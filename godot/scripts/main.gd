@@ -35,8 +35,10 @@ var shots := 0
 var recorded_commands: Array = []
 var capture_mode := false
 var thermal_material: StandardMaterial3D
+var shutting_down := false
 
 func _ready() -> void:
+	get_tree().auto_accept_quit = false
 	_setup_world()
 	sound = Sound.new()
 	add_child(sound)
@@ -54,6 +56,21 @@ func _ready() -> void:
 		_capture_sequence.call_deferred()
 	if "--smoke-test" in args:
 		_smoke_test.call_deferred()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		request_quit()
+
+func request_quit() -> void:
+	if shutting_down:
+		return
+	shutting_down = true
+	paused = true
+	set_process(false)
+	set_physics_process(false)
+	set_process_unhandled_key_input(false)
+	var drained: bool = await sound.drain_for_shutdown()
+	get_tree().quit.call_deferred(0 if drained else 1)
 
 func _setup_world() -> void:
 	environment = Environment.new()
@@ -403,7 +420,7 @@ func _capture_sequence() -> void:
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(out.path_join("05-manual.png"))
 	print("CAPTURE_COMPLETE ",out)
-	get_tree().quit()
+	request_quit()
 
 func _smoke_test() -> void:
 	start_range()
@@ -432,5 +449,4 @@ func _smoke_test() -> void:
 	set_screen("menu")
 	await get_tree().process_frame
 	print("RUNTIME_SMOKE_PASS: movement, four stations, selection, fire, effects, screen navigation")
-	# Let this awaited frame callback return before requesting scene teardown.
-	get_tree().quit.call_deferred()
+	request_quit()

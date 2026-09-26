@@ -9,6 +9,7 @@ var effects: Array[AudioStreamPlayer] = []
 var cursor := 0
 var last_voice := ""
 var cache: Dictionary = {}
+var playback_lifetimes: Array[WeakRef] = []
 
 func _ready() -> void:
 	engine = AudioStreamPlayer.new()
@@ -45,6 +46,7 @@ func play(cue: String) -> void:
 	p.stream = stream
 	p.volume_db = linear_to_db(volume * 0.6)
 	p.play()
+	_remember_playback(p)
 
 func speak(cue: String) -> void:
 	last_voice = cue
@@ -56,6 +58,7 @@ func speak(cue: String) -> void:
 	voice.stream = stream
 	voice.volume_db = linear_to_db(volume * 0.8)
 	voice.play()
+	_remember_playback(voice)
 
 func update_engine(speed: float, active: bool) -> void:
 	if muted or not active:
@@ -65,18 +68,39 @@ func update_engine(speed: float, active: bool) -> void:
 	engine.volume_db = linear_to_db(volume*(0.055+minf(absf(speed)*0.003,0.09)))
 	if not engine.playing:
 		engine.play()
+		_remember_playback(engine)
+
+func _remember_playback(player: AudioStreamPlayer) -> void:
+	playback_lifetimes = playback_lifetimes.filter(func(reference): return reference.get_ref() != null)
+	if player.has_stream_playback():
+		playback_lifetimes.append(weakref(player.get_stream_playback()))
 
 func stop_all() -> void:
-	engine.stop()
-	voice.stop()
-	for p in effects:
+	for p in [engine, voice] + effects:
+		_remember_playback(p)
 		p.stop()
 
-func _exit_tree() -> void:
-	# Release playback and cached stream references before audio-server teardown.
+func release_streams() -> void:
 	stop_all()
 	engine.stream = null
 	voice.stream = null
 	for p in effects:
 		p.stream = null
 	cache.clear()
+
+func drain_for_shutdown() -> bool:
+	# AudioServer can retain stopped playback until its next mixing pass. Track
+	# actual playback lifetime instead of relying on one fast scene-tree frame.
+	muted = true
+	release_streams()
+	var deadline := Time.get_ticks_msec() + 1000
+	while playback_lifetimes.any(func(reference): return reference.get_ref() != null):
+		if Time.get_ticks_msec() >= deadline:
+			push_error("Audio playback did not drain before the shutdown deadline")
+			return false
+		await get_tree().create_timer(0.01, true, false, true).timeout
+	playback_lifetimes.clear()
+	return true
+
+func _exit_tree() -> void:
+	release_streams()

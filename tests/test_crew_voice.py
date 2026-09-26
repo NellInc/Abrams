@@ -41,6 +41,17 @@ class CrewVoiceTests(unittest.TestCase):
             self.assertIn("heading two eight zero", json.dumps(body))
             self.assertNotIn("heading 280", json.dumps(body))
 
+    def test_all_original_pc_bearing_strings_are_spoken_digit_by_digit(self):
+        fixture = json.loads((ROOT / "godot/tests/fixtures/pc_bearings.json").read_text())
+        words = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+        self.assertEqual(len(fixture["rows"]), 256)
+        for internal, degrees, digits in fixture["rows"]:
+            caption = "We've been hit! Bearing " + digits
+            expected = "We've been hit! Bearing " + " ".join(words[int(d)] for d in digits)
+            with self.subTest(internal=internal):
+                self.assertEqual(digits, f"{degrees:03d}")
+                self.assertEqual(pronounce_headings(caption), expected)
+
     def test_existing_captions_and_identifiers_preserved(self):
         self.assertEqual(SCRIPT["cues"].keys(), LINES.keys())
         for cue, (role, caption, _) in LINES.items():

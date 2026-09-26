@@ -24,6 +24,12 @@ ROM upload or redistribution was requested. Preserve the supplied files.
 
 The active goal remains open. `GOAL.md` incorporates the platform clarification.
 
+Nell asked whether to transplant/rewrite the code or retain the original behind
+a new renderer. The recommended direction is original-PC-executable authority
+inside an instrumented emulator, with a read-only Godot presentation bridge.
+The following goal continuation authorized continued local execution. Neither
+the current authored range nor a diagnostic pose view counts as the remaster.
+
 ## Proven local milestones
 
 | Outcome | Evidence | Boundary |
@@ -31,6 +37,11 @@ The active goal remains open. `GOAL.md` incorporates the platform clarification.
 | Preserve PC reference | 68-file SHA-256 manifest and verification | Supplied package includes PTL distribution branding; historical authenticity unresolved. |
 | Recover PC compression/data | All 48 type-2 resources decode to declared lengths; eight SSS/WLD pairs inspected | Field storage is not full mission semantics. |
 | Recover PC vector storage | 188 shape records; 992 primitive lists; closed cube OBJ independently checked | Renderer flags, units, materials and object identities unresolved. |
+| Recover PC executable images | Four EXEPACK images match an independent unpacker and execution of their original stubs | Isolated CPU proof, not complete game behaviour. |
+| Original bearing calculation | All 256 inputs match the Godot port; all 256 padded hit-call strings pass digit-wise TTS expansion | Angle integration and actual incoming-hit events remain. |
+| Live original PC core | Original Mossel Defense briefing, motor pool and mission executed inside the local core | Emulator timing calibration, complete mission outcomes and all eight missions remain. |
+| Original replay bridge | Two 978-sample traces match full 640 KiB RAM and framebuffer bytes exactly | Same-core bounded replay, not historical-machine or whole-game parity. |
+| Godot live integration | Input forwarding, player movement, braking, stations, turret and HEAT consumption pass; helper exit zero | Diagnostic vehicle pose only; original world, cameras, visibility and combat presentation remain. |
 | Read original manual | 48-page scan, extracted page images, mechanics ledger | Manual statements require runtime confirmation. |
 | Testable simulation | 1,093 Godot checks pass | Provisional authored range only. |
 | Functional range | Native/headless movement, four stations, targeting, fire, effects and menus | No original campaign or enemy AI. |
@@ -81,19 +92,63 @@ transcripts match automatically; casting/listening approval remains open. The
 effects rebuild was separately checked to preserve their hashes and metadata.
 The historical shutdown warning remains unresolved; a passing run is not a repair.
 
+### Original-core bridge pass
+
+`artifacts/pc-bridge-replay-02/report.json` proves two 978-sample original-PC
+replays with identical conventional RAM and framebuffer bytes. The first replay
+check failed on a stale initial restored framebuffer and an incorrect instant-
+braking expectation; that artifact is retained. Explicit video priming and enough
+original braking time resolved those specific failures without replacing rules.
+`artifacts/pc-live-godot/report.json` verifies native Godot input/state transport
+and graceful helper exit. `artifacts/pc-bridge-viewer-run-02.log` and the paired
+native PNG show the read-only pose viewer with no engine errors. The earlier
+viewer run's premature camera look-at was corrected. These checks do not establish
+original terrain/camera/visibility fidelity or historical CPU/input timing.
+
+The native 1440x810 paired view was visually inspected. No optional Impeccable
+linter is installed/configured for this GDScript-only project; none was installed
+to replace native rendering checks. The original GAME bytes were reverified and
+all 68 files in the local content ZIP match them byte-for-byte.
+
+### Audio shutdown regression
+
+The first bridge-wide gate (`artifacts/validation-20260926T222702Z`) failed after
+the runtime assertions with a retained `voice_ready.wav` and its playback.
+An initial drain guard watched only currently attached playback and still missed
+players stopped earlier by a menu change. A focused stopped-before-drain test
+reproduced that failure (`artifacts/audio-already-stopped-before-fix.log`).
+
+The controller now retains weak lifetime observations of started/stopped playback,
+releases owned streams and waits for those observed instances to be freed before
+scene teardown, with a one-second failure deadline. Window close, capture and
+smoke-test shutdown use that path. Five stopped-before-drain checks now pass
+(`artifacts/audio-already-stopped-fixed-1.log` through `-5.log`), as does the full
+runtime smoke (`artifacts/runtime-audio-drain-fixed.log`). This is a demonstrated
+project-level teardown repair for the reproduced path, not a Godot-engine fix or
+a claim about every platform. Earlier passing runs did not prove this repair.
+
+Final combined gate for this pass:
+`artifacts/validation-20260926T223708Z/results.txt`, terminal exit zero. All eight
+checks pass: 75 Python tests, reference preservation, 1,093 authored simulation
+checks, 512 original-bearing fixture outputs, 60,000 geometry normals, nine
+generated voices, observed audio playback deallocation, and runtime smoke.
+The separate live-core replay and native Godot bridge receipts above are required
+alongside that gate; the normal source gate does not silently claim to run them.
+
 ## Open outcome matrix
 
-1. **Exact PC simulation:** input-hold persistence, governor/heat/fuel, targeting
+1. **Exact PC simulation:** retain the original as authority rather than porting
+   provisional rules. Live control traces now establish persistent motion on
+   release and braking over time with keypad 5. Governor/heat/fuel, targeting
    probability, weapon class effects, damage, guided fire, smoke and AI remain
    unresolved. Current provisional numerical constants are labelled in data/docs.
 2. **Eight PC missions:** containers parsed, execution semantics and matching
    start-to-end success/failure traces remain. No mission is marked complete.
-3. **PC original runtime:** DOSBox-X launches into the original game. Selected
-   graphics mode/palette is unresolved despite the emulator being set to EGA.
-   This prevents using its current colors as the visual baseline. The executable
-   contains the literal startup syntax `Usage: ABRAMS [CGA/EGA/TANDY/HERC]`.
-   The next-launch config now passes `ABRAMS.COM EGA` explicitly. Its resulting
-   palette has not been verified; the already-running session was left unchanged.
+3. **PC original runtime:** explicit `ABRAMS.COM EGA` startup is now verified.
+   The raw framebuffer had correct colors while the OpenGL window showed a blue
+   cast. Switching the running emulator to Surface corrected the displayed
+   colors, confirmed by Nell. `.runtime/dosbox-x.conf` saves `output=surface`.
+   Underlying OpenGL defect remains undiagnosed; source files stayed unchanged.
 4. **Campaign/persistence:** original progression, scores, ranks and save format
    remain; the range's save/restore is separate developer functionality.
 5. **Visual restoration:** first four static assets complete as v1 local artwork.
@@ -115,12 +170,14 @@ The historical shutdown warning remains unresolved; a passing run is not a repai
 
 ## Next bounded investigations
 
-1. Verify PC startup graphics selection and stable original controls, then record
-   input/state traces. Resolve the palette before extracting PC instrument colors.
-2. Follow the PC SHAPE renderer's vertex/index/flag paths. Map specific known
-   objects before using decoded vectors as final model geometry.
-3. Decode mission actor/action semantics and measured movement/fire timing, one
-   scenario at a time. Add original-versus-remaster regression fixtures.
+1. Recover original camera transforms and logical update boundaries. Current
+   snapshots are VGA-frame-boundary samples; original UI drawing may lag them.
+   Calibrate real-time input/CPU pacing against the standalone reference.
+2. Follow the PC SHAPE renderer and live actor list. Map original world units,
+   object identities and visibility before replacing the combat view.
+3. Extend original-executable replay coverage to station/weapon modes, enemy
+   state, damage, mission outcomes and campaign/persistence, one scenario at a
+   time. Current bridge receipts and limitations are in `pc-live-bridge.md`.
 4. Continue the now-proven Genesis capture/extraction pipeline for remaining
    artwork, then remaster with unchanged source layers retained for comparison.
 

@@ -8,6 +8,8 @@ music and sound-effect references for a faithful presentation upgrade.
 
 * Open **Play.command** for the authored calibration range.
 * Open **Art Review.command** for original/remaster artwork comparisons.
+* Open **PC Bridge.command** for the local original-PC/Godot pose research view.
+  It requires the ignored local emulator, content ZIP and mission snapshot.
 * Alternatively import `godot/project.godot` in Godot 4 and run the main scene.
 * Set `GODOT_BIN` to the engine executable if the launcher cannot find it.
 
@@ -43,6 +45,8 @@ Earlier mixed recordings are retained only as comparison material.
 * `docs/original-mechanics.md`: manual-derived PC requirements and unknowns.
 * `docs/reference-formats.md`: PC compression and scenario/world storage.
 * `docs/shape-format.md`: bounded PC vector-geometry recovery.
+* `docs/pc-executable-research.md`: unpacked PC code and executable bearing comparisons.
+* `docs/pc-live-bridge.md`: original-executable authority, live Godot bridge and replay evidence.
 * `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
 * `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.
 * `docs/voice-workflow.md`: generative crew speech and performance directions.
