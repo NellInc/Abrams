@@ -31,6 +31,20 @@ class Variable(C.Structure):
     _fields_ = [("key", C.c_char_p), ("value", C.c_char_p)]
 
 
+class Geometry(C.Structure):
+    _fields_ = [("base_width", C.c_uint), ("base_height", C.c_uint),
+                ("max_width", C.c_uint), ("max_height", C.c_uint),
+                ("aspect_ratio", C.c_float)]
+
+
+class Timing(C.Structure):
+    _fields_ = [("fps", C.c_double), ("sample_rate", C.c_double)]
+
+
+class AVInfo(C.Structure):
+    _fields_ = [("geometry", Geometry), ("timing", Timing)]
+
+
 class ReferenceCore:
     def __init__(self, library: Path, rom: Path, directory: Path):
         self.library, self.rom = library.resolve(), rom.resolve()
@@ -43,6 +57,8 @@ class ReferenceCore:
         self.variables: dict[bytes, bytes] = {}
         self.last_video = None
         self.capture_video = False
+        self.audio_sink = None
+        self.audio_error = None
         self.callbacks = []
         self.rom_bytes = rom.read_bytes()
         if self.rom_bytes[0x100:0x104] != b"SEGA":
@@ -52,8 +68,8 @@ class ReferenceCore:
         bindings = [
             ("environment", C.CFUNCTYPE(C.c_bool, C.c_uint, C.c_void_p), self._environment),
             ("video_refresh", C.CFUNCTYPE(None, C.c_void_p, C.c_uint, C.c_uint, C.c_size_t), self._video),
-            ("audio_sample", C.CFUNCTYPE(None, C.c_int16, C.c_int16), lambda *_: None),
-            ("audio_sample_batch", C.CFUNCTYPE(C.c_size_t, C.c_void_p, C.c_size_t), lambda _, n: n),
+            ("audio_sample", C.CFUNCTYPE(None, C.c_int16, C.c_int16), self._audio_sample),
+            ("audio_sample_batch", C.CFUNCTYPE(C.c_size_t, C.c_void_p, C.c_size_t), self._audio_batch),
             ("input_poll", C.CFUNCTYPE(None), lambda: None),
             ("input_state", C.CFUNCTYPE(C.c_int16, C.c_uint, C.c_uint, C.c_uint, C.c_uint), self._input),
         ]
@@ -70,12 +86,36 @@ class ReferenceCore:
         self.core.retro_serialize.restype = C.c_bool
         self.core.retro_unserialize.argtypes = [C.c_void_p, C.c_size_t]
         self.core.retro_unserialize.restype = C.c_bool
+        self.core.retro_get_system_av_info.argtypes = [C.POINTER(AVInfo)]
+        self.core.retro_get_system_av_info.restype = None
         self.core.retro_init()
         info = GameInfo(str(self.rom).encode(), C.cast(self.rom_buffer, C.c_void_p), len(self.rom_bytes), None)
         if not self.core.retro_load_game(C.byref(info)):
             self.core.retro_deinit()
             raise RuntimeError("Reference core rejected the ROM")
         self.core.retro_set_controller_port_device(0, 1)
+
+    def av_info(self) -> AVInfo:
+        info = AVInfo()
+        self.core.retro_get_system_av_info(C.byref(info))
+        return info
+
+    def _write_audio(self, raw):
+        if self.audio_sink is not None and self.audio_error is None:
+            try:
+                self.audio_sink(raw)
+            except Exception as error:
+                # ctypes callbacks cannot propagate exceptions through C. Surface
+                # the failure immediately after retro_run returns instead.
+                self.audio_error = error
+
+    def _audio_sample(self, left, right):
+        self._write_audio(struct.pack("=hh", left, right))
+
+    def _audio_batch(self, data, frames):
+        if self.audio_sink is not None:
+            self._write_audio(C.string_at(data, frames * 4))
+        return frames
 
     def _environment(self, command, data):
         if command in (9, 31):
@@ -124,6 +164,8 @@ class ReferenceCore:
         for i in range(count):
             self.capture_video = i == count - 1
             self.core.retro_run()
+            if self.audio_error is not None:
+                raise RuntimeError("Reference audio capture failed") from self.audio_error
             self.frame += 1
         self.pressed.clear()
 

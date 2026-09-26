@@ -1,5 +1,4 @@
 {
-  "sample_rate": 48000,
   "effects": {
     "cannon": {
       "sha256": "8cbd7bc916ce62da13bc798e95c6997b529db126d22c39c2bf395cb324403208",
@@ -30,70 +29,152 @@
       "source": "original mathematical synthesis, tools/build_audio.py"
     }
   },
-  "voice_status": "development synthetic radio takes",
+  "voice_status": "Generative crew takes: eight Gemini 3.8, one authorized 3.1 fallback; transcription matched; listening review pending",
   "voices": {
     "ready": {
       "role": "Commander",
+      "voice": "Orus",
       "text": "Crew ready. Range is clear. Move out.",
-      "generator": "eSpeak NG local",
-      "voice": "en-us+m3",
-      "sha256": "482831668e857d3ff290a4cc50281796fa33264a371bb8733784616241004557"
+      "performed_text": "Crew ready. Range is clear. Move out.",
+      "direction": "Seasoned American tank commander. Firm, controlled, concise; natural speech close to a dry microphone. Brisk. Perform the three scripted sentences exactly, with punctuation setting the pauses.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 83520,
+      "duration_seconds": 3.48,
+      "sha256": "bad407552b65f34b94ae35770494beb1d8e4259cd313cdd83975ac66732c0876",
+      "source_master": "local-audio/crew-gemini-3.8-v2-repairs/voice_ready.wav",
+      "processing": "Unmodified generated dry master"
     },
     "on_the_way": {
       "role": "Gunner",
+      "voice": "Iapetus",
       "text": "On the way!",
-      "generator": "eSpeak NG local",
-      "voice": "en-us+m2",
-      "sha256": "247ef7167931a9e6419efbe5f74e12d9c149737100f5df8234e058661d44220f"
+      "performed_text": "On the way!",
+      "direction": "American tank gunner. Clear, alert, clipped operational delivery; dry close microphone. Immediate, decisive firing call. Quick attack with no introductory pause.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 24960,
+      "duration_seconds": 1.04,
+      "sha256": "a5d0a4c561eba0c8eac06977eabffaadff5fd137bd5ff7b0f0410c41289cc6fb",
+      "source_master": "local-audio/crew-gemini-3.8-v1/voice_on_the_way.wav",
+      "processing": "Unmodified generated dry master"
     },
     "loaded": {
       "role": "Loader",
+      "voice": "Fenrir",
       "text": "Up!",
-      "generator": "eSpeak NG local",
-      "voice": "en-us+m4",
-      "sha256": "dfcc9d17cdadd64c95c187057970b2a34bf8f2e730db672cb9c962d45f6c7afe"
+      "performed_text": "Up!",
+      "direction": "American tank loader working inside a cramped turret. Energetic, physically exerted, short clear calls; dry close microphone. A short, clear readiness call. Speak only the written word, with ordinary pronunciation.",
+      "generator": "gemini-3.1-flash-tts-preview",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 22080,
+      "duration_seconds": 0.92,
+      "sha256": "d9d9c52d76624e8a3cb01c610bc42ca4e396424f7220d0d760a7ba494f6b9f2c",
+      "source_master": "local-audio/crew-gemini-3.1-loaded-v1/voice_loaded.wav",
+      "processing": "Unmodified generated dry master"
     },
     "target": {
       "role": "Gunner",
+      "voice": "Iapetus",
       "text": "Target acquired.",
-      "generator": "eSpeak NG local",
-      "voice": "en-us+m2",
-      "sha256": "2c9c565d61fef4427beecadbab2d94bb9661e9a14c65dacb3ce20acb900e1fc6"
+      "performed_text": "Target acquired.",
+      "direction": "American tank gunner. Clear, alert, clipped operational delivery; dry close microphone. Quick factual confirmation, focused rather than excited.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 30720,
+      "duration_seconds": 1.28,
+      "sha256": "df19791393e2196b21e09099b61b9a01b1682cf3c5784b787174da100fa10044",
+      "source_master": "local-audio/crew-gemini-3.8-v1/voice_target.wav",
+      "processing": "Unmodified generated dry master"
     },
     "hit": {
       "role": "Commander",
+      "voice": "Orus",
       "text": "Good hit.",
-      "generator": "eSpeak NG local",
-      "voice": "en-us+m3",
-      "sha256": "e70f61f1f8a0f86995c1fd71974312d085ef58a84e8351a29b79bc1ec735c91b"
+      "performed_text": "Good hit.",
+      "direction": "Seasoned American tank commander. Firm, controlled, concise; natural speech close to a dry microphone. Restrained approval of a training hit, concise and level.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 27840,
+      "duration_seconds": 1.16,
+      "sha256": "ad33dce78e49f694627be489d9ed6bdb4fce8c1fcc6af4f0b1126694d60f8124",
+      "source_master": "local-audio/crew-gemini-3.8-v1/voice_hit.wav",
+      "processing": "Unmodified generated dry master"
     },
     "cease_fire": {
       "role": "Commander",
+      "voice": "Orus",
       "text": "Cease fire. Range complete.",
-      "generator": "eSpeak NG local",
-      "voice": "en-us+m3",
-      "sha256": "55ab9604dd42744eed2305ab5c0793a177f28a4927b748d6c341233436a51c63"
+      "performed_text": "Cease fire. <short pause> Range complete.",
+      "direction": "Seasoned American tank commander. Firm, controlled, concise; natural speech close to a dry microphone. Firm stop order, then a calmer confirmation.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 72000,
+      "duration_seconds": 3.0,
+      "sha256": "5f875b182e148a1d2e38ac6ce7f7c0cf31991fec66c17c4bc171df3f9c9e7cb8",
+      "source_master": "local-audio/crew-gemini-3.8-v1/voice_cease_fire.wav",
+      "processing": "Unmodified generated dry master"
     },
     "smoke": {
       "role": "Gunner",
+      "voice": "Iapetus",
       "text": "Smoke out.",
-      "generator": "eSpeak NG local",
-      "voice": "en-us+m2",
-      "sha256": "e630bc70439eb79999106816afeb8a78691c43867d113973a09baf2fe28bad61"
+      "performed_text": "Smoke out.",
+      "direction": "American tank gunner. Clear, alert, clipped operational delivery; dry close microphone. Short tactical confirmation, clear and immediate.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 26880,
+      "duration_seconds": 1.12,
+      "sha256": "5395a78c1112cbaa24b80cd7b44f8efaf118e3e244689d4f5772573082907600",
+      "source_master": "local-audio/crew-gemini-3.8-v1/voice_smoke.wav",
+      "processing": "Unmodified generated dry master"
     },
     "empty": {
       "role": "Loader",
+      "voice": "Fenrir",
       "text": "No rounds remaining.",
-      "generator": "eSpeak NG local",
-      "voice": "en-us+m4",
-      "sha256": "94b3a65d9899556a0475b8fd34ee44514118591cb0eed63956f3d0bf800e23f8"
+      "performed_text": "No rounds remaining.",
+      "direction": "American tank loader working inside a cramped turret. Energetic, physically exerted, short clear calls; dry close microphone. Urgent factual ammunition report, without panic or theatrical shouting.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 45120,
+      "duration_seconds": 1.88,
+      "sha256": "922b47e4607c2c396e4c0ffde96c19f9dd554d897ab34e471e9ff8abe8c89e39",
+      "source_master": "local-audio/crew-gemini-3.8-v1/voice_empty.wav",
+      "processing": "Unmodified generated dry master"
     },
     "moving": {
       "role": "Driver",
+      "voice": "Algenib",
       "text": "Moving.",
-      "generator": "eSpeak NG local",
-      "voice": "en-us+m5",
-      "sha256": "eeadcc64445b0936a1a4b28c462787fc106862b68517fc8c6e91e84250f111f4"
+      "performed_text": "Moving.",
+      "direction": "American tank driver. Low, slightly gravelly, matter of fact and calm; dry close microphone. Brief acknowledgement while concentrating on driving.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 29760,
+      "duration_seconds": 1.24,
+      "sha256": "4ef410639e5af805c43e8d2fdcf7881a18f7c296ca117e8c02da61a2d176ca77",
+      "source_master": "local-audio/crew-gemini-3.8-v1/voice_moving.wav",
+      "processing": "Unmodified generated dry master"
     }
-  }
+  },
+  "effects_sample_rate": 48000
 }

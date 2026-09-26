@@ -1,0 +1,23 @@
+{
+  "preferred_model": "gemini-3.8-flash-tts",
+  "fallback_model": "gemini-3.1-flash-tts-preview",
+  "bearing_pronunciation": "Speak three individual digits, including leading zeroes: heading 280 is heading two eight zero; 045 is zero four five. Preserve numeric captions.",
+  "scope": "Authored calibration range. Original PC dialogue coverage remains to be recovered.",
+  "roles": {
+    "Commander": {"voice": "Orus", "style": "Seasoned American tank commander. Firm, controlled, concise; natural speech close to a dry microphone."},
+    "Gunner": {"voice": "Iapetus", "style": "American tank gunner. Clear, alert, clipped operational delivery; dry close microphone."},
+    "Loader": {"voice": "Fenrir", "style": "American tank loader working inside a cramped turret. Energetic, physically exerted, short clear calls; dry close microphone."},
+    "Driver": {"voice": "Algenib", "style": "American tank driver. Low, slightly gravelly, matter of fact and calm; dry close microphone."}
+  },
+  "cues": {
+    "ready": {"role": "Commander", "caption": "Crew ready. Range is clear. Move out.", "text": "Crew ready. Range is clear. Move out.", "direction": "Brisk. Perform the three scripted sentences exactly, with punctuation setting the pauses."},
+    "on_the_way": {"role": "Gunner", "caption": "On the way!", "text": "On the way!", "direction": "Immediate, decisive firing call. Quick attack with no introductory pause."},
+    "loaded": {"role": "Loader", "caption": "Up!", "text": "Up!", "direction": "A short, clear readiness call. Speak only the written word, with ordinary pronunciation."},
+    "target": {"role": "Gunner", "caption": "Target acquired.", "text": "Target acquired.", "direction": "Quick factual confirmation, focused rather than excited."},
+    "hit": {"role": "Commander", "caption": "Good hit.", "text": "Good hit.", "direction": "Restrained approval of a training hit, concise and level."},
+    "cease_fire": {"role": "Commander", "caption": "Cease fire. Range complete.", "text": "Cease fire. <short pause> Range complete.", "direction": "Firm stop order, then a calmer confirmation."},
+    "smoke": {"role": "Gunner", "caption": "Smoke out.", "text": "Smoke out.", "direction": "Short tactical confirmation, clear and immediate."},
+    "empty": {"role": "Loader", "caption": "No rounds remaining.", "text": "No rounds remaining.", "direction": "Urgent factual ammunition report, without panic or theatrical shouting."},
+    "moving": {"role": "Driver", "caption": "Moving.", "text": "Moving.", "direction": "Brief acknowledgement while concentrating on driving."}
+  }
+}

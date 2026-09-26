@@ -2,6 +2,7 @@
 GAME/
 GENESIS/
 local-art/
+local-audio/
 *.pdf
 reference/
 artifacts/

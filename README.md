@@ -1,8 +1,8 @@
 # Abrams Battle Tank reconstruction
 
 A local Godot remaster project for Dynamix's PC **Abrams Battle Tank**.
-The PC version is definitive for gameplay. The Genesis version supplies visual
-inspiration for faithful higher-resolution artwork.
+The PC version is definitive for gameplay. The Genesis version supplies artwork,
+music and sound-effect references for a faithful presentation upgrade.
 
 ## Play the current local build
 
@@ -13,7 +13,7 @@ inspiration for faithful higher-resolution artwork.
 
 The range supports four stations, driving/turret modes, target selection/lock,
 three main ammunition types, machine gun, smoke effects, zoom, a thermal preview,
-captions and scratch crew voice, pause/settings and local range save/restore.
+captions and crew voice, pause/settings and local range save/restore.
 F1-F4 select stations; C changes control mode; arrows move; Enter selects a
 target; L locks; Space fires; M fires the machine gun; 1/2/3 select ammunition;
 Z zooms; T toggles thermal; H shows help; Escape pauses.
@@ -31,6 +31,11 @@ his office and the motor pool. It is available locally under
 palettes, exact prompts and source receipts accompany it. The original cartridge
 and derived art are excluded from Git and normal project exports.
 
+Directly extracted Genesis audio assets are in `local-audio/genesis-native-v1/`:
+ten PCM samples, 25 FM patches and four native music containers. WAV wrappers
+preserve every sample byte. These remain excluded from Git and game exports.
+Earlier mixed recordings are retained only as comparison material.
+
 ## Research and validation
 
 * `docs/GOAL.md`: full objective, under 3,800 characters.
@@ -39,6 +44,8 @@ and derived art are excluded from Git and normal project exports.
 * `docs/reference-formats.md`: PC compression and scenario/world storage.
 * `docs/shape-format.md`: bounded PC vector-geometry recovery.
 * `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
+* `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.
+* `docs/voice-workflow.md`: generative crew speech and performance directions.
 * `docs/simulation-contract.md`: provisional range behaviour and test boundaries.
 
 Run `./tools/validate.sh` for the local test gate. Python resource tests need the
@@ -52,5 +59,5 @@ Nothing has been published or deployed. Supplied game files and extracted or
 derived artwork have no redistribution permission established by this work.
 Newly written code is unlicensed pending the project's licensing decision.
 Font licenses are retained beside their files. Current effects are newly
-synthesized; crew recordings are temporary synthetic takes, not final voice
-performances. Emulator libraries are local research dependencies only.
+synthesized. Crew speech uses generated performances; final casting and listening
+review remain open. Emulator libraries are local research dependencies only.

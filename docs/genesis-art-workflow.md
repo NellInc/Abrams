@@ -4,8 +4,9 @@
 
 Nell supplied the ROM and requested local graphic extraction and faithful
 high-resolution remastering. Her subsequent clarification makes the **PC version
-definitive for gameplay**. Genesis provides visual inspiration only. No Genesis
-gameplay rule has been adopted in the simulation.
+definitive for gameplay**. Genesis provides presentation references. Nell later
+also authorized music and sound extraction, recorded in `genesis-audio-workflow.md`.
+No Genesis gameplay rule has been adopted in the simulation.
 
 Working if: simulation rules cite PC evidence, and a Genesis-only behaviour is
 never treated as a parity oracle without an explicit decision.

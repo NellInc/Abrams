@@ -6,6 +6,16 @@
 logic, higher-resolution graphics, new effects and voice. She then supplied the
 Genesis ROM and requested graphic extraction and style-preserving remastering.
 Her clarification explicitly retains PC gameplay as definitive.
+She subsequently authorized Genesis sound and music extraction as reference
+material for likely upgrades. PC events and timing continue to govern playback.
+She clarified that native samples should be used rather than mixed recordings,
+and requested generative crew speech, preferring Gemini 3.8 Flash TTS with 3.1
+Flash TTS as fallback. This authorizes sending the authored crew script to Google
+for speech generation. Original game audio and ROM data stay local.
+Nell also specified digit-by-digit bearing barks. The generation pipeline now
+expands heading/bearing numerals while retaining numeric captions; a separate
+Gemini 3.8 audition says the supplied heading-280 line. It is an audition, not an
+added simulation event.
 
 Authorized: inspect supplied references, execute local emulators, create source
 extracts, use selected images with the built-in image editor, author Godot code,
@@ -25,9 +35,10 @@ The active goal remains open. `GOAL.md` incorporates the platform clarification.
 | Testable simulation | 1,093 Godot checks pass | Provisional authored range only. |
 | Functional range | Native/headless movement, four stations, targeting, fire, effects and menus | No original campaign or enemy AI. |
 | Terrain correctness | 60,000 upward triangle normals and flat range bounds pass | Procedural presentation remains preliminary. |
-| New audio | Seven original synthesized effects and nine scratch crew takes with provenance | Mix/listening review and final performances remain. |
+| New audio | Seven original synthesized effects; nine generative crew samples replace scratch speech | Eight Gemini 3.8 takes, one 3.1 fallback; final casting/listening review remains. |
 | Genesis source integrity | 512 KB ROM checksum `727b` and unchanged SHA-256 | PC mechanics remain authoritative. |
 | Genesis extraction | Ten independent captured scenes reconstruct with zero pixel differences | Bounded video mode; not exhaustive ROM asset recovery. |
+| Genesis native audio | Ten PCM assets, 25 FM patches and four music containers extracted directly from ROM | Cue identities and music-command interpretation remain; earlier mixed recordings are comparison-only. |
 | Initial high-resolution art | Four generated assets saved locally with prompts and receipts | Fine details are interpreted; first Wilson/office treatment approved by Nell. |
 | Godot art comparison | Three scenes in both modes captured in native renderer | External local art only; no release bundle. |
 
@@ -63,6 +74,13 @@ open despite this successful diagnostic-mode run. Artwork captures also pass at
 1440x810 and 1920x1080. The local art-workbench ZIP contains 162 verified entries;
 neither the ROM nor an emulator is included.
 
+Audio update gate: `artifacts/validation-20260926T212412Z/results.txt` passes
+reference tests, source preservation, simulation, geometry, imported audio and
+runtime checks, with a terminal exit status of zero. The nine selected voice
+transcripts match automatically; casting/listening approval remains open. The
+effects rebuild was separately checked to preserve their hashes and metadata.
+The historical shutdown warning remains unresolved; a passing run is not a repair.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** input-hold persistence, governor/heat/fuel, targeting
@@ -82,7 +100,15 @@ neither the ROM nor an emulator is included.
    Cockpits, recognition art, Wilson animation, in-world models, effects and all
    UI states remain. Preserve PC information density and four-station controls.
 6. **Audio:** final voice performances, per-event coverage, mixing/listening,
-   accessibility and source/licensing records remain.
+   accessibility and source/licensing records remain. Direct native extraction
+   replaces recordings as the asset source. Eleven WAV payloads (ten assets and
+   one silence placeholder) match the ROM byte-for-byte; 25 FM patches and four
+   native music containers are preserved. The 68-entry native archive is verified.
+   Nine generative range voices are installed, with unchanged cues/caption words.
+   Automated transcription matched the selected set after a revised 3.8 readiness
+   take and a 3.1 fallback for the one-word loader call. Rejected takes are retained.
+   No human listening approval, complete PC dialogue coverage or finished music
+   arrangement is claimed.
 7. **Release:** no production package, export templates or community publication
    approved; build reproducibility, target platforms and redistribution decisions
    remain. Source-only work can continue locally.
