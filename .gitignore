@@ -1,0 +1,16 @@
+.DS_Store
+GAME/
+GENESIS/
+local-art/
+*.pdf
+reference/
+artifacts/
+.runtime/
+.godot/
+*.tmp
+*.log
+__pycache__/
+*.pyc
+.env
+.env.*
+builds/

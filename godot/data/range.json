@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "authored_calibration_range",
+  "title": "Calibration Range",
+  "provenance": "Original-authored exercise, separate from all eight original missions.",
+  "bounds": [-1200.0, 1200.0, -1800.0, 300.0],
+  "spawn": [0.0, 180.0],
+  "heading": 0.0,
+  "targets": [
+    {"id": "t01", "name": "ALPHA", "pos": [-90.0, -180.0], "hp": 100.0, "kind": "armour", "team": "range"},
+    {"id": "t02", "name": "BRAVO", "pos": [110.0, -460.0], "hp": 100.0, "kind": "armour", "team": "range"},
+    {"id": "t03", "name": "CHARLIE", "pos": [-220.0, -820.0], "hp": 100.0, "kind": "armour", "team": "range"},
+    {"id": "t04", "name": "DELTA", "pos": [280.0, -1120.0], "hp": 100.0, "kind": "armour", "team": "range"}
+  ],
+  "completion": "Destroy all four stationary range targets. Fuel exhaustion ends the exercise. No enemy AI or original campaign scoring is implemented."
+}

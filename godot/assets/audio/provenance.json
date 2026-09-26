@@ -1,0 +1,99 @@
+{
+  "sample_rate": 48000,
+  "effects": {
+    "cannon": {
+      "sha256": "8cbd7bc916ce62da13bc798e95c6997b529db126d22c39c2bf395cb324403208",
+      "source": "original mathematical synthesis, tools/build_audio.py"
+    },
+    "impact": {
+      "sha256": "bc13651ec306fb739d50fd623d2cac1554cc74248daf16cab5a2337ccc193880",
+      "source": "original mathematical synthesis, tools/build_audio.py"
+    },
+    "machinegun": {
+      "sha256": "c15fc10f5bd0ab5b346f5a23716e598a0631ddb08696e28ec23fea192bdd46cc",
+      "source": "original mathematical synthesis, tools/build_audio.py"
+    },
+    "reload": {
+      "sha256": "4e2ef3e64b6417da4edd6f0d4f26fe30eca826662503badc990ccf4deca701ff",
+      "source": "original mathematical synthesis, tools/build_audio.py"
+    },
+    "smoke": {
+      "sha256": "66e6179a6633058a142cb747f0836fd6bfd686b8b9a8ccebb7c29d7e5e409690",
+      "source": "original mathematical synthesis, tools/build_audio.py"
+    },
+    "switch": {
+      "sha256": "0230e063790d6b7a660470ad2bb0d488c15ef774ff1026526862aa897523bf84",
+      "source": "original mathematical synthesis, tools/build_audio.py"
+    },
+    "engine": {
+      "sha256": "d248c5aa34fd2359b9b4fd0e6fb986262b5167fda515fefe0d239bd2278b33ab",
+      "source": "original mathematical synthesis, tools/build_audio.py"
+    }
+  },
+  "voice_status": "development synthetic radio takes",
+  "voices": {
+    "ready": {
+      "role": "Commander",
+      "text": "Crew ready. Range is clear. Move out.",
+      "generator": "eSpeak NG local",
+      "voice": "en-us+m3",
+      "sha256": "482831668e857d3ff290a4cc50281796fa33264a371bb8733784616241004557"
+    },
+    "on_the_way": {
+      "role": "Gunner",
+      "text": "On the way!",
+      "generator": "eSpeak NG local",
+      "voice": "en-us+m2",
+      "sha256": "247ef7167931a9e6419efbe5f74e12d9c149737100f5df8234e058661d44220f"
+    },
+    "loaded": {
+      "role": "Loader",
+      "text": "Up!",
+      "generator": "eSpeak NG local",
+      "voice": "en-us+m4",
+      "sha256": "dfcc9d17cdadd64c95c187057970b2a34bf8f2e730db672cb9c962d45f6c7afe"
+    },
+    "target": {
+      "role": "Gunner",
+      "text": "Target acquired.",
+      "generator": "eSpeak NG local",
+      "voice": "en-us+m2",
+      "sha256": "2c9c565d61fef4427beecadbab2d94bb9661e9a14c65dacb3ce20acb900e1fc6"
+    },
+    "hit": {
+      "role": "Commander",
+      "text": "Good hit.",
+      "generator": "eSpeak NG local",
+      "voice": "en-us+m3",
+      "sha256": "e70f61f1f8a0f86995c1fd71974312d085ef58a84e8351a29b79bc1ec735c91b"
+    },
+    "cease_fire": {
+      "role": "Commander",
+      "text": "Cease fire. Range complete.",
+      "generator": "eSpeak NG local",
+      "voice": "en-us+m3",
+      "sha256": "55ab9604dd42744eed2305ab5c0793a177f28a4927b748d6c341233436a51c63"
+    },
+    "smoke": {
+      "role": "Gunner",
+      "text": "Smoke out.",
+      "generator": "eSpeak NG local",
+      "voice": "en-us+m2",
+      "sha256": "e630bc70439eb79999106816afeb8a78691c43867d113973a09baf2fe28bad61"
+    },
+    "empty": {
+      "role": "Loader",
+      "text": "No rounds remaining.",
+      "generator": "eSpeak NG local",
+      "voice": "en-us+m4",
+      "sha256": "94b3a65d9899556a0475b8fd34ee44514118591cb0eed63956f3d0bf800e23f8"
+    },
+    "moving": {
+      "role": "Driver",
+      "text": "Moving.",
+      "generator": "eSpeak NG local",
+      "voice": "en-us+m5",
+      "sha256": "eeadcc64445b0936a1a4b28c462787fc106862b68517fc8c6e91e84250f111f4"
+    }
+  }
+}

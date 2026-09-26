@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "status": "mixed_manual_evidence_and_unknown_original_values",
+  "purpose": "Original-authored calibration rules. No numerical gameplay parity is asserted.",
+  "values": {
+    "tick_hz": 60,
+    "max_forward_speed": 12.0,
+    "max_reverse_speed": 5.0,
+    "acceleration": 3.0,
+    "braking": 5.0,
+    "hull_turn_rate": 0.48,
+    "turret_turn_rate": 0.65,
+    "fuel_per_second": 0.035,
+    "fuel_per_metre": 0.004,
+    "weapon_ranges": [
+      2000.0,
+      2500.0,
+      4000.0,
+      1000.0
+    ],
+    "weapon_damage": [
+      100.0,
+      100.0,
+      100.0,
+      20.0
+    ],
+    "reload_ticks": [
+      240,
+      240,
+      300,
+      6
+    ],
+    "initial_ammo": [
+      16,
+      16,
+      8,
+      80
+    ],
+    "target_radius": 5.5,
+    "selection_half_angle": 0.35,
+    "lock_range": 2000.0,
+    "smoke_count": 4,
+    "weapon_min_ranges": [
+      0.0,
+      0.0,
+      770.0,
+      0.0
+    ],
+    "sight_turn_rate": 0.15,
+    "min_elevation": -0.15,
+    "max_elevation": 0.35,
+    "sight_height": 2.65,
+    "target_center_height": 1.8,
+    "target_vertical_radius": 1.8
+  },
+  "source_note": "Weapon names and station permissions are manual-grounded. Manual pp20-21 supplies weapon ranges and independent MG loading; p33 supplies nominal 4-second main-gun reload, capacity 40 main rounds and 80 MG rounds. AX 5-second reload, MG cadence, main-ammo split and all damage/handling/range-target constants are provisional authored calibration.",
+  "evidence": {
+    "weapon_ranges": "Manual pp20-21: HEAT 2000m, sabot 2500m, AX 770-4000m, COAX 0-1000m",
+    "main_ammo_capacity": "Manual p33: 40 main rounds; split16/16/8 is authored calibration",
+    "mg_ammo_capacity": "Manual p33: 80 rounds",
+    "main_reload_ticks": "Manual p33: nominal4seconds; AX slower per p21; AX5seconds is provisional",
+    "remaining_numeric_values": "Except the evidence-tagged ranges, capacities and nominal reload: unknown original values, authored calibration only",
+    "vertical_aim_geometry": "unknown original values; flat authored range, sight at 2.65m and target centers at 1.8m, vertical half-height 1.8m"
+  }
+}
