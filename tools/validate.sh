@@ -27,6 +27,7 @@ run_check reference python3 -m unittest discover -s tests -v
 run_check preservation python3 tools/reference_inventory.py --verify
 run_check simulation ./tools/godot.sh --headless --script res://tests/test_simulation.gd
 run_check pc_rules ./tools/godot.sh --headless --script res://tests/test_pc_rules.gd
+run_check pc_world ./tools/godot.sh --headless --script res://tests/test_pc_world_view.gd
 run_check geometry ./tools/godot.sh --headless --script res://tests/test_geometry.gd
 run_check audio ./tools/godot.sh --headless --script res://tests/test_audio.gd
 run_check audio_shutdown ./tools/godot.sh --headless --verbose --script res://tests/test_audio_shutdown.gd

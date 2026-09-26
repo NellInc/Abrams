@@ -77,7 +77,12 @@ def ascii_runs(data: bytes, minimum: int = 8) -> list[dict]:
 
 
 def parse_world(data: bytes) -> dict:
-    """Validate 4096-offset directory and its count-prefixed u16 lists."""
+    """Decode the 64x64 static-object directory used by SIM 0b4d:2bd0.
+
+    The high bit selects a packed nibble position; otherwise three i16 words
+    follow. Shape 127 is an unused slot. Units, materials and visibility are
+    deliberately not inferred from these storage/placement facts.
+    """
     if len(data) < 8192:
         raise ValueError("world directory truncated")
     pointers = struct.unpack("<4096H", data[:8192])
@@ -89,17 +94,39 @@ def parse_world(data: bytes) -> dict:
         if pointer != cursor or cursor >= len(data):
             raise ValueError("world pointer does not match sequential record boundary")
         count = data[cursor]
-        end = cursor + 1 + count * 2
-        if count == 0 or end > len(data):
+        if not 1 <= count <= 4:
             raise ValueError("empty or truncated world list")
+        cursor += 1
+        row, column = divmod(index, 64)
+        entries = []
+        for _ in range(count):
+            if cursor >= len(data):
+                raise ValueError("truncated world entry")
+            flags = data[cursor]
+            compact = bool(flags & 128)
+            end = cursor + (2 if compact else 7)
+            if end > len(data):
+                raise ValueError("truncated world position")
+            if compact:
+                position = data[cursor + 1]
+                x, y, z = (position >> 4) * 256, (position & 15) * 256, 0
+                world = [column * 4096 + x, (row + 1) * 4096 - y, z]
+            else:
+                x, y, z = struct.unpack_from("<3h", data, cursor + 1)
+                world = [column * 4096 + 2048 + x, row * 4096 + 2048 - y, z]
+            entries.append({"offset": cursor, "shape_index": flags & 127,
+                            "compact": compact, "unused": flags & 127 == 127,
+                            "world_position_raw": world})
+            cursor = end
         records.append({"directory_index": index, "directory_offset": index * 2,
-                        "offset": pointer, "count": count,
-                        "values_u16le": list(struct.unpack("<" + "H" * count, data[cursor + 1:end]))})
-        cursor = end
+                        "row": row, "column": column,
+                        "offset": pointer, "count": count, "entries": entries})
     if cursor != len(data):
         raise ValueError("unreferenced world tail")
-    return {"directory_entries": 4096, "records": records,
-            "evidence": "directory and list boundaries verified; spatial orientation and value meanings unknown"}
+    return {"directory_entries": 4096, "rows": 64, "columns": 64,
+            "cell_size_raw": 4096, "records": records,
+            "axes": ["east", "south", "original_height"],
+            "evidence": "SIM 0b4d:2af2/2bd0 placement semantics; physical units and visibility unresolved"}
 
 
 def parse_scenario(data: bytes) -> dict:
@@ -216,7 +243,7 @@ def main() -> int:
         parser.error("report output must be outside GAME")
     reports = [inspect_file(args.game / name) for name in names]
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps({"schema": 1, "files": reports}, indent=2) + "\n")
+    args.output.write_text(json.dumps({"schema": 2, "files": reports}, indent=2) + "\n")
     if args.extract:
         for name in names:
             data = (args.game / name).read_bytes()

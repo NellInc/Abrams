@@ -2,8 +2,9 @@
 
 This investigation extends the compression and directory work in
 `docs/reference-formats.md`. The source is the user-supplied `GAME/SHAPE.TBL`.
-No original executable was run, no original bytes were changed, and no assets
-were uploaded. All offsets below are zero-based offsets into the **decoded**
+The initial storage work was read-only. Subsequent isolated original-CPU checks
+now establish primitive vertex decoding; see `pc-world-research.md`. Original
+bytes remain unchanged and no assets were uploaded. All offsets below are zero-based offsets into the **decoded**
 SHAPE.TBL buffer.
 
 ## Deliverables and reproduction
@@ -30,12 +31,15 @@ tests require the supplied local GAME data. The interpreter only reads bytes.
 fits every applicable supplied record. The parser enforces an exact,
 nonoverlapping partition of each control region and an exact vector-array tail.
 
-**Strongly supported interpretation:** signed triples referenced by the low seven
-bits of primitive bytes represent geometry positions. Shape 166 independently
-forms a closed cube with the expected face and edge invariants.
+**Original-CPU verified vertex interpretation:** low seven bits index a vector.
+A clear high bit uses its signed coordinate words directly. A set high bit uses
+each component's low byte, multiplies by 256, subtracts 2048 with signed 16-bit
+wrap, then arithmetic-shifts by header byte 2. All 1,894 distinct primitive
+references match original routine `0b4d:1a5c` under an identity camera transform.
+Shape 166 also independently forms a closed cube with the expected topology.
 
 **Unresolved semantics:** rendering command execution, flags, material indices,
-original axis conventions and units, normal-vector representation, visibility
+physical units, normal-vector representation, visibility
 rules, dynamic geometry, and correspondence to game object classes. No visual
 similarity is used as proof of these semantics.
 
@@ -46,7 +50,7 @@ For each record beginning at `S`:
 | Relative offset | Stored field | Verified extent |
 |---|---|---|
 | `+0` | unknown unsigned 16-bit word | 2 bytes |
-| `+2` | unknown byte | 1 byte |
+| `+2` | packed-vertex arithmetic right shift | 1 byte |
 | `+3` | vector count `N` | 1 byte |
 | `+4` | absolute vector-array pointer `V` | 2-byte little-endian |
 | `+6` onward | selector entries | word, pointer, repeated; `ffff` word terminator |
@@ -177,3 +181,11 @@ identical in Godot.
 
 Each probe has a concrete confirming read path. Broader speculative parsing is
 outside this bounded lane.
+
+## Original world wire survey
+
+`PC Bridge.command` now renders decoded static primitive outlines at original
+continuous world positions. It reads original active allocations, includes every
+primitive list and uses a survey camera. This intentionally remains a diagnostic
+view: original visibility, LOD selection, face rejection, materials and opaque
+commands are not reproduced. The main authored range is unchanged.

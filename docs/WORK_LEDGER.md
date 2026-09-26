@@ -135,6 +135,67 @@ generated voices, observed audio playback deallocation, and runtime smoke.
 The separate live-core replay and native Godot bridge receipts above are required
 alongside that gate; the normal source gate does not silently claim to run them.
 
+## Original world bridge, 27 September 2026
+
+The preceding architecture answer was a discussion checkpoint, with no source
+progress. This pass implements the next original-PC presentation dependency.
+
+**Recovered and executed:** WLD shape IDs and packed/extended coordinates, signed
+streaming-local positions, continuous map coordinates, active static/dynamic
+pool layouts, and primitive high-bit vertex scaling. The original executable's
+own routines match all 6,163 static entries across eight worlds, 16,384 packed
+positions, 192 extended cases, 192 cell-center/inverse cases, 1,894 distinct
+primitive references and all four map-window shifts. Receipt:
+`artifacts/pc-world-oracle-02.json` (terminal exit zero). The first narrower
+oracle is retained as `pc-world-oracle-01.json`; neither run failed.
+
+**Independent decoder evidence:** entire decoded SHAPE.TBL (33,830 bytes) and
+SNARIO6.WLD (10,778 bytes) match the running original's buffers. All 37 current
+static objects match the source window. This upgrades those two resources from
+structural evidence to original-decoder comparison; other resources remain
+unverified by an independent decoder.
+
+**Bridge repair:** schema 1's unsigned local coordinates were wrong for world
+placement. Schema 2 reads signed coordinates and carries the shifting window
+origin. `artifacts/pc-world-live-01/report.json` contains two identical 978-sample
+traces, one real northward rebase, no movement discontinuity and zero static
+placement mismatches at every sampled frame. Original files stayed unchanged.
+The prior pre-world bridge trace also matches all 978 RAM/framebuffer/input
+samples exactly (`artifacts/pc-world-baseline-comparison.json`), so this richer
+read-only observer did not alter that original execution.
+
+**Native presentation:** replaced the invented grid with original static geometry
+outlines. Source WLD entry offsets keep instance identities stable across slot
+reuse. The original PC executable alone governs movement and combat; the authored
+vehicle is still a calibration model. `artifacts/pc-world-viewer-01.log` records
+native capture and graceful exit zero; `artifacts/pc-bridge-viewer/paired-view.png`
+was visually inspected. `artifacts/pc-world-godot-01.log` and the updated
+`artifacts/pc-live-godot/report.json` prove actual process-pipe delivery of geometry,
+37 static objects, continuous movement and helper exit zero. This work and its
+visual review were performed by the same root agent.
+
+**Aggregate gate:** `artifacts/validation-20260926T230149Z/results.txt`, terminal
+exit zero. All nine checks passed, including 83 Python tests, source preservation,
+1,093 authored simulation checks, 512 original-bearing outputs, nine new Godot
+world-view checks, geometry, audio, playback teardown and runtime smoke. The
+original-CPU oracle and live replays remain separate explicit gates. After the
+report schema/evidence-text update, 21 focused decoder/shape tests also passed. No optional
+Impeccable linter is installed/configured; native rendered inspection was used.
+
+**Limits:** this is an elevated wire survey of allocated static objects and all
+primitive lists. It deliberately remains outside the main gameplay application.
+Original camera, visibility/occlusion, LOD/material selection, dynamic geometry,
+physical units, mission/campaign outcomes and timing calibration are unfinished.
+It is not a completed mission, remaster or release. Nothing was pushed/published.
+
+Next evidence-led renderer targets: `0b4d:0412` establishes camera pose and matrix;
+`0b4d:1684/1776` builds the candidate list; `0b4d:2867` selects geometry roots;
+`0b4d:0541` applies face rejection and materials. The mission-entry RAM has camera
+position `[2048,2048,50]`, identity matrix diagonal 16384, center `[159,61]`,
+projection shift 7 and near value 16. DS `8dd2` counts 14 candidates at DS `6f58`,
+compared with 37 allocated static objects. These are observed fields and code
+leads, **not yet a validated camera/visibility bridge**. Preserve that distinction.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -142,7 +203,8 @@ alongside that gate; the normal source gate does not silently claim to run them.
    release and braking over time with keypad 5. Governor/heat/fuel, targeting
    probability, weapon class effects, damage, guided fire, smoke and AI remain
    unresolved. Current provisional numerical constants are labelled in data/docs.
-2. **Eight PC missions:** containers parsed, execution semantics and matching
+2. **Eight PC missions:** containers and all static placements recovered; trigger
+   execution semantics and matching
    start-to-end success/failure traces remain. No mission is marked complete.
 3. **PC original runtime:** explicit `ABRAMS.COM EGA` startup is now verified.
    The raw framebuffer had correct colors while the OpenGL window showed a blue
@@ -173,8 +235,9 @@ alongside that gate; the normal source gate does not silently claim to run them.
 1. Recover original camera transforms and logical update boundaries. Current
    snapshots are VGA-frame-boundary samples; original UI drawing may lag them.
    Calibrate real-time input/CPU pacing against the standalone reference.
-2. Follow the PC SHAPE renderer and live actor list. Map original world units,
-   object identities and visibility before replacing the combat view.
+2. Follow the original camera, draw-candidate list, shape-root selection, face
+   rejection and materials using the source offsets above. Static world and
+   primitive positions are now proven; full rendering fidelity remains.
 3. Extend original-executable replay coverage to station/weapon modes, enemy
    state, damage, mission outcomes and campaign/persistence, one scenario at a
    time. Current bridge receipts and limitations are in `pc-live-bridge.md`.

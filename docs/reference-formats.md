@@ -1,7 +1,8 @@
 # Supplied DOS reference: byte evidence
 
-This report records locally inspected bytes. The original executables were never
-run and the original files were never modified. The baseline fingerprints cover
+This report began with locally inspected bytes. Subsequent original-executable
+checks are recorded below and in `pc-world-research.md`. Original files remain
+unchanged. The baseline fingerprints cover
 all 68 files inside `GAME`; the separately supplied PDF is outside that baseline.
 Decoded reports remain local reference material.
 
@@ -20,6 +21,8 @@ without rewriting the baseline. No timestamps or machine-specific paths enter it
 `reference/reports/scenarios.json` contains the structured inspection, raw and
 decoded hashes, byte offsets, strings, and undecoded field values. Generated
 `*.decoded` files contain the decompressed bytes.
+Report schema 2 replaces WLD's earlier opaque `values_u16le` with decoded entries,
+source offsets, shape IDs and continuous raw positions.
 
 ## Evidence levels
 
@@ -65,21 +68,25 @@ other reset locations. The bounded implementation rejects invalid codes,
 truncation, output overrun, lengths above 16 MiB, and unexplained trailing bytes.
 
 A matching declared length plus coherent messages is strong structural evidence.
-There is no independently obtained original decoder output against which to
-prove every decoded byte. Fixed SHA-256 regression fixtures preserve today's
-observed decoding; they are regression evidence, not independent ground truth.
+The decoded SHAPE.TBL and SNARIO6.WLD now match their entire original-game
+RAM buffers byte-for-byte (33,830 and 10,778 bytes respectively). This is an
+independent original-decoder comparison for those two resources. Other resources
+still have structural and regression evidence only; the comparison does not
+extend automatically to all 48 files.
 
 ## WLD directory and lists
 
 **Structurally verified across all eight scenarios:** decoded offsets
 `0000..1fff` contain 4096 little-endian 16-bit offsets. Zero marks an absent list.
 Every nonzero entry points to a sequential list beginning at or after `2000`.
-Each list contains an unsigned byte count, followed by that many little-endian
-16-bit values. Traversing nonzero directory entries in order consumes the entire
-remainder of each file exactly, with no overlap, gaps, or unreferenced tail.
+The original loader confirms a count of one to four entries. Each entry begins
+with a shape index in its low seven bits. A set high bit selects one packed
+position byte; otherwise six bytes contain three signed coordinate words. All
+6,163 entries in the supplied eight worlds use the packed form. Traversing the
+directory consumes the files exactly, with no overlap, gaps or unreferenced tail.
 
 Example, `SNARIO0.WLD`: directory offset `0016` has `00 20`, pointing to `2000`;
-bytes at `2000` are `01 b2 88`, giving one value, `0x88b2`. Directory offset `003c`
+bytes at `2000` are `01 b2 88`, giving shape 50 (`b2 & 7f`) at packed position `88`. Directory offset `003c`
 has `03 20`, pointing to the next list at `2003`, bytes `01 a6 88`.
 
 | Scenario | Decoded bytes | Nonzero directory entries |
@@ -93,9 +100,11 @@ has `03 20`, pointing to the next list at `2003`, bytes `01 a6 88`.
 | 6 | 10778 | 828 |
 | 7 | 11195 | 977 |
 
-**Inferred:** 4096 entries suggest a 64 by 64 spatial grid. Axis order, north,
-origin, scale, and meanings of the list values are unverified. The report exposes
-`directory_index` and raw values, never fabricated coordinates or terrain names.
+**Original-CPU verified:** the directory is a 64 by 64 row-major grid, with
+4096 raw units per cell, columns increasing east and rows south. Original loading
+routines reproduce all 6,163 placements. Physical units and semantic terrain
+names remain unresolved. See `pc-world-research.md` for the streaming origin,
+compact/extended coordinates and independent execution receipts.
 
 ## SSS records and text
 

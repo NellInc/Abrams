@@ -13,13 +13,18 @@ import json
 import os
 from pathlib import Path
 import sys
+import struct
 
 try:
     from tools.pc_reference_core import PcReferenceCore, CORE_SHA256, KEYS
     from tools.pc_live_state import SimStateReader
+    from tools.inspect_scenarios import decode_resource
+    from tools.inspect_shapes import inspect_shapes, primitive_vertices
 except ModuleNotFoundError:
     from pc_reference_core import PcReferenceCore, CORE_SHA256, KEYS
     from pc_live_state import SimStateReader
+    from inspect_scenarios import decode_resource
+    from inspect_shapes import inspect_shapes, primitive_vertices
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -80,6 +85,20 @@ def main():
         ready.update({"protocol": 1, "core_sha256": CORE_SHA256,
                       "startup_frames_after_restore": 2,
                       "sampling": "paired completed VGA boundary; original drawing may lag simulation"})
+        shape_bytes = decode_resource((ROOT / "GAME/SHAPE.TBL").read_bytes())
+        if ready["state"] is None:
+            raise ValueError("SIM not initialized for original shape extraction")
+        ds = ready["state"]["load_segment"] * 16 + 0x19E00
+        offset, segment = struct.unpack_from("<HH", core.last_video_ram, ds + 0x6D50)
+        address = segment * 16 + offset
+        if core.last_video_ram[address:address + len(shape_bytes)] != shape_bytes:
+            raise ValueError("supplied SHAPE.TBL does not match the running original")
+        shapes = inspect_shapes(shape_bytes)
+        # Local research geometry only. All primitive lists are included, so
+        # this is explicitly a wire survey, not a visibility/LOD-correct view.
+        ready["static_wire_geometry"] = {
+            str(shape["index"]): [primitive_vertices(shape, p) for p in shape["primitives"]]
+            for shape in shapes["shapes"][:127]}
         send(ready)
         while True:
             line = sys.stdin.readline(8193)

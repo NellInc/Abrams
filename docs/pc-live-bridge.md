@@ -7,15 +7,16 @@ remains separate and is never instantiated by this bridge.
 ## What runs locally
 
 `PC Bridge.command` opens a native side-by-side research view: the original PC
-framebuffer on the left, the existing authored Godot vehicle driven by original
-position/heading/turret state on the right. Controls are forwarded as keyboard
+framebuffer on the left, the original static-world wire survey and an authored calibration vehicle driven by
+original position/heading/turret state on the right. Controls are forwarded as keyboard
 input to the original executable. Arrow keys map to the manual's numeric keypad.
 Use 5 to stop or brake, C for control mode, Space to fire, and F1 through F4 for
 stations. Closing the window asks this helper to exit and waits for its exit.
 It does not signal the separately running DOSBox-X app.
 
-The diagnostic stage has no original terrain, enemy rendering, camera matching
-or gameplay collision. Its translation scale is explicitly 1:64 for inspection;
+The diagnostic stage now has original static terrain/structure outlines. Enemy
+rendering, original camera/visibility/LOD matching and gameplay collision remain
+unimplemented in this view. Its translation scale is explicitly 1:64 for inspection;
 original world units and height mapping remain unverified. The current view
 starts from a local original-game save state in The Mossel Defense. It does not
 yet replace the authored range as the main application.
@@ -99,7 +100,9 @@ uses the live load segment plus SIM's `19e0` data-segment offset.
 |---|---|---|
 | Player body pointer | `799b` | Allocated at code `1d36..1d84`; changed movement/heading observed live. |
 | Turret pointer | `7999` | Allocated from body at `1d78`; relative rotation observed after C and keypad 6. |
-| Position | body `+4`, `+6`, `+8` | Initial `[2048,2048,50]`; planar words change during driving. Units and height interpretation are unverified. |
+| Local position | signed words at body `+4`, `+6`, `+8` | Schema 2 corrects schema 1's unsigned interpretation. These are streaming-local coordinates. |
+| Continuous position | local coordinates plus bytes `886a`, `776c` | Original window origin and shift routines verified. See `pc-world-research.md`; physical units remain unverified. |
+| Object pools | `7ace` static / `709e` dynamic | Active allocations and their source shape IDs/positions; allocation does not establish visibility. |
 | Hull heading | body byte `+1a` | Original driver/gunner display reads it; stable original heading 100 matched raw 185. |
 | Relative turret | turret byte `+0b` | Gunner display `5767..5778` adds it to hull byte before the original bearing conversion. |
 | Station | byte `799d` | F1..F4 dispatch at `1e4e..1e66`; gunner and driver verified live. |
@@ -151,3 +154,14 @@ AI, damage and outcomes, then every mission and campaign/save transition.
 Finish audiovisual event extraction and restored presentation without changing
 simulation decisions. Build/import dependency handling and release permissions
 remain open. No proprietary files or this local prototype have been published.
+
+## World bridge extension
+
+State schema 2 supplies signed `position_raw`, continuous `world_position_raw`,
+window origin and read-only static/dynamic pools. The ready packet includes
+static wire geometry only after the source SHAPE.TBL matches the running game
+RAM exactly. Godot keys static instances by WLD entry offset across streaming
+slot reuse. `artifacts/pc-world-live-01/report.json` adds a live window rebase and
+zero static-placement mismatches to the two 978-frame matching replays.
+The detailed original-instruction oracle and boundaries are in
+`pc-world-research.md`.

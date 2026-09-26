@@ -31,6 +31,10 @@ func _process(_delta: float) -> bool:
 			break
 		if message.type == "ready":
 			initial = state
+			if int(state.schema) != 2: errors.append("continuous world schema missing")
+			if state.world.static.size() != 37: errors.append("original initial static pool differs")
+			if not message.has("static_wire_geometry") or not message.static_wire_geometry.has("50"):
+				errors.append("original static wire geometry missing")
 		else:
 			snapshots.append(state)
 		if snapshots.size() < steps.size():
@@ -40,6 +44,8 @@ func _process(_delta: float) -> bool:
 			if snapshots[1].station != "driver": errors.append("driver station not forwarded")
 			if snapshots[3].position_raw == initial.position_raw: errors.append("original player did not move")
 			if snapshots[5].speed_raw != 0: errors.append("original braking did not finish")
+			if snapshots[5].world.window_origin == initial.world.window_origin: errors.append("original world did not rebase")
+			if snapshots[5].world_position_raw[1] >= initial.world_position_raw[1]: errors.append("northward world position did not advance")
 			if snapshots[7].station != "gunner": errors.append("gunner station not forwarded")
 			if snapshots[13].turret_relative_u8 == snapshots[7].turret_relative_u8: errors.append("turret did not rotate")
 			if snapshots[-1].ammunition.HEAT != initial.ammunition.HEAT - 1: errors.append("HEAT consumption mismatch")

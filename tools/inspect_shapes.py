@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Inspect verified SHAPE.TBL storage and export the closed-cube test fixture.
+"""Inspect SHAPE.TBL storage, decode primitive vertices, export a cube fixture.
 
-Vector triples and primitive references are storage facts. Axes, units, colors,
-culling flags, vector metadata and command execution remain unverified.
+Primitive vertex conversion is checked by pc_world_oracle.py against original
+instructions. Physical units, colors, culling and commands remain unresolved.
 """
 from __future__ import annotations
 import argparse
@@ -123,7 +123,7 @@ def inspect_shapes(data: bytes) -> dict:
                        "opaque_commands": list(commands.values()),
                        "control_coverage": "exact nonoverlapping partition"})
     return {"schema": 1, "decoded_sha256": hashlib.sha256(data).hexdigest(), "shapes": shapes,
-            "evidence": "storage validated; low-7-bit index interpretation is strongly supported; renderer semantics unresolved"}
+            "evidence": "storage validated; primitive vertex conversion available; complete renderer semantics unresolved"}
 
 
 def cube_geometry(shape: dict) -> tuple[list[list[int]], list[list[int]]]:
@@ -157,6 +157,26 @@ def cube_geometry(shape: dict) -> tuple[list[list[int]], list[list[int]]]:
     if len(planes) != 6 or len(edges) != 12 or set(edges.values()) != {2}:
         raise ValueError("cube topology is not a closed six-face boundary")
     return vertices, mapped
+
+
+def primitive_vertices(shape: dict, primitive: dict) -> list[list[int]]:
+    """SIM 0b4d:1a5c: high-bit references use centered, scaled grid vectors.
+
+    Returns object-local positions, not normals, visibility, LOD or materials.
+    Ordinary references retain the original signed coordinate words.
+    """
+    shift = shape["header_byte_2"]
+    if not 0 <= shift <= 15:
+        raise ValueError("unsupported packed-vector shift")
+    result = []
+    for encoded in primitive["encoded_indices"]:
+        vector = shape["vectors_i16le"][encoded & 127]
+        if encoded & 128:
+            # The original uses only each word's low byte, wraps at 16 bits,
+            # then performs an arithmetic right shift by header byte 2.
+            vector = [((((v & 255) * 256 - 2048 + 32768) % 65536) - 32768) >> shift for v in vector]
+        result.append(list(vector))
+    return result
 
 
 def cube_obj(shape: dict) -> str:

@@ -5,7 +5,7 @@ import struct
 import unittest
 
 from tools.inspect_scenarios import decode_resource
-from tools.inspect_shapes import inspect_shapes, cube_geometry, cube_obj
+from tools.inspect_shapes import inspect_shapes, cube_geometry, cube_obj, primitive_vertices
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -53,6 +53,18 @@ class ShapeTests(unittest.TestCase):
             cube_geometry(shape)
         with self.assertRaises(ValueError):
             cube_geometry(self.report["shapes"][0])
+
+    def test_packed_terrain_vertices_use_original_center_and_scale(self):
+        shape = self.report["shapes"][50]
+        self.assertEqual(primitive_vertices(shape, shape["primitives"][0]),
+                         [[-256, 2048, 0], [-256, -2048, 0], [256, -2048, 0], [256, 2048, 0]])
+
+    def test_vertex_modes_signed_wrap_and_shift(self):
+        shape = {"header_byte_2": 2, "vectors_i16le": [[-1, 128, 256], [8, 8, 8]]}
+        self.assertEqual(primitive_vertices(shape, {"encoded_indices": [0, 128, 129]}),
+                         [[-1, 128, 256], [-576, 7680, -512], [0, 0, 0]])
+        with self.assertRaises(ValueError):
+            primitive_vertices(shape | {"header_byte_2": 16}, {"encoded_indices": [128]})
 
     def test_malformed_vector_count_and_pointer(self):
         for offset, value in ((0x17a + 3, 255), (0x17a + 4, 0)):
