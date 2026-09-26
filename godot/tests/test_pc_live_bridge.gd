@@ -35,6 +35,10 @@ func _process(_delta: float) -> bool:
 			if state.world.static.size() != 37: errors.append("original initial static pool differs")
 			if not message.has("static_wire_geometry") or not message.static_wire_geometry.has("50"):
 				errors.append("original static wire geometry missing")
+			elif not message.static_wire_geometry["50"] is Dictionary:
+				errors.append("source primitive IDs missing from geometry")
+			if not state.camera is Dictionary or state.render_static_faces.is_empty():
+				errors.append("original camera/static face selection missing")
 		else:
 			snapshots.append(state)
 		if snapshots.size() < steps.size():

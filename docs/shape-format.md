@@ -39,8 +39,8 @@ references match original routine `0b4d:1a5c` under an identity camera transform
 Shape 166 also independently forms a closed cube with the expected topology.
 
 **Unresolved semantics:** rendering command execution, flags, material indices,
-physical units, normal-vector representation, visibility
-rules, dynamic geometry, and correspondence to game object classes. No visual
+physical units, dynamic normal transforms, solid occlusion,
+dynamic geometry, and correspondence to game object classes. No visual
 similarity is used as proof of these semantics.
 
 ## Record header and vector tail
@@ -69,8 +69,9 @@ Examples:
   occupying 96 bytes to `81d4`.
 * Record 170 at `823a`: count zero and pointer `8254`, exactly the record end.
 
-Selector words are retained as unknown words. Their descending patterns suggest
-scale or distance thresholds, but the reader does not call them LOD distances.
+Selector words are signed projected-size thresholds. Original CPU checks now
+verify first-threshold-at-most-size selection and the final-root fallback in 508
+static-shape cases. These are not physical distances; see `pc-camera-research.md`.
 
 ## Pointer graph for the 168 records with vectors
 
@@ -95,7 +96,7 @@ Primitive termination is searched only after the three-byte prefix. The prefix
 can itself contain `ff`, so searching from the primitive start would corrupt the
 parse. Index interpretation currently exposes both original bytes and
 `index & 0x7f`. Every low-seven-bit index is less than its record's vector count.
-The high-bit meaning is unresolved.
+The high-bit conversion is verified by the original CPU checks described above.
 
 The second root list references eleven four-byte opaque commands across six
 records (111, 145, 153, 156, 161, and 162). Treating those targets as groups fails
@@ -189,3 +190,9 @@ continuous world positions. It reads original active allocations, includes every
 primitive list and uses a survey camera. This intentionally remains a diagnostic
 view: original visibility, LOD selection, face rejection, materials and opaque
 commands are not reproduced. The main authored range is unchanged.
+
+## Original static face extension
+
+`pc-camera-research.md` establishes the static prefix-normal rejection rule and
+detail-root selection against the original draw callback. Dynamic normal
+transforms, opaque commands and material/fill semantics remain unresolved.

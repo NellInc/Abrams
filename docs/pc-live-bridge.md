@@ -7,19 +7,18 @@ remains separate and is never instantiated by this bridge.
 ## What runs locally
 
 `PC Bridge.command` opens a native side-by-side research view: the original PC
-framebuffer on the left, the original static-world wire survey and an authored calibration vehicle driven by
-original position/heading/turret state on the right. Controls are forwarded as keyboard
+framebuffer on the left, static wire geometry with the original camera and face selection on the right. Controls are forwarded as keyboard
 input to the original executable. Arrow keys map to the manual's numeric keypad.
 Use 5 to stop or brake, C for control mode, Space to fire, and F1 through F4 for
 stations. Closing the window asks this helper to exit and waits for its exit.
 It does not signal the separately running DOSBox-X app.
 
-The diagnostic stage now has original static terrain/structure outlines. Enemy
-rendering, original camera/visibility/LOD matching and gameplay collision remain
-unimplemented in this view. Its translation scale is explicitly 1:64 for inspection;
-original world units and height mapping remain unverified. The current view
-starts from a local original-game save state in The Mossel Defense. It does not
-yet replace the authored range as the main application.
+The diagnostic stage now follows the original crew camera, draw queue, static
+shape-detail root and face rejection. Dynamic vehicles, solid occlusion and
+materials remain open. Its 1:64 inspection scale does not establish physical
+units. The current view starts from a local original-game save state in The
+Mossel Defense. It does not replace the authored range as the main application.
+Camera evidence and synchronization limits are in `pc-camera-research.md`.
 
 Working if: input changes originate in the PC executable, the Godot pose and
 ammunition readouts follow captured original state, and no provisional range
@@ -147,8 +146,9 @@ Do not change the original's handling to the authored range's assumptions.
 
 ## Remaining critical path
 
-Recover logical update boundaries, original camera transforms, world/actor
-geometry and visibility before replacing the original combat view. Calibrate
+Recover logical update boundaries, dynamic actor geometry, solid occlusion and
+materials before replacing the original combat view. Camera and bounded static
+face-selection evidence are now recorded in `pc-camera-research.md`. Calibrate
 CPU/input timing against the original reference. Cover all station/weapon modes,
 AI, damage and outcomes, then every mission and campaign/save transition.
 Finish audiovisual event extraction and restored presentation without changing
@@ -165,3 +165,6 @@ slot reuse. `artifacts/pc-world-live-01/report.json` adds a live window rebase a
 zero static-placement mismatches to the two 978-frame matching replays.
 The detailed original-instruction oracle and boundaries are in
 `pc-world-research.md`.
+
+Protocol 2 carries primitive-ID geometry dictionaries and per-frame static face
+masks, plus the cached original camera. Both host and Godot require this version.

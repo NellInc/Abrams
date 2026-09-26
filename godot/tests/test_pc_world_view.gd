@@ -11,7 +11,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var view = WorldView.new()
 	root.add_child(view)
-	view.set_geometry({"1": [[[0, 0, 0], [64, 0, 0], [64, 64, 64]]], "2": [[[0, 0, 0], [0, 128, 0]]], "3": []})
+	view.set_geometry({"1": {"10": [[0, 0, 0], [64, 0, 0], [64, 64, 64]]}, "2": {"20": [[0, 0, 0], [0, 128, 0]]}, "3": {}})
 	check(view.meshes.size() == 2, "empty geometry should not create an invalid surface")
 	check(view.meshes[1].surface_get_array_len(0) == 6, "triangle wire should have three edges")
 	check(view.meshes[2].surface_get_array_len(0) == 2, "line should have one edge")
@@ -26,12 +26,18 @@ func _run() -> void:
 	object.shape_index = 2
 	check(view.apply_state(state) == Vector3(0, 0, -1), "northward movement should remain continuous")
 	check(view.instances[8193] == identity and identity.mesh == view.meshes[2], "changed shape must retain source identity")
+	state.render_static_faces = [{"world_entry_offset": 8193, "primitive_ids": [20]}]
+	view.apply_state(state)
+	check(view.instances[8193].mesh.surface_get_array_len(0) == 2, "original primitive mask should select the source line")
+	state.render_static_faces = []
+	view.apply_state(state)
+	check(view.instances.is_empty(), "allocated objects absent from the original draw queue must be hidden")
 	state.world.static = []
 	view.apply_state(state)
 	check(view.instances.is_empty(), "unloaded world entries must leave the survey")
 	view.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PC_WORLD_VIEW: 9 original-coordinate wire-survey checks passed")
+	if failures.is_empty(): print("PC_WORLD_VIEW: 11 original-coordinate and draw-mask checks passed")
 	else:
 		for failure in failures: printerr("FAIL: " + failure)
 	quit(0 if failures.is_empty() else 1)

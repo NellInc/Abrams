@@ -87,12 +87,13 @@ It uses a 1:64 inspection scale, maps east/up/south into Godot axes and keeps th
 first player position as its display anchor. The original PC simulation alone
 continues to govern movement and combat. No gameplay collision is added.
 
-The wire survey includes every static primitive list in allocated objects and
-uses an elevated camera. It is therefore a research view, never the finished
-gameplay visibility list. The authored calibration vehicle is also provisional.
-Original camera transforms, face/material/LOD selection, dynamic meshes, hidden
-actors, timing calibration and physical units remain open. All decoded geometry
-and original RAM stay local; none has been published or bundled for distribution.
+The original-camera extension now restricts static outlines to the original draw
+queue, selected detail root and accepted faces. The elevated survey and authored
+calibration vehicle have been removed from this bridge view. See
+`pc-camera-research.md` for original-instruction and native projection evidence.
+Dynamic meshes, solid occlusion, materials, opaque commands, timing calibration
+and physical units remain open. All decoded geometry and original RAM stay
+local; none has been published or bundled for distribution.
 
 Working if: original CPU and live replay receipts pass, crossing a window edge
 does not jump the Godot position, and the survey remains separated from gameplay

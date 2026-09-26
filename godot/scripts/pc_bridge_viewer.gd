@@ -1,11 +1,12 @@
 extends SceneTree
 ## Diagnostic native view, not an original mission renderer or finished remaster.
 const Bridge = preload("res://scripts/pc_bridge.gd")
-const Vehicle = preload("res://scripts/vehicle.gd")
 const WorldView = preload("res://scripts/pc_world_view.gd")
+const PcCamera = preload("res://scripts/pc_camera.gd")
 var world_view: Node3D
+var world_viewport: SubViewport
+var world_aspect: AspectRatioContainer
 var bridge = Bridge.new()
-var vehicle: Node3D
 var camera: Camera3D
 var picture: TextureRect
 var status: Label
@@ -76,7 +77,7 @@ func _build_ui() -> void:
 		var column := VBoxContainer.new()
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		panels.add_child(column)
-		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else "GODOT: ORIGINAL WORLD WIRE SURVEY", 19))
+		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else "GODOT: ORIGINAL CAMERA / STATIC FACES", 19))
 		if side == 0:
 			var aspect := AspectRatioContainer.new()
 			aspect.ratio = 4.0 / 3.0
@@ -87,21 +88,25 @@ func _build_ui() -> void:
 			picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			aspect.add_child(picture)
 		else:
-			var container := SubViewportContainer.new()
-			container.stretch = true
-			container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-			column.add_child(container)
-			var viewport := SubViewport.new()
-			viewport.size = Vector2i(640, 480)
-			viewport.own_world_3d = true
-			container.add_child(viewport)
-			_build_stage(viewport)
+			world_aspect = AspectRatioContainer.new()
+			world_aspect.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			column.add_child(world_aspect)
+			var display := TextureRect.new()
+			display.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			world_aspect.add_child(display)
+			world_viewport = SubViewport.new()
+			world_viewport.size = Vector2i(1024, 388)
+			world_viewport.own_world_3d = true
+			world_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+			display.add_child(world_viewport)
+			display.texture = world_viewport.get_texture()
+			_build_stage(world_viewport)
 	status = _label("Starting the locally supplied PC game...", 22)
 	stack.add_child(status)
 	caption = _label("", 18)
 	stack.add_child(caption)
 	stack.add_child(_label("Arrows: original keypad controls   5: stop/brake   C: hull/turret   Space: fire   F1 to F4: stations", 18))
-	stack.add_child(_label("Research survey: original static geometry and placements, with a calibration vehicle. Camera, visibility, LOD and materials are unfinished. Scale 1:64; physical units unverified.", 17))
+	stack.add_child(_label("Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
 
 func _build_stage(viewport: SubViewport) -> void:
 	var world := Node3D.new()
@@ -120,8 +125,6 @@ func _build_stage(viewport: SubViewport) -> void:
 	world.add_child(light)
 	world_view = WorldView.new()
 	world.add_child(world_view)
-	vehicle = Vehicle.new()
-	world.add_child(vehicle)
 	camera = Camera3D.new()
 	world.add_child(camera)
 	camera.look_at_from_position(Vector3(10, 8, 12), Vector3(0, 1.5, 0))
@@ -129,7 +132,6 @@ func _build_stage(viewport: SubViewport) -> void:
 
 func _process(delta: float) -> bool:
 	elapsed += delta
-	vehicle.update_pose(vehicle.turret_root.rotation.y, delta)
 	for message in bridge.poll():
 		_apply_sample(message)
 	if not bridge.failure.is_empty():
@@ -166,6 +168,7 @@ func _apply_sample(message: Dictionary) -> void:
 		bridge.failure = "SIM state is unavailable. No substitute simulation was started."
 		return
 	samples += 1
+	if capture: print("PC_VIEW_SAMPLE %d sequence=%d" % [samples, int(message.sequence)])
 	fps = float(message.fps)
 	var image := Image.new()
 	if image.load_png_from_buffer(Marshalls.base64_to_raw(message.png)) != OK:
@@ -175,27 +178,28 @@ func _apply_sample(message: Dictionary) -> void:
 	if message.has("static_wire_geometry"):
 		world_view.set_geometry(message.static_wire_geometry)
 	var position: Array = state.world_position_raw
-	vehicle.position = world_view.apply_state(state)
-	vehicle.rotation.y = float(state.hull_angle_u8) * TAU / 256.0
-	vehicle.update_pose(float(state.turret_relative_u8) * TAU / 256.0, 0)
-	camera.position = vehicle.position + Vector3(95, 110, 130)
-	camera.look_at(vehicle.position + Vector3(0, 1.5, 0))
-	if not previous.is_empty():
-		for weapon in ["HEAT", "SABOT", "AX"]:
-			if state.ammunition[weapon] < previous.ammunition[weapon]: vehicle.recoil = 0.4
+	world_view.apply_state(state)
+	if state.camera is Dictionary:
+		var dimensions: Vector2i = PcCamera.apply(camera, state.camera, world_view.anchor)
+		world_viewport.size = dimensions * 4
+		# A 320x200 framebuffer is displayed at 4:3, so source pixels are 1.2
+		# times taller. Keep that display stretch outside the 3D projection.
+		world_aspect.ratio = float(dimensions.x) / (float(dimensions.y) * 1.2)
 	status.text = "%s   HEADING %03d   SIGHT %03d   SPEED %d   FUEL %d" % [str(state.station).to_upper(), state.heading_degrees, state.bearing_degrees, state.speed_display, state.fuel_display]
 	caption.text = "HEAT %d   SABOT %d   AX %d   COAX %d     World: %s   Window: %s   Objects: %d" % [state.ammunition.HEAT, state.ammunition.SABOT, state.ammunition.AX, state.ammunition.COAX, str(position), str(state.world.window_origin), state.world.static.size()]
 	previous = state
 
 func _capture() -> void:
+	print("PC_VIEW_CAPTURE_WAIT")
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(output.path_join("paired-view.png"))
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
-	file.store_string(JSON.stringify({"state": previous, "samples": samples, "scope": "original static geometry wire survey; visibility, LOD, camera and materials unresolved"}, "  "))
+	file.store_string(JSON.stringify({"state": previous, "samples": samples, "scope": "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()
 
 func _close() -> void:
+	if not closing and not bridge.failure.is_empty(): printerr("PC_VIEW_FAILED: " + bridge.failure)
 	closing = true
 	bridge.close()

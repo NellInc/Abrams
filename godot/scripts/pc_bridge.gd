@@ -65,6 +65,9 @@ func poll() -> Array[Dictionary]:
 		if value.get("type") not in ["ready", "sample"] or int(value.get("id", -2)) != waiting_id:
 			failure = "Unexpected PC bridge response sequence."
 			break
+		if value.get("type") == "ready" and int(value.get("protocol", 0)) != 2:
+			failure = "Unsupported original-PC bridge protocol."
+			break
 		pending = false
 		messages.append(value)
 	if pending and not closing and Time.get_ticks_msec() - request_started > 30000:

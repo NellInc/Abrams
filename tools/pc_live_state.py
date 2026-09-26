@@ -13,9 +13,11 @@ import struct
 try:
     from tools.unpack_pc_executables import unpack
     from tools.pc_world import world_position, window_origin, read_objects
+    from tools.pc_render_state import read_camera
 except ModuleNotFoundError:
     from unpack_pc_executables import unpack
     from pc_world import world_position, window_origin, read_objects
+    from pc_render_state import read_camera
 
 SIM_SHA256 = "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099"
 
@@ -68,6 +70,7 @@ class SimStateReader:
         speed_raw = word(body + 36, signed=True)
         local_position = [word(body + delta, signed=True) for delta in (4, 6, 8)]
         origin = window_origin(ram, ds)
+        objects = read_objects(ram, ds)
         return {
             "schema": 2, "basis": "original-PC-SIM-read-only",
             "load_segment": base // 16,
@@ -75,7 +78,8 @@ class SimStateReader:
             "station": ("gunner", "commander", "cupola", "driver")[station],
             "position_raw": local_position,
             "world_position_raw": world_position(local_position, origin),
-            "world": read_objects(ram, ds),
+            "world": objects,
+            "camera": read_camera(ram, ds, objects),
             "position_units": "unverified-original-units",
             "hull_angle_u8": hull_angle, "turret_relative_u8": turret_angle,
             "heading_degrees": bearing(hull_angle),

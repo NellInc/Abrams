@@ -196,6 +196,31 @@ projection shift 7 and near value 16. DS `8dd2` counts 14 candidates at DS `6f58
 compared with 37 allocated static objects. These are observed fields and code
 leads, **not yet a validated camera/visibility bridge**. Preserve that distinction.
 
+## Original camera bridge, 27 September 2026
+
+The architecture discussion was a status checkpoint, not a source milestone.
+The completed camera implementation and original-instruction checks are now
+recorded in `pc-camera-research.md`. Protocol 2 sends the original crew camera,
+primitive-ID geometry and original static face masks. Godot's view now uses that
+camera rather than an elevated survey or authored vehicle.
+
+Receipts: `pc-camera-oracle-05.json` (1,133 matrix vectors, 598 integer
+projections, 151 static-object selections, 508 root-threshold cases);
+`pc-camera-godot-03.log` (233 points, maximum 0.063590 source-pixel error);
+`pc-camera-live-godot-02.log` (protocol-2 integration and exit zero);
+`pc-camera-replay-01/report.json` (978 samples twice, matching original RAM and
+video). The pre-camera RAM/video/input baseline also matches. The ten-stage
+aggregate gate passed at `validation-20260926T232721Z`, with 87 Python tests.
+Native capture `pc-camera-viewer-02.log` passed and was visually reviewed by the
+same root author; the preceding unexplained exit-1 attempt remains recorded.
+
+Camera sampling is explicitly not atomic: sample 464 catches a transient
+100-unit player displacement and changed height while the drawing cache retains
+its previous pose. The decoder preserves the original drawing cache. Old
+UI-clip metadata and two misleading movement capture filenames are documented
+as superseded in the camera research note. Dynamic vehicles, solid occlusion,
+materials, timing calibration and full gameplay parity remain open.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -232,12 +257,13 @@ leads, **not yet a validated camera/visibility bridge**. Preserve that distincti
 
 ## Next bounded investigations
 
-1. Recover original camera transforms and logical update boundaries. Current
+1. Recover logical update boundaries. Original camera transforms now have
+   bounded instruction/projection evidence; current
    snapshots are VGA-frame-boundary samples; original UI drawing may lag them.
    Calibrate real-time input/CPU pacing against the standalone reference.
-2. Follow the original camera, draw-candidate list, shape-root selection, face
-   rejection and materials using the source offsets above. Static world and
-   primitive positions are now proven; full rendering fidelity remains.
+2. Recover dynamic object transforms, normal rejection, materials and opaque
+   drawing commands. The current camera/static-face bridge remains diagnostic;
+   solid occlusion and full rendering fidelity remain.
 3. Extend original-executable replay coverage to station/weapon modes, enemy
    state, damage, mission outcomes and campaign/persistence, one scenario at a
    time. Current bridge receipts and limitations are in `pc-live-bridge.md`.

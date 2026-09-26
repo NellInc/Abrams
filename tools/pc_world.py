@@ -38,6 +38,7 @@ def read_objects(ram: bytes, ds: int) -> dict:
             local = list(struct.unpack_from("<3h", ram, at + 4))
             item = {"slot": slot, "pointer": pointer, "flags": flags,
                     "shape_index": ram[at + 1], "shape_header_word": struct.unpack_from("<H", ram, at + 2)[0],
+                    "projected_size_raw": struct.unpack_from("<h", ram, at + 16)[0],
                     "position_local_raw": local, "world_position_raw": world_position(local, origin)}
             if name == "static":
                 cell = ram[at + 20]
