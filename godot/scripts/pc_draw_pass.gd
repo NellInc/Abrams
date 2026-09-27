@@ -1,6 +1,10 @@
 extends Node3D
 ## Camera-relative replay of observed original draw calls. Presentation only.
 ## Wire outlines do not establish filled-surface occlusion or material parity.
+const SurfaceGeometry = preload("res://scripts/pc_surface_geometry.gd")
+const SurfaceShader = preload("res://scripts/pc_surface.gdshader")
+var solid_enabled := false
+var render_warnings: Array[String] = []
 const DISPLAY_SCALE := 64.0
 var mesh_node: MeshInstance3D
 var polygon_count := 0
@@ -15,6 +19,10 @@ static func camera_point(raw: Array) -> Vector3:
 	return Vector3(float(raw[0]), float(raw[2]), -float(raw[1])) / DISPLAY_SCALE
 
 func apply_pass(pass_data: Dictionary) -> void:
+	render_warnings.clear()
+	if solid_enabled:
+		_apply_surfaces(pass_data)
+		return
 	var vertices := PackedVector3Array()
 	polygon_count = 0
 	dynamic_polygon_count = 0
@@ -45,3 +53,72 @@ func apply_pass(pass_data: Dictionary) -> void:
 	material.albedo_color = Color("82a7a0")
 	mesh.surface_set_material(0, material)
 	mesh_node.mesh = mesh
+
+func _apply_surfaces(pass_data: Dictionary) -> void:
+	mesh_node.mesh = null
+	polygon_count = 0
+	dynamic_polygon_count = 0
+	source_points.clear()
+	if not pass_data.get("camera") is Dictionary: return
+	if not pass_data.get("materials") is Array or not pass_data.get("palette_rgb") is Array:
+		render_warnings.append("Original material/palette observation unavailable")
+		return
+	var frame: Dictionary = pass_data.camera
+	var vertices := PackedVector3Array()
+	var materials := PackedVector2Array()
+	var texture := Image.create(pass_data.materials.size() * 2, 2, false, Image.FORMAT_RGBA8)
+	for index in pass_data.materials.size():
+		var words: Array = pass_data.materials[index]
+		for y in 2:
+			for x in 2:
+				var word: int = int(words[0]) if y == 1 else int(words[1])
+				var value := int(words[0]) & 15 if words[0] == words[1] else (word >> (8 if x == 0 else 0)) & 15
+				var rgb: Array = pass_data.palette_rgb[value]
+				texture.set_pixel(index * 2 + x, y, Color8(int(rgb[0]), int(rgb[1]), int(rgb[2])))
+	if pass_data.get("background") is Dictionary:
+		var backgrounds: Array = SurfaceGeometry.background_polygons(pass_data.background, frame)
+		if backgrounds.is_empty(): render_warnings.append("Unsupported vertical horizon")
+		for background: Dictionary in backgrounds:
+			var points: Array = []
+			for point: Vector2 in background.points: points.append(SurfaceGeometry.unproject(point, 1024.0, frame))
+			_add_triangles(vertices, materials, SurfaceGeometry.triangle_vertices(points, frame), int(background.material), pass_data.materials.size())
+	else:
+		render_warnings.append("Original background observation unavailable")
+	for object: Dictionary in pass_data.objects:
+		for polygon: Dictionary in object.polygons:
+			var points: Array = polygon.camera_vertices
+			if points.size() < 2: continue
+			polygon_count += 1
+			if bool(object.get("dynamic_instance", not bool(object.static_path))): dynamic_polygon_count += 1
+			source_points.append_array(points)
+			var fill := int(polygon.get("fill_mode", 0)) != 0 and points.size() >= 3
+			if fill:
+				var triangles: Array = SurfaceGeometry.triangle_vertices(points, frame)
+				_add_triangles(vertices, materials, triangles, int(polygon.colors[1]), pass_data.materials.size())
+			if not fill or polygon.colors[0] != polygon.colors[1]:
+				var edges: int = points.size() if points.size() > 2 else 1
+				for i in edges:
+					_add_triangles(vertices, materials, SurfaceGeometry.line_vertices(points[i], points[(i + 1) % points.size()], frame), int(polygon.colors[0]), pass_data.materials.size())
+	if vertices.is_empty(): return
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_TEX_UV] = materials
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var material := ShaderMaterial.new()
+	material.shader = SurfaceShader
+	material.set_shader_parameter("material_patterns", ImageTexture.create_from_image(texture))
+	material.set_shader_parameter("pattern_width", float(texture.get_width()))
+	material.set_shader_parameter("source_origin", Vector2(frame.clip[0], frame.clip[1]))
+	material.set_shader_parameter("source_dimensions", Vector2(frame.clip[2] - frame.clip[0] + 1, frame.clip[3] - frame.clip[1] + 1))
+	mesh.surface_set_material(0, material)
+	mesh_node.mesh = mesh
+
+func _add_triangles(vertices: PackedVector3Array, materials: PackedVector2Array, points: Array, material: int, count: int) -> void:
+	if material < 0 or material >= count:
+		render_warnings.append("Unsupported original material %d" % material)
+		return
+	for point: Array in points:
+		vertices.append(camera_point(point))
+		materials.append(Vector2(material, 0))

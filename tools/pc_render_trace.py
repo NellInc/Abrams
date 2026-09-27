@@ -14,10 +14,12 @@ try:
     from tools.pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
     from tools.inspect_shapes import inspect_shapes
     from tools.inspect_scenarios import decode_resource
+    from tools.pc_materials import read_materials
 except ModuleNotFoundError:
     from pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
     from inspect_shapes import inspect_shapes
     from inspect_scenarios import decode_resource
+    from pc_materials import read_materials
 
 ROOT = Path(__file__).resolve().parents[1]
 CALLBACK = C.CFUNCTYPE(None, C.c_uint32, C.POINTER(C.c_uint16), C.c_void_p, C.c_uint32, C.c_uint32)
@@ -37,6 +39,9 @@ class Collector:
         self.scanout_sequence = 0
         self.current = None
         self.composition_cx = None
+        self.palette_rgb = None
+        self.backgrounds = {}
+        self.background_page = None
         self.error = None
         self.sequence = 0
         self.vertices_checked = 0
@@ -53,13 +58,28 @@ class Collector:
             def word(at): return struct.unpack_from('<H', raw, at - offset)[0]
             def words(at, n): return list(struct.unpack_from('<' + 'h' * n, raw, at - offset))
             def byte(at): return raw[at - offset]
+            if event == 14:
+                if len(raw) != 64: raise ValueError('unsupported palette snapshot')
+                self.palette_rgb = [list(raw[i:i + 3]) for i in range(0, 64, 4)]
+                return
             if event == 13:
                 page = (word(0x35A8) - 0xA000) * 16
                 self.pages.pop(page, None)
                 self.drawing_pages.add(page)
+                self.background_page = page
+                self.backgrounds[page] = None
                 if self.scanout and self.scanout['page_offset'] == page:
                     self.scanout['draw_pass'] = None
                     self.scanout['reason'] = 'displayed page redrawn during scanout'
+                return
+            if event == 15:
+                upper, lower = struct.unpack('<HH', raw)
+                self.backgrounds[self.background_page] = {'kind': 'horizon',
+                    'line': [[regs['si'], regs['di']], [regs['bx'], regs['cx']]],
+                    'colors': [upper & 255, lower & 255]}
+                return
+            if event == 16:
+                self.backgrounds[self.background_page] = {'kind': 'solid', 'color': regs['dx'] & 255}
                 return
             if event == 9:
                 return  # page-register write is observed; scanout latch is authoritative
@@ -76,6 +96,9 @@ class Collector:
                     'start_ram_sha256': hashlib.sha256(raw).hexdigest(), 'world': state['world'],
                     'page_offset': (struct.unpack_from('<H', raw, ds + 0x35A8)[0] - 0xA000) * 16,
                     'unsupported': []}
+                self.active['materials'] = read_materials(raw, ds)
+                self.active['palette_rgb'] = self.palette_rgb
+                self.active['background'] = self.backgrounds.get(self.active['page_offset'])
                 if self.sequence == 1 and self.output: (self.output / 'first-render.bin').write_bytes(raw)
                 self.current = None
                 self.composition_cx = None
@@ -128,6 +151,7 @@ class Collector:
                     self.vertices_checked += 1
                 self.current['polygons'].append({'primitive': self.current['primitive_ids'][-1] if self.current['primitive_ids'] else None,
                     'colors': [byte(0x359E), byte(0x359D)],
+                    'fill_mode': byte(0x359C),
                     'camera_vertices': vertices,
                     'pixels': list(map(list, zip(words(0x1A29, count), words(0x1A49, count))))})
             elif event == 6:
@@ -149,7 +173,8 @@ class Collector:
             page = slot_or_page
             drawing = self.pages.get(page) if page not in self.drawing_pages else None
             self.scanout = {'scanout_sequence': self.scanout_sequence, 'page_offset': page,
-                'draw_pass': drawing, 'reason': None if drawing else 'no complete observed pass for scanned page'}
+                'draw_pass': drawing, 'reason': None if drawing else 'no complete observed pass for scanned page',
+                'palette_rgb': [list(raw[i:i + 3]) for i in range(0, 64, 4)] if len(raw) == 64 else None}
         elif event == 11:
             if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
             self.buffers[slot_or_page] = self.scanout

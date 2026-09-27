@@ -51,6 +51,7 @@ func _run() -> void:
 		viewport.add_child(camera)
 		camera.make_current()
 		var drawn = DrawPass.new()
+		drawn.solid_enabled = "--solid" in args
 		camera.add_child(drawn)
 		for pass_data in fixture.render_passes:
 			var frame: Dictionary = pass_data.camera.duplicate(true)
@@ -61,6 +62,7 @@ func _run() -> void:
 			var dimensions := PcCamera.apply(camera, frame, Vector3.ZERO)
 			viewport.size = dimensions * 4
 			drawn.apply_pass(pass_data)
+			check(drawn.render_warnings.is_empty(), "surface warnings in draw pass %s: %s" % [str(pass_data.sequence), str(drawn.render_warnings)])
 			await process_frame
 			pass_count += 1
 			for point in drawn.source_points:
@@ -74,8 +76,8 @@ func _run() -> void:
 					failures.append("point=%s actual=%s expected=%s viewport=%s" % [str(point), str(actual), str(expected), str(viewport.size)])
 				projected += 1
 		check(projected > 0 and drawn.dynamic_polygon_count > 0, "fixture must include projected vehicle geometry")
-		if args.size() == 4 and args[2] == "--capture":
-			capture_path = args[3]
+		if "--capture" in args and args.find("--capture") + 1 < args.size():
+			capture_path = args[args.find("--capture") + 1]
 			await RenderingServer.frame_post_draw
 			check(viewport.get_texture().get_image().save_png(capture_path) == OK, "native capture failed")
 		print("PC_DRAW_PASS_FIXTURE: %d passes, %d projections, maximum error %.6f source pixels; %d dynamic polygons in final pass" % [pass_count, projected, maximum_error, drawn.dynamic_polygon_count])

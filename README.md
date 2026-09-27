@@ -10,6 +10,9 @@ music and sound-effect references for a faithful presentation upgrade.
 * Open **Art Review.command** for original/remaster artwork comparisons.
 * Open **PC Bridge.command** for the local original-PC/Godot pose research view.
   It requires the ignored local emulator, content ZIP and mission snapshot.
+  Run `./PC\ Bridge.command --trace` for the source-built tandem renderer with
+  original solid geometry, EGA materials and live vehicles. Add `--wire` for its
+  wireframe diagnostic. See `docs/pc-surfaces-research.md` for evidence and limits.
 * Alternatively import `godot/project.godot` in Godot 4 and run the main scene.
 * Set `GODOT_BIN` to the engine executable if the launcher cannot find it.
 
@@ -47,6 +50,7 @@ Earlier mixed recordings are retained only as comparison material.
 * `docs/shape-format.md`: bounded PC vector-geometry recovery.
 * `docs/pc-executable-research.md`: unpacked PC code and executable bearing comparisons.
 * `docs/pc-live-bridge.md`: original-executable authority, live Godot bridge and replay evidence.
+* `docs/pc-surfaces-research.md`: live original surfaces, material patterns and native colour checks.
 * `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
 * `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.
 * `docs/voice-workflow.md`: generative crew speech and performance directions.

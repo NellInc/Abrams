@@ -295,6 +295,38 @@ This advances live presentation integration. Solid surfaces, original material
 patterns, clipping/opaque drawing, high-resolution replacements and the full
 mission/campaign/release outcome matrix remain open. No content was published.
 
+## Filled original surfaces and materials, 27 September 2026
+
+The optional source-built tandem viewer now renders filled original static and
+dynamic geometry, sky/ground boundaries, EGA material patterns and the actual
+remapped game palette. `--wire` retains the diagnostic view. Original painter
+order is preserved in one triangle stream with depth testing disabled. The PC
+executable still executes its own renderer and remains the sole gameplay
+authority. Godot's fractional clipping and edges never feed simulation state.
+
+The original span instruction oracle passes 10,240 cases, with 3,276,800 checked
+pixel positions. Native Godot tests pass palette RGB, source-coordinate dither
+phase, painter order and sky/ground checks. The updated tracing core matches the
+retained unmodified baseline in all 1,167 input/RAM/video frames and all 23 stage
+states. All ten four-station/control checks pass. All 261 recorded passes render
+without surface warnings and retain 33,551 passing projection checks, maximum
+0.003906 source pixels. The seven known sprite-root omissions remain recorded.
+
+Live filled integration passes with 15 paired samples and 161 vehicle polygons.
+The first native capture timed out on a draw notification after its samples
+completed. Explicit main-thread drawing/synchronization fixes capture without
+advancing PC frames or extending the deadline. Its OS scheduling cause remains
+unverified. The successful paired image was inspected by its author. Exact RGB
+matches at 24,219 of 24,832 source-pixel centre samples in that scene; missing
+HUD/reticle/target-box drawing and integer-edge differences remain, so this is
+not full raster parity. Retained images, failed/successful logs, custody pins
+and commands are detailed in `pc-surfaces-research.md`.
+
+All twelve aggregate stages pass in `validation-20260927T005801Z`, including 107
+Python tests and original-file preservation. No content was published. Sprite
+and opaque commands, integer raster coverage, original cockpit/HUD, replacement
+art, full missions/campaign, timing calibration and release work remain open.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -335,9 +367,10 @@ mission/campaign/release outcome matrix remain open. No content was published.
    bounded instruction/projection evidence; current
    snapshots are VGA-frame-boundary samples; original UI drawing may lag them.
    Calibrate real-time input/CPU pacing against the standalone reference.
-2. Recover original material patterns, solid surfaces, clipping and opaque/sprite
-   drawing commands. Dynamic transforms now have instruction-cache evidence and
-   an optional live scanout-paired wire renderer; full rendering fidelity remains.
+2. Recover opaque/sprite drawing commands, cockpit/HUD and integer clipping and
+   edge coverage. Solid geometry and original material patterns now run in the
+   live scanout-paired renderer; full rendering fidelity remains. Surface evidence
+   and reproduction commands are in `pc-surfaces-research.md`.
 3. Extend original-executable replay coverage to station/weapon modes, enemy
    state, damage, mission outcomes and campaign/persistence, one scenario at a
    time. Current bridge receipts and limitations are in `pc-live-bridge.md`.

@@ -4,9 +4,11 @@
 
 The PC executable remains the only simulation authority. The optional source-built
 trace backend now streams actual static and dynamic drawing passes into the live
-Godot viewer. This is an unfilled diagnostic renderer. Solid surfaces, materials,
-opaque/sprite command rendering, remastered models and complete mission parity
-remain required. The nightly reference backend stays the default.
+Godot viewer. This note records the initial wireframe integration. The subsequent
+[surface implementation](pc-surfaces-research.md) adds filled geometry and original
+materials; `--wire` retains the diagnostic view. Opaque/sprite command rendering,
+remastered models and complete mission parity remain required. The nightly
+reference backend stays the default.
 
 The preceding interactive turn answered Nell's architecture question and
 rechecked existing evidence; it made no implementation progress. This pass
@@ -160,12 +162,13 @@ python3 tools/capture_pc_render_trace.py --mode trace --profile controls \
 ./PC\ Bridge.command --trace --capture
 ```
 
-## Next rendering evidence
+## Material evidence identified during this stage
 
 Original material IDs exceed 15. The observed values include 17 and 26, so a
 plain 16-colour palette lookup would be wrong. `0f8d:0c34..0c9d` reads the material's
 words from `DS:43a6` and `DS:4626`; the EGA span routine at `0f8d:59fd` alternates
 word/byte colours by scanline and pixel parity. For example, the captured ID 17
 has words `0700` and `0007`. These are source/snapshot observations, not yet a
-verified replacement material implementation. Derive and test those patterns,
-polygon fill/outline semantics and clipping before introducing solid surfaces.
+verified replacement material implementation at this stage. The subsequent
+[surface research](pc-surfaces-research.md) implements and tests those patterns,
+with integer clipping/raster coverage still explicitly separate.

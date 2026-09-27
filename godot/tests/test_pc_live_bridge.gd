@@ -23,6 +23,7 @@ func _initialize() -> void:
 	trace_mode = "--trace" in OS.get_cmdline_user_args()
 	output = root_path.path_join("artifacts/pc-trace-live-godot" if trace_mode else "artifacts/pc-live-godot")
 	draw_view = DrawPass.new()
+	draw_view.solid_enabled = trace_mode
 	root.add_child(draw_view)
 	DirAccess.make_dir_recursive_absolute(output)
 	started = Time.get_ticks_msec()
@@ -44,7 +45,11 @@ func _process(_delta: float) -> bool:
 			var presentation: Dictionary = message.get("presentation", {})
 			var drawing = presentation.get("draw_pass")
 			if drawing is Dictionary:
-				draw_view.apply_pass(drawing)
+				var displayed: Dictionary = drawing.duplicate(false)
+				if presentation.get("palette_rgb") is Array:
+					displayed.palette_rgb = presentation.palette_rgb
+				draw_view.apply_pass(displayed)
+				errors.append_array(draw_view.render_warnings)
 				paired_count += 1
 				vehicle_polygons += draw_view.dynamic_polygon_count
 				unsupported_count += drawing.unsupported.size()

@@ -97,5 +97,39 @@ class RenderTraceTests(unittest.TestCase):
         self.assertEqual(c.completed_count, 10)
         self.assertEqual(len(c.pages), 2)
 
+    def test_material_background_is_owned_by_original_drawing_page(self):
+        c = self.collector()
+        self.event(c, 13, 0x35A0, b'\0' * 8 + b'\x00\xa0')
+        self.event(c, 15, 100, b'\x05\x00\x08\x00',
+                   [0, 287, 61, 0, 32, 61] + [0] * 6)
+        horizon = {'kind': 'horizon', 'line': [[32, 61], [287, 61]], 'colors': [5, 8]}
+        self.assertEqual(c.backgrounds[0], horizon)
+        self.event(c, 13, 0x35A0, b'\0' * 8 + b'\x00\xa2')
+        self.event(c, 16, regs=[0, 0, 0, 8] + [0] * 8)
+        self.assertEqual(c.backgrounds[8192], {'kind': 'solid', 'color': 8})
+        self.assertEqual(c.backgrounds[0], horizon)
+        self.event(c, 13, 0x35A0, b'\0' * 8 + b'\x00\xa0')
+        self.assertIsNone(c.backgrounds[0])
+        self.assertEqual(c.backgrounds[8192], {'kind': 'solid', 'color': 8})
+
+    def test_palette_is_frozen_with_scanned_buffer_not_latest_draw_palette(self):
+        c = self.collector()
+        first = bytes(value for i in range(16) for value in (i, i + 16, i + 32, 0))
+        second = bytes(value for i in range(16) for value in (255 - i, 0, i, 0))
+        expected = [list(first[i:i + 3]) for i in range(0, 64, 4)]
+        self.event(c, 14, raw=first)
+        self.assertEqual(c.palette_rgb, expected)
+        self.finish_pass(c, 1, 0)
+        self.event(c, 10, 0, first)
+        self.event(c, 11, 2)
+        self.event(c, 14, raw=second)
+        self.event(c, 10, 8192, second)
+        self.assertEqual(self.present(c, 2)['palette_rgb'], expected)
+        self.assertNotEqual(c.palette_rgb, expected)
+
+    def test_invalid_draw_palette_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'unsupported palette snapshot'):
+            self.event(self.collector(), 14, raw=b'\0' * 63)
+
 
 if __name__ == '__main__': unittest.main()

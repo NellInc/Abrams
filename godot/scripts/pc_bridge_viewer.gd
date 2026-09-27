@@ -7,6 +7,7 @@ const PcCamera = preload("res://scripts/pc_camera.gd")
 var world_view: Node3D
 var draw_view: Node3D
 var trace_mode := false
+var wire_mode := false
 var previous_presentation: Dictionary = {}
 var world_viewport: SubViewport
 var world_aspect: AspectRatioContainer
@@ -41,6 +42,7 @@ func _initialize() -> void:
 	started = Time.get_ticks_msec()
 	capture = "--capture" in OS.get_cmdline_user_args()
 	trace_mode = "--trace" in OS.get_cmdline_user_args()
+	wire_mode = "--wire" in OS.get_cmdline_user_args()
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	output = directory.path_join("artifacts/pc-trace-viewer" if trace_mode else "artifacts/pc-bridge-viewer")
 	DirAccess.make_dir_recursive_absolute(output)
@@ -83,7 +85,7 @@ func _build_ui() -> void:
 		var column := VBoxContainer.new()
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		panels.add_child(column)
-		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else ("GODOT: OBSERVED ORIGINAL DRAW PASS" if trace_mode else "GODOT: ORIGINAL CAMERA / STATIC FACES"), 19))
+		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else (("GODOT: ORIGINAL SURFACES" if not wire_mode else "GODOT: ORIGINAL WIREFRAME") if trace_mode else "GODOT: ORIGINAL CAMERA / STATIC FACES"), 19))
 		if side == 0:
 			var aspect := AspectRatioContainer.new()
 			aspect.ratio = 4.0 / 3.0
@@ -112,7 +114,7 @@ func _build_ui() -> void:
 	caption = _label("", 18)
 	stack.add_child(caption)
 	stack.add_child(_label("Arrows: original keypad controls   5: stop/brake   C: hull/turret   Space: fire   F1 to F4: stations", 18))
-	stack.add_child(_label("Live original vehicle and scenery wireframes, paired by EGA scanout page. Solid surfaces, materials and unsupported sprite commands remain open." if trace_mode else "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
+	stack.add_child(_label(("Original wireframe diagnostic. Omit --wire for filled surfaces." if wire_mode else "Live original surfaces and EGA materials. Sprite effects, exact raster edges and high-resolution replacement artwork remain open.") if trace_mode else "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
 
 func _build_stage(viewport: SubViewport) -> void:
 	var world := Node3D.new()
@@ -136,6 +138,7 @@ func _build_stage(viewport: SubViewport) -> void:
 	camera.look_at_from_position(Vector3(10, 8, 12), Vector3(0, 1.5, 0))
 	camera.make_current()
 	draw_view = DrawPass.new()
+	draw_view.solid_enabled = trace_mode and not wire_mode
 	camera.add_child(draw_view)
 	world_view.visible = not trace_mode
 
@@ -192,7 +195,10 @@ func _apply_sample(message: Dictionary) -> void:
 		previous_presentation = message.get("presentation", {})
 		var drawing = previous_presentation.get("draw_pass")
 		if drawing is Dictionary:
-			draw_view.apply_pass(drawing)
+			var displayed: Dictionary = drawing.duplicate(false)
+			if previous_presentation.get("palette_rgb") is Array:
+				displayed.palette_rgb = previous_presentation.palette_rgb
+			draw_view.apply_pass(displayed)
 			frame = drawing.camera.duplicate(true)
 			frame.matrix_q14_columns = [16384,0,0,0,16384,0,0,0,16384]
 			frame.world_position_raw = [0,0,0]
@@ -211,7 +217,7 @@ func _apply_sample(message: Dictionary) -> void:
 	if trace_mode:
 		var drawing = previous_presentation.get("draw_pass")
 		if drawing is Dictionary:
-			caption.text += "\nDraw pass %d   Vehicle polygons %d   Unsupported commands %d" % [int(drawing.sequence), draw_view.dynamic_polygon_count, drawing.unsupported.size()]
+			caption.text += "\nDraw pass %d   Vehicle polygons %d   Unsupported commands %d" % [int(drawing.sequence), draw_view.dynamic_polygon_count, drawing.unsupported.size() + draw_view.render_warnings.size()]
 		else:
 			caption.text += "\nNo paired geometry: " + str(previous_presentation.get("reason", "awaiting scanout"))
 	previous = state
@@ -219,10 +225,15 @@ func _apply_sample(message: Dictionary) -> void:
 func _capture() -> void:
 	print("PC_VIEW_CAPTURE_WAIT")
 	await process_frame
-	await RenderingServer.frame_post_draw
+	# Captures must not wait indefinitely for an OS-scheduled window redraw.
+	# This deferred method runs on the main thread and advances no PC frames.
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
 	root.get_texture().get_image().save_png(output.path_join("paired-view.png"))
+	world_viewport.get_texture().get_image().save_png(output.path_join("surface-view.png"))
+	picture.texture.get_image().save_png(output.path_join("original-frame.png"))
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
-	file.store_string(JSON.stringify({"state": previous, "samples": samples, "presentation": previous_presentation, "scope": "scanout-paired original draw pass; solid surfaces, materials and opaque commands unresolved" if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
+	file.store_string(JSON.stringify({"state": previous, "samples": samples, "presentation": previous_presentation, "scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired original surfaces and EGA materials; exact raster edges and sprite/opaque commands unresolved") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()
 
