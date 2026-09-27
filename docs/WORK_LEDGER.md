@@ -986,6 +986,55 @@ front-end/information bindings and the remaining whole-graphics register stay
 open. Proprietary samples/art remain ignored and local. This is a verified
 portrait milestone, not completion of the remaster or its active parent goal.
 
+## Genesis office, Wilson and visible briefing text (2026-09-27)
+
+The default Play/tandem path now replaces matched original BRIEF and END office
+scenes with the Genesis-derived office and three corresponding character
+performances. A new 1293x1217 RGBA facepalm image was made with the built-in image
+generator from the selected Genesis character, preserving the original PC pose
+meaning. It is an authored variant, not a claimed extraction of a native Genesis
+facepalm frame. Its source, exact prompt, dimensions and hash remain in the local
+asset sidecar. No original executable/core was changed or uploaded.
+
+The local recognition catalog composes the original OFFICE/CO resources at
+measured coordinates, with the actual bright-red BRIEF palette. Complete RGB
+prefix hashes above a verified original dialogue border select the scene. An
+altered pixel, partial border, unknown pose or wrong program retains the original.
+The dialogue renderer uses exact original 8x8 glyph patterns, unique character
+lookup and a second complete line check. No queued text or inferred string is
+used. Every uncertain line remains original; all controls and timing stay with
+the PC executable. The office restoration and typography clear on state changes.
+
+`pc-frontend-native-01` preserves every dialogue pixel with text restoration off,
+**8,148,958 checks, zero errors, exit 0**. `pc-frontend-native-02` tests combined
+art and text, **6,825,954 checks, zero errors, exit 0**, across 19 captures and 12
+eligible recorded frames (four each of the three poses). Independent donor/alpha
+probes and original-pixel checks cover registration, overwrite rejection and
+unknown-state fallback. Native live Play captures show the facepalm and speaking
+poses. The paired original-art run has identical original framebuffer bytes and
+program/presentation packets, recorded in `pc-genesis-brief-comparison-01.json`.
+BRIEF has no active SIM state, so this is not full-RAM/all-mission parity evidence.
+
+The complete gate `validation-20260927T183539Z/results.txt` passes **25 stages**,
+**203 Python tests**, **109 frontend checks** and original-file preservation,
+terminal exit 0. Cockpit/status regression still passes **11,944,300 checks**, exit
+0. A missing frontend fixture exits 1. The first headless prototype failed to
+compile because PackedByteArray has no sha256_text method. The existing
+HashingContext pattern fixed it; the new gate has a quit bound and requires an
+explicit completion marker. The failed receipt is retained, not counted as a pass.
+The optional Impeccable linter is unavailable; native visual evidence was inspected
+by the same assistant that authored this work, not an independent reviewer.
+
+A stop request is pending for that first failed, idle headless test (PID 87427,
+exec session 39692). Do not signal it or its shell without the requested approval;
+recheck its exact identity before any approved cleanup. Subsequent tests and all
+live captures have completed. This pending cleanup does not block other local
+restoration work.
+
+Details: `genesis-briefing-integration.md`. The complete graphics register remains
+open: other Wilson/animation variants, motor-pool and information bindings,
+remaining gauges, world objects and effects still require work. Local only.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -1007,7 +1056,9 @@ portrait milestone, not completion of the remaster or its active parent goal.
    stations and STATUS in the default tandem. Four crew portraits, another Wilson
    gesture and two ammunition illustrations join the first static collection in
    the gallery. Eligible crew portraits now bind to original visible crew messages,
-   with native gunner and loader evidence; other gallery families need live bindings. Nine gunner illustration cells and
+   with native gunner and loader evidence. The office and three Wilson poses now
+   bind to original briefing/debrief frames with exact visible dialogue decoding;
+   other gallery families need live bindings. Nine gunner illustration cells and
    scalable pixel-verified live/fixed text are enabled; remaining cockpit trims,
    bitmap instruments/labels, scenery-bearing text, recognition art,
    Wilson animation, in-world models, effects and all

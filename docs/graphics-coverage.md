@@ -26,7 +26,7 @@ is still being recovered; no overall completion percentage is justified.
 | Dynamic gauges and reticles | Corresponding Genesis gauges visible | PC values use verified scalable type; most bars, reticles and orientation graphic remain original | Source-driven high-resolution bars, bearing/reticle lettering, rotating hull/turret diagram; no hidden information |
 | Systems status | Native CHECK DAMAGE captured exactly | Genesis background and pristine schematic live; twelve labels and six values scalable | Actual damaged schematics and lamp art; original fallback remains until verified |
 | Title and credits | Title extracted; complete credits variants unverified | Title v1 in gallery | PC title/credits bindings, original animation and transitions |
-| Briefing office and Wilson | Office and two observed Wilson poses extracted | Office, Wilson neutral and lower-hand gesture in gallery | All mouth/gesture variants; registration across animation; original briefing/debrief display binding |
+| Briefing office and Wilson | Office and two observed Wilson poses extracted | Office, neutral/speaking Wilson and a Genesis-derived facepalm live; exact visible 8x8 dialogue gets scalable lettering | Other CO poses, mouth variants, all dialogue layouts and partial-draw transitions |
 | Crew portraits | Four native crew-information portraits extracted | Four 1254x1254 derivatives; fully matched source faces bind to live crew lines, native gunner and loader verified | Live commander/driver evidence, injury/talking/other poses and radio bindings |
 | Motor pool | Native scene extracted | Background v1 in gallery | PC setup controls, allocation values, menu visibility and transitions |
 | Crew information | Native diagram and portrait placements extracted | Four portrait derivatives; whole-page study rejected for added boxes/layout drift | Faithful complete page composition and PC information-flow binding |
@@ -60,7 +60,8 @@ retried through a differently worded request or another image route. The earlier
 coarse candidate is retained and excluded from the selected gallery set.
 
 The art-review gallery has 15 pages, including isolated portrait and ammunition
-illustrations. The cockpit/status, verified instrument cells and eligible crew portraits
-bind these new images into the original-PC tandem. Portrait evidence is in
-`genesis-portrait-integration.md`. Gallery availability must
+illustrations. The cockpit/status, verified instrument cells, eligible crew portraits and
+matched office/Wilson scenes bind these images into the original-PC tandem.
+Portrait evidence is in `genesis-portrait-integration.md`; the extra live
+facepalm derivative and briefing evidence are in `genesis-briefing-integration.md`. Gallery availability must
 never be reported as completed live-game integration.

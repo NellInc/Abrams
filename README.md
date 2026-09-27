@@ -24,7 +24,9 @@ music and sound-effect references for a faithful presentation upgrade.
   Genesis-derived high-resolution assets. Actual PC damage indicators and live
   values remain authoritative. Verified visible crew faces use the four Genesis
   portrait derivatives; unsupported or partial faces retain the original.
-  Other instruments, models and terrain are unfinished.
+  Original briefing/debriefing scenes now use the Genesis office and three
+  Wilson poses, with exactly decoded scalable dialogue. Unknown poses and
+  transitions retain the original. Other instruments, models and terrain are unfinished.
   Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
   `--pc-colours` to keep the new cockpit materials with original world colours.
   `--flat-world` disables terrain detail while retaining cockpit art and colours.
@@ -61,11 +63,12 @@ range is authored test content. Original missions, enemy AI, exact movement,
 damage, scoring and campaign parity remain unfinished. Passing internal tests
 does not prove that the original game logic has been recreated.
 
-The local artwork collection includes the title, Colonel Wilson and a second
-gesture, his office, motor pool, four crew portraits, four cockpit plates,
+The local artwork collection includes the title, Colonel Wilson in three
+poses, his office, motor pool, four crew portraits, four cockpit plates,
 systems status, and two ammunition illustrations. The gallery has 15 comparison
-pages. Eligible crew portraits now bind to live PC messages; information
-illustrations and briefing artwork still need live PC binding.
+pages. The additional facepalm variant appears in the live briefing restoration.
+Eligible crew portraits and office/Wilson scenes bind to the PC game; information
+illustrations and other frontend scenes still need live binding.
 Assets are available locally under
 `local-art/genesis/`. Untouched PNG extracts, original layered OpenRaster,
 palettes, exact prompts and source receipts accompany it. The original cartridge
@@ -93,6 +96,7 @@ Earlier mixed recordings are retained only as comparison material.
 * `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
 * `docs/genesis-cockpit-integration.md`: Genesis-first live cockpit/status integration and native proof.
 * `docs/genesis-portrait-integration.md`: Genesis faces, original visibility matching and native proof.
+* `docs/genesis-briefing-integration.md`: restored office/Wilson poses and exact visible-dialogue decoding.
 * `docs/graphics-coverage.md`: whole-graphics scope, source precedence and remaining families.
 * `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.
 * `docs/pc-audio-research.md`: original sound requests, bounded transport and native playback proof.
@@ -101,7 +105,8 @@ Earlier mixed recordings are retained only as comparison material.
 
 Run `./tools/validate.sh` for the local test gate. Python resource tests need the
 supplied PC reference files; Genesis capture tests additionally need local
-captures. The Genesis cockpit test needs the local fingerprinted remaster set.
+captures. The Genesis cockpit and frontend tests need the local fingerprinted
+remaster sets and recognition catalogs described in their integration documents.
 Pillow is required for graphics tests and extraction. Godot 4 is
 required for simulation and runtime checks. The UI ownership test compiles the
 actual read-only C++ observer with the local `c++` compiler.

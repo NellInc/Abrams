@@ -62,6 +62,7 @@ func _initialize() -> void:
 	if "--output" in args and args.find("--output")+1 < args.size(): output = args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	_build_ui()
+	if trace_mode: tandem_frame.frontend_art.text_enabled = "--original-text" not in args
 	if trace_mode and cockpit_art_requested and not wire_mode and "--flat-world" not in args:
 		var terrain := preload("res://scripts/pc_terrain_style.gd").new()
 		if terrain.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")):
@@ -83,6 +84,13 @@ func _initialize() -> void:
 		output.path_join("host.log"), "trace" if trace_mode else "reference")
 	if boot_mode and capture:
 		auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_boot_steps.json"))
+	if capture and "--capture-briefing" in args:
+		var index := args.find("--capture-briefing")+1
+		var pose: String = args[index] if index<args.size() else ""
+		var count: int = {"facepalm":16,"neutral":18,"speaking":20}.get(pose,0)
+		if not boot_mode or count==0 or "--capture-station" in args or "--capture-crew" in args:
+			bridge.failure = "Briefing capture requires cold boot, a supported pose, and no station/crew route"
+		else: auto_steps = auto_steps.slice(0,count)
 
 	if capture and "--capture-station" in args:
 		var station_arg := args.find("--capture-station")+1
@@ -264,6 +272,8 @@ func _apply_sample(message: Dictionary) -> void:
 		tandem_frame.set_frame(image, {}, null)
 		status.text = "ORIGINAL PC: " + str(previous_program.get("name","STARTING"))
 		caption.text = "Original menu/briefing or SIM initialization. Showing the original framebuffer; no substitute simulation."
+		if trace_mode and cockpit_art_requested and tandem_frame.frontend_art.set_frame(image,previous_program):
+			caption.text = "GENESIS OFFICE / WILSON: " + tandem_frame.frontend_art.active.name + " | original PC dialogue, timing and controls"
 		return
 	if message.has("static_wire_geometry"):
 		world_view.set_geometry(message.static_wire_geometry)
@@ -340,6 +350,8 @@ func _capture() -> void:
 		"genesis_art": tandem_frame.genesis_art_enabled if trace_mode else false,
 		"instrument_art": tandem_frame.instrument_art.active.map(func(item): return item.name) if trace_mode else [],
 		"portrait_art": {"id":tandem_frame.portrait_art.active.id,"name":tandem_frame.portrait_art.active.name} if trace_mode and not tandem_frame.portrait_art.active.is_empty() else null,
+		"frontend_art": tandem_frame.frontend_art.active if trace_mode else {},
+		"frontend_text": tandem_frame.frontend_art.typography.runs.map(func(r):return r.text) if trace_mode else [],
 		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects; optional proven-pixel cockpit materials with original instruments/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()

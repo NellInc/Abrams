@@ -170,6 +170,11 @@ sequence, restored state and VDP reconstruction receipt. Menu names are source
 identities, not a claim that Genesis specifications define PC mechanics.
 The selected portraits now bind to completely matched visible PC crew faces;
 `genesis-portrait-integration.md` records source matching and native proof.
+The office and three Wilson performances now have live original-PC bindings,
+including a new 1293x1217 transparent facepalm derived from the selected Genesis
+character image. This authored reaction has no claimed native Genesis frame
+recovery. Its exact prompt and provenance are beside the image; see
+`genesis-briefing-integration.md` for the complete source-prefix and dialogue checks.
 
 Verified historically: native Godot capture of the original three scenes at 1440x810 and
 1920x1080, alpha-composited briefing, source framing and readable review controls.

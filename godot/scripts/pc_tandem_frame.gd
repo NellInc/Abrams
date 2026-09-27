@@ -5,6 +5,7 @@ const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
 var typography = preload("res://scripts/pc_typography.gd").new()
 var instrument_art = preload("res://scripts/pc_instrument_art.gd").new()
 var portrait_art = preload("res://scripts/pc_portrait_art.gd").new()
+var frontend_art = preload("res://scripts/pc_frontend_art.gd").new()
 var genesis_art_enabled := false
 const GENESIS_ART = {
 	1:["gunner","f396cd9ade02fb6a6e6aeb7d13cd2e72dde0eabb79bf1a77f218c979d507f41a"],
@@ -45,8 +46,11 @@ func _init() -> void:
 	portrait_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(typography)
 	typography.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(frontend_art)
+	frontend_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 func _fallback(reason: String) -> bool:
+	frontend_art.clear()
 	world_enabled = false
 	typography.clear_runs()
 	fallback_reason = reason
@@ -82,6 +86,7 @@ func load_genesis_art(root: String) -> bool:
 	typography.fixed_labels_enabled = true
 	instrument_art.load_sources(root,images[1])
 	portrait_art.load_sources(root)
+	frontend_art.load_sources(root)
 	return true
 
 func set_gunner_art(image: Image) -> bool:
@@ -211,6 +216,7 @@ func _set_driver_assembly(presentation: Dictionary, ui: Image) -> void:
 	driver_assembly_enabled = true
 
 func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> bool:
+	frontend_art.clear()
 	texture = ImageTexture.create_from_image(source) if source != null and not source.is_empty() else null
 	if texture == null or source.get_size() != Vector2i(320, 200):
 		return _fallback("unsupported original framebuffer")

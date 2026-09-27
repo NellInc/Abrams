@@ -11,6 +11,7 @@ var runs: Array[Dictionary] = []
 var labels: Array[Control] = []
 var fixed_labels_enabled := false
 var status_numbers_enabled := false
+var dialogue_glyphs: Dictionary = {}
 # These words are confirmed in the source screens. Each candidate still has to
 # match every original font bit and every UI pixel before it may be redrawn.
 const FIXED_LABELS = [
@@ -57,6 +58,7 @@ func _init() -> void:
 
 func load_sources(directory: String) -> bool:
 	fonts.clear()
+	dialogue_glyphs.clear()
 	clear_runs()
 	var found := {}
 	for name in FONT_SOURCES:
@@ -64,6 +66,12 @@ func load_sources(directory: String) -> bool:
 		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=FONT_SOURCES[name]: return false
 		found[FONT_SOURCES[name]] = FileAccess.get_file_as_bytes(path)
 	fonts = found
+	var dialogue: PackedByteArray = fonts[FONT_SOURCES["8X8.FNT"]]
+	for code in range(32,127):
+		var at := 4+(code-int(dialogue[2]))*8
+		var key := dialogue.slice(at,at+8).hex_encode()
+		# Ambiguous source glyphs can never be silently assigned a character.
+		dialogue_glyphs[key] = "" if dialogue_glyphs.has(key) else String.chr(code)
 	FACE.render_range(0,Vector2i(64,0),32,126)
 	return true
 
@@ -71,16 +79,50 @@ func clear_runs() -> void:
 	runs.clear()
 	for label in labels: label.hide()
 
-func _fixed_candidate(words: String, at: Vector2i, source: Image) -> Dictionary:
-	var box := Rect2i(at,Vector2i(words.length()*6,6))
+func _fixed_candidate(words: String, at: Vector2i, source: Image, font_name: String="6X6.FNT") -> Dictionary:
+	var font: PackedByteArray = fonts[FONT_SOURCES[font_name]]
+	var cell := Vector2i(font[0],font[1])
+	var box := Rect2i(at,Vector2i(words.length()*cell.x,cell.y))
 	var crop := source.get_region(box)
 	crop.convert(Image.FORMAT_RGB8)
 	var hash := HashingContext.new()
 	hash.start(HashingContext.HASH_SHA256)
 	hash.update(crop.get_data())
 	return {"text":words,"rect":[box.position.x,box.position.y,box.size.x,box.size.y],
-		"font_sha256":FONT_SOURCES["6X6.FNT"],"cell_size":[6,6],"foreground":1,
+		"font_sha256":FONT_SOURCES[font_name],"cell_size":[cell.x,cell.y],"foreground":1,
 		"uniform_background_rgb":[0,0,0],"pixel_sha256":hash.finish().hex_encode(),"kind":"verified_fixed_cell"}
+
+func set_office_dialogue(source: Image, border_y: int) -> void:
+	clear_runs()
+	if dialogue_glyphs.is_empty() or source==null or source.get_size()!=Vector2i(320,200): return
+	if border_y not in [137,147,157,167,177,187,200]: return
+	var candidates: Array = []
+	for y in range(border_y+2,192,10):
+		var words := ""
+		var valid := true
+		for column in 38:
+			var bits := PackedByteArray()
+			for dy in 8:
+				var row := 0
+				for dx in 8:
+					var rgb := source.get_pixel(8+column*8+dx,y+dy).to_rgba32()
+					if rgb==0xffffffff: row|=128>>dx
+					elif rgb!=0x5555ffff: valid=false
+				bits.append(row)
+			var character: String = dialogue_glyphs.get(bits.hex_encode(),"")
+			if character.is_empty(): valid=false
+			words+=character
+		if not valid or words.strip_edges().is_empty(): continue
+		var candidate := _fixed_candidate(words,Vector2i(8,y),source,"8X8.FNT")
+		candidate.uniform_background_rgb=[85,85,255]
+		candidate.kind="verified_office_dialogue"
+		candidates.append(candidate)
+	var ui := Image.create_empty(320,200,false,Image.FORMAT_L8)
+	ui.fill(Color.WHITE) # Caller already proved the original office/dialogue layout.
+	# Only foreground entry 1 is used. Background comes from its exact RGB cell.
+	var palette: Array = []
+	for i in 16: palette.append([255,255,255] if i==1 else [0,0,0])
+	set_frame(source,ui,{"text_runs":candidates,"palette_rgb":palette})
 
 func _status_number(source: Image, y: int) -> Dictionary:
 	# Three original right-aligned digit cells. Exact glyph lookup, not OCR or
