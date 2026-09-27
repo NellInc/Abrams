@@ -392,6 +392,24 @@ draws/UI masks and graceful child exit. Full evidence, pins, limitations and
 commands are in `pc-ui-research.md`. No content was published. The overall goal
 remains active.
 
+## Native cockpit assets and first material study
+
+Exported seven original full-screen PC plates and all seven `STRUTS.BMP` images
+with a reproducible local extractor. All 16,024 strut pixels and masks match
+loaded original memory. Full independent plate-loader parity remains unverified.
+The focused seven tests and extraction receipt pass; `local-art/pc-ui-v2` is the
+canonical extraction, with the exploratory v1 inputs preserved.
+
+Two built-in image-editor studies of the gunner plate are saved at 1586x992 in
+`local-art/pc-ui-remastered`, with exact prompts and measured receipts. Both
+failed the authoritative aperture-geometry gate and remain uninstalled studies.
+After a targeted revision still gave the wrong vertical bounds, equivalent
+prompt retries stopped. Integration must use exact renderer-owned apertures and
+instrument layout, with generated art supplying surface treatment. Dynamic UI
+semantics, erasure and modal coverage still need separation before a static plate
+can replace original UI pixels. See `pc-ui-art-workflow.md`. No new artwork was
+silently substituted into the proven tandem path.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
