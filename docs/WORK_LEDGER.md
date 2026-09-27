@@ -1226,6 +1226,65 @@ against the sampled native Genesis palette before declaring those families
 finished. The new armament v2 palette correction should guide that pass.
 No assets were published or committed, and the whole remaster goal remains active.
 
+## Genesis title animation and original PC credits (2026-09-27)
+
+Nell asked whether animations, particularly the intro, had been restored. The
+answer at that point was no for the intro: the title was gallery-only. This
+continuation adds its live animation and credit sequence, with evidence in
+`genesis-intro-integration.md`. The overall goal remains active and incomplete.
+
+Implemented:
+
+* Captured every PC boundary across 6,000 unattended frames and a separate
+  1,800-frame early-space route. Both routes match the unmodified core's paired
+  full RAM, framebuffer and inputs exactly, covering 7,800 records.
+* Decoded the original CREDITS plate and four EXPLO.BMP poses; independently
+  composed five complete title/flash frames, 320,000 matching RGB pixels.
+* Extracted the four corresponding Genesis flash poses. Their VDP reconstructions
+  match 286,720 pixels exactly. Source cutouts and manifests remain local.
+* Generated a transparent 1448x1086 four-pose atlas using the built-in image tool.
+  Its exact prompt and measured dimensions are retained beside it. The native
+  preview was reviewed against the source, and the generated PNG is unchanged.
+* Added 13 full-frame-gated compositions: clean title, four flash phases and
+  eight credit cards. Credit text, metrics, colours and borders are native
+  source-shaped meshes. START still owns order, timing, key response and exit.
+  Unknown/partial frames retain original pixels; no independent timer was added.
+
+Validation:
+
+* `pc-intro-native-01/report.json`: 2,259,820 checks, zero errors beneath the full
+  tandem renderer, including independent donor/alpha checks and every credit
+  pixel at 4x. The headless suite passed 7,921 checks.
+* `validation-20260927T214511Z`: 28 stages and 214 Python tests, terminal exit 0.
+* The first separate cold-boot launcher pair reached different original frames,
+  so `pc-intro-launcher-parity-01.json` correctly failed. No green parity claim
+  was made from it. The diagnostic capture now uses the shared neutral START
+  snapshot; ordinary Play remains a cold boot. Both final native launcher runs
+  (`pc-intro-live-02`, `pc-intro-original-live-02`) exit 0. The nine checks in
+  `pc-intro-launcher-parity-02.json` pass, including identical source PNGs and
+  pixel-exact original-art fallback. This final diagnostic change was validated
+  by those launcher runs after the aggregate gate, without repeating that gate.
+* A 44.340459-second silent preview at `pc-intro-native-01/title-sequence-v2.mp4`
+  assembles native renders with original holds. All transition timestamps and
+  2,657 encoded frames are checked. It is not a real-time recording. The first
+  encoding used a 25 Hz input clock and is superseded, with the reason retained
+  in `preview-receipt.json`.
+* Optional Impeccable is absent; native rendering/pixel tests cover this surface.
+
+Remaining: publisher splash, moving 3D menu backdrop, other transition variants,
+intro audio, human art acceptance, the other animation families, all remaining
+mission/runtime parity and release requirements. No emulator, simulation or
+original source files changed. Media/catalogs remain ignored; no publication or
+push. The five pre-existing untracked vehicle-study files remain untouched.
+
+Nell then explicitly requested a dedication to her father, David "Ming" Kenny.
+The final intro credit now adds a lower-left memorial panel reading "Dedicated
+to the memory of" and "David \"Ming\" Kenny", using the original 6X6/8X8 faces,
+black field and matching red border. No original credit is covered or replaced,
+and its duration remains the original final-card hold. This new authored text is
+kept distinct from the original credit evidence. The intro capture accepts
+`--capture-intro dedication` to verify the final card through the actual launcher.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -1252,7 +1311,10 @@ No assets were published or committed, and the whole remaster goal remains activ
    the motor pool now has its Genesis background, verified scalable arming panel and
    text live, including governor/focus variants. Five information illustrations
    now bind to original START pages; the complete observed crew page adds its
-   Genesis portraits and wireframe. Remaining information-page typography, frames
+   Genesis portraits and wireframe. The title now has four Genesis-derived flash
+   poses and eight original-font credit cards, driven by complete PC frames.
+   Publisher splash and moving menu backdrop remain original.
+   Remaining information-page typography, frames
    and top-down tank schematics remain open. Other gallery families need live bindings. Nine gunner illustration cells and
    scalable pixel-verified live/fixed text are enabled; remaining cockpit trims,
    bitmap instruments/labels, scenery-bearing text, recognition art,

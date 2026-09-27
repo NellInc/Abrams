@@ -29,6 +29,10 @@ music and sound-effect references for a faithful presentation upgrade.
   transitions retain the original. The motor pool now uses a clean-contour Genesis
   remaster with pixel-verified scalable arming labels and values; the original PC
   menu still owns selections and loadout. Other instruments, models and terrain are unfinished.
+  The title now uses its Genesis-derived remaster, four high-resolution flash
+  poses and the original credit lettering, selected by original PC frames.
+  Its final credit screen dedicates the remaster to David "Ming" Kenny.
+  The publisher splash and moving 3D menu backdrop remain original.
   Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
   `--pc-colours` to keep the new cockpit materials with original world colours.
   `--flat-world` disables terrain detail while retaining cockpit art and colours.
@@ -67,10 +71,12 @@ does not prove that the original game logic has been recreated.
 
 The local artwork collection includes the title, Colonel Wilson in three
 poses, his office, motor pool, four crew portraits, four cockpit plates,
-systems status, two ammunition illustrations and three armament illustrations. The gallery has 18 comparison
+systems status, two ammunition illustrations and three armament illustrations. The gallery has 19 comparison
 pages. The additional facepalm variant appears in the live briefing restoration.
 Eligible crew portraits, office/Wilson scenes, the motor pool, crew information page and five information
-illustrations bind to the PC game. Remaining information-page components and
+illustrations bind to the PC game. The title/fire/credits sequence is also live;
+see `docs/genesis-intro-integration.md` for source and animation evidence.
+Remaining information-page components and
 other frontend scenes still need restoration and live binding.
 Assets are available locally under
 `local-art/genesis/`. Untouched PNG extracts, original layered OpenRaster,

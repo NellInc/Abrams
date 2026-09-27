@@ -101,9 +101,10 @@ func run() -> void:
 		if source==null or source.get_size()!=Vector2i(320,200): continue
 		var program: Dictionary = entry.program if entry.get("program") is Dictionary else {}
 		var enabled: bool = art.set_frame(source,program)
-		if enabled: coverage[art.active.pose]+=1
+		if enabled and art.active.get("scene")=="office": coverage[art.active.pose]+=1
 		if entry.label in ["boot-15","boot-17","boot-19","debrief"]: check(enabled,"observed office must restore: "+entry.label)
-		if program.get("name") not in ["BRIEF","END"]: check(not enabled,"non-office program retains original")
+		if program.get("name") not in ["BRIEF","END"]:
+			check(not enabled or (program.get("name")=="START" and art.active.get("scene")=="intro"),"non-office program only permits separately verified intro")
 		if native and program.get("name") in ["BRIEF","END"]: await render(source,entry.label)
 		if entry.label=="boot-17":
 			var changed := source.duplicate()

@@ -17,6 +17,7 @@ var motor_indices := PackedByteArray()
 var portraits: Array[Texture2D] = []
 var active: Dictionary = {}
 var text_enabled := true
+var intro_art = preload("res://scripts/pc_intro_art.gd").new()
 var information_art = preload("res://scripts/pc_information_art.gd").new()
 var arming_panel = preload("res://scripts/pc_arming_panel_art.gd").new()
 var typography = preload("res://scripts/pc_typography.gd").new()
@@ -28,6 +29,8 @@ func _init() -> void:
 	var effect := ShaderMaterial.new()
 	effect.shader = preload("res://scripts/pc_frontend_art.gdshader")
 	material = effect
+	add_child(intro_art)
+	intro_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(information_art)
 	information_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(arming_panel)
@@ -38,6 +41,7 @@ func _init() -> void:
 
 func clear() -> void:
 	active.clear()
+	intro_art.clear()
 	information_art.clear()
 	arming_panel.clear()
 	typography.clear_runs()
@@ -50,6 +54,7 @@ func load_sources(root_path: String) -> bool:
 	catalog.clear()
 	portraits.clear()
 	_load_motor_pool(root_path)
+	intro_art.load_sources(root_path)
 	information_art.load_sources(root_path)
 	arming_panel.load_sources(root_path)
 	var path := root_path.path_join("local-art/pc-frontend-v1/office.json")
@@ -156,6 +161,12 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}) 
 	if source==null or source.get_size()!=Vector2i(320,200): return false
 	if source.get_format()!=Image.FORMAT_RGB8: return false
 	if program.get("name")=="START":
+		if intro_art.set_frame(source,program):
+			texture = ImageTexture.create_from_image(source)
+			active = {"scene":"intro","name":intro_art.active.name}
+			if intro_art.active.dedication: active.dedication="David \"Ming\" Kenny"
+			visible = true
+			return true
 		if not information_art.set_frame(source,program): return false
 		texture = ImageTexture.create_from_image(source)
 		active = {"scene":"information","name":information_art.active.name}

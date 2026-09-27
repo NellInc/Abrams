@@ -80,10 +80,25 @@ func _initialize() -> void:
 	var python := OS.get_environment("ABRAMS_PYTHON")
 	if python.is_empty(): python = "/opt/homebrew/bin/python3"
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
-	bridge.start(python, "" if boot_mode else directory.path_join(state_path), output.path_join("saves"),
+	var startup_state := "" if boot_mode else directory.path_join(state_path)
+	# Frame-sensitive intro comparison requires a shared neutral START boundary.
+	# This diagnostic alone uses it; ordinary Play continues to cold boot.
+	if boot_mode and capture and "--capture-intro" in args:
+		startup_state=directory.path_join("artifacts/pc-neutral-boot-01/neutral-boot/reference.state")
+	bridge.start(python, startup_state, output.path_join("saves"),
 		output.path_join("host.log"), "trace" if trace_mode else "reference")
 	if boot_mode and capture:
 		auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_boot_steps.json"))
+	if capture and "--capture-intro" in args:
+		var conflict := ["--capture-briefing","--capture-motor-pool","--capture-information","--capture-station","--capture-crew"].any(func(flag):return flag in args)
+		if not boot_mode or conflict:
+			bridge.failure = "Intro capture requires START mode and no other route"
+		else:
+			var index:=args.find("--capture-intro")+1
+			var phase: String=args[index] if index<args.size() and not args[index].begins_with("--") else "credits"
+			if phase not in ["credits","dedication"]: bridge.failure="Unsupported intro capture phase"
+			elif phase=="dedication": auto_steps=[[3,["return"]],[600,[]],[600,[]],[600,[]],[600,[]]]
+			else: auto_steps = [[3,["return"]],[550,[]]]
 	if capture and "--capture-briefing" in args:
 		var index := args.find("--capture-briefing")+1
 		var pose: String = args[index] if index<args.size() else ""
