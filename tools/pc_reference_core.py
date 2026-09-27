@@ -43,9 +43,14 @@ class ThrottleState(C.Structure):
 
 
 class PcReferenceCore:
-    def __init__(self, library: Path, content: Path, saves: Path):
-        if hashlib.sha256(library.read_bytes()).hexdigest() != CORE_SHA256:
+    def __init__(self, library: Path, content: Path, saves: Path, *, expected_sha256: str = CORE_SHA256):
+        # The ordinary bridge retains the reviewed upstream-binary pin. Separate
+        # source-built research variants must explicitly supply their build pin;
+        # this does not establish their timing/memory compatibility.
+        if (len(expected_sha256) != 64 or any(c not in "0123456789abcdef" for c in expected_sha256)
+                or hashlib.sha256(library.read_bytes()).hexdigest() != expected_sha256):
             raise ValueError("memory/thread assumptions require the fingerprinted DOSBox Pure core")
+        self.core_sha256 = expected_sha256
         if content.suffix.lower() != ".zip":
             raise ValueError("load a ZIP to keep source game writes isolated")
         saves.mkdir(parents=True, exist_ok=True)
@@ -239,7 +244,7 @@ class PcReferenceCore:
             raise RuntimeError("original reference serialization failed")
         (directory / "reference.state").write_bytes(state.raw)
         self.pause_at_frame_end()
-        receipt = {"core_sha256": CORE_SHA256, "retro_run_count": self.frame,
+        receipt = {"core_sha256": self.core_sha256, "retro_run_count": self.frame,
                    "memory_basis": "physical conventional RAM, 640 KiB",
                    "video_memory_alignment": "video precedes RAM by one completed VGA frame",
                    "options": {k.decode(): v.decode() for k, v in (self.variables | self.overrides).items()},
@@ -249,7 +254,7 @@ class PcReferenceCore:
         receipt["throttle"] = "FRAME_STEPPING"
         (directory / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
 
-    def restore(self, path: Path):
+    def restore(self, path: Path, *, expected_source_sha256: str | None = None):
         raw = path.read_bytes()
         if not 0 < len(raw) <= 128 * 1024 * 1024:
             raise ValueError("invalid saved-state size")
@@ -258,7 +263,8 @@ class PcReferenceCore:
         receipt_path = path.with_name("receipt.json")
         if receipt_path.exists():
             receipt = json.loads(receipt_path.read_text())
-            if receipt.get("core_sha256") != CORE_SHA256 or receipt.get("pressed_keys"):
+            source_pin = expected_source_sha256 or self.core_sha256
+            if receipt.get("core_sha256") != source_pin or receipt.get("pressed_keys"):
                 raise ValueError("restore requires this core and a neutral-key snapshot")
             if receipt.get("files", {}).get(path.name) != hashlib.sha256(raw).hexdigest():
                 raise ValueError("saved-state fingerprint mismatch")

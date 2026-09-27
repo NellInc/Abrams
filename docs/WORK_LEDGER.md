@@ -221,6 +221,45 @@ UI-clip metadata and two misleading movement capture filenames are documented
 as superseded in the camera research note. Dynamic vehicles, solid occlusion,
 materials, timing calibration and full gameplay parity remain open.
 
+## Vehicle arithmetic and actual renderer hooks, 27 September 2026
+
+Recovered original vehicle orientation matrices, staged packed-vector rotation
+and register-dependent matrix composition. `pc-vehicle-oracle-01.json` checks
+2,280 orientations, 915,705 packed lookup words (5,985 coefficients) and 1,920
+compositions. A synthetic original-CPU witness proves that incoming CX affects
+yaw-specialized arithmetic. The running executable contains the same instructions.
+No conventional engine rotation was substituted.
+
+Built an unmodified baseline and a read-only instruction-observer variant from
+pinned DOSBox Pure source `73e03aa145e0549ed4d5a20f8e65532714da33f5`. The old
+nightly save state failed the native format check in both builds; the logs remain.
+Bootstrapped the original game afresh, with a verified 3,600-frame fixture builder.
+The default nightly core, its original save state and the working Godot bridge
+are unchanged. Explicit alternate binary and source-state hashes are required
+for the experimental backend; state-format checks remain in force.
+
+`pc-render-hook-comparison-03.json`: 180 original input frames on source baseline
+and traced libraries, zero RAM/framebuffer/input differences. The traced run
+captured 45 complete drawing passes, 66 vehicle contexts and 5,341 exact original
+vertex-cache matches. Godot recorded-pass replay checks 5,243 projected vertices
+(maximum 0.000062 source pixels). Its first failed check was a root-viewport
+scaling error in the test harness, repaired with a dedicated SubViewport and no
+tolerance change. Full detail, scope and retained failures: `pc-vehicle-research.md`.
+
+This is source-built renderer observation and recorded-pass replay, not a live
+vehicle renderer or full raster/occlusion match yet. The next integration must
+pair complete render passes with original video boundaries. No assets or binaries
+were published. The whole remaster goal remains active.
+
+Validation: eleven aggregate stages passed in `validation-20260927T000739Z`,
+including 95 Python tests and original-file preservation. Default live bridge
+integration passed in `pc-core-pin-godot-01.log`. Native captured draw replay
+passed in `pc-draw-pass-native-01.log`; the author inspected its output. Final
+classification/projection tests and the repeated source-baseline comparison
+passed after separating dynamic allocation from the static arithmetic shortcut.
+The optional Impeccable linter remains unavailable; native Godot rendering and
+projection checks provide the applicable visual evidence here.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting

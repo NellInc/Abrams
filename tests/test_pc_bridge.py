@@ -2,6 +2,10 @@ from pathlib import Path
 import ctypes as C
 import struct
 import unittest
+import hashlib
+import json
+import tempfile
+from types import SimpleNamespace
 
 from tools.pc_live_state import SimStateReader, bearing
 from tools.pc_reference_core import PcReferenceCore, KEYS, MemoryDescriptor, ThrottleState
@@ -90,6 +94,37 @@ class PcBridgeTests(unittest.TestCase):
         state = ThrottleState()
         self.assertTrue(core._environment(71 | 0x10000, C.byref(state)))
         self.assertEqual((state.mode, state.rate), (1, 0.0))
+
+    def test_alternative_core_still_requires_an_exact_explicit_pin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "core.dylib"
+            path.write_bytes(b"not a core")
+            for pin in ("", "bad", "0" * 64):
+                with self.assertRaisesRegex(ValueError, "fingerprinted"):
+                    PcReferenceCore(path, Path("game.zip"), Path(directory) / "saves", expected_sha256=pin)
+
+    def test_cross_build_restore_requires_explicit_source_receipt_pin(self):
+        core = PcReferenceCore.__new__(PcReferenceCore)
+        core.core_sha256 = "a" * 64
+        core.pressed = set()
+        core.set_keys = lambda _: None
+        core.pause_at_frame_end = lambda: None
+        loaded = []
+        core.core = SimpleNamespace(retro_unserialize=lambda *args: loaded.append(args[1]) or True)
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory) / "reference.state"
+            state.write_bytes(b"test state")
+            receipt = {"core_sha256": "b" * 64, "pressed_keys": [],
+                       "files": {state.name: hashlib.sha256(state.read_bytes()).hexdigest()}}
+            receipt_path = state.with_name("receipt.json")
+            receipt_path.write_text(json.dumps(receipt))
+            with self.assertRaises(ValueError): core.restore(state)
+            self.assertEqual(loaded, [])
+            core.restore(state, expected_source_sha256="b" * 64)
+            self.assertEqual(loaded, [10])
+            receipt["pressed_keys"] = [32]
+            receipt_path.write_text(json.dumps(receipt))
+            with self.assertRaises(ValueError): core.restore(state, expected_source_sha256="b" * 64)
 
     def test_protocol_accepts_only_bounded_keyboard_steps(self):
         validate_command({"op": "quit"})
