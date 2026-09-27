@@ -114,7 +114,7 @@ func _build_ui() -> void:
 	caption = _label("", 18)
 	stack.add_child(caption)
 	stack.add_child(_label("Arrows: original keypad controls   5: stop/brake   C: hull/turret   Space: fire   F1 to F4: stations", 18))
-	stack.add_child(_label(("Original wireframe diagnostic. Omit --wire for filled surfaces." if wire_mode else "Live original surfaces and EGA materials. Sprite effects, exact raster edges and high-resolution replacement artwork remain open.") if trace_mode else "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
+	stack.add_child(_label(("Original wireframe diagnostic. Omit --wire for filled surfaces." if wire_mode else "Live original surfaces, materials and bitmap effects. Cockpit/HUD, opaque commands and high-resolution replacement artwork remain open.") if trace_mode else "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
 
 func _build_stage(viewport: SubViewport) -> void:
 	var world := Node3D.new()
@@ -217,7 +217,7 @@ func _apply_sample(message: Dictionary) -> void:
 	if trace_mode:
 		var drawing = previous_presentation.get("draw_pass")
 		if drawing is Dictionary:
-			caption.text += "\nDraw pass %d   Vehicle polygons %d   Unsupported commands %d" % [int(drawing.sequence), draw_view.dynamic_polygon_count, drawing.unsupported.size() + draw_view.render_warnings.size()]
+			caption.text += "\nDraw pass %d   Vehicle polygons %d   Sprites %d   Unsupported commands %d" % [int(drawing.sequence), draw_view.dynamic_polygon_count, draw_view.sprite_count, drawing.unsupported.size() + draw_view.render_warnings.size()]
 		else:
 			caption.text += "\nNo paired geometry: " + str(previous_presentation.get("reason", "awaiting scanout"))
 	previous = state
@@ -233,7 +233,7 @@ func _capture() -> void:
 	world_viewport.get_texture().get_image().save_png(output.path_join("surface-view.png"))
 	picture.texture.get_image().save_png(output.path_join("original-frame.png"))
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
-	file.store_string(JSON.stringify({"state": previous, "samples": samples, "presentation": previous_presentation, "scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired original surfaces and EGA materials; exact raster edges and sprite/opaque commands unresolved") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
+	file.store_string(JSON.stringify({"state": previous, "samples": samples, "presentation": previous_presentation, "scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired original surfaces, materials and bitmap effects; exact raster edges, HUD and opaque commands unresolved") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()
 

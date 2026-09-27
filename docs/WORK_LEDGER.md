@@ -327,6 +327,37 @@ Python tests and original-file preservation. No content was published. Sprite
 and opaque commands, integer raster coverage, original cockpit/HUD, replacement
 art, full missions/campaign, timing calibration and release work remain open.
 
+## Original bitmap effects integrated, 27 September 2026
+
+Decoded all 64 `EFFECTS.BMP` images and checked 28,960 pixels and transparency
+masks against the original loaded EGA buffers. Local native PNG samples and a
+contact sheet are in `local-art/pc-effects-v1`, with provenance and the captured
+palette. These are exact original extracts, not yet remastered artwork.
+
+New read-only hooks observe the original bitmap selection, projected position,
+clipping and completion. Godot emits masked source-pixel runs at the correct
+position in the original painter stream. All seven formerly missing sprite
+draws in the four-station profile now render. The full 1,167-frame trace and all
+23 stage states still match the unmodified source baseline; this scenario has
+no unsupported commands. Other sequences and opaque four-byte commands remain.
+
+The independent original bitmap-blitter oracle passes 512 cases and 32,768,000
+framebuffer-pixel checks, including clipping and untouched backgrounds. Its
+initial far-return harness failed; the verified scope stops before RETF after
+checking restored SS/SP and does not claim return-transfer correctness. Native
+Godot passes 57,546 exact RGB samples across all 64 source effects, transparency,
+clipping, palette/material separation and painter order. A non-EGA dark-grey
+probe failed separately (17 became 12; 51 became 50). This discrepancy remains
+an explicit high-resolution material acceptance item, with the failed log kept.
+
+All 261 recorded passes replay with seven sprites and the existing 33,551
+projection checks. Three source-frame/attributed-pass pairs were captured and
+inspected by their author. Five of 89 opaque sprite sample positions are black
+in the source reticle region; the Godot view still lacks the original HUD.
+All thirteen aggregate stages and 113 Python tests pass in
+`validation-20260927T012101Z`. Detailed proof, limitations, hashes and commands:
+`pc-sprites-research.md`. No content was published; the parent goal remains open.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -367,10 +398,12 @@ art, full missions/campaign, timing calibration and release work remain open.
    bounded instruction/projection evidence; current
    snapshots are VGA-frame-boundary samples; original UI drawing may lag them.
    Calibrate real-time input/CPU pacing against the standalone reference.
-2. Recover opaque/sprite drawing commands, cockpit/HUD and integer clipping and
-   edge coverage. Solid geometry and original material patterns now run in the
-   live scanout-paired renderer; full rendering fidelity remains. Surface evidence
-   and reproduction commands are in `pc-surfaces-research.md`.
+2. Recover remaining opaque drawing commands, cockpit/HUD and integer polygon
+   edge coverage. Solid geometry, original materials and bitmap effects now run
+   in the live scanout-paired renderer. Expand live coverage beyond the three
+   observed effect IDs. Validate arbitrary dark colours separately before new
+   high-resolution materials. Evidence is in `pc-surfaces-research.md` and
+   `pc-sprites-research.md`.
 3. Extend original-executable replay coverage to station/weapon modes, enemy
    state, damage, mission outcomes and campaign/persistence, one scenario at a
    time. Current bridge receipts and limitations are in `pc-live-bridge.md`.

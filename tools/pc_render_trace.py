@@ -15,11 +15,13 @@ try:
     from tools.inspect_shapes import inspect_shapes
     from tools.inspect_scenarios import decode_resource
     from tools.pc_materials import read_materials
+    from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
 except ModuleNotFoundError:
     from pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
     from inspect_shapes import inspect_shapes
     from inspect_scenarios import decode_resource
     from pc_materials import read_materials
+    from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
 
 ROOT = Path(__file__).resolve().parents[1]
 CALLBACK = C.CFUNCTYPE(None, C.c_uint32, C.POINTER(C.c_uint16), C.c_void_p, C.c_uint32, C.c_uint32)
@@ -45,6 +47,8 @@ class Collector:
         self.error = None
         self.sequence = 0
         self.vertices_checked = 0
+        self.effects = decode_bitmaps(decode_resource((ROOT / 'GAME/EFFECTS.BMP').read_bytes()))
+        self.effect_pixels_checked = 0
         self.shapes = inspect_shapes(decode_resource((ROOT / 'GAME/SHAPE.TBL').read_bytes()))['shapes']
         self.callback = CALLBACK(self.observe)
 
@@ -99,6 +103,9 @@ class Collector:
                 self.active['materials'] = read_materials(raw, ds)
                 self.active['palette_rgb'] = self.palette_rgb
                 self.active['background'] = self.backgrounds.get(self.active['page_offset'])
+                if self.sequence == 1:
+                    loaded = verify_loaded_effects(raw, ds, self.effects)
+                    self.effect_pixels_checked = sum(p['width'] * p['height'] for p in loaded)
                 if self.sequence == 1 and self.output: (self.output / 'first-render.bin').write_bytes(raw)
                 self.current = None
                 self.composition_cx = None
@@ -110,8 +117,39 @@ class Collector:
                 self.current = None
                 self.composition_cx = None
                 if raw[0] & 128:
-                    self.active['unsupported'].append({'kind': 'sprite_root', 'pointer': regs['bx'],
-                        'root': regs['di'], 'command': list(raw)})
+                    obj = next(o for name in ('static', 'dynamic') for o in self.active['world'][name]
+                               if o['pointer'] == regs['bx'])
+                    self.current = {'kind': 'sprite', 'pointer': regs['bx'], 'root': regs['di'],
+                        'shape_index': obj['shape_index'], 'bitmap_index': raw[1], 'sprite_status': 'pending',
+                        'dynamic_instance': any(o['pointer'] == regs['bx'] for o in self.active['world']['dynamic']),
+                        'polygons': []}
+                    self.active['objects'].append(self.current)
+            elif event == 17:
+                if not self.current or self.current.get('kind') != 'sprite':
+                    self.active['unsupported'].append({'kind': 'unattributed_bitmap'})
+                    return
+                ds, stack = regs['ds'] * 16, regs['ss'] * 16 + regs['bp']
+                index, x, y = struct.unpack_from('<Hhh', raw, stack + 6)
+                if index != self.current['bitmap_index'] or index >= len(self.effects):
+                    raise ValueError('original bitmap selection differs from root')
+                source = self.effects[index]
+                bitmap = read_ega_bitmap(raw, ds, regs['bx'])
+                if any(bitmap[k] != source[k] for k in ('width', 'height', 'pixels')):
+                    raise ValueError('observed bitmap differs from source resource')
+                if bitmap['opaque'] != [p != 0 for p in source['pixels']]:
+                    raise ValueError('observed bitmap transparency differs from source resource')
+                if raw[ds + 0x359F] != 15:
+                    self.current['sprite_status'] = 'unsupported-plane-mask'
+                    self.active['unsupported'].append({'kind': 'bitmap_plane_mask', 'value': raw[ds + 0x359F]})
+                    return
+                clip = list(struct.unpack_from('<4h', raw, ds + 0x3593))
+                # The driver's clip storage is left/right/top/bottom.
+                self.current['sprite'] = bitmap | {'index': index, 'origin': [x, y],
+                    'clip': [clip[0], clip[2], clip[1], clip[3]]}
+                self.current['sprite_status'] = 'observed'
+            elif event == 18:
+                if self.current and self.current.get('kind') == 'sprite' and self.current['sprite_status'] == 'pending':
+                    self.current['sprite_status'] = 'rejected-before-blit'
             elif event == 8:
                 self.active['unsupported'].append({'kind': 'opaque_command', 'command_offset': regs['di'],
                     'pointer': self.current['pointer'] if self.current else None, 'command': list(raw)})
@@ -135,9 +173,9 @@ class Collector:
                         raise ValueError(f'actual live original composition mismatch for {pointer:#x}')
                 self.active['objects'].append(self.current)
                 self.composition_cx = None
-            elif event == 3 and self.current:
+            elif event == 3 and self.current and self.current.get('kind') != 'sprite':
                 self.current['primitive_ids'].append(regs['si'])
-            elif event == 6 and self.current:
+            elif event == 6 and self.current and self.current.get('kind') != 'sprite':
                 count = word(0x1A69)
                 if not 0 <= count <= 16: raise ValueError('unsupported polygon buffer length')
                 shape = self.shapes[self.current['shape_index']]
@@ -157,6 +195,9 @@ class Collector:
             elif event == 6:
                 self.active['unsupported'].append({'kind': 'unattributed_polygon'})
             elif event == 4:
+                for obj in self.active.get('objects', []):
+                    if obj.get('sprite_status') == 'pending':
+                        self.active['unsupported'].append({'kind': 'incomplete_sprite', 'pointer': obj['pointer']})
                 self.passes.append(self.active)
                 self.completed_count += 1
                 self.pages[self.active['page_offset']] = self.active

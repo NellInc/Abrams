@@ -75,3 +75,31 @@ static func background_polygons(background: Dictionary, camera: Dictionary) -> A
 			p = q
 		result.append({"points": polygon, "material": background.colors[half]})
 	return result
+
+static func sprite_runs(sprite: Dictionary, camera: Dictionary) -> Array:
+	# Original bitmap pixels, not a guessed billboard scale. Transparent pixels
+	# emit no triangles, preserving earlier original surfaces in painter order.
+	var result: Array = []
+	var left: int = maxi(int(sprite.clip[0]), int(camera.clip[0]))
+	var top: int = maxi(int(sprite.clip[1]), int(camera.clip[1]))
+	var right: int = mini(int(sprite.clip[2]), int(camera.clip[2]))
+	var bottom: int = mini(int(sprite.clip[3]), int(camera.clip[3]))
+	for row in int(sprite.height):
+		var y: int = int(sprite.origin[1]) + row
+		if y < top or y > bottom: continue
+		var col: int = maxi(0, left - int(sprite.origin[0]))
+		var end: int = mini(int(sprite.width), right - int(sprite.origin[0]) + 1)
+		while col < end:
+			var at: int = row * int(sprite.width) + col
+			if not sprite.opaque[at]:
+				col += 1
+				continue
+			var color: int = int(sprite.pixels[at])
+			var start := col
+			col += 1
+			while col < end and sprite.opaque[row * int(sprite.width) + col] and int(sprite.pixels[row * int(sprite.width) + col]) == color:
+				col += 1
+			var x: int = int(sprite.origin[0]) + start
+			result.append({"points": [Vector2(x, y), Vector2(x + col - start, y),
+				Vector2(x + col - start, y + 1), Vector2(x, y + 1)], "color": color})
+	return result

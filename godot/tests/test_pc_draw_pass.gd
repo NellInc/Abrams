@@ -26,6 +26,7 @@ func _run() -> void:
 	var pass_count := 0
 	var maximum_error := 0.0
 	var capture_path := ""
+	var sprites := 0
 	if args.size() >= 2 and args[0] == "--fixture":
 		var fixture = JSON.parse_string(FileAccess.get_file_as_string(args[1]))
 		if not fixture is Dictionary or fixture.get("render_passes", []).is_empty():
@@ -62,6 +63,12 @@ func _run() -> void:
 			var dimensions := PcCamera.apply(camera, frame, Vector3.ZERO)
 			viewport.size = dimensions * 4
 			drawn.apply_pass(pass_data)
+			if drawn.solid_enabled:
+				var expected_sprites := 0
+				for object: Dictionary in pass_data.objects:
+					if object.get("sprite") is Dictionary: expected_sprites += 1
+				check(drawn.sprite_count == expected_sprites, "observed sprite count differs")
+				sprites += drawn.sprite_count
 			check(drawn.render_warnings.is_empty(), "surface warnings in draw pass %s: %s" % [str(pass_data.sequence), str(drawn.render_warnings)])
 			await process_frame
 			pass_count += 1
@@ -81,6 +88,7 @@ func _run() -> void:
 			await RenderingServer.frame_post_draw
 			check(viewport.get_texture().get_image().save_png(capture_path) == OK, "native capture failed")
 		print("PC_DRAW_PASS_FIXTURE: %d passes, %d projections, maximum error %.6f source pixels; %d dynamic polygons in final pass" % [pass_count, projected, maximum_error, drawn.dynamic_polygon_count])
+		print("PC_DRAW_PASS_SPRITES: %d" % sprites)
 	print("PC_DRAW_PASS: basic axes, geometry, classification and clearing checks complete")
 	for message in failures: printerr("FAIL: " + message)
 	quit(0 if failures.is_empty() else 1)

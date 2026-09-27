@@ -9,6 +9,7 @@ const DISPLAY_SCALE := 64.0
 var mesh_node: MeshInstance3D
 var polygon_count := 0
 var dynamic_polygon_count := 0
+var sprite_count := 0
 var source_points: Array = []
 
 func _init() -> void:
@@ -20,6 +21,7 @@ static func camera_point(raw: Array) -> Vector3:
 
 func apply_pass(pass_data: Dictionary) -> void:
 	render_warnings.clear()
+	sprite_count = 0
 	if solid_enabled:
 		_apply_surfaces(pass_data)
 		return
@@ -66,7 +68,10 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	var frame: Dictionary = pass_data.camera
 	var vertices := PackedVector3Array()
 	var materials := PackedVector2Array()
-	var texture := Image.create(pass_data.materials.size() * 2, 2, false, Image.FORMAT_RGBA8)
+	var material_count: int = pass_data.materials.size()
+	# Extra solid swatches represent direct bitmap palette entries. They must
+	# never be interpreted as dithered polygon materials.
+	var texture := Image.create((material_count + 16) * 2, 2, false, Image.FORMAT_RGBA8)
 	for index in pass_data.materials.size():
 		var words: Array = pass_data.materials[index]
 		for y in 2:
@@ -75,6 +80,11 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 				var value := int(words[0]) & 15 if words[0] == words[1] else (word >> (8 if x == 0 else 0)) & 15
 				var rgb: Array = pass_data.palette_rgb[value]
 				texture.set_pixel(index * 2 + x, y, Color8(int(rgb[0]), int(rgb[1]), int(rgb[2])))
+	for index in 16:
+		var rgb: Array = pass_data.palette_rgb[index]
+		for y in 2:
+			for x in 2:
+				texture.set_pixel((material_count + index) * 2 + x, y, Color8(int(rgb[0]), int(rgb[1]), int(rgb[2])))
 	if pass_data.get("background") is Dictionary:
 		var backgrounds: Array = SurfaceGeometry.background_polygons(pass_data.background, frame)
 		if backgrounds.is_empty(): render_warnings.append("Unsupported vertical horizon")
@@ -85,6 +95,12 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	else:
 		render_warnings.append("Original background observation unavailable")
 	for object: Dictionary in pass_data.objects:
+		if object.get("sprite") is Dictionary:
+			sprite_count += 1
+			for run: Dictionary in SurfaceGeometry.sprite_runs(object.sprite, frame):
+				var points: Array = []
+				for point: Vector2 in run.points: points.append(SurfaceGeometry.unproject(point, 1024.0, frame))
+				_add_triangles(vertices, materials, SurfaceGeometry.triangle_vertices(points, frame), material_count + int(run.color), material_count + 16)
 		for polygon: Dictionary in object.polygons:
 			var points: Array = polygon.camera_vertices
 			if points.size() < 2: continue

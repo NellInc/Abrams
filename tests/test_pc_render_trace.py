@@ -77,18 +77,34 @@ class RenderTraceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'dimensions differ'):
             c.paired_video((b'\0' * 8, 1, 1, 8))
 
-    def test_sprite_root_resets_stale_matrix_and_records_unsupported_commands(self):
+    def test_sprite_root_resets_stale_matrix_and_observes_original_rejection(self):
         c = self.collector()
-        c.active = {'unsupported': []}
+        c.active = {'unsupported': [], 'objects': [], 'world': {'static': [],
+                    'dynamic': [{'pointer': 123, 'shape_index': 168}]}}
         c.current, c.composition_cx = {'pointer': 123}, 4
         self.event(c, 7, 20, b'\x80\x05', [0, 123, 0, 0, 0, 20] + [0] * 6)
-        self.assertIsNone(c.current)
+        self.assertEqual(c.current['kind'], 'sprite')
+        self.assertNotIn('matrix', c.current)
         self.assertIsNone(c.composition_cx)
-        self.assertEqual(c.active['unsupported'][0]['kind'], 'sprite_root')
+        self.event(c, 18)
+        self.assertEqual(c.current['sprite_status'], 'rejected-before-blit')
         self.event(c, 8, 22, b'\0' * 4)
         self.event(c, 6)
         self.assertEqual([x['kind'] for x in c.active['unsupported']],
-                         ['sprite_root', 'opaque_command', 'unattributed_polygon'])
+                         ['opaque_command', 'unattributed_polygon'])
+
+    def test_unobserved_sprite_completion_is_reported(self):
+        c = self.collector()
+        c.active = {'page_offset': 0, 'unsupported': [], 'objects': [
+            {'sprite_status': 'pending', 'pointer': 123}]}
+        self.event(c, 4)
+        self.assertEqual(c.passes[-1]['unsupported'], [{'kind': 'incomplete_sprite', 'pointer': 123}])
+
+    def test_unattributed_bitmap_is_reported(self):
+        c = self.collector()
+        c.active = {'unsupported': []}
+        self.event(c, 17)
+        self.assertEqual(c.active['unsupported'], [{'kind': 'unattributed_bitmap'}])
 
     def test_live_history_is_bounded_and_count_is_total(self):
         c = self.collector()

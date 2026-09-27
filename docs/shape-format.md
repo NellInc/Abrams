@@ -120,9 +120,12 @@ Empty lists, points, and two-index primitives must not be silently converted int
 triangles. Longer lists may represent polygons, but fill rules and winding
 semantics require the original renderer contract.
 
-In the 20 zero-vector records, selector pointers address opaque two-byte pairs.
-These also partition their control regions exactly. They may reference other
-shapes; that interpretation has not been established.
+In the 20 zero-vector records, selector pointers address two-byte pairs with
+bit 7 set in the first byte. Original `0b4d:28d0..28de` dispatches the second byte
+as a bitmap index through `0b4d:437c` and `0000:8b08`. These are effect sprites,
+with source-selected detail levels, rather than references to vector shapes.
+All 64 images in `EFFECTS.BMP` match their loaded original EGA pixels and masks.
+See `pc-sprites-research.md` for extraction, blitter evidence and live integration.
 
 ## Independently checked cube, record 166
 

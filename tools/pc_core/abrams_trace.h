@@ -39,7 +39,7 @@ static INLINE void AbramsTraceInstruction() {
     // Cheap filter before consulting segments on the normal instruction path.
     if (ip != 0x8ac4 && ip != 0x02c1 && ip != 0x29ad && ip != 0x0596 && ip != 0x2979 && ip != 0x0357
         && ip != 0x28d0 && ip != 0x31a6 && ip != 0x59e4 && ip != 0x340b
-        && ip != 0x3707 && ip != 0x36c8) return;
+        && ip != 0x3707 && ip != 0x36c8 && ip != 0x8b49 && ip != 0x28e4) return;
     if (SegValue(ds) != abrams_trace_load + 0x19e0) return;
     Bit32u segment = SegValue(cs), event = 0, start = 0, length = 0;
     const Bit32u base = SegPhys(ds);
@@ -48,6 +48,7 @@ static INLINE void AbramsTraceInstruction() {
         if (ip == 0x8ac4 && mem_readw(base + 0x358c) == 0x012c) {
             event = 1; length = 640 * 1024;
         } else if (ip == 0x02c1) { event = 4; }
+        else if (ip == 0x8b49) { event = 17; length = 640 * 1024; }
     } else if (segment == abrams_trace_load + 0x0b4d) {
         if (ip == 0x29ad) { event = 2; start = 0x1100; length = 0x0f00; }
         else if (ip == 0x0596) { event = 3; start = 0x1200; length = 0x2400; }
@@ -57,6 +58,7 @@ static INLINE void AbramsTraceInstruction() {
         else if (ip == 0x340b) { event = 13; start = 0x35a0; length = 10; }
         else if (ip == 0x3707) { event = 15; start = reg_bp + 12; length = 4; }
         else if (ip == 0x36c8) { event = 16; }
+        else if (ip == 0x28e4) { event = 18; }
     } else if (segment == abrams_trace_load + 0x0f8d) {
         if (ip == 0x0357) { event = 6; start = 0x1200; length = 0x2400; }
         else if (ip == 0x59e4) { event = 9; start = 0x35a0; length = 10; }
@@ -65,6 +67,6 @@ static INLINE void AbramsTraceInstruction() {
     const Bit16u regs[12] = {reg_ax, reg_bx, reg_cx, reg_dx, reg_si, reg_di,
         reg_bp, reg_sp, SegValue(cs), SegValue(ds), SegValue(es), SegValue(ss)};
     if (event == 1) abrams_trace_callback(14, regs, (const Bit8u*)render.pal.rgb, 0, 16 * 4);
-    if (length) MEM_BlockRead(event == 1 ? 0 : (event == 15 ? SegPhys(ss) : ((event == 7 || event == 8) ? SegPhys(es) : base)) + start, abrams_trace_snapshot, length);
+    if (length) MEM_BlockRead((event == 1 || event == 17) ? 0 : (event == 15 ? SegPhys(ss) : ((event == 7 || event == 8) ? SegPhys(es) : base)) + start, abrams_trace_snapshot, length);
     abrams_trace_callback(event, regs, abrams_trace_snapshot, start, length);
 }

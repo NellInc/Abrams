@@ -11,6 +11,8 @@ wireframe diagnostic. The nightly/static backend remains unchanged.
 The rendered geometry has higher-resolution edges, while its palette and dither
 patterns deliberately retain source appearance. It is the reference presentation
 layer for later remastered assets. It is not the finished high-resolution art.
+The subsequent [sprite implementation](pc-sprites-research.md) closes the seven
+effect omissions recorded in this stage; its remaining limitations are separate.
 
 ## Material and palette recovery
 

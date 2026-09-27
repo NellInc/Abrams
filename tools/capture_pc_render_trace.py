@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--profile', choices=['turn', 'controls'], default='turn')
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--state-core-sha256', help='defaults to the selected reference or source-baseline pin')
+    parser.add_argument('--capture-sprites', action='store_true', help='save first paired framebuffer for each observed effect image')
     args = parser.parse_args()
     if not 1 <= args.frames <= 3000: parser.error('frames must be 1..3000')
     if args.output.resolve().is_relative_to((ROOT / 'GAME').resolve()): parser.error('output must be outside original GAME')
@@ -61,6 +62,7 @@ def main():
         if args.mode == 'trace':
             collector.attach(core, state['load_segment'])
         presentations = []
+        sprite_presentations, captured_sprites = [], set()
         stages = {}
         if args.profile == 'controls':
             steps = STEPS + [('commander-key', 3, ['f2']), ('commander', 60, []),
@@ -77,6 +79,15 @@ def main():
                 presentations.append({k: v for k, v in paired.items() if k != 'draw_pass'} |
                     {'draw_sequence': paired['draw_pass']['sequence'] if paired.get('draw_pass') else None,
                      'latest_complete_sequence': collector.passes[-1]['sequence'] if collector.passes else None})
+                if args.capture_sprites and paired.get('draw_pass'):
+                    drawing = paired['draw_pass']
+                    ids = {o['sprite']['index'] for o in drawing['objects'] if o.get('sprite')}
+                    if ids - captured_sprites:
+                        filename = f'sprite-pass-{drawing["sequence"]:05d}-frame-{i:05d}.png'
+                        core.screenshot().save(args.output / filename)
+                        sprite_presentations.append({'draw_sequence': drawing['sequence'], 'frame_index': i,
+                            'bitmap_indices': sorted(ids), 'image': filename})
+                        captured_sprites.update(ids)
             frames.append({'index': i, 'keys': keys, 'ram_sha256': hashlib.sha256(core.last_video_ram).hexdigest(),
                 'video_sha256': hashlib.sha256(core.last_video[0]).hexdigest()})
             if end_stage: stages[stage] = reader.read(core.last_video_ram)
@@ -86,6 +97,8 @@ def main():
             'state_core_sha256': source_pin, 'trace_header_sha256': manifest['trace_header_sha256'],
             'profile': args.profile, 'stages': stages,
             'original_vertices_checked': collector.vertices_checked,
+            'effect_pixels_checked': collector.effect_pixels_checked,
+            'sprite_presentations': sprite_presentations,
             'presentations': presentations, 'render_passes': list(collector.passes), 'incomplete_pass_at_stop': collector.active is not None,
             'scope': 'actual original normal-core instruction hooks; no guest writes; compare baseline/reference hashes separately'}
         (args.output / 'report.json').write_text(json.dumps(result, indent=2) + '\n')
