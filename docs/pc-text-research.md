@@ -155,9 +155,16 @@ python3 tools/verify_pc_text_trace.py \
   --output artifacts/pc-text-crew-comparison-02.json
 ```
 
-Current local trace core SHA-256 is
+The font/readiness build used trace core SHA-256
 `303d494ecbb28a900d3732fc772e292b3a4fa271036f9c2cdf214f60698776e2`;
 trace header SHA-256 is
 `e42c666bad4102220c158506fc27329d8d49ec21f84f9021d5f9cdc7b9d34869`.
 The unchanged source baseline remains
 `57edbd309eb2ab6264b70188c3a85408fbcfa8c62e83b8c7b9c39b7309f61ac6`.
+
+
+The subsequent [original crew-message integration](pc-audio-research.md#fully-displayed-original-crew-messages-2026-09-27)
+adds assignment identity, complete prefix/suffix grouping, and live incoming-hit
+and damage coverage. Its updated native core fingerprints and acceptance
+receipts supersede the font/readiness build pins above. Displayed radio coverage
+remains open.

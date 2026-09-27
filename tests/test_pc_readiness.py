@@ -77,7 +77,7 @@ class ReadinessTests(unittest.TestCase):
         session.collector.paired_video=lambda _video: visible(10 if core.frame<3 else 11)
         session.step(3)
         packet=session.drain_audio();events=packet['events']
-        self.assertEqual(packet['schema'],2)
+        self.assertEqual(packet['schema'],3)
         self.assertEqual([(e['id'],e['frame'],e['kind']) for e in events],
                          [(1,1,'reload_complete'),(2,3,'readiness_visible')])
         self.assertEqual(events[1]['completion_frame'],1)

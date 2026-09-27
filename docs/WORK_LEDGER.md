@@ -688,6 +688,57 @@ crew/radio/bearing dialogue, human listening, end-to-end display/audio-device
 latency and the wider remaster remain open. The existing loader sample is the
 Gemini 3.1 fallback; this work made no additional generation/network request.
 
+## Original visible crew dialogue, 2026-09-27
+
+Recovered once-only identity at the original crew-message setters and coupled it
+to complete source-pixel-verified prefix/suffix display. Original simulation and
+rendering still execute unchanged. Queued text cannot become a caption or voice
+before all parts appear together. The public bridge audio envelope is schema 3.
+
+Fourteen new dry Gemini 3.8 Flash TTS performances are installed: five observed
+hit bearings and nine damage reports. Orus is the authored voice for original
+portrait index 3, whose named role is not yet recovered. Bearing words are spoken
+one digit at a time, including zeroes; captions retain the original numerals.
+The first transcription's separated numeric formatting failed the strict word
+gate. A separate blinded phonetic question recovered all five correct literal
+three-word sequences. Both checks and generated WAV hashes are retained. Nine
+damage lines passed the first transcription. Human listening remains open.
+
+Verification performed by the implementing assistant:
+
+* `pc-crew-comparison-01.json`: all fourteen checks pass. Every one of 8,576
+  original RAM/video/input/queued-message records equals the untouched baseline.
+  Seventeen assignments yield sixteen complete visible reports and sixteen
+  once-only voice events from fourteen assets. Repeated 041 reports remain
+  distinct. The never-fully-visible COAX-destroyed assignment remains silent.
+* `pc-crew-crop-verification-01.json`: all 28 saved PNG prefix/suffix crops match
+  their independently recalculated RGB hashes. The incoming 043 frame was viewed.
+* `pc-crew-native-01/report.json`: 8,576 original frames through native Godot,
+  sixteen actual generated stream starts matching the parity trace, fourteen
+  voices, zero errors, original END transition and child exit 0.
+* `pc-crew-lifecycle-01/report.json`: all eleven checks, 7,267 identical frames,
+  52 stage states and identical original program boundaries.
+* `validation-20260927T112933Z/results.txt`: all eighteen stages, 181 Python tests
+  and 150 Godot audio assertions. The later reusable number-classifier test is
+  separately covered in `pc-crew-python-final-01.log`: all 182 Python tests pass.
+* `pc-crew-regression-native-01/report.json`: the prior 1,712-frame native
+  firing/loader/motor/gate fixture still passes, with 3,426 loop checks, three
+  visible-readiness receipts (two audible), zero errors and child exit 0.
+
+The first synthetic grouping test had the suffix rectangle six pixels too far
+left. Actual source capture established x=190 for the 24-character prefix; the
+fixture was corrected without weakening the grouping check. Failed logs remain.
+The current new trace header is `97798516834b2cfd97f00458f6fbf5743df17e593d569964f15cc3f7ef63a2b8`;
+core `9c63ca3140bc5063767da0a5b3e8ec9a6e4a5cd92d18d445b699b39739dbaaee`.
+
+No mixed game recording, guest-memory edit, push, upload of proprietary files or
+publication occurred. Authored scripts went to Google for the requested TTS;
+generated samples went back for blinded QA. The mission snapshot's disk-dependent
+debrief outcome is outside this fixture. Radio entry points have source evidence
+but no observed live radio message yet. Full bearing/dialogue coverage, listening
+and mix approval, physical audio/display timing and the broader remaster remain
+open. This milestone does not close the parent goal.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -716,7 +767,7 @@ Gemini 3.1 fallback; this work made no additional generation/network request.
    native music containers are preserved. The 68-entry native archive is verified.
    Nine generative range voices are installed, with unchanged cues/caption words.
    Original-event cannon, smoke and visible-readiness calls now reuse three
-   selected takes in the opt-in tandem audio pilot; F5 and pause retain authority. Engine and turret
+   selected takes in the opt-in tandem audio pilot; F5 and pause retain authority. Fourteen additional Gemini 3.8 takes now cover sixteen fully displayed original hit/damage reports in the bounded incoming-fire trace, with source-message identities preventing repeats and hidden-text disclosure. Engine and turret
    loops now follow original interpreter state, including the turret release tail.
    Automated transcription matched the selected set after a revised 3.8 readiness
    take and a 3.1 fallback for the one-word loader call. Rejected takes are retained.

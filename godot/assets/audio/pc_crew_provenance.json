@@ -1,0 +1,409 @@
+{
+  "scope": "Bounded original PC crew portrait index 3. Orus is an authored casting choice, not a recovered named role. Exact displayed messages from the local source trace; full PC dialogue coverage remains open.",
+  "status": "Automated wording and digit delivery checked; human listening review pending",
+  "script_sha256": "87bc5c4953da6aa94bd4870f6d620f7528cd85c0c93de5c4a51136cae9052546",
+  "voices": {
+    "pc_hit_zero_four_three": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "We've been hit! Bearing 043",
+      "performed_text": "We've been hit! Bearing zero four three",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 68160,
+      "duration_seconds": 2.84,
+      "sha256": "8036a0af9c198a7087bd41cfd1642884f963d7c9a7fc256abfa36b7f869f3e1b",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_hit_zero_four_three.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "We've been hit, bearing 0 4 3.",
+        "expected": "We've been hit! Bearing zero four three",
+        "normalized_match": false,
+        "audio_sha256": "8036a0af9c198a7087bd41cfd1642884f963d7c9a7fc256abfa36b7f869f3e1b"
+      },
+      "number_delivery_qa": {
+        "number_delivery": "individual_digits",
+        "spoken_number_words": [
+          "zero",
+          "four",
+          "three"
+        ],
+        "expected_number_words": [
+          "zero",
+          "four",
+          "three"
+        ],
+        "audio_sha256": "8036a0af9c198a7087bd41cfd1642884f963d7c9a7fc256abfa36b7f869f3e1b",
+        "match": true
+      }
+    },
+    "pc_hit_zero_four_one": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "We've been hit! Bearing 041",
+      "performed_text": "We've been hit! Bearing zero four one",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 65280,
+      "duration_seconds": 2.72,
+      "sha256": "b29e32ecd34cd5c940f337c2cdd68cf68875bd21e97617cc30f73b77981ac2a6",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_hit_zero_four_one.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "We've been hit, bearing 0 4 1.",
+        "expected": "We've been hit! Bearing zero four one",
+        "normalized_match": false,
+        "audio_sha256": "b29e32ecd34cd5c940f337c2cdd68cf68875bd21e97617cc30f73b77981ac2a6"
+      },
+      "number_delivery_qa": {
+        "number_delivery": "individual_digits",
+        "spoken_number_words": [
+          "zero",
+          "four",
+          "one"
+        ],
+        "expected_number_words": [
+          "zero",
+          "four",
+          "one"
+        ],
+        "audio_sha256": "b29e32ecd34cd5c940f337c2cdd68cf68875bd21e97617cc30f73b77981ac2a6",
+        "match": true
+      }
+    },
+    "pc_hit_one_three_seven": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "We've been hit! Bearing 137",
+      "performed_text": "We've been hit! Bearing one three seven",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 59520,
+      "duration_seconds": 2.48,
+      "sha256": "7645f6f303daa2fb730a450724a4696fa9c6c90f472f4c46bd24c3b4e7d2d616",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_hit_one_three_seven.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "We've been hit, bearing 1 3 7.",
+        "expected": "We've been hit! Bearing one three seven",
+        "normalized_match": false,
+        "audio_sha256": "7645f6f303daa2fb730a450724a4696fa9c6c90f472f4c46bd24c3b4e7d2d616"
+      },
+      "number_delivery_qa": {
+        "number_delivery": "individual_digits",
+        "spoken_number_words": [
+          "one",
+          "three",
+          "seven"
+        ],
+        "expected_number_words": [
+          "one",
+          "three",
+          "seven"
+        ],
+        "audio_sha256": "7645f6f303daa2fb730a450724a4696fa9c6c90f472f4c46bd24c3b4e7d2d616",
+        "match": true
+      }
+    },
+    "pc_main_gun_damaged": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "Main Gun damaged",
+      "performed_text": "Main Gun damaged",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 36480,
+      "duration_seconds": 1.52,
+      "sha256": "4ccab38211248368812dcb64da10c47c7ff1d6a71d6ce65e54e8ce59ae4867a3",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_main_gun_damaged.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Main gun damaged.",
+        "expected": "Main Gun damaged",
+        "normalized_match": true,
+        "audio_sha256": "4ccab38211248368812dcb64da10c47c7ff1d6a71d6ce65e54e8ce59ae4867a3"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_main_gun_destroyed": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "Main Gun destroyed",
+      "performed_text": "Main Gun destroyed",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 45120,
+      "duration_seconds": 1.88,
+      "sha256": "eed8c5d289094f19a85f228cd480b31ce91cfaa815d794e70c7f9c7004ba184b",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_main_gun_destroyed.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Main gun destroyed.",
+        "expected": "Main Gun destroyed",
+        "normalized_match": true,
+        "audio_sha256": "eed8c5d289094f19a85f228cd480b31ce91cfaa815d794e70c7f9c7004ba184b"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_hit_one_four_zero": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "We've been hit! Bearing 140",
+      "performed_text": "We've been hit! Bearing one four zero",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 72000,
+      "duration_seconds": 3.0,
+      "sha256": "e5ed26e63ac2fd59eca3bc2a3a1d1449ea3e539d68df714b87b24fabd760bf7e",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_hit_one_four_zero.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "We've been hit, bearing 1 4 0.",
+        "expected": "We've been hit! Bearing one four zero",
+        "normalized_match": false,
+        "audio_sha256": "e5ed26e63ac2fd59eca3bc2a3a1d1449ea3e539d68df714b87b24fabd760bf7e"
+      },
+      "number_delivery_qa": {
+        "number_delivery": "individual_digits",
+        "spoken_number_words": [
+          "one",
+          "four",
+          "zero"
+        ],
+        "expected_number_words": [
+          "one",
+          "four",
+          "zero"
+        ],
+        "audio_sha256": "e5ed26e63ac2fd59eca3bc2a3a1d1449ea3e539d68df714b87b24fabd760bf7e",
+        "match": true
+      }
+    },
+    "pc_ballistic_computer_damaged": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "Ballistic Computer damaged",
+      "performed_text": "Ballistic Computer damaged",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 48000,
+      "duration_seconds": 2.0,
+      "sha256": "2617bd979231dc62fcfe1cb09438a052b80b22c55f2ec6e1db0abb8ee20a01ec",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_ballistic_computer_damaged.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Ballistic computer damaged.",
+        "expected": "Ballistic Computer damaged",
+        "normalized_match": true,
+        "audio_sha256": "2617bd979231dc62fcfe1cb09438a052b80b22c55f2ec6e1db0abb8ee20a01ec"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_halon_damaged": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "Halon damaged",
+      "performed_text": "Halon damaged",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 35520,
+      "duration_seconds": 1.48,
+      "sha256": "7ae0b7767bd80f9cc5f319e3eb82702a874e5a6f2ed7fb3cd8d47a653a7e3c78",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_halon_damaged.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Halon damaged.",
+        "expected": "Halon damaged",
+        "normalized_match": true,
+        "audio_sha256": "7ae0b7767bd80f9cc5f319e3eb82702a874e5a6f2ed7fb3cd8d47a653a7e3c78"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_turret_motors_damaged": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "Turret Motors damaged",
+      "performed_text": "Turret Motors damaged",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 42240,
+      "duration_seconds": 1.76,
+      "sha256": "709b0e3b49217415e094b8267c9793b16813ebea0def00a4475b7069edbc0455",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_turret_motors_damaged.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Turret motors damaged.",
+        "expected": "Turret Motors damaged",
+        "normalized_match": true,
+        "audio_sha256": "709b0e3b49217415e094b8267c9793b16813ebea0def00a4475b7069edbc0455"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_coax_machine_gun_damaged": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "COAX machine gun damaged",
+      "performed_text": "COAX machine gun damaged",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 48000,
+      "duration_seconds": 2.0,
+      "sha256": "9d410c3dbe44baa1b21768c4c0d2c6183946ba44927e5b93ecd1d27a5f4bb8cf",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_coax_machine_gun_damaged.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Coax machine gun damaged.",
+        "expected": "COAX machine gun damaged",
+        "normalized_match": true,
+        "audio_sha256": "9d410c3dbe44baa1b21768c4c0d2c6183946ba44927e5b93ecd1d27a5f4bb8cf"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_hit_zero_four_zero": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "We've been hit! Bearing 040",
+      "performed_text": "We've been hit! Bearing zero four zero",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 69120,
+      "duration_seconds": 2.88,
+      "sha256": "6a78e2110cb83978ebb554f15f49609001e861d4b309b5d332e34197e8557d4b",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_hit_zero_four_zero.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "We've been hit, bearing 0 4 0.",
+        "expected": "We've been hit! Bearing zero four zero",
+        "normalized_match": false,
+        "audio_sha256": "6a78e2110cb83978ebb554f15f49609001e861d4b309b5d332e34197e8557d4b"
+      },
+      "number_delivery_qa": {
+        "number_delivery": "individual_digits",
+        "spoken_number_words": [
+          "zero",
+          "four",
+          "zero"
+        ],
+        "expected_number_words": [
+          "zero",
+          "four",
+          "zero"
+        ],
+        "audio_sha256": "6a78e2110cb83978ebb554f15f49609001e861d4b309b5d332e34197e8557d4b",
+        "match": true
+      }
+    },
+    "pc_halon_destroyed": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "Halon destroyed",
+      "performed_text": "Halon destroyed",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 43200,
+      "duration_seconds": 1.8,
+      "sha256": "aa2a7e6d01d910808be3ed234a55533a13131e2b7f0450a385de44f44aa1b30f",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_halon_destroyed.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Halon destroyed.",
+        "expected": "Halon destroyed",
+        "normalized_match": true,
+        "audio_sha256": "aa2a7e6d01d910808be3ed234a55533a13131e2b7f0450a385de44f44aa1b30f"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_turret_motors_destroyed": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "Turret Motors destroyed",
+      "performed_text": "Turret Motors destroyed",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 47040,
+      "duration_seconds": 1.96,
+      "sha256": "5a4a05fb2e37294e27c1eb1d7638aaf3a1d17c58cf5c24c634c8c9e9f16ee588",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_turret_motors_destroyed.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Turret motors destroyed.",
+        "expected": "Turret Motors destroyed",
+        "normalized_match": true,
+        "audio_sha256": "5a4a05fb2e37294e27c1eb1d7638aaf3a1d17c58cf5c24c634c8c9e9f16ee588"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_radio_equipment_damaged": {
+      "role": "pc_crew_3",
+      "voice": "Orus",
+      "text": "Radio Equipment damaged",
+      "performed_text": "Radio Equipment damaged",
+      "direction": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise. An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 48960,
+      "duration_seconds": 2.04,
+      "sha256": "4cef8c66f30e19a61d742ab014822a102659b4757800377871ce40f71595c01e",
+      "source_master": "local-audio/pc-crew-gemini-3.8-v1/voice_pc_radio_equipment_damaged.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Radio equipment damaged.",
+        "expected": "Radio Equipment damaged",
+        "normalized_match": true,
+        "audio_sha256": "4cef8c66f30e19a61d742ab014822a102659b4757800377871ce40f71595c01e"
+      },
+      "number_delivery_qa": null
+    }
+  },
+  "qa_inputs": [
+    {
+      "path": "local-audio/pc-crew-gemini-3.8-v1/qa-first/transcription-check.json",
+      "sha256": "1aa14ed8e7820bbd2de4a2f4e9cf0a1732eddeff0fe10e64ef581c5caff4df47"
+    },
+    {
+      "path": "local-audio/pc-crew-gemini-3.8-v1/qa-bearing-delivery/number-delivery-check.json",
+      "sha256": "3e905290ca626689e4c16e36c078b9a15cf0b168e487bef958c6acbc1702d91b"
+    }
+  ]
+}

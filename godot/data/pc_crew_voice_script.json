@@ -1,0 +1,123 @@
+{
+  "scope": "Bounded original PC crew portrait index 3. Orus is an authored casting choice, not a recovered named role. Exact displayed messages from the local source trace; full PC dialogue coverage remains open.",
+  "roles": {
+    "pc_crew_3": {
+      "voice": "Orus",
+      "style": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise."
+    }
+  },
+  "cues": {
+    "pc_hit_zero_four_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 043",
+      "text": "We've been hit! Bearing 043",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 2369,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_hit_zero_four_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 041",
+      "text": "We've been hit! Bearing 041",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 3133,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_hit_one_three_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 137",
+      "text": "We've been hit! Bearing 137",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 5863,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_main_gun_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Main Gun damaged",
+      "text": "Main Gun damaged",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 6207,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_main_gun_destroyed": {
+      "role": "pc_crew_3",
+      "caption": "Main Gun destroyed",
+      "text": "Main Gun destroyed",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 6486,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_hit_one_four_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 140",
+      "text": "We've been hit! Bearing 140",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 6600,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_ballistic_computer_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Ballistic Computer damaged",
+      "text": "Ballistic Computer damaged",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 6699,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_halon_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Halon damaged",
+      "text": "Halon damaged",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 7048,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_turret_motors_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Turret Motors damaged",
+      "text": "Turret Motors damaged",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 7237,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_coax_machine_gun_damaged": {
+      "role": "pc_crew_3",
+      "caption": "COAX machine gun damaged",
+      "text": "COAX machine gun damaged",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 7262,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_hit_zero_four_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 040",
+      "text": "We've been hit! Bearing 040",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 7313,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_halon_destroyed": {
+      "role": "pc_crew_3",
+      "caption": "Halon destroyed",
+      "text": "Halon destroyed",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 7447,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_turret_motors_destroyed": {
+      "role": "pc_crew_3",
+      "caption": "Turret Motors destroyed",
+      "text": "Turret Motors destroyed",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 7830,
+      "reference_capture": "pc-dialogue-scout-01"
+    },
+    "pc_radio_equipment_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Radio Equipment damaged",
+      "text": "Radio Equipment damaged",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises.",
+      "reference_frame": 8028,
+      "reference_capture": "pc-dialogue-scout-01"
+    }
+  }
+}

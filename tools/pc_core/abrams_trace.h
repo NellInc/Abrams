@@ -140,11 +140,23 @@ static INLINE void AbramsTraceInstruction() {
         && ip != 0x3707 && ip != 0x36c8 && ip != 0x8b49 && ip != 0x28e4 && ip != 0x0347
         && ip != 0x1170 && ip != 0x123a && ip != 0x1226 && ip != 0x1238 && ip != 0x1a7c
         && ip != 0x9107 && ip != 0x8da3 && ip != 0x35ee && ip != 0x91d6
-        && ip != 0x020a && ip != 0x0259) return;
+        && ip != 0x020a && ip != 0x0259
+        && ip != 0x3d0c && ip != 0x3d6a && ip != 0x3d8e && ip != 0x3db0 && ip != 0x3dd2
+        && ip != 0x3c90 && ip != 0x3cd4 && ip != 0x3f73) return;
     if (SegValue(ds) != abrams_trace_load + 0x19e0) return;
     Bit32u segment = SegValue(cs), event = 0, start = 0, length = 0;
     const Bit32u base = SegPhys(ds);
     if (base + 65536 > 640 * 1024) return;
+    if (segment == abrams_trace_load && (ip == 0x3d0c || ip == 0x3d6a || ip == 0x3d8e ||
+        ip == 0x3db0 || ip == 0x3dd2 || ip == 0x3c90 || ip == 0x3cd4 || ip == 0x3f73)) {
+        // Completed crew assignment, queued radio assignment, or the original
+        // radio-open store. Observation never implies that the words are visible.
+        const Bit16u regs[12] = {reg_ax, reg_bx, reg_cx, reg_dx, reg_si, reg_di,
+            reg_bp, reg_sp, SegValue(cs), SegValue(ds), SegValue(es), SegValue(ss)};
+        MEM_BlockRead(0, abrams_trace_snapshot, sizeof(abrams_trace_snapshot));
+        abrams_trace_callback(28, regs, abrams_trace_snapshot, ip, sizeof(abrams_trace_snapshot));
+        return;
+    }
     if (segment == abrams_trace_load + 0x0f8d && (ip == 0x020a || ip == 0x0259)) {
         const Bit16u regs[12] = {reg_ax, reg_bx, reg_cx, reg_dx, reg_si, reg_di,
             reg_bp, reg_sp, SegValue(cs), SegValue(ds), SegValue(es), SegValue(ss)};

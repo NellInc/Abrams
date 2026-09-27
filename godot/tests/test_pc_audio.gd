@@ -13,7 +13,7 @@ func sound(id: int, frame: int, sample: String = "cannon", enabled: bool = true,
 		"voice":"on_the_way" if sample == "cannon" else null, "enabled":enabled}
 
 func packet(frame: int, id: int, events: Array, enabled: bool = true, epoch: int = 1) -> Dictionary:
-	return {"schema":2, "frame":frame, "epoch":epoch, "last_id":id,
+	return {"schema":3, "frame":frame, "epoch":epoch, "last_id":id,
 		"active":true, "enabled":enabled, "events":events}
 
 func readiness(id: int, frame: int, enabled: bool = true) -> Dictionary:
@@ -27,6 +27,14 @@ func loops(engine_on: bool = true, turret_on: bool = false) -> Dictionary:
 		"amplitude":3,"idle_period":0x4584,"amplitude_reference":3},
 		"turret":{"active":turret_on,"channel":2,"ticks":20,"program":0xc4c,"period":8500,
 		"amplitude":3,"idle_period":8500,"amplitude_reference":3}}
+
+func crew(id: int, frame: int, assignment: int = 1) -> Dictionary:
+	return {"kind":"crew_visible","sample":null,"voice":"pc_hit_zero_four_three",
+		"ip":0x3d6a,"return_ip":0,"value":0,"backend":0,"enabled":true,"epoch":1,
+		"id":id,"frame":frame,"message_id":assignment,"speaker":3,
+		"text":"We've been hit! Bearing 043","parts":[
+			{"rect":[46,112,144,6],"draw_sequence":1,"source_pointer":0x95d,"pixel_sha256":"a".repeat(64)},
+			{"rect":[190,112,18,6],"draw_sequence":2,"source_pointer":0x6472,"pixel_sha256":"b".repeat(64)}]}
 
 func _initialize() -> void: run.call_deferred()
 
@@ -139,6 +147,49 @@ func run() -> void:
 		check(await bad.drain_for_shutdown(),"loader "+mode+" drain")
 		bad.queue_free()
 		await process_frame
+	var crew_audio := PcAudio.new()
+	root.add_child(crew_audio)
+	var hit := packet(10,1,[crew(1,10)])
+	check(crew_audio.apply_audio(JSON.parse_string(JSON.stringify(hit))),"visible crew JSON envelope")
+	check(crew_audio.voice.playing and crew_audio.last_voice == "pc_hit_zero_four_three","actual digit-bearing sample starts")
+	check(crew_audio.cursor == 0,"crew is voice-only")
+	check(crew_audio.apply_audio(hit) and crew_audio.delivered == 1,"same crew envelope never replays")
+	check(crew_audio.apply_audio(packet(11,2,[crew(2,11,2)])) and crew_audio.delivered == 2,"repeated identical report has new original identity")
+	check(crew_audio.apply_audio(packet(12,3,[crew(3,12,3)],false)) and not crew_audio.voice.playing,"original mute suppresses crew")
+	check(crew_audio.apply_audio(packet(30,4,[crew(4,20,4)])) and crew_audio.delivered == 2,"diagnostic batch never speaks stale crew backlog")
+	check(await crew_audio.drain_for_shutdown(),"crew playback drain")
+	crew_audio.queue_free()
+	await process_frame
+	for mode in ["identity","speaker","caption","voice","ip","parts","hash","rect","fraction","effect","duplicate"]:
+		var bad := PcAudio.new()
+		root.add_child(bad)
+		var event := crew(1,10)
+		match mode:
+			"identity": event.message_id = 0
+			"speaker": event.speaker = 1
+			"caption": event.text = "We've been hit! Bearing 040"
+			"voice": event.voice = "hit"
+			"ip": event.ip = 0x3d0c
+			"parts": event.parts.pop_back()
+			"hash": event.parts[0].pixel_sha256 = "z".repeat(64)
+			"rect": event.parts[1].rect[0] = 189
+			"fraction": event.parts[0].draw_sequence = 1.5
+			"effect": event.sample = "impact"
+			"duplicate":
+				check(bad.apply_audio(packet(9,1,[crew(1,9)])),"duplicate crew setup")
+				event.id = 2
+		check(not bad.apply_audio(packet(10,int(event.id),[event])),"crew "+mode+" rejected")
+		check(await bad.drain_for_shutdown(),"crew "+mode+" drain")
+		bad.queue_free()
+		await process_frame
+	var pc_script: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_crew_voice_script.json"))
+	var pc_receipt: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio/pc_crew_provenance.json"))
+	for cue in pc_script.cues:
+		var stream := load("res://assets/audio/voice_%s.wav" % cue) as AudioStreamWAV
+		var entry: Dictionary = pc_receipt.voices[cue]
+		check(stream != null and stream.mix_rate == int(entry.sample_rate) and not stream.stereo and not stream.data.is_empty(),"crew imported format "+cue)
+		check(absf(stream.get_length()-float(entry.duration_seconds)) < 0.001,"crew imported duration "+cue)
+		check(entry.text == pc_script.cues[cue].caption and entry.generator == "gemini-3.8-flash-tts","crew caption/provider "+cue)
 	print("PC_AUDIO: %d checks, %d failures" % [checks,failures.size()])
 	for failure in failures: printerr(failure)
 	quit(0 if failures.is_empty() else 1)

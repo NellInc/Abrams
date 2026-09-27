@@ -21,6 +21,7 @@ try:
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from tools.pc_audio_events import AudioEvents
     from tools.pc_text_trace import TextRuns
+    from tools.pc_message_events import visible_messages
     from tools.pc_plate_trace import PlateLoads, PLATE_IDS
 except ModuleNotFoundError:
     from pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
@@ -30,6 +31,7 @@ except ModuleNotFoundError:
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from pc_audio_events import AudioEvents
     from pc_text_trace import TextRuns
+    from pc_message_events import visible_messages
     from pc_plate_trace import PlateLoads, PLATE_IDS
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -77,6 +79,9 @@ class Collector:
                 self.observe_video(event, offset, raw, registers)
                 return
             regs = dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'), registers[:12]))
+            if event == 28:
+                self.text.messages.observe(raw, regs, offset)
+                return
             if event == 26:
                 self.text.begin(raw, regs)
                 return
@@ -304,7 +309,7 @@ class Collector:
                                         (frame or {}).get('palette_rgb'))
             metadata = {k:v for k,v in (frame or {}).items() if k != '_text_candidates'}
             self.presented = {**(metadata or {'draw_pass': None, 'reason': 'unobserved framebuffer'}),
-                'text_runs': visible,
+                'text_runs': visible, 'messages': visible_messages(visible),
                 'buffer_slot': slot_or_page, 'video_sha256': hashlib.sha256(raw).hexdigest(),
                 'width': width, 'height': height}
 

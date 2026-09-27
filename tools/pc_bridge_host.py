@@ -84,6 +84,8 @@ def main():
                 raise ValueError("Rebuild the local trace core for original audio-event support")
             if manifest.get("text_event_schema") != 1:
                 raise ValueError("Rebuild the local trace core for original visible-text support")
+            if manifest.get("message_event_schema") != 1:
+                raise ValueError("Rebuild the local trace core for original message identity support")
             pin, source_pin = manifest["trace_sha256"], manifest["baseline_sha256"]
             args.core = ROOT / ".runtime/pc-core/abrams-trace.dylib"
         core = PcReferenceCore(args.core, args.content, args.saves, expected_sha256=pin)

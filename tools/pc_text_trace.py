@@ -8,8 +8,10 @@ import hashlib
 import struct
 try:
     from tools.pc_fonts import FONT_NAMES, loaded_font, text_pixels
+    from tools.pc_message_events import MessageAssignments
 except ModuleNotFoundError:
     from pc_fonts import FONT_NAMES, loaded_font, text_pixels
+    from pc_message_events import MessageAssignments
 
 CALLERS = {0x3F1D: 'crew_primary', 0x3F58: 'crew_secondary',
            0x400D: 'radio', 0x55DF: 'weapon_status'}
@@ -21,6 +23,7 @@ class TextRuns:
         self.pages = {}
         self.pending = None
         self.sequence = 0
+        self.messages = MessageAssignments()
         self.counts = Counter()
 
     def begin(self, ram, regs):
@@ -59,9 +62,11 @@ class TextRuns:
                     'font_sha256':font['sha256'],'font_sources':font['sources'],
                     'foreground':foreground,'background':background,'transparent':bool(mode),
                     'speaker':ram[ds+0x6464] if caller in (0x3F1D,0x3F58) else None}
+            self.messages.bind(item,text)
             self.pending = (key,(item,ink))
-        except ValueError:
+        except ValueError as error:
             self.counts['unsupported_entries'] += 1
+            self.counts['unsupported: '+str(error)] += 1
 
     def finish(self, raw):
         if self.pending is None: raise ValueError('native text return without entry')

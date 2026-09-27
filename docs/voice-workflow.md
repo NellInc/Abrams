@@ -85,9 +85,53 @@ final mixes remain separate unfinished parts of the remaster.
 
 ## Original PC tandem use
 
-The opt-in `PC Bridge.command --audio` pilot reuses only “On the way!” at the
+The opt-in `PC Bridge.command --audio` pilot reuses “On the way!” at the
 original accepted cannon request and “Smoke out.” at the original smoke request.
 It does not borrow training-range outcomes or interpret “Good hit” as an incoming
-hit. The loader call is withheld pending original readiness-display timing.
+hit. The loader says “Up!” after an original reload and a strictly newer,
+pixel-verified READY display, with mute, freshness and duplicate safeguards.
 All bearing calls still require digit-wise speech with numeric captions.
 See [original audio research](pc-audio-research.md) for the live event boundary.
+
+
+## Original PC crew catalogue
+
+`godot/data/pc_crew_voice_script.json` is the bounded PC-source catalogue, separate
+from the calibration-range script. Fourteen Gemini 3.8 takes use Orus for original
+portrait index 3: five observed hit bearings and nine damage reports. The named
+crew role is unknown; the cast is authored. Native dry WAV masters remain in
+`local-audio/pc-crew-gemini-3.8-v1`, installed unchanged beside the range clips.
+Their receipt is `godot/assets/audio/pc_crew_provenance.json`.
+
+The first blinded transcription matched all nine damage lines. Its five bearing
+transcripts used separated numerals such as `0 4 3`, despite asking for literal
+spoken words. That first check correctly failed the strict word-form gate.
+A separate blinded number-delivery question then classified all five clips as
+individual digits and returned each literal three-word sequence, including
+leading zeroes. Both responses and audio hashes are retained. Numeric text alone
+never establishes digit-by-digit delivery. The offline installer requires either
+matching literal words, or the separated-digit transcript plus the independently
+matching phonetic classification. Whole-number transcripts remain rejected.
+
+`tools/check_crew_transcripts.py` sends only fingerprinted generated WAVs, neutral
+clip IDs and a generic transcription/classification question. Expected words,
+cue identifiers and reference game files are withheld. No original recording,
+ROM or game binary is sent. `--number-delivery --cue <cue>` selects the second
+question when needed. Each call uses a fresh output directory and never retries
+a paid request automatically. The API shape follows Google's
+[audio documentation](https://ai.google.dev/gemini-api/docs/audio).
+
+```sh
+python3 tools/generate_crew_voice.py \
+  --script godot/data/pc_crew_voice_script.json --output local-audio/pc-crew-new
+python3 tools/check_crew_transcripts.py --directory local-audio/pc-crew-new \
+  --output local-audio/pc-crew-new/qa-first
+# After the separately selected bearing classification, verify/install offline:
+python3 tools/install_pc_crew_voice.py --source local-audio/pc-crew-new --dry-run
+python3 tools/install_pc_crew_voice.py --source local-audio/pc-crew-new
+```
+
+Working if: installed bytes match generated hashes, numeric captions remain
+unchanged, and live voices start once per fully displayed original assignment.
+These checks passed for the observed set. Automated wording and native playback
+proof do not establish human performance approval or all-PC-dialogue coverage.

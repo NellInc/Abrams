@@ -14,8 +14,9 @@ simulation. Original F5 sound-off and pause stop effects and voices. Closing the
 viewer drains Godot playback and gracefully closes its own PC helper.
 
 This is partial sound coverage. Engine/turret loops now follow their original
-sound channels. Radio, warning sounds, original message-driven dialogue,
-broader readiness coverage, briefings and music remain.
+sound channels. Fourteen generated takes cover five observed incoming-hit
+bearings and nine damage reports, triggered by fully visible original messages.
+Radio, warning sounds, wider crew/readiness coverage, briefings and music remain.
 Final mix and human listening approval are also open.
 
 ## Original code boundary
@@ -53,9 +54,9 @@ The initial firing probe directly exercises cannon, coax and smoke. The later
 native motor probe also exercises impact request 6 from return IP 74e5. Other
 impact and menu mappings retain callsite evidence without live acoustic coverage. Unknown requests are retained in diagnostics and stay silent. No “Good
 hit”, training-range completion, or ready-to-move line is borrowed for an
-unrelated PC event. Incoming-hit speech will use the original displayed bearing
-and digit-wise pronunciation, including leading zeroes, after its visibility
-boundary is established.
+unrelated PC event. The bounded incoming-hit set now uses the original displayed
+bearing with digit-wise pronunciation, including leading zeroes. See the
+message-identity and source-frame gate below.
 
 Main-gun routine 3376 checks subsystem condition, loading state and remaining
 ammunition before reaching 33c1. Coax routine 3298 similarly checks ammunition
@@ -64,10 +65,11 @@ Consequently a key press alone never triggers remastered firing audio.
 
 ## Transport and playback
 
-Protocol 4 carries an `audio` envelope, now schema 2 for visible-readiness events.
+Protocol 4 carries an `audio` envelope, now schema 3 for visible-readiness and crew-message events.
 The native sound-event layout is unchanged. The tracing build manifest
 advertises `audio_event_schema: 1`; the live host refuses an older local tracing
-build with a rebuild instruction and also requires `text_event_schema: 1`.
+build with a rebuild instruction and also requires `text_event_schema: 1` and
+`message_event_schema: 1`.
 Protocol 2 remains the silent historical
 static-view backend.
 
@@ -345,4 +347,97 @@ python3 tools/verify_pc_readiness.py \
   --output artifacts/pc-readiness-comparison-02.json
 ./tools/godot.sh --script res://tests/test_pc_audio_bridge.gd -- \
   --output "$PWD/artifacts/pc-readiness-native-03"
+```
+
+
+## Fully displayed original crew messages, 2026-09-27
+
+Original message assignment and visible text drawing are separate boundaries.
+A read-only native event 28 observes the completed setters at main CS:3d0c,
+3d6a, 3d8e, 3db0 and 3dd2. Its payload is the same twelve-register snapshot and
+640 KiB conventional RAM used by the existing text observer. Original near-call
+code, registers, RAM and timing remain unchanged. Local disassembly is retained
+as `artifacts/pc-message-original-disassembly-01.txt`.
+
+Main DS:094c holds the crew prefix pointer, 646a the optional suffix pointer,
+and 6464 the portrait index. Every assignment receives a new identity, including
+repeated identical reports. Each subsequently verified text draw can bind only
+to the exact current pointer, bytes, portrait and part of that assignment.
+The frozen scanout candidates retain that identity. A public `messages` item
+requires every part in one presented frame, matching page, style, portrait and
+adjacent source rectangles. Queued words alone never appear in the public packet.
+Working if: different assignments cannot combine prefix/suffix parts, and hidden
+queued text never produces a presentation message or voice.
+
+`CrewBarks` consumes each newly displayed crew identity once per SIM epoch.
+Only portrait 3, exact catalogue text, and source assignment 3d6a (hit bearing)
+or 3dd2 (damage) qualify. The derived `crew_visible` event carries the identity,
+original IP, caption, and each part's original rectangle, draw sequence, pointer
+and pixel hash. Numeric captions stay original. New text replaces any playing
+voice; no spoken backlog is queued. Muted appearances are consumed silently,
+old page contents never replay, and the existing six-frame delivery freshness,
+original sound gate and program-epoch safeguards still apply. Godot validates
+the complete schema-3 envelope before playback, including the voice/caption
+catalogue and both visible source parts.
+
+Fourteen dry Gemini 3.8 Flash TTS masters are installed in the opt-in audio pilot:
+five observed bearings (043, 041, 137, 140, 040) and nine system-damage reports.
+Orus is an authored casting choice for original portrait index 3; the character's
+named role has not been recovered. Full performances speak each bearing digit,
+including zeroes. `pc_crew_provenance.json` retains WAV hashes, scripts, model,
+voice, duration and automated QA evidence. Human listening/mix approval remains
+open. Details are in [the voice workflow](voice-workflow.md).
+
+### Evidence and limits
+
+* `pc-crew-comparison-01.json`: all 14 checks pass. All 8,576 original RAM, video,
+  input and queued-dialogue records equal the untouched source baseline.
+  Seventeen assignments produce sixteen fully visible reports and exactly
+  sixteen voice events from fourteen distinct clips. The 041 report occurs at
+  three different original assignments. Assignment 15, “COAX machine gun
+  destroyed”, never completely appears and never speaks.
+* `pc-crew-crop-verification-01.json`: all 28 prefix/suffix rectangles from fourteen
+  independently saved source PNGs match their runtime RGB hashes. The incoming
+  043 source frame was also visually inspected.
+* `pc-crew-native-01/report.json`: actual native Godot and original-PC child,
+  8,576 frames, sixteen once-only AudioStreamPlayer starts using the fourteen
+  generated streams, matching the parity-tested source-frame receipts. Original
+  END transition, zero errors, child exit 0. No gameplay audio was recorded.
+* `pc-crew-lifecycle-01/report.json`: all eleven lifecycle checks pass, including
+  7,267 identical RAM/video/input frames, 52 stage states and program boundaries.
+* `validation-20260927T112933Z/results.txt`: all eighteen stages pass, 181 Python
+  tests and 150 Godot audio assertions. A subsequent number-classification QA
+  test is covered by `pc-crew-python-final-01.log`: all 182 Python tests pass.
+* `pc-crew-regression-native-01/report.json`: existing native 1,712-frame
+  firing, loader, motor, F5 and pause route passes with 3,426 loop checks, three
+  readiness receipts (two audible), zero errors and child exit 0.
+
+The implementing assistant reviewed these changes and reran the actual checks.
+The dialogue route's RAM-only mission snapshot is not proof of matching
+filesystem-dependent debrief outcomes. The separate neutral-START lifecycle
+fixture covers bounded quit/reentry, not all mission outcomes. Radio queue/open
+IPs 3c90, 3cd4 and 3f73 are observed by the hook, but this route queued no radio
+messages despite ordinary R-key pulses. Live radio speech remains unimplemented.
+The text gate omitted 133 calls under its existing colors-or-blank-run rejection;
+this evidence does not distinguish those two reasons. Physical audio/display
+latency, full bearing coverage and complete dialogue coverage remain open.
+
+Current core SHA-256:
+`9c63ca3140bc5063767da0a5b3e8ec9a6e4a5cd92d18d445b699b39739dbaaee`.
+Trace header:
+`97798516834b2cfd97f00458f6fbf5743df17e593d569964f15cc3f7ef63a2b8`.
+Unmodified source baseline:
+`57edbd309eb2ab6264b70188c3a85408fbcfa8c62e83b8c7b9c39b7309f61ac6`.
+
+```sh
+python3 tools/capture_pc_dialogue.py --mode trace \
+  --state artifacts/pc-source-boot-01/mission-entry/reference.state \
+  --output artifacts/pc-crew-trace-new
+python3 tools/verify_pc_dialogue.py \
+  --trace artifacts/pc-crew-trace-new/report.json \
+  --baseline artifacts/pc-dialogue-baseline-01/report.json \
+  --output artifacts/pc-crew-comparison-new.json
+./tools/godot.sh --script res://tests/test_pc_crew_bridge.gd -- \
+  --reference "$PWD/artifacts/pc-crew-trace-new/report.json" \
+  --output "$PWD/artifacts/pc-crew-native-new"
 ```
