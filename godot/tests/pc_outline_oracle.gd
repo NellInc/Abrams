@@ -5,7 +5,7 @@ var cache := {}
 
 func load_sources(root_path: String) -> void:
 	faces.clear();cache.clear()
-	var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(root_path.path_join("local-art/pc-outline-fonts-v1/manifest.json")))
+	var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(root_path.path_join("local-art/pc-outline-fonts-v2/manifest.json")))
 	for face in data.faces:
 		faces[face.source_sha256]=face
 
@@ -13,7 +13,7 @@ func classification(sha: String, code: int, p: Vector2, scale: Vector2) -> int:
 	var key:="%s:%d:%s:%s"%[sha,code,str(p),str(scale)]
 	if cache.has(key): return cache[key]
 	var polygons: Array=faces[sha].glyphs[code-32].contours
-	var inside:=false
+	var winding:=0
 	var distance:=INF
 	for polygon in polygons:
 		for i in polygon.size():
@@ -23,8 +23,8 @@ func classification(sha: String, code: int, p: Vector2, scale: Vector2) -> int:
 			var delta:=(p-a)*scale
 			var amount:=clampf(delta.dot(edge)/maxf(edge.length_squared(),0.00001),0,1)
 			distance=minf(distance,(delta-edge*amount).length())
-			if (a.y>p.y)!=(b.y>p.y) and p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x: inside=not inside
-	var result:= -1 if distance<0.8 else int(inside)
+			if (a.y>p.y)!=(b.y>p.y) and p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x: winding+=1 if b.y>a.y else -1
+	var result:= -1 if distance<0.8 else int(winding!=0)
 	cache[key]=result
 	return result
 

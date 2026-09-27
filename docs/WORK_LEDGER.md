@@ -30,6 +30,36 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Optical typeface refinement, 2026-09-28
+
+Nell requested a second beautification pass to regularize thicknesses and angles.
+The four-face v2 pack optically shapes 203 alphanumeric glyphs with shared stroke,
+bowl and bevel geometry. Technical strokes are one source unit; bold vertical
+stems are two units with one-unit horizontal bars. Related bowl cuts are 45
+degrees and stencil slits are 0.75 units. Original fixed advances, distinctive
+forms and source recognition remain. The previous local bitmap stair decisions
+no longer constrain authored alphanumeric joins. Symbols and already rectilinear
+serif forms retain their earlier contours.
+
+This is a rendering-only change to existing bindings: credits, David "Ming"
+Kenny's dedication, briefing/debriefing, cockpit readouts, arming and supported
+information text. The PC still owns content and timing. Generated fonts stay in
+ignored local art; original sources and the five unrelated untracked vehicle
+study files are untouched. No new dependency, publication or push was needed.
+
+Proof: `validation-20260927T230059Z/results.txt` has 28 passing stages including
+220 Python tests. Six native suites cover all glyphs at five scales and the
+integrated screens, with zero errors. Exact counts and current manifest hash are
+in `pc-text-research.md`. Three actual launcher captures (credit, briefing and
+dedication) match those native fixtures byte-for-byte, recorded in
+`artifacts/pc-font-beauty-launcher-receipt-01.json`. The same-scale comparison is
+`artifacts/pc-font-beauty-recap-01/credits-before-after.png`.
+
+The assistant authored and visually reviewed these shapes. Nell's stylistic
+acceptance remains separate. The optional Impeccable linter is unavailable;
+native Godot checks provide rendered evidence. This completed local typography
+pass does not close the broader remaster goal or imply full gameplay parity.
+
 ## High-resolution original-style typefaces, 2026-09-27
 
 Nell supplied the DIRECTOR / DAMON SLYE credit screenshot and requested the very

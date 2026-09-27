@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Reconstruct local scalable outline faces from the four original PC fonts.
 
-Integer cells, ink islands, stencil cuts and fixed advances are retained.
-Only alternating one-cell boundary stairs become straight diagonals; serif
-corners are protected. This is a new outline reconstruction, not a substitute
-commercial font or a claim that the original vector masters were recovered.
+Fixed cells and original character identity are retained. Authored centre lines
+regularize alphanumeric stroke weights, bevels, bowls and stencil gaps. Source
+serifs and symbols retain their traced contours. These are optical reconstructions
+of the supplied bitmap designs, not recovered original vector masters.
 """
 import argparse
 import hashlib
@@ -13,6 +13,7 @@ from pathlib import Path
 from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from tools.pc_fonts import decode_font
+from tools.pc_font_optical import shape
 
 ROOT=Path(__file__).resolve().parents[1]
 PINS={
@@ -77,6 +78,8 @@ def point_in_polygon(p,poly):
 def glyph_contours(font,code,name):
     bits=font['glyphs'][code-font['first']]
     original=contours(bits,font['width'],font['height'])
+    optical=shape(font,code,name)
+    if optical is not None:return optical,optical!=original
     result=[simplify(poly,name.removesuffix('.FNT'),code) for poly in original]
     for i,ink in enumerate(bits):
         values=[point_in_polygon((i%font['width']+.5,i//font['width']+.5),poly) for poly in result]
@@ -102,14 +105,15 @@ def build_face(path,output):
         glyph=pen.glyph();key=f'uni{code:04X}';glyphs[key]=glyph
         if glyph.numberOfContours:glyph.recalcBounds(None)
         metrics[key]=(round(w/h*UNITS),glyph.xMin if glyph.numberOfContours else 0)
-        entries.append({'code':code,'contours':polygons,'redrawn':changed})
+        entries.append({'code':code,'contours':polygons,'redrawn':changed,
+                        'optically_shaped':shape(font,code,name) is not None})
     fb=FontBuilder(UNITS,isTTF=True);fb.setupGlyphOrder(order)
     fb.setupCharacterMap({i:f'uni{i:04X}' for i in range(32,127)})
     fb.setupGlyf(glyphs);fb.setupHorizontalMetrics(metrics)
     fb.setupHorizontalHeader(ascent=UNITS,descent=0,lineGap=0)
     fb.setupOS2(sTypoAscender=UNITS,sTypoDescender=0,sTypoLineGap=0,usWinAscent=UNITS,usWinDescent=0)
     family='Abrams Remaster '+path.stem
-    fb.setupNameTable({'familyName':family,'styleName':'Regular','uniqueFontIdentifier':family+' v1',
+    fb.setupNameTable({'familyName':family,'styleName':'Regular','uniqueFontIdentifier':family+' v2',
                       'fullName':family,'psName':family.replace(' ','-'),
                       'copyright':'Local derivative of supplied original game font. Redistribution rights unestablished.'})
     fb.setupPost(isFixedPitch=1);fb.setupMaxp()
@@ -118,7 +122,8 @@ def build_face(path,output):
     output.mkdir(parents=True,exist_ok=True);filename=path.stem.lower()+'.ttf';fb.save(output/filename)
     return {'source':name,'source_sha256':PINS[name],'file':filename,
             'sha256':hashlib.sha256((output/filename).read_bytes()).hexdigest(),
-            'cell':[w,h],'glyphs':entries,'redrawn_glyphs':sum(e['redrawn'] for e in entries)}
+            'cell':[w,h],'glyphs':entries,'redrawn_glyphs':sum(e['redrawn'] for e in entries),
+            'optically_shaped_glyphs':sum(e['optically_shaped'] for e in entries)}
 
 
 def main():
@@ -126,7 +131,7 @@ def main():
     if any(args.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ['GAME','GENESIS']):p.error('output must be outside source directories')
     args.output.mkdir(parents=True,exist_ok=False)
     faces=[build_face(ROOT/'GAME'/name,args.output) for name in PINS]
-    data={'schema':1,'units_per_em':UNITS,'faces':faces,'scope':__doc__}
+    data={'schema':2,'units_per_em':UNITS,'faces':faces,'fill_rule':'nonzero','scope':__doc__}
     path=args.output/'manifest.json';path.write_text(json.dumps(data,indent=2)+'\n')
     print('Four original-style outline faces;',sum(f['redrawn_glyphs'] for f in faces),'contour-redrawn glyphs;',hashlib.sha256(path.read_bytes()).hexdigest())
 

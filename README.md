@@ -35,6 +35,7 @@ music and sound-effect references for a faithful presentation upgrade.
   Its final credit screen dedicates the remaster to David "Ming" Kenny.
   Credits, briefings and 81 verified information-page text runs share those
   original-style outlines, preserving their wording, spacing and colours.
+  Optical shaping regularizes letter weights, diagonal joins and stencil gaps.
   The publisher splash and moving 3D menu backdrop remain original.
   Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
   `--pc-colours` to keep the new cockpit materials with original world colours.

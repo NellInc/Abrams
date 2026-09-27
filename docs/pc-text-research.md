@@ -7,7 +7,77 @@ four original faces after a second, independent Godot source-pixel check. The so
 remain available with `--original-text`. The READY-specific loader voice gate
 is described in `pc-audio-research.md`.
 
-## High-resolution original-style outlines, 2026-09-27
+## Optical refinement, 2026-09-28
+
+Nell requested more regular thicknesses and angles after reviewing the first
+outline pass. `tools/pc_font_optical.py` now supplies authored centre-line geometry
+for 203 alphanumeric glyphs across the four faces. Shared bowl, shoulder, stroke
+and bevel construction replaces the local pixel-corner decisions that produced
+pinched joins and thin diagonal strokes. The bold faces retain two-unit vertical
+stems and one-unit bars; the technical faces use one-unit strokes. Related bowl
+corners share 45-degree cuts. Stencil openings use consistent 0.75-unit slits.
+Measurements are in the original glyph-cell coordinate space.
+
+The source's fixed advance, cap/ascender/descender bounds, slab serifs, squared
+technical Y, distinctive technical 4/7 and slashed 8X8 zero remain. Already
+rectilinear serif forms and unmodified symbols retain their earlier contours.
+All 380 glyph/face combinations remain present, with identical source aliases.
+The runtime bindings, colours, original text verification and game logic are
+unchanged. This pack replaces the font shapes in the same previously verified
+credit, memorial, office, cockpit, arming and information-page cells.
+
+The original bitmap-centre equality requirement remains for unshaped glyphs and
+for source recognition. Optical shaping deliberately relaxes it for the 203
+authored glyphs; enforcing it there would preserve the irregularities Nell asked
+to remove. New binary-level checks measure D/O stems and bars, related bowl
+angles, stencil gaps, diagonal weight, counters, bounds and fixed advances.
+The native oracle uses TrueType's nonzero winding rule for joined strokes and
+counter contours, independently of Godot's font rasterizer.
+
+Working if: related glyphs have measured consistent stems and bevels, stencil
+gaps and counters remain open, and native text still fits every verified original
+cell without changing protected pixels or displayed wording.
+
+The selected pack is `local-art/pc-outline-fonts-v2/manifest.json`, SHA-256
+`3d87b1ade72efd6f975895e10d16b1082d49f6eec6a6776da85c1d1091d6f574`.
+Generate with the existing Python FontTools dependency into a fresh directory:
+
+```sh
+python3 -m tools.build_pc_outline_fonts --output local-art/pc-outline-fonts-v2
+```
+
+The v1 pack remains available for comparison. Development studies are under
+`artifacts/pc-font-beauty-study-01/`. The first binary check exposed float
+round-trip noise, then a redundant closing vertex removed by the TTF writer.
+The check now compares exact integer design units, and contour normalization
+removes duplicate vertices before both metadata and binary serialization.
+These were representation defects; neither was accepted as a passing check.
+
+Selected-pack evidence:
+
+* `validation-20260927T230059Z/results.txt`: all 28 repository stages passed,
+  including 220 Python tests, preservation and runtime smoke checks.
+* `pc-font-beauty-native-02/report.json`: 4,765,809 checks, zero errors, four
+  faces at five scales plus cockpit fixtures.
+* Native intro, office, arming, information and cockpit reports under
+  `pc-font-beauty-{intro,office,arming,information,cockpits}-01`: respectively
+  2,840,243; 8,148,962; 1,068,308; 17,760,849; and 12,371,692 checks, zero errors.
+* Three actual launcher runs exited zero with no engine errors.
+  `pc-font-beauty-launcher-receipt-01.json` verifies byte-identical credit,
+  briefing and dedication PNGs against their independently checked native
+  fixtures and records the selected font-manifest hash.
+* The 8x complete glyph specimen, briefing and dedication were visually reviewed.
+  `pc-font-beauty-recap-01/credits-before-after.png` compares the two font packs
+  through the real credit renderer at the same scale, spacing and colours.
+
+The assistant authored the refinements and performed their visual review.
+Stylistic acceptance remains Nell's. Original supplied files and derivative-font
+redistribution boundaries are unchanged; the optional Impeccable linter is absent.
+
+## First outline pass, 2026-09-27 (superseded shapes)
+
+This section records the earlier v1 construction and its evidence. Coverage and
+source recognition remain current; the optical v2 pack above supplies the shapes.
 
 Nell's credit-card screenshot clarified that literal enlargement of the bitmap
 stair-steps was insufficient. The current default reconstructs clean angular
@@ -47,19 +117,15 @@ Working if: diagonal edges render as outlines rather than enlarged pixel steps,
 all complete verified runs fit their original cells, every nontext pixel stays
 protected, and `--original-text` retains the source-shaped rendering.
 
-The local pack is `local-art/pc-outline-fonts-v1/manifest.json`, SHA-256
+The earlier local pack is `local-art/pc-outline-fonts-v1/manifest.json`, SHA-256
 `5301f992bf938ef537161b89bbb712d66ef7471d4c4305709008787634dd8a6b`.
-The loader verifies this manifest, every original FNT and every TTF payload.
-Generation uses the already available Python FontTools package:
-
-```sh
-python3 -m tools.build_pc_outline_fonts --output local-art/pc-outline-fonts-v1
-```
+Its generator is preserved in commit `5d98bc3`. The loader verifies the selected
+pack's manifest, every original FNT and every TTF payload.
 
 Use a fresh output directory when rebuilding; generated fonts and catalogs stay
 ignored local derivatives. No redistribution permission is implied.
 
-Current evidence (the bitmap-only evidence below is historical):
+First-pass evidence:
 
 * `tests/test_pc_outline_fonts.py`: deterministic TTF bytes, actual TTF contour
   coordinates, advances, 21,660 original cell centres, bounds and aliases.
