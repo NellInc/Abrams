@@ -21,12 +21,14 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.inspect_shapes import inspect_shapes, primitive_vertices
     from tools.pc_render_state import static_faces_for_state
+    from tools.pc_render_trace import Collector
 except ModuleNotFoundError:
     from pc_reference_core import PcReferenceCore, CORE_SHA256, KEYS
     from pc_live_state import SimStateReader
     from inspect_scenarios import decode_resource
     from inspect_shapes import inspect_shapes, primitive_vertices
     from pc_render_state import static_faces_for_state
+    from pc_render_trace import Collector
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -56,6 +58,7 @@ def main():
     p.add_argument("--state", type=Path, required=True)
     p.add_argument("--saves", type=Path, required=True)
     p.add_argument("--core", type=Path, default=ROOT / ".runtime/pc-core/dosbox_pure_libretro.dylib")
+    p.add_argument("--backend", choices=["reference", "trace"], default="reference")
     p.add_argument("--content", type=Path, default=ROOT / ".runtime/pc-core/abrams-ref.zip")
     args = p.parse_args()
     # Core printf/log output must never corrupt the JSON channel.
@@ -65,30 +68,46 @@ def main():
     shape_bytes = decode_resource((ROOT / "GAME/SHAPE.TBL").read_bytes())
     shapes = inspect_shapes(shape_bytes)["shapes"]
     core = None
+    collector = None
 
     def send(message):
         output.write(json.dumps(message, separators=(",", ":")) + "\n")
 
     try:
-        core = PcReferenceCore(args.core, args.content, args.saves)
+        pin, source_pin = CORE_SHA256, CORE_SHA256
+        if args.backend == "trace":
+            manifest = json.loads((ROOT / ".runtime/pc-core/abrams-trace.json").read_text())
+            if manifest.get("schema") != 2:
+                raise ValueError("trace backend requires the scanout-aware source build")
+            pin, source_pin = manifest["trace_sha256"], manifest["baseline_sha256"]
+            args.core = ROOT / ".runtime/pc-core/abrams-trace.dylib"
+        core = PcReferenceCore(args.core, args.content, args.saves, expected_sha256=pin)
         core.run(240)
-        core.restore(args.state)
+        core.restore(args.state, expected_source_sha256=source_pin)
         core.run(1)  # documented stale-native-framebuffer priming step
+        if args.backend == "trace":
+            state = reader.read(core.conventional_memory())
+            if state is None: raise ValueError("trace backend requires the original SIM")
+            collector = Collector(reader, history_limit=2)
+            collector.attach(core, state["load_segment"])
         core.run(1)  # first paired state/video sample
         sequence = 0
 
         def packet(kind, request_id):
             state = reader.read(core.last_video_ram)
-            if state is not None:
+            if state is not None and collector is None:
                 state["render_static_faces"] = static_faces_for_state(state, shapes)
             image = io.BytesIO()
             core.screenshot().save(image, format="PNG")
-            return {"type": kind, "id": request_id, "sequence": sequence,
+            result = {"type": kind, "id": request_id, "sequence": sequence,
                     "state": state, "png": base64.b64encode(image.getvalue()).decode("ascii"),
                     "fps": core.pause_at_frame_end().timing.fps}
+            if collector:
+                result["presentation"] = collector.paired_video(core.last_video)
+            return result
 
         ready = packet("ready", -1)
-        ready.update({"protocol": 2, "core_sha256": CORE_SHA256,
+        ready.update({"protocol": 3 if collector else 2, "backend": args.backend, "core_sha256": pin,
                       "startup_frames_after_restore": 2,
                       "sampling": "paired completed VGA boundary; original drawing may lag simulation"})
         if ready["state"] is None:
@@ -100,9 +119,10 @@ def main():
             raise ValueError("supplied SHAPE.TBL does not match the running original")
         # Geometry remains local. The per-frame mask selects original roots and
         # static faces; unresolved dynamic/opaque drawing is not substituted.
-        ready["static_wire_geometry"] = {
-            str(shape["index"]): {str(p["offset"]): primitive_vertices(shape, p) for p in shape["primitives"]}
-            for shape in shapes[:127]}
+        if collector is None:
+            ready["static_wire_geometry"] = {
+                str(shape["index"]): {str(p["offset"]): primitive_vertices(shape, p) for p in shape["primitives"]}
+                for shape in shapes[:127]}
         send(ready)
         while True:
             line = sys.stdin.readline(8193)
@@ -124,6 +144,7 @@ def main():
         raise
     finally:
         if core:
+            if collector: collector.detach(core)
             core.close()
         output.close()
 

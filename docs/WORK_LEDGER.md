@@ -260,6 +260,41 @@ passed after separating dynamic allocation from the static arithmetic shortcut.
 The optional Impeccable linter remains unavailable; native Godot rendering and
 projection checks provide the applicable visual evidence here.
 
+## Live source renderer and EGA scanout attribution
+
+The optional `PC Bridge.command --trace` viewer now renders observed static and
+dynamic original geometry live. Protocol 3 carries a drawing pass attributed to
+the original scanned EGA page and the exact submitted host framebuffer slot.
+The default nightly/static bridge remains intact. The extracted collector has
+bounded live history; sprite/opaque commands are explicitly counted rather than
+inheriting stale previous-object matrices. Startup/unsafe page associations clear
+the Godot geometry instead of substituting another pass.
+
+The 180-frame source-baseline comparison still has zero original RAM/video/input
+mismatches. Of 175 paired presentations, 152 lag the newest completed original
+draw pass, confirming that newest-pass selection would be incorrect. All 5,341
+observed original vertices retain exact cache agreement. Native process-pipe
+integration passes the existing controls/movement/braking/turn/fire checks and
+renders vehicle polygons; native side-by-side capture was inspected by its author.
+
+A subsequent 1,167-frame profile matches source baseline and trace in every
+RAM/video/input record and every decoded end-of-stage state. All four crew
+stations, driving, braking, turning, firing and world rebasing pass ten explicit
+checks. There are 261 original draw passes, 34,444 exact vertex-cache checks and
+33,551 Godot projection checks (maximum 0.003906 source pixels). Seven sprite-root
+draws remain unsupported and explicitly recorded. See
+`pc-scanout-controls-comparison-01.json` and `pc-scanout-controls-projection-01.log`.
+The default nightly bridge separately retains passing live integration evidence.
+
+Eleven aggregate validation stages and 102 Python tests passed in
+`validation-20260927T003103Z`. Source-build anchor and mistyped hash failures were rejected by existing guards,
+retained and corrected without weakening the checks. Full scope, source hooks,
+receipts and launch instructions: `pc-render-sync-research.md`.
+
+This advances live presentation integration. Solid surfaces, original material
+patterns, clipping/opaque drawing, high-resolution replacements and the full
+mission/campaign/release outcome matrix remain open. No content was published.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -300,9 +335,9 @@ projection checks provide the applicable visual evidence here.
    bounded instruction/projection evidence; current
    snapshots are VGA-frame-boundary samples; original UI drawing may lag them.
    Calibrate real-time input/CPU pacing against the standalone reference.
-2. Recover dynamic object transforms, normal rejection, materials and opaque
-   drawing commands. The current camera/static-face bridge remains diagnostic;
-   solid occlusion and full rendering fidelity remain.
+2. Recover original material patterns, solid surfaces, clipping and opaque/sprite
+   drawing commands. Dynamic transforms now have instruction-cache evidence and
+   an optional live scanout-paired wire renderer; full rendering fidelity remains.
 3. Extend original-executable replay coverage to station/weapon modes, enemy
    state, damage, mission outcomes and campaign/persistence, one scenario at a
    time. Current bridge receipts and limitations are in `pc-live-bridge.md`.

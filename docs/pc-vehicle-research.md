@@ -158,3 +158,12 @@ the zero-angle static-transform shortcut. Its focused Godot classification check
 and repeated traced capture/projection passed; the repeated 180-frame trace still
 matches the unmodified source baseline. Captured camera metadata now identifies
 the actual drawing callback boundary, rather than labelling it a VGA snapshot.
+
+## Subsequent live integration
+
+The source-built renderer is now available in the optional `--trace` live viewer.
+Its pass attribution follows original EGA scanout through the core's three host
+framebuffer slots, rather than selecting the newest completed pass. See
+`pc-render-sync-research.md`. The former recorded-only limitation above describes
+the earlier milestone. Filled surfaces, materials and opaque/sprite commands
+remain unfinished in the current live renderer.

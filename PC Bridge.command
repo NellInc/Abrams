@@ -2,7 +2,13 @@
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$ROOT"
-for file in .runtime/pc-core/dosbox_pure_libretro.dylib .runtime/pc-core/abrams-ref.zip reference/pc-live/mission-entry/reference.state; do
+BACKEND_FILES=".runtime/pc-core/dosbox_pure_libretro.dylib reference/pc-live/mission-entry/reference.state"
+for arg in "$@"; do
+  if [ "$arg" = "--trace" ]; then
+    BACKEND_FILES=".runtime/pc-core/abrams-trace.dylib .runtime/pc-core/abrams-trace.json artifacts/pc-source-boot-01/mission-entry/reference.state"
+  fi
+done
+for file in .runtime/pc-core/abrams-ref.zip $BACKEND_FILES; do
   if [ ! -f "$file" ]; then
     printf 'Local research dependency missing: %s\nSee docs/pc-live-bridge.md.\n' "$file" >&2
     exit 1

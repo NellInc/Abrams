@@ -2,8 +2,12 @@ extends SceneTree
 ## Diagnostic native view, not an original mission renderer or finished remaster.
 const Bridge = preload("res://scripts/pc_bridge.gd")
 const WorldView = preload("res://scripts/pc_world_view.gd")
+const DrawPass = preload("res://scripts/pc_draw_pass.gd")
 const PcCamera = preload("res://scripts/pc_camera.gd")
 var world_view: Node3D
+var draw_view: Node3D
+var trace_mode := false
+var previous_presentation: Dictionary = {}
 var world_viewport: SubViewport
 var world_aspect: AspectRatioContainer
 var bridge = Bridge.new()
@@ -36,14 +40,16 @@ func _initialize() -> void:
 	auto_accept_quit = false
 	started = Time.get_ticks_msec()
 	capture = "--capture" in OS.get_cmdline_user_args()
+	trace_mode = "--trace" in OS.get_cmdline_user_args()
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
-	output = directory.path_join("artifacts/pc-bridge-viewer")
+	output = directory.path_join("artifacts/pc-trace-viewer" if trace_mode else "artifacts/pc-bridge-viewer")
 	DirAccess.make_dir_recursive_absolute(output)
 	_build_ui()
 	var python := OS.get_environment("ABRAMS_PYTHON")
 	if python.is_empty(): python = "/opt/homebrew/bin/python3"
-	bridge.start(python, directory.path_join("reference/pc-live/mission-entry/reference.state"),
-		output.path_join("saves"), output.path_join("host.log"))
+	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
+	bridge.start(python, directory.path_join(state_path), output.path_join("saves"),
+		output.path_join("host.log"), "trace" if trace_mode else "reference")
 
 func _label(text: String, size: int) -> Label:
 	var label := Label.new()
@@ -77,7 +83,7 @@ func _build_ui() -> void:
 		var column := VBoxContainer.new()
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		panels.add_child(column)
-		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else "GODOT: ORIGINAL CAMERA / STATIC FACES", 19))
+		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else ("GODOT: OBSERVED ORIGINAL DRAW PASS" if trace_mode else "GODOT: ORIGINAL CAMERA / STATIC FACES"), 19))
 		if side == 0:
 			var aspect := AspectRatioContainer.new()
 			aspect.ratio = 4.0 / 3.0
@@ -106,7 +112,7 @@ func _build_ui() -> void:
 	caption = _label("", 18)
 	stack.add_child(caption)
 	stack.add_child(_label("Arrows: original keypad controls   5: stop/brake   C: hull/turret   Space: fire   F1 to F4: stations", 18))
-	stack.add_child(_label("Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
+	stack.add_child(_label("Live original vehicle and scenery wireframes, paired by EGA scanout page. Solid surfaces, materials and unsupported sprite commands remain open." if trace_mode else "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
 
 func _build_stage(viewport: SubViewport) -> void:
 	var world := Node3D.new()
@@ -129,6 +135,9 @@ func _build_stage(viewport: SubViewport) -> void:
 	world.add_child(camera)
 	camera.look_at_from_position(Vector3(10, 8, 12), Vector3(0, 1.5, 0))
 	camera.make_current()
+	draw_view = DrawPass.new()
+	camera.add_child(draw_view)
+	world_view.visible = not trace_mode
 
 func _process(delta: float) -> bool:
 	elapsed += delta
@@ -178,15 +187,33 @@ func _apply_sample(message: Dictionary) -> void:
 	if message.has("static_wire_geometry"):
 		world_view.set_geometry(message.static_wire_geometry)
 	var position: Array = state.world_position_raw
-	world_view.apply_state(state)
-	if state.camera is Dictionary:
-		var dimensions: Vector2i = PcCamera.apply(camera, state.camera, world_view.anchor)
+	var frame = state.camera
+	if trace_mode:
+		previous_presentation = message.get("presentation", {})
+		var drawing = previous_presentation.get("draw_pass")
+		if drawing is Dictionary:
+			draw_view.apply_pass(drawing)
+			frame = drawing.camera.duplicate(true)
+			frame.matrix_q14_columns = [16384,0,0,0,16384,0,0,0,16384]
+			frame.world_position_raw = [0,0,0]
+		else:
+			draw_view.apply_pass({"objects": []})
+			frame = null
+	else:
+		world_view.apply_state(state)
+	if frame is Dictionary:
+		var dimensions: Vector2i = PcCamera.apply(camera, frame, Vector3.ZERO if trace_mode else world_view.anchor)
 		world_viewport.size = dimensions * 4
-		# A 320x200 framebuffer is displayed at 4:3, so source pixels are 1.2
-		# times taller. Keep that display stretch outside the 3D projection.
+		# Source 320x200 pixels stretch to 4:3 outside the 3D projection.
 		world_aspect.ratio = float(dimensions.x) / (float(dimensions.y) * 1.2)
 	status.text = "%s   HEADING %03d   SIGHT %03d   SPEED %d   FUEL %d" % [str(state.station).to_upper(), state.heading_degrees, state.bearing_degrees, state.speed_display, state.fuel_display]
 	caption.text = "HEAT %d   SABOT %d   AX %d   COAX %d     World: %s   Window: %s   Objects: %d" % [state.ammunition.HEAT, state.ammunition.SABOT, state.ammunition.AX, state.ammunition.COAX, str(position), str(state.world.window_origin), state.world.static.size()]
+	if trace_mode:
+		var drawing = previous_presentation.get("draw_pass")
+		if drawing is Dictionary:
+			caption.text += "\nDraw pass %d   Vehicle polygons %d   Unsupported commands %d" % [int(drawing.sequence), draw_view.dynamic_polygon_count, drawing.unsupported.size()]
+		else:
+			caption.text += "\nNo paired geometry: " + str(previous_presentation.get("reason", "awaiting scanout"))
 	previous = state
 
 func _capture() -> void:
@@ -195,7 +222,7 @@ func _capture() -> void:
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(output.path_join("paired-view.png"))
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
-	file.store_string(JSON.stringify({"state": previous, "samples": samples, "scope": "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
+	file.store_string(JSON.stringify({"state": previous, "samples": samples, "presentation": previous_presentation, "scope": "scanout-paired original draw pass; solid surfaces, materials and opaque commands unresolved" if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()
 

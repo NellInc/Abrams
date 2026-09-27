@@ -11,12 +11,14 @@ var next_id := 0
 var waiting_id := -1
 var request_started := 0
 var closing := false
+var expected_protocol := 2
 
-func start(python: String, state_path: String, save_path: String, log_path: String) -> bool:
+func start(python: String, state_path: String, save_path: String, log_path: String, backend: String = "reference") -> bool:
 	var project_root := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	log_file = FileAccess.open(log_path, FileAccess.WRITE)
+	expected_protocol = 3 if backend == "trace" else 2
 	process = OS.execute_with_pipe(python, ["-u", project_root.path_join("tools/pc_bridge_host.py"),
-		"--state", state_path, "--saves", save_path], false)
+		"--state", state_path, "--saves", save_path, "--backend", backend], false)
 	if process.is_empty():
 		failure = "Could not start the local PC core host."
 		return false
@@ -65,7 +67,7 @@ func poll() -> Array[Dictionary]:
 		if value.get("type") not in ["ready", "sample"] or int(value.get("id", -2)) != waiting_id:
 			failure = "Unexpected PC bridge response sequence."
 			break
-		if value.get("type") == "ready" and int(value.get("protocol", 0)) != 2:
+		if value.get("type") == "ready" and int(value.get("protocol", 0)) != expected_protocol:
 			failure = "Unsupported original-PC bridge protocol."
 			break
 		pending = false

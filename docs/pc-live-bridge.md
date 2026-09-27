@@ -6,6 +6,13 @@ remains separate and is never instantiated by this bridge.
 
 ## What runs locally
 
+The optional `PC Bridge.command --trace` backend now includes live dynamic-vehicle
+wire geometry attributed to the original EGA scanout page and submitted host
+framebuffer. It uses a separate source-built core and compatible save state.
+The default below remains the nightly/static backend. See
+[scanout research](pc-render-sync-research.md) for the live trace contract,
+verification, unsupported-command reporting and remaining limits.
+
 `PC Bridge.command` opens a native side-by-side research view: the original PC
 framebuffer on the left, static wire geometry with the original camera and face selection on the right. Controls are forwarded as keyboard
 input to the original executable. Arrow keys map to the manual's numeric keypad.
