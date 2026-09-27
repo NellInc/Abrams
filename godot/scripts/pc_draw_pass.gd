@@ -5,6 +5,7 @@ const SurfaceGeometry = preload("res://scripts/pc_surface_geometry.gd")
 const SurfaceShader = preload("res://scripts/pc_surface.gdshader")
 const Colour = preload("res://scripts/pc_colour.gd")
 var solid_enabled := false
+var presentation_palette: Array = []
 var render_warnings: Array[String] = []
 const DISPLAY_SCALE := 64.0
 var mesh_node: MeshInstance3D
@@ -67,6 +68,7 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 		render_warnings.append("Original material/palette observation unavailable")
 		return
 	var frame: Dictionary = pass_data.camera
+	var palette: Array = presentation_palette if presentation_palette.size() == 16 else pass_data.palette_rgb
 	var vertices := PackedVector3Array()
 	var materials := PackedVector2Array()
 	var material_count: int = pass_data.materials.size()
@@ -80,10 +82,10 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 			for x in 2:
 				var word: int = int(words[0]) if y == 1 else int(words[1])
 				var value := int(words[0]) & 15 if words[0] == words[1] else (word >> (8 if x == 0 else 0)) & 15
-				var rgb: Array = pass_data.palette_rgb[value]
+				var rgb: Array = palette[value]
 				texture.set_pixel(index * 2 + x, y, Colour.input_color(rgb,compatibility))
 	for index in 16:
-		var rgb: Array = pass_data.palette_rgb[index]
+		var rgb: Array = palette[index]
 		for y in 2:
 			for x in 2:
 				texture.set_pixel((material_count + index) * 2 + x, y, Colour.input_color(rgb,compatibility))

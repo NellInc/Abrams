@@ -739,6 +739,78 @@ but no observed live radio message yet. Full bearing/dialogue coverage, listenin
 and mix approval, physical audio/display timing and the broader remaster remain
 open. This milestone does not close the parent goal.
 
+## Four-station cockpit materials and verified struts, 2026-09-27
+
+The user-approved tandem now has opt-in high-resolution material donors for all
+four original stations via `--cockpit-art`. Three new built-in imagegen outputs
+under `local-art/pc-ui-remastered/cockpit-set-v1/` join the existing gunner study.
+PC extracts control geometry; Genesis images provide style only. Original masks,
+source fingerprints and protected instrument rectangles retain live information,
+visibility, text and original modal transitions. Exact prompts and provenance
+remain local beside the ignored generated PNGs. Human art approval is open.
+
+The first integration exposed a real first-plane provenance loss on plate changes
+and missing source attribution after original STRUTS redraws. The observer now
+retains incoming known bits on origin conflict. New read-only bitmap entry/return
+observations verify the original descriptor, pixels, placement, clip and completed
+page before claiming host-only provenance. Unmapped or ambiguous draws remain
+original. No guest logic, timing, memory or original rendering was replaced.
+
+Evidence: `pc-cockpit-comparison-03.json` matches all 2,214 RAM/video/input frames
+and 21 stage states with the untouched core, covering four stations and STATUS.
+414 verified strut draws account for 551,098 source/completed pixel instances.
+`pc-cockpit-pixel-proof-03.json` checks 641,384 plate pixels independently.
+The per-bit oracle passes 4,096 operations and 20 explicit cases.
+`pc-cockpit-art-native-04/report.json` passes 2,102,889 native checks, including
+protected original pixels and high-resolution detail. Existing gunner native
+regression passes 2,309,888 RGB checks. `pc-cockpit-lifecycle-01/report.json`
+passes all eleven checks with 7,267 identical frames and 52 stage states.
+`validation-20260927T120418Z/results.txt` passes all nineteen stages, 188 Python
+tests and 150 Godot audio assertions. Actual commander cold boot and driver/cupola
+viewer captures compose the correct station material and exit cleanly.
+
+The implementing assistant also performed the source and visual review. Some
+original flat/dithered fragments, all instruments and fonts remain source
+resolution. This is material restoration with bounded replay evidence, not full
+cockpit, world-art or mission parity completion. Failed first captures and the
+corrected test expectation are retained. Current core pins, reproduction commands
+and exact boundaries are in `docs/pc-ui-art-workflow.md`. No publication occurred;
+all other open outcomes remain active.
+
+## Visual correction following Nell's review, 2026-09-27
+
+Nell flagged the EGA-looking world and mismatched gunner/driver overlays. The
+first pass's parity and pixel-protection results did not establish finished
+visual restoration. The world had retained the PC diagnostic colours, while
+static material attribution omitted the driver's procedurally redrawn assembly.
+
+The bridge now defaults to high-resolution cockpit donors with colours read
+from the actual verified Genesis CRAM extraction. `--original-art` restores the
+original diagnostic; `--pc-colours` retains new cockpit materials with PC world
+colours. This is a source-based colour pass; remastered terrain/vehicles remain
+unfinished. The gunner donor is fitted to the PC sight rows, with explicit
+texel-centre sampling. Original sight geometry and information remain unchanged.
+
+Read-only observation of original main-CS `5ba1..5da3` now attributes the fixed
+lower driver struts and turret-relative roof writes. Each qualifying pixel
+retains its original horizontal offset at scanline time. The full 527-byte
+routine matches the unpacked, relocated executable. No original simulation,
+rendering, memory or timing is replaced. The native driver view now has continuous
+materials, and the original turret control/A alignment moves them appropriately.
+
+Final observer receipts: `pc-driver-assembly-proof-03.json` matches 1,257 frames
+and 19 stages, checks 218,484 assembly pixel instances and both turn directions.
+`pc-cockpit-comparison-05.json` matches all 2,214 frames and 21 station/modal states.
+`pc-driver-assembly-lifecycle-02/report.json` passes all eleven checks, 7,267
+matching frames and 52 stage states. Gunner alignment passes 2,309,888 native RGB
+checks. `validation-20260927T124323Z/results.txt` passes all twenty stages,
+189 Python tests and 150 Godot audio assertions. Default cold boot, explicit
+original-art opt-out and the final driver/gunner native viewers exit cleanly.
+Failed test fixtures and the one-texel sampling failure are retained, diagnosed
+and repaired. Current pins, remaining limits and further native receipts are in
+`docs/pc-ui-art-workflow.md`. The same assistant implemented and reviewed this
+revision; Nell's final art approval and the full remaster remain open. Local only.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -757,8 +829,9 @@ open. This milestone does not close the parent goal.
 4. **Campaign/persistence:** original progression, scores, ranks and save format
    remain; the range's save/restore is separate developer functionality.
 5. **Visual restoration:** first four static assets complete as v1 local artwork.
-   A proven-pixel high-resolution gunner-surround pilot is now opt-in. Remaining
-   cockpit materials/instruments, recognition art, Wilson animation, in-world models, effects and all
+   Proven-pixel material donors now cover all four stations in the default
+   tandem view. Remaining cockpit trims/instruments/fonts, recognition art,
+   Wilson animation, in-world models, effects and all
    UI states remain. Preserve PC information density and four-station controls.
 6. **Audio:** final voice performances, per-event coverage, mixing/listening,
    accessibility and source/licensing records remain. Direct native extraction

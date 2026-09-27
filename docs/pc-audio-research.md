@@ -422,12 +422,14 @@ The text gate omitted 133 calls under its existing colors-or-blank-run rejection
 this evidence does not distinguish those two reasons. Physical audio/display
 latency, full bearing coverage and complete dialogue coverage remain open.
 
-Current core SHA-256:
+The crew-message milestone used core SHA-256:
 `9c63ca3140bc5063767da0a5b3e8ec9a6e4a5cd92d18d445b699b39739dbaaee`.
 Trace header:
 `97798516834b2cfd97f00458f6fbf5743df17e593d569964f15cc3f7ef63a2b8`.
 Unmodified source baseline:
 `57edbd309eb2ab6264b70188c3a85408fbcfa8c62e83b8c7b9c39b7309f61ac6`.
+The subsequent source-verified cockpit strut extension and its current pins are
+recorded in [the cockpit art workflow](pc-ui-art-workflow.md).
 
 ```sh
 python3 tools/capture_pc_dialogue.py --mode trace \

@@ -8,11 +8,13 @@
 #include <string.h>
 
 struct AbramsPlateOwnership {
-    // One common source byte per planar byte. Mixed origins are discarded
-    // conservatively rather than attributed to whichever plate was newest.
-    uint16_t origin[65536];
+    // One common source byte per planar byte. When origins differ, retain only
+    // the incoming, explicitly known bits. Other bits stay unknown; four-plane
+    // agreement is still required before a pixel can qualify.
+    // Domain 8 carries the original moving-driver draw offset in bits 17..31.
+    uint32_t origin[65536];
     uint32_t bits[65536];
-    uint16_t latch_origin;
+    uint32_t latch_origin;
     uint32_t latch_bits;
     bool valid;
 
@@ -28,15 +30,15 @@ struct AbramsPlateOwnership {
         latch_origin = origin[address];
         latch_bits = bits[address];
     }
-    static void merge(uint16_t& tag, uint32_t& selected, uint16_t other, uint32_t mask) {
+    static void merge(uint32_t& tag, uint32_t& selected, uint32_t other, uint32_t mask) {
         if (!other || !mask) return;
-        if (selected && tag != other) { tag = 0; selected = 0; return; }
+        if (selected && tag != other) selected = 0;
         tag = other;
         selected |= mask;
     }
     void write(uint32_t address, uint8_t value, unsigned mode, unsigned operation,
                unsigned rotate, uint32_t bit_mask, uint32_t plane_mask,
-               uint32_t enable_set_reset, uint32_t set_reset, uint16_t authored,
+               uint32_t enable_set_reset, uint32_t set_reset, uint32_t authored,
                uint32_t authored_bits = 0xffffffffu) {
         if (address >= 65536 || mode > 3 || operation > 3 || rotate > 7) { valid = false; return; }
         uint32_t preserve = 0xffffffffu, assign = 0;
@@ -56,7 +58,7 @@ struct AbramsPlateOwnership {
             // New direct writes (including identical/black UI) discard tags.
             assign = operation == 3 ? 0 : mask;
         }
-        uint16_t tag = 0;
+        uint32_t tag = 0;
         uint32_t selected = 0;
         merge(tag, selected, origin[address], bits[address] & ~plane_mask);
         merge(tag, selected, latch_origin, latch_bits & preserve & plane_mask);
@@ -64,23 +66,35 @@ struct AbramsPlateOwnership {
         origin[address] = tag;
         bits[address] = selected;
     }
-    void retain(uint32_t address, uint16_t before_origin, uint32_t before_bits, uint8_t preserve) {
+    void retain(uint32_t address, uint32_t before_origin, uint32_t before_bits, uint8_t preserve) {
         if (address >= 65536) { valid = false; return; }
         uint32_t keep = uint32_t(preserve) * 0x01010101u, selected = 0;
-        uint16_t tag = 0;
+        uint32_t tag = 0;
         merge(tag, selected, origin[address], bits[address] & ~keep);
         merge(tag, selected, before_origin, before_bits & keep);
         origin[address] = tag;
         bits[address] = selected;
     }
+    bool claim_bitmap(unsigned page, unsigned plate, const uint8_t* mask) {
+        if ((page != 0 && page != 8192) || plate < 1 || plate > 4 || !mask) return false;
+        for (unsigned at = 0; at < 8000; ++at) {
+            if (!mask[at]) continue;
+            uint32_t tag = uint32_t((plate << 13) | at);
+            unsigned dest = page + at;
+            if (origin[dest] != tag) bits[dest] = 0;
+            origin[dest] = tag;
+            bits[dest] |= uint32_t(mask[at]) * 0x01010101u;
+        }
+        return true;
+    }
     uint8_t pixel(uint32_t address) const {
         if (!valid || address >= 65536 * 8) return 0;
         uint32_t at = address >> 3, mask = 0x80808080u >> (address & 7);
-        uint16_t tag = origin[at];
+        uint32_t tag = origin[at];
         // Copies at a different x/y are retained internally but never mapped
         // to artwork at the wrong coordinate. 8192-byte original EGA pages.
         if ((bits[at] & mask) != mask || (tag & 8191u) != (at & 8191u) || (tag & 8191u) >= 8000) return 0;
-        return uint8_t(tag >> 13);
+        return uint8_t((tag >> 13) & 15u);
     }
 };
 #endif

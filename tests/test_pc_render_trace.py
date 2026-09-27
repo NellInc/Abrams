@@ -138,6 +138,24 @@ class RenderTraceTests(unittest.TestCase):
         c.ui_mask_slot = None
         with self.assertRaisesRegex(ValueError,'plate mask.*slots differ'): self.event(c,11,1)
 
+    def test_driver_assembly_offsets_follow_scanline_frame_and_clear(self):
+        c=self.collector();raw=bytearray(64000*3)
+        raw[0:3]=bytes((0,64,255));raw[3:6]=bytes((253,63,255))
+        self.event(c,10,0);self.event(c,19,2,bytes([255])*64000)
+        self.event(c,31,2,bytes(raw));self.event(c,11,2)
+        self.event(c,10,8192);self.event(c,19,0,bytes([255])*64000)
+        self.event(c,31,0,bytes(64000*3));self.event(c,11,0)
+        overlay=self.present(c,2)['driver_overlay']
+        self.assertEqual(overlay['source'],'SIM.EXE:5ba1..5da3')
+        self.assertEqual(Image.open(io.BytesIO(base64.b64decode(overlay['mask_png']))).tobytes(),bytes(raw))
+        self.assertIsNone(self.present(c,0)['driver_overlay'])
+        for rgb,ui in [((0,64,255),0),((0,128,255),255),((0,64,1),255),((1,0,0),255)]:
+            c=self.collector();self.event(c,10,0);self.event(c,19,0,bytes([ui])*64000)
+            bad=bytes(rgb)+bytes(64000*3-3)
+            with self.assertRaisesRegex(ValueError,'driver provenance'):self.event(c,31,0,bad)
+        c=self.collector();self.event(c,10,0)
+        with self.assertRaisesRegex(ValueError,'paired UI'):self.event(c,31,0,bytes(raw))
+
     def test_invalid_ui_mask_fails_instead_of_inventing_transparency(self):
         for raw, error in [(b'\0', 'dimensions'), (bytes([254])*64000, 'provenance')]:
             with self.subTest(error=error):

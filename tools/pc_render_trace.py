@@ -21,6 +21,8 @@ try:
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from tools.pc_audio_events import AudioEvents
     from tools.pc_text_trace import TextRuns
+    from tools.pc_strut_trace import StrutDraws
+    from tools.pc_live_state import SIM_SHA256
     from tools.pc_message_events import visible_messages
     from tools.pc_plate_trace import PlateLoads, PLATE_IDS
 except ModuleNotFoundError:
@@ -31,6 +33,8 @@ except ModuleNotFoundError:
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from pc_audio_events import AudioEvents
     from pc_text_trace import TextRuns
+    from pc_strut_trace import StrutDraws
+    from pc_live_state import SIM_SHA256
     from pc_message_events import visible_messages
     from pc_plate_trace import PlateLoads, PLATE_IDS
 
@@ -63,6 +67,8 @@ class Collector:
         self.audio = AudioEvents()
         self.text = TextRuns(ROOT / "GAME")
         self.plates = PlateLoads(ROOT / 'GAME')
+        self.struts = StrutDraws(ROOT / 'GAME', self.plates)
+        self.claim_strut = None
         self.vertices_checked = 0
         self.effects = decode_bitmaps(decode_resource((ROOT / 'GAME/EFFECTS.BMP').read_bytes()))
         self.effect_pixels_checked = 0
@@ -75,10 +81,21 @@ class Collector:
             if event == 25:
                 self.audio.observe(raw, text_sequence=self.text.sequence)
                 return
-            if event in (10, 11, 12, 19, 24):
+            if event in (10, 11, 12, 19, 24, 31):
                 self.observe_video(event, offset, raw, registers)
                 return
             regs = dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'), registers[:12]))
+            if event == 29:
+                self.struts.begin(raw, regs, offset)
+                return
+            if event == 30:
+                claim = self.struts.finish(raw, offset)
+                if claim:
+                    plate,mask = claim
+                    buffer = (C.c_uint8*len(mask)).from_buffer_copy(mask)
+                    if not self.claim_strut(offset,plate,buffer,len(mask)):
+                        raise ValueError('native strut provenance claim rejected')
+                return
             if event == 28:
                 self.text.messages.observe(raw, regs, offset)
                 return
@@ -268,6 +285,25 @@ class Collector:
                         'mask_png': base64.b64encode(png.getvalue()).decode('ascii'),
                         'mask_sha256': hashlib.sha256(raw).hexdigest(), 'ui_pixels': raw.count(255),
                         'basis': 'EGA bit provenance sampled at original scanline time'}
+        elif event == 31:
+            if slot_or_page not in range(3) or (raw and len(raw) != 64000*3):
+                raise ValueError('invalid original driver mask frame')
+            if raw and (self.ui_mask_slot != slot_or_page or len(self.scanout_ui_bits) != 64000):
+                raise ValueError('driver mask lacks paired UI provenance')
+            if any(raw[i+2] not in (0,255) or raw[i+1] > 127 or
+                   (raw[i+2] and self.scanout_ui_bits[i//3] != 255) or
+                   (not raw[i+2] and (raw[i] or raw[i+1])) for i in range(0,len(raw),3)):
+                raise ValueError('unsafe original driver provenance')
+            if self.scanout:
+                self.scanout['driver_overlay'] = None
+                if raw and any(raw[2::3]):
+                    png = io.BytesIO()
+                    Image.frombytes('RGB',(320,200),raw).save(png,format='PNG')
+                    self.scanout['driver_overlay'] = {'width':320,'height':200,
+                        'mask_png':base64.b64encode(png.getvalue()).decode('ascii'),
+                        'mask_sha256':hashlib.sha256(raw).hexdigest(),
+                        'source':'SIM.EXE:5ba1..5da3','source_sha256':SIM_SHA256,
+                        'basis':'original turret-relative driver assembly writes; per-bit offset sampled with each scanline'}
         elif event == 24:
             if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
             if raw and len(raw) != 64000: raise ValueError('unsupported plate mask dimensions')
@@ -325,6 +361,9 @@ class Collector:
 
     def attach(self, core, load_segment):
         core.pause_at_frame_end()
+        self.claim_strut = core.core.abrams_trace_claim_strut
+        self.claim_strut.argtypes = [C.c_uint,C.c_uint,C.POINTER(C.c_uint8),C.c_uint]
+        self.claim_strut.restype = C.c_bool
         core.core.abrams_trace_configure.argtypes = [C.c_uint16, CALLBACK]
         core.core.abrams_trace_configure.restype = None
         core.core.abrams_trace_configure(load_segment, self.callback)

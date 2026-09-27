@@ -20,8 +20,14 @@ static bool abrams_ui_valid = false;
 static AbramsBitmapOwnership abrams_bitmap;
 static bool abrams_bitmap_active = false;
 static Bit16u abrams_bitmap_return_ip, abrams_bitmap_return_cs;
+static bool abrams_strut_active = false, abrams_strut_claiming = false;
+static unsigned abrams_strut_page = 0;
 static AbramsPlateOwnership abrams_plates;
 static Bit8u abrams_plate_mask[320 * 200];
+static Bit8u abrams_driver_mask[320 * 200 * 3];
+static bool abrams_driver_active = false;
+static unsigned abrams_driver_page = 0;
+static Bit32u abrams_driver_tag = 0;
 static unsigned abrams_plate_id = 0;
 static bool abrams_plate_active = false;
 static Bit16u abrams_plate_return_ip, abrams_plate_return_cs;
@@ -38,12 +44,24 @@ void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
     abrams_trace_callback = callback;
     abrams_world_drawing = false;
     abrams_bitmap_active = false;
+    abrams_strut_active = abrams_strut_claiming = false;
     abrams_plate_active = false;
+    abrams_driver_active = false;
     abrams_plate_id = 0;
     abrams_plate_copy_active = false;
     abrams_text_active = false;
     abrams_ownership.reset();
     abrams_plates.reset();
+}
+
+// Claim only host provenance, during the verified original bitmap's return.
+// No guest memory, register, VGA latch, instruction or timing value is writable.
+extern "C" __attribute__((visibility("default")))
+bool abrams_trace_claim_strut(unsigned page, unsigned plate, const Bit8u* mask, unsigned length) {
+    if (!abrams_strut_claiming || page != abrams_strut_page || length != 8000 || !mask) return false;
+    for (unsigned at = 0; at < 8000; ++at) for (unsigned bit = 0; bit < 8; ++bit)
+        if ((mask[at] & (128u >> bit)) && !abrams_ownership.pixel((page + at)*8 + bit)) return false;
+    return abrams_plates.claim_bitmap(page, plate, mask);
 }
 
 extern "C" void AbramsTraceVgaRead(Bit32u address) {
@@ -55,9 +73,9 @@ extern "C" void AbramsTraceVgaRead(Bit32u address) {
 extern "C" void AbramsTraceVgaWrite(Bit32u address, Bit8u value) {
     if (!abrams_trace_callback || vga.mode != M_EGA) return;
     Bit32u before = address < 65536 ? abrams_ownership.owners[address] : 0xffffffffu;
-    Bit16u plate_before = address < 65536 ? abrams_plates.origin[address] : 0;
+    Bit32u plate_before = address < 65536 ? abrams_plates.origin[address] : 0;
     Bit32u plate_bits_before = address < 65536 ? abrams_plates.bits[address] : 0;
-    Bit16u authored = 0;
+    Bit32u authored = 0;
     Bit32u authored_bits = 0xffffffffu;
     if (abrams_plate_active && abrams_plate_id && SegValue(cs) == abrams_trace_load + 0x1388) {
         if (address < abrams_plate_begin || address >= abrams_plate_end ||
@@ -79,6 +97,11 @@ extern "C" void AbramsTraceVgaWrite(Bit32u address, Bit8u value) {
             authored_bits = abrams_plates.bits[source];
         }
     }
+    // The original driver's turret-relative roof routine contains only its
+    // two lower struts, bitmap, rectangle, roof polygons and boundary lines.
+    // Stamp actual writes, preserving all four-plane and transparent-bit rules.
+    if (abrams_driver_active && address >= abrams_driver_page && address < abrams_driver_page + 8000)
+        authored = abrams_driver_tag | (address - abrams_driver_page);
     abrams_ownership.write(address, value, vga.config.write_mode, vga.config.raster_op,
         vga.config.data_rotate, vga.config.full_bit_mask, vga.config.full_map_mask,
         ~vga.config.full_not_enable_set_reset, vga.config.full_set_reset, !abrams_world_drawing);
@@ -95,7 +118,13 @@ extern "C" void AbramsTraceRasterLine(Bit32u address, Bit32u row, Bit32u width, 
     if (width != 320 || row >= 200 || vga.mode != M_EGA) { abrams_ui_valid = false; return; }
     for (Bit32u x = 0; x < 320; ++x) {
         abrams_ui_mask[row * 320 + x] = abrams_ownership.pixel((address + x) & wrap_mask);
-        abrams_plate_mask[row * 320 + x] = abrams_plates.pixel((address + x) & wrap_mask);
+        Bit32u at = (address + x) & wrap_mask, pixel = row * 320 + x;
+        unsigned id = abrams_plates.pixel(at);
+        abrams_plate_mask[pixel] = id <= 7 ? Bit8u(id) : 0;
+        Bit32u offset = id == 8 ? (abrams_plates.origin[at >> 3] >> 17) : 0;
+        abrams_driver_mask[pixel*3] = Bit8u(offset);
+        abrams_driver_mask[pixel*3+1] = Bit8u(offset >> 8);
+        abrams_driver_mask[pixel*3+2] = id == 8 ? 255 : 0;
     }
     abrams_ui_rows[row] = true;
 }
@@ -115,6 +144,8 @@ extern "C" void AbramsTraceVideoComplete(Bit32u slot) {
     for (unsigned y = 0; y < 200; ++y) complete = complete && abrams_ui_rows[y];
     abrams_trace_callback(19, regs, complete ? abrams_ui_mask : NULL, slot, complete ? sizeof(abrams_ui_mask) : 0);
     bool plates_complete = complete && abrams_plates.valid;
+    abrams_trace_callback(31, regs, plates_complete ? abrams_driver_mask : NULL, slot,
+        plates_complete ? sizeof(abrams_driver_mask) : 0);
     abrams_trace_callback(24, regs, plates_complete ? abrams_plate_mask : NULL, slot,
         plates_complete ? sizeof(abrams_plate_mask) : 0);
     abrams_trace_callback(11, regs, NULL, slot, 0);
@@ -128,8 +159,23 @@ extern "C" void AbramsTraceVideoPresent(Bit32u slot, const Bit8u* pixels, Bit32u
 static INLINE void AbramsTraceInstruction() {
     if (!abrams_trace_callback || !abrams_trace_load) return;
     Bit32u ip = reg_eip;
-    if (abrams_bitmap_active && ip == abrams_bitmap_return_ip && SegValue(cs) == abrams_bitmap_return_cs)
+    if (abrams_bitmap_active && ip == abrams_bitmap_return_ip && SegValue(cs) == abrams_bitmap_return_cs) {
+        if (abrams_strut_active) {
+            // Read backing planes directly, preserving guest VGA latches.
+            for (unsigned at = 0; at < 64000; ++at) {
+                unsigned address = abrams_strut_page + at/8, colour = 0;
+                for (unsigned p = 0; p < 4; ++p)
+                    if (vga.mem.linear[address*4+p] & (128u >> (at&7))) colour |= 1u << p;
+                abrams_trace_snapshot[at] = Bit8u(colour);
+            }
+            const Bit16u regs[12] = {};
+            abrams_strut_claiming = true;
+            abrams_trace_callback(30, regs, abrams_trace_snapshot, abrams_strut_page, 64000);
+            abrams_strut_claiming = false;
+        }
+        abrams_strut_active = false;
         abrams_bitmap_active = false;
+    }
     if (abrams_plate_active && ip == abrams_plate_return_ip && SegValue(cs) == abrams_plate_return_cs)
         abrams_plate_active = false;
     if (abrams_plate_copy_active && ip == abrams_plate_copy_return_ip && SegValue(cs) == abrams_plate_copy_return_cs)
@@ -142,11 +188,27 @@ static INLINE void AbramsTraceInstruction() {
         && ip != 0x9107 && ip != 0x8da3 && ip != 0x35ee && ip != 0x91d6
         && ip != 0x020a && ip != 0x0259
         && ip != 0x3d0c && ip != 0x3d6a && ip != 0x3d8e && ip != 0x3db0 && ip != 0x3dd2
-        && ip != 0x3c90 && ip != 0x3cd4 && ip != 0x3f73) return;
+        && ip != 0x3c90 && ip != 0x3cd4 && ip != 0x3f73
+        && ip != 0x5ba1 && ip != 0x5c50 && ip != 0x5da3) return;
     if (SegValue(ds) != abrams_trace_load + 0x19e0) return;
     Bit32u segment = SegValue(cs), event = 0, start = 0, length = 0;
     const Bit32u base = SegPhys(ds);
     if (base + 65536 > 640 * 1024) return;
+    if (segment == abrams_trace_load && (ip == 0x5ba1 || ip == 0x5c50 || ip == 0x5da3)) {
+        abrams_driver_active = false;
+        if (ip != 0x5da3 && reg_bp >= 2 && SegPhys(ss) + reg_bp < 640 * 1024) {
+            // Lower struts are fixed to the hull; the roof then adopts its
+            // original turret-relative centre before its first drawing call.
+            int offset = ip == 0x5ba1 ? 0 : (Bit16s)mem_readw(SegPhys(ss) + reg_bp - 2) - 160;
+            unsigned page = (mem_readw(base + 0x35a8) - 0xa000u) * 16u;
+            if (offset >= -16384 && offset < 16384 && (page == 0 || page == 8192)) {
+                abrams_driver_page = page;
+                abrams_driver_tag = (Bit32u(offset + 16384) << 17) | (8u << 13);
+                abrams_driver_active = true;
+            }
+        }
+        return;
+    }
     if (segment == abrams_trace_load && (ip == 0x3d0c || ip == 0x3d6a || ip == 0x3d8e ||
         ip == 0x3db0 || ip == 0x3dd2 || ip == 0x3c90 || ip == 0x3cd4 || ip == 0x3f73)) {
         // Completed crew assignment, queued radio assignment, or the original
@@ -330,6 +392,18 @@ static INLINE void AbramsTraceInstruction() {
         abrams_bitmap_return_ip = mem_readw(stack);
         abrams_bitmap_return_cs = mem_readw(stack + 2);
         abrams_bitmap_active = true;
+        abrams_strut_active = false;
+        unsigned table = mem_readw(base + 0x798e);
+        if (!abrams_driver_active && table && table + 14 <= 65536) for (unsigned index = 0; index < 7; ++index) {
+            if (base + mem_readw(base + table + index*2) != descriptor) continue;
+            const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,reg_bp,reg_sp,
+                SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+            abrams_strut_page = page;
+            abrams_strut_active = true;
+            MEM_BlockRead(0, abrams_trace_snapshot, sizeof(abrams_trace_snapshot));
+            abrams_trace_callback(29, regs, abrams_trace_snapshot, index, sizeof(abrams_trace_snapshot));
+            break;
+        }
         return;
     }
     if (segment == abrams_trace_load) {

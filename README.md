@@ -12,18 +12,24 @@ music and sound-effect references for a faithful presentation upgrade.
   It cold-boots the original menus, briefings and missions, using the ignored
   local tracing core and content ZIP. Mission exit and reentry stay in the
   original game. Its Godot view shows
-  original solid geometry, EGA materials, live vehicles and bitmap effects beneath
-  the original cockpit/HUD. The cockpit is still source-resolution artwork.
-  Add `--wire` for its wireframe diagnostic. `--trace` retains the old mission
+  original solid geometry, live vehicles and bitmap effects with high-resolution
+  cockpit material donors and a colour study drawn from the extracted Genesis
+  palette. Original PC instruments, map, text and visibility remain authoritative.
+  The driver's overhead assembly follows its original turret-relative drawing.
+  Terrain and vehicle models still need their visual remaster.
+  Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
+  `--pc-colours` to keep the new cockpit materials with original world colours.
+  `--gunner-art` selects the earlier gunner-only pilot. `--cockpit-art` explicitly
+  selects the default four-station pass. Missing local assets or provenance
+  retain the original. See `docs/pc-ui-art-workflow.md` for coverage and limits.
+  Add `--wire` for the wireframe diagnostic. `--trace` retains the old mission
   snapshot probe; `--reference` selects the older static research backend.
   See `docs/pc-live-bridge.md` for controls, snapshot limits and lifecycle evidence.
-  Add `--gunner-art` for the local high-resolution gunner-surround pilot. It uses
-  verified surviving plate pixels above the instruments; all instruments and the
-  original sight geometry stay unchanged. Missing art/provenance falls back to
-  the original. See `docs/pc-ui-art-workflow.md` for its restricted scope.
   Add `--audio` for original-event sample playback and generated firing/smoke
   crew calls, plus engine and turret loops driven by original sound channels.
   The loader says “Up!” once a completed reload has a verified visible READY label.
+  Fourteen additional generated takes cover the observed hit-bearing and damage
+  reports, gated on complete original displayed messages. Bearings speak by digit.
   F5 and original pause mute them. Remaining dialogue and music are unfinished;
   see `docs/pc-audio-research.md`.
 * Alternatively import `godot/project.godot` in Godot 4 and run the main scene.

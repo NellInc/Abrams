@@ -15,6 +15,9 @@ var trace_mode := false
 var boot_mode := false
 var wire_mode := false
 var gunner_art_requested := false
+var cockpit_art_requested := false
+var genesis_style = preload("res://scripts/pc_genesis_style.gd").new()
+var genesis_colours_requested := false
 var previous_presentation: Dictionary = {}
 var world_viewport: SubViewport
 var world_aspect: AspectRatioContainer
@@ -50,8 +53,11 @@ func _initialize() -> void:
 	boot_mode = "--boot" in args or ("--trace" not in args and "--reference" not in args)
 	trace_mode = boot_mode or "--trace" in OS.get_cmdline_user_args()
 	wire_mode = "--wire" in OS.get_cmdline_user_args()
-	gunner_art_requested = "--gunner-art" in args
+	cockpit_art_requested = "--cockpit-art" in args or (trace_mode and "--original-art" not in args and "--gunner-art" not in args and not wire_mode)
+	gunner_art_requested = "--gunner-art" in args or cockpit_art_requested
+	genesis_colours_requested = (cockpit_art_requested or "--genesis-colours" in args) and "--pc-colours" not in args
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	if genesis_colours_requested: genesis_style.load_palette(directory.path_join("reference/genesis/extracted/gunner/palette.gpl"))
 	output = directory.path_join("artifacts/pc-boot-viewer" if boot_mode else ("artifacts/pc-trace-viewer" if trace_mode else "artifacts/pc-bridge-viewer"))
 	if "--output" in args and args.find("--output")+1 < args.size(): output = args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
@@ -62,6 +68,11 @@ func _initialize() -> void:
 	if trace_mode and gunner_art_requested:
 		var art_path := directory.path_join("local-art/pc-ui-remastered/gunner-plate-v2.png")
 		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
+	if trace_mode and cockpit_art_requested:
+		for id in [2,3,4]:
+			var filename: String = {2:"commander",3:"cupola",4:"driver"}[id]+"-plate-v1.png"
+			var path := directory.path_join("local-art/pc-ui-remastered/cockpit-set-v1/"+filename)
+			if FileAccess.file_exists(path): tandem_frame.set_cockpit_art(id,Image.load_from_file(path))
 	var python := OS.get_environment("ABRAMS_PYTHON")
 	if python.is_empty(): python = "/opt/homebrew/bin/python3"
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
@@ -69,6 +80,16 @@ func _initialize() -> void:
 		output.path_join("host.log"), "trace" if trace_mode else "reference")
 	if boot_mode and capture:
 		auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_boot_steps.json"))
+
+	if capture and "--capture-station" in args:
+		var station_arg := args.find("--capture-station")+1
+		var station: String = args[station_arg] if station_arg < args.size() else ""
+		var key: String = {"gunner":"f1","commander":"f2","cupola":"f3","driver":"f4"}.get(station,"")
+		if key.is_empty():
+			bridge.failure = "Unsupported capture station"
+		else:
+			if not boot_mode: auto_steps = [[3,["f2"]],[300,[]]]
+			auto_steps.append_array([[3,[key]],[300,[]]])
 
 func _label(text: String, size: int) -> Label:
 	var label := Label.new()
@@ -102,7 +123,7 @@ func _build_ui() -> void:
 		var column := VBoxContainer.new()
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		panels.add_child(column)
-		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else (("GODOT WORLD / ORIGINAL COCKPIT" if not wire_mode else "GODOT WIREFRAME / ORIGINAL COCKPIT") if trace_mode else "GODOT: ORIGINAL CAMERA / STATIC FACES"), 19))
+		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else (("GODOT / REMASTERED COCKPIT" if cockpit_art_requested else "GODOT WORLD / ORIGINAL COCKPIT" if not wire_mode else "GODOT WIREFRAME / ORIGINAL COCKPIT") if trace_mode else "GODOT: ORIGINAL CAMERA / STATIC FACES"), 19))
 		if side == 0:
 			var aspect := AspectRatioContainer.new()
 			aspect.ratio = 4.0 / 3.0
@@ -149,6 +170,7 @@ func _build_ui() -> void:
 	if trace_mode:
 		footer = "Scanout-paired Godot world with original cockpit, reticle and messages. Source-resolution UI is temporary; high-resolution artwork and exact polygon edges remain open."
 		if gunner_art_requested: footer = "Material pilot: verified gunner-surround pixels use high-resolution art. Instruments and other stations remain original. Camera geometry stays authoritative."
+		if cockpit_art_requested: footer = "High-resolution cockpit materials follow original pixel provenance. Live instruments, messages, visibility and controls remain authoritative."
 		if wire_mode: footer = "Original wireframe diagnostic. Omit --wire for filled surfaces."
 	stack.add_child(_label(footer,17))
 
@@ -243,6 +265,7 @@ func _apply_sample(message: Dictionary) -> void:
 			var displayed: Dictionary = drawing.duplicate(false)
 			if previous_presentation.get("palette_rgb") is Array:
 				displayed.palette_rgb = previous_presentation.palette_rgb
+			draw_view.presentation_palette = genesis_style.for_original(displayed.palette_rgb) if genesis_colours_requested else []
 			draw_view.apply_pass(displayed)
 			frame = drawing.camera.duplicate(true)
 			frame.matrix_q14_columns = [16384,0,0,0,16384,0,0,0,16384]
@@ -269,7 +292,11 @@ func _apply_sample(message: Dictionary) -> void:
 			caption.text += "\nNo paired geometry: " + str(previous_presentation.get("reason", "awaiting scanout"))
 		if not tandem_frame.world_enabled:
 			caption.text += "\nORIGINAL FRAME FALLBACK: " + tandem_frame.fallback_reason
-		if gunner_art_requested:
+		if cockpit_art_requested:
+			caption.text += "\nHIGH-RES COCKPIT PLATES: " + str(tandem_frame.cockpit_art_ids) + " | original instruments retained"
+			caption.text += " | moving driver assembly" if tandem_frame.driver_assembly_enabled else ""
+			caption.text += " | Genesis colour study" if genesis_colours_requested and not genesis_style.palette.is_empty() else ""
+		elif gunner_art_requested:
 			caption.text += "\n" + ("HIGH-RES GUNNER SURROUND: original instruments retained" if tandem_frame.gunner_art_enabled else "ORIGINAL MATERIALS: " + tandem_frame.gunner_art_reason)
 	previous = state
 
@@ -289,7 +316,10 @@ func _capture() -> void:
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
 		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions} if pc_audio else null,
 		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,
-		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects with original source-resolution cockpit/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
+		"driver_assembly": tandem_frame.driver_assembly_enabled if trace_mode else false,
+		"genesis_colours": genesis_colours_requested and not genesis_style.palette.is_empty(),
+		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],
+		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects; optional proven-pixel cockpit materials with original instruments/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()
 

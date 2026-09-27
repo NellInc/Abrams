@@ -36,6 +36,8 @@ run_check pc_colour ./tools/godot.sh --headless --script res://tests/test_pc_col
 run_check pc_sprites ./tools/godot.sh --headless --script res://tests/test_pc_sprites.gd
 run_check pc_tandem_frame ./tools/godot.sh --headless --script res://tests/test_pc_tandem_frame.gd
 run_check pc_plate_art ./tools/godot.sh --headless --script res://tests/test_pc_plate_art.gd
+run_check pc_genesis_style ./tools/godot.sh --headless --script res://tests/test_pc_genesis_style.gd
+run_check pc_cockpit_art ./tools/godot.sh --headless --script res://tests/test_pc_cockpit_art.gd
 run_check geometry ./tools/godot.sh --headless --script res://tests/test_geometry.gd
 run_check audio ./tools/godot.sh --headless --script res://tests/test_audio.gd
 run_check pc_audio ./tools/godot.sh --headless --script res://tests/test_pc_audio.gd

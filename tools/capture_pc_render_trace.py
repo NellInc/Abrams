@@ -36,7 +36,7 @@ def main():
     parser.add_argument('--mode', choices=['trace','baseline','reference'], default='trace')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=180)
-    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio', 'text'], default='turn')
+    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio', 'text', 'cockpit', 'driver'], default='turn')
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--state-core-sha256', help='defaults to the selected reference or source-baseline pin')
     parser.add_argument('--capture-sprites', action='store_true', help='save first paired framebuffer for each observed effect image')
@@ -68,7 +68,27 @@ def main():
         presentations = []
         sprite_presentations, captured_sprites, ui_presentations = [], set(), []
         stages = {}
-        if args.profile == 'text':
+        if args.profile == 'driver':
+            steps=[('baseline',30,[]),('commander-key',3,['f2']),('commander',240,[]),
+                   ('driver-key',3,['f4']),('driver-centered',240,[]),
+                   ('turret-mode-key',3,['c']),('turret-mode',30,[]),
+                   ('driver-turn-key',12,['right']),('driver-turned',60,[]),
+                   ('driver-brake-key',3,['kp5']),('driver-braked',60,[]),
+                   ('driver-reverse-key',24,['left']),('driver-reversed',60,[]),
+                   ('driver-stop-key',3,['kp5']),('driver-stopped',60,[]),
+                   ('driver-align-key',3,['a']),('driver-aligned',180,[]),
+                   ('gunner-key',3,['f1']),('gunner-settled',240,[])]
+            inputs=[(name,keys,n==count-1) for name,count,keys in steps for n in range(count)]
+        elif args.profile == 'cockpit':
+            steps=[('baseline',30,[])]
+            for name,key in [('commander','f2'),('driver','f4'),('cupola','f3'),('gunner','f1')]:
+                steps += [(name+'-key',3,[key]),(name+'-transition',60,[]),(name+'-settled',240,[])]
+            steps += [('commander-return-key',3,['f2']),('commander-return',240,[]),
+                      ('damage-key',3,['d']),('damage-settled',240,[]),
+                      ('damage-close-key',3,['space']),('commander-restored',240,[]),
+                      ('gunner-return-key',3,['f1']),('gunner-restored',240,[])]
+            inputs=[(name,keys,n==count-1) for name,count,keys in steps for n in range(count)]
+        elif args.profile == 'text':
             steps = [('baseline',30,[])]
             for i in range(7):
                 steps += [(f'smoke-{i+1}-key',3,['s']),(f'smoke-{i+1}',30,[])]
@@ -147,7 +167,7 @@ def main():
             'profile': args.profile, 'stages': stages, 'audio_events': audio_events, 'audio_states': audio_states,
             'original_vertices_checked': collector.vertices_checked,
             'effect_pixels_checked': collector.effect_pixels_checked,
-            'plate_loads': collector.plates.report(), 'text_observation': collector.text.report(),
+            'plate_loads': collector.plates.report(), 'strut_draws': collector.struts.report(), 'text_observation': collector.text.report(),
             'sprite_presentations': sprite_presentations,
             'ui_presentations': ui_presentations,
             'presentations': presentations, 'render_passes': list(collector.passes), 'incomplete_pass_at_stop': collector.active is not None,

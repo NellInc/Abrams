@@ -149,7 +149,8 @@ captures, emulator binaries or derived graphics are added to Git or published.
 
 ## Remaining boundaries
 
-The later plate provenance and opt-in gunner-material pilot are documented in
+The later plate provenance, source-verified strut redraws, moving driver assembly and four-station
+material pilot are documented in
 `pc-ui-art-workflow.md`, including current core pins and bounded replay evidence.
 High-resolution cockpit instruments/fonts, remastered world assets, remaining opaque
 commands, exact polygon edge coverage, other game modes and full mission/campaign

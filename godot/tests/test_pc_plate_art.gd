@@ -65,7 +65,11 @@ func _run() -> void:
 				var eligible := not inside and sy < 123 and original and sx % 3 == 0
 				var expected := source.get_pixel(sx,sy)
 				if inside and not original: expected = Color.CYAN
-				elif eligible and art.get_pixel(x,y).a == 1.0: expected = art.get_pixel(x,y)
+				elif eligible:
+					var py := (y+0.5)/4.0
+					var donor_y := py*20.0/13.0 if py<13.0 else (lerpf(20,94,(py-13)/97) if py<110 else lerpf(94,123,(py-110)/13))
+					var ay := clampi(floori(donor_y*4+0.0001),0,799)
+					if art.get_pixel(x,ay).a == 1.0: expected = art.get_pixel(x,ay)
 				check(image.get_pixel(x,y).to_rgba32()==expected.to_rgba32(),"synthetic high-res/retained pixel %d,%d" % [x,y])
 				checks += 1
 	for kind in ["palette","source","dimensions","ids","world","missing"]:

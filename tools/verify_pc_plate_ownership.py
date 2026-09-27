@@ -14,6 +14,7 @@ HEADER = Path(__file__).resolve().parent / 'pc_core/abrams_plate_ownership.h'
 def verify():
     wrapper = '''#include "abrams_plate_ownership.h"
 static AbramsPlateOwnership s;
+extern "C" bool claim(unsigned page,unsigned plate,const uint8_t* mask) { return s.claim_bitmap(page,plate,mask); }
 extern "C" void reset() { s.reset(); }
 extern "C" void read_address(unsigned a) { s.read(a); }
 extern "C" unsigned origin(unsigned a) { return s.origin[a]; }
@@ -36,9 +37,12 @@ extern "C" void copy_pixel(unsigned src,unsigned dest,unsigned mask) {
         subprocess.run(['c++','-std=c++11','-O2','-shared','-fPIC','-I',str(HEADER.parent),str(cpp),'-o',str(binary)],check=True)
         lib = C.CDLL(str(binary))
         lib.write_address.argtypes = [C.c_uint] * 10
+        lib.origin.restype = C.c_uint
         lib.bits.restype, lib.valid.restype = C.c_uint, C.c_bool
         lib.retain.argtypes = [C.c_uint] * 4
         lib.copy_pixel.argtypes = [C.c_uint] * 3
+        lib.claim.argtypes=[C.c_uint,C.c_uint,C.POINTER(C.c_uint8)]
+        lib.claim.restype=C.c_bool
         lib.reset()
         # Independent model keeps each of 32 plane bits separately. The C++
         # representation may drop mixed origins, but must never claim a wrong one.
@@ -121,6 +125,41 @@ extern "C" void copy_pixel(unsigned src,unsigned dest,unsigned mask) {
                 if any(lib.pixel((other+1)*8+b) for b in range(8)):
                     raise ValueError('shifted copy mapped artwork to wrong coordinate')
                 explicit += 1
+        # Loading a new plate over another must retain the first newly written
+        # plane. Dropping both conflicting sources loses that plane forever.
+        lib.reset()
+        at=123
+        for plate in (2,4,3,1,5):
+            for plane in range(4):
+                lib.read_address(at)
+                lib.write_address(at,0,0,0,0,0xffffffff,255 << (8*plane),0,0,(plate << 13)|at)
+                if plane < 3 and any(lib.pixel(at*8+b) for b in range(8)):
+                    raise ValueError('partial new plate qualified before all four planes')
+            if any(lib.pixel(at*8+b)!=plate for b in range(8)):
+                raise ValueError('first plane lost when a different plate replaces old origins')
+            explicit+=1
+        # Completed opaque bitmap writes claim only their exact selected bits.
+        lib.reset();mask=(C.c_uint8*8000)();mask[123]=0x90
+        if not lib.claim(8192,4,mask):raise ValueError('valid bitmap claim refused')
+        for bit in range(8):
+            if lib.pixel((8192+123)*8+bit)!=(4 if bit in (0,3) else 0):
+                raise ValueError('bitmap claim escaped its opaque bits')
+        if lib.claim(1,4,mask) or lib.claim(0,5,mask) or lib.claim(0,4,None):
+            raise ValueError('unsupported bitmap claim accepted')
+        explicit+=1
+        # Moving roof writes retain their own signed offset through planar
+        # changes; provenance never adopts another roof position's offset.
+        lib.reset()
+        for offset in (-161,0,83):
+            tag=((offset+16384)<<17)|(8<<13)|123
+            for plane in range(4):
+                lib.read_address(123)
+                lib.write_address(123,0,0,0,0,0xffffffff,255<<(plane*8),0,0,tag)
+                if plane<3 and any(lib.pixel(123*8+b) for b in range(8)):
+                    raise ValueError('partial moving roof position qualified')
+            if lib.origin(123)!=tag or any(lib.pixel(123*8+b)!=8 for b in range(8)):
+                raise ValueError('moving roof provenance lost position or domain')
+            explicit+=1
         lib.read_address(65536)
         if lib.valid() or lib.pixel(0): raise ValueError('invalid memory read did not disable plate mask')
     return {'operations':cases, 'plane_bits_checked':cases*32, 'nonzero_claims_checked':claimed,
