@@ -20,6 +20,7 @@ class TextRuns:
         self.catalog = {name: (source/name).read_bytes() for name in FONT_NAMES}
         self.pages = {}
         self.pending = None
+        self.sequence = 0
         self.counts = Counter()
 
     def begin(self, ram, regs):
@@ -35,6 +36,7 @@ class TextRuns:
         self.pages.pop(key,None)
         self.pending = (key,None)
         self.counts['entries'] += 1
+        self.sequence += 1
         # Unsupported legitimate source text stays original-only. Never invent
         # glyphs, clip a label, or reuse the previous label after a failed draw.
         try:
@@ -53,7 +55,7 @@ class TextRuns:
             if foreground>15 or background>15 or mode not in (0,1) or not any(ink):
                 raise ValueError('unsupported text colors or blank run')
             item = {'kind':CALLERS[caller], 'return_ip':caller,'source_pointer':pointer,
-                    'text':text.decode('cp437'), 'rect':[x,y,width,height], 'page_offset':page,
+                    'text':text.decode('cp437'), 'draw_sequence':self.sequence, 'rect':[x,y,width,height], 'page_offset':page,
                     'font_sha256':font['sha256'],'font_sources':font['sources'],
                     'foreground':foreground,'background':background,'transparent':bool(mode),
                     'speaker':ram[ds+0x6464] if caller in (0x3F1D,0x3F58) else None}

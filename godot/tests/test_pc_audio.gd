@@ -13,8 +13,14 @@ func sound(id: int, frame: int, sample: String = "cannon", enabled: bool = true,
 		"voice":"on_the_way" if sample == "cannon" else null, "enabled":enabled}
 
 func packet(frame: int, id: int, events: Array, enabled: bool = true, epoch: int = 1) -> Dictionary:
-	return {"schema":1, "frame":frame, "epoch":epoch, "last_id":id,
+	return {"schema":2, "frame":frame, "epoch":epoch, "last_id":id,
 		"active":true, "enabled":enabled, "events":events}
+
+func readiness(id: int, frame: int, enabled: bool = true) -> Dictionary:
+	return {"kind":"readiness_visible","ip":0x35ee,"return_ip":0,"value":0,"backend":0,
+		"id":id,"frame":frame,"epoch":1,"enabled":enabled,"sample":null,"voice":"loaded",
+		"completion_frame":frame-3,"text_sequence":10,"text_draw_sequence":11,
+		"text_return_ip":0x55df,"text_pointer":0x0aca,"text_pixel_sha256":"a".repeat(64)}
 
 func loops(engine_on: bool = true, turret_on: bool = false) -> Dictionary:
 	return {"engine":{"active":engine_on,"channel":3,"ticks":85,"program":0xbf8,"period":0x4584,
@@ -102,6 +108,37 @@ func run() -> void:
 	check(await motors.drain_for_shutdown(),"motor playback drains")
 	motors.queue_free()
 	await process_frame
+	var loader := PcAudio.new()
+	root.add_child(loader)
+	var up := packet(10,1,[readiness(1,10)])
+	check(loader.apply_audio(JSON.parse_string(JSON.stringify(up))),"visible readiness JSON envelope")
+	check(loader.voice.playing and loader.last_voice == "loaded" and loader.voice.stream == loader.get_stream("voice_loaded"),"actual generative loader sample started")
+	check(loader.cursor == 0 and loader.delivered == 1,"readiness is voice-only")
+	check(loader.apply_audio(up) and loader.delivered == 1,"repeated READY packet never repeats bark")
+	check(loader.apply_audio(packet(11,2,[readiness(2,11,false)],false)),"muted readiness consumed")
+	check(not loader.voice.playing and loader.delivered == 1,"muted completion stays silent")
+	check(loader.apply_audio(packet(30,3,[readiness(3,20)])),"stale readiness consumed")
+	check(loader.delivered == 1 and loader.receipts[-1].reason == "stale-diagnostic-step","old batch never speaks loader backlog")
+	check(await loader.drain_for_shutdown(),"loader voice playback drain")
+	loader.queue_free()
+	await process_frame
+	for mode in ["draw_order","delay","caller","pointer","digest","effect","voice","schema"]:
+		var bad := PcAudio.new()
+		root.add_child(bad)
+		var attempt := packet(10,1,[readiness(1,10)])
+		match mode:
+			"draw_order": attempt.events[0].text_draw_sequence = 10
+			"delay": attempt.events[0].completion_frame = 0
+			"caller": attempt.events[0].text_return_ip = 0x3f1d
+			"pointer": attempt.events[0].text_pointer = 0xad8
+			"digest": attempt.events[0].text_pixel_sha256 = "x".repeat(64)
+			"effect": attempt.events[0].sample = "cannon"
+			"voice": attempt.events[0].voice = "ready"
+			"schema": attempt.schema = 1
+		check(not bad.apply_audio(attempt) and bad.delivered == 0,"loader "+mode+" rejected before playback")
+		check(await bad.drain_for_shutdown(),"loader "+mode+" drain")
+		bad.queue_free()
+		await process_frame
 	print("PC_AUDIO: %d checks, %d failures" % [checks,failures.size()])
 	for failure in failures: printerr(failure)
 	quit(0 if failures.is_empty() else 1)

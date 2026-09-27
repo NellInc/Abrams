@@ -12,6 +12,8 @@ var drained := false
 var errors: Array[String] = []
 var events: Array = []
 var heard: Array = []
+var readiness_events: Array = []
+var readiness_checks := 0
 var output := ""
 var loop_checks := 0
 var engine_periods: Dictionary = {}
@@ -37,7 +39,7 @@ func start() -> void:
 		[3,["m"]],[30,[]],[3,["s"]],[30,[]],
 		[3,["f5"]],[30,[]],[3,["space"]],[300,[]],
 		[3,["f5"]],[30,[]],[3,["escape"]],[30,[]],[3,["space"]],[30,[]],
-		[3,["space"]],[180,[]]]
+		[3,["space"]],[200,[]]]
 	for step in steps:
 		for _i in int(step[0]): commands.append(step[1])
 	var python := OS.get_environment("ABRAMS_PYTHON")
@@ -51,6 +53,17 @@ func _process(_delta: float) -> bool:
 	for message in bridge.poll():
 		var packet: Dictionary = message.get("audio",{})
 		events.append_array(packet.get("events",[]))
+		for event in packet.get("events",[]):
+			if event.kind == "readiness_visible":
+				readiness_events.append(event)
+				var runs: Array = message.get("presentation",{}).get("text_runs",[])
+				var match_found := false
+				for run in runs:
+					if run.kind == "weapon_status" and run.text == "READY " and int(run.draw_sequence) == int(event.text_draw_sequence) and run.pixel_sha256 == event.text_pixel_sha256:
+						match_found = true
+				if not match_found: errors.append("Loader bark has no paired visible READY evidence")
+				if int(event.frame)-int(event.completion_frame) < 1: errors.append("Loader bark did not wait for later visible frame")
+				readiness_checks += 1
 		var last := int(audio.last_event_id)
 		if not audio.apply_audio(packet): errors.append(audio.failure)
 		for name in ["engine","turret"]:
@@ -68,8 +81,11 @@ func _process(_delta: float) -> bool:
 		for receipt in audio.receipts:
 			if int(receipt.id) > last and receipt.reason.is_empty():
 				heard.append(receipt.duplicate())
-				var player: AudioStreamPlayer = audio.effects[(audio.cursor-1) % audio.effects.size()]
-				if not player.playing or player.stream == null: errors.append("Mapped event did not start sample")
+				if receipt.sample != null:
+					var player: AudioStreamPlayer = audio.effects[(audio.cursor-1) % audio.effects.size()]
+					if not player.playing or player.stream == null: errors.append("Mapped event did not start sample")
+				if receipt.voice != null and (not audio.voice.playing or audio.last_voice != receipt.voice):
+					errors.append("Mapped event did not start its generated voice")
 	if not bridge.failure.is_empty() and bridge.failure not in errors: errors.append(bridge.failure)
 	if Time.get_ticks_msec()-started > 240000 and not stopping: errors.append("native audio bridge deadline")
 	if stopping:
@@ -93,7 +109,12 @@ func stop() -> void:
 
 func finish() -> void:
 	var counts := {}
-	for event in heard: counts[event.sample] = int(counts.get(event.sample,0)) + 1
+	var speech_counts := {}
+	for event in heard:
+		if event.sample != null: counts[event.sample] = int(counts.get(event.sample,0)) + 1
+		if event.voice != null: speech_counts[event.voice] = int(speech_counts.get(event.voice,0)) + 1
+	if int(speech_counts.get("loaded",0)) != 2: errors.append("Expected two audible visible-readiness barks")
+	if readiness_events.size() != 3: errors.append("Expected three visible readiness receipts including muted load")
 	if int(counts.get("cannon",0)) != 2: errors.append("Expected two audible original cannon requests")
 	if int(counts.get("machinegun",0)) != 1: errors.append("Expected one original machine-gun request")
 	if int(counts.get("smoke",0)) != 1: errors.append("Expected one original smoke request")
@@ -108,10 +129,11 @@ func finish() -> void:
 	if engine_stops.size() != 2: errors.append("F5 and pause missing from loop-transition evidence")
 	if bridge.exit_code() != 0: errors.append("PC child did not exit cleanly")
 	var report := {"frames":index,"events":events,"heard":heard,"sample_counts":counts,
+		"readiness_events":readiness_events,"speech_counts":speech_counts,"readiness_checks":readiness_checks,
 		"loop_checks":loop_checks,"loop_frames":loop_frames,"engine_periods":engine_periods.keys(),"turret_active_frames":turret_active_frames,
 		"muted_loop_frames":muted_loop_frames,"loop_transitions":audio.loop_transitions,
 		"muted_shots":muted_shots.size(),"gates":gates.size(),"child_exit":bridge.exit_code(),"errors":errors,
 		"scope":"actual original PC host and native Godot playback, no mixed audio recording"}
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
-	print("PC_AUDIO_NATIVE: " + JSON.stringify({"frames":index,"counts":counts,"events":events.size(),"loop_checks":loop_checks,"turret_frames":turret_active_frames,"errors":errors}))
+	print("PC_AUDIO_NATIVE: " + JSON.stringify({"frames":index,"counts":counts,"speech_counts":speech_counts,"readiness_checks":readiness_checks,"events":events.size(),"loop_checks":loop_checks,"turret_frames":turret_active_frames,"errors":errors}))
 	quit(0 if errors.is_empty() else 1)

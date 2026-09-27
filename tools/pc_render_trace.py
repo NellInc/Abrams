@@ -71,7 +71,7 @@ class Collector:
         try:
             raw = C.string_at(data, length)
             if event == 25:
-                self.audio.observe(raw)
+                self.audio.observe(raw, text_sequence=self.text.sequence)
                 return
             if event in (10, 11, 12, 19, 24):
                 self.observe_video(event, offset, raw, registers)

@@ -8,10 +8,12 @@ try:
     from tools.pc_audio_events import audio_status
     from tools.pc_live_state import active_program
     from tools.pc_render_trace import Collector
+    from tools.pc_readiness import ReadinessBark
 except ModuleNotFoundError:
     from pc_audio_events import audio_status
     from pc_live_state import active_program
     from pc_render_trace import Collector
+    from pc_readiness import ReadinessBark
 
 
 class PresentationSession:
@@ -24,6 +26,7 @@ class PresentationSession:
         self.transitions = []
         self.audio_pending = []
         self.audio_sequence = 0
+        self.readiness = ReadinessBark()
         self.audio_state = {"active": False, "enabled": False}
 
     @staticmethod
@@ -48,21 +51,23 @@ class PresentationSession:
             self.before_frame()
             self.core.run(1, keys)
             if self.collector and self.collector.error: raise self.collector.error
-            if self.collector:
-                for event in self.collector.audio.drain():
-                    if len(self.audio_pending) >= 4096: raise ValueError('session audio queue overflow')
-                    self.audio_sequence += 1
-                    self.audio_pending.append(event | {'id': self.audio_sequence, 'frame': self.core.frame,
-                                                       'epoch': self.epoch})
+            events = self.collector.audio.drain() if self.collector else []
             ram = self.core.conventional_memory()
             program = active_program(ram)
             verified = (self.collector and self.identity(program) == self.identity(self.program)
                         and self.reader.locate(ram) == program['load_segment']*16)
             self.audio_state = audio_status(ram, program if verified else None)
+            presentation = self.collector.paired_video(self.core.last_video) if verified else {}
+            events += self.readiness.advance(self.core.frame, events, presentation, self.audio_state)
+            for event in events:
+                if len(self.audio_pending) >= 4096: raise ValueError('session audio queue overflow')
+                self.audio_sequence += 1
+                self.audio_pending.append(event | {'id': self.audio_sequence, 'frame': self.core.frame,
+                                                   'epoch': self.epoch})
 
     def drain_audio(self):
         events, self.audio_pending = self.audio_pending, []
-        return {'schema': 1, 'frame': self.core.frame, 'epoch': self.epoch,
+        return {'schema': 2, 'frame': self.core.frame, 'epoch': self.epoch,
                 'last_id': self.audio_sequence, 'events': events, **self.audio_state}
 
     def sample(self):
@@ -87,6 +92,7 @@ class PresentationSession:
                 'render_epoch': self.epoch}
 
     def close(self):
+        self.readiness.pending = None
         if self.collector:
             self.collector.detach(self.core)
             self.collector = None

@@ -28,7 +28,7 @@ class AudioEvents:
         self.limit = limit
         self.pending = deque()
 
-    def observe(self, raw):
+    def observe(self, raw, *, text_sequence=None):
         if len(raw) != 12: raise ValueError('invalid native audio boundary')
         ip, caller, value, backend, gate, reload_state = struct.unpack('<6H', raw)
         if ip not in (0x9107, 0x8DA3, 0x35EE, 0x91D6):
@@ -44,9 +44,10 @@ class AudioEvents:
             event.update(kind='gate', enabled=value == 1 and backend in (0, 1))
         elif ip == 0x35EE:
             if reload_state != 2: raise ValueError('reload completion outside original loading state')
-            # Kept as research evidence only. A future loader bark must respect
-            # visibility of the original readiness indication, not expose it early.
+            # The separate readiness gate needs a newer, actually visible READY
+            # draw. This original boundary alone remains silent.
             event['kind'] = 'reload_complete'
+            if text_sequence is not None: event['text_sequence'] = text_sequence
         else:
             event['kind'] = 'engine_parameter'
         self.pending.append(event)

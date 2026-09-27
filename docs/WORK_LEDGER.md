@@ -659,6 +659,35 @@ font, caption replacement, additional bark or whole-game parity is claimed.
 The full remaster remains active. Exact boundary and reproduction instructions
 are in `pc-text-research.md`.
 
+## Loader voice after visible readiness, 2026-09-27
+
+Connected the existing generated “Up!” performance to the original reload plus
+source-frame visibility boundary. The source reload records a text-draw barrier;
+a strictly newer, pixel-verified READY label can qualify one voice-only event
+within six emulated frames. New fire, SIM exit, timeout, mute and stale delivery
+remain suppressing conditions. No original state, timers or sample bytes change.
+The local audio envelope advances to schema 2, with source/draw/hash validation.
+
+* `pc-readiness-comparison-01.json`: 23 checks, all 2,091 RAM/video/input and
+  original sound-channel observations match the untouched baseline. Three
+  qualified readiness receipts, each three frames after completion; one muted.
+* `pc-readiness-native-02/report.json`: 1,712 actual PC frames through native
+  Godot, two loader voice starts and one muted load, three paired READY proofs,
+  3,426 loop checks, unchanged existing effect counts, zero errors, child exit 0.
+  The first test ended exactly at the final reload instruction and failed its
+  overly early third-bark expectation. Twenty extra neutral frames cover the
+  subsequent display update; the gate was not weakened.
+* `pc-readiness-lifecycle-01/report.json`: all 11 checks, 7,267 compared frames,
+  52 stage states and program boundaries equal to the original baseline.
+* `validation-20260927T105237Z/results.txt`: all 18 stages, 165 Python tests,
+  77 Godot audio assertions, terminal exit 0.
+
+The implementing assistant reviewed the integrated source and reran these checks.
+Coverage remains bounded to the exact visible READY path. Other readiness labels,
+crew/radio/bearing dialogue, human listening, end-to-end display/audio-device
+latency and the wider remaster remain open. The existing loader sample is the
+Gemini 3.1 fallback; this work made no additional generation/network request.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -686,8 +715,8 @@ are in `pc-text-research.md`.
    one silence placeholder) match the ROM byte-for-byte; 25 FM patches and four
    native music containers are preserved. The 68-entry native archive is verified.
    Nine generative range voices are installed, with unchanged cues/caption words.
-   Original-event cannon and smoke calls now reuse two selected takes in the
-   opt-in tandem audio pilot; F5 and pause retain authority. Engine and turret
+   Original-event cannon, smoke and visible-readiness calls now reuse three
+   selected takes in the opt-in tandem audio pilot; F5 and pause retain authority. Engine and turret
    loops now follow original interpreter state, including the turret release tail.
    Automated transcription matched the selected set after a revised 3.8 readiness
    take and a 3.1 fallback for the one-word loader call. Rejected takes are retained.

@@ -15,7 +15,7 @@ viewer drains Godot playback and gracefully closes its own PC helper.
 
 This is partial sound coverage. Engine/turret loops now follow their original
 sound channels. Radio, warning sounds, original message-driven dialogue,
-readiness barks, briefings and music remain.
+broader readiness coverage, briefings and music remain.
 Final mix and human listening approval are also open.
 
 ## Original code boundary
@@ -28,7 +28,7 @@ registers, guest RAM, instructions, execution order or cycle counts:
 |---|---|---|
 | `0000:9107` | Original sound dispatcher | Reads driver type at main DS:35ac, then dispatches PC-speaker/Tandy event tables. Near-call argument is SS:SP+2. |
 | `0000:8da3` | Original sound gate | Writes the argument to sound DS:0f48. F5 calls it at 1e78; pause at 407d, resume at 408f. |
-| `0000:35ee` | Original reload completion | Reached only after reload state 2 counts down; original instruction clears main DS:79aa. Evidence only, no bark yet. |
+| `0000:35ee` | Original reload completion | Reached only after reload state 2 counts down; original instruction clears main DS:79aa. Silent by itself; the visible-READY gate below can qualify a loader bark. |
 | `0000:91d6` | Original engine sound parameter | Caller 787e supplies an original movement-derived parameter. Request evidence only; playback reads the running original sound channel. |
 
 Main DS is load+19e0; sound DS is load+18b5. Gate value 1 and sound driver 0 or 1
@@ -64,9 +64,11 @@ Consequently a key press alone never triggers remastered firing audio.
 
 ## Transport and playback
 
-Protocol 4 adds an `audio` envelope with schema 1. The tracing build manifest
+Protocol 4 carries an `audio` envelope, now schema 2 for visible-readiness events.
+The native sound-event layout is unchanged. The tracing build manifest
 advertises `audio_event_schema: 1`; the live host refuses an older local tracing
-build with a rebuild instruction. Protocol 2 remains the silent historical
+build with a rebuild instruction and also requires `text_event_schema: 1`.
+Protocol 2 remains the silent historical
 static-view backend.
 
 `PresentationSession` drains native requests after each original emulation
@@ -263,5 +265,84 @@ sample frames rather than a compressed-byte approximation.
 The subsequent text observer proves original READY, TRACK, LOAD and the empty
 smoke warning against the actual displayed pixels. Details, native font recovery
 and unchanged-core comparisons are in `pc-text-research.md`. This prerequisite
-does not itself enable new barks: reload completion still has no voice, and
+supplies the source-frame proof used by the bounded loader gate below. General
 message occurrences, suffix grouping and radio timing remain separate work.
+
+
+## Visible-READY loader call
+
+The opt-in tandem audio pilot now reuses the existing generated loader “Up!”
+performance. The selected dry master is the previously verified Gemini 3.1 Flash
+TTS fallback, Fenrir voice, 24 kHz mono PCM, 0.92 seconds. Its installed SHA-256
+is `d9d9c52d76624e8a3cb01c610bc42ca4e396424f7220d0d760a7ba494f6b9f2c`.
+No sample or generation was changed for this integration.
+
+`ReadinessBark` follows this bounded presentation contract:
+
+1. Original `0000:35ee` must complete a real reload. Record the current monotone
+   text-draw sequence as a barrier. The event alone remains silent.
+2. A strictly newer original draw must produce the exact READY string at main
+   DS:0aca, through the verified weapon-status caller 55df.
+3. That run must pass the source-glyph, original-page, scanout-slot and complete
+   RGB rectangle comparison from `pc-text-research.md`.
+4. Within six emulated frames of completion, emit one `readiness_visible` event,
+   carrying the completion frame, barrier, newer draw sequence and RGB hash.
+5. Consume the pending completion. A new accepted cannon shot, departed SIM or
+   timeout discards it. Returning to the gunner station much later cannot speak
+   an old load. A muted completion or muted display boundary stays silent.
+
+The six-frame window is a conservative presentation freshness limit. It writes
+no gameplay timers. LOCKED, malfunction, absent/non-gunner readiness displays
+and cases outside this bounded contract get no new loader bark. This is partial
+readiness coverage, intentionally avoiding inferred dialogue.
+
+Godot audio schema 2 validates the entire new event before any playback, including
+known source addresses, strictly newer draw order, bounded delay and pixel hash.
+The call uses only `voice_loaded`, with no invented sound effect. Existing
+monotone IDs, epoch ownership, duplicate suppression, stale-batch suppression,
+F5, pause, voice preferences and stream shutdown still apply.
+
+Working if: old READY pixels never qualify a newly completed reload, each eligible
+visible transition requests the generated voice once, and a muted or stale load
+never becomes an audible catch-up call.
+
+### Evidence
+
+The implementing assistant also reviewed this integration.
+
+* `pc-readiness-comparison-01.json`: all 23 checks pass over 2,091 frames against
+  the untouched source baseline. RAM, video, inputs and original sound channels
+  are identical. The three readiness events follow completion by exactly three
+  source frames: 822 to 825, 1477 to 1480 and 1918 to 1921. The middle one remains
+  muted. All three require a strictly newer original text draw.
+* `pc-readiness-native-02/report.json`: actual one-frame PC pipe and native Godot
+  playback, 1,712 original frames. Three paired READY receipts, two generated
+  loader voice starts, one silent load, 3,426 loop checks, unchanged effect/gate
+  counts, zero errors and child exit 0. Native completion-to-ready frames are
+  1115 to 1118, 1528 to 1531 and 1934 to 1937.
+* The first native test stopped at frame 1934, precisely the final reload
+  completion. It correctly produced no final bark yet, so its expectation of
+  three receipts failed. The retained `pc-readiness-native-01` report shows that
+  failure. The test was extended by 20 input-free frames through the actual
+  display update; the timing gate itself was unchanged.
+* `pc-readiness-lifecycle-01/report.json`: all 11 lifecycle checks pass, 7,267
+  compared RAM/video/input frames, all 52 stage states and program boundaries
+  identical to the original baseline.
+* `validation-20260927T105237Z/results.txt`: all 18 stages pass, including 165
+  Python tests and 77 Godot audio assertions. Unit coverage includes old/absent
+  draws, duplicate delivery, mute at either boundary, interrupted loads, timeouts,
+  SIM exit, bad source addresses/hash/order and real voice-stream activation.
+
+The timing proof is against the paired original source framebuffer delivered to
+Godot. Monitor/compositor and audio-device latency have not been measured. Human
+performance/mix approval and complete original dialogue coverage remain open.
+No new external calls, recordings, publication or push occurred.
+
+```sh
+python3 tools/verify_pc_readiness.py \
+  --trace artifacts/pc-readiness-trace-01/report.json \
+  --baseline artifacts/pc-audio-baseline-03/report.json \
+  --output artifacts/pc-readiness-comparison-02.json
+./tools/godot.sh --script res://tests/test_pc_audio_bridge.gd -- \
+  --output "$PWD/artifacts/pc-readiness-native-03"
+```

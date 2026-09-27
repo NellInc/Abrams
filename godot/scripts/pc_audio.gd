@@ -73,6 +73,20 @@ func _sync_loops(loops: Dictionary) -> void:
 func _integer(value) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and float(value) == floorf(float(value))
 
+func _valid_readiness(event: Dictionary) -> bool:
+	for key in ["completion_frame", "text_sequence", "text_draw_sequence", "text_return_ip", "text_pointer"]:
+		if not _integer(event.get(key)) or int(event[key]) < 0: return false
+	if int(event.ip) != 0x35ee or int(event.value) != 0 or int(event.text_return_ip) != 0x55df or int(event.text_pointer) != 0x0aca:
+		return false
+	if int(event.text_draw_sequence) <= int(event.text_sequence): return false
+	var delay := int(event.frame)-int(event.completion_frame)
+	if delay < 0 or delay > MAX_AGE_FRAMES: return false
+	var digest = event.get("text_pixel_sha256")
+	if not digest is String or digest.length() != 64: return false
+	for i in digest.length():
+		if digest[i] not in "0123456789abcdef": return false
+	return true
+
 func _reject(reason: String) -> bool:
 	failure = reason
 	muted = true
@@ -84,7 +98,7 @@ func apply_audio(packet: Dictionary) -> bool:
 	# Validate the entire envelope before allowing any audible side effect.
 	for key in ["schema", "frame", "epoch", "last_id"]:
 		if not _integer(packet.get(key)) or int(packet[key]) < 0: return _reject("Invalid audio envelope: " + key)
-	if int(packet.schema) != 1 or not packet.get("active") is bool or not packet.get("enabled") is bool:
+	if int(packet.schema) != 2 or not packet.get("active") is bool or not packet.get("enabled") is bool:
 		return _reject("Unsupported original audio envelope")
 	if not packet.get("events") is Array or packet.events.size() > 4096:
 		return _reject("Invalid original audio event list")
@@ -100,13 +114,16 @@ func apply_audio(packet: Dictionary) -> bool:
 			return _reject("Unordered original audio events")
 		if int(event.epoch) > int(packet.epoch) or not event.get("enabled") is bool:
 			return _reject("Invalid original audio epoch or gate")
-		if event.get("kind") not in ["sound", "gate", "reload_complete", "engine_parameter"]:
+		if event.get("kind") not in ["sound", "gate", "reload_complete", "engine_parameter", "readiness_visible"]:
 			return _reject("Unknown original audio event kind")
 		var sample = event.get("sample")
 		var speech = event.get("voice")
 		if sample != null and (event.kind != "sound" or sample not in SAMPLES):
 			return _reject("Unknown remastered sample")
-		if speech != null and speech != VOICES.get(sample, ""):
+		if event.kind == "readiness_visible":
+			if sample != null or speech != "loaded" or not _valid_readiness(event):
+				return _reject("Invalid visible original readiness")
+		elif speech != null and speech != VOICES.get(sample, ""):
 			return _reject("Unknown original-event crew voice")
 		prior_frame = int(event.frame)
 		prior_id = int(event.id)
@@ -134,9 +151,9 @@ func apply_audio(packet: Dictionary) -> bool:
 		if int(event.epoch) != epoch: reason = "previous-program"
 		elif not packet.active or not packet.enabled or not event.enabled: reason = "original-sound-gate"
 		elif last_frame - int(event.frame) > MAX_AGE_FRAMES: reason = "stale-diagnostic-step"
-		elif event.kind != "sound" or event.get("sample") == null: reason = "unmapped-original-request"
+		elif event.kind != "readiness_visible" and (event.kind != "sound" or event.get("sample") == null): reason = "unmapped-original-request"
 		if reason.is_empty():
-			play(event.sample)
+			if event.get("sample") != null: play(event.sample)
 			if event.get("voice") != null: speak(event.voice)
 			delivered += 1
 		else:

@@ -3,7 +3,8 @@
 The tandem bridge now supplies read-only `presentation.text_runs` metadata for
 selected original labels. Every supplied run has passed both native glyph and
 presented-frame checks. Godot still displays the original pixels. This stage
-adds no replacement typography, subtitles or message-triggered voices.
+adds no replacement typography or subtitles. The subsequent READY-specific
+loader voice gate is described in `pc-audio-research.md`.
 
 ## Native font storage
 
@@ -86,7 +87,7 @@ rectangle pixels invalidate the run, and original RAM/video/input comparisons
 remain equal to the untouched core.
 
 The metadata contains the displayed words, rectangle, source pointer, font hash,
-callsite, palette indices and complete RGB rectangle hash. The crew speaker byte
+callsite, monotone draw sequence, palette indices and complete RGB rectangle hash. The crew speaker byte
 is captured at the original draw, with no added character identity inferred.
 These are visible **runs**, not once-only message occurrences. Repeated drawing,
 repeated identical messages, primary/secondary grouping, radio acknowledgement
@@ -129,8 +130,8 @@ and speech cancellation still need a separate occurrence/timing contract.
 The implementation was reviewed by the same assistant that wrote it. No live
 hit-bearing suffix or displayed radio message was exercised in these probes.
 Their recognized callsites are source-derived; live acceptance remains open.
-The earlier all-256 bearing formatter/TTS tests do not close that gap. No new
-voice, font remaster or full dialogue coverage is claimed.
+The earlier all-256 bearing formatter/TTS tests do not close that gap. These font/text probes predate the subsequent loader integration. They do not
+establish a font remaster or full dialogue coverage.
 
 ## Reproduction
 

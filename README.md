@@ -23,6 +23,7 @@ music and sound-effect references for a faithful presentation upgrade.
   the original. See `docs/pc-ui-art-workflow.md` for its restricted scope.
   Add `--audio` for original-event sample playback and generated firing/smoke
   crew calls, plus engine and turret loops driven by original sound channels.
+  The loader says “Up!” once a completed reload has a verified visible READY label.
   F5 and original pause mute them. Remaining dialogue and music are unfinished;
   see `docs/pc-audio-research.md`.
 * Alternatively import `godot/project.godot` in Godot 4 and run the main scene.
