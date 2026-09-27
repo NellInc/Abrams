@@ -846,6 +846,42 @@ Other terrain, vehicles, buildings, trees, effects, instruments, complete missio
 parity and release packaging remain unfinished. Local only; the parent goal stays
 active.
 
+## Pixel-verified live typography, 2026-09-27
+
+The preceding terrain milestone was verified progress. This continuation expands
+read-only source text observation from four semantic calls to all 49 main-segment
+calls to the same original string wrapper. Generic numeric helper calls retain
+separate page/coordinate candidates. Blank clearing draws are verified and
+remove labels. Existing crew identity, readiness and speech rules remain intact.
+
+Godot now independently decodes the fingerprinted original font and checks every
+source pixel and complete UI ownership before drawing scalable IBM Plex Mono
+inside the original cells. Unknown, overwritten or scenery-bearing text stays
+original. The default tandem enables this; `--original-text` is the opt-out.
+The same assistant implemented and reviewed the change. Native gunner/driver
+captures were inspected with the existing remastered materials and terrain.
+
+The unchanged-core routes match 19,365 recorded RAM/video/input frames, including
+station/modal, smoke-warning, incoming hit/damage and original mission exit/reentry. Two native
+fixture suites pass 5,577,448 assertions with zero errors. The live gunner
+on/off comparison changes 5,434 pixels, all inside the ten verified text boxes,
+with identical original RAM fingerprint, state, framebuffer and world rendering.
+The 22-stage aggregate gate passes 192 Python tests and 150 audio assertions.
+The first aggregate run correctly failed a hardcoded test width; the corrected
+source-derived width passes and the failed receipt remains. Blank-draw handling
+was separately repaired and recaptured. A native crew test against an older
+observer reference rejected changed draw-sequence numbering; a fresh trace
+passes all original baseline checks and all 1,849 audio events match after
+normalizing only that observer counter. The unchanged strict native crew test
+then passes all 8,576 frames and sixteen calls from fourteen generated clips,
+with zero errors and child exit zero. Exact receipts, current core pins and
+coverage limits are in `docs/pc-text-research.md`.
+
+Static bitmap instruments/labels, text over scenery, complete fonts/dialogue,
+mission outcomes and release packaging remain unfinished. No historical timing,
+full-game parity, human art approval or publication is claimed. Local only; the
+parent goal remains active.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -865,7 +901,8 @@ active.
    remain; the range's save/restore is separate developer functionality.
 5. **Visual restoration:** first four static assets complete as v1 local artwork.
    Proven-pixel material donors now cover all four stations in the default
-   tandem view. Remaining cockpit trims/instruments/fonts, recognition art,
+   tandem view. Scalable pixel-verified live text is now enabled; remaining cockpit trims,
+   bitmap instruments/labels, scenery-bearing text, recognition art,
    Wilson animation, in-world models, effects and all
    UI states remain. Preserve PC information density and four-station controls.
    Grass and seven selected flat source surfaces now have world-anchored detail;

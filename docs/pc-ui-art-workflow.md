@@ -421,7 +421,7 @@ original frames. No asset is added to distribution or uploaded by this correctio
 
 ### Revised native observer pins
 
-* Core: `f7452d08d9fb1bdf3f7cf73ddc1870bbe8c62192b01c8251d38a0e90a990baa3`
+* Core at this cockpit milestone: `f7452d08d9fb1bdf3f7cf73ddc1870bbe8c62192b01c8251d38a0e90a990baa3`
 * Trace header: `b7e1ef36182ae8f9928e3eefa218bede5012553abc49cacb5d94f0fb8401e006`
 * Plate header: `3720a03996d3e22c6c756365da122e11d9d72c2fbfd35c7a09c25e6b465da00e`
 
@@ -484,3 +484,9 @@ python3 tools/verify_pc_driver_overlay.py \
   --baseline artifacts/pc-driver-baseline-new/report.json \
   --output artifacts/pc-driver-proof-new.json
 ```
+
+The later [live typography pass](pc-text-research.md#scalable-live-typography-2026-09-27)
+expands source string observation and adds independently pixel-verified scalable
+letters. Its current observer pins and fresh lifecycle comparisons supersede
+the core pin for the cockpit milestone above. Plate/driver attribution is
+unchanged.

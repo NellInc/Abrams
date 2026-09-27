@@ -17,10 +17,13 @@ music and sound-effect references for a faithful presentation upgrade.
   palette. Original PC instruments, map, text and visibility remain authoritative.
   The driver's overhead assembly follows its original turret-relative drawing.
   Grass and road surfaces now carry world-anchored high-resolution detail.
-  Vehicle models, other terrain materials and instruments still need their visual remaster.
+  Pixel-verified instrument values, weapon status and eligible crew messages
+  now use scalable lettering inside their original display cells.
+  Vehicle models, other terrain materials and bitmap instruments remain unfinished.
   Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
   `--pc-colours` to keep the new cockpit materials with original world colours.
   `--flat-world` disables terrain detail while retaining cockpit art and colours.
+  `--original-text` keeps the source lettering without disabling other artwork.
   `--gunner-art` selects the earlier gunner-only pilot. `--cockpit-art` explicitly
   selects the default four-station pass. Missing local assets or provenance
   retain the original. See `docs/pc-ui-art-workflow.md` for coverage and limits.
@@ -74,7 +77,7 @@ Earlier mixed recordings are retained only as comparison material.
 * `docs/pc-surfaces-research.md`: live original surfaces, material patterns and native colour checks.
 * `docs/pc-sprites-research.md`: native effect extraction, original bitmap-blitter checks and tandem playback.
 * `docs/pc-ui-research.md`: scanline UI provenance, transparent cockpit edges and native composition checks.
-* `docs/pc-text-research.md`: native fonts and pixel-verified visible crew/weapon text.
+* `docs/pc-text-research.md`: native fonts, visibility gates and scalable live typography.
 * `docs/pc-ui-art-workflow.md`: native PC cockpit plates/struts and high-resolution material studies.
 * `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
 * `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.

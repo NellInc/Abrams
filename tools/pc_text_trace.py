@@ -13,8 +13,12 @@ except ModuleNotFoundError:
     from pc_fonts import FONT_NAMES, loaded_font, text_pixels
     from pc_message_events import MessageAssignments
 
+# Every source main-CS far CALL to the original string wrapper.
+TEXT_CALLS = (0x144b,0x3f1d,0x3f58,0x400d,0x4053,0x5345,0x5359,0x5379,0x538d,0x5456,0x546a,0x5483,0x54a0,0x551c,0x55b9,0x55df,0x5764,0x57a2,0x58cd,0x595a,0x59a8,0x59d4,0x62ed,0x6333,0x6347,0x635b,0x63f5,0x6409,0x641d,0x67c4,0x680d,0x6836,0x6dfe,0x6e70,0x6e93,0x6eb6,0x6ed9,0x6efc,0x6f1f,0x7f01,0x7f50,0x7fa7,0x809e,0x80b2,0x831c,0x8330,0x8349,0x88cf,0x88e2)
+MAX_CANDIDATES = 256
 CALLERS = {0x3F1D: 'crew_primary', 0x3F58: 'crew_secondary',
            0x400D: 'radio', 0x55DF: 'weapon_status'}
+CALLERS = {caller: CALLERS.get(caller,'instrument') for caller in TEXT_CALLS}
 
 
 class TextRuns:
@@ -35,7 +39,7 @@ class TextRuns:
         if caller not in CALLERS or regs['ds'] != cs+0x19E0 or regs['cs'] != cs+0x0F8D:
             raise ValueError('unknown original text caller')
         page = (struct.unpack_from('<H',ram,ds+0x35A8)[0]-0xA000)*16
-        key = (page, caller)
+        key = (page, caller, x, y)
         self.pages.pop(key,None)
         self.pending = (key,None)
         self.counts['entries'] += 1
@@ -55,11 +59,12 @@ class TextRuns:
             foreground,background = [struct.unpack_from('<H',ram,ds+0x48A6+2*ram[ds+at])[0]&255
                                      for at in (0x3590,0x3591)]
             mode = ram[ds+0x3592]
-            if foreground>15 or background>15 or mode not in (0,1) or not any(ink):
-                raise ValueError('unsupported text colors or blank run')
+            if foreground>15 or background>15 or mode not in (0,1):
+                raise ValueError('unsupported text colors')
             item = {'kind':CALLERS[caller], 'return_ip':caller,'source_pointer':pointer,
                     'text':text.decode('cp437'), 'draw_sequence':self.sequence, 'rect':[x,y,width,height], 'page_offset':page,
                     'font_sha256':font['sha256'],'font_sources':font['sources'],
+                    'cell_size':[font['width'],font['height']],
                     'foreground':foreground,'background':background,'transparent':bool(mode),
                     'speaker':ram[ds+0x6464] if caller in (0x3F1D,0x3F58) else None}
             self.messages.bind(item,text)
@@ -82,15 +87,21 @@ class TextRuns:
             raise ValueError('invalid native text pixels')
         if candidate is None: return
         item,ink = candidate
-        if [x,y,width,height]!=item['rect'] or (page,caller)!=key:
+        if [x,y,width,height]!=item['rect'] or (page,caller)!=key[:2]:
             raise ValueError('native text entry/return differ')
         if any((bit and pixel!=item['foreground']) or
                (not bit and not item['transparent'] and pixel!=item['background'])
                for bit,pixel in zip(ink,pixels)):
             self.counts['glyph_mismatches'] += 1
             return
-        self.pages[key] = (item,pixels,ink)
         self.counts['glyph_verified'] += 1
+        if not any(ink):
+            self.counts['blank_glyph_verified'] += 1
+            return  # Actual clearing draw, never a visible replacement label.
+        self.pages[key] = (item,pixels,ink)
+        while len(self.pages)>MAX_CANDIDATES:
+            del self.pages[next(iter(self.pages))]
+            self.counts['candidate_evictions'] += 1
 
     def scanout(self,page):
         # Copy references to immutable completed candidates. A later draw cannot
@@ -113,7 +124,9 @@ class TextRuns:
             if not any(not bit and palette[pixel]!=foreground for bit,pixel in zip(ink,pixels)):
                 self.counts['no_contrast'] += 1
                 continue
-            result.append(item | {'pixel_sha256':hashlib.sha256(actual).hexdigest(),
+            backgrounds={tuple(palette[pixel]) for bit,pixel in zip(ink,pixels) if not bit}
+            uniform=list(next(iter(backgrounds))) if len(backgrounds)==1 else None
+            result.append(item | {'uniform_background_rgb':uniform, 'pixel_sha256':hashlib.sha256(actual).hexdigest(),
                 'basis':'source glyphs and complete RGB rectangle match the presented original framebuffer'})
             self.counts['presented_runs'] += 1
         return result

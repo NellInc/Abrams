@@ -66,6 +66,8 @@ func _initialize() -> void:
 		var terrain := preload("res://scripts/pc_terrain_style.gd").new()
 		if terrain.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")):
 			draw_view.terrain_style = terrain
+	if trace_mode and cockpit_art_requested and "--original-text" not in args:
+		tandem_frame.typography.load_sources(directory.path_join("GAME"))
 	if trace_mode and "--audio" in args:
 		pc_audio = PcAudio.new()
 		root.add_child(pc_audio)
@@ -301,6 +303,7 @@ func _apply_sample(message: Dictionary) -> void:
 			caption.text += " | moving driver assembly" if tandem_frame.driver_assembly_enabled else ""
 			caption.text += " | Genesis colour study" if genesis_colours_requested and not genesis_style.palette.is_empty() else ""
 			caption.text += " | terrain detail" if draw_view.terrain_active else ""
+			caption.text += " | verified high-res text: %d" % tandem_frame.typography.runs.size()
 		elif gunner_art_requested:
 			caption.text += "\n" + ("HIGH-RES GUNNER SURROUND: original instruments retained" if tandem_frame.gunner_art_enabled else "ORIGINAL MATERIALS: " + tandem_frame.gunner_art_reason)
 	previous = state
@@ -323,6 +326,7 @@ func _capture() -> void:
 		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,
 		"driver_assembly": tandem_frame.driver_assembly_enabled if trace_mode else false,
 		"genesis_colours": genesis_colours_requested and not genesis_style.palette.is_empty(),
+		"high_resolution_text_runs": tandem_frame.typography.runs.size() if trace_mode else 0,
 		"terrain_detail": draw_view.terrain_active if trace_mode else false,
 		"terrain_polygons": draw_view.terrain_polygon_count if trace_mode else 0,
 		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],

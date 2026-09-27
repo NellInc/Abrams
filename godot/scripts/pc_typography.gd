@@ -1,0 +1,140 @@
+extends Control
+## Scalable text, only after independent source-glyph and complete UI-box checks.
+const FACE = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
+const FONT_SOURCES = {
+	"6X6.FNT":"a1ab3119ad84f1debb4fda3a57271e08ed9f0bdf1e535a5885a92758e07d5840",
+	"8X6.FNT":"aa295b11f913a8829baf0590fc9405a602deae2a50a00ee592ffaac2f1099567",
+	"8X8.FNT":"857af65a215ccfcf92508ad43848c63e08bcef7ed2da2f3bcd75b670cd515812",
+	"STENCIL.FNT":"3f92e8c7488278d86aeaa978d87d980d6a688fc9c8dbf87befaf4e6bbc9f4181"}
+var fonts: Dictionary = {}
+var runs: Array[Dictionary] = []
+var labels: Array[Control] = []
+
+class RunLabel extends Control:
+	var run: Dictionary
+	func _draw() -> void:
+		if run.is_empty(): return
+		draw_rect(Rect2(Vector2.ZERO,size),run.background)
+		var face: FontFile = FACE
+		var top := 0.0
+		var bottom := 0.0
+		var left := 0.0
+		var right := 0.0
+		for i in run.text.length():
+			var code: int = run.text.unicode_at(i)
+			var glyph := face.get_glyph_index(64,code,0)
+			var at := face.get_glyph_offset(0,Vector2i(64,0),glyph)
+			var extent := face.get_glyph_size(0,Vector2i(64,0),glyph)
+			if extent.x == 0 or extent.y == 0: continue
+			top = minf(top,at.y); bottom = maxf(bottom,at.y+extent.y)
+			left = minf(left,at.x); right = maxf(right,at.x+extent.x)
+		right = maxf(right,face.get_glyph_advance(0,64,face.get_glyph_index(64,77,0)).x)
+		if right <= left or bottom <= top: return
+		var cell := size/Vector2(run.text.length(),1)
+		var margin := Vector2(size.x/run.rect.size.x,size.y/run.rect.size.y)*0.5
+		var fit := (cell-margin*2)/Vector2(right-left,bottom-top)
+		for i in run.text.length():
+			draw_set_transform(Vector2(i*cell.x+margin.x-left*fit.x,margin.y-top*fit.y),0,fit)
+			draw_string(face,Vector2.ZERO,run.text.substr(i,1),HORIZONTAL_ALIGNMENT_LEFT,-1,64,run.foreground)
+		draw_set_transform(Vector2.ZERO)
+
+func _init() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	resized.connect(_layout)
+
+func load_sources(directory: String) -> bool:
+	fonts.clear()
+	clear_runs()
+	var found := {}
+	for name in FONT_SOURCES:
+		var path := directory.path_join(name)
+		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=FONT_SOURCES[name]: return false
+		found[FONT_SOURCES[name]] = FileAccess.get_file_as_bytes(path)
+	fonts = found
+	FACE.render_range(0,Vector2i(64,0),32,126)
+	return true
+
+func clear_runs() -> void:
+	runs.clear()
+	for label in labels: label.hide()
+
+static func integers(value: Variant, count: int, low: int, high: int) -> bool:
+	if not value is Array or value.size()!=count: return false
+	for n in value:
+		if not (n is int or n is float) or not is_finite(float(n)) or n!=floorf(n) or n<low or n>high: return false
+	return true
+
+func verified_run(item: Variant, source: Image, ui: Image, palette: Array) -> Dictionary:
+	if not item is Dictionary or not item.get("text") is String: return {}
+	var words: String = item.text
+	if words.is_empty() or words.length()>53 or not fonts.has(item.get("font_sha256")): return {}
+	if not integers(item.get("rect"),4,0,320) or not integers(item.get("cell_size"),2,1,32): return {}
+	if not integers(item.get("uniform_background_rgb"),3,0,255): return {}
+	if not integers([item.get("foreground")],1,0,15): return {}
+	var bytes: PackedByteArray = fonts[item.font_sha256]
+	var cell := Vector2i(bytes[0],bytes[1])
+	var box := Rect2i(item.rect[0],item.rect[1],item.rect[2],item.rect[3])
+	if box.size!=Vector2i(words.length()*cell.x,cell.y) or item.cell_size[0]!=cell.x or item.cell_size[1]!=cell.y: return {}
+	if box.end.x>320 or box.end.y>200 or box.size.x<=0 or box.size.y<=0: return {}
+	if palette.size()!=16 or not integers(palette[int(item.foreground)],3,0,255): return {}
+	var foreground := Color8(palette[int(item.foreground)][0],palette[int(item.foreground)][1],palette[int(item.foreground)][2])
+	var background := Color8(item.uniform_background_rgb[0],item.uniform_background_rgb[1],item.uniform_background_rgb[2])
+	if foreground==background: return {}
+	var stride := (cell.x+7)/8
+	var visible_ink := false
+	for i in words.length():
+		var code := words.unicode_at(i)
+		if code<32 or code>126 or code<int(bytes[2]) or code>=int(bytes[2])+int(bytes[3]): return {}
+		for y in cell.y:
+			for x in cell.x:
+				var at := 4+((code-int(bytes[2]))*cell.y+y)*stride+x/8
+				var ink := (int(bytes[at]) & (128>>(x%8)))!=0
+				visible_ink = visible_ink or ink
+				var px := box.position.x+i*cell.x+x
+				var py := box.position.y+y
+				if ui.get_pixel(px,py).r!=1.0: return {}
+				if source.get_pixel(px,py).to_rgba32()!=(foreground if ink else background).to_rgba32(): return {}
+	if not visible_ink: return {}
+	var crop := source.get_region(box)
+	crop.convert(Image.FORMAT_RGB8)
+	var hash := HashingContext.new()
+	hash.start(HashingContext.HASH_SHA256)
+	hash.update(crop.get_data())
+	if hash.finish().hex_encode()!=item.get("pixel_sha256"): return {}
+	return {"text":words,"rect":Rect2(box),"foreground":foreground,"background":background,
+		"kind":item.get("kind",""),"draw_sequence":item.get("draw_sequence",0)}
+
+func set_frame(source: Image, ui: Image, presentation: Dictionary) -> void:
+	clear_runs()
+	if fonts.is_empty() or not presentation.get("text_runs") is Array or not presentation.get("palette_rgb") is Array: return
+	if source==null or source.get_size()!=Vector2i(320,200) or ui==null or ui.get_size()!=Vector2i(320,200) or ui.get_format()!=Image.FORMAT_L8: return
+	var candidates: Array = presentation.text_runs.duplicate()
+	if candidates.size()>256: return
+	# Latest completed writes win when identical surviving candidates overlap.
+	candidates.reverse()
+	for item in candidates:
+		var run := verified_run(item,source,ui,presentation.palette_rgb)
+		if run.is_empty(): continue
+		var overlaps := false
+		for old in runs:
+			if run.rect.intersects(old.rect): overlaps = true; break
+		if overlaps: continue
+		runs.append(run)
+		if runs.size()>labels.size():
+			var label := RunLabel.new()
+			label.clip_contents = true
+			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(label)
+			labels.append(label)
+	_layout()
+
+func _layout() -> void:
+	var scale_to_view := size/Vector2(320,200)
+	for i in runs.size():
+		var label: Control = labels[i]
+		label.run = runs[i]
+		label.position = runs[i].rect.position*scale_to_view
+		label.size = runs[i].rect.size*scale_to_view
+		label.show()
+		label.queue_redraw()

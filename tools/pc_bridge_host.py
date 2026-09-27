@@ -82,7 +82,7 @@ def main():
                 raise ValueError("trace backend requires the scanout-aware source build")
             if manifest.get("audio_event_schema") != 1:
                 raise ValueError("Rebuild the local trace core for original audio-event support")
-            if manifest.get("text_event_schema") != 1:
+            if manifest.get("text_event_schema") != 2:
                 raise ValueError("Rebuild the local trace core for original visible-text support")
             if manifest.get("message_event_schema") != 1:
                 raise ValueError("Rebuild the local trace core for original message identity support")

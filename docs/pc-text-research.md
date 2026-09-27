@@ -1,10 +1,11 @@
 # Original PC fonts and visible text
 
-The tandem bridge now supplies read-only `presentation.text_runs` metadata for
-selected original labels. Every supplied run has passed both native glyph and
-presented-frame checks. Godot still displays the original pixels. This stage
-adds no replacement typography or subtitles. The subsequent READY-specific
-loader voice gate is described in `pc-audio-research.md`.
+The tandem bridge supplies read-only `presentation.text_runs` metadata for
+original labels. Every supplied run passes native glyph and presented-frame
+checks. The default cockpit view now replaces eligible runs with scalable
+lettering after a second, independent Godot pixel check. The source letters
+remain available with `--original-text`. The READY-specific loader voice gate
+is described in `pc-audio-research.md`.
 
 ## Native font storage
 
@@ -47,8 +48,8 @@ return IP/CS, string pointer, x and y. It reads the selected font and drawing pa
 converts foreground/background indices through the original word table at 48a6,
 then calls the original character driver for each byte.
 
-The observer recognizes only these return addresses in the original main code
-segment:
+The observer originally recognized four semantic return addresses in the
+original main code segment:
 
 | Return IP | Meaning | Source routine |
 |---|---|---|
@@ -62,7 +63,11 @@ six-word rectangle header `(x,y,width,height,page_offset,return_ip)`, followed b
 one EGA colour index per pixel, immediately before the wrapper's RETF. It reads
 host plane storage directly, avoiding guest VGA reads that would change latches.
 The original instructions, rendering, registers and emulated cycle schedule
-continue unchanged. The trace manifest requires `text_event_schema: 1`.
+continue unchanged. The expanded observer requires `text_event_schema: 2`.
+It recognizes all 49 main-segment far calls to the same source string wrapper.
+The additional calls have the conservative `instrument` kind; their inclusion
+does not assign new speech or message identities. A source test matches the
+native and Python allowlists against the unpacked executable's call bytes.
 
 ## Visibility gate
 
@@ -77,23 +82,26 @@ continue unchanged. The trace manifest requires `text_event_schema: 1`.
 5. Expose only matching runs. Empty, offscreen, rejected-character, unknown-font,
    overwritten, wrong-page, unknown-palette and unobserved runs remain absent.
 
-Candidates are bounded to four callsites on each of two pages. A redraw replaces
-that page/callsite's candidate; a new SIM collector discards the old mission's
-candidates. A later draw cannot mutate an older scanout's evidence. Internal
-candidate pixels never appear in the JSON bridge payload.
+Candidates are bounded to 256 `(page, callsite, x, y)` entries, with oldest-entry
+eviction. Coordinates distinguish labels drawn through the same numeric helper.
+A redraw replaces that key's candidate; a verified blank clearing draw leaves
+no label. A new SIM collector discards the old mission's candidates. A later
+draw cannot mutate an older scanout's evidence. Internal candidate pixels never
+appear in the JSON bridge payload.
 
 Working if: a queued or erased message cannot become visible metadata, altered
 rectangle pixels invalidate the run, and original RAM/video/input comparisons
 remain equal to the untouched core.
 
 The metadata contains the displayed words, rectangle, source pointer, font hash,
-callsite, monotone draw sequence, palette indices and complete RGB rectangle hash. The crew speaker byte
+callsite, monotone draw sequence, palette indices, cell dimensions, uniform
+background RGB (or null), and complete RGB rectangle hash. The crew speaker byte
 is captured at the original draw, with no added character identity inferred.
 These are visible **runs**, not once-only message occurrences. Repeated drawing,
 repeated identical messages, primary/secondary grouping, radio acknowledgement
 and speech cancellation still need a separate occurrence/timing contract.
 
-## Bounded live evidence
+## Historical visible-text evidence
 
 * `pc-text-audio-01/report.json`: 2,091 actual frames, 372 observed text calls, all
   372 source-glyph matches, 1,570 presented runs. READY appears in 1,148 frames,
@@ -168,3 +176,145 @@ adds assignment identity, complete prefix/suffix grouping, and live incoming-hit
 and damage coverage. Its updated native core fingerprints and acceptance
 receipts supersede the font/readiness build pins above. Displayed radio coverage
 remains open.
+
+## Scalable live typography, 2026-09-27
+
+The default four-station material view now enables `pc_typography.gd`. It uses
+our existing SIL Open Font License IBM Plex Mono face, with a 64-pixel glyph
+cache and fixed source-cell advance. Each accepted run has its own clipped
+Control, preserving its original rectangle, foreground and background. Resizing
+changes presentation dimensions only. `--original-text` disables replacement;
+`--original-art` also retains the source letters.
+
+The original `6X6.FNT`, `8X6.FNT`, `8X8.FNT` and `STENCIL.FNT` files remain local.
+Godot loads them only after checking all four SHA-256 fingerprints. It decodes
+the bitmaps independently of the Python observer and checks:
+
+1. ASCII words, cell dimensions, font identity and complete on-screen bounds.
+2. Every pixel against the source glyph foreground or a single uniform actual
+   background colour, plus the complete original RGB rectangle hash.
+3. Every pixel's original UI ownership. Any scenery pixel rejects the whole run.
+4. Nonblank visible ink and a non-overlapping replacement rectangle. Later
+   surviving candidates take precedence when their rectangles overlap.
+
+Every new frame clears the previous labels before accepting current runs. A
+missing font, incomplete frame, unsupported text, changed background, menu or
+fallback clears replacements and retains the source pixels. Working if: erased
+or altered values disappear immediately, no replacement can cover a world pixel,
+and native images change only within verified source UI rectangles.
+
+The source font bytes serve as evidence, rather than the new visible font.
+Static bitmap lettering, gauges, icons and text over scenery still use their
+original pixels. In particular, the bearing strip over the world remains
+source-rendered. Some static labels become eligible only on observed source
+redraws. This pass does not claim complete high-resolution instruments or
+uniform text coverage across every state.
+
+### Verified receipts
+
+* `pc-live-type-crew-comparison-02.json`: all twelve checks pass against
+  `pc-text-crew-baseline-01`. All 1,308 full-RAM/video/input frames and stage
+  states match. All 3,105 observed string calls match their source glyphs,
+  including 226 blank clearing draws. There are 13,058 presented runs and
+  11,255 rejected stale/background comparisons. All 316 saved source crops
+  independently match their runtime RGB hashes.
+* `pc-live-type-cockpit-comparison-02.json`: all nine checks pass against
+  `pc-cockpit-baseline-02`. All 2,214 frames and 21 stage states match. All 2,235
+  observed calls match glyphs, including 130 blank draws. All 117 saved source
+  crops match; 38,297 candidate/frame comparisons are rejected.
+* `pc-live-type-lifecycle-01/report.json`: all eleven checks pass, including
+  7,267 identical RAM/video/input frames, 52 stage states and original
+  START/BRIEF/SIM/END/START/BRIEF/SIM boundaries against
+  `pc-lifecycle-baseline-02`. These three routes total 10,789 matching frames.
+* `pc-live-type-dialogue-comparison-01.json`: all fourteen checks pass against
+  `pc-dialogue-baseline-01`, including 8,576 matching RAM/video/input/queued-text
+  frames, seventeen original assignments and sixteen fully visible crew calls.
+  All 22,229 string calls match source glyphs, including 1,814 clearing draws.
+  Together with the three routes above, 19,365 recorded frames match the
+  untouched core. Routes can overlap; this is not 19,365 unique game situations.
+* `pc-live-type-dialogue-event-comparison-01.json`: all three checks pass against
+  the earlier crew trace. All 1,849 audio events remain exactly equal after
+  removing only observer `draw_sequence` from their source parts. Frames,
+  words, pixel hashes, rectangles, source pointers, voices, IDs and gates are
+  unchanged; all original assignment records also match.
+* `pc-live-type-crew-audio-native-02/report.json`: the unchanged strict native
+  playback test passes with the fresh verified reference. All 8,576 original
+  frames complete, sixteen once-only crew events start fourteen generated
+  streams on their exact reference frames, END is reached, and the child exits
+  zero with no errors. This is stream-start evidence, not physical-device
+  latency or human listening approval.
+* `pc-live-type-crew-native-02/report.json`: 3,227,083 native Godot assertions,
+  zero errors, 3,264,000 visited pixels, including the synthetic 1280 x 800
+  full-frame boundary test and 35 actual source captures. There are 10,654
+  changed text samples. Every protected source-pixel centre remains unchanged.
+* `pc-live-type-cockpit-native-02/report.json`: 2,350,365 native assertions,
+  zero errors and 2,368,000 visited pixels over the synthetic image and 21
+  actual station/modal samples. There are 5,544 changed text samples. Both
+  native reports include rejection, stale-label and resize checks.
+* `pc-live-type-viewer-comparison-01.json`: all eight checks pass for two actual
+  gunner viewers from the same original snapshot, with replacement on/off.
+  Complete presentation metadata (including render RAM hash), original state,
+  original framebuffer and Godot world framebuffer are identical. Ten text
+  runs change 5,434 of 1,024,000 output pixels, all inside independently checked
+  UI boxes. The original-text opt-out reports zero replacements.
+* `pc-live-type-driver-viewer-01`: live driver capture shows three restored
+  numeric runs with the moving assembly, Genesis colours and terrain detail
+  still enabled. Gunner and driver captures were visually inspected. Their
+  native viewer processes exit zero.
+* `validation-20260927T133757Z/results.txt`: all 22 repository stages pass,
+  including 192 Python tests, source preservation, 18 headless typography
+  assertions, 150 Godot audio assertions and the existing runtime smoke gate.
+
+These changes were implemented and reviewed by the same assistant. The first
+aggregate run failed a new test's hardcoded ten-character width for an
+actually eleven-character label. The test now derives bounds from the source
+rectangle; the failed log is retained in `pc-live-type-validation-01.log`.
+The earlier crew/cockpit `-01` observer captures categorized blank clearing
+runs as unsupported; the corrected `-02` captures prove them against the actual
+original background and never expose them as visible labels. No guard was
+removed to obtain these passes. The optional Impeccable linter is unavailable
+locally; actual Godot rendering and pixel checks provide the visual validation.
+
+The first native crew regression, `pc-live-type-crew-audio-native-01`, stopped
+on its first bark because the previous four-callsite reference had different
+observer draw-sequence numbers (592/593 versus 7684/7685). Its source frame 2369,
+voice, words, rectangles and RGB hashes agree. The strict reference comparison
+is retained. The fresh baseline-verified dialogue capture and complete event
+comparison above establish that only this observer numbering changed.
+
+All 49 source callsites are allowed, but these bounded routes do not prove live
+coverage of every callsite, dialogue, font, weapon mode or mission. These are
+shared-state emulator comparisons, with no new historical hardware timing or
+physical display/audio latency claim. The independently cold-booted RAM
+fingerprint difference retained in the terrain investigation remains unresolved.
+
+### Current observer pins and reproduction
+
+This typography build supersedes the older font, crew and cockpit core pins:
+
+* Core: `537c524451028b5b5a2952901a40fc2abbf8a5af77adb5e8caba792d2fd7b024`.
+* Trace header: `7aef474f9f410f4414dc68856d4e793b0964f26c3866c3c884fe6bb335d9f0e4`.
+* Plate observer: `3720a03996d3e22c6c756365da122e11d9d72c2fbfd35c7a09c25e6b465da00e`.
+* Unchanged baseline: `57edbd309eb2ab6264b70188c3a85408fbcfa8c62e83b8c7b9c39b7309f61ac6`.
+
+Use fresh output names:
+
+```sh
+python3 tools/build_pc_trace_core.py
+python3 tools/capture_pc_render_trace.py --mode trace --profile text --capture-ui \
+  --state artifacts/pc-source-boot-01/mission-entry/reference.state \
+  --output artifacts/pc-live-type-crew-NEW
+python3 tools/verify_pc_text_trace.py \
+  --trace artifacts/pc-live-type-crew-NEW/report.json \
+  --baseline artifacts/pc-text-crew-baseline-01/report.json \
+  --output artifacts/pc-live-type-crew-comparison-NEW.json
+./tools/godot.sh --disable-render-loop --script res://tests/test_pc_typography.gd -- \
+  --native --fixture "$PWD/artifacts/pc-live-type-crew-NEW/report.json" \
+  --output "$PWD/artifacts/pc-live-type-native-NEW"
+./PC\ Bridge.command --trace --capture --capture-station gunner \
+  --output "$PWD/artifacts/pc-live-type-viewer-NEW"
+```
+
+The font cache uses the documented Godot 4.7
+[FontFile glyph APIs](https://docs.godotengine.org/en/4.7/classes/class_fontfile.html).
+No new external font dependency or proprietary distribution is introduced.

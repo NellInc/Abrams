@@ -2,7 +2,7 @@ from pathlib import Path
 import struct
 import unittest
 from tools.pc_fonts import decode_font,text_pixels
-from tools.pc_text_trace import TextRuns
+from tools.pc_text_trace import TextRuns,TEXT_CALLS,MAX_CANDIDATES
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -83,11 +83,52 @@ class TextTests(unittest.TestCase):
         raw,_=self.draw();self.observer.finish(b'')
         self.assertEqual(self.observer.scanout(0),())
 
-    def test_unsupported_blank_and_offscreen_runs_fail_closed(self):
-        for text,x in [(b'      ',52),(b'READY ',319)]:
-            self.draw(text,x=x);self.observer.finish(b'')
-            self.assertEqual(self.observer.scanout(0),())
-        self.assertEqual(self.observer.counts['unsupported_entries'],2)
+    def test_blank_clears_candidate_and_offscreen_runs_fail_closed(self):
+        raw,_=self.draw();self.observer.finish(raw)
+        raw,_=self.draw(b'      ');self.observer.finish(raw)
+        self.assertEqual(self.observer.scanout(0),())
+        self.assertEqual(self.observer.counts['blank_glyph_verified'],1)
+        self.draw(b'READY ',x=319);self.observer.finish(b'')
+        self.assertEqual(self.observer.scanout(0),())
+        self.assertEqual(self.observer.counts['unsupported_entries'],1)
+
+    def test_all_main_string_calls_match_original_and_native_allowlist(self):
+        from tools.unpack_pc_executables import unpack
+        import re
+        decoded,_=unpack((ROOT/'GAME/SIM.EXE').read_bytes())
+        calls=tuple(n+5 for n in range(65536) if decoded[n:n+5]==bytes.fromhex('9a 0a 02 8d 0f'))
+        self.assertEqual(TEXT_CALLS,calls)
+        native=(ROOT/'tools/pc_core/abrams_trace.h').read_text().split('const Bit16u calls[] = {',1)[1].split('}',1)[0]
+        self.assertEqual(tuple(int(n,16) for n in re.findall(r'0x[0-9a-f]+',native)),calls)
+        self.assertEqual(len(calls),49)
+
+    def test_repeated_generic_call_keeps_distinct_coordinates_and_uniform_background(self):
+        raw,video=self.draw(b'100',caller=0x144B,x=10,y=10,mode=1)
+        self.observer.finish(raw)
+        first=self.present(self.observer.scanout(0),video)[0]
+        self.assertEqual(first['kind'],'instrument')
+        self.assertEqual(first['uniform_background_rgb'],self.palette[3])
+        self.assertEqual(first['cell_size'],[6,6])
+        raw,video=self.draw(b'280',caller=0x144B,x=40,y=10)
+        self.observer.finish(raw)
+        self.assertEqual(len(self.observer.scanout(0)),2)
+        # Other source graphics behind a transparent run prevent flat-box replacement.
+        raw,video=self.draw(b'280',caller=0x144B,x=40,y=10,mode=1)
+        raw=bytearray(raw);video=bytearray(video)
+        at=next(i for i,v in enumerate(raw[12:]) if v==3)
+        raw[12+at]=4
+        y,x=divmod(at,18);start=((10+y)*320+40+x)*4
+        r,g,b=self.palette[4];video[start:start+4]=bytes([b,g,r,255])
+        self.observer.finish(bytes(raw))
+        items=self.present(self.observer.scanout(0),bytes(video))
+        self.assertIsNone(items[0]['uniform_background_rgb'])
+
+    def test_generic_text_history_is_bounded(self):
+        for i in range(MAX_CANDIDATES+1):
+            raw,_=self.draw(b'0',caller=0x144B,x=i%50,y=(i//50)*8)
+            self.observer.finish(raw)
+        self.assertEqual(len(self.observer.pages),MAX_CANDIDATES)
+        self.assertEqual(self.observer.counts['candidate_evictions'],1)
 
     def test_wire_schema_and_unpaired_return_rejected(self):
         with self.assertRaisesRegex(ValueError,'without entry'): self.observer.finish(b'')

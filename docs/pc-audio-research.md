@@ -68,7 +68,7 @@ Consequently a key press alone never triggers remastered firing audio.
 Protocol 4 carries an `audio` envelope, now schema 3 for visible-readiness and crew-message events.
 The native sound-event layout is unchanged. The tracing build manifest
 advertises `audio_event_schema: 1`; the live host refuses an older local tracing
-build with a rebuild instruction and also requires `text_event_schema: 1` and
+build with a rebuild instruction and also requires `text_event_schema: 2` and
 `message_event_schema: 1`.
 Protocol 2 remains the silent historical
 static-view backend.
@@ -428,8 +428,9 @@ Trace header:
 `97798516834b2cfd97f00458f6fbf5743df17e593d569964f15cc3f7ef63a2b8`.
 Unmodified source baseline:
 `57edbd309eb2ab6264b70188c3a85408fbcfa8c62e83b8c7b9c39b7309f61ac6`.
-The subsequent source-verified cockpit strut extension and its current pins are
-recorded in [the cockpit art workflow](pc-ui-art-workflow.md).
+The subsequent source-verified cockpit strut extension is recorded in
+[the cockpit art workflow](pc-ui-art-workflow.md). The expanded live typography
+observer's current pins are in [the text research](pc-text-research.md#current-observer-pins-and-reproduction).
 
 ```sh
 python3 tools/capture_pc_dialogue.py --mode trace \

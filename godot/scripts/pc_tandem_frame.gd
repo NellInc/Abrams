@@ -2,6 +2,7 @@ extends TextureRect
 ## Original UI pixels over scanout-paired Godot scenery. No inferred colour key.
 ## Missing attribution shows the actual source frame, never stale scenery.
 const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
+var typography = preload("res://scripts/pc_typography.gd").new()
 var world_enabled := false
 var fallback_reason := "awaiting original framebuffer"
 const ART_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
@@ -25,9 +26,12 @@ func _init() -> void:
 	var shader_material := ShaderMaterial.new()
 	shader_material.shader = COMPOSITOR
 	material = shader_material
+	add_child(typography)
+	typography.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 func _fallback(reason: String) -> bool:
 	world_enabled = false
+	typography.clear_runs()
 	fallback_reason = reason
 	material.set_shader_parameter("world_enabled", false)
 	material.set_shader_parameter("world_texture", null)
@@ -183,4 +187,5 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> boo
 	fallback_reason = ""
 	_set_art(presentation,mask)
 	_set_driver_assembly(presentation,mask)
+	typography.set_frame(source,mask,presentation)
 	return true

@@ -38,6 +38,13 @@ static Bit32u abrams_plate_copy_source, abrams_plate_copy_dest;
 static bool abrams_text_active = false;
 static Bit16u abrams_text_rect[6];
 
+static bool AbramsKnownTextCaller(Bit16u caller) {
+    const Bit16u calls[] = {0x144b,0x3f1d,0x3f58,0x400d,0x4053,0x5345,0x5359,0x5379,0x538d,0x5456,0x546a,0x5483,0x54a0,0x551c,0x55b9,0x55df,0x5764,0x57a2,0x58cd,0x595a,0x59a8,0x59d4,0x62ed,0x6333,0x6347,0x635b,0x63f5,0x6409,0x641d,0x67c4,0x680d,0x6836,0x6dfe,0x6e70,0x6e93,0x6eb6,0x6ed9,0x6efc,0x6f1f,0x7f01,0x7f50,0x7fa7,0x809e,0x80b2,0x831c,0x8330,0x8349,0x88cf,0x88e2};
+    for (unsigned i = 0; i < sizeof(calls)/sizeof(calls[0]); ++i)
+        if (calls[i] == caller) return true;
+    return false;
+}
+
 extern "C" __attribute__((visibility("default")))
 void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
     abrams_trace_load = load;
@@ -226,7 +233,7 @@ static INLINE void AbramsTraceInstruction() {
             Bit32u stack = SegPhys(ss) + reg_sp;
             if (stack + 10 > 640 * 1024 || mem_readw(stack + 2) != abrams_trace_load) return;
             Bit32u caller = mem_readw(stack);
-            if (caller != 0x3f1d && caller != 0x3f58 && caller != 0x400d && caller != 0x55df) return;
+            if (!AbramsKnownTextCaller(Bit16u(caller))) return;
             MEM_BlockRead(0, abrams_trace_snapshot, sizeof(abrams_trace_snapshot));
             abrams_trace_callback(26, regs, abrams_trace_snapshot, 0, sizeof(abrams_trace_snapshot));
             Bit32u pointer = mem_readw(stack + 4), n = 0;
