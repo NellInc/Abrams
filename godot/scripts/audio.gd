@@ -17,7 +17,8 @@ func _ready() -> void:
 	var stream := load("res://assets/audio/engine.wav") as AudioStreamWAV
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_begin = 0
-	stream.loop_end = stream.data.size()/2
+	# Imported WAV data can be QOA, so byte count is not a PCM frame count.
+	stream.loop_end = roundi(stream.get_length()*stream.mix_rate)
 	engine.stream = stream
 	engine.volume_db = -28
 	voice = AudioStreamPlayer.new()

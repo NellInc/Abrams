@@ -5,6 +5,10 @@ Unknown requests stay in diagnostics without acquiring invented meanings.
 """
 from collections import deque
 import struct
+try:
+    from tools.pc_audio_loops import read_loops
+except ModuleNotFoundError:
+    from pc_audio_loops import read_loops
 
 # Return IPs immediately after verified near calls to 0000:9107.
 SAMPLES = {
@@ -54,8 +58,9 @@ class AudioEvents:
 
 
 def audio_status(ram, program):
-    if not program or program['name'] != 'SIM': return {'active': False, 'enabled': False}
+    if not program or program['name'] != 'SIM': return {'active': False, 'enabled': False, 'loops': {}}
     load = program['load_segment'] * 16
     backend = ram[load + 0x19E00 + 0x35AC]
     gate = ram[load + 0x18B50 + 0x0F48]
-    return {'active': True, 'enabled': backend in (0, 1) and gate == 1, 'backend': backend}
+    return {'active': True, 'enabled': backend in (0, 1) and gate == 1, 'backend': backend,
+            'loops': read_loops(ram, load, backend)}

@@ -14,11 +14,13 @@ from pathlib import Path
 
 try:
     from tools.pc_reference_core import PcReferenceCore, CORE_SHA256
-    from tools.pc_live_state import SimStateReader
+    from tools.pc_live_state import SimStateReader, active_program
+    from tools.pc_audio_events import audio_status
     from tools.verify_pc_bridge import STEPS
 except ModuleNotFoundError:
     from pc_reference_core import PcReferenceCore, CORE_SHA256
-    from pc_live_state import SimStateReader
+    from pc_live_state import SimStateReader, active_program
+    from pc_audio_events import audio_status
     from verify_pc_bridge import STEPS
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,7 +55,7 @@ def main():
     reader = SimStateReader(ROOT / 'GAME/SIM.EXE')
     collector = Collector(reader, args.output)
     core = PcReferenceCore(library, ROOT / '.runtime/pc-core/abrams-ref.zip', args.output / 'saves', expected_sha256=pin)
-    frames, audio_events = [], []
+    frames, audio_events, audio_states = [], [], []
     try:
         core.run(240)
         core.restore(args.state, expected_source_sha256=source_pin)
@@ -121,6 +123,10 @@ def main():
                         (args.output / plate_mask).write_bytes(base64.b64decode(paired['plate_overlay']['mask_png']))
                     ui_presentations.append({'stage': ui_stage, 'draw_sequence': paired['draw_pass']['sequence'],
                         'frame_index': i, 'image': filename + '.png', 'mask': filename + '-mask.png', 'plate_mask':plate_mask})
+            if args.profile == 'audio':
+                current_ram = core.conventional_memory()
+                audio_states.append({'frame_index':i, 'stage':stage,
+                                     **audio_status(current_ram,active_program(current_ram))})
             frames.append({'index': i, 'keys': keys, 'ram_sha256': hashlib.sha256(core.last_video_ram).hexdigest(),
                 'video_sha256': hashlib.sha256(core.last_video[0]).hexdigest()})
             if end_stage: stages[stage] = reader.read(core.last_video_ram)
@@ -128,7 +134,7 @@ def main():
         result = {'mode': args.mode, 'core_sha256': pin, 'source_commit': manifest['commit'], 'frames': frames,
             'state_sha256': hashlib.sha256(args.state.read_bytes()).hexdigest(),
             'state_core_sha256': source_pin, 'trace_header_sha256': manifest['trace_header_sha256'],
-            'profile': args.profile, 'stages': stages, 'audio_events': audio_events,
+            'profile': args.profile, 'stages': stages, 'audio_events': audio_events, 'audio_states': audio_states,
             'original_vertices_checked': collector.vertices_checked,
             'effect_pixels_checked': collector.effect_pixels_checked,
             'plate_loads': collector.plates.report(),

@@ -74,6 +74,12 @@ def effect(kind: str, seconds: float, seed: int) -> list[float]:
             x = 0.45*noise*math.exp(-t*3) + 1.2*low*math.exp(-t*7)
         elif kind == "switch":
             x = (noise*0.22 + math.sin(t*14000)*0.17)*math.exp(-t*90)
+        elif kind == "turret":
+            # Periodic hydraulic motor/gear harmonics, separate from the turbine.
+            # Integer frequencies and modulation keep the 2-second loop seamless.
+            motor = (0.13*math.sin(TAU*230*t) + 0.055*math.sin(TAU*460*t)
+                     + 0.025*math.sin(TAU*690*t) + 0.018*math.sin(TAU*1380*t))
+            x = motor*(0.85+0.15*math.sin(TAU*3*t)) + 0.035*math.sin(TAU*58*t)
         else:
             # Periodic turbine spectrum. Every partial repeats at the loop boundary.
             x = 0.16*math.sin(TAU*48*t) + 0.10*math.sin(TAU*96*t)
@@ -99,9 +105,9 @@ def main() -> None:
         raise SystemExit("Existing generative speech is protected from scratch-voice replacement")
     manifest.pop("sample_rate", None)
     manifest["effects_sample_rate"] = RATE
-    for i, (kind, duration) in enumerate({"cannon":2.4,"impact":2.8,"machinegun":0.22,"reload":0.85,"smoke":1.3,"switch":0.12,"engine":2.0}.items()):
+    for i, (kind, duration) in enumerate({"cannon":2.4,"impact":2.8,"machinegun":0.22,"reload":0.85,"smoke":1.3,"switch":0.12,"engine":2.0,"turret":2.0}.items()):
         path = OUT / f"{kind}.wav"
-        pcm(path, effect(kind, duration, 1988+i), loop=kind == "engine")
+        pcm(path, effect(kind, duration, 1988+i), loop=kind in ("engine", "turret"))
         manifest["effects"][kind] = {"sha256":hashlib.sha256(path.read_bytes()).hexdigest(), "source":"original mathematical synthesis, tools/build_audio.py"}
     if args.scratch_voices:
         manifest["voice_status"] = "development synthetic radio takes"

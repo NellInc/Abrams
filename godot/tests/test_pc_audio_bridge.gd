@@ -13,6 +13,11 @@ var errors: Array[String] = []
 var events: Array = []
 var heard: Array = []
 var output := ""
+var loop_checks := 0
+var engine_periods: Dictionary = {}
+var turret_active_frames := 0
+var muted_loop_frames := 0
+var loop_frames: Dictionary = {}
 
 func _initialize() -> void: start.call_deferred()
 
@@ -23,7 +28,12 @@ func start() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	audio = PcAudio.new()
 	root.add_child(audio)
-	var steps := [[30,[]],[3,["c"]],[30,[]],[3,["space"]],[300,[]],
+	for name in ["engine","turret"]:
+		loop_frames[name] = audio[name].stream.loop_end
+		if int(loop_frames[name]) != 96000: errors.append("Compressed WAV loop has wrong sample-frame endpoint")
+	var steps := [[30,[]],[3,["f4"]],[30,[]],[60,["kp8"]],[60,[]],[3,["kp5"]],[240,[]],
+		[3,["f1"]],[60,[]],[3,["c"]],[30,[]],[60,["kp6"]],[30,[]],[3,["kp5"]],[90,[]],
+		[3,["space"]],[300,[]],
 		[3,["m"]],[30,[]],[3,["s"]],[30,[]],
 		[3,["f5"]],[30,[]],[3,["space"]],[300,[]],
 		[3,["f5"]],[30,[]],[3,["escape"]],[30,[]],[3,["space"]],[30,[]],
@@ -43,13 +53,25 @@ func _process(_delta: float) -> bool:
 		events.append_array(packet.get("events",[]))
 		var last := int(audio.last_event_id)
 		if not audio.apply_audio(packet): errors.append(audio.failure)
+		for name in ["engine","turret"]:
+			var source: Dictionary = packet.get("loops",{}).get(name,{})
+			var player: AudioStreamPlayer = audio.engine if name == "engine" else audio.turret
+			var expected: bool = bool(packet.get("active",false)) and bool(packet.get("enabled",false)) and bool(source.get("active",false))
+			if player.playing != expected: errors.append("Original channel/playback mismatch: " + name)
+			loop_checks += 1
+			if expected:
+				if not is_equal_approx(player.pitch_scale,clampf(float(source.idle_period)/float(source.period),0.25,4.0)):
+					errors.append("Original tone period/playback pitch mismatch: " + name)
+				if name == "engine": engine_periods[int(source.period)] = true
+				else: turret_active_frames += 1
+			elif bool(source.get("active",false)): muted_loop_frames += 1
 		for receipt in audio.receipts:
 			if int(receipt.id) > last and receipt.reason.is_empty():
 				heard.append(receipt.duplicate())
 				var player: AudioStreamPlayer = audio.effects[(audio.cursor-1) % audio.effects.size()]
 				if not player.playing or player.stream == null: errors.append("Mapped event did not start sample")
 	if not bridge.failure.is_empty() and bridge.failure not in errors: errors.append(bridge.failure)
-	if Time.get_ticks_msec()-started > 180000 and not stopping: errors.append("native audio bridge deadline")
+	if Time.get_ticks_msec()-started > 240000 and not stopping: errors.append("native audio bridge deadline")
 	if stopping:
 		if drained and bridge.has_exited(): finish()
 	elif not errors.is_empty(): stop.call_deferred()
@@ -79,10 +101,17 @@ func finish() -> void:
 	if muted_shots.size() != 1: errors.append("Expected one silent original cannon request")
 	var gates := events.filter(func(e): return e.kind == "gate")
 	if gates.size() != 4: errors.append("Expected F5 off/on and pause/resume gates")
+	if engine_periods.size() < 2: errors.append("Original engine tone never changed")
+	if turret_active_frames == 0: errors.append("Original turret loop never sounded")
+	if muted_loop_frames == 0: errors.append("Muted original loops were not exercised")
+	var engine_stops: Array = audio.loop_transitions.filter(func(e): return e.name == "engine" and not e.active)
+	if engine_stops.size() != 2: errors.append("F5 and pause missing from loop-transition evidence")
 	if bridge.exit_code() != 0: errors.append("PC child did not exit cleanly")
 	var report := {"frames":index,"events":events,"heard":heard,"sample_counts":counts,
+		"loop_checks":loop_checks,"loop_frames":loop_frames,"engine_periods":engine_periods.keys(),"turret_active_frames":turret_active_frames,
+		"muted_loop_frames":muted_loop_frames,"loop_transitions":audio.loop_transitions,
 		"muted_shots":muted_shots.size(),"gates":gates.size(),"child_exit":bridge.exit_code(),"errors":errors,
 		"scope":"actual original PC host and native Godot playback, no mixed audio recording"}
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
-	print("PC_AUDIO_NATIVE: " + JSON.stringify({"frames":index,"counts":counts,"events":events.size(),"errors":errors}))
+	print("PC_AUDIO_NATIVE: " + JSON.stringify({"frames":index,"counts":counts,"events":events.size(),"loop_checks":loop_checks,"turret_frames":turret_active_frames,"errors":errors}))
 	quit(0 if errors.is_empty() else 1)

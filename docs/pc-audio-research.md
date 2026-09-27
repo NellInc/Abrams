@@ -13,8 +13,9 @@ neither records the emulator's mixed output nor runs the calibration-range
 simulation. Original F5 sound-off and pause stop effects and voices. Closing the
 viewer drains Godot playback and gracefully closes its own PC helper.
 
-This is partial sound coverage. Engine/turret loops, radio, warning sounds,
-original message-driven dialogue, readiness barks, briefings and music remain.
+This is partial sound coverage. Engine/turret loops now follow their original
+sound channels. Radio, warning sounds, original message-driven dialogue,
+readiness barks, briefings and music remain.
 Final mix and human listening approval are also open.
 
 ## Original code boundary
@@ -28,7 +29,7 @@ registers, guest RAM, instructions, execution order or cycle counts:
 | `0000:9107` | Original sound dispatcher | Reads driver type at main DS:35ac, then dispatches PC-speaker/Tandy event tables. Near-call argument is SS:SP+2. |
 | `0000:8da3` | Original sound gate | Writes the argument to sound DS:0f48. F5 calls it at 1e78; pause at 407d, resume at 408f. |
 | `0000:35ee` | Original reload completion | Reached only after reload state 2 counts down; original instruction clears main DS:79aa. Evidence only, no bark yet. |
-| `0000:91d6` | Original engine sound parameter | Caller 787e supplies an original movement-derived parameter. Evidence only, no substitute engine rules. |
+| `0000:91d6` | Original engine sound parameter | Caller 787e supplies an original movement-derived parameter. Request evidence only; playback reads the running original sound channel. |
 
 Main DS is load+19e0; sound DS is load+18b5. Gate value 1 and sound driver 0 or 1
 are the only enabled combinations accepted. Other values remain silent.
@@ -48,9 +49,9 @@ return IP. A known number from an unfamiliar callsite stays unmapped.
 | 6 or 8, original impact dispatches | 6b25, 74e5, 7547 | impact | None |
 | 14, original menu-selection dispatches | 15e4, 15ff, 1640, 814d, 81cf, 81f3 | switch | None |
 
-The impact and menu mappings have callsite evidence; their live acoustic coverage
-is not established by this firing probe. It directly exercises cannon, coax and
-smoke. Unknown requests are retained in diagnostics and stay silent. No “Good
+The initial firing probe directly exercises cannon, coax and smoke. The later
+native motor probe also exercises impact request 6 from return IP 74e5. Other
+impact and menu mappings retain callsite evidence without live acoustic coverage. Unknown requests are retained in diagnostics and stay silent. No “Good
 hit”, training-range completion, or ready-to-move line is borrowed for an
 unrelated PC event. Incoming-hit speech will use the original displayed bearing
 and digit-wise pronunciation, including leading zeroes, after its visibility
@@ -151,3 +152,107 @@ The unmodified baseline remains
 `57edbd309eb2ab6264b70188c3a85408fbcfa8c62e83b8c7b9c39b7309f61ac6`.
 Original executable and asset bytes are unchanged. No new audio generation,
 network calls, proprietary redistribution, publication or push was performed.
+
+## Continuous engine and turret channels
+
+`tools/pc_audio_loops.py` reads the original sound interpreter's live channel
+records at the same fenced boundary as the sound gate. It does not infer motor
+state from input keys, turret angle, vehicle speed or an invented acceleration
+model. Restoring a mission snapshot therefore restores its already-running
+engine sound without waiting for another start request.
+
+Each channel record has 48 bytes. Offset 0 is the remaining interpreter timer,
+2 its next program byte, 4 its base tone period, and 0a its amplitude. All four
+conditions must qualify: a nonzero timer, a program cursor within the relevant
+original loop, a nonzero period and nonzero amplitude. A different sound using
+the same channel cannot acquire motor identity.
+
+| Original driver | Record table in sound DS | Engine channel / program interval | Turret channel / program interval |
+|---|---|---|---|
+| PC speaker (0) | 0f76 | 3 / [0bd4, 0bfc) | 2 / [0c20, 0c84) |
+| Tandy (1) | 1110 | 0 / [0628, 0650) | 1 / [0650, 06cc) |
+
+The original dispatcher 9107 and interpreter 8f33 execute unmodified in
+`tools/pc_audio_loop_oracle.py`. The isolated harness supplies only arguments,
+stack, driver selection and the channel context normally set by the original
+interrupt wrapper. Both driver paths pass 3,744 ticks each: engine start, idle,
+parameter change, turret start, original release tail, engine stop and all 12
+other tested sound requests. None of those unrelated requests masquerades as a
+motor loop. This is isolated CPU evidence for Tandy; the live core probe uses
+PC-speaker mode.
+
+Godot plays the existing turbine sample and a new separate hydraulic/gear sample.
+The turret source is original mathematical synthesis, two seconds of periodic
+48 kHz mono 16-bit audio. Its waveform and periodic boundary are checked, and
+its source hash is recorded in `provenance.json`. The rebuild preserved all 16
+pre-existing effect and voice WAVs byte-for-byte.
+
+Pitch follows the ratio of the original idle period to the current channel
+period, with presentation limits of 0.25 to 4.0. Gain follows channel amplitude
+relative to its driver-specific reference and the authored mix level. These are
+new timbres and a modern mix, not an emulation of PC-speaker waveforms or its
+single-voice arbitration. Original decisions, channel activation and release
+remain authoritative. New samples, historical pacing and subjective mix approval
+are distinct claims.
+
+### Compressed loop endpoint repair
+
+The existing shared engine player used `data.size()/2` as its loop endpoint.
+Runtime inspection established that Godot imported both loops as QOA: 38,864
+compressed bytes represented 96,000 sample frames. The old calculation looped
+at frame 19,432 (about 0.405 seconds), truncating a two-second authored cycle.
+The new turret player initially inherited that broken assumption.
+
+Both players now use the imported duration multiplied by sample rate. Godot
+[defines loop endpoints in samples and supports compressed WAV data](https://docs.godotengine.org/en/stable/classes/class_audiostreamwav.html#class-audiostreamwav-property-loop-end).
+`pc-audio-loop-import-probe.log` retains the observed defect;
+`pc-audio-loop-import-fixed.log` confirms both endpoints at 96,000. Regression
+checks cover the actual compressed imported resources. The shared repair also
+fixes the calibration range's engine loop; its full runtime gate still passes.
+
+A separate diagnostic defect omitted muted loop stops because the player had
+already been stopped before transitions were counted. Desired original channel
+state now has its own bounded transition record. F5 and pause stops, as well as
+resumes, appear in the native report.
+
+### Motor evidence
+
+* `pc-audio-loop-oracle-01.json`: both unchanged original interpreter paths,
+  7,488 ticks total, all 14 case checks pass.
+* `pc-audio-loop-synthesis-01.json`: all 16 earlier WAV hashes unchanged; the
+  new turret sample hash is
+  `d058da69d0eed464859d86db4bb2ff2af3ae038e8e8798ca15fb9ffe7646499e`.
+* `pc-audio-comparison-03.json`: all 18 checks pass over 2,091 frames. RAM,
+  video, input, decoded gameplay states and live sound-channel states are equal
+  to the unmodified baseline. Turret rotation continues on key release; its
+  stop command retains the original deceleration tail before going silent.
+* `pc-audio-native-04/report.json`: 1,692 actual original frames, 3,386 channel
+  activation/pitch comparisons, 130 sounding turret frames, 370 muted-loop
+  observations and four distinct engine periods. Both loops use all 96,000
+  frames. Two cannon, one machine-gun, one smoke and one impact sample played;
+  one muted accepted cannon request stayed silent. Four original gate changes,
+  correct F5/pause transition receipts, zero errors, clean child exit.
+* Native runs 02 and 03 retain earlier activation evidence; run 02 predates the
+  transition-log repair, and both predate the compressed endpoint repair.
+* `validation-20260927T101153Z/results.txt`: all 18 stages pass, including 146
+  Python tests, 52 Godot audio assertions and original-source preservation,
+  terminal exit 0.
+
+Reproduce the isolated interpreter check with the pinned analysis environment:
+
+```sh
+.runtime/pc-analysis-venv/bin/python tools/pc_audio_loop_oracle.py \
+  --output artifacts/pc-audio-loop-oracle-01.json
+```
+
+For fresh live captures, use the earlier baseline/trace `audio` commands with
+new output directories, then compare them with `verify_pc_audio_trace.py`.
+The native test now also checks continuous channels and full loop endpoints.
+No native core changes were required for this extension; the pins above remain
+current. No original instructions or files changed, and no mixed recordings or
+external generation were used.
+
+Working if: restored engine audio starts from the original occupied channel,
+turret release follows its interpreter tail, mute silences still-active channels,
+other sounds never claim motor identity, and imported loops cover all authored
+sample frames rather than a compressed-byte approximation.

@@ -34,6 +34,19 @@ def verify(trace, baseline):
         'only_context_correct_voices': all(e.get('voice') in (None,'on_the_way','smoke') for e in events),
         'event_frame_order': all(a['frame_index']<=b['frame_index'] for a,b in zip(events,events[1:])),
     }
+    audio_states = trace.get('audio_states', [])
+    if audio_states:
+        stages = lambda name: [r for r in audio_states if r['stage'] == name]
+        checks.update({
+            'original_sound_channel_states_identical': audio_states == baseline.get('audio_states'),
+            'engine_idle_channel_present': all(r['loops']['engine']['active'] for r in stages('baseline')),
+            'engine_tone_changes_with_original_program': len({r['loops']['engine']['period'] for r in audio_states}) > 1,
+            'turret_persists_on_key_release': all(r['loops']['turret']['active'] for r in stages('turn-coast')),
+            'turret_original_deceleration_tail': any(r['loops']['turret']['active'] for r in stages('turret-stopped')) and
+                not stages('turret-stopped')[-1]['loops']['turret']['active'],
+            'mute_and_pause_preserve_silent_engine_state': all(r['loops']['engine']['active'] and not r['enabled']
+                for r in stages('muted') + stages('paused')),
+        })
     return {'checks':checks,'frames':len(trace['frames']),'events':len(events),
             'sample_request_counts':dict(counts),'core_sha256':trace['core_sha256'],
             'baseline_sha256':baseline['core_sha256'], 'state_sha256':trace['state_sha256']}

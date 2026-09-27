@@ -581,6 +581,43 @@ Interactive one-frame delivery is tested separately. Current pins, exact command
 and remaining coverage are in `pc-audio-research.md`. No new external generation,
 publication, upload or push occurred. The full remaster goal stays active.
 
+## Original sound-channel loops, 2026-09-27
+
+Extended the original-event audio pilot with engine and turret loops. Source
+ownership comes from the original sound interpreter's channel timer, program
+cursor, tone period and amplitude. Keyboard or vehicle-state heuristics are
+absent. The original turret deceleration tail is retained. A separate newly
+synthesized two-second turret sample accompanies the existing turbine sample;
+all 16 prior effect/voice WAVs stayed byte-identical.
+
+The implementing assistant also performed the review. It found two in-scope
+faults and retained before/after evidence: mute stops were omitted from the
+transition log, and the shared engine player treated compressed QOA byte length
+as a 16-bit PCM frame count. The latter truncated each two-second loop at 19,432
+frames. Both engine and turret now loop at the full 96,000 frames; regression
+tests inspect actual imported resources. The range's shared player is fixed too.
+
+* `pc-audio-loop-oracle-01.json`: unchanged original dispatch/interpreter routines
+  execute for 3,744 ticks in each of PC-speaker and Tandy modes. All 14 case
+  checks pass, including starts, release, parameter change, stops and rejecting
+  unrelated channel occupants. Live Tandy coverage remains open.
+* `pc-audio-comparison-03.json`: 18 checks pass, 2,091 RAM/video/input/gameplay
+  and original sound-channel states match the unmodified baseline.
+* `pc-audio-native-04/report.json`: 1,692 original frames, 3,386 native loop
+  activation/pitch comparisons, 130 active turret frames and 370 muted-loop
+  observations. Correct full sample endpoints, four engine periods, F5/pause
+  stop/resume receipts, five played one-shots including one impact, zero errors,
+  child exit 0. The muted accepted cannon shot stays silent.
+* `validation-20260927T101153Z/results.txt`: all 18 stages pass, 146 Python tests,
+  52 Godot audio assertions, original source preservation, terminal exit 0.
+
+Current runtime is still an opt-in presentation pilot. Radio/warnings, original
+message-linked dialogue/readiness, subtitles/mix controls and music remain.
+PC-speaker arbitration and old waveforms are replaced by authored timbres and a
+modern mix; original gameplay and loop ownership are retained. Human listening
+approval and historical pacing are not established. Full details and both repair
+receipts are in `pc-audio-research.md`. The parent goal remains active.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -609,7 +646,8 @@ publication, upload or push occurred. The full remaster goal stays active.
    native music containers are preserved. The 68-entry native archive is verified.
    Nine generative range voices are installed, with unchanged cues/caption words.
    Original-event cannon and smoke calls now reuse two selected takes in the
-   opt-in tandem audio pilot; F5 and pause retain authority.
+   opt-in tandem audio pilot; F5 and pause retain authority. Engine and turret
+   loops now follow original interpreter state, including the turret release tail.
    Automated transcription matched the selected set after a revised 3.8 readiness
    take and a 3.1 fallback for the one-word loader call. Rejected takes are retained.
    No human listening approval, complete PC dialogue coverage or finished music

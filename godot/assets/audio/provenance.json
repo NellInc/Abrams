@@ -27,6 +27,10 @@
     "engine": {
       "sha256": "d248c5aa34fd2359b9b4fd0e6fb986262b5167fda515fefe0d239bd2278b33ab",
       "source": "original mathematical synthesis, tools/build_audio.py"
+    },
+    "turret": {
+      "sha256": "d058da69d0eed464859d86db4bb2ff2af3ae038e8e8798ca15fb9ffe7646499e",
+      "source": "original mathematical synthesis, tools/build_audio.py"
     }
   },
   "voice_status": "Generative crew takes: eight Gemini 3.8, one authorized 3.1 fallback; transcription matched; listening review pending",

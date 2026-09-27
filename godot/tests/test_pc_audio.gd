@@ -16,6 +16,12 @@ func packet(frame: int, id: int, events: Array, enabled: bool = true, epoch: int
 	return {"schema":1, "frame":frame, "epoch":epoch, "last_id":id,
 		"active":true, "enabled":enabled, "events":events}
 
+func loops(engine_on: bool = true, turret_on: bool = false) -> Dictionary:
+	return {"engine":{"active":engine_on,"channel":3,"ticks":85,"program":0xbf8,"period":0x4584,
+		"amplitude":3,"idle_period":0x4584,"amplitude_reference":3},
+		"turret":{"active":turret_on,"channel":2,"ticks":20,"program":0xc4c,"period":8500,
+		"amplitude":3,"idle_period":8500,"amplitude_reference":3}}
+
 func _initialize() -> void: run.call_deferred()
 
 func run() -> void:
@@ -62,6 +68,40 @@ func run() -> void:
 		check(await bad.drain_for_shutdown(),mode+" drain")
 		bad.queue_free()
 		await process_frame
+	var motors := PcAudio.new()
+	root.add_child(motors)
+	check(motors.engine.stream.loop_end == 96000,"full engine loop survives compressed WAV import")
+	check(motors.turret.stream.loop_end == 96000,"full turret loop survives compressed WAV import")
+	var loop_packet := packet(1,0,[])
+	loop_packet.loops = loops()
+	check(motors.apply_audio(loop_packet) and motors.engine.playing and not motors.turret.playing,"restored original engine channel starts")
+	check(is_equal_approx(motors.engine.pitch_scale,1.0),"original idle period")
+	loop_packet = packet(2,0,[])
+	loop_packet.loops = loops(true,true)
+	loop_packet.loops.engine.period = 0x3384
+	check(motors.apply_audio(loop_packet) and motors.turret.playing,"original turret channel starts")
+	check(is_equal_approx(motors.engine.pitch_scale,float(0x4584)/float(0x3384)),"original tone period controls engine pitch")
+	check(motors.turret.stream is AudioStreamWAV and motors.turret.stream.loop_mode == AudioStreamWAV.LOOP_FORWARD,"authored turret PCM loop")
+	loop_packet = packet(3,0,[],false)
+	loop_packet.loops = loops(true,true)
+	check(motors.apply_audio(loop_packet) and not motors.engine.playing and not motors.turret.playing,"original gate silences active channels")
+	check(motors.loop_transitions[-1].active == false and motors.loop_transitions[-2].active == false,"mute stops retained in transition evidence")
+	loop_packet = packet(4,0,[])
+	loop_packet.loops = loops(true,true)
+	check(motors.apply_audio(loop_packet) and motors.engine.playing and motors.turret.playing,"gate resume restores original channels")
+	loop_packet = packet(5,0,[])
+	loop_packet.loops = loops(true,false)
+	check(motors.apply_audio(loop_packet) and motors.engine.playing and not motors.turret.playing,"original turret release stops independently")
+	loop_packet = packet(6,0,[])
+	loop_packet.active = false
+	check(motors.apply_audio(loop_packet) and not motors.engine.playing,"leaving SIM clears original engine")
+	loop_packet = packet(7,0,[])
+	loop_packet.loops = loops()
+	loop_packet.loops.engine.period = 0
+	check(not motors.apply_audio(loop_packet) and not motors.engine.playing,"invalid active tone fails closed")
+	check(await motors.drain_for_shutdown(),"motor playback drains")
+	motors.queue_free()
+	await process_frame
 	print("PC_AUDIO: %d checks, %d failures" % [checks,failures.size()])
 	for failure in failures: printerr(failure)
 	quit(0 if failures.is_empty() else 1)

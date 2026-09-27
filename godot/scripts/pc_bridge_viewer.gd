@@ -287,7 +287,7 @@ func _capture() -> void:
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
 	file.store_string(JSON.stringify({"state": previous, "program": previous_program, "samples": samples, "presentation": previous_presentation,
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
-		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts} if pc_audio else null,
+		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions} if pc_audio else null,
 		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,
 		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects with original source-resolution cockpit/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)

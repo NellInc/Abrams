@@ -22,8 +22,9 @@ music and sound-effect references for a faithful presentation upgrade.
   original sight geometry stay unchanged. Missing art/provenance falls back to
   the original. See `docs/pc-ui-art-workflow.md` for its restricted scope.
   Add `--audio` for original-event sample playback and generated firing/smoke
-  crew calls. F5 and original pause mute it. Engine loops, remaining dialogue
-  and music are unfinished; see `docs/pc-audio-research.md`.
+  crew calls, plus engine and turret loops driven by original sound channels.
+  F5 and original pause mute them. Remaining dialogue and music are unfinished;
+  see `docs/pc-audio-research.md`.
 * Alternatively import `godot/project.godot` in Godot 4 and run the main scene.
 * Set `GODOT_BIN` to the engine executable if the launcher cannot find it.
 
