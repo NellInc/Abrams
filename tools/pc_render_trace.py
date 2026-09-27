@@ -19,6 +19,7 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.pc_materials import read_materials
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
+    from tools.pc_audio_events import AudioEvents
     from tools.pc_plate_trace import PlateLoads, PLATE_IDS
 except ModuleNotFoundError:
     from pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
@@ -26,6 +27,7 @@ except ModuleNotFoundError:
     from inspect_scenarios import decode_resource
     from pc_materials import read_materials
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
+    from pc_audio_events import AudioEvents
     from pc_plate_trace import PlateLoads, PLATE_IDS
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,6 +56,7 @@ class Collector:
         self.background_page = None
         self.error = None
         self.sequence = 0
+        self.audio = AudioEvents()
         self.plates = PlateLoads(ROOT / 'GAME')
         self.vertices_checked = 0
         self.effects = decode_bitmaps(decode_resource((ROOT / 'GAME/EFFECTS.BMP').read_bytes()))
@@ -64,6 +67,9 @@ class Collector:
     def observe(self, event, registers, data, offset, length):
         try:
             raw = C.string_at(data, length)
+            if event == 25:
+                self.audio.observe(raw)
+                return
             if event in (10, 11, 12, 19, 24):
                 self.observe_video(event, offset, raw, registers)
                 return

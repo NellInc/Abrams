@@ -70,6 +70,7 @@ def main():
                     'ram_sha256':hashlib.sha256(core.last_video_ram).hexdigest(),
                     'video_sha256':hashlib.sha256(core.last_video[0]).hexdigest()})
             sample = session.sample()
+            sample["audio"] = session.drain_audio()
             filename = step['label']+'.png'
             core.screenshot().save(args.output/filename)
             samples.append(step | sample | {'frame':core.frame, 'image':filename})

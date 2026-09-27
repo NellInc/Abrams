@@ -20,6 +20,10 @@ wireframe diagnostic. See [UI research](pc-ui-research.md),
 [scanout research](pc-render-sync-research.md) and
 [surface research](pc-surfaces-research.md) for presentation evidence and limits.
 
+Optional `--audio` maps verified original sound requests to authored samples and
+generated firing/smoke calls. Original F5 and pause control the sound gate;
+[PC audio research](pc-audio-research.md) records coverage and remaining sounds.
+
 Arrows, numeric keypad, alphabetic keys, digits, F1 through F12, Enter, Escape,
 Space, Tab and Backspace retain their original key identities. In particular,
 top-row 5 is distinct from keypad 5, so name entry does not become tank braking.

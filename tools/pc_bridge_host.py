@@ -80,6 +80,8 @@ def main():
             manifest = json.loads((ROOT / ".runtime/pc-core/abrams-trace.json").read_text())
             if manifest.get("schema") != 2:
                 raise ValueError("trace backend requires the scanout-aware source build")
+            if manifest.get("audio_event_schema") != 1:
+                raise ValueError("Rebuild the local trace core for original audio-event support")
             pin, source_pin = manifest["trace_sha256"], manifest["baseline_sha256"]
             args.core = ROOT / ".runtime/pc-core/abrams-trace.dylib"
         core = PcReferenceCore(args.core, args.content, args.saves, expected_sha256=pin)
@@ -106,6 +108,7 @@ def main():
                     "fps": core.pause_at_frame_end().timing.fps}
             if session:
                 result.update(sample)
+                result["audio"] = session.drain_audio()
             return result
 
         ready = packet("ready", -1)

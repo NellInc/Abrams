@@ -135,11 +135,32 @@ static INLINE void AbramsTraceInstruction() {
     if (ip != 0x8ac4 && ip != 0x02c1 && ip != 0x29ad && ip != 0x0596 && ip != 0x2979 && ip != 0x0357
         && ip != 0x28d0 && ip != 0x31a6 && ip != 0x59e4 && ip != 0x340b
         && ip != 0x3707 && ip != 0x36c8 && ip != 0x8b49 && ip != 0x28e4 && ip != 0x0347
-        && ip != 0x1170 && ip != 0x123a && ip != 0x1226 && ip != 0x1238 && ip != 0x1a7c) return;
+        && ip != 0x1170 && ip != 0x123a && ip != 0x1226 && ip != 0x1238 && ip != 0x1a7c
+        && ip != 0x9107 && ip != 0x8da3 && ip != 0x35ee && ip != 0x91d6) return;
     if (SegValue(ds) != abrams_trace_load + 0x19e0) return;
     Bit32u segment = SegValue(cs), event = 0, start = 0, length = 0;
     const Bit32u base = SegPhys(ds);
     if (base + 65536 > 640 * 1024) return;
+    if (segment == abrams_trace_load &&
+        (ip == 0x9107 || ip == 0x8da3 || ip == 0x35ee || ip == 0x91d6)) {
+        // Actual original sound requests, gate changes and reload completion.
+        // Six LE words. Read the near-call stack before the original prologue;
+        // no callback can supply a return value or change guest execution.
+        const Bit16u regs[12] = {reg_ax, reg_bx, reg_cx, reg_dx, reg_si, reg_di,
+            reg_bp, reg_sp, SegValue(cs), SegValue(ds), SegValue(es), SegValue(ss)};
+        Bit32u stack = SegPhys(ss) + reg_sp;
+        Bit32u sound = 16u * (abrams_trace_load + 0x18b5) + 0x0f48;
+        if (stack + 4 > 640 * 1024 || sound >= 640 * 1024) {
+            abrams_trace_callback(25, regs, NULL, 0, 0); return;
+        }
+        Bit16u values[6] = {Bit16u(ip), mem_readw(stack),
+            Bit16u(ip == 0x35ee ? 0 : mem_readw(stack + 2)),
+            mem_readb(base + 0x35ac), mem_readb(sound), mem_readb(base + 0x79aa)};
+        Bit8u bytes[12];
+        for (unsigned i = 0; i < 6; ++i) { bytes[i*2] = Bit8u(values[i]); bytes[i*2+1] = Bit8u(values[i] >> 8); }
+        abrams_trace_callback(25, regs, bytes, 0, 12);
+        return;
+    }
     if (segment == abrams_trace_load + 0x0f8d && ip == 0x1a7c) {
         Bit32u stack = SegPhys(ss) + reg_sp;
         Bit32u source = mem_readw(base + 0x35a2), dest = mem_readw(base + 0x35a4);

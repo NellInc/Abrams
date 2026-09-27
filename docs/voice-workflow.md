@@ -82,3 +82,12 @@ Automated transcription checks intelligibility and wording, with expected words
 withheld from the recognizer. It does not establish final casting, acting quality
 or listening approval. The entire PC dialogue catalogue, mission briefings and
 final mixes remain separate unfinished parts of the remaster.
+
+## Original PC tandem use
+
+The opt-in `PC Bridge.command --audio` pilot reuses only “On the way!” at the
+original accepted cannon request and “Smoke out.” at the original smoke request.
+It does not borrow training-range outcomes or interpret “Good hit” as an incoming
+hit. The loader call is withheld pending original readiness-display timing.
+All bearing calls still require digit-wise speech with numeric captions.
+See [original audio research](pc-audio-research.md) for the live event boundary.

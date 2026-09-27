@@ -1,11 +1,14 @@
 extends SceneTree
 ## Research tandem view. Original PC executables own every game flow.
+const PcAudio = preload("res://scripts/pc_audio.gd")
 const Bridge = preload("res://scripts/pc_bridge.gd")
 const Keyboard = preload("res://scripts/pc_keyboard.gd")
 const WorldView = preload("res://scripts/pc_world_view.gd")
 const DrawPass = preload("res://scripts/pc_draw_pass.gd")
 const PcCamera = preload("res://scripts/pc_camera.gd")
 const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
+var pc_audio: Node
+var audio_drained := true
 var world_view: Node3D
 var draw_view: Node3D
 var trace_mode := false
@@ -53,6 +56,9 @@ func _initialize() -> void:
 	if "--output" in args and args.find("--output")+1 < args.size(): output = args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	_build_ui()
+	if trace_mode and "--audio" in args:
+		pc_audio = PcAudio.new()
+		root.add_child(pc_audio)
 	if trace_mode and gunner_art_requested:
 		var art_path := directory.path_join("local-art/pc-ui-remastered/gunner-plate-v2.png")
 		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
@@ -180,7 +186,7 @@ func _process(delta: float) -> bool:
 		status.text = "Bridge stopped: " + bridge.failure
 		_close()
 	if closing:
-		if bridge.has_exited(): quit(0 if bridge.failure.is_empty() and bridge.exit_code() == 0 else 1)
+		if bridge.has_exited() and audio_drained: quit(0 if bridge.failure.is_empty() and bridge.exit_code() == 0 else 1)
 		return false
 	if not bridge.pending:
 		if capture:
@@ -202,6 +208,9 @@ func _process(delta: float) -> bool:
 	return false
 
 func _apply_sample(message: Dictionary) -> void:
+	if pc_audio and not pc_audio.apply_audio(message.get("audio", {})):
+		bridge.failure = pc_audio.failure
+		return
 	var state = message.get("state")
 	if not state is Dictionary and not trace_mode:
 		bridge.failure = "SIM state is unavailable. No substitute simulation was started."
@@ -278,12 +287,21 @@ func _capture() -> void:
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
 	file.store_string(JSON.stringify({"state": previous, "program": previous_program, "samples": samples, "presentation": previous_presentation,
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
+		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts} if pc_audio else null,
 		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,
 		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects with original source-resolution cockpit/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()
 
+func _drain_audio() -> void:
+	if not await pc_audio.drain_for_shutdown(): bridge.failure = "Original-event audio did not drain"
+	audio_drained = true
+
 func _close() -> void:
+	if closing: return
+	if pc_audio:
+		audio_drained = false
+		_drain_audio.call_deferred()
 	if not closing and not bridge.failure.is_empty(): printerr("PC_VIEW_FAILED: " + bridge.failure)
 	closing = true
 	bridge.close()

@@ -43,7 +43,9 @@ class SessionTests(unittest.TestCase):
                                  read=lambda ram: {'load_segment':0x1ED})
         observations = []
         class FakeCollector:
-            def __init__(self,*args,**kwargs): self.error=None
+            def __init__(self,*args,**kwargs):
+                self.error=None
+                self.audio=SimpleNamespace(drain=lambda: [])
             def attach(self,core,segment): observations.append(('attach',segment))
             def detach(self,core): observations.append(('detach',))
             def paired_video(self,video): return {'draw_pass':{'sequence':1}}

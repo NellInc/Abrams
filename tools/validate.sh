@@ -38,6 +38,7 @@ run_check pc_tandem_frame ./tools/godot.sh --headless --script res://tests/test_
 run_check pc_plate_art ./tools/godot.sh --headless --script res://tests/test_pc_plate_art.gd
 run_check geometry ./tools/godot.sh --headless --script res://tests/test_geometry.gd
 run_check audio ./tools/godot.sh --headless --script res://tests/test_audio.gd
+run_check pc_audio ./tools/godot.sh --headless --script res://tests/test_pc_audio.gd
 run_check audio_shutdown ./tools/godot.sh --headless --verbose --script res://tests/test_audio_shutdown.gd
 run_check runtime ./tools/godot.sh --headless --verbose -- --smoke-test
 printf 'VALIDATION_COMPLETE %s\n' "$OUT"

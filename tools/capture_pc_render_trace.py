@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--mode', choices=['trace','baseline','reference'], default='trace')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=180)
-    parser.add_argument('--profile', choices=['turn', 'controls', 'plates'], default='turn')
+    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio'], default='turn')
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--state-core-sha256', help='defaults to the selected reference or source-baseline pin')
     parser.add_argument('--capture-sprites', action='store_true', help='save first paired framebuffer for each observed effect image')
@@ -53,7 +53,7 @@ def main():
     reader = SimStateReader(ROOT / 'GAME/SIM.EXE')
     collector = Collector(reader, args.output)
     core = PcReferenceCore(library, ROOT / '.runtime/pc-core/abrams-ref.zip', args.output / 'saves', expected_sha256=pin)
-    frames = []
+    frames, audio_events = [], []
     try:
         core.run(240)
         core.restore(args.state, expected_source_sha256=source_pin)
@@ -66,13 +66,23 @@ def main():
         presentations = []
         sprite_presentations, captured_sprites, ui_presentations = [], set(), []
         stages = {}
-        if args.profile in ('controls', 'plates'):
+        if args.profile in ('controls', 'plates', 'audio'):
             steps = STEPS + [('commander-key', 3, ['f2']), ('commander', 60, [])]
             if args.profile == 'plates':
                 steps += [('damage-key', 3, ['d']), ('damage', 120, []),
                           ('damage-close-key', 3, ['space']), ('damage-closed', 60, [])]
             steps += [('cupola-key', 3, ['f3']), ('cupola', 60, []),
                       ('return-gunner-key', 3, ['f1']), ('return-gunner', 240 if args.profile == 'plates' else 60, [])]
+            if args.profile == 'audio':
+                steps += [('machinegun-key', 3, ['m']), ('machinegun', 60, []),
+                          ('smoke-key', 3, ['s']), ('smoke', 60, []),
+                          ('mute-key', 3, ['f5']), ('muted', 30, []),
+                          ('muted-fire-key', 3, ['space']), ('muted-fire', 300, []),
+                          ('unmute-key', 3, ['f5']), ('unmuted', 30, []),
+                          ('pause-key', 3, ['escape']), ('paused', 60, []),
+                          ('resume-key', 3, ['space']), ('resumed', 60, []),
+                          ('audible-fire-key', 3, ['space']), ('audible-fire-wait', 15, []),
+                          ('rejected-fire-key', 3, ['space']), ('audible-fire', 282, [])]
             inputs = [(name, keys, n == count - 1) for name, count, keys in steps for n in range(count)]
         else:
             inputs = [('turn', ['c'] if i < 3 else ['kp6'] if 30 <= i < 90 else [], i == args.frames - 1)
@@ -81,6 +91,7 @@ def main():
             captured_sprite = False
             core.run(1, keys)
             if collector.error: raise collector.error
+            audio_events.extend(e | {"frame_index": i, "stage": stage} for e in collector.audio.drain())
             if args.mode == 'trace':
                 paired = collector.paired_video(core.last_video)
                 metadata = {k: v for k, v in paired.items() if k not in ('draw_pass', 'ui_overlay', 'plate_overlay')}
@@ -117,7 +128,7 @@ def main():
         result = {'mode': args.mode, 'core_sha256': pin, 'source_commit': manifest['commit'], 'frames': frames,
             'state_sha256': hashlib.sha256(args.state.read_bytes()).hexdigest(),
             'state_core_sha256': source_pin, 'trace_header_sha256': manifest['trace_header_sha256'],
-            'profile': args.profile, 'stages': stages,
+            'profile': args.profile, 'stages': stages, 'audio_events': audio_events,
             'original_vertices_checked': collector.vertices_checked,
             'effect_pixels_checked': collector.effect_pixels_checked,
             'plate_loads': collector.plates.report(),

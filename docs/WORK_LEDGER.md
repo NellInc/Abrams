@@ -536,6 +536,51 @@ fonts/instruments, high-resolution world assets, event-driven remastered audio,
 full mission/campaign/save coverage and historical pacing remain open. The parent
 goal stays active.
 
+## Original-event audio pilot, 2026-09-27
+
+Continued under Nell's approval to use the original PC as authority. The native
+observer now reads the original sound dispatcher, sound gate, engine parameter
+and reload completion. The sound/voice layer has no keyboard-driven firing or
+replacement combat rules. Read-only trace event 25 feeds a bounded once-only
+queue with original frame and SIM epoch custody.
+
+The opt-in `PC Bridge.command --audio` pilot maps accepted cannon, coax and smoke
+requests to existing newly synthesized sample files, with the selected generated
+“On the way!” and “Smoke out.” takes. Original F5 and pause stop playback. Impact
+and menu requests have bounded callsite mappings; their native acoustic coverage
+remains unproven. Engine/turret loops, warnings, radio, the complete PC dialogue
+catalogue and music remain open. Original reload completion is recorded without
+a bark pending readiness-display timing. Bearings retain digit-wise speech.
+
+Evidence checked directly by the implementing assistant:
+
+* `pc-audio-comparison-02.json`: all 12 checks pass. 2,091 frames of RAM, video,
+  inputs and stage states match the unmodified source-built baseline exactly.
+  113 original events include three accepted main-gun shots, one coax and one
+  smoke request. An extra fire input while loading is rejected without an extra
+  sound. A muted accepted shot still consumes its original ammunition.
+* `pc-audio-native-01/report.json`: 1,050 actual original frames through the PC
+  child and native Godot audio. Two cannon samples, one coax and one smoke sample
+  played; one muted cannon stayed silent. Four F5/pause gates, zero errors,
+  child exit 0. Generated speech uses the existing selected samples. No mixed
+  audio was recorded; this establishes machine playback rather than mix approval.
+* `pc-audio-lifecycle-01/report.json`: all 7,267 frames, 52 stages and program
+  boundaries still match the original boot/mission/debrief/reentry baseline.
+* `pc-audio-unit-01.log`: 38 Godot assertions, including actual sample/voice
+  startup, duplicate suppression, stale research batches, epoch transitions,
+  malformed packets and playback drain. Six additional Python tests cover
+  source-qualified cues, gate state, invalid reload events, queue limits and
+  session delivery custody.
+* `validation-20260927T095432Z/results.txt`: all 18 gates pass, 143 Python tests,
+  preserved source files, terminal exit 0.
+
+The implementation and review were performed by the same assistant. Native
+viewer research captures deliberately suppress sounds older than six emulated
+frames when a single diagnostic command fast-forwards hundreds of frames.
+Interactive one-frame delivery is tested separately. Current pins, exact commands
+and remaining coverage are in `pc-audio-research.md`. No new external generation,
+publication, upload or push occurred. The full remaster goal stays active.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -563,6 +608,8 @@ goal stays active.
    one silence placeholder) match the ROM byte-for-byte; 25 FM patches and four
    native music containers are preserved. The 68-entry native archive is verified.
    Nine generative range voices are installed, with unchanged cues/caption words.
+   Original-event cannon and smoke calls now reuse two selected takes in the
+   opt-in tandem audio pilot; F5 and pause retain authority.
    Automated transcription matched the selected set after a revised 3.8 readiness
    take and a 3.1 fallback for the one-word loader call. Rejected takes are retained.
    No human listening approval, complete PC dialogue coverage or finished music
