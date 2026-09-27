@@ -91,6 +91,10 @@ func _initialize() -> void:
 		if not boot_mode or count==0 or "--capture-station" in args or "--capture-crew" in args:
 			bridge.failure = "Briefing capture requires cold boot, a supported pose, and no station/crew route"
 		else: auto_steps = auto_steps.slice(0,count)
+	if capture and "--capture-motor-pool" in args:
+		if not boot_mode or "--capture-briefing" in args or "--capture-station" in args or "--capture-crew" in args:
+			bridge.failure = "Motor-pool capture requires cold boot and no other capture route"
+		else: auto_steps = auto_steps.slice(0,23)
 
 	if capture and "--capture-station" in args:
 		var station_arg := args.find("--capture-station")+1
@@ -272,7 +276,7 @@ func _apply_sample(message: Dictionary) -> void:
 		tandem_frame.set_frame(image, {}, null)
 		status.text = "ORIGINAL PC: " + str(previous_program.get("name","STARTING"))
 		caption.text = "Original menu/briefing or SIM initialization. Showing the original framebuffer; no substitute simulation."
-		if trace_mode and cockpit_art_requested and tandem_frame.frontend_art.set_frame(image,previous_program):
+		if trace_mode and cockpit_art_requested and tandem_frame.frontend_art.set_frame(image,previous_program,previous_presentation):
 			caption.text = "GENESIS OFFICE / WILSON: " + tandem_frame.frontend_art.active.name + " | original PC dialogue, timing and controls"
 		return
 	if message.has("static_wire_geometry"):
@@ -323,6 +327,8 @@ func _apply_sample(message: Dictionary) -> void:
 			caption.text += " | verified high-res text: %d" % tandem_frame.typography.runs.size()
 		elif gunner_art_requested:
 			caption.text += "\n" + ("HIGH-RES GUNNER SURROUND: original instruments retained" if tandem_frame.gunner_art_enabled else "ORIGINAL MATERIALS: " + tandem_frame.gunner_art_reason)
+	if trace_mode and cockpit_art_requested and tandem_frame.frontend_art.set_frame(image,previous_program,previous_presentation):
+		caption.text = "GENESIS MOTOR POOL: original PC arming menu, values and controls"
 	previous = state
 
 func _capture() -> void:

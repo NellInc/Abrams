@@ -13,7 +13,7 @@ except ModuleNotFoundError:
     from pc_plate_oracle import PLATES
     from inspect_scenarios import decode_resource
 
-PLATE_IDS = ('GPS.BIN', 'TC.BIN', 'AA.BIN', 'DRIVER.BIN', 'STATUS.BIN', 'IDENTIFY', 'FRAME')
+PLATE_IDS = ('GPS.BIN', 'TC.BIN', 'AA.BIN', 'DRIVER.BIN', 'STATUS.BIN', 'IDENTIFY', 'FRAME', 'ATBASE.BIN')
 
 
 class PlateLoads:
@@ -28,6 +28,17 @@ class PlateLoads:
         self.loads = deque(maxlen=history_limit)
         self.completed = 0
         self.orphan_chunks = 0
+        self.motor_pool_readbacks = deque(maxlen=history_limit)
+
+    def verify_motor_pool(self, pixels, page):
+        if page not in (0,8192) or len(pixels)!=64000:
+            raise ValueError('unsupported motor-pool readback')
+        data,pin=self.resources['ATBASE.BIN']
+        expected=bytes(n for b in data for n in (b>>4,b&15))
+        equal=pixels==expected
+        self.motor_pool_readbacks.append({'page_offset':page,'verified':equal,
+            'pixels':len(pixels),'source_sha256':pin,'indices_sha256':hashlib.sha256(pixels).hexdigest()})
+        return equal
 
     def observe(self, event, raw, result=0):
         if event == 20:
@@ -77,5 +88,6 @@ class PlateLoads:
 
     def report(self):
         return {'completed_count': self.completed, 'loads': list(self.loads),
+                'motor_pool_readbacks':list(self.motor_pool_readbacks),
                 'orphan_chunks': self.orphan_chunks, 'incomplete_load': self.active is not None,
                 'scope': 'original file-loader bytes at packed-driver entry; no live pixel replacement attribution'}

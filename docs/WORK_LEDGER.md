@@ -1035,6 +1035,55 @@ Details: `genesis-briefing-integration.md`. The complete graphics register remai
 open: other Wilson/animation variants, motor-pool and information bindings,
 remaining gauges, world objects and effects still require work. Local only.
 
+## Genesis motor pool and original arming menu (2026-09-27)
+
+The selected donor is now `motor-pool-v2.png`, a 1586x992 built-in image edit
+of only the Genesis scene and its earlier Genesis-derived remaster. Clean ink
+contours replace v1's enlarged stairs/dither; both versions and the exact prompt
+remain local. SHA-256 is
+`3fb46798b867ca528f96e8bc0a70d6f3a9e7a1016ca87f3e8549562469019c76`.
+The gallery and live PC frontend use v2. No original resource was modified.
+
+The loader begins before a safe observer attachment. The initial additive tag
+change therefore passed replay parity but correctly restored nothing. A bounded
+caller-frame recovery plus exact 64,000-index readback at ATBASE loader success
+now bootstraps host-only provenance. Later UI writes remove it. Internal domain
+9 maps to transport ID 8 without taking the moving driver's domain 8. The first
+new export build lacked a visibility annotation and the capture failed; the
+corrected build exports the callback, which refuses calls outside its scoped
+readback window. Source/core details are in `genesis-motor-pool-integration.md`.
+
+The Genesis background is live behind the PC's irregular clipboard, with no
+rectangle guess or colour key. Seven visible text runs are scalable. Numeric
+cells use the original font and numeric alphabet, avoiding its ambiguous O/0
+and I/1 glyphs. Governor ON/OFF, red focus and white unfocused variants use exact
+whole-run verification. Unsupported glyphs retain their original pixels.
+The clipboard border/clip is still source-resolution; this family is not closed.
+
+Verified receipts:
+
+* `pc-motor-pool-trace-03` equals the unmodified source baseline for all 7,267
+  full RAM/video/input records, 52 stage states and original program boundaries.
+  Two complete readbacks and 428,072 attributed pixels pass separately.
+* `pc-motor-pool-controls-baseline-01` equals the trace through 7,366 frames and
+  58 stages, including real arrow-key governor selection/toggle and mission entry.
+* Native art-only, art/text and control-state gates pass respectively 581,353,
+  431,597 and 1,046,842 checks. Rendered outputs were visually inspected.
+* `pc-genesis-motor-pool-live-01` is an actual Play launcher capture; its original-
+  art comparator retains identical terminal state/presentation/source framebuffer.
+* The new core retains exact original driver replay over 1,257 frames and 19
+  stages; 218,484 moving-assembly and 364,645 static plate pixels pass.
+* `validation-20260927T191709Z` completes 26 stages including 207 Python tests,
+  original-file preservation, frontend, audio and runtime checks.
+* Final focused motor-pool/office gates pass 158/109 checks after avoiding mask
+  decoding when ATBASE is absent. Final native office and cockpit/status
+  regressions pass 6,825,954 and 12,371,690 checks respectively. Optional
+  Impeccable is unavailable; native rendering was used, with no linter install.
+
+The older failed briefing test PID 87427 remains subject to the prior unanswered
+cleanup request; it was not signalled. No new test process was left active.
+No push, publication or proprietary-art redistribution. Parent goal remains open.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -1058,7 +1107,9 @@ remaining gauges, world objects and effects still require work. Local only.
    the gallery. Eligible crew portraits now bind to original visible crew messages,
    with native gunner and loader evidence. The office and three Wilson poses now
    bind to original briefing/debrief frames with exact visible dialogue decoding;
-   other gallery families need live bindings. Nine gunner illustration cells and
+   the motor pool now has its Genesis background and verified scalable arming
+   text live, including governor/focus variants. Other gallery families need live
+   bindings. Nine gunner illustration cells and
    scalable pixel-verified live/fixed text are enabled; remaining cockpit trims,
    bitmap instruments/labels, scenery-bearing text, recognition art,
    Wilson animation, in-world models, effects and all

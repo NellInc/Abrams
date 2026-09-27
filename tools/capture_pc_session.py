@@ -6,6 +6,7 @@ does not restore RAM without its filesystem, author menu rules or write RAM.
 """
 from __future__ import annotations
 import argparse
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -25,12 +26,20 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def steps():
+def steps(motor_pool_controls=False):
     fixture = ROOT / 'godot/tests/fixtures'
     boot = json.loads((fixture / 'pc_boot_steps.json').read_text())
-    return ([{'label': 'ready', 'frames': 1, 'keys': []}] +
+    route=([{'label': 'ready', 'frames': 1, 'keys': []}] +
             [{'label': f'boot-{i:02d}', 'frames': n, 'keys': keys} for i,(n,keys) in enumerate(boot)] +
             json.loads((fixture / 'pc_reentry_steps.json').read_text()))
+    if motor_pool_controls:
+        index=next(i for i,s in enumerate(route) if s['label']=='boot-23')
+        extra=[]
+        for name,key in [('select-governor','up'),('toggle-governor','right'),('select-begin','down')]:
+            extra.extend([{'label':name+'-press','frames':3,'keys':[key]},
+                          {'label':name,'frames':30,'keys':[]}])
+        route[index:index]=extra
+    return route
 
 
 def main():
@@ -39,6 +48,8 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--compare', type=Path, help='other capture report, compared after this run')
     p.add_argument('--boot-state', type=Path, help='shared neutral START snapshot for byte-exact comparison')
+    p.add_argument('--capture-ui', action='store_true', help='save paired original UI/plate masks at stage boundaries')
+    p.add_argument('--motor-pool-controls', action='store_true', help='exercise the original governor menu with ordinary arrow keys')
     args = p.parse_args()
     other = json.loads(args.compare.read_text()) if args.compare else None
     if any(args.output.resolve().is_relative_to((ROOT / name).resolve()) for name in ('GAME','GENESIS')):
@@ -56,7 +67,7 @@ def main():
     session = PresentationSession(core,SimStateReader(ROOT/'GAME/SIM.EXE'),
                                   decode_resource((ROOT/'GAME/SHAPE.TBL').read_bytes()),trace=args.mode=='trace',
                                   collector_factory=factory)
-    records, samples = [], []
+    records, samples, ui_presentations, presentations = [], [], [], []
     try:
         core.run(240)  # Same original startup boundary as the live host.
         if args.boot_state:
@@ -64,7 +75,7 @@ def main():
             core.run(1)  # Native framebuffer priming after snapshot restore.
             program = active_program(core.conventional_memory())
             if not program or program['name'] != 'START': raise ValueError('comparison requires a neutral START snapshot')
-        for step in steps():
+        for step in steps(args.motor_pool_controls):
             for _ in range(step['frames']):
                 session.step(1,step['keys'])
                 records.append({'frame':core.frame, 'keys':step['keys'],
@@ -75,6 +86,16 @@ def main():
             filename = step['label']+'.png'
             core.screenshot().save(args.output/filename)
             samples.append(step | sample | {'frame':core.frame, 'image':filename})
+            view=sample['presentation']
+            if args.capture_ui and (view.get('plate_overlay') or {}).get('mask_png'):
+                index=len(presentations)
+                presentations.append(view)
+                mask=step['label']+'-ui.png'
+                plate=step['label']+'-plates.png'
+                (args.output/mask).write_bytes(base64.b64decode(view['ui_overlay']['mask_png'],validate=True))
+                (args.output/plate).write_bytes(base64.b64decode(view['plate_overlay']['mask_png'],validate=True))
+                ui_presentations.append({'stage':step['label'],'frame_index':index,
+                    'image':filename,'mask':mask,'plate_mask':plate})
         by_name = {sample['label']:sample for sample in samples}
         programs = [entry['program']['name'] if entry['program'] else None for entry in session.transitions]
         checks = {
@@ -96,6 +117,7 @@ def main():
             'restore_priming_frames':1 if args.boot_state else 0,
             'transitions':session.transitions,'checks':checks,
             'plate_epochs':[c.plates.report() for c in collectors],
+            'ui_presentations':ui_presentations,'presentations':presentations,
             'scope':'bounded original cold-boot, quit and reentry; compare full paired RAM/video/input records separately'}
         if args.compare:
             mismatches = [i for i,(a,b) in enumerate(zip(records,other['records'])) if a!=b]

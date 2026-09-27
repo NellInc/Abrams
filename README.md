@@ -26,7 +26,9 @@ music and sound-effect references for a faithful presentation upgrade.
   portrait derivatives; unsupported or partial faces retain the original.
   Original briefing/debriefing scenes now use the Genesis office and three
   Wilson poses, with exactly decoded scalable dialogue. Unknown poses and
-  transitions retain the original. Other instruments, models and terrain are unfinished.
+  transitions retain the original. The motor pool now uses a clean-contour Genesis
+  remaster with pixel-verified scalable arming labels and values; the original PC
+  menu still owns selections and loadout. Other instruments, models and terrain are unfinished.
   Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
   `--pc-colours` to keep the new cockpit materials with original world colours.
   `--flat-world` disables terrain detail while retaining cockpit art and colours.
@@ -67,7 +69,7 @@ The local artwork collection includes the title, Colonel Wilson in three
 poses, his office, motor pool, four crew portraits, four cockpit plates,
 systems status, and two ammunition illustrations. The gallery has 15 comparison
 pages. The additional facepalm variant appears in the live briefing restoration.
-Eligible crew portraits and office/Wilson scenes bind to the PC game; information
+Eligible crew portraits, office/Wilson scenes and the motor pool bind to the PC game; information
 illustrations and other frontend scenes still need live binding.
 Assets are available locally under
 `local-art/genesis/`. Untouched PNG extracts, original layered OpenRaster,
@@ -97,6 +99,7 @@ Earlier mixed recordings are retained only as comparison material.
 * `docs/genesis-cockpit-integration.md`: Genesis-first live cockpit/status integration and native proof.
 * `docs/genesis-portrait-integration.md`: Genesis faces, original visibility matching and native proof.
 * `docs/genesis-briefing-integration.md`: restored office/Wilson poses and exact visible-dialogue decoding.
+* `docs/genesis-motor-pool-integration.md`: Genesis background, original arming controls and replay proof.
 * `docs/graphics-coverage.md`: whole-graphics scope, source precedence and remaining families.
 * `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.
 * `docs/pc-audio-research.md`: original sound requests, bounded transport and native playback proof.

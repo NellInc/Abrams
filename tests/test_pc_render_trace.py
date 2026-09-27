@@ -119,7 +119,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertEqual(plate['plates']['1']['source'],'GPS.BIN')
         self.assertEqual(plate['plates']['1']['pixels'],64000)
         self.assertIsNone(self.present(c,0)['plate_overlay'])
-        for raw in (bytes([8])*64000,b'\1'):
+        for raw in (bytes([9])*64000,b'\1'):
             c = self.collector()
             self.event(c,10,0)
             self.event(c,19,0,bytes([255])*64000)
@@ -137,6 +137,29 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c,24,0,bytes([1])*64000)
         c.ui_mask_slot = None
         with self.assertRaisesRegex(ValueError,'plate mask.*slots differ'): self.event(c,11,1)
+
+    def test_motor_pool_uses_new_transport_ID_without_reassigning_others(self):
+        c=self.collector()
+        self.event(c,10,0)
+        self.event(c,19,0,bytes([255])*64000)
+        self.event(c,24,0,bytes([8])*64000)
+        self.event(c,11,0)
+        plate=self.present(c,0)['plate_overlay']
+        self.assertEqual(plate['plates']['8']['source'],'ATBASE.BIN')
+        self.assertEqual(plate['plates']['8']['pixels'],64000)
+        self.assertEqual(plate['plates']['7']['source'],'FRAME')
+
+    def test_motor_pool_claim_requires_complete_exact_original_readback(self):
+        c=self.collector();calls=[]
+        c.claim_motor_pool=lambda page: calls.append(page) or True
+        pixels=bytes(n for b in c.plates.resources['ATBASE.BIN'][0] for n in (b>>4,b&15))
+        self.event(c,32,8192,pixels)
+        self.assertEqual(calls,[8192])
+        changed=bytearray(pixels);changed[200]^=1
+        self.event(c,32,0,bytes(changed))
+        self.assertEqual(calls,[8192])
+        self.assertFalse(c.plates.report()['motor_pool_readbacks'][-1]['verified'])
+        with self.assertRaisesRegex(ValueError,'readback'):self.event(c,32,0,pixels[:-1])
 
     def test_driver_assembly_offsets_follow_scanline_frame_and_clear(self):
         c=self.collector();raw=bytearray(64000*3)

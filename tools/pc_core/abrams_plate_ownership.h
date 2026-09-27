@@ -25,6 +25,15 @@ struct AbramsPlateOwnership {
         latch_bits = 0;
         valid = true;
     }
+    // Called only during a host-verified complete ATBASE loader readback.
+    bool claim_motor_pool(uint32_t page) {
+        if (!valid || (page != 0 && page != 8192)) return false;
+        for (unsigned at = 0; at < 8000; ++at) {
+            origin[page+at] = (9u << 13) | at;
+            bits[page+at] = 0xffffffffu;
+        }
+        return true;
+    }
     void read(uint32_t address) {
         if (address >= 65536) { valid = false; return; }
         latch_origin = origin[address];

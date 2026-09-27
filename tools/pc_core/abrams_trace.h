@@ -29,6 +29,7 @@ static bool abrams_driver_active = false;
 static unsigned abrams_driver_page = 0;
 static Bit32u abrams_driver_tag = 0;
 static unsigned abrams_plate_id = 0;
+static bool abrams_motor_pool_claiming = false;
 static bool abrams_plate_active = false;
 static Bit16u abrams_plate_return_ip, abrams_plate_return_cs;
 static Bit32u abrams_plate_begin, abrams_plate_end, abrams_plate_page;
@@ -55,6 +56,7 @@ void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
     abrams_plate_active = false;
     abrams_driver_active = false;
     abrams_plate_id = 0;
+    abrams_motor_pool_claiming = false;
     abrams_plate_copy_active = false;
     abrams_text_active = false;
     abrams_ownership.reset();
@@ -69,6 +71,12 @@ bool abrams_trace_claim_strut(unsigned page, unsigned plate, const Bit8u* mask, 
     for (unsigned at = 0; at < 8000; ++at) for (unsigned bit = 0; bit < 8; ++bit)
         if ((mask[at] & (128u >> bit)) && !abrams_ownership.pixel((page + at)*8 + bit)) return false;
     return abrams_plates.claim_bitmap(page, plate, mask);
+}
+
+extern "C" __attribute__((visibility("default")))
+bool abrams_trace_claim_motor_pool(unsigned page) {
+    if (!abrams_motor_pool_claiming || page != abrams_plate_page) return false;
+    return abrams_plates.claim_motor_pool(page);
 }
 
 extern "C" void AbramsTraceVgaRead(Bit32u address) {
@@ -89,7 +97,7 @@ extern "C" void AbramsTraceVgaWrite(Bit32u address, Bit8u value) {
             vga.config.write_mode != 0 || vga.config.raster_op != 0 || vga.config.data_rotate != 0 ||
             vga.config.full_bit_mask != 0xffffffffu || vga.config.full_not_enable_set_reset != 0xffffffffu) {
             abrams_plates.valid = false;
-        } else authored = Bit16u((abrams_plate_id << 13) | (address - abrams_plate_page));
+        } else authored = Bit32u((abrams_plate_id << 13) | (address - abrams_plate_page));
     }
     if (abrams_plate_copy_active && SegValue(cs) == abrams_trace_load + 0x1388) {
         if (address < abrams_plate_copy_dest || address >= abrams_plate_copy_dest + 8000 ||
@@ -127,7 +135,9 @@ extern "C" void AbramsTraceRasterLine(Bit32u address, Bit32u row, Bit32u width, 
         abrams_ui_mask[row * 320 + x] = abrams_ownership.pixel((address + x) & wrap_mask);
         Bit32u at = (address + x) & wrap_mask, pixel = row * 320 + x;
         unsigned id = abrams_plates.pixel(at);
-        abrams_plate_mask[pixel] = id <= 7 ? Bit8u(id) : 0;
+        // Internal domain 8 belongs to the moving driver assembly. ATBASE
+        // uses domain 9 and transport plate ID 8, preserving every old ID.
+        abrams_plate_mask[pixel] = id <= 7 ? Bit8u(id) : (id == 9 ? 8 : 0);
         Bit32u offset = id == 8 ? (abrams_plates.origin[at >> 3] >> 17) : 0;
         abrams_driver_mask[pixel*3] = Bit8u(offset);
         abrams_driver_mask[pixel*3+1] = Bit8u(offset >> 8);
@@ -330,15 +340,30 @@ static INLINE void AbramsTraceInstruction() {
             abrams_trace_callback(20, regs, abrams_trace_snapshot, name, n + 1);
             // IDs are presentation metadata only, independently byte-verified
             // by the host before it accepts the frame. Never open these paths.
-            const char* names[] = {"GPS.BIN", "TC.BIN", "AA.BIN", "DRIVER.BIN", "STATUS.BIN", "IDENTIFY", "FRAME"};
+            const char* names[] = {"GPS.BIN", "TC.BIN", "AA.BIN", "DRIVER.BIN", "STATUS.BIN", "IDENTIFY", "FRAME", "ATBASE.BIN"};
             char upper[13];
             for (unsigned i = 0; i <= n; ++i) {
                 unsigned c = abrams_trace_snapshot[i];
                 upper[i] = char(c >= 'a' && c <= 'z' ? c - 'a' + 'A' : c);
             }
             abrams_plate_id = 0;
-            for (unsigned i = 0; i < 7; ++i) if (!strcmp(upper, names[i])) abrams_plate_id = i + 1;
+            for (unsigned i = 0; i < 8; ++i) if (!strcmp(upper, names[i])) abrams_plate_id = i == 7 ? 9 : i + 1;
         } else if (ip == 0x123a) {
+            // A frame-boundary attachment can enter during ATBASE's first
+            // strip. Recover its live filename only through the pinned
+            // loader call site and intact caller frame; no heuristic scan.
+            if (!abrams_plate_id && mem_readw(stack) == 0x11e6 &&
+                mem_readw(stack+2) == segment && SegPhys(ss)+reg_bp+8 < 640*1024) {
+                unsigned name = mem_readw(SegPhys(ss)+reg_bp+6);
+                const char* expected = "ATBASE.BIN";
+                bool equal = name+11 <= 65536;
+                for (unsigned i=0; equal && i<11; ++i) {
+                    unsigned c=mem_readb(base+name+i);
+                    if (c>='a' && c<='z') c-=32;
+                    if (c != (unsigned char)expected[i]) equal=false;
+                }
+                if (equal) abrams_plate_id=9;
+            }
             // Original buffer, count, x/y and page at the packed-driver dispatch.
             // Wire header: six little-endian words, then exactly count bytes.
             Bit32u count = mem_readw(stack + 8);
@@ -367,6 +392,20 @@ static INLINE void AbramsTraceInstruction() {
                 abrams_plate_active = true;
             }
         } else {
+            if (ip == 0x1226 && reg_ax == 1 && abrams_plate_id == 9 &&
+                (abrams_plate_page == 0 || abrams_plate_page == 8192)) {
+                // Success before RETF, hence before the caller draws menus.
+                // Direct backing-plane reads preserve every guest VGA latch.
+                for (unsigned at=0; at<64000; ++at) {
+                    unsigned address=abrams_plate_page+at/8, colour=0;
+                    for (unsigned p=0; p<4; ++p)
+                        if (vga.mem.linear[address*4+p] & (128u>>(at&7))) colour|=1u<<p;
+                    abrams_trace_snapshot[at]=Bit8u(colour);
+                }
+                abrams_motor_pool_claiming=true;
+                abrams_trace_callback(32,regs,abrams_trace_snapshot,abrams_plate_page,64000);
+                abrams_motor_pool_claiming=false;
+            }
             abrams_trace_callback(22, regs, NULL, 0, 0);
             abrams_plate_id = 0;
         }

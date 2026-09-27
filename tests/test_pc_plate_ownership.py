@@ -7,7 +7,7 @@ class PlateOwnershipTests(unittest.TestCase):
         result = verify()
         self.assertEqual(result['operations'],4096)
         self.assertEqual(result['plane_bits_checked'],131072)
-        self.assertEqual(result['explicit_page_plate_cases'],23)
+        self.assertEqual(result['explicit_page_plate_cases'],27)
 
 
 if __name__ == '__main__': unittest.main()

@@ -15,6 +15,7 @@ def verify():
     wrapper = '''#include "abrams_plate_ownership.h"
 static AbramsPlateOwnership s;
 extern "C" bool claim(unsigned page,unsigned plate,const uint8_t* mask) { return s.claim_bitmap(page,plate,mask); }
+extern "C" bool motor_pool(unsigned page) { return s.claim_motor_pool(page); }
 extern "C" void reset() { s.reset(); }
 extern "C" void read_address(unsigned a) { s.read(a); }
 extern "C" unsigned origin(unsigned a) { return s.origin[a]; }
@@ -43,6 +44,8 @@ extern "C" void copy_pixel(unsigned src,unsigned dest,unsigned mask) {
         lib.copy_pixel.argtypes = [C.c_uint] * 3
         lib.claim.argtypes=[C.c_uint,C.c_uint,C.POINTER(C.c_uint8)]
         lib.claim.restype=C.c_bool
+        lib.motor_pool.argtypes=[C.c_uint]
+        lib.motor_pool.restype=C.c_bool
         lib.reset()
         # Independent model keeps each of 32 plane bits separately. The C++
         # representation may drop mixed origins, but must never claim a wrong one.
@@ -86,10 +89,11 @@ extern "C" void copy_pixel(unsigned src,unsigned dest,unsigned mask) {
                         model[dest] = expected
                         cases += 1
         if claimed < 1000 or not lib.valid(): raise ValueError('observer lost useful coverage or validity')
-        # Concrete complete-plane writes, all seven IDs, both pages, copy,
+        # Concrete complete-plane writes, static domains (9 is ATBASE; 8 is
+        # reserved for the moving driver assembly), both pages, copy,
         # changed coordinate, identical-colour UI, XOR and transparent bitmap.
         explicit = 0
-        for plate in range(1,8):
+        for plate in (*range(1,8),9):
             for page in (0,8192):
                 lib.reset()
                 at, tag = page + 123, (plate << 13) | 123
@@ -127,6 +131,16 @@ extern "C" void copy_pixel(unsigned src,unsigned dest,unsigned mask) {
                 explicit += 1
         # Loading a new plate over another must retain the first newly written
         # plane. Dropping both conflicting sources loses that plane forever.
+        for page in (0,8192):
+            lib.reset()
+            if not lib.motor_pool(page) or lib.motor_pool(1): raise ValueError('motor-pool page bounds failed')
+            if any(lib.pixel(page*8+p)!=9 for p in range(64000)):
+                raise ValueError('verified complete motor pool not claimed')
+            lib.read_address(page)
+            lib.write_address(page,0,0,0,0,0xffffffff,0xffffffff,0,0,0)
+            if any(lib.pixel(page*8+p) for p in range(8)):
+                raise ValueError('later identical UI write retained motor-pool tag')
+            explicit+=1
         lib.reset()
         at=123
         for plate in (2,4,3,1,5):

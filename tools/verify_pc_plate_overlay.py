@@ -43,7 +43,11 @@ def verify(report_path):
                 raise ValueError(f'{sample["stage"]}: {name} at {at%320},{at//320}: {rgb[at]} != {expected}')
             counts[name] += 1
         for i,name in enumerate(PLATE_IDS):
-            if counts[name] != metadata['plates'][str(i+1)]['pixels']: raise ValueError('plate pixel count differs')
+            # Historical captures predate additive transport IDs. An absent
+            # entry is valid only when no captured pixel uses that ID.
+            entry=metadata['plates'].get(str(i+1))
+            if entry is None and counts[name]==0: continue
+            if entry is None or counts[name] != entry['pixels']: raise ValueError('plate pixel count differs')
         checked = sum(counts.values())
         frames.append({'stage':sample['stage'],'pixels':checked,'plates':counts})
         total += checked

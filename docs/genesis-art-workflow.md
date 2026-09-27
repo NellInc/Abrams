@@ -121,7 +121,7 @@ layers at their original positions. It excludes the dialogue box.
 | Colonel Wilson, alpha cutout | `wilson-v1.png` | 1293x1217 |
 | Empty briefing office | `office-background-v1.png` | 1586x992 |
 | Title illustration | `title-v1.png` | 1586x992 |
-| Motor pool, interface removed | `motor-pool-v1.png` | 1586x992 |
+| Motor pool, interface removed, clean contours | `motor-pool-v2.png` | 1586x992 |
 
 These are built-in image-generation edits of the extracted reference images.
 They are new high-resolution interpretations, distinct from exact extracts.
@@ -131,6 +131,9 @@ ratios. No claim of 4K output is made.
 
 `prompts.json` records the exact prompts, input roles, paths and tool choice.
 `remaster-manifest.json` records measured dimensions, hashes and alpha status.
+The motor-pool v2 pass has its own `motor-pool-v2-prompt.json`, recording the
+built-in tool prompt, both Genesis-only references, output hash and dimensions.
+It is now live in the PC tandem, documented in `genesis-motor-pool-integration.md`.
 `briefing-remastered.svg` is an editable, self-contained two-layer composition
 with the unmodified generated PNGs embedded, positioned to the original layout.
 Its office and officer remain separate image objects.

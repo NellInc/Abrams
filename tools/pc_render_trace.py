@@ -69,6 +69,7 @@ class Collector:
         self.plates = PlateLoads(ROOT / 'GAME')
         self.struts = StrutDraws(ROOT / 'GAME', self.plates)
         self.claim_strut = None
+        self.claim_motor_pool = None
         self.vertices_checked = 0
         self.effects = decode_bitmaps(decode_resource((ROOT / 'GAME/EFFECTS.BMP').read_bytes()))
         self.effect_pixels_checked = 0
@@ -95,6 +96,11 @@ class Collector:
                     buffer = (C.c_uint8*len(mask)).from_buffer_copy(mask)
                     if not self.claim_strut(offset,plate,buffer,len(mask)):
                         raise ValueError('native strut provenance claim rejected')
+                return
+            if event == 32:
+                if self.plates.verify_motor_pool(raw,offset):
+                    if not self.claim_motor_pool(offset):
+                        raise ValueError('native motor-pool provenance claim rejected')
                 return
             if event == 28:
                 self.text.messages.observe(raw, regs, offset)
@@ -364,6 +370,9 @@ class Collector:
         self.claim_strut = core.core.abrams_trace_claim_strut
         self.claim_strut.argtypes = [C.c_uint,C.c_uint,C.POINTER(C.c_uint8),C.c_uint]
         self.claim_strut.restype = C.c_bool
+        self.claim_motor_pool = core.core.abrams_trace_claim_motor_pool
+        self.claim_motor_pool.argtypes = [C.c_uint]
+        self.claim_motor_pool.restype = C.c_bool
         core.core.abrams_trace_configure.argtypes = [C.c_uint16, CALLBACK]
         core.core.abrams_trace_configure.restype = None
         core.core.abrams_trace_configure(load_segment, self.callback)

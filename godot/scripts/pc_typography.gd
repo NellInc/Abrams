@@ -146,6 +146,51 @@ func _status_number(source: Image, y: int) -> Dictionary:
 	if words.strip_edges().is_empty(): return {}
 	return _fixed_candidate(words,Vector2i(83,y),source)
 
+func set_motor_pool_menu(source: Image, ui: Image, tags: Image) -> void:
+	clear_runs()
+	if not fonts.has(FONT_SOURCES["6X6.FNT"]): return
+	var bytes: PackedByteArray=fonts[FONT_SOURCES["6X6.FNT"]]
+	var fields: Array=[[257,113,"SELECT",Color.WHITE],[245,123,"ARMING MIX",Color.WHITE],
+		[245,170,"GOVERNOROFF",Color.WHITE],[245,170,"GOVERNOR ON",Color.WHITE],
+		[259,183,"BEGIN",Color(170.0/255,0,0)]]
+	# Original digit cells have an unambiguous numeric alphabet. The font's
+	# O/0 and I/1 glyphs overlap, so unrestricted character OCR is forbidden.
+	for field in [[137,"HEAT"],[147,"SABOT"],[157,"AX"]]:
+		var digits := ""
+		for column in 2:
+			var matches := ""
+			for character in " 0123456789":
+				var same := true
+				for y in 6:
+					for x in 6:
+						var ink := (int(bytes[4+(character.unicode_at(0)-32)*6+y])&(128>>x))!=0
+						var actual := source.get_pixel(299+column*6+x,field[0]+y)
+						if ink and not actual.is_equal_approx(Color.BLACK): same=false
+						if not ink and not actual.is_equal_approx(Color.WHITE) and not actual.is_equal_approx(Color(170.0/255,0,0)): same=false
+				if same: matches+=character
+			if matches.length()!=1: digits=""; break
+			digits+=matches
+		if digits.length()==2 and not digits.strip_edges().is_empty():
+			fields.append([245,field[0],field[1]+" ".repeat(9-field[1].length())+digits,Color.WHITE])
+	var candidates: Array=[]
+	for field in fields:
+		var eligible := true
+		for y in 6:
+			for x in field[2].length()*6:
+				if tags.get_pixel(field[0]+x,field[1]+y).r!=0: eligible=false
+		if not eligible: continue
+		for background in [Color.WHITE,Color(170.0/255,0,0)]:
+			var candidate := _fixed_candidate(field[2],Vector2i(field[0],field[1]),source)
+			candidate.foreground=0
+			candidate.uniform_background_rgb=[roundi(background.r*255),roundi(background.g*255),roundi(background.b*255)]
+			candidate.kind="verified_motor_pool_menu"
+			candidates.append(candidate)
+	var palette: Array=[]
+	for i in 16: palette.append([0,0,0])
+	# Every full string still has to match the original font and UI ownership,
+	# including spaces, highlighting and all unchanged functional labels.
+	set_frame(source,ui,{"text_runs":candidates,"palette_rgb":palette})
+
 static func integers(value: Variant, count: int, low: int, high: int) -> bool:
 	if not value is Array or value.size()!=count: return false
 	for n in value:

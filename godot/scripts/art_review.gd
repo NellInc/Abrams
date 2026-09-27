@@ -4,7 +4,7 @@ const ART := [
 	{"name":"TITLE", "source":"title-original.png", "remaster":"title-v1.png"},
 	{"name":"WILSON'S BRIEFING", "source":"office-background-original.png", "remaster":"office-background-v1.png",
 		"portrait_source":"wilson-original.png","portrait_remaster":"wilson-v1.png"},
-	{"name":"MOTOR POOL", "source":"motor-pool-original.png", "remaster":"motor-pool-v1.png"},
+	{"name":"MOTOR POOL", "source":"motor-pool-original.png", "remaster":"motor-pool-v2.png"},
 	{"name":"GUNNER COCKPIT", "source":"gunner-original.png", "remaster":"gunner-genesis-v1.png","collection":"cockpit-v2"},
 	{"name":"COMMANDER COCKPIT", "source":"commander-original.png", "remaster":"commander-genesis-v1.png","collection":"cockpit-v2"},
 	{"name":"CUPOLA", "source":"cupola-original.png", "remaster":"cupola-genesis-v1.png","collection":"cockpit-v2"},

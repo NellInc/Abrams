@@ -31,6 +31,16 @@ class PlateTraceTests(unittest.TestCase):
         self.assertEqual(t.report()['completed_count'],3)
         self.assertEqual(len(t.report()['loads']),2)
 
+    def test_motor_pool_original_bytes_are_verified(self):
+        t=self.make()
+        t.observe(20,b'atbase.bin\0')
+        for y in range(0,200,20):
+            t.observe(21,self.chunk(t,y,data=t.resources['ATBASE.BIN'][0][y*160:y*160+3200]))
+        t.observe(22,b'',1)
+        record=t.report()['loads'][0]
+        self.assertTrue(record['verified'])
+        self.assertEqual(record['source_sha256'],'7a2b2e763b37623f423c7f332c2a34d4bb810f5a457a3d8f55aec27e9262ac03')
+
     def test_unobserved_entry_and_failed_load_never_verify(self):
         t = self.make()
         t.observe(21,self.chunk(t))

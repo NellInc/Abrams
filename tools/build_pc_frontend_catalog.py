@@ -6,6 +6,7 @@ No text recognition, screenshot-derived artwork, guest writes or tolerant match.
 The catalog is local-only, derived from the supplied original resources.
 """
 import argparse
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -62,17 +63,30 @@ def build(game):
             'scope':__doc__}
 
 
+def motor_pool(game):
+    name='ATBASE.BIN'
+    pin='7a2b2e763b37623f423c7f332c2a34d4bb810f5a457a3d8f55aec27e9262ac03'
+    source=(game/name).read_bytes()
+    if hashlib.sha256(source).hexdigest()!=pin: raise ValueError('unsupported original '+name)
+    packed=decode_resource(source)
+    if len(packed)!=32000: raise ValueError('unsupported motor-pool dimensions')
+    return {'schema':1,'source':name,'source_sha256':pin,'width':320,'height':200,
+            'packed_indices_base64':base64.b64encode(packed).decode(),
+            'scope':'Original PC indices for recognition only. Genesis supplies replacement artwork.'}
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--motor-pool',action='store_true');a=p.parse_args()
     if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')):
         p.error('output must be outside original sources')
-    data=build(ROOT/'GAME')
+    data=motor_pool(ROOT/'GAME') if a.motor_pool else build(ROOT/'GAME')
     a.output.mkdir(parents=True,exist_ok=False)
     payload=(json.dumps(data,indent=2)+'\n').encode()
-    (a.output/'office.json').write_bytes(payload)
+    (a.output/('motor-pool.json' if a.motor_pool else 'office.json')).write_bytes(payload)
     print(json.dumps({'catalog_sha256':hashlib.sha256(payload).hexdigest(),
-                      'poses':[x['portrait_rect'] for x in data['templates']]}))
+                      'poses':[x['portrait_rect'] for x in data.get('templates',[])]}))
 
 
 if __name__=='__main__':main()

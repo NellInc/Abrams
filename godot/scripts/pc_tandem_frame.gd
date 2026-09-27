@@ -156,7 +156,7 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 	var ui_bits := ui.get_data()
 	var present := {}
 	for at in tags.size():
-		if tags[at] > 7 or (tags[at] != 0 and ui_bits[at] != 255): return
+		if tags[at] > 8 or (tags[at] != 0 and ui_bits[at] != 255): return
 		if tags[at] != 0: present[int(tags[at])] = true
 	var available := cockpit_art_textures.duplicate()
 	if gunner_art_texture != null: available[1] = gunner_art_texture

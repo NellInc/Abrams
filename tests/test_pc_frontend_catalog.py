@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 from PIL import Image
 
-from tools.build_pc_frontend_catalog import build, compose, PALETTE
+from tools.build_pc_frontend_catalog import build, compose, motor_pool, PALETTE
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -37,6 +37,16 @@ class FrontendCatalogTests(unittest.TestCase):
         if not local.exists():self.skipTest('requires generated local recognition catalog')
         payload=(json.dumps(build(ROOT/'GAME'),indent=2)+'\n').encode()
         self.assertEqual(payload,local.read_bytes())
+
+    def test_motor_pool_catalog_is_exact_pinned_original_indices(self):
+        import base64
+        from tools.inspect_scenarios import decode_resource
+        data=motor_pool(ROOT/'GAME')
+        packed=base64.b64decode(data['packed_indices_base64'],validate=True)
+        self.assertEqual(len(packed),32000)
+        self.assertEqual(packed,decode_resource((ROOT/'GAME/ATBASE.BIN').read_bytes()))
+        local=ROOT/'local-art/pc-motor-pool-v1/motor-pool.json'
+        self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),local.read_bytes())
 
 
 if __name__=='__main__':unittest.main()
