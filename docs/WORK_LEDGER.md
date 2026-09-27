@@ -811,6 +811,41 @@ and repaired. Current pins, remaining limits and further native receipts are in
 `docs/pc-ui-art-workflow.md`. The same assistant implemented and reviewed this
 revision; Nell's final art approval and the full remaster remain open. Local only.
 
+## World-anchored grass and road detail, 2026-09-27
+
+The preceding goal turn made verified progress on cockpit fit and default colours.
+This continuation adds two built-in image-generated detail donors, retained
+unchanged locally with prompts and hashes. The default tandem now maps them onto
+the original ground and seven selected static shape/primitive pairs. Genesis
+colours, triangle vertices, material identities, painter order and silhouettes
+remain authoritative. Actor colours alone never select terrain detail. The
+original quantized camera and continuous world origin anchor texture placement;
+the original flat ground background receives a presentation-only plane mapping.
+
+The source receipt verifies all seven selected shapes and their flat vertices.
+Across 292 recorded passes, the geometry/material/data checks pass. Native GPU
+tests check actual terrain-only changes, protected original UI and analytic
+texture coordinates under translation/rotation. The 21-stage aggregate gate in
+`validation-20260927T130747Z` passes, including 189 Python tests, source-file
+preservation and 150 audio assertions. Current receipts and precise boundaries
+are in `docs/pc-terrain-art-workflow.md`.
+
+Actual live cold boot enables detail; `--flat-world` retains the preceding view.
+Their final original framebuffer and decoded state match, but independently
+cold-booted full-RAM fingerprints differ. This is a retained failed comparison,
+not a parity pass. Two viewers restored from the same original snapshot have
+identical full presentation metadata including the render RAM hash, state and
+framebuffer; all eight shared-state checks pass. The core remains unchanged at
+`f7452d08d9fb1bdf3f7cf73ddc1870bbe8c62192b01c8251d38a0e90a990baa3`.
+
+The first native fixture omitted separately stored mask PNGs and fell back to the
+original frame. The corrected fixture requires successful composition before
+claiming UI protection. Failed receipts remain. The implementing assistant also
+reviewed the source and native images; human motion/art acceptance remains open.
+Other terrain, vehicles, buildings, trees, effects, instruments, complete mission
+parity and release packaging remain unfinished. Local only; the parent goal stays
+active.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -833,6 +868,8 @@ revision; Nell's final art approval and the full remaster remain open. Local onl
    tandem view. Remaining cockpit trims/instruments/fonts, recognition art,
    Wilson animation, in-world models, effects and all
    UI states remain. Preserve PC information density and four-station controls.
+   Grass and seven selected flat source surfaces now have world-anchored detail;
+   this does not complete terrain or model restoration.
 6. **Audio:** final voice performances, per-event coverage, mixing/listening,
    accessibility and source/licensing records remain. Direct native extraction
    replaces recordings as the asset source. Eleven WAV payloads (ten assets and

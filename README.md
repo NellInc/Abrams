@@ -16,9 +16,11 @@ music and sound-effect references for a faithful presentation upgrade.
   cockpit material donors and a colour study drawn from the extracted Genesis
   palette. Original PC instruments, map, text and visibility remain authoritative.
   The driver's overhead assembly follows its original turret-relative drawing.
-  Terrain and vehicle models still need their visual remaster.
+  Grass and road surfaces now carry world-anchored high-resolution detail.
+  Vehicle models, other terrain materials and instruments still need their visual remaster.
   Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
   `--pc-colours` to keep the new cockpit materials with original world colours.
+  `--flat-world` disables terrain detail while retaining cockpit art and colours.
   `--gunner-art` selects the earlier gunner-only pilot. `--cockpit-art` explicitly
   selects the default four-station pass. Missing local assets or provenance
   retain the original. See `docs/pc-ui-art-workflow.md` for coverage and limits.
