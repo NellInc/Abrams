@@ -93,6 +93,14 @@ func _initialize() -> void:
 		else:
 			if not boot_mode: auto_steps = [[3,["f2"]],[300,[]]]
 			auto_steps.append_array([[3,[key]],[300,[]]])
+	if capture and "--capture-crew" in args:
+		if not trace_mode:
+			bridge.failure = "Crew capture requires the original trace backend"
+		else:
+			if not boot_mode and "--capture-station" not in args: auto_steps = [[30,[]]]
+			# Same ordinary input pulses as capture_pc_render_trace.py's text
+			# profile. No RAM edits or presentation-created crew messages.
+			for i in 7: auto_steps.append_array([[3,["s"]],[30,[]]])
 
 func _label(text: String, size: int) -> Label:
 	var label := Label.new()
@@ -298,6 +306,7 @@ func _apply_sample(message: Dictionary) -> void:
 		if cockpit_art_requested:
 			caption.text += "\nGENESIS-DERIVED COCKPITS: " + str(tandem_frame.cockpit_art_ids) + " | PC live values"
 			caption.text += " | illustrated instrument cells: %d" % tandem_frame.instrument_art.active.size()
+			if not tandem_frame.portrait_art.active.is_empty(): caption.text += " | Genesis " + tandem_frame.portrait_art.active.name + " portrait"
 			caption.text += " | moving driver assembly" if tandem_frame.driver_assembly_enabled else ""
 			caption.text += " | Genesis colour study" if genesis_colours_requested and not genesis_style.palette.is_empty() else ""
 			caption.text += " | terrain detail" if draw_view.terrain_active else ""
@@ -330,6 +339,7 @@ func _capture() -> void:
 		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],
 		"genesis_art": tandem_frame.genesis_art_enabled if trace_mode else false,
 		"instrument_art": tandem_frame.instrument_art.active.map(func(item): return item.name) if trace_mode else [],
+		"portrait_art": {"id":tandem_frame.portrait_art.active.id,"name":tandem_frame.portrait_art.active.name} if trace_mode and not tandem_frame.portrait_art.active.is_empty() else null,
 		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects; optional proven-pixel cockpit materials with original instruments/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()

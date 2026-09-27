@@ -4,6 +4,7 @@ extends TextureRect
 const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
 var typography = preload("res://scripts/pc_typography.gd").new()
 var instrument_art = preload("res://scripts/pc_instrument_art.gd").new()
+var portrait_art = preload("res://scripts/pc_portrait_art.gd").new()
 var genesis_art_enabled := false
 const GENESIS_ART = {
 	1:["gunner","f396cd9ade02fb6a6e6aeb7d13cd2e72dde0eabb79bf1a77f218c979d507f41a"],
@@ -40,6 +41,8 @@ func _init() -> void:
 	material = shader_material
 	add_child(instrument_art)
 	instrument_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(portrait_art)
+	portrait_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(typography)
 	typography.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
@@ -78,6 +81,7 @@ func load_genesis_art(root: String) -> bool:
 	material.set_shader_parameter("genesis_art",true)
 	typography.fixed_labels_enabled = true
 	instrument_art.load_sources(root,images[1])
+	portrait_art.load_sources(root)
 	return true
 
 func set_gunner_art(image: Image) -> bool:
@@ -101,6 +105,7 @@ func set_cockpit_art(plate_id: int, image: Image) -> bool:
 
 func _disable_art(reason: String) -> void:
 	instrument_art.clear()
+	portrait_art.clear()
 	status_diagram_verified = false
 	material.set_shader_parameter("status_art_enabled",false)
 	material.set_shader_parameter("status_diagram_verified",false)
@@ -249,5 +254,6 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> boo
 		var tags := Image.new()
 		if tags.load_png_from_buffer(Marshalls.base64_to_raw(presentation.plate_overlay.mask_png))==OK:
 			instrument_art.set_frame(source,mask,tags)
+	if genesis_art_enabled: portrait_art.set_frame(source,mask,presentation)
 	typography.set_frame(source,mask,presentation)
 	return true

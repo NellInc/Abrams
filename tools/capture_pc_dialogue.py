@@ -6,6 +6,7 @@ Ordinary radio-key pulses probe the original retrieval path. Stop at SIM exit;
 the RAM-only mission snapshot does not establish disk-dependent outcome parity.
 """
 import argparse
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -42,6 +43,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--mode',choices=['trace','baseline'],required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--state',type=Path,required=True)
+    p.add_argument('--capture-ui',action='store_true',help='save paired original masks/presentations with newly visible dialogue')
     p.add_argument('--frames',type=int,default=12000);a=p.parse_args()
     if not 1<=a.frames<=18000:p.error('frames must be 1..18000')
     if any(a.output.resolve().is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
@@ -56,7 +58,7 @@ def main():
     def factory(*args,**kwargs):
         collector=Collector(*args,**kwargs);collectors.append(collector);return collector
     session=PresentationSession(core,reader,decode_resource((ROOT/'GAME/SHAPE.TBL').read_bytes()),trace=a.mode=='trace',collector_factory=factory)
-    records=[];changes=[];audio=[];seen=set();prior=None;final=None
+    records=[];changes=[];audio=[];seen=set();prior=None;final=None;ui_presentations=[]
     try:
         core.run(240);core.restore(a.state,expected_source_sha256=manifest['baseline_sha256']);core.run(1)
         if not reader.read(core.conventional_memory()):raise ValueError('missing original SIM')
@@ -80,6 +82,11 @@ def main():
                 unseen=set(new)-seen
                 if unseen:
                     filename=f'text-{i:05d}.png';core.screenshot().save(a.output/filename);item['image']=filename
+                    if a.capture_ui and view.get('ui_overlay',{}).get('mask_png'):
+                        maskname=f'text-{i:05d}-mask.png'
+                        (a.output/maskname).write_bytes(base64.b64decode(view['ui_overlay']['mask_png'],validate=True))
+                        ui_presentations.append({'stage':f'dialogue-{i:05d}','frame_index':i,
+                                                 'image':filename,'mask':maskname,'presentation':view})
                     if any(r['kind']=='crew_secondary' for r in runs):
                         (a.output/f'text-{i:05d}.bin').write_bytes(ram)
                     seen.update(unseen)
@@ -95,7 +102,7 @@ def main():
                 'state_core_sha256':manifest['baseline_sha256'],
                 'text_epochs':[c.text.report() for c in collectors],
                 'message_epochs':[{'counts':dict(c.text.messages.counts),'assignments':list(c.text.messages.history)} for c in collectors],
-                'scope':__doc__}
+                'ui_presentations':ui_presentations,'scope':__doc__}
         (a.output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps({'frames':len(records),'changes':len(changes),'unique_visible_runs':len(seen),
                           'final_program':final['program']}),flush=True)

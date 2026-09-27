@@ -940,6 +940,52 @@ gauges, reticles, maps, remaining portraits/animation, all informational/menu
 flows, world models and effects remain unfinished. Local only. The parent goal
 remains active; this milestone does not close it.
 
+## Genesis-first live crew portraits (2026-09-27)
+
+The four selected Genesis crew derivatives now have a presentation-only live
+binding in `pc_portrait_art.gd`. The PC FACES data supplies exact source identity
+and transparency samples only; no PC illustration becomes a visual donor.
+`extract_pc_portraits.py` proves all 10,696 pixels and original preservation-mask
+bits against four unique loaded EGA plane blocks. Its local catalog and all four
+Genesis images are hash-pinned. Partial, overwritten, ambiguous, non-UI or
+unrecognised portraits retain the original; menu/fallback transitions clear art.
+
+Native `pc-portrait-native-01` covers all four identities synthetically and 35
+recorded source frames: **39,757,118 checks, zero errors, terminal exit 0**.
+The real gunner is visibly restored. `pc-portrait-loader-native-01` adds the
+original loader bearing-043 hit report, **5,965,113 checks, zero errors, exit 0**.
+Every pixel outside original face coverage is checked unchanged, and independent
+bilinear donor probes verify the selected Genesis image. The author performed
+this visual review; no independent human acceptance is claimed.
+
+`pc-genesis-crew-live-02` runs the actual bridge and shows the Genesis gunner,
+cockpit and nine illustrated cells together. `pc-genesis-crew-original-01` runs
+identical original inputs with `--original-art`. Both exit 0; their complete PC
+state/program/presentation and original framebuffer bytes match. The remastered
+composite differs as intended. The receipt is
+`pc-genesis-crew-presentation-comparison-01.json`. A new optional `--capture-ui`
+flag in the existing dialogue recorder stores paired masks. All 2,500 original
+RAM/video/program/input records match the prior same-core trace in
+`pc-portrait-loader-trace-comparison-01.json`; this is not new uninstrumented-core
+parity evidence. No trace core or guest binary was changed.
+
+The first snapshot probe retains the PC cockpit because no source-plate
+provenance survives restoring that old snapshot. Switching stations through the
+original controls supplies fresh provenance. This limitation and the bridge's
+one-frame offset from the standalone recorder are documented, rather than
+concealed by accepting unproven pixels. Native regression
+`pc-genesis-cockpits-portrait-regression-01` still passes **11,944,300 checks**.
+The complete source gate `validation-20260927T180807Z/results.txt` passes all
+**24 stages**, **200 Python tests**, 37 portrait checks, and original-file
+preservation, with terminal exit 0. The optional Impeccable linter remains
+unavailable; native captures and pixel checks cover this Godot surface.
+
+Details and repeatable commands are in `genesis-portrait-integration.md`.
+Live commander/driver evidence, additional poses, coarse source-mask edges,
+front-end/information bindings and the remaining whole-graphics register stay
+open. Proprietary samples/art remain ignored and local. This is a verified
+portrait milestone, not completion of the remaster or its active parent goal.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -960,7 +1006,8 @@ remains active; this milestone does not close it.
 5. **Visual restoration:** Genesis-first material donors now cover all four
    stations and STATUS in the default tandem. Four crew portraits, another Wilson
    gesture and two ammunition illustrations join the first static collection in
-   the gallery; these need live bindings. Nine gunner illustration cells and
+   the gallery. Eligible crew portraits now bind to original visible crew messages,
+   with native gunner and loader evidence; other gallery families need live bindings. Nine gunner illustration cells and
    scalable pixel-verified live/fixed text are enabled; remaining cockpit trims,
    bitmap instruments/labels, scenery-bearing text, recognition art,
    Wilson animation, in-world models, effects and all

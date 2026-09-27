@@ -168,6 +168,8 @@ information-menu item; C closes a menu. Single-frame down presses with release
 gaps selected the observed ammo/armament entries. Every capture retains its exact
 sequence, restored state and VDP reconstruction receipt. Menu names are source
 identities, not a claim that Genesis specifications define PC mechanics.
+The selected portraits now bind to completely matched visible PC crew faces;
+`genesis-portrait-integration.md` records source matching and native proof.
 
 Verified historically: native Godot capture of the original three scenes at 1440x810 and
 1920x1080, alpha-composited briefing, source framing and readable review controls.
