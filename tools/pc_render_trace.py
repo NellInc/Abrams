@@ -270,4 +270,6 @@ class Collector:
 
     def detach(self, core):
         core.pause_at_frame_end()
-        core.core.abrams_trace_configure(0, self.callback)
+        # A zero load segment only disables instruction hooks. VGA callbacks
+        # must also be removed before this Python callback can be released.
+        core.core.abrams_trace_configure(0, CALLBACK())

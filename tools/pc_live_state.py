@@ -22,6 +22,26 @@ except ModuleNotFoundError:
 SIM_SHA256 = "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099"
 
 
+def active_program(ram: bytes) -> dict | None:
+    """Pinned DOSBox Pure SDA/MCB observation, not an executable-byte search.
+
+    dos_inc.h places SDA at 00b2:0000 and current PSP at offset 10h. The
+    preceding allocated MCB supplies its owner and eight-byte program name.
+    This avoids treating freed but still resident SIM code as an active game.
+    """
+    if len(ram) != 640 * 1024: raise ValueError('expected physical conventional RAM')
+    psp, = struct.unpack_from('<H',ram,0xB30)
+    at = (psp-1)*16
+    if psp < 1 or at+16+256 > len(ram): return None
+    if ram[at] not in (ord('M'),ord('Z')) or struct.unpack_from('<H',ram,at+1)[0] != psp:
+        return None
+    if ram[psp*16:psp*16+2] != b'\xcd\x20': return None
+    raw = ram[at+8:at+16].split(b'\0',1)[0].rstrip(b' ')
+    if not raw or any(v < 32 or v > 126 for v in raw): return None
+    return {'name': raw.decode('ascii'), 'psp': psp, 'load_segment': psp+16,
+            'basis': 'pinned DOSBox Pure active PSP and allocated MCB'}
+
+
 def bearing(angle: int) -> int:
     return (360 - ((angle & 255) * 360 >> 8)) % 360
 

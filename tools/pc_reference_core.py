@@ -19,7 +19,7 @@ except ModuleNotFoundError:
     from genesis_capture import AVInfo, GameInfo, Variable
 
 CORE_SHA256 = "f21c70074c8432a634d82e9daa187a9424c629d9d503270a7a663d0751ebc3d8"
-KEYS = {"return": 13, "escape": 27, "space": 32, "up": 273,
+KEYS = {"backspace": 8, "tab": 9, "return": 13, "escape": 27, "space": 32, "up": 273,
         "down": 274, "right": 275, "left": 276,
         **{f"kp{i}": 256 + i for i in range(10)},
         **{f"f{i}": 281 + i for i in range(1, 13)},

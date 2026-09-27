@@ -16,9 +16,10 @@ var expected_protocol := 2
 func start(python: String, state_path: String, save_path: String, log_path: String, backend: String = "reference") -> bool:
 	var project_root := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	log_file = FileAccess.open(log_path, FileAccess.WRITE)
-	expected_protocol = 3 if backend == "trace" else 2
-	process = OS.execute_with_pipe(python, ["-u", project_root.path_join("tools/pc_bridge_host.py"),
-		"--state", state_path, "--saves", save_path, "--backend", backend], false)
+	expected_protocol = 4 if backend == "trace" else 2
+	var arguments := ["-u",project_root.path_join("tools/pc_bridge_host.py"),"--saves",save_path,"--backend",backend]
+	if not state_path.is_empty(): arguments.append_array(["--state",state_path])
+	process = OS.execute_with_pipe(python, arguments, false)
 	if process.is_empty():
 		failure = "Could not start the local PC core host."
 		return false

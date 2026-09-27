@@ -3,6 +3,7 @@ import base64
 import hashlib
 import io
 import unittest
+from types import SimpleNamespace
 from PIL import Image
 
 from tools.pc_render_trace import Collector
@@ -11,6 +12,13 @@ from tools.pc_render_trace import Collector
 class RenderTraceTests(unittest.TestCase):
     def collector(self):
         return Collector(None, history_limit=2)
+
+    def test_detach_removes_native_callback_not_only_load_segment(self):
+        calls = []
+        core = SimpleNamespace(pause_at_frame_end=lambda: None,
+            core=SimpleNamespace(abrams_trace_configure=lambda segment,callback: calls.append((segment,bool(callback)))))
+        self.collector().detach(core)
+        self.assertEqual(calls,[(0,False)])
 
     def event(self, c, event, offset=0, raw=b'', regs=None):
         registers = (C.c_uint16 * 12)(*(regs or [0] * 12))

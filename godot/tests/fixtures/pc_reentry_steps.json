@@ -1,0 +1,156 @@
+[
+  {
+    "label": "before-quit",
+    "frames": 30,
+    "keys": []
+  },
+  {
+    "label": "quit-key",
+    "frames": 3,
+    "keys": [
+      "q"
+    ]
+  },
+  {
+    "label": "quit-dissolve",
+    "frames": 60,
+    "keys": []
+  },
+  {
+    "label": "quit-dialog",
+    "frames": 300,
+    "keys": []
+  },
+  {
+    "label": "select-quit",
+    "frames": 3,
+    "keys": [
+      "down"
+    ]
+  },
+  {
+    "label": "quit-selected",
+    "frames": 30,
+    "keys": []
+  },
+  {
+    "label": "confirm-quit",
+    "frames": 3,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "debrief",
+    "frames": 600,
+    "keys": []
+  },
+  {
+    "label": "debrief-advance",
+    "frames": 3,
+    "keys": [
+      "space"
+    ]
+  },
+  {
+    "label": "mission-summary",
+    "frames": 600,
+    "keys": []
+  },
+  {
+    "label": "continue-summary",
+    "frames": 3,
+    "keys": [
+      "space"
+    ]
+  },
+  {
+    "label": "main-menu",
+    "frames": 600,
+    "keys": []
+  },
+  {
+    "label": "scenario-key",
+    "frames": 3,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "scenario-menu",
+    "frames": 30,
+    "keys": []
+  },
+  {
+    "label": "begin-again",
+    "frames": 3,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "second-title",
+    "frames": 300,
+    "keys": []
+  },
+  {
+    "label": "second-title-skip",
+    "frames": 3,
+    "keys": [
+      "space"
+    ]
+  },
+  {
+    "label": "second-wilson",
+    "frames": 240,
+    "keys": []
+  },
+  {
+    "label": "second-wilson-skip",
+    "frames": 3,
+    "keys": [
+      "space"
+    ]
+  },
+  {
+    "label": "second-briefing",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "second-briefing-skip",
+    "frames": 3,
+    "keys": [
+      "space"
+    ]
+  },
+  {
+    "label": "second-briefing-end",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "second-load",
+    "frames": 3,
+    "keys": [
+      "space"
+    ]
+  },
+  {
+    "label": "second-motor-pool",
+    "frames": 360,
+    "keys": []
+  },
+  {
+    "label": "second-motor-pool-start",
+    "frames": 3,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "second-mission",
+    "frames": 360,
+    "keys": []
+  }
+]

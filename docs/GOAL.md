@@ -7,7 +7,7 @@ Preserve the PC missions, objectives, controls, crew stations, movement, targeti
 Completion requires:
 
 1. Fingerprinted, unchanged reference files; documented provenance; a working original-game comparison workflow; and an evidence ledger separating observed behaviour, manual descriptions, inferences and unknowns.
-2. A testable simulation separated from rendering and audio, with recovered original mission data and no silently invented replacement rules.
+2. Tandem architecture: the original PC executable under pinned emulation owns all gameplay. Godot supplies presentation through a read-only state/drawing bridge and forwards original input. Keep the original renderer running where its work affects gameplay. No parallel replacement simulation or silently invented rules.
 3. All eight PC missions and complete briefing, motor-pool, four-station, debriefing, campaign and persistence flows.
 4. Cohesive high-resolution graphics grounded in the original assets, upgraded music, new SFX and generative crew voice, adjustable mixes and captions. Extract native samples and music data rather than mixed gameplay recordings. Prefer Gemini 3.8 Flash TTS, with 3.1 Flash TTS as fallback, using character-specific acting direction and suitable vocal cues. Speak bearings digit by digit, including leading zeroes; retain numeric captions. Preserve recognizable musical motifs and cue identities where appropriate; PC events determine playback timing. Retain untouched extracts beside remastered variants and record their source and transformation history.
 5. Repeatable original-versus-remaster input traces and state/outcome comparisons, regression tests, and native runtime evidence. Internal consistency alone cannot establish exact parity.

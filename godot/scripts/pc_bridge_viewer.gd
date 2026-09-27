@@ -1,6 +1,7 @@
 extends SceneTree
-## Diagnostic native view, not an original mission renderer or finished remaster.
+## Research tandem view. Original PC executables own every game flow.
 const Bridge = preload("res://scripts/pc_bridge.gd")
+const Keyboard = preload("res://scripts/pc_keyboard.gd")
 const WorldView = preload("res://scripts/pc_world_view.gd")
 const DrawPass = preload("res://scripts/pc_draw_pass.gd")
 const PcCamera = preload("res://scripts/pc_camera.gd")
@@ -8,6 +9,7 @@ const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
 var world_view: Node3D
 var draw_view: Node3D
 var trace_mode := false
+var boot_mode := false
 var wire_mode := false
 var previous_presentation: Dictionary = {}
 var world_viewport: SubViewport
@@ -20,6 +22,7 @@ var picture: TextureRect
 var status: Label
 var caption: Label
 var previous: Dictionary = {}
+var previous_program: Dictionary = {}
 var elapsed := 0.0
 var fps := 59.9227
 var closing := false
@@ -30,11 +33,6 @@ var output: String
 var auto_steps := [[3, ["c"]], [30, []], [30, ["kp6"]], [30, []], [3, ["kp5"]], [60, []], [3, ["space"]], [300, []]]
 var auto_index := 0
 var started: int
-const INPUTS = {KEY_UP: "kp8", KEY_DOWN: "kp2", KEY_LEFT: "kp4", KEY_RIGHT: "kp6",
-	KEY_KP_8: "kp8", KEY_KP_2: "kp2", KEY_KP_4: "kp4", KEY_KP_6: "kp6", KEY_KP_5: "kp5", KEY_5: "kp5",
-	KEY_F1: "f1", KEY_F2: "f2", KEY_F3: "f3", KEY_F4: "f4", KEY_C: "c", KEY_A: "a",
-	KEY_SPACE: "space", KEY_ENTER: "return", KEY_1: "1", KEY_2: "2", KEY_3: "3",
-	KEY_M: "m", KEY_R: "r", KEY_S: "s", KEY_T: "t", KEY_Z: "z", KEY_L: "l"}
 
 func _initialize() -> void:
 	root.title = "Abrams: original PC / Godot bridge research"
@@ -44,17 +42,21 @@ func _initialize() -> void:
 	auto_accept_quit = false
 	started = Time.get_ticks_msec()
 	capture = "--capture" in OS.get_cmdline_user_args()
-	trace_mode = "--trace" in OS.get_cmdline_user_args()
+	var args := OS.get_cmdline_user_args()
+	boot_mode = "--boot" in args or ("--trace" not in args and "--reference" not in args)
+	trace_mode = boot_mode or "--trace" in OS.get_cmdline_user_args()
 	wire_mode = "--wire" in OS.get_cmdline_user_args()
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
-	output = directory.path_join("artifacts/pc-trace-viewer" if trace_mode else "artifacts/pc-bridge-viewer")
+	output = directory.path_join("artifacts/pc-boot-viewer" if boot_mode else ("artifacts/pc-trace-viewer" if trace_mode else "artifacts/pc-bridge-viewer"))
 	DirAccess.make_dir_recursive_absolute(output)
 	_build_ui()
 	var python := OS.get_environment("ABRAMS_PYTHON")
 	if python.is_empty(): python = "/opt/homebrew/bin/python3"
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
-	bridge.start(python, directory.path_join(state_path), output.path_join("saves"),
+	bridge.start(python, "" if boot_mode else directory.path_join(state_path), output.path_join("saves"),
 		output.path_join("host.log"), "trace" if trace_mode else "reference")
+	if boot_mode and capture:
+		auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_boot_steps.json"))
 
 func _label(text: String, size: int) -> Label:
 	var label := Label.new()
@@ -130,7 +132,7 @@ func _build_ui() -> void:
 	stack.add_child(status)
 	caption = _label("", 18)
 	stack.add_child(caption)
-	stack.add_child(_label("Arrows: original keypad controls   5: stop/brake   C: hull/turret   Space: fire   F1 to F4: stations", 18))
+	stack.add_child(_label("Arrows/keypad: original controls   Enter: select   Q: mission quit   Esc: pause/back   F1 to F4: stations", 18))
 	stack.add_child(_label(("Original wireframe diagnostic. Omit --wire for filled surfaces." if wire_mode else "Scanout-paired Godot world with original cockpit, reticle and messages. Source-resolution UI is temporary; high-resolution artwork and exact polygon edges remain open.") if trace_mode else "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
 
 func _build_stage(viewport: SubViewport) -> void:
@@ -182,18 +184,15 @@ func _process(delta: float) -> bool:
 			# One outstanding request. Slow presentation never advances invented
 			# gameplay ticks or runs the authored range alongside the PC game.
 			elapsed = 0.0
-			var keys: Array = []
-			for key in INPUTS:
-				if Input.is_key_pressed(key) and INPUTS[key] not in keys: keys.append(INPUTS[key])
-			bridge.step(1, keys)
-	if capture and Time.get_ticks_msec() - started > 60000:
+			bridge.step(1, Keyboard.held())
+	if capture and Time.get_ticks_msec() - started > (180000 if boot_mode else 60000):
 		bridge.failure = "capture deadline"
 		_close()
 	return false
 
 func _apply_sample(message: Dictionary) -> void:
 	var state = message.get("state")
-	if not state is Dictionary:
+	if not state is Dictionary and not trace_mode:
 		bridge.failure = "SIM state is unavailable. No substitute simulation was started."
 		return
 	samples += 1
@@ -204,6 +203,15 @@ func _apply_sample(message: Dictionary) -> void:
 		bridge.failure = "invalid original framebuffer"
 		return
 	picture.texture = ImageTexture.create_from_image(image)
+	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
+	if not state is Dictionary:
+		previous = {}
+		previous_presentation = message.get("presentation", {})
+		draw_view.apply_pass({"objects": []})
+		tandem_frame.set_frame(image, {}, null)
+		status.text = "ORIGINAL PC: " + str(previous_program.get("name","STARTING"))
+		caption.text = "Original menu/briefing or SIM initialization. Showing the original framebuffer; no substitute simulation."
+		return
 	if message.has("static_wire_geometry"):
 		world_view.set_geometry(message.static_wire_geometry)
 	var position: Array = state.world_position_raw
@@ -255,7 +263,7 @@ func _capture() -> void:
 	if trace_mode: tandem_viewport.get_texture().get_image().save_png(output.path_join("tandem-frame.png"))
 	picture.texture.get_image().save_png(output.path_join("original-frame.png"))
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
-	file.store_string(JSON.stringify({"state": previous, "samples": samples, "presentation": previous_presentation,
+	file.store_string(JSON.stringify({"state": previous, "program": previous_program, "samples": samples, "presentation": previous_presentation,
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
 		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects with original source-resolution cockpit/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)

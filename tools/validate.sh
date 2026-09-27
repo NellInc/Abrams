@@ -28,6 +28,7 @@ run_check preservation python3 tools/reference_inventory.py --verify
 run_check simulation ./tools/godot.sh --headless --script res://tests/test_simulation.gd
 run_check pc_rules ./tools/godot.sh --headless --script res://tests/test_pc_rules.gd
 run_check pc_world ./tools/godot.sh --headless --script res://tests/test_pc_world_view.gd
+run_check pc_keyboard ./tools/godot.sh --headless --script res://tests/test_pc_keyboard.gd
 run_check pc_camera ./tools/godot.sh --headless --script res://tests/test_pc_camera.gd
 run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_draw_pass.gd
 run_check pc_surfaces ./tools/godot.sh --headless --script res://tests/test_pc_surfaces.gd

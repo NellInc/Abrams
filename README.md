@@ -8,13 +8,15 @@ music and sound-effect references for a faithful presentation upgrade.
 
 * Open **Play.command** for the authored calibration range.
 * Open **Art Review.command** for original/remaster artwork comparisons.
-* Open **PC Bridge.command** for the local original-PC/Godot pose research view.
-  It requires the ignored local emulator, content ZIP and mission snapshot.
-  Run `./PC\ Bridge.command --trace` for the source-built tandem renderer with
+* Open **PC Bridge.command** for the original-PC/Godot tandem research view.
+  It cold-boots the original menus, briefings and missions, using the ignored
+  local tracing core and content ZIP. Mission exit and reentry stay in the
+  original game. Its Godot view shows
   original solid geometry, EGA materials, live vehicles and bitmap effects beneath
   the original cockpit/HUD. The cockpit is still source-resolution artwork.
-  Add `--wire` for its wireframe diagnostic. See `docs/pc-ui-research.md` for
-  composition evidence and limits.
+  Add `--wire` for its wireframe diagnostic. `--trace` retains the old mission
+  snapshot probe; `--reference` selects the older static research backend.
+  See `docs/pc-live-bridge.md` for controls, snapshot limits and lifecycle evidence.
 * Alternatively import `godot/project.godot` in Godot 4 and run the main scene.
 * Set `GODOT_BIN` to the engine executable if the launcher cannot find it.
 

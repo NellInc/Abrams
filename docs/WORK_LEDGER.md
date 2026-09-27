@@ -410,6 +410,64 @@ semantics, erasure and modal coverage still need separation before a static plat
 can replace original UI pixels. See `pc-ui-art-workflow.md`. No new artwork was
 silently substituted into the proven tandem path.
 
+## Original cold boot and mission reentry, 2026-09-27
+
+Nell explicitly approved the tandem architecture: "Tandem it is, proceed."
+The default `PC Bridge.command` now cold-boots the original through START, BRIEF,
+SIM and END. The old snapshot/static paths remain explicit diagnostics. The
+original owns menus, motor pool, quit choice, debrief and second mission entry.
+Godot uses full original pixels outside attributed battle views.
+
+The read-only session tracks the active DOS PSP/MCB, checks executable anchors,
+waits for matching SHAPE.TBL, detaches callbacks on program changes and creates a
+fresh rendering epoch for reentry. Freed resident SIM code cannot authorize a
+render. Trace protocol is now 4. The keyboard preserves top-row digits, keypad
+and arrow identities; eight mapping cases pass, and original up/right match
+keypad 8/6 in decoded state and framebuffer in the driver probe.
+
+A real fixture flaw was found: RAM-only mission restore omitted the disk overlay.
+The source snapshot's SHELL selected resource 6, while the pristine ZIP selected
+1. Quitting the restored mission with an empty overlay produced the wrong
+Mass Destruction summary. The same inputs with the source disk overlay restored
+Wilson's debrief. The cold-boot flow keeps the original disk writes together and
+shows the correct Mossel summary. Saved-session packaging must include both RAM
+and disk state; historical within-mission traces do not establish this contract.
+
+The first lifecycle script inherited the shortened RAM-only debrief sequence and
+failed to reenter SIM under cold boot. The failed artifacts are retained. The
+corrected script includes the original debrief screen. Independent cold boots
+also had different starting RAM and some video frames, so none were claimed as
+non-interference evidence. The pinned core reads host time. The definitive
+comparison uses one neutral START snapshot before any input or overlay changes.
+
+Verified receipts:
+
+* `artifacts/pc-lifecycle-baseline-02/report.json` and
+  `artifacts/pc-lifecycle-trace-02/report.json`: 7,267 identical paired full-RAM,
+  framebuffer and input records; 52 matching stage states; identical START,
+  BRIEF, SIM, END, START, BRIEF, SIM boundaries; fresh epoch 2; zero sampled
+  unsupported drawing commands; quit mask covers all 64,000 pixels.
+* `artifacts/pc-session-native-02/report.json`: actual cold boot through Godot's
+  pipe, 52 stages, nine paired worlds, 3,328,000 exact RGB checks, no failures,
+  helper exit zero. Menu/modal pixels match the source and world pixels match
+  the corresponding Godot viewport. This is not world-raster parity.
+* `artifacts/pc-session-live-integration-01.log`: existing snapshot control
+  regression still passes with 15 paired draws/masks and 161 vehicle polygons.
+* `artifacts/pc-arrow-identity-01/report.json`: original arrow/keypad equivalence
+  for the tested driving directions. No claim covers all keyboard layouts.
+* `artifacts/validation-20260927T023626Z/results.txt`: all 15 aggregate stages
+  pass, including 127 Python tests, eight original-key mappings, reference
+  preservation and the existing simulation/audio/runtime gates, exit zero.
+
+`artifacts/pc-default-boot-native-01.log` verifies the new default launcher
+through a 26-sample capture into the original SIM, with cockpit composition
+enabled and exit zero. Its side-by-side capture and native lifecycle screenshots
+were visually inspected. The original cockpit/menu artwork is still source-resolution.
+High-resolution art installation, event-driven remastered audio, complete
+missions/campaign/save coverage and historical pacing remain open. No publication
+or original-source modification occurred. See `pc-live-bridge.md` for reproduction
+commands, exact boundaries and the preserved failed probes.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting

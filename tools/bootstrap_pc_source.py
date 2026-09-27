@@ -11,10 +11,10 @@ import json
 from pathlib import Path
 try:
     from tools.pc_reference_core import PcReferenceCore
-    from tools.pc_live_state import SimStateReader
+    from tools.pc_live_state import SimStateReader, active_program
 except ModuleNotFoundError:
     from pc_reference_core import PcReferenceCore
-    from pc_live_state import SimStateReader
+    from pc_live_state import SimStateReader, active_program
 
 ROOT = Path(__file__).resolve().parents[1]
 # Preserve the actual observed probe sequence, including ineffective credit-skip
@@ -29,6 +29,7 @@ STEPS = [(3,['return']), (720,[]), (3,['escape']), (180,[]), (3,['space']),
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--boot-only', action='store_true', help='neutral START fixture before user input or SHELL changes')
     args = parser.parse_args()
     for name in ('GAME', 'GENESIS'):
         if args.output.resolve().is_relative_to((ROOT / name).resolve()): parser.error('output must be outside proprietary source directories')
@@ -38,6 +39,12 @@ def main():
                            args.output / 'saves', expected_sha256=manifest['baseline_sha256'])
     try:
         core.run(240)
+        if args.boot_only:
+            program = active_program(core.conventional_memory())
+            if not program or program['name'] != 'START': raise ValueError('original START not active')
+            core.dump(args.output / 'neutral-boot')
+            print('PC_SOURCE_BOOT: neutral original START, 240 frames; no mission selected')
+            return
         for frames, keys in STEPS: core.run(frames, keys)
         state = SimStateReader(ROOT / 'GAME/SIM.EXE').read(core.conventional_memory())
         if (state is None or state['scenario_resource_index'] != 6 or state['station'] != 'gunner'
