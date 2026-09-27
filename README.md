@@ -17,6 +17,10 @@ music and sound-effect references for a faithful presentation upgrade.
   Add `--wire` for its wireframe diagnostic. `--trace` retains the old mission
   snapshot probe; `--reference` selects the older static research backend.
   See `docs/pc-live-bridge.md` for controls, snapshot limits and lifecycle evidence.
+  Add `--gunner-art` for the local high-resolution gunner-surround pilot. It uses
+  verified surviving plate pixels above the instruments; all instruments and the
+  original sight geometry stay unchanged. Missing art/provenance falls back to
+  the original. See `docs/pc-ui-art-workflow.md` for its restricted scope.
 * Alternatively import `godot/project.godot` in Godot 4 and run the main scene.
 * Set `GODOT_BIN` to the engine executable if the launcher cannot find it.
 

@@ -87,6 +87,39 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 11, 0)
         self.assertIsNone(self.present(c, 0)['ui_overlay'])
 
+    def test_plate_provenance_follows_slot_and_requires_original_UI(self):
+        c = self.collector()
+        self.event(c,10,0)
+        self.event(c,19,2,bytes([255])*64000)
+        self.event(c,24,2,bytes([1])*64000)
+        self.event(c,11,2)
+        self.event(c,10,8192)
+        self.event(c,19,0,bytes([255])*64000)
+        self.event(c,24,0)
+        self.event(c,11,0)
+        plate = self.present(c,2)['plate_overlay']
+        self.assertEqual(plate['plates']['1']['source'],'GPS.BIN')
+        self.assertEqual(plate['plates']['1']['pixels'],64000)
+        self.assertIsNone(self.present(c,0)['plate_overlay'])
+        for raw in (bytes([8])*64000,b'\1'):
+            c = self.collector()
+            self.event(c,10,0)
+            self.event(c,19,0,bytes([255])*64000)
+            with self.assertRaisesRegex(ValueError,'plate'): self.event(c,24,0,raw)
+        c = self.collector()
+        self.event(c,10,0)
+        self.event(c,19,0,bytes(64000))
+        with self.assertRaisesRegex(ValueError,'world pixels'): self.event(c,24,0,bytes([1])*64000)
+        c = self.collector()
+        self.event(c,10,0)
+        with self.assertRaisesRegex(ValueError,'paired UI'): self.event(c,24,0,bytes(64000))
+        c = self.collector()
+        self.event(c,10,0)
+        self.event(c,19,0,bytes([255])*64000)
+        self.event(c,24,0,bytes([1])*64000)
+        c.ui_mask_slot = None
+        with self.assertRaisesRegex(ValueError,'plate mask.*slots differ'): self.event(c,11,1)
+
     def test_invalid_ui_mask_fails_instead_of_inventing_transparency(self):
         for raw, error in [(b'\0', 'dimensions'), (bytes([254])*64000, 'provenance')]:
             with self.subTest(error=error):

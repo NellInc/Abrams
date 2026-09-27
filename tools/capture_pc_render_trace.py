@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--mode', choices=['trace','baseline','reference'], default='trace')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=180)
-    parser.add_argument('--profile', choices=['turn', 'controls'], default='turn')
+    parser.add_argument('--profile', choices=['turn', 'controls', 'plates'], default='turn')
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--state-core-sha256', help='defaults to the selected reference or source-baseline pin')
     parser.add_argument('--capture-sprites', action='store_true', help='save first paired framebuffer for each observed effect image')
@@ -66,9 +66,13 @@ def main():
         presentations = []
         sprite_presentations, captured_sprites, ui_presentations = [], set(), []
         stages = {}
-        if args.profile == 'controls':
-            steps = STEPS + [('commander-key', 3, ['f2']), ('commander', 60, []),
-                ('cupola-key', 3, ['f3']), ('cupola', 60, []), ('return-gunner-key', 3, ['f1']), ('return-gunner', 60, [])]
+        if args.profile in ('controls', 'plates'):
+            steps = STEPS + [('commander-key', 3, ['f2']), ('commander', 60, [])]
+            if args.profile == 'plates':
+                steps += [('damage-key', 3, ['d']), ('damage', 120, []),
+                          ('damage-close-key', 3, ['space']), ('damage-closed', 60, [])]
+            steps += [('cupola-key', 3, ['f3']), ('cupola', 60, []),
+                      ('return-gunner-key', 3, ['f1']), ('return-gunner', 240 if args.profile == 'plates' else 60, [])]
             inputs = [(name, keys, n == count - 1) for name, count, keys in steps for n in range(count)]
         else:
             inputs = [('turn', ['c'] if i < 3 else ['kp6'] if 30 <= i < 90 else [], i == args.frames - 1)
@@ -79,8 +83,9 @@ def main():
             if collector.error: raise collector.error
             if args.mode == 'trace':
                 paired = collector.paired_video(core.last_video)
-                metadata = {k: v for k, v in paired.items() if k not in ('draw_pass', 'ui_overlay')}
+                metadata = {k: v for k, v in paired.items() if k not in ('draw_pass', 'ui_overlay', 'plate_overlay')}
                 metadata['ui_overlay'] = {k:v for k,v in (paired.get('ui_overlay') or {}).items() if k != 'mask_png'}
+                metadata['plate_overlay'] = {k:v for k,v in (paired.get('plate_overlay') or {}).items() if k != 'mask_png'}
                 presentations.append(metadata |
                     {'draw_sequence': paired['draw_pass']['sequence'] if paired.get('draw_pass') else None,
                      'latest_complete_sequence': collector.passes[-1]['sequence'] if collector.passes else None})
@@ -99,8 +104,12 @@ def main():
                     filename = f'ui-{ui_stage}-frame-{i:05d}'
                     core.screenshot().save(args.output / (filename + '.png'))
                     (args.output / (filename + '-mask.png')).write_bytes(base64.b64decode(paired['ui_overlay']['mask_png']))
+                    plate_mask = None
+                    if paired.get('plate_overlay'):
+                        plate_mask = filename + '-plate.png'
+                        (args.output / plate_mask).write_bytes(base64.b64decode(paired['plate_overlay']['mask_png']))
                     ui_presentations.append({'stage': ui_stage, 'draw_sequence': paired['draw_pass']['sequence'],
-                        'frame_index': i, 'image': filename + '.png', 'mask': filename + '-mask.png'})
+                        'frame_index': i, 'image': filename + '.png', 'mask': filename + '-mask.png', 'plate_mask':plate_mask})
             frames.append({'index': i, 'keys': keys, 'ram_sha256': hashlib.sha256(core.last_video_ram).hexdigest(),
                 'video_sha256': hashlib.sha256(core.last_video[0]).hexdigest()})
             if end_stage: stages[stage] = reader.read(core.last_video_ram)
@@ -111,6 +120,7 @@ def main():
             'profile': args.profile, 'stages': stages,
             'original_vertices_checked': collector.vertices_checked,
             'effect_pixels_checked': collector.effect_pixels_checked,
+            'plate_loads': collector.plates.report(),
             'sprite_presentations': sprite_presentations,
             'ui_presentations': ui_presentations,
             'presentations': presentations, 'render_passes': list(collector.passes), 'incomplete_pass_at_stop': collector.active is not None,

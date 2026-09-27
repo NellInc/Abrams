@@ -19,12 +19,14 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.pc_materials import read_materials
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
+    from tools.pc_plate_trace import PlateLoads, PLATE_IDS
 except ModuleNotFoundError:
     from pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
     from inspect_shapes import inspect_shapes
     from inspect_scenarios import decode_resource
     from pc_materials import read_materials
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
+    from pc_plate_trace import PlateLoads, PLATE_IDS
 
 ROOT = Path(__file__).resolve().parents[1]
 CALLBACK = C.CFUNCTYPE(None, C.c_uint32, C.POINTER(C.c_uint16), C.c_void_p, C.c_uint32, C.c_uint32)
@@ -40,6 +42,8 @@ class Collector:
         self.drawing_pages = set()
         self.scanout = None
         self.ui_mask_slot = None
+        self.plate_mask_slot = None
+        self.scanout_ui_bits = b''
         self.buffers = {}
         self.presented = None
         self.scanout_sequence = 0
@@ -50,6 +54,7 @@ class Collector:
         self.background_page = None
         self.error = None
         self.sequence = 0
+        self.plates = PlateLoads(ROOT / 'GAME')
         self.vertices_checked = 0
         self.effects = decode_bitmaps(decode_resource((ROOT / 'GAME/EFFECTS.BMP').read_bytes()))
         self.effect_pixels_checked = 0
@@ -59,10 +64,14 @@ class Collector:
     def observe(self, event, registers, data, offset, length):
         try:
             raw = C.string_at(data, length)
-            if event in (10, 11, 12, 19):
+            if event in (10, 11, 12, 19, 24):
                 self.observe_video(event, offset, raw, registers)
                 return
             regs = dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'), registers[:12]))
+            if event in (20, 21, 22):
+                self.plates.observe(event, raw, regs['ax'])
+                return
+            if event == 23: raise ValueError(f'unsupported native plate observation: {offset}')
             def word(at): return struct.unpack_from('<H', raw, at - offset)[0]
             def words(at, n): return list(struct.unpack_from('<' + 'h' * n, raw, at - offset))
             def byte(at): return raw[at - offset]
@@ -215,6 +224,8 @@ class Collector:
     def observe_video(self, event, slot_or_page, raw, registers):
         if event == 10:
             self.ui_mask_slot = None
+            self.plate_mask_slot = None
+            self.scanout_ui_bits = b''
             self.scanout_sequence += 1
             page = slot_or_page
             drawing = self.pages.get(page) if page not in self.drawing_pages else None
@@ -226,6 +237,7 @@ class Collector:
             if raw and len(raw) != 320 * 200: raise ValueError('unsupported UI mask dimensions')
             if any(v not in (0, 255) for v in raw): raise ValueError('invalid UI provenance mask')
             self.ui_mask_slot = slot_or_page
+            self.scanout_ui_bits = raw
             if self.scanout:
                 self.scanout['ui_overlay'] = None
                 if raw:
@@ -235,13 +247,37 @@ class Collector:
                         'mask_png': base64.b64encode(png.getvalue()).decode('ascii'),
                         'mask_sha256': hashlib.sha256(raw).hexdigest(), 'ui_pixels': raw.count(255),
                         'basis': 'EGA bit provenance sampled at original scanline time'}
+        elif event == 24:
+            if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
+            if raw and len(raw) != 64000: raise ValueError('unsupported plate mask dimensions')
+            if any(value > len(PLATE_IDS) for value in raw): raise ValueError('invalid plate provenance mask')
+            if raw and (self.ui_mask_slot != slot_or_page or len(self.scanout_ui_bits) != 64000):
+                raise ValueError('plate mask lacks paired UI provenance')
+            if any(plate and ui != 255 for plate, ui in zip(raw,self.scanout_ui_bits)):
+                raise ValueError('plate mask covers original world pixels')
+            self.plate_mask_slot = slot_or_page
+            if self.scanout:
+                self.scanout['plate_overlay'] = None
+                if raw:
+                    png = io.BytesIO()
+                    Image.frombytes('L', (320,200), raw).save(png, format='PNG')
+                    self.scanout['plate_overlay'] = {'width':320, 'height':200,
+                        'mask_png':base64.b64encode(png.getvalue()).decode('ascii'),
+                        'mask_sha256':hashlib.sha256(raw).hexdigest(),
+                        'plates':{str(i+1):{'source':name,'pixels':raw.count(i+1),
+                            'source_sha256':self.plates.resources[name][1]} for i,name in enumerate(PLATE_IDS)},
+                        'basis':'all four EGA bits retain the same source plate and original coordinate at scanout'}
         elif event == 11:
             if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
             if self.ui_mask_slot is not None and self.ui_mask_slot != slot_or_page:
                 raise ValueError('UI mask and completed framebuffer slots differ')
+            if self.plate_mask_slot is not None and self.plate_mask_slot != slot_or_page:
+                raise ValueError('plate mask and completed framebuffer slots differ')
             self.buffers[slot_or_page] = self.scanout
             self.scanout = None
             self.ui_mask_slot = None
+            self.plate_mask_slot = None
+            self.scanout_ui_bits = b''
         elif event == 12:
             if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
             frame = self.buffers.get(slot_or_page)

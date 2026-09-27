@@ -484,6 +484,58 @@ Godot 4.7.2 path. It does not establish lit/interpolated high-resolution texture
 fidelity or cross-platform results. Version changes require the native gate.
 `pc-surfaces-research.md` records source links, failed baseline and exact receipts.
 
+## Original cockpit provenance and material pilot, 2026-09-27
+
+Nell's continuation authorizes the tandem remaster, with original PC logic and
+renderer still running. No publishing, external upload or original-file changes
+were performed. Local art from the preceding approved studies is reused unchanged.
+
+The original packed-plate driver now has an independent 42-case instruction
+oracle covering all seven extracted plates, both EGA pages and three chunk sizes.
+Live file-loader tracing verifies all four crew-station plates and STATUS.BIN.
+A separate conservative all-plane provenance mask tracks surviving source plate
+pixels through subsequent UI writes, transparent bitmaps and page copies, then
+follows actual scanlines and the completed host buffer slot.
+
+The first recorded material test failed because JSON float arrays did not compare
+equal to the identical integer palette constant. Component-wise validated numeric
+comparison fixes it, with a wire-round-trip regression test. The first cold-boot
+viewer then exposed missing provenance through the original CPU dissolve.
+That exact driver is now observed and independently tested. Its untouched pixel
+at (312,199) was discovered and preserved rather than silently repaired.
+
+`PC Bridge.command --gunner-art` enables the new local gunner-surround pilot.
+Only proven material pixels above row 123, outside the PC camera, may change.
+The lower instrument panel, reticles, messages and other stations stay original.
+Missing metadata, art, matching source fingerprint or supported palette disables
+the pilot. Default launch remains the source-resolution comparison view.
+
+Final evidence:
+
+* `pc-plate-oracle-01.json`: 2,688,000 original packed-driver pixels;
+  `pc-dissolve-oracle-04.json`: 128,000 dissolve pixels, both page directions.
+* `pc-plate-pixels-02.json`: 482,370 surviving plate pixels across 30 captured
+  samples exactly match original source pixels and palette.
+* `pc-plate-ownership-comparison-02.json`: all 1,533 original input/RAM/video
+  records and stage states equal the unmodified source baseline.
+* `pc-plate-lifecycle-03/report.json`: all 7,267 input/RAM/video records, 52 stages
+  and original program boundaries equal the same neutral-start baseline through
+  mission quit, debrief, menu and reentry.
+* `pc-plate-art-native-03/report.json`: 2,771,432 exact RGB checks pass; 172,484
+  source samples acquire new materials while protected pixels remain original.
+* `pc-gunner-material-viewer-02`: real cold-boot pipe and native Godot viewer,
+  both world and material composition enabled, 33,620 source plate pixels
+  verified, clean exit, final side-by-side capture visually inspected.
+* `validation-20260927T093036Z/results.txt`: all 17 stages pass, including 137
+  Python tests and original-source preservation, terminal exit zero.
+
+Full commands, current core/header pins, failing probes and scope are in
+`pc-ui-art-workflow.md`. The implementation and visual review were performed by
+the same assistant. This remains a partial material restoration. Other stations,
+fonts/instruments, high-resolution world assets, event-driven remastered audio,
+full mission/campaign/save coverage and historical pacing remain open. The parent
+goal stays active.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -502,7 +554,8 @@ fidelity or cross-platform results. Version changes require the native gate.
 4. **Campaign/persistence:** original progression, scores, ranks and save format
    remain; the range's save/restore is separate developer functionality.
 5. **Visual restoration:** first four static assets complete as v1 local artwork.
-   Cockpits, recognition art, Wilson animation, in-world models, effects and all
+   A proven-pixel high-resolution gunner-surround pilot is now opt-in. Remaining
+   cockpit materials/instruments, recognition art, Wilson animation, in-world models, effects and all
    UI states remain. Preserve PC information density and four-station controls.
 6. **Audio:** final voice performances, per-event coverage, mixing/listening,
    accessibility and source/licensing records remain. Direct native extraction

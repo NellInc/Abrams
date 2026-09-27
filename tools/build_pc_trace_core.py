@@ -25,7 +25,8 @@ def main():
     status = subprocess.check_output(['git', '-C', str(SOURCE), 'status', '--porcelain', '--untracked-files=all'], text=True)
     allowed = {' M src/cpu/core_normal.cpp', '?? src/cpu/abrams_trace.h',
                ' M dosbox_pure_libretro.cpp', ' M src/hardware/vga_draw.cpp',
-               ' M src/hardware/vga_memory.cpp', '?? src/cpu/abrams_vga_ownership.h'}
+               ' M src/hardware/vga_memory.cpp', '?? src/cpu/abrams_vga_ownership.h',
+               '?? src/cpu/abrams_plate_ownership.h'}
     if any(line not in allowed for line in status.splitlines()):
         raise ValueError('preserve unrecognized dependency changes; source build is not the reviewed input')
     target = SOURCE / 'src/cpu/core_normal.cpp'
@@ -41,6 +42,8 @@ def main():
     shutil.copyfile(header, target.with_name('abrams_trace.h'))
     ownership = ROOT / 'tools/pc_core/abrams_vga_ownership.h'
     shutil.copyfile(ownership, target.with_name(ownership.name))
+    plates = ROOT / 'tools/pc_core/abrams_plate_ownership.h'
+    shutil.copyfile(plates, target.with_name(plates.name))
     target.write_text(changed)
     patches = {
         'src/hardware/vga_draw.cpp': [
@@ -101,6 +104,7 @@ def main():
         'source_core_normal_sha256': hashlib.sha256(original.encode()).hexdigest(),
         'patched_core_normal_sha256': sha(target), 'trace_header_sha256': sha(header),
         'ownership_header_sha256': sha(ownership),
+        'plate_ownership_header_sha256': sha(plates),
         'baseline_sha256': sha(baseline), 'trace_sha256': sha(output),
         'build': ['make', '-j4'], 'compiler': subprocess.check_output(['c++', '--version'], text=True).splitlines()[0],
         'license': 'GPL-2.0-or-later; upstream LICENSE and notices retained in source checkout',

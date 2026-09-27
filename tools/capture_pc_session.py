@@ -14,11 +14,13 @@ try:
     from tools.pc_live_state import SimStateReader, active_program
     from tools.pc_session import PresentationSession
     from tools.inspect_scenarios import decode_resource
+    from tools.pc_render_trace import Collector
 except ModuleNotFoundError:
     from pc_reference_core import PcReferenceCore
     from pc_live_state import SimStateReader, active_program
     from pc_session import PresentationSession
     from inspect_scenarios import decode_resource
+    from pc_render_trace import Collector
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -45,8 +47,14 @@ def main():
     library = 'abrams-trace.dylib' if args.mode == 'trace' else 'source-baseline.dylib'
     core = PcReferenceCore(ROOT / '.runtime/pc-core' / library, ROOT / '.runtime/pc-core/abrams-ref.zip',
                            args.output / 'saves', expected_sha256=manifest[args.mode+'_sha256'])
+    collectors = []
+    def factory(*args, **kwargs):
+        collector = Collector(*args, **kwargs)
+        collectors.append(collector)
+        return collector
     session = PresentationSession(core,SimStateReader(ROOT/'GAME/SIM.EXE'),
-                                  decode_resource((ROOT/'GAME/SHAPE.TBL').read_bytes()),trace=args.mode=='trace')
+                                  decode_resource((ROOT/'GAME/SHAPE.TBL').read_bytes()),trace=args.mode=='trace',
+                                  collector_factory=factory)
     records, samples = [], []
     try:
         core.run(240)  # Same original startup boundary as the live host.
@@ -85,6 +93,7 @@ def main():
             'boot_state_sha256':hashlib.sha256(args.boot_state.read_bytes()).hexdigest() if args.boot_state else None,
             'restore_priming_frames':1 if args.boot_state else 0,
             'transitions':session.transitions,'checks':checks,
+            'plate_epochs':[c.plates.report() for c in collectors],
             'scope':'bounded original cold-boot, quit and reentry; compare full paired RAM/video/input records separately'}
         if args.compare:
             other = json.loads(args.compare.read_text())

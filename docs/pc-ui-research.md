@@ -137,7 +137,7 @@ python3 tools/capture_pc_render_trace.py --mode trace --profile controls \
 Source revision: DOSBox Pure `73e03aa145e0549ed4d5a20f8e65532714da33f5`.
 Unmodified baseline SHA-256:
 `57edbd309eb2ab6264b70188c3a85408fbcfa8c62e83b8c7b9c39b7309f61ac6`.
-New observed-core SHA-256:
+UI-foundation observed-core SHA-256 (before the later plate extension):
 `f0af54e7f16a412651eaadec93d8572564d38e75992580e80f23cb6fa3ab37af`.
 Ownership header SHA-256:
 `af16f5561b6f8069d9c545b84fd253eab591bfca8c1e4290107c0847b1d7d488`.
@@ -149,9 +149,12 @@ captures, emulator binaries or derived graphics are added to Git or published.
 
 ## Remaining boundaries
 
-High-resolution cockpit art/fonts, remastered world assets, remaining opaque
+The later plate provenance and opt-in gunner-material pilot are documented in
+`pc-ui-art-workflow.md`, including current core pins and bounded replay evidence.
+High-resolution cockpit instruments/fonts, remastered world assets, remaining opaque
 commands, exact polygon edge coverage, other game modes and full mission/campaign
 coverage remain open. The map is retained from the PC frame. EGA RGB fidelity
-does not resolve the earlier arbitrary-dark-colour spatial-shader discrepancy.
+is distinct from the arbitrary-colour Compatibility correction subsequently
+verified in `pc-surfaces-research.md`.
 Wall-clock pacing and historical machine timing remain separate acceptance work;
 matching frame-stepped RAM/video hashes establishes neither.

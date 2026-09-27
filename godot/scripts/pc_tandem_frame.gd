@@ -4,6 +4,12 @@ extends TextureRect
 const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
 var world_enabled := false
 var fallback_reason := "awaiting original framebuffer"
+const ART_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
+	[170,0,0],[170,85,0],[0,170,0],[85,255,85],[255,255,85],[0,0,0],[255,85,85],[0,0,170],[85,255,255],[255,255,255]]
+const GUNNER_SOURCE_SHA256 = "359b4c55240fbfda8e1bbb36d71e6b8ebf4c1aa48ea7394c26764cbf69e5795b"
+var gunner_art_texture: Texture2D
+var gunner_art_enabled := false
+var gunner_art_reason := "material pilot disabled"
 
 func _init() -> void:
 	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -18,7 +24,67 @@ func _fallback(reason: String) -> bool:
 	material.set_shader_parameter("world_enabled", false)
 	material.set_shader_parameter("world_texture", null)
 	material.set_shader_parameter("ui_mask", null)
+	_disable_art("original frame fallback")
 	return false
+
+func set_gunner_art(image: Image) -> bool:
+	gunner_art_texture = null
+	_disable_art("material image unavailable")
+	if image == null or image.is_empty() or image.get_width() < 640 or image.get_height() < 400:
+		return false
+	if absf(float(image.get_width()) / image.get_height() - 1.6) > 0.02: return false
+	gunner_art_texture = ImageTexture.create_from_image(image)
+	return true
+
+func _disable_art(reason: String) -> void:
+	gunner_art_enabled = false
+	gunner_art_reason = reason
+	material.set_shader_parameter("gunner_art_enabled", false)
+	material.set_shader_parameter("gunner_art", null)
+	material.set_shader_parameter("plate_mask", null)
+
+func _art_palette_matches(palette: Variant) -> bool:
+	# Godot JSON numbers are floats. Nested Array equality distinguishes 0.0
+	# from 0, although scalar numeric equality does not. Compare components.
+	if not palette is Array or palette.size() != 16: return false
+	for i in 16:
+		if not palette[i] is Array or palette[i].size() != 3: return false
+		for channel in 3:
+			var value = palette[i][channel]
+			if not (value is int or value is float) or value != ART_PALETTE[i][channel]: return false
+	return true
+
+func _set_art(presentation: Dictionary, ui: Image) -> void:
+	_disable_art("material pilot disabled")
+	if gunner_art_texture == null: return
+	gunner_art_reason = "no supported plate provenance"
+	if not _art_palette_matches(presentation.get("palette_rgb")):
+		gunner_art_reason = "palette differs from material study"
+		return
+	var overlay = presentation.get("plate_overlay")
+	if not overlay is Dictionary or overlay.get("width") != 320 or overlay.get("height") != 200: return
+	var plates = overlay.get("plates")
+	if not plates is Dictionary or not plates.get("1") is Dictionary: return
+	if plates["1"].get("source") != "GPS.BIN" or plates["1"].get("source_sha256") != GUNNER_SOURCE_SHA256: return
+	var encoded = overlay.get("mask_png")
+	if not encoded is String: return
+	var mask := Image.new()
+	if mask.load_png_from_buffer(Marshalls.base64_to_raw(encoded)) != OK or mask.get_size() != Vector2i(320,200): return
+	if mask.get_format() != Image.FORMAT_L8: return
+	var tags := mask.get_data()
+	var ui_bits := ui.get_data()
+	var present := false
+	for at in tags.size():
+		if tags[at] > 7 or (tags[at] != 0 and ui_bits[at] != 255): return
+		present = present or tags[at] == 1
+	if not present:
+		gunner_art_reason = "no surviving gunner plate pixels"
+		return
+	material.set_shader_parameter("gunner_art", gunner_art_texture)
+	material.set_shader_parameter("plate_mask", ImageTexture.create_from_image(mask))
+	material.set_shader_parameter("gunner_art_enabled", true)
+	gunner_art_enabled = true
+	gunner_art_reason = ""
 
 func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> bool:
 	texture = ImageTexture.create_from_image(source) if source != null and not source.is_empty() else null
@@ -57,4 +123,5 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> boo
 	material.set_shader_parameter("world_enabled", true)
 	world_enabled = true
 	fallback_reason = ""
+	_set_art(presentation,mask)
 	return true

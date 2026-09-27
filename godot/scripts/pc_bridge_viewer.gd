@@ -11,6 +11,7 @@ var draw_view: Node3D
 var trace_mode := false
 var boot_mode := false
 var wire_mode := false
+var gunner_art_requested := false
 var previous_presentation: Dictionary = {}
 var world_viewport: SubViewport
 var world_aspect: AspectRatioContainer
@@ -46,10 +47,15 @@ func _initialize() -> void:
 	boot_mode = "--boot" in args or ("--trace" not in args and "--reference" not in args)
 	trace_mode = boot_mode or "--trace" in OS.get_cmdline_user_args()
 	wire_mode = "--wire" in OS.get_cmdline_user_args()
+	gunner_art_requested = "--gunner-art" in args
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	output = directory.path_join("artifacts/pc-boot-viewer" if boot_mode else ("artifacts/pc-trace-viewer" if trace_mode else "artifacts/pc-bridge-viewer"))
+	if "--output" in args and args.find("--output")+1 < args.size(): output = args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	_build_ui()
+	if trace_mode and gunner_art_requested:
+		var art_path := directory.path_join("local-art/pc-ui-remastered/gunner-plate-v2.png")
+		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
 	var python := OS.get_environment("ABRAMS_PYTHON")
 	if python.is_empty(): python = "/opt/homebrew/bin/python3"
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
@@ -133,7 +139,12 @@ func _build_ui() -> void:
 	caption = _label("", 18)
 	stack.add_child(caption)
 	stack.add_child(_label("Arrows/keypad: original controls   Enter: select   Q: mission quit   Esc: pause/back   F1 to F4: stations", 18))
-	stack.add_child(_label(("Original wireframe diagnostic. Omit --wire for filled surfaces." if wire_mode else "Scanout-paired Godot world with original cockpit, reticle and messages. Source-resolution UI is temporary; high-resolution artwork and exact polygon edges remain open.") if trace_mode else "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
+	var footer := "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending."
+	if trace_mode:
+		footer = "Scanout-paired Godot world with original cockpit, reticle and messages. Source-resolution UI is temporary; high-resolution artwork and exact polygon edges remain open."
+		if gunner_art_requested: footer = "Material pilot: verified gunner-surround pixels use high-resolution art. Instruments and other stations remain original. Camera geometry stays authoritative."
+		if wire_mode: footer = "Original wireframe diagnostic. Omit --wire for filled surfaces."
+	stack.add_child(_label(footer,17))
 
 func _build_stage(viewport: SubViewport) -> void:
 	var world := Node3D.new()
@@ -249,6 +260,8 @@ func _apply_sample(message: Dictionary) -> void:
 			caption.text += "\nNo paired geometry: " + str(previous_presentation.get("reason", "awaiting scanout"))
 		if not tandem_frame.world_enabled:
 			caption.text += "\nORIGINAL FRAME FALLBACK: " + tandem_frame.fallback_reason
+		if gunner_art_requested:
+			caption.text += "\n" + ("HIGH-RES GUNNER SURROUND: original instruments retained" if tandem_frame.gunner_art_enabled else "ORIGINAL MATERIALS: " + tandem_frame.gunner_art_reason)
 	previous = state
 
 func _capture() -> void:
@@ -265,6 +278,7 @@ func _capture() -> void:
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
 	file.store_string(JSON.stringify({"state": previous, "program": previous_program, "samples": samples, "presentation": previous_presentation,
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
+		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,
 		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects with original source-resolution cockpit/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()
