@@ -58,7 +58,7 @@ run_check pc_genesis_cockpits ./tools/godot.sh --headless --script res://tests/t
 run_check pc_portrait_art ./tools/godot.sh --headless --script res://tests/test_pc_portrait_art.gd
 run_check pc_frontend_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_frontend_art.gd
 run_check pc_motor_pool_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_motor_pool_art.gd -- --text
-run_check pc_information_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_information_art.gd
+run_check pc_information_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_information_art.gd -- --tandem
 run_check pc_typography ./tools/godot.sh --headless --script res://tests/test_pc_typography.gd
 run_check geometry ./tools/godot.sh --headless --script res://tests/test_geometry.gd
 run_check audio ./tools/godot.sh --headless --script res://tests/test_audio.gd

@@ -88,6 +88,92 @@ def arming_panel(game):
             'scope':'Original clipboard recognition only. Genesis menu supplies rendered panel style. One intermittently overwritten bottom pixel remains original.'}
 
 
+def crew_information(game, capture):
+    """Compose only a fully identified original crew page, with Genesis donors."""
+    from PIL import Image
+    try:
+        from tools.extract_pc_portraits import verify_loaded
+    except ModuleNotFoundError:
+        from extract_pc_portraits import verify_loaded
+    source=Image.open(capture/'crew.png').convert('RGB')
+    fingerprint=hashlib.sha256(source.tobytes()).hexdigest()
+    if fingerprint!='ab6177af9b4cf2442a41a1a7bf3f88dbafb5116186cbf4b7760efa196e798977':
+        raise ValueError('unsupported complete original crew page')
+    sprites=decode_bitmaps(decode_resource((game/'CREW.BMP').read_bytes()))
+    ram=(capture/'crew.bin').read_bytes()
+    proof=[verify_loaded(ram,sprite) for sprite in sprites]
+    portraits=[(0,'gunner',18,23,49,48,'gunner-v2.png'),
+               (1,'driver',18,121,49,48,'driver-v2.png'),
+               (2,'loader',253,121,49,48,'loader-v1.png'),
+               (3,'commander',253,24,49,47,'commander-v1.png')]
+    boxes=[];layers=[]
+    for index,name,x,y,w,h,art in portraits:
+        sprite=sprites[index]
+        for i,c in enumerate(sprite['pixels']):
+            if c and source.getpixel((x+i%sprite['width'],y+i//sprite['width']))!=PALETTE[c]:
+                raise ValueError('crew portrait placement differs: '+name)
+        boxes.append((x,y,x+w,y+h))
+        layers.append({'name':'crew-'+name,'rect':[x,y,w,h],
+                       'art':'crew-v1/'+art,'fit':'stretch','frame_rgb':None})
+    # This is the source diagram's measured green-ink bounding box. Registration
+    # maps the selected derivative's ink bounds to it, leaving original callouts
+    # and seat rectangles at their exact original positions.
+    layers.insert(0,{'name':'crew-diagram','rect':[63,64,194,53],
+                     'art':'crew-diagram-v1/crew-diagram-v2.png','source_rect':[33,62,2106,560],
+                     'frame_rgb':None})
+    genesis_path=game.parent/'local-art/genesis/source/crew-information-original.png'
+    if hashlib.sha256(genesis_path.read_bytes()).hexdigest()!='766fa75a68a6cf02a5ce2b1442a6b559c9a239856cc30b1152e913eebf31d632':
+        raise ValueError('Genesis crew source differs')
+    genesis=Image.open(genesis_path).convert('RGB')
+    # Both technical-caption masks match the Genesis source, translated only.
+    caption_count=0
+    for y in range(66,127):
+        for x in range(56,256):
+            rgb=genesis.getpixel((x,y))
+            if rgb in [(172,170,172),(65,68,65)]:
+                expected=(255,255,255) if rgb==(172,170,172) else (85,85,85)
+                if source.getpixel((x+4,y-6))!=expected: raise ValueError('Genesis caption correspondence differs')
+                caption_count+=1
+    if caption_count!=386: raise ValueError('incomplete Genesis technical caption')
+    wire_count=0;overdraw_count=0
+    for y in range(66,127):
+        for x in range(56,256):
+            if genesis.getpixel((x,y))!=(98,137,65): continue
+            actual=source.getpixel((x+4,y-6))
+            if actual not in [(0,170,0),(255,85,85)]: raise ValueError('Genesis wireframe registration differs')
+            wire_count+=1;overdraw_count+=actual==(255,85,85)
+    if (wire_count,overdraw_count)!=(1853,22): raise ValueError('incomplete Genesis wireframe registration')
+    colours={(255,255,85):(238,238,65),(85,255,255):(65,238,238),
+             (255,85,85):(238,0,0),(170,85,0):(205,101,32)}
+    overlays={}
+    def ink(x,y):
+        if any(left<=x<right and top<=y<bottom for left,top,right,bottom in boxes): return None
+        rgb=source.getpixel((x,y))
+        if 16<=x<304 and 10<=y<18 and rgb==(0,170,0): return (238,238,238)
+        if 68<=x<129 and 62<=y<83:
+            if rgb==(255,255,255): return (172,170,172)
+            if rgb==(85,85,85): return (65,68,65)
+        if 8<=x<312 and 20<=y<170 and rgb in colours:
+            if rgb==(170,85,0) and 59<=x<261 and 60<=y<121: return (98,32,0)
+            return colours[rgb]
+        return None
+    for y in range(200):
+        x=0
+        while x<320:
+            rgb=ink(x,y)
+            if rgb is None: x+=1;continue
+            end=x+1
+            while end<320 and ink(end,y)==rgb: end+=1
+            overlays.setdefault(rgb,[]).append([x,y,end-x,1]);x=end
+    return {'name':'crew','rect':[0,0,320,200],
+            'rgb_sha256':hashlib.sha256(source.tobytes()[:320*175*3]).hexdigest(),
+            'full_rgb_sha256':fingerprint,'background_rgb':[0,0,0],
+            'layers':layers,'overlays':[{'rgb':list(rgb),'rects':rects} for rgb,rects in overlays.items()],
+            'loaded_source_proof':proof,'genesis_caption_pixels_checked':caption_count,
+            'genesis_wire_pixels_checked':wire_count,'original_red_callout_overdraw_pixels':overdraw_count,
+            'genesis_source_sha256':hashlib.sha256(genesis_path.read_bytes()).hexdigest()}
+
+
 def information(game, capture):
     from PIL import Image
     try:
@@ -97,7 +183,8 @@ def information(game, capture):
         from capture_pc_session import INFORMATION_PAGES, INFORMATION_HEIGHT
         from extract_pc_portraits import verify_loaded
     pins={'START.EXE':'a6fd07ae3df4f61806852d92c0c50354b7f7afccee10da88710ef0bc3361ca6a',
-          'INFO.BMP':'3cdf0c2dcadc387215a1bf4251ceb046820db6439ffcce419a9de2b61bcceff2'}
+          'INFO.BMP':'3cdf0c2dcadc387215a1bf4251ceb046820db6439ffcce419a9de2b61bcceff2',
+          'CREW.BMP':'6351763f4ccbe4daca199a0ac9738039ddbd6a30720476dc5488fd84d95805bf'}
     for name,pin in pins.items():
         if hashlib.sha256((game/name).read_bytes()).hexdigest()!=pin: raise ValueError('unsupported '+name)
     report=json.loads((capture/'report.json').read_text())
@@ -122,12 +209,18 @@ def information(game, capture):
                     raise ValueError('original illustration differs: '+name)
             proof.append(verify_loaded((capture/(name+'.bin')).read_bytes(),sprite))
         path=game.parent/'local-art/genesis/remastered'/art
-        image=Image.open(path)
+        with Image.open(path) as image: size=list(image.size)
         entries.append({'name':name,'rgb_sha256':pin,'rect':rect,'art':art,
                         'art_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
-                        'size':list(image.size),'loaded_source_proof':proof})
-    return {'schema':1,'sources':pins,'recognition_height':INFORMATION_HEIGHT,'entries':entries,
-            'scope':'Exact original page prefix and loaded INFO bitmap proof. Genesis illustrations only; all text, borders below row 175 and unsupported pages stay original.'}
+                        'size':size,'loaded_source_proof':proof})
+    crew=crew_information(game,capture)
+    for layer in crew['layers']:
+        path=game.parent/'local-art/genesis/remastered'/layer['art']
+        layer['art_sha256']=hashlib.sha256(path.read_bytes()).hexdigest()
+        with Image.open(path) as image: layer['size']=list(image.size)
+    entries.append(crew)
+    return {'schema':2,'sources':pins,'recognition_height':INFORMATION_HEIGHT,'entries':entries,
+            'scope':'Exact original prefix and loaded bitmap proof. Five illustration boxes retain surrounding source pixels. The crew page additionally requires its complete frame hash before Genesis composition; original label glyphs and callout/seat relationships are retained as geometry.'}
 
 
 def main():

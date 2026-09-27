@@ -3,6 +3,7 @@ const Frontend = preload("res://scripts/pc_frontend_art.gd")
 var checks := 0
 var errors: Array[String] = []
 var art: TextureRect
+var tandem: TextureRect
 var viewport: SubViewport
 var backdrop: TextureRect
 var native := false
@@ -35,7 +36,7 @@ func render(source: Image, label: String) -> void:
 			var p := Vector2i(x/4,y/4)
 			if not area.has_point(p): check(image.get_pixel(x,y)==source.get_pixelv(p),"protected source information: "+label)
 			elif image.get_pixel(x,y)!=source.get_pixelv(p): changed+=1
-	if not item.is_empty():
+	if not item.is_empty() and item.name!="crew":
 		check(changed>int(area.get_area()*4),"illustration visibly restored: "+label)
 		check(image.get_pixelv(area.position*4+Vector2i(2,2))==Color8(238,68,65),"Genesis red frame: "+label)
 		var donor: Image=art.information_art.textures[item.name].get_image()
@@ -51,8 +52,49 @@ func render(source: Image, label: String) -> void:
 			var expected := bilinear(donor,crop.position+crop.size*uv-Vector2(0.5,0.5))
 			var actual := image.get_pixelv(pixel)
 			check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"independent Genesis donor probe: "+label)
+	if item.get("name")=="crew": verify_crew(source,image)
 	check(image.save_png(output.path_join(label+".png"))==OK,"native output saved")
 	samples.append({"label":label,"art":item.get("name",""),"changed_pixels":changed})
+
+func verify_crew(source: Image, image: Image) -> void:
+	# Independent full-frame oracle: no original text exists underneath the black
+	# page. Expected glyph/callout shapes come directly from the reference pixels,
+	# never the generated overlay spans. Each image uses its explicit donor crop.
+	var portrait_boxes: Array[Rect2i]=[Rect2i(18,23,49,48),Rect2i(18,121,49,48),Rect2i(253,121,49,48),Rect2i(253,24,49,47)]
+	var layers: Array=art.information_art.active.layers
+	check(layers.map(func(l):return l.name)==["crew-diagram","crew-gunner","crew-driver","crew-loader","crew-commander"],"original crew-role placement/order")
+	var images := {}
+	for layer in layers: images[layer.name]=art.information_art.textures[layer.name].get_image()
+	for y in 800:
+		for x in 1280:
+			var p:=Vector2i(x/4,y/4)
+			var centre:=(Vector2(x,y)+Vector2(0.5,0.5))/4
+			var expected:=Color.BLACK
+			for layer in layers:
+				var r: Array=layer.rect
+				var box:=Rect2(r[0],r[1],r[2],r[3])
+				if not box.has_point(centre): continue
+				var donor: Image=images[layer.name]
+				var area:=Rect2(Vector2.ZERO,Vector2(donor.get_size()))
+				if layer.name=="crew-diagram": area=Rect2(33,62,2106,560)
+				expected=bilinear(donor,area.position+(centre-box.position)/box.size*area.size-Vector2(0.5,0.5))
+			if not portrait_boxes.any(func(box):return box.has_point(p)):
+				var rgb:=source.get_pixelv(p).to_rgba32()
+				if Rect2i(16,10,288,8).has_point(p) and rgb==0x00aa00ff: expected=Color8(238,238,238)
+				elif Rect2i(68,62,61,21).has_point(p) and rgb in [0xffffffff,0x555555ff]:
+					expected=Color8(172,170,172) if rgb==0xffffffff else Color8(65,68,65)
+				elif Rect2i(8,20,304,150).has_point(p):
+					if rgb==0xffff55ff: expected=Color8(238,238,65)
+					elif rgb==0x55ffffff: expected=Color8(65,238,238)
+					elif rgb==0xff5555ff: expected=Color8(238,0,0)
+					elif rgb==0xaa5500ff:
+						expected=Color8(98,32,0) if Rect2i(59,60,202,61).has_point(p) else Color8(205,101,32)
+			var actual:=image.get_pixel(x,y)
+			check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"complete crew donor/label/callout composition")
+
+func apply_frame(source: Image, program: Dictionary, presentation: Dictionary={}) -> bool:
+	if tandem!=null: tandem.set_frame(source,{},null)
+	return art.set_frame(source,program,presentation)
 
 func run() -> void:
 	var root_path := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
@@ -71,37 +113,50 @@ func run() -> void:
 	backdrop=TextureRect.new(); backdrop.size=viewport.size
 	backdrop.expand_mode=TextureRect.EXPAND_IGNORE_SIZE; backdrop.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
 	viewport.add_child(backdrop)
-	art=Frontend.new(); art.size=viewport.size; viewport.add_child(art)
+	if "--tandem" in args:
+		tandem=preload("res://scripts/pc_tandem_frame.gd").new()
+		tandem.size=viewport.size;viewport.add_child(tandem)
+		check(tandem.load_genesis_art(root_path),"complete live tandem material set loaded")
+		art=tandem.frontend_art
+	else:
+		art=Frontend.new(); art.size=viewport.size; viewport.add_child(art)
 	check(art.load_sources(root_path),"frontend source set loaded")
 	check(not art.information_art.catalog.is_empty(),"pinned information catalog loaded")
 	check(FileAccess.file_exists(fixture),"fixture exists")
 	if not FileAccess.file_exists(fixture) or art.information_art.catalog.is_empty(): finish(); return
 	if native: check(DirAccess.make_dir_recursive_absolute(output)==OK,"output directory")
 	var report: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(fixture))
-	var pages := ["ax","sabot","coax","cannon","smoke"]
+	var pages := ["crew","ax","sabot","coax","cannon","smoke"]
 	var coverage := {}
 	for entry in report.samples:
 		var source := Image.load_from_file(fixture.get_base_dir().path_join(entry.image))
 		var program: Dictionary=entry.program if entry.get("program") is Dictionary else {}
-		var enabled: bool=art.set_frame(source,program,entry.presentation)
+		var enabled: bool=apply_frame(source,program,entry.presentation)
 		if entry.label in pages or entry.label.trim_suffix("-wait") in pages:
 			check(enabled and art.active.get("scene")=="information","known page enabled: "+entry.label)
 			check(art.information_art.active.get("name")==entry.label.trim_suffix("-wait"),"correct illustration identity")
 			coverage[entry.label.trim_suffix("-wait")]=true
-		elif entry.label in ["crew","heat","information-close"]:
+		elif entry.label in ["heat","information-close"]:
 			check(not enabled,"unsupported pages and menus remain original: "+entry.label)
-		if native and entry.label in pages+["crew","heat","information-close"]: await render(source,entry.label)
+		if native and entry.label in pages+["heat","information-close"]: await render(source,entry.label)
+		if entry.label=="crew":
+			check(art.information_art.active.layers.size()==5,"diagram plus four crew portraits")
+			for at in [Vector2i(16,10),Vector2i(18,23),Vector2i(70,35),Vector2i(170,83),Vector2i(10,190)]:
+				var changed:=source.duplicate();changed.set_pixelv(at,Color.MAGENTA)
+				check(not apply_frame(changed,program,{}),"changed crew page pixel rejects full composition: "+str(at))
+				if native: await render(changed,"crew-rejected-%d-%d"%[at.x,at.y])
+			check(not apply_frame(source,{"name":"SIM"},{}),"crew image in wrong program rejected")
 		if entry.label=="coax":
 			for at in [Vector2i(0,0),Vector2i(18,143),Vector2i(151,95)]:
 				var changed := source.duplicate(); changed.set_pixelv(at,Color.MAGENTA)
-				check(not art.set_frame(changed,program,{}),"one changed prefix pixel rejects whole illustration")
+				check(not apply_frame(changed,program,{}),"one changed prefix pixel rejects whole illustration")
 				check(not art.visible and art.information_art.active.is_empty(),"failure clears stale illustration")
 				if native: await render(changed,"rejected-%d-%d"%[at.x,at.y])
 			var border := source.duplicate(); border.set_pixel(200,175,Color.MAGENTA)
-			check(art.set_frame(border,program,{}),"variable untouched lower border permits correct illustration")
+			check(apply_frame(border,program,{}),"variable untouched lower border permits correct illustration")
 			if native: await render(border,"preserved-border")
-			check(not art.set_frame(source,{"name":"SIM"},{}),"wrong executable rejects information")
-	check(coverage.size()==5,"all five supported pages and settled waits covered")
+			check(not apply_frame(source,{"name":"SIM"},{}),"wrong executable rejects information")
+	check(coverage.size()==6,"all six supported pages and settled waits covered")
 	check(not art.load_sources(root_path.path_join("artifacts/missing-information")),"missing sources rejected")
 	check(art.information_art.catalog.is_empty() and not art.visible,"missing source clears stale information")
 	if native:

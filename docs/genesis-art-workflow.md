@@ -155,7 +155,7 @@ Godot menu. Left/right or buttons select a scene; Tab compares original and
 remaster; Escape returns to the garage. Artwork is loaded from the ignored local
 folder at runtime, so it is never silently bundled into a source-only export.
 
-The expanded gallery has 18 pages: the original three scenes, four stations,
+The expanded gallery has 19 pages: the original three scenes, four stations,
 STATUS, a second Wilson pose, four crew portraits, AX/SABOT illustrations and three armament illustrations.
 New plates are under `cockpit-v2/`; portraits and ammunition are under
 `remastered/crew-v1/` and `remastered/info-v1/`. The crew images measure
@@ -204,3 +204,9 @@ complete menu/information states and live bindings, remaining dynamic cockpit
 instruments, and consistent in-world geometry. The low-polygon playfield is rendered by the original program;
 a framebuffer extract does not recover the underlying model or world semantics.
 PC instrument information and controls must survive any visual redesign.
+
+The crew wireframe now has a separately extracted source crop and a selected
+2172x724 contour-cleanup derivative. The gallery's nineteenth page compares them.
+The live PC crew page uses the separate portrait and diagram assets under a whole-
+frame recognition gate; it does not use the rejected whole-page generation.
+See `genesis-information-integration.md` for source registration and runtime proof.

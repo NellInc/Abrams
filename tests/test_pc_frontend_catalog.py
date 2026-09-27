@@ -63,13 +63,20 @@ class FrontendCatalogTests(unittest.TestCase):
 
     def test_information_sources_and_native_loaded_planes(self):
         data=information(ROOT/'GAME',ROOT/'artifacts/pc-information-baseline-02')
-        local=ROOT/'local-art/pc-information-v1/information.json'
+        local=ROOT/'local-art/pc-information-v2/information.json'
         self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),local.read_bytes())
         self.assertEqual(data['recognition_height'],175)
-        self.assertEqual([e['name'] for e in data['entries']],['ax','sabot','coax','cannon','smoke'])
+        self.assertEqual([e['name'] for e in data['entries']],['ax','sabot','coax','cannon','smoke','crew'])
+        crew=data['entries'][-1]
+        self.assertEqual(crew['full_rgb_sha256'],'ab6177af9b4cf2442a41a1a7bf3f88dbafb5116186cbf4b7760efa196e798977')
+        self.assertEqual(crew['genesis_caption_pixels_checked'],386)
+        self.assertEqual((crew['genesis_wire_pixels_checked'],crew['original_red_callout_overdraw_pixels']),(1853,22))
+        self.assertEqual([x['name'] for x in crew['layers']],['crew-diagram','crew-gunner','crew-driver','crew-loader','crew-commander'])
+        self.assertEqual(sum(x['pixels_checked'] for x in crew['loaded_source_proof']),23384)
+        self.assertEqual(crew['layers'][0]['rect'],[63,64,194,53])
         for entry in data['entries']:
             x,y,w,h=entry['rect']
-            self.assertLess(y+h,175)
+            self.assertLessEqual(y+h,200 if entry['name']=='crew' else 175)
             for proof in entry['loaded_source_proof']:
                 self.assertEqual(proof['pixels_checked'],proof['mask_bits_checked'])
 

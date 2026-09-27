@@ -21,6 +21,7 @@ const ART := [
 	{"name":"COAX ILLUSTRATION", "source":"info-v1/weapon-coax-illustration.png", "remaster":"weapon-coax-v2.png","collection":"remastered/armament-v1","wide":true,"source_aspect":4.25},
 	{"name":"CANNON ILLUSTRATION", "source":"info-v1/weapon-cannon-illustration.png", "remaster":"weapon-cannon-v2.png","collection":"remastered/armament-v1","wide":true,"source_aspect":5.25},
 	{"name":"SMOKE DISCHARGERS", "source":"info-v1/weapon-smoke-illustration.png", "remaster":"weapon-smoke-v2.png","collection":"remastered/armament-v1","wide":true,"source_aspect":3.2},
+	{"name":"CREW STATIONS DIAGRAM", "source":"crew-diagram-v1/crew-diagram-original.png", "remaster":"crew-diagram-v2.png","collection":"remastered/crew-diagram-v1","wide":true,"source_aspect":3.2786885},
 ]
 var page := 0
 var original := false

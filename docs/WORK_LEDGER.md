@@ -45,6 +45,33 @@ arming, office and Genesis-cockpit checks pass. No source executable, bridge, in
 simulation file changed. The original-text fallback remains available. Proprietary
 font data stays local. The wider remaster goal remains open.
 
+## Crew information composition, 2026-09-27
+
+The previous goal turn made progress: commit e0a1181 restored the original
+letterforms and passed native fidelity checks. This continuation binds the four
+existing Genesis portraits and a new clean-contour Genesis wireframe to the
+complete original PC crew-information page. Labels, four seat positions and
+callout relationships remain original. The footer/frame is replaced only when
+all 64,000 source pixels match, beyond the earlier 175-row illustration gate.
+
+The diagram's first generated pass retained coarse stairs and was rejected.
+The selected second pass and both exact prompts remain local under
+`local-art/genesis/remastered/crew-diagram-v1/`. The earlier unrelated HEAT image
+rejection remains open; no retry or workaround was attempted for it.
+
+Catalog v2 verifies 63,840 loaded source pixels and mask bits, including all five
+CREW sprites. Caption/diagram registration independently matches the Genesis
+source. Native standalone and complete-tandem checks pass, as do actual Play
+remaster/original source and state comparisons. The two test renders and actual
+launcher output have identical PNG bytes. A misleading image preview initially
+looked incomplete; original-resolution inspection and byte equality disproved
+my rendering-fault diagnosis. No production workaround was made for that preview.
+
+Evidence and current limits are in `genesis-information-integration.md`. The
+19-page gallery, 27-stage gate and strengthened 48-check tandem information test
+pass. This remains local work. No game executable, emulator, input route or
+simulation changed; full-game parity and the whole remaster remain open.
+
 ## Proven local milestones
 
 | Outcome | Evidence | Boundary |
@@ -1224,8 +1251,9 @@ No assets were published or committed, and the whole remaster goal remains activ
    bind to original briefing/debrief frames with exact visible dialogue decoding;
    the motor pool now has its Genesis background, verified scalable arming panel and
    text live, including governor/focus variants. Five information illustrations
-   now bind to original START pages; their page typography, frames and tank
-   schematics remain open. Other gallery families need live bindings. Nine gunner illustration cells and
+   now bind to original START pages; the complete observed crew page adds its
+   Genesis portraits and wireframe. Remaining information-page typography, frames
+   and top-down tank schematics remain open. Other gallery families need live bindings. Nine gunner illustration cells and
    scalable pixel-verified live/fixed text are enabled; remaining cockpit trims,
    bitmap instruments/labels, scenery-bearing text, recognition art,
    Wilson animation, in-world models, effects and all
