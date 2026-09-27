@@ -114,8 +114,10 @@ The first native test used arbitrary synthetic greys and failed two samples:
 RGB 17 became 12, and 51 became 50. The actual EGA palette and all supplied effect
 images passed in that same run. The final sprite test uses the original EGA
 colour domain, retaining exact equality and recording the failed probe in
-`pc-sprite-native-test-01.log`. Arbitrary dark-colour fidelity remains a separate
-high-resolution material acceptance item. The upstream Compatibility
+`pc-sprite-native-test-01.log`. That failure is retained as historical evidence. The later
+[material correction](pc-surfaces-research.md#arbitrary-rgb-correction-2026-09-27)
+passes 1,280 arbitrary RGB swatches; future lit/interpolated high-resolution
+materials still need their own acceptance gate. The upstream Compatibility
 [scene shader](https://github.com/godotengine/godot/blob/master/drivers/gles3/shaders/scene.glsl)
 converts unshaded albedo to linear and back, consistent with the observed
 round-trip discrepancy; this is not proof of the exact installed shader cause.

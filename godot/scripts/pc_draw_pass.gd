@@ -3,6 +3,7 @@ extends Node3D
 ## Wire outlines do not establish filled-surface occlusion or material parity.
 const SurfaceGeometry = preload("res://scripts/pc_surface_geometry.gd")
 const SurfaceShader = preload("res://scripts/pc_surface.gdshader")
+const Colour = preload("res://scripts/pc_colour.gd")
 var solid_enabled := false
 var render_warnings: Array[String] = []
 const DISPLAY_SCALE := 64.0
@@ -71,7 +72,8 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	var material_count: int = pass_data.materials.size()
 	# Extra solid swatches represent direct bitmap palette entries. They must
 	# never be interpreted as dithered polygon materials.
-	var texture := Image.create((material_count + 16) * 2, 2, false, Image.FORMAT_RGBA8)
+	var compatibility := RenderingServer.get_current_rendering_method() == "gl_compatibility"
+	var texture := Image.create((material_count + 16) * 2, 2, false, Image.FORMAT_RGBAF if compatibility else Image.FORMAT_RGBA8)
 	for index in pass_data.materials.size():
 		var words: Array = pass_data.materials[index]
 		for y in 2:
@@ -79,12 +81,12 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 				var word: int = int(words[0]) if y == 1 else int(words[1])
 				var value := int(words[0]) & 15 if words[0] == words[1] else (word >> (8 if x == 0 else 0)) & 15
 				var rgb: Array = pass_data.palette_rgb[value]
-				texture.set_pixel(index * 2 + x, y, Color8(int(rgb[0]), int(rgb[1]), int(rgb[2])))
+				texture.set_pixel(index * 2 + x, y, Colour.input_color(rgb,compatibility))
 	for index in 16:
 		var rgb: Array = pass_data.palette_rgb[index]
 		for y in 2:
 			for x in 2:
-				texture.set_pixel((material_count + index) * 2 + x, y, Color8(int(rgb[0]), int(rgb[1]), int(rgb[2])))
+				texture.set_pixel((material_count + index) * 2 + x, y, Colour.input_color(rgb,compatibility))
 	if pass_data.get("background") is Dictionary:
 		var backgrounds: Array = SurfaceGeometry.background_polygons(pass_data.background, frame)
 		if backgrounds.is_empty(): render_warnings.append("Unsupported vertical horizon")

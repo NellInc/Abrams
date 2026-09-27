@@ -468,6 +468,22 @@ missions/campaign/save coverage and historical pacing remain open. No publicatio
 or original-source modification occurred. See `pc-live-bridge.md` for reproduction
 commands, exact boundaries and the preserved failed probes.
 
+## Dark-colour material correction, 2026-09-27
+
+Nell requested continued work. The previously recorded non-EGA dark-grey defect
+was reproduced across 1,280 native swatches: 390 failed before correction.
+Version-matched upstream shader inspection identified the lossy approximate
+unshaded sRGB round trip. A bounded float lookup correction in the Compatibility
+material path now passes all 1,280 exact RGB samples. Source images are untouched;
+other renderers bypass this path. Native EGA, 57,546 bitmap pixels and 3,648,005
+UI-composition RGB checks still pass. The complete 16-stage gate passes in
+`artifacts/validation-20260927T024842Z/results.txt`, exit zero.
+
+The correction covers nearest-filtered unshaded swatches on the tested M1 Max /
+Godot 4.7.2 path. It does not establish lit/interpolated high-resolution texture
+fidelity or cross-platform results. Version changes require the native gate.
+`pc-surfaces-research.md` records source links, failed baseline and exact receipts.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -512,8 +528,8 @@ commands, exact boundaries and the preserved failed probes.
    Solid geometry, original materials and bitmap effects now run under the
    original source-resolution cockpit/HUD in the scanout-paired renderer. Recover
    UI semantics and assets for a faithful high-resolution replacement. Expand live coverage beyond the three
-   observed effect IDs. Validate arbitrary dark colours separately before new
-   high-resolution materials. Evidence is in `pc-surfaces-research.md` and
+   observed effect IDs. The unshaded arbitrary-colour lookup now passes its native
+   gate; validate future lit/interpolated high-resolution materials separately. Evidence is in `pc-surfaces-research.md` and
    `pc-sprites-research.md` and `pc-ui-research.md`.
 3. Extend original-executable replay coverage to station/weapon modes, enemy
    state, damage, mission outcomes and campaign/persistence, one scenario at a

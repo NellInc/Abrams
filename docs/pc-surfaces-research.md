@@ -139,3 +139,52 @@ Remaining work includes sprites/opaque commands, integer clipping/coverage,
 cockpit/HUD reproduction, high-resolution replacement art, runtime timing
 calibration, full-mission/campaign evidence and release packaging. This local
 surface milestone does not complete the remaster goal. Nothing was published.
+
+## Arbitrary RGB correction, 2026-09-27
+
+A native 1,280-swatch test expanded the earlier two dark-grey failures to all
+256 grey levels, three primary ramps and a mixed-colour permutation. Before the
+fix, 390 swatches failed, with inputs 1 through 7 becoming black. Source images
+and the EGA palette were unchanged. The failed baseline remains in
+`artifacts/pc-colour-before-01.json`.
+
+The version-matched Godot 4.7.2
+[scene shader](https://github.com/godotengine/godot/blob/4.7.2-stable/drivers/gles3/shaders/scene.glsl)
+converts unshaded albedo through the approximate cubic and power functions in
+[tonemap_inc.glsl](https://github.com/godotengine/godot/blob/4.7.2-stable/drivers/gles3/shaders/tonemap_inc.glsl).
+These functions are not inverses. A CPU model predicted the main darkening,
+though 131 readback samples differed by quantization from that model; the CPU
+model alone was not accepted as repair proof.
+
+`pc_colour.gd` inverts that pair for the Compatibility material lookup. The
+256-entry mapping is computed once, is bounded/monotone, and uses float RGBA
+storage to avoid requantization before shading. Original source RGB is retained.
+Other rendering backends bypass the compensation. This is scoped to the current
+unshaded, nearest-filtered, linear-tone-map presentation path. HDR, interpolated
+colour, lit remastered materials and other platforms need separate evidence.
+
+`artifacts/pc-colour-after-02.json` now passes all 1,280 exact RGB readbacks in
+Godot 4.7.2 Compatibility on M1 Max. The aggregate gate checks the mapping and
+geometry headlessly; GPU equality requires the native test.
+
+Working if: all 256 levels in each native test channel survive exactly, the EGA
+palette/dither and painter-order checks stay unchanged, and source artwork is
+never pre-darkened or overwritten.
+
+Regression receipts, all with terminal exit zero:
+
+* `pc-colour-surfaces-native-01.log`: EGA palette, dither, painter order and horizon.
+* `pc-colour-sprites-native-01.log`: 57,546 exact native bitmap pixel checks.
+* `pc-colour-ui-native-01.log`: 3,648,005 exact RGB checks, including 1,004,578
+  original UI pixels, 659,422 world-texture samples and five UI-over-effect pixels.
+* `validation-20260927T024842Z/results.txt`: all 16 stages, including 127 Python
+  tests, source preservation and existing Godot/runtime gates.
+
+```sh
+./tools/godot.sh --disable-render-loop --script res://tests/test_pc_colour.gd -- \
+  --native --output "$PWD/artifacts/pc-colour-NEW.json"
+```
+
+No original emulator or simulation code changed in this correction. The native
+colour gate must be rerun on engine upgrades before retaining this compatibility
+compensation. New high-resolution textures are not yet installed.
