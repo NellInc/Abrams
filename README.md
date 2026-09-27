@@ -65,6 +65,7 @@ Earlier mixed recordings are retained only as comparison material.
 * `docs/pc-surfaces-research.md`: live original surfaces, material patterns and native colour checks.
 * `docs/pc-sprites-research.md`: native effect extraction, original bitmap-blitter checks and tandem playback.
 * `docs/pc-ui-research.md`: scanline UI provenance, transparent cockpit edges and native composition checks.
+* `docs/pc-text-research.md`: native fonts and pixel-verified visible crew/weapon text.
 * `docs/pc-ui-art-workflow.md`: native PC cockpit plates/struts and high-resolution material studies.
 * `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
 * `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.

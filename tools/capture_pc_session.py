@@ -40,6 +40,7 @@ def main():
     p.add_argument('--compare', type=Path, help='other capture report, compared after this run')
     p.add_argument('--boot-state', type=Path, help='shared neutral START snapshot for byte-exact comparison')
     args = p.parse_args()
+    other = json.loads(args.compare.read_text()) if args.compare else None
     if any(args.output.resolve().is_relative_to((ROOT / name).resolve()) for name in ('GAME','GENESIS')):
         p.error('output must be outside original source directories')
     args.output.mkdir(parents=True,exist_ok=False)
@@ -97,7 +98,6 @@ def main():
             'plate_epochs':[c.plates.report() for c in collectors],
             'scope':'bounded original cold-boot, quit and reentry; compare full paired RAM/video/input records separately'}
         if args.compare:
-            other = json.loads(args.compare.read_text())
             mismatches = [i for i,(a,b) in enumerate(zip(records,other['records'])) if a!=b]
             comparable = lambda r: [{k:s[k] for k in ('label','frame','keys','program','state')} for s in r['samples']]
             checks['equal_frame_count'] = len(records)==len(other['records'])

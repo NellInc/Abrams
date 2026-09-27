@@ -144,7 +144,8 @@ separate neutral START snapshot and original filesystem overlays.
 * `pc-audio-viewer-01`: native existing viewer, nine valid pipe samples, clean
   exit. Its deliberately large diagnostic steps suppress stale firing audio.
 
-Core SHA-256:
+Audio-only core used for the original pilot receipts (superseded by the
+text-enabled pin in `pc-text-research.md`), SHA-256:
 `3a9f0e56ef3f65bee62fb027fd5938ac2501906d91136107953d87884b9ddf5f`.
 Observer header SHA-256:
 `4c900d08085090914ea973917b7046d92e4b6df81284adc4fd608c617842f963`.
@@ -256,3 +257,11 @@ Working if: restored engine audio starts from the original occupied channel,
 turret release follows its interpreter tail, mute silences still-active channels,
 other sounds never claim motor identity, and imported loops cover all authored
 sample frames rather than a compressed-byte approximation.
+
+## Visible-text prerequisite
+
+The subsequent text observer proves original READY, TRACK, LOAD and the empty
+smoke warning against the actual displayed pixels. Details, native font recovery
+and unchanged-core comparisons are in `pc-text-research.md`. This prerequisite
+does not itself enable new barks: reload completion still has no voice, and
+message occurrences, suffix grouping and radio timing remain separate work.

@@ -29,6 +29,8 @@ static Bit32u abrams_plate_begin, abrams_plate_end, abrams_plate_page;
 static bool abrams_plate_copy_active = false;
 static Bit16u abrams_plate_copy_return_ip, abrams_plate_copy_return_cs;
 static Bit32u abrams_plate_copy_source, abrams_plate_copy_dest;
+static bool abrams_text_active = false;
+static Bit16u abrams_text_rect[6];
 
 extern "C" __attribute__((visibility("default")))
 void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
@@ -39,6 +41,7 @@ void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
     abrams_plate_active = false;
     abrams_plate_id = 0;
     abrams_plate_copy_active = false;
+    abrams_text_active = false;
     abrams_ownership.reset();
     abrams_plates.reset();
 }
@@ -136,11 +139,58 @@ static INLINE void AbramsTraceInstruction() {
         && ip != 0x28d0 && ip != 0x31a6 && ip != 0x59e4 && ip != 0x340b
         && ip != 0x3707 && ip != 0x36c8 && ip != 0x8b49 && ip != 0x28e4 && ip != 0x0347
         && ip != 0x1170 && ip != 0x123a && ip != 0x1226 && ip != 0x1238 && ip != 0x1a7c
-        && ip != 0x9107 && ip != 0x8da3 && ip != 0x35ee && ip != 0x91d6) return;
+        && ip != 0x9107 && ip != 0x8da3 && ip != 0x35ee && ip != 0x91d6
+        && ip != 0x020a && ip != 0x0259) return;
     if (SegValue(ds) != abrams_trace_load + 0x19e0) return;
     Bit32u segment = SegValue(cs), event = 0, start = 0, length = 0;
     const Bit32u base = SegPhys(ds);
     if (base + 65536 > 640 * 1024) return;
+    if (segment == abrams_trace_load + 0x0f8d && (ip == 0x020a || ip == 0x0259)) {
+        const Bit16u regs[12] = {reg_ax, reg_bx, reg_cx, reg_dx, reg_si, reg_di,
+            reg_bp, reg_sp, SegValue(cs), SegValue(ds), SegValue(es), SegValue(ss)};
+        if (ip == 0x020a) {
+            Bit32u stack = SegPhys(ss) + reg_sp;
+            if (stack + 10 > 640 * 1024 || mem_readw(stack + 2) != abrams_trace_load) return;
+            Bit32u caller = mem_readw(stack);
+            if (caller != 0x3f1d && caller != 0x3f58 && caller != 0x400d && caller != 0x55df) return;
+            MEM_BlockRead(0, abrams_trace_snapshot, sizeof(abrams_trace_snapshot));
+            abrams_trace_callback(26, regs, abrams_trace_snapshot, 0, sizeof(abrams_trace_snapshot));
+            Bit32u pointer = mem_readw(stack + 4), n = 0;
+            for (; n < 320 && pointer + n < 65536 && mem_readb(base + pointer + n); ++n) {}
+            Bit32u x = mem_readw(stack + 6), y = mem_readw(stack + 8);
+            Bit32u cell = mem_readb(base + 0x364e), height = mem_readb(base + 0x3662);
+            Bit32u page = mem_readw(base + 0x35a8), width = n * cell;
+            if (abrams_text_active || !n || n == 320 || pointer + n >= 65536 ||
+                !cell || cell > 16 || !height || height > 32 || x + width > 320 || y + height > 200 ||
+                (page != 0xa000 && page != 0xa200) || vga.mode != M_EGA) {
+                abrams_trace_callback(27, regs, NULL, 0, 0);
+                abrams_text_active = false;
+                return;
+            }
+            abrams_text_rect[0] = Bit16u(x); abrams_text_rect[1] = Bit16u(y);
+            abrams_text_rect[2] = Bit16u(width); abrams_text_rect[3] = Bit16u(height);
+            abrams_text_rect[4] = Bit16u((page - 0xa000u) * 16u); abrams_text_rect[5] = Bit16u(caller);
+            abrams_text_active = true;
+        } else if (abrams_text_active) {
+            // Inspect host plane storage directly. Guest mem_readb(A000:...) would
+            // change VGA latches; this observation must leave them untouched.
+            unsigned x = abrams_text_rect[0], y = abrams_text_rect[1];
+            unsigned width = abrams_text_rect[2], height = abrams_text_rect[3], page = abrams_text_rect[4];
+            for (unsigned i = 0; i < 6; ++i) {
+                abrams_trace_snapshot[2*i] = Bit8u(abrams_text_rect[i]);
+                abrams_trace_snapshot[2*i+1] = Bit8u(abrams_text_rect[i] >> 8);
+            }
+            for (unsigned dy = 0; dy < height; ++dy) for (unsigned dx = 0; dx < width; ++dx) {
+                unsigned at = page + (y + dy) * 40 + (x + dx) / 8, color = 0;
+                for (unsigned p = 0; p < 4; ++p)
+                    if (vga.mem.linear[at*4+p] & (128u >> ((x + dx) & 7))) color |= 1u << p;
+                abrams_trace_snapshot[12 + dy*width + dx] = Bit8u(color);
+            }
+            abrams_trace_callback(27, regs, abrams_trace_snapshot, 0, 12 + width*height);
+            abrams_text_active = false;
+        }
+        return;
+    }
     if (segment == abrams_trace_load &&
         (ip == 0x9107 || ip == 0x8da3 || ip == 0x35ee || ip == 0x91d6)) {
         // Actual original sound requests, gate changes and reload completion.

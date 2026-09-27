@@ -618,6 +618,47 @@ modern mix; original gameplay and loop ownership are retained. Human listening
 approval and historical pacing are not established. Full details and both repair
 receipts are in `pc-audio-research.md`. The parent goal remains active.
 
+## Original fonts and visible crew text, 2026-09-27
+
+Recovered all five original fixed-cell font files and selected-font identity.
+The original character-driver oracle passes 3,912 blits and 1,025,507,328 complete
+plane-byte comparisons, including the original signed-comparison quirk rejecting
+nine stored 8X8 glyphs. The initial failed expectation and corrected proof remain
+in `pc-font-oracle-01.log` and `pc-font-oracle-02.json`.
+
+Added read-only original string-entry/return hooks and `presentation.text_runs`.
+Source glyphs must match the completed native EGA rectangle; that entire rectangle
+must then match the actual presented RGB pixels on the same original scanout
+page and buffer slot. Unknown, overwritten or erased runs are omitted. Original
+rendering continues, and Godot still displays the source text unchanged.
+
+* `pc-text-parity-01.json`: 18 audio/control parity checks, 2,091 frames exactly
+  equal to the untouched core. All 372 text calls match source glyphs; READY,
+  TRACK and LOAD visibility is proven separately.
+* `pc-text-crew-comparison-01.json`: 12 checks, 1,308 frames and all stage states
+  exactly equal; original empty-smoke warning visible for 134 frames, absent
+  after erasure. Twenty-four saved source crops match the runtime RGB hashes.
+* `pc-text-lifecycle-02/report.json`: all 11 checks pass, 7,267 frames and 52
+  stages equal to the original lifecycle baseline. The first comparison failed
+  on a mistyped baseline filename; corrected, then rerun to terminal exit 0.
+  The capture now checks baseline readability before emulation.
+* `pc-text-native-01/report.json`: updated core through actual Godot playback,
+  1,692 frames, 3,386 loop comparisons, unchanged one-shot/mute counts, zero
+  errors, full loop endpoints and child exit 0.
+* `validation-20260927T104409Z/results.txt`: all 18 stages, 158 Python tests,
+  52 Godot audio assertions, terminal exit 0.
+
+All three observed reload completions precede the first visible READY label by
+three frames. This confirms why the remaining readiness bark must wait for the
+presentation boundary rather than merely watch the RAM loading flag.
+
+The implementing assistant reviewed these changes and visually inspected the
+original crew-warning frame. Live radio text and hit-bearing suffixes remain
+unexercised, although their source callsites are identified. No high-resolution
+font, caption replacement, additional bark or whole-game parity is claimed.
+The full remaster remains active. Exact boundary and reproduction instructions
+are in `pc-text-research.md`.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting

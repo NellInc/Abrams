@@ -20,6 +20,7 @@ try:
     from tools.pc_materials import read_materials
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from tools.pc_audio_events import AudioEvents
+    from tools.pc_text_trace import TextRuns
     from tools.pc_plate_trace import PlateLoads, PLATE_IDS
 except ModuleNotFoundError:
     from pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
@@ -28,6 +29,7 @@ except ModuleNotFoundError:
     from pc_materials import read_materials
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from pc_audio_events import AudioEvents
+    from pc_text_trace import TextRuns
     from pc_plate_trace import PlateLoads, PLATE_IDS
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +59,7 @@ class Collector:
         self.error = None
         self.sequence = 0
         self.audio = AudioEvents()
+        self.text = TextRuns(ROOT / "GAME")
         self.plates = PlateLoads(ROOT / 'GAME')
         self.vertices_checked = 0
         self.effects = decode_bitmaps(decode_resource((ROOT / 'GAME/EFFECTS.BMP').read_bytes()))
@@ -74,6 +77,12 @@ class Collector:
                 self.observe_video(event, offset, raw, registers)
                 return
             regs = dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'), registers[:12]))
+            if event == 26:
+                self.text.begin(raw, regs)
+                return
+            if event == 27:
+                self.text.finish(raw)
+                return
             if event in (20, 21, 22):
                 self.plates.observe(event, raw, regs['ax'])
                 return
@@ -236,6 +245,7 @@ class Collector:
             page = slot_or_page
             drawing = self.pages.get(page) if page not in self.drawing_pages else None
             self.scanout = {'scanout_sequence': self.scanout_sequence, 'page_offset': page,
+                '_text_candidates': self.text.scanout(page),
                 'draw_pass': drawing, 'reason': None if drawing else 'no complete observed pass for scanned page',
                 'palette_rgb': [list(raw[i:i + 3]) for i in range(0, 64, 4)] if len(raw) == 64 else None}
         elif event == 19:
@@ -290,7 +300,11 @@ class Collector:
             width, height = registers[0], registers[1]
             if not 1 <= width <= 2048 or not 1 <= height <= 2048 or len(raw) != width * height * 4:
                 raise ValueError('unsupported traced framebuffer dimensions')
-            self.presented = {**(frame or {'draw_pass': None, 'reason': 'unobserved framebuffer'}),
+            visible = self.text.present((frame or {}).get('_text_candidates', ()), raw, width, height,
+                                        (frame or {}).get('palette_rgb'))
+            metadata = {k:v for k,v in (frame or {}).items() if k != '_text_candidates'}
+            self.presented = {**(metadata or {'draw_pass': None, 'reason': 'unobserved framebuffer'}),
+                'text_runs': visible,
                 'buffer_slot': slot_or_page, 'video_sha256': hashlib.sha256(raw).hexdigest(),
                 'width': width, 'height': height}
 

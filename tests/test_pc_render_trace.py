@@ -34,6 +34,24 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 12, slot, pixels, [1, 1] + [0] * 10)
         return c.paired_video((pixels, 1, 1, 4))
 
+    def test_text_candidates_follow_native_slot_and_never_leak_internal_pixels(self):
+        c = self.collector()
+        item = {'kind':'weapon_status','text':'READY ','rect':[52,165,1,1],
+                'foreground':14,'page_offset':0}
+        candidate = (item, bytes([14]), bytes([1]))
+        calls = []
+        c.text.scanout = lambda page: (candidate,) if page == 0 else ()
+        c.text.present = lambda candidates,raw,w,h,palette: calls.append(candidates) or [i[0] for i in candidates]
+        self.event(c,10,0)
+        self.event(c,11,2)
+        self.event(c,10,8192)
+        self.event(c,11,1)
+        result = self.present(c,2)
+        self.assertEqual(result['text_runs'],[item])
+        self.assertNotIn('_text_candidates',result)
+        self.assertEqual(self.present(c,1)['text_runs'],[])
+        self.assertEqual(calls,[(candidate,),()])
+
     def test_scanout_uses_displayed_page_not_latest_complete_pass(self):
         c = self.collector()
         self.finish_pass(c, 1, 0)

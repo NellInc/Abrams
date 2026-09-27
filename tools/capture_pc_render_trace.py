@@ -36,7 +36,7 @@ def main():
     parser.add_argument('--mode', choices=['trace','baseline','reference'], default='trace')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=180)
-    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio'], default='turn')
+    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio', 'text'], default='turn')
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--state-core-sha256', help='defaults to the selected reference or source-baseline pin')
     parser.add_argument('--capture-sprites', action='store_true', help='save first paired framebuffer for each observed effect image')
@@ -68,7 +68,17 @@ def main():
         presentations = []
         sprite_presentations, captured_sprites, ui_presentations = [], set(), []
         stages = {}
-        if args.profile in ('controls', 'plates', 'audio'):
+        if args.profile == 'text':
+            steps = [('baseline',30,[])]
+            for i in range(7):
+                steps += [(f'smoke-{i+1}-key',3,['s']),(f'smoke-{i+1}',30,[])]
+            steps += [('crew-gunner',60,[])]
+            for name,key in [('commander','f2'),('cupola','f3'),('driver','f4'),('gunner','f1')]:
+                steps += [(name+'-key',3,[key]),(name+'-settle',30,[]),
+                          (name+'-empty-smoke-key',3,['s']),(name+'-crew',90,[])]
+            steps += [('crew-expired',300,[]),('radio-key',3,['r']),('radio',180,[])]
+            inputs = [(name, keys, n == count-1) for name,count,keys in steps for n in range(count)]
+        elif args.profile in ('controls', 'plates', 'audio'):
             steps = STEPS + [('commander-key', 3, ['f2']), ('commander', 60, [])]
             if args.profile == 'plates':
                 steps += [('damage-key', 3, ['d']), ('damage', 120, []),
@@ -137,7 +147,7 @@ def main():
             'profile': args.profile, 'stages': stages, 'audio_events': audio_events, 'audio_states': audio_states,
             'original_vertices_checked': collector.vertices_checked,
             'effect_pixels_checked': collector.effect_pixels_checked,
-            'plate_loads': collector.plates.report(),
+            'plate_loads': collector.plates.report(), 'text_observation': collector.text.report(),
             'sprite_presentations': sprite_presentations,
             'ui_presentations': ui_presentations,
             'presentations': presentations, 'render_passes': list(collector.passes), 'incomplete_pass_at_stop': collector.active is not None,
