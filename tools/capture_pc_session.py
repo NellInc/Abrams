@@ -26,16 +26,22 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def steps(motor_pool_controls=False):
+def steps(motor_pool_controls=False, motor_pool_allocations=False):
     fixture = ROOT / 'godot/tests/fixtures'
     boot = json.loads((fixture / 'pc_boot_steps.json').read_text())
     route=([{'label': 'ready', 'frames': 1, 'keys': []}] +
             [{'label': f'boot-{i:02d}', 'frames': n, 'keys': keys} for i,(n,keys) in enumerate(boot)] +
             json.loads((fixture / 'pc_reentry_steps.json').read_text()))
-    if motor_pool_controls:
+    if motor_pool_controls or motor_pool_allocations:
         index=next(i for i,s in enumerate(route) if s['label']=='boot-23')
         extra=[]
-        for name,key in [('select-governor','up'),('toggle-governor','right'),('select-begin','down')]:
+        controls=[('select-governor','up'),('toggle-governor','right'),('select-begin','down')]
+        if motor_pool_allocations:
+            controls=[('arming-governor','up'),('arming-ax','up'),('arming-ax-increase','right'),
+                      ('arming-sabot','up'),('arming-sabot-decrease','left'),('arming-heat','up'),
+                      ('arming-heat-increase','right'),('arming-sabot-return','down'),
+                      ('arming-ax-return','down'),('arming-governor-return','down'),('arming-begin','down')]
+        for name,key in controls:
             extra.extend([{'label':name+'-press','frames':3,'keys':[key]},
                           {'label':name,'frames':30,'keys':[]}])
         route[index:index]=extra
@@ -50,6 +56,7 @@ def main():
     p.add_argument('--boot-state', type=Path, help='shared neutral START snapshot for byte-exact comparison')
     p.add_argument('--capture-ui', action='store_true', help='save paired original UI/plate masks at stage boundaries')
     p.add_argument('--motor-pool-controls', action='store_true', help='exercise the original governor menu with ordinary arrow keys')
+    p.add_argument('--motor-pool-allocations', action='store_true', help='exercise all original ammunition fields with ordinary arrow keys')
     args = p.parse_args()
     other = json.loads(args.compare.read_text()) if args.compare else None
     if any(args.output.resolve().is_relative_to((ROOT / name).resolve()) for name in ('GAME','GENESIS')):
@@ -75,7 +82,7 @@ def main():
             core.run(1)  # Native framebuffer priming after snapshot restore.
             program = active_program(core.conventional_memory())
             if not program or program['name'] != 'START': raise ValueError('comparison requires a neutral START snapshot')
-        for step in steps(args.motor_pool_controls):
+        for step in steps(args.motor_pool_controls,args.motor_pool_allocations):
             for _ in range(step['frames']):
                 session.step(1,step['keys'])
                 records.append({'frame':core.frame, 'keys':step['keys'],

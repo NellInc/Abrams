@@ -61,9 +61,60 @@ fields. The font shares O/0 and I/1 glyphs, so unrestricted character recognitio
 is deliberately excluded; a numeric alphabet is used only inside the original
 numeric fields. Incorrect/partial glyphs retain their original pixels.
 
-`--original-text` disables these replacements. Clipboard border and clip
-contours are still source-resolution, and remain open in the whole-graphics
-register. This milestone does not complete every motor-pool state or all UI art.
+`--original-text` disables these replacements and retains the original clipboard.
+
+## Genesis arming-panel frame
+
+Completed, independently verified clipboard frames now use a scalable dark
+panel with the Genesis menu's white rim, grey header and inverted selection.
+The exact Genesis source supplies the sampled palette. The PC still owns the
+seven text rectangles, values and focus. No new controls or allocation rules
+are introduced. The old clip area reveals the registered Genesis background.
+
+`pc_arming_panel_art.gd` first matches every static visible pixel of CLIP.BMP,
+every transparent background attribution and all seven complete source-font
+runs. Partial drawing, unsupported glyphs or one changed rim pixel retains the
+original panel. Pixel (312,199) is sometimes overwritten by the original;
+its purpose is untraced, so it is always copied verbatim, never guessed away.
+
+The 88x113 original clipboard sprite is independently verified against 9,944
+loaded original EGA pixels and 9,944 preservation bits at physical offset
+274592 in `pc-motor-pool-loader-diagnostic-01/boot-21.bin`. The source SHA is
+`496e4349840d934c42da24fc929b25869a0db050dd6a66ac68a9349af6b7e6ce`.
+Generate the recognition-only catalog using `build_pc_frontend_catalog.py
+--arming-panel`; its pinned SHA is
+`0189ac8eab74a8bfd9f1d267cebba18cba502df005faf4ae9c28408a5788fb03`.
+
+Working if: original arrow-key allocations and focus remain unchanged, complete
+panels use Genesis styling, and unverified drawing retains the real PC pixels.
+
+## Arming-panel evidence
+
+* `pc-genesis-arming-allocations-parity-01.json`: all 7,630 full RAM/video/input
+  records, 74 stage states and program boundaries equal the original baseline.
+  Ordinary keys increase AX, decrease SABOT, increase HEAT and return to BEGIN.
+  Original mission-entry ammunition is COAX 80, HEAT 11, SABOT 5, AX 19.
+* `pc-genesis-arming-allocations-plate-proof-01.json`: 1,647,444 attributed
+  source pixels verified across 38 captured plate-bearing frames.
+* `pc-genesis-arming-allocations-native-01/report.json`: 95,050 checks, zero
+  errors, 27 motor-pool samples. Native pixel probes verify the panel palette,
+  source-derived focus colours, restored clip background and protected pixels.
+  The corresponding headless allocation gate passes 378 checks.
+* `pc-genesis-arming-launcher-parity-01.json`: actual Play capture retains the
+  original-art comparator's exact source PNG, state, program, presentation and
+  sample count. The remastered capture contains the Genesis panel and all seven
+  text runs. The displayed image and selected allocation images were inspected.
+* `validation-20260927T194023Z`: all 26 stages pass, including 208 Python tests
+  and original-file preservation. The separate native office regression passes
+  8,148,962 checks, zero errors, after adding the shared frontend child.
+
+The initial headless/native panel runs each failed two synthetic assertions:
+the test changed a background pixel without removing its ATBASE tag. The fixed
+test models an actual later UI write by clearing its tag and updating the count.
+Those failed receipts remain; only the subsequent runs above are green gates.
+This implementation and its visual review are by the same assistant. The
+optional Impeccable tool is unavailable; no dependency was installed.
+Other menu/settings transitions and the whole graphics programme remain open.
 
 ## Evidence
 

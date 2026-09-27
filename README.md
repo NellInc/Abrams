@@ -67,7 +67,7 @@ does not prove that the original game logic has been recreated.
 
 The local artwork collection includes the title, Colonel Wilson in three
 poses, his office, motor pool, four crew portraits, four cockpit plates,
-systems status, and two ammunition illustrations. The gallery has 15 comparison
+systems status, two ammunition illustrations and three armament illustrations. The gallery has 18 comparison
 pages. The additional facepalm variant appears in the live briefing restoration.
 Eligible crew portraits, office/Wilson scenes and the motor pool bind to the PC game; information
 illustrations and other frontend scenes still need live binding.

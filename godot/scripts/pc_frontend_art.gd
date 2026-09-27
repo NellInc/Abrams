@@ -17,6 +17,7 @@ var motor_indices := PackedByteArray()
 var portraits: Array[Texture2D] = []
 var active: Dictionary = {}
 var text_enabled := true
+var arming_panel = preload("res://scripts/pc_arming_panel_art.gd").new()
 var typography = preload("res://scripts/pc_typography.gd").new()
 
 func _init() -> void:
@@ -26,12 +27,15 @@ func _init() -> void:
 	var effect := ShaderMaterial.new()
 	effect.shader = preload("res://scripts/pc_frontend_art.gdshader")
 	material = effect
+	add_child(arming_panel)
+	arming_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(typography)
 	typography.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	clear()
 
 func clear() -> void:
 	active.clear()
+	arming_panel.clear()
 	typography.clear_runs()
 	visible = false
 	material.set_shader_parameter("restored_height",0.0)
@@ -42,6 +46,7 @@ func load_sources(root_path: String) -> bool:
 	catalog.clear()
 	portraits.clear()
 	_load_motor_pool(root_path)
+	arming_panel.load_sources(root_path)
 	var path := root_path.path_join("local-art/pc-frontend-v1/office.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA: return false
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -135,6 +140,9 @@ func _set_motor_pool(source: Image, presentation: Dictionary) -> bool:
 	material.set_shader_parameter("motor_enabled",true)
 	active={"scene":"motor_pool","name":"Genesis motor pool","pixels":count}
 	if text_enabled: typography.set_motor_pool_menu(source,original_ui,mask)
+	if arming_panel.set_frame(source,original_ui,mask,typography.runs,palette,material.get_shader_parameter("motor_pool")):
+		typography.use_genesis_menu_style()
+		active.arming_panel="Genesis menu"
 	visible=true
 	return true
 

@@ -155,8 +155,8 @@ Godot menu. Left/right or buttons select a scene; Tab compares original and
 remaster; Escape returns to the garage. Artwork is loaded from the ignored local
 folder at runtime, so it is never silently bundled into a source-only export.
 
-The expanded gallery has 15 pages: the original three scenes, four stations,
-STATUS, a second Wilson pose, four crew portraits, and AX/SABOT illustrations.
+The expanded gallery has 18 pages: the original three scenes, four stations,
+STATUS, a second Wilson pose, four crew portraits, AX/SABOT illustrations and three armament illustrations.
 New plates are under `cockpit-v2/`; portraits and ammunition are under
 `remastered/crew-v1/` and `remastered/info-v1/`. The crew images measure
 1254x1254, ammunition images 2172x724, and the lower-hand Wilson pose 1294x1216.
@@ -164,6 +164,19 @@ Gunner/driver coarse-outline first passes are retained but excluded from selecti
 The complete crew-information study added portrait boxes and drifted in placement;
 it is also excluded. HEAT's cleanup revision hit an image-tool safety rejection,
 recorded in its manifest. It remains unfinished, without a PC-art substitution.
+
+The three armament derivatives are selected in `remastered/armament-v1/`.
+Coax measures 2168x725; cannon and smoke each measure 2172x724. Untouched
+source crops are 136x32, 168x32 and 128x40 respectively. The gallery preserves
+those native aspect ratios when showing originals; remasters have additional
+background padding. Their original external illustrations remain the visual
+reference. The first generated set drifted toward a yellow-green grid and
+saturated cyan. The second pass corrected the palette using sampled Genesis
+RGB references. Both sets and exact built-in image-tool prompts are retained.
+These are selected gallery illustrations, not live information-screen bindings
+or pixel-exact enlargements. The implementing assistant reviewed both source
+and generated art. `artifacts/genesis-armament-gallery-02` contains all 36 native
+original/remaster captures; the process reports `ART_REVIEW_PASS: 18 scenes`.
 
 The four crew portraits are native 48x48 crops of
 `reference/genesis/graphics-crew-02/crew-settled`. A executes the selected original

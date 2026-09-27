@@ -28,10 +28,10 @@ is still being recovered; no overall completion percentage is justified.
 | Title and credits | Title extracted; complete credits variants unverified | Title v1 in gallery | PC title/credits bindings, original animation and transitions |
 | Briefing office and Wilson | Office and two observed Wilson poses extracted | Office, neutral/speaking Wilson and a Genesis-derived facepalm live; exact visible 8x8 dialogue gets scalable lettering | Other CO poses, mouth variants, all dialogue layouts and partial-draw transitions |
 | Crew portraits | Four native crew-information portraits extracted | Four 1254x1254 derivatives; fully matched source faces bind to live crew lines, native gunner and loader verified | Live commander/driver evidence, injury/talking/other poses and radio bindings |
-| Motor pool | Native scene extracted | Clean-contour v2 live; seven verified scalable clipboard text runs; initial load, governor ON/OFF focus and mission reentry checked | Clipboard frame/clip contours remain original resolution; remaining allocation/focus variants and settings transitions |
+| Motor pool | Native scene and menu extracted | Clean-contour v2 live; seven verified scalable text runs and complete-source-gated Genesis panel; governor, all three allocation fields and mission reentry checked | Partial/unrecognized drawing retains PC pixels; remaining limits, settings and transition variants |
 | Crew information | Native diagram and portrait placements extracted | Four portrait derivatives; whole-page study rejected for added boxes/layout drift | Faithful complete page composition and PC information-flow binding |
 | Ammunition information | AX, HEAT and SABOT pages reconstructed exactly | AX and SABOT illustrations at 2172x724 in gallery; HEAT revision blocked by image tool | HEAT art, original text/layout composition, animation variants and PC binding |
-| Armament information | Coax, cannon and smoke pages reconstructed exactly | Untouched extracts prepared; high-resolution illustration work open | Three weapon illustrations, live labels/values, correct PC content and bindings |
+| Armament information | Coax, cannon and smoke pages reconstructed exactly | Three high-resolution Genesis-derived illustrations in gallery, palette revision selected | Live labels/values, correct PC content and bindings; animation/state variants |
 | Recognition information | Genesis counterpart not yet fully inventoried | PC IDENTIFY only a format/layout oracle | Find Genesis equivalents before selecting visual donors; all vehicle identities and pages |
 | Maps and mission information | Commander map visible; long-range and mission pages incomplete | Original PC map retained live | Complete Genesis references, scalable map symbols, original information/visibility, briefing/debrief mission variants |
 | Menus, pause, saves, scores, endings | Some Genesis menus captured; full families unverified | Original PC flows retained | Inventory complete states, source-matched hi-res frames/type, original focus/input/saved-game behaviour |
@@ -50,6 +50,8 @@ is still being recovered; no overall completion percentage is justified.
 * `local-art/genesis/cockpit-v2/manifest.json`: default runtime set and hashes.
 * `local-art/genesis/remastered/crew-v1/manifest.json`: four selected portraits,
   original prompts and rejected coarse-outline variants.
+* `local-art/genesis/remastered/armament-v1/manifest.json`: three armament illustrations,
+  source and image hashes, exact prompts and superseded palette candidates.
 * `local-art/genesis/remastered/info-v1/manifest.json`: ammunition illustrations,
   failed candidates and exact HEAT safety-filter rejection.
 
@@ -59,7 +61,7 @@ moderation, category `illicit`. No replacement image was returned. It was not
 retried through a differently worded request or another image route. The earlier
 coarse candidate is retained and excluded from the selected gallery set.
 
-The art-review gallery has 15 pages, including isolated portrait and ammunition
+The art-review gallery has 18 pages, including isolated portrait, ammunition and armament
 illustrations. The cockpit/status, verified instrument cells, eligible crew portraits and
 matched office/Wilson scenes and the motor pool bind these images into the original-PC tandem.
 Portrait evidence is in `genesis-portrait-integration.md`; the extra live

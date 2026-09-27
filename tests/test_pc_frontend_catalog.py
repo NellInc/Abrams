@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 from PIL import Image
 
-from tools.build_pc_frontend_catalog import build, compose, motor_pool, PALETTE
+from tools.build_pc_frontend_catalog import build, compose, motor_pool, arming_panel, PALETTE
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -47,6 +47,19 @@ class FrontendCatalogTests(unittest.TestCase):
         self.assertEqual(packed,decode_resource((ROOT/'GAME/ATBASE.BIN').read_bytes()))
         local=ROOT/'local-art/pc-motor-pool-v1/motor-pool.json'
         self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),local.read_bytes())
+
+    def test_clipboard_geometry_is_original_and_loaded_planes_match(self):
+        import base64
+        from tools.inspect_scenarios import decode_resource
+        from tools.pc_bitmaps import decode_bitmaps
+        from tools.extract_pc_portraits import verify_loaded
+        data=arming_panel(ROOT/'GAME')
+        sprite=decode_bitmaps(decode_resource((ROOT/'GAME/CLIP.BMP').read_bytes()))[0]
+        self.assertEqual(base64.b64decode(data['indices_base64']),bytes(sprite['pixels']))
+        local=ROOT/'local-art/pc-arming-panel-v1/arming-panel.json'
+        self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),local.read_bytes())
+        ram=ROOT/'artifacts/pc-motor-pool-loader-diagnostic-01/boot-21.bin'
+        if ram.exists():self.assertEqual(verify_loaded(ram.read_bytes(),sprite)['pixels_checked'],9944)
 
 
 if __name__=='__main__':unittest.main()

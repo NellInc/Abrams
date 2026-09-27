@@ -18,6 +18,9 @@ const ART := [
 	{"name":"CREW: LOADER", "source":"crew-loader-original.png", "remaster":"loader-v1.png","collection":"remastered/crew-v1","square":true},
 	{"name":"AX ILLUSTRATION", "source":"info-v1/ammo-ax-illustration.png", "remaster":"ammo-ax-v2.png","collection":"remastered/info-v1","wide":true},
 	{"name":"SABOT ILLUSTRATION", "source":"info-v1/ammo-sabot-illustration.png", "remaster":"ammo-sabot-v2.png","collection":"remastered/info-v1","wide":true},
+	{"name":"COAX ILLUSTRATION", "source":"info-v1/weapon-coax-illustration.png", "remaster":"weapon-coax-v2.png","collection":"remastered/armament-v1","wide":true,"source_aspect":4.25},
+	{"name":"CANNON ILLUSTRATION", "source":"info-v1/weapon-cannon-illustration.png", "remaster":"weapon-cannon-v2.png","collection":"remastered/armament-v1","wide":true,"source_aspect":5.25},
+	{"name":"SMOKE DISCHARGERS", "source":"info-v1/weapon-smoke-illustration.png", "remaster":"weapon-smoke-v2.png","collection":"remastered/armament-v1","wide":true,"source_aspect":3.2},
 ]
 var page := 0
 var original := false
@@ -104,6 +107,9 @@ func _draw() -> void:
 	var art_rect := Rect2(188,63,1224,765) # Native 8:5 framing retained.
 	if ART[page].get("square",false): art_rect=Rect2(417.5,63,765,765)
 	if ART[page].get("wide",false): art_rect=Rect2(188,241.5,1224,408)
+	if original and ART[page].has("source_aspect"):
+		var height: float=1224.0/float(ART[page].source_aspect)
+		art_rect=Rect2(188,445.5-height/2,1224,height)
 	var key: String = ART[page].source if original else ART[page].remaster
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if original else CanvasItem.TEXTURE_FILTER_LINEAR
 	if textures.has(key):

@@ -191,6 +191,16 @@ func set_motor_pool_menu(source: Image, ui: Image, tags: Image) -> void:
 	# including spaces, highlighting and all unchanged functional labels.
 	set_frame(source,ui,{"text_runs":candidates,"palette_rgb":palette})
 
+func use_genesis_menu_style() -> void:
+	# Only called after the complete clipboard and all seven source runs pass.
+	# Source glyph/state evidence is unchanged; these are presentation colours.
+	for run in runs:
+		var focused: bool=run.background.is_equal_approx(Color(170.0/255,0,0))
+		var heading: bool=run.text in ["SELECT","ARMING MIX"]
+		run.background=Color(238.0/255,238.0/255,238.0/255) if focused else Color(98.0/255,101.0/255,98.0/255) if heading else Color.BLACK
+		run.foreground=Color.BLACK if focused else Color(238.0/255,238.0/255,238.0/255)
+	for label in labels: label.queue_redraw()
+
 static func integers(value: Variant, count: int, low: int, high: int) -> bool:
 	if not value is Array or value.size()!=count: return false
 	for n in value:

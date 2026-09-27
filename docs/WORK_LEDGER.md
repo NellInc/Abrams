@@ -1084,6 +1084,53 @@ The older failed briefing test PID 87427 remains subject to the prior unanswered
 cleanup request; it was not signalled. No new test process was left active.
 No push, publication or proprietary-art redistribution. Parent goal remains open.
 
+## Genesis arming-panel restoration (2026-09-27)
+
+The complete verified PC clipboard now receives a scalable Genesis-style frame,
+white lettering, grey heading and inverse selection. The PC owns all seven
+source text cells, quantities, focus and key processing. All static clipboard
+pixels and text must match before replacing the panel; partial/unknown drawing
+falls back. One untraced intermittently overwritten bottom pixel is retained.
+The original CLIP.BMP is recognition data only; Genesis supplies visual style.
+
+Verified: the 7,630-frame allocation replay matches the original baseline at
+all 74 stages, including HEAT 11 / SABOT 5 / AX 19 at mission entry. Source-plane
+proof covers 9,944 clipboard pixels and preservation bits; attributed-plate
+proof covers 1,647,444 pixels. The final native gate passes 95,050 checks across
+27 motor-pool samples. Its headless companion passes 378 checks. Actual Play
+capture source PNG, state, program, presentation and sample count exactly equal
+the original-art comparator. Images were visually inspected by their implementer.
+
+`validation-20260927T194023Z` completes all 26 stages and 208 Python tests. The
+separate native office regression passes 8,148,962 checks, zero errors. Initial
+panel runs failed two synthetic assertions because the fixture changed a pixel
+without clearing its old provenance; corrected tests model the real UI write.
+Failed receipts are retained. Detailed artifact pointers and source/catalog pins
+are in `genesis-motor-pool-integration.md`. Optional Impeccable remains absent.
+
+No original files, gameplay logic, emulator core or unrelated vehicle studies
+were changed in this pass. The earlier idle test remains untouched pending
+its unanswered cleanup request. No push or redistribution. Parent goal stays open.
+
+## Genesis armament illustrations (2026-09-27)
+
+Previous goal segment classified as progress: the arming panel changed runtime
+presentation and produced terminal parity/native evidence. Continued with the
+three extracted Genesis armament illustrations, using the built-in image tool.
+Coax v2 is 2168x725; cannon and smoke v2 are 2172x724. All are local under
+`local-art/genesis/remastered/armament-v1/`, with source/output hashes and exact
+prompts in its manifest. The first versions are retained but rejected for
+palette drift. Revised images use the extracted cyan/green/grey palette family.
+No PC EGA imagery was used as a visual reference.
+
+The gallery now has 18 comparison pages. Native source aspect is preserved for
+these differently proportioned source crops. Both 18-page capture passes exited
+0, and the final `genesis-armament-gallery-02` contains 36 saved native images.
+Source/remaster images were visually reviewed by their author. The optional
+Impeccable tool remains absent. These three assets are gallery-ready only;
+original-PC information screen bindings, layouts, labels and variants remain.
+No HEAT generation retry, public upload, publication or proprietary-art commit.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -1107,7 +1154,7 @@ No push, publication or proprietary-art redistribution. Parent goal remains open
    the gallery. Eligible crew portraits now bind to original visible crew messages,
    with native gunner and loader evidence. The office and three Wilson poses now
    bind to original briefing/debrief frames with exact visible dialogue decoding;
-   the motor pool now has its Genesis background and verified scalable arming
+   the motor pool now has its Genesis background, verified scalable arming panel and
    text live, including governor/focus variants. Other gallery families need live
    bindings. Nine gunner illustration cells and
    scalable pixel-verified live/fixed text are enabled; remaining cockpit trims,

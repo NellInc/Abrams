@@ -75,16 +75,31 @@ def motor_pool(game):
             'scope':'Original PC indices for recognition only. Genesis supplies replacement artwork.'}
 
 
+def arming_panel(game):
+    source=(game/'CLIP.BMP').read_bytes()
+    pin='496e4349840d934c42da24fc929b25869a0db050dd6a66ac68a9349af6b7e6ce'
+    if hashlib.sha256(source).hexdigest()!=pin: raise ValueError('unsupported original CLIP.BMP')
+    images=decode_bitmaps(decode_resource(source))
+    if len(images)!=1 or (images[0]['width'],images[0]['height'])!=(88,113):
+        raise ValueError('unsupported clipboard geometry')
+    return {'schema':1,'source':'CLIP.BMP','source_sha256':pin,'origin':[239,87],
+            'width':88,'height':113,'indices_base64':base64.b64encode(bytes(images[0]['pixels'])).decode(),
+            'preserved_pixels':[[312,199]],
+            'scope':'Original clipboard recognition only. Genesis menu supplies rendered panel style. One intermittently overwritten bottom pixel remains original.'}
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--motor-pool',action='store_true');a=p.parse_args()
+    mode=p.add_mutually_exclusive_group()
+    mode.add_argument('--motor-pool',action='store_true')
+    mode.add_argument('--arming-panel',action='store_true');a=p.parse_args()
     if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')):
         p.error('output must be outside original sources')
-    data=motor_pool(ROOT/'GAME') if a.motor_pool else build(ROOT/'GAME')
+    data=arming_panel(ROOT/'GAME') if a.arming_panel else motor_pool(ROOT/'GAME') if a.motor_pool else build(ROOT/'GAME')
     a.output.mkdir(parents=True,exist_ok=False)
     payload=(json.dumps(data,indent=2)+'\n').encode()
-    (a.output/('motor-pool.json' if a.motor_pool else 'office.json')).write_bytes(payload)
+    (a.output/('arming-panel.json' if a.arming_panel else 'motor-pool.json' if a.motor_pool else 'office.json')).write_bytes(payload)
     print(json.dumps({'catalog_sha256':hashlib.sha256(payload).hexdigest(),
                       'poses':[x['portrait_rect'] for x in data.get('templates',[])]}))
 
