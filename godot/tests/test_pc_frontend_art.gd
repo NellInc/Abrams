@@ -40,7 +40,8 @@ func render(source: Image, label: String) -> void:
 			var text_pixel := false
 			for run in art.typography.runs:
 				if run.rect.has_point(Vector2(x/4,y/4)): text_pixel=true; break
-			if y>=height*4 and not text_pixel: check(same,"protected original text/fallback changed: "+label)
+			if text_pixel: check(same,"original office letterform changed: "+label)
+			elif y>=height*4: check(same,"protected original text/fallback changed: "+label)
 			elif not same: changed+=1
 	if height>0:
 		check(changed>100000,"restored office visibly drawn: "+label)

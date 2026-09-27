@@ -46,5 +46,15 @@ class FontTests(unittest.TestCase):
         self.assertEqual((decode_font((ROOT/'GAME/8X6.FNT').read_bytes())['width'],
                           decode_font((ROOT/'GAME/8X6.FNT').read_bytes())['height']),(8,8))
 
+    def test_printable_genesis_stencil_matches_original_pc_face(self):
+        from tools.extract_genesis_vdp import VDP
+        capture=VDP(ROOT/'reference/genesis/graphics-ammo-pages-01/ax')
+        font=decode_font((ROOT/'GAME/STENCIL.FNT').read_bytes())
+        # Contiguous native font bank, not OCR or a visually similar font.
+        # DEL (127) differs and is deliberately excluded from restored text.
+        for code in range(32,127):
+            actual=[int(bool(pixel)) for pixel in capture.tiles[1504+code-32]]
+            self.assertEqual(actual,rendered_glyph(font,code),code)
+
 
 if __name__=='__main__': unittest.main()

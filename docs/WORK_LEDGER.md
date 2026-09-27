@@ -30,6 +30,21 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Original typeface request, 2026-09-27
+
+Nell requested the same fonts/typefaces as the originals. Removed the IBM Plex
+Mono substitute from verified game text and retained each run's original font
+identity and metrics. Four original faces now render as scalable glyph meshes,
+with their pixel-shaped contours unchanged. Genesis VDP tiles prove an exact
+printable stencil-face match. Original-only page text stays untouched; developer
+range/gallery fonts are outside the game lettering change.
+
+The code and native pixel checks are documented in `pc-text-research.md`.
+The 27-stage full gate and 211 Python tests pass; native empty-backdrop font,
+arming, office and Genesis-cockpit checks pass. No source executable, bridge, input route or
+simulation file changed. The original-text fallback remains available. Proprietary
+font data stays local. The wider remaster goal remains open.
+
 ## Proven local milestones
 
 | Outcome | Evidence | Boundary |

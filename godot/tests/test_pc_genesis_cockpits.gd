@@ -129,7 +129,9 @@ func fixtures(path: String, output: String) -> void:
 				for cell in frame.instrument_art.active:
 					if cell.source.has_point(p): allowed = true
 				for label in frame.typography.runs:
-					if label.rect.has_point(Vector2(p)): allowed = true
+					if label.rect.has_point(Vector2(p)):
+						allowed = true
+						check(result.get_pixel(x,y).to_rgba32()==source.get_pixelv(p).to_rgba32(),"original cockpit letterform changed: "+entry.stage)
 				var same := result.get_pixel(x,y).to_rgba32()==source.get_pixelv(p).to_rgba32()
 				if not allowed: check(same,"protected source pixel changed: %s %d,%d"%[entry.stage,x,y])
 				elif not same: changed+=1

@@ -38,7 +38,7 @@ is still being recovered; no overall completion percentage is justified.
 | World vehicles and objects | Genesis imagery/palette available; geometry/variant correspondence incomplete | Original PC geometry and visibility live; earlier PC model studies are unaccepted | Genesis-first materials/detail for each class; maintain PC silhouettes where visibility matters; all views, damage and effects |
 | Terrain, buildings and vegetation | Native scenes and palette captured in part | Grass and seven selected original surfaces have detail | Remaining terrain/object materials, horizon variants and source-consistent silhouettes |
 | Explosions, smoke, tracers and damage overlays | Native Genesis variant inventory incomplete | Original PC effects retained live | Extract Genesis effect families, remaster all frames, bind to original timing and occlusion |
-| Fonts, cursors and interface symbols | Some glyph correspondence found, complete font inventory open | Verified PC text rendered with scalable substitute font | Faithful Genesis typography across all glyphs, native source-layout controls, non-Latin/unknown glyph policy if applicable |
+| Fonts, cursors and interface symbols | Four PC faces decoded; all 95 printable Genesis stencil glyphs match PC STENCIL | Original glyph meshes replace the substitute font in verified cockpit, arming and office runs, with exact source metrics | Remaining Genesis font families, high-resolution bindings for source-only pages, cursors and symbols; unknown glyphs retain original pixels |
 
 ## Current source and output pointers
 

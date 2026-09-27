@@ -3,9 +3,67 @@
 The tandem bridge supplies read-only `presentation.text_runs` metadata for
 original labels. Every supplied run passes native glyph and presented-frame
 checks. The default cockpit view now replaces eligible runs with scalable
-lettering after a second, independent Godot pixel check. The source letters
+original letterforms as resolution-independent meshes after a second, independent
+Godot pixel check. The source letters
 remain available with `--original-text`. The READY-specific loader voice gate
 is described in `pc-audio-research.md`.
+
+## Original typefaces restored, 2026-09-27
+
+Nell requested the original font/typeface. The prior IBM Plex Mono substitution
+is removed from verified game text. The renderer now keeps the source font hash
+and cell dimensions through verification and constructs geometry directly from
+the pinned original font bits. Original side bearings, baseline, spacing, stroke
+weight, counters and stencil cuts are unchanged. Each label caches only its
+current text mesh; resizing changes the drawing transform, not the letter design.
+The original pixel-shaped contours are intentional. This is exact scalable
+geometry, not invented smooth outlines or a lookalike typeface.
+
+All four supplied faces support the 95 printable ASCII characters (32 through
+126) already admitted by the visible-text gate. This does not expand the original
+character set. Unknown fonts, rejected characters and incomplete/overwritten
+runs still retain the original framebuffer. No new font binaries or proprietary
+font payloads are committed; glyph geometry is made locally from supplied files.
+
+The Genesis capture at `reference/genesis/graphics-ammo-pages-01/ax` contains a
+contiguous stencil font bank at VDP tile 1504. All 95 printable glyph masks match
+PC `STENCIL.FNT` exactly. Tile 1599 (DEL) differs and is excluded. This establishes
+that specific shared face; it does not identify every other Genesis bitmap font.
+`test_pc_fonts.py` validates the entire capture receipt and compares each mask.
+Original information-page text is already retained verbatim. It has not acquired
+new high-resolution page bindings in this change. Developer-only range/gallery
+chrome keeps its separate fonts.
+
+Working if: restored game text uses the verified original face and metrics,
+all 380 printable glyph/face combinations preserve their bit silhouettes at
+multiple scales, and no replacement can draw outside its verified source box.
+
+Evidence:
+
+* `pc-original-fonts-headless-02/report.json`: 182,924 geometry/visibility checks,
+  no errors. The native pass below repeats these checks.
+* `pc-original-fonts-native-02/report.json`: 9,088,617 checks, no errors. All four
+  faces are drawn on an empty backdrop at 1x, 3x, 3.5x, 4x and 8x and compared with
+  an independent direct-bit oracle. An invisible renderer cannot pass by exposing
+  original text underneath. Recorded cockpit text also matches its source.
+* `pc-original-fonts-arming-native-01/report.json`: 1,068,308 checks, no errors.
+  Complete glyphs and original allocation/focus states match, with the existing
+  Genesis menu colour mapping retained.
+* `pc-original-fonts-office-native-01/report.json`: 8,148,962 checks, no errors.
+  Native briefing/debrief dialogue letterforms and protected regions match.
+* `pc-original-fonts-cockpits-native-01/report.json`: 12,371,692 checks, no errors.
+  Four stations and STATUS retain exact lettering under the live Genesis art profile.
+* `validation-20260927T204936Z/results.txt`: all 27 repository stages pass,
+  including 211 Python tests. The subsequent native-02 test strengthens the
+  specimen oracle with an empty backdrop; production code is unchanged.
+
+The previous typography assertion demanded more than 100 changed pixels and
+multiple antialiasing colours. That rewarded the unwanted substitute design.
+Its replacement demands original glyph fidelity. These checks were implemented
+and reviewed by the same assistant. This presentation-only change adds no new
+simulation, timing, campaign or whole-game parity evidence. The optional
+Impeccable linter is not installed; visual validation uses native Godot captures
+and pixel comparisons.
 
 ## Native font storage
 

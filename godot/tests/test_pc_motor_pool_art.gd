@@ -60,7 +60,15 @@ func render(source: Image, mask: Image, label: String) -> void:
 			var grey := Color(98.0/255,101.0/255,98.0/255)
 			var expected_background := light if selected else grey if run.text in ["SELECT","ARMING MIX"] else Color.BLACK
 			check(run.background==expected_background and run.foreground==(Color.BLACK if selected else light),"original focus maps to Genesis colours: "+run.text)
-			check(frame.get_pixelv(Vector2i(run.rect.position)*4).is_equal_approx(expected_background),"native text cell background: "+run.text)
+			# Check the complete authentic glyph, including ink at the cell origin.
+			# The removed substitute font inset incorrectly made every origin blank.
+			var original_font: PackedByteArray=art.typography.fonts[run.font_sha256]
+			for y in 24:
+				for x in int(run.rect.size.x)*4:
+					var column := (x/4)/6
+					var bit := (int(original_font[4+(run.text.unicode_at(column)-32)*6+y/4])&(128>>((x/4)%6)))!=0
+					var expected: Color=run.foreground if bit else expected_background
+					check(frame.get_pixelv(Vector2i(run.rect.position)*4+Vector2i(x,y)).is_equal_approx(expected),"original arming glyph/focus: "+run.text)
 		for probe in [[Vector2i(239*4+2,150*4+2),Color(238.0/255,238.0/255,238.0/255)],
 			[Vector2i(242*4+2,150*4+2),Color.BLACK],
 			[Vector2i(242*4+2,120*4+2),Color(98.0/255,101.0/255,98.0/255)]]:

@@ -1,12 +1,12 @@
 extends Control
-## Scalable text, only after independent source-glyph and complete UI-box checks.
-const FACE = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
+## Original letterforms as scalable geometry, after source-glyph/UI-box checks.
 const FONT_SOURCES = {
 	"6X6.FNT":"a1ab3119ad84f1debb4fda3a57271e08ed9f0bdf1e535a5885a92758e07d5840",
 	"8X6.FNT":"aa295b11f913a8829baf0590fc9405a602deae2a50a00ee592ffaac2f1099567",
 	"8X8.FNT":"857af65a215ccfcf92508ad43848c63e08bcef7ed2da2f3bcd75b670cd515812",
 	"STENCIL.FNT":"3f92e8c7488278d86aeaa978d87d980d6a688fc9c8dbf87befaf4e6bbc9f4181"}
 var fonts: Dictionary = {}
+var font_geometry: Dictionary = {}
 var runs: Array[Dictionary] = []
 var labels: Array[Control] = []
 var fixed_labels_enabled := false
@@ -25,31 +25,64 @@ const FIXED_LABELS = [
 
 class RunLabel extends Control:
 	var run: Dictionary
+	var mesh: ArrayMesh
+	var mesh_key := ""
 	func _draw() -> void:
 		if run.is_empty(): return
 		draw_rect(Rect2(Vector2.ZERO,size),run.background)
-		var face: FontFile = FACE
-		var top := 0.0
-		var bottom := 0.0
-		var left := 0.0
-		var right := 0.0
-		for i in run.text.length():
-			var code: int = run.text.unicode_at(i)
-			var glyph := face.get_glyph_index(64,code,0)
-			var at := face.get_glyph_offset(0,Vector2i(64,0),glyph)
-			var extent := face.get_glyph_size(0,Vector2i(64,0),glyph)
-			if extent.x == 0 or extent.y == 0: continue
-			top = minf(top,at.y); bottom = maxf(bottom,at.y+extent.y)
-			left = minf(left,at.x); right = maxf(right,at.x+extent.x)
-		right = maxf(right,face.get_glyph_advance(0,64,face.get_glyph_index(64,77,0)).x)
-		if right <= left or bottom <= top: return
-		var cell := size/Vector2(run.text.length(),1)
-		var margin := Vector2(size.x/run.rect.size.x,size.y/run.rect.size.y)*0.5
-		var fit := (cell-margin*2)/Vector2(right-left,bottom-top)
-		for i in run.text.length():
-			draw_set_transform(Vector2(i*cell.x+margin.x-left*fit.x,margin.y-top*fit.y),0,fit)
-			draw_string(face,Vector2.ZERO,run.text.substr(i,1),HORIZONTAL_ALIGNMENT_LEFT,-1,64,run.foreground)
+		# Cache only this label's current text. No unbounded cache of live values.
+		var key: String = run.font_sha256+run.text
+		if key!=mesh_key:
+			mesh = make_mesh(run)
+			mesh_key = key
+		if mesh==null: return
+		draw_set_transform(Vector2.ZERO,0,size/run.rect.size)
+		draw_mesh(mesh,null,Transform2D.IDENTITY,run.foreground)
 		draw_set_transform(Vector2.ZERO)
+
+	static func make_mesh(value: Dictionary) -> ArrayMesh:
+		var vertices := PackedVector3Array()
+		var indices := PackedInt32Array()
+		for i in value.text.length():
+			var offset := Vector2(i*value.cell_size.x,0)
+			for rect: Rect2 in value.glyphs[value.text.unicode_at(i)]:
+				var a := rect.position+offset
+				var b := rect.end+offset
+				var start := vertices.size()
+				vertices.append_array(PackedVector3Array([Vector3(a.x,a.y,0),
+					Vector3(b.x,a.y,0),Vector3(b.x,b.y,0),Vector3(a.x,b.y,0)]))
+				indices.append_array(PackedInt32Array([start,start+1,start+2,start,start+2,start+3]))
+		if vertices.is_empty(): return null
+		var arrays := []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_INDEX] = indices
+		var result := ArrayMesh.new()
+		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+		return result
+
+static func glyph_geometry(bytes: PackedByteArray) -> Dictionary:
+	# One rectangle per contiguous ink span, with the original side bearings,
+	# baseline, counters and stencil cuts. No autotracing, smoothing or lookalike.
+	var result := {}
+	var width := int(bytes[0])
+	var height := int(bytes[1])
+	var stride := (width+7)/8
+	for code in range(32,127):
+		var spans: Array[Rect2] = []
+		for y in height:
+			var start := -1
+			for x in range(width+1):
+				var ink := false
+				if x<width:
+					var at := 4+((code-int(bytes[2]))*height+y)*stride+x/8
+					ink = (int(bytes[at]) & (128>>(x%8)))!=0
+				if ink and start<0: start=x
+				if not ink and start>=0:
+					spans.append(Rect2(start,y,x-start,1))
+					start=-1
+		result[code] = spans
+	return result
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -58,6 +91,7 @@ func _init() -> void:
 
 func load_sources(directory: String) -> bool:
 	fonts.clear()
+	font_geometry.clear()
 	dialogue_glyphs.clear()
 	clear_runs()
 	var found := {}
@@ -66,13 +100,13 @@ func load_sources(directory: String) -> bool:
 		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=FONT_SOURCES[name]: return false
 		found[FONT_SOURCES[name]] = FileAccess.get_file_as_bytes(path)
 	fonts = found
+	for sha in fonts: font_geometry[sha] = glyph_geometry(fonts[sha])
 	var dialogue: PackedByteArray = fonts[FONT_SOURCES["8X8.FNT"]]
 	for code in range(32,127):
 		var at := 4+(code-int(dialogue[2]))*8
 		var key := dialogue.slice(at,at+8).hex_encode()
 		# Ambiguous source glyphs can never be silently assigned a character.
 		dialogue_glyphs[key] = "" if dialogue_glyphs.has(key) else String.chr(code)
-	FACE.render_range(0,Vector2i(64,0),32,126)
 	return true
 
 func clear_runs() -> void:
@@ -245,6 +279,7 @@ func verified_run(item: Variant, source: Image, ui: Image, palette: Array) -> Di
 	hash.update(crop.get_data())
 	if hash.finish().hex_encode()!=item.get("pixel_sha256"): return {}
 	return {"text":words,"rect":Rect2(box),"foreground":foreground,"background":background,
+		"font_sha256":item.font_sha256,"cell_size":cell,"glyphs":font_geometry[item.font_sha256],
 		"kind":item.get("kind",""),"draw_sequence":item.get("draw_sequence",0)}
 
 func set_frame(source: Image, ui: Image, presentation: Dictionary) -> void:
