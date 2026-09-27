@@ -13,6 +13,7 @@ from PIL import Image, ImageChops
 from tools.inspect_scenarios import decode_resource
 from tools.extract_pc_ui import screen_pixels
 from tools.pc_bitmaps import decode_bitmaps
+from tools.pc_fonts import decode_font, text_pixels
 
 ROOT = Path(__file__).resolve().parents[1]
 PINS = {'START.EXE':'a6fd07ae3df4f61806852d92c0c50354b7f7afccee10da88710ef0bc3361ca6a',
@@ -25,6 +26,17 @@ POSES = [(173,100),(178,100),(182,93),(196,87)]
 # Explicit atlas donor regions omit only transparent margins/isolated generated
 # specks. Target bounds come from the actual cumulative PC frame, not a timer.
 DONORS = [[63,127,350,255],[813,124,448,319],[61,604,586,432],[784,577,664,509]]
+# Source bytes verify every letter before any outline face may replace it.
+# These are the actual displayed names, including VOLKMER and RICH HILLEMAN.
+CREDIT_LINES = [
+    [('DIRECTOR',221,120,True),('DAMON SLYE',214,136,False)],
+    [('SIMULATION',211,120,True),('DAVID MCCLURG',200,136,False)],
+    [('PRODUCT SHELL',204,117,True),('RICHARD RAYL',206,131,False),('GREG VOLKMER',206,140,False)],
+    [('ARTISTRY',221,117,True),('KOBI MILLER',206,131,False),('CYRUS KANGA',206,140,False)],
+    [('DESIGN',229,120,True),('DAMON SLYE',214,136,False)],
+    [('WORLD',226,117,True),('CREATION',218,126,True),('JERRY LUTTRELL',198,139,False)],
+    [('PRODUCER',221,120,True),('RICH HILLEMAN',202,136,False)],
+    [('ABRAMS BATTLETANK',175,118,True),('COPYRIGHT 1988,89',175,130,True),('DYNAMIX,INC',194,150,True)]]
 
 
 def sha(path):
@@ -71,13 +83,24 @@ def build(root, capture):
             raise ValueError('original title/flash source composition differs')
         entry = {'name':'title' if index==0 else f'flash-{index}' if index<=4 else f'credit-{index-4}',
                  'rgb_sha256':record['rgb_sha256'], 'capture_image':path.name, 'flash':min(index,4),
-                 'overlays':[]}
+                 'overlays':[], 'text_runs':[]}
         if index >= 5:
             box = (194,110,314,150) if index < 12 else (172,110,314,162)
             outside = image.copy(); outside.paste(current.crop(box),box[:2])
             if outside.tobytes()!=current.tobytes(): raise ValueError('credit changed pixels outside original card')
             entry['credit_rect'] = [box[0],box[1],box[2]-box[0],box[3]-box[1]]
             entry['overlays'] = spans(image,box)
+            for words,x,y,stencil in CREDIT_LINES[index-5]:
+                name='STENCIL.FNT' if stencil else '8X6.FNT'
+                font=decode_font((root/'GAME'/name).read_bytes())
+                width,height,bits=text_pixels(font,words.encode('ascii'))
+                fg=(85,85,255) if stencil and index<12 else (255,255,255)
+                expected=bytes(c for bit in bits for c in (fg if bit else (0,0,0)))
+                if image.crop((x,y,x+width,y+height)).tobytes()!=expected:
+                    raise ValueError('credit text differs from original glyph bytes: '+words)
+                entry['text_runs'].append({'text':words,'font':name,'font_sha256':font['sha256'],
+                                          'rect':[x,y,width,height],'cell':[font['width'],font['height']],
+                                          'foreground':list(fg)})
         entries.append(entry)
     flashes = []
     for index,frame in enumerate(FRAMES[1:5]):

@@ -53,12 +53,14 @@ unchanged.
   320,000 RGB pixels. The original sprite positions are `(173,100)`, `(178,100)`,
   `(182,93)` and `(196,87)`. Later phases preserve earlier drawing beneath them.
 * Each credit card differs from the final flash frame only inside its original
-  card rectangle. Horizontal coloured spans retain every original lettering,
-  spacing, border and background pixel as scalable geometry. No substitute font
-  or generated lettering is used for the credits.
+  card rectangle. Source spans preserve the original panels and provide the
+  bitmap-lettering fallback. Each complete displayed string is independently
+  checked against its original FNT before the new outline face may replace it.
+  The stencil headings and thin technical names retain their original cells,
+  colours and placement. See `pc-text-research.md` for contour reconstruction.
 
-The local catalog is `local-art/pc-intro-v1/intro.json`, SHA-256
-`1d90451bca98d7c2311ba29c2c9ca09352193c3ef72213c59a895d473bc8e99b`.
+The local catalog is `local-art/pc-intro-v2/intro.json`, SHA-256
+`302bf7dae0d9aa7605aaf3b849074f986ea7212bb3d9ec29bb09956b505f437f`.
 It contains 13 complete-frame bindings and pins the executable, native resources
 and selected artwork. It is ignored by Git with the other reference-derived data.
 
@@ -95,6 +97,12 @@ No ROM or executable was sent to the image tool, and no redistribution rights
 are asserted.
 
 ## Runtime and validation
+
+The current outline-font native pass is
+`artifacts/pc-outline-intro-native-01/report.json`: **2,840,243 checks, zero errors**.
+It additionally checks both original-text modes and every outlined credit and
+dedication cell against an independent contour oracle. The evidence below
+records the earlier bitmap-shaped credit rendering and original timing work.
 
 `godot/tests/test_pc_intro_art.gd` runs beneath the full tandem material hierarchy.
 Its native oracle samples the actual image donors independently and checks every

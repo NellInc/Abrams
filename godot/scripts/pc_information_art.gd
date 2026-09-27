@@ -2,7 +2,7 @@ extends Control
 ## Genesis illustrations over complete verified original START information pages.
 ## Original contents, page order and navigation stay PC-owned. Full-page crew art
 ## additionally requires the complete frame, including its otherwise variable footer.
-const CATALOG_SHA := "9a8881ef013cf4f2d7d2352a6c0e4d082ff302c58267219db24212bfd88884e0"
+const CATALOG_SHA := "c42a5917374dea8eeb918c32bb5f163f8d8456a7471a5fcb2632b2e44d422d84"
 var catalog: Dictionary = {}
 var textures: Dictionary = {}
 var active: Dictionary = {}
@@ -21,7 +21,7 @@ func clear() -> void:
 
 func load_sources(root_path: String) -> bool:
 	clear(); catalog.clear(); textures.clear(); overlays.clear()
-	var path := root_path.path_join("local-art/pc-information-v2/information.json")
+	var path := root_path.path_join("local-art/pc-information-v3/information.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA: return false
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
 	for name in data.sources:

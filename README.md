@@ -19,7 +19,8 @@ music and sound-effect references for a faithful presentation upgrade.
   The driver's overhead assembly follows its original turret-relative drawing.
   Grass and road surfaces now carry world-anchored high-resolution detail.
   Pixel-verified instrument values, weapon status and eligible crew messages
-  now use scalable lettering inside their original display cells.
+  now use high-resolution outline reconstructions of the original typefaces
+  inside their original display cells.
   Nine gunner instrument illustrations and the systems-status artwork now use
   Genesis-derived high-resolution assets. Actual PC damage indicators and live
   values remain authoritative. Verified visible crew faces use the four Genesis
@@ -32,6 +33,8 @@ music and sound-effect references for a faithful presentation upgrade.
   The title now uses its Genesis-derived remaster, four high-resolution flash
   poses and the original credit lettering, selected by original PC frames.
   Its final credit screen dedicates the remaster to David "Ming" Kenny.
+  Credits, briefings and 81 verified information-page text runs share those
+  original-style outlines, preserving their wording, spacing and colours.
   The publisher splash and moving 3D menu backdrop remain original.
   Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
   `--pc-colours` to keep the new cockpit materials with original world colours.

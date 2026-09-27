@@ -10,6 +10,7 @@ var source: Image
 var ui: Image
 var world: Texture2D
 var directory: String
+var outlines = preload("res://tests/pc_outline_oracle.gd").new()
 
 func check(ok: bool, why: String) -> void:
 	checks += 1
@@ -46,6 +47,7 @@ func presentation(runs: Array) -> Dictionary:
 		"ui_overlay":{"width":320,"height":200,"mask_png":Marshalls.raw_to_base64(ui.save_png_to_buffer())},"text_runs":runs}
 func run() -> void:
 	directory = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	outlines.load_sources(directory)
 	viewport = SubViewport.new()
 	viewport.size = Vector2i(1280,800)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -54,6 +56,7 @@ func run() -> void:
 	view.size = viewport.size
 	viewport.add_child(view)
 	check(view.typography.load_sources(directory.path_join("GAME")),"original fonts verified")
+	check(view.typography.outline_fonts.fonts.size()==4,"all four outline faces verified")
 	source = Image.create_empty(320,200,false,Image.FORMAT_RGB8)
 	source.fill(Color8(85,85,85))
 	ui = Image.create_empty(320,200,false,Image.FORMAT_L8)
@@ -79,8 +82,9 @@ func run() -> void:
 				pixels += 1
 				if not in_box: check(same,"font escaped verified box")
 				else:
+					check(outlines.matches(image.get_pixel(x,y),view.typography.runs[0],(Vector2(x,y)+Vector2(0.5,0.5))/4,Vector2(4,4)),"synthetic outline contours and colours")
 					if not same: changed += 1
-		check(changed==0,"scalable lettering differs from original glyph designs")
+		check(changed>0,"outline renderer must replace bitmap stair steps")
 		image.save_png(output.path_join("synthetic.png"))
 	for field in ["text","font_sha256","pixel_sha256","cell_size","uniform_background_rgb","rect"]:
 		var bad := label.duplicate(true)
@@ -168,21 +172,21 @@ func fixtures(path: String, output: String) -> void:
 		var frame_changed := 0
 		for y in 200:
 			for x in 320:
-				var eligible := false
+				var eligible: Dictionary = {}
 				for run in view.typography.runs:
-					if run.rect.has_point(Vector2(x+0.5,y+0.5)): eligible=true; break
+					if run.rect.has_point(Vector2(x+0.5,y+0.5)): eligible=run; break
 				var same := image.get_pixel(x*4+2,y*4+2).to_rgba32()==source.get_pixel(x,y).to_rgba32()
 				pixels += 1
-				if not eligible: check(same,"font changed protected original pixel in "+sample.stage)
+				if eligible.is_empty(): check(same,"font changed protected original pixel in "+sample.stage)
 				else:
-					check(same,"live original letterform changed: "+sample.stage)
+					check(outlines.matches(image.get_pixel(x*4+2,y*4+2),eligible,Vector2(x+0.625,y+0.625),Vector2(4,4)),"live outline letterform: "+sample.stage)
 					if not same: frame_changed += 1
 		changed += frame_changed
 		var labels := []
 		for run in view.typography.runs: labels.append(run.text)
 		observations.append({"stage":sample.stage,"labels":labels,"changed":frame_changed})
 		image.save_png(output.path_join(sample.stage+".png"))
-	check(observations.any(func(s):return s.labels.size()>3 and s.changed==0),"no faithful actual instrument lettering")
+	check(observations.any(func(s):return s.labels.size()>3 and s.changed>0),"no visible outline instrument lettering")
 	FileAccess.open(output.path_join("samples.json"),FileAccess.WRITE).store_string(JSON.stringify(observations,"  "))
 
 func verify_geometry() -> void:
@@ -204,7 +208,7 @@ func verify_geometry() -> void:
 
 func specimen(output: String) -> void:
 	# Draw on an empty backdrop so an invisible renderer cannot pass by showing
-	# the original framebuffer. Only the independent bit oracle supplies expected pixels.
+	# the original framebuffer. An independent contour oracle supplies expectations.
 	view.hide()
 	var backdrop := ColorRect.new()
 	backdrop.color=Color8(85,85,85)
@@ -232,11 +236,13 @@ func specimen(output: String) -> void:
 		lettering.set_frame(source,ui,presentation(candidates))
 		check(lettering.runs.size()==24,"all four original faces and printable characters are visible")
 		var result := await snapshot()
-		for y in result.get_height():
-			for x in result.get_width():
-				var p := Vector2i(floori((x+0.5)/factor),floori((y+0.5)/factor))
-				check(result.get_pixel(x,y).to_rgba32()==source.get_pixelv(p).to_rgba32(),"native font fidelity at scale "+str(factor))
-		result.save_png(output.path_join("four-original-faces-"+str(factor)+"x.png"))
+		for run in lettering.runs:
+			check(run.outline_font is Font,"specimen uses real outline face")
+			var box: Rect2=Rect2(run.rect.position*factor,run.rect.size*factor)
+			for y in range(ceili(box.position.y),floori(box.end.y)):
+				for x in range(ceili(box.position.x),floori(box.end.x)):
+					check(outlines.matches(result.get_pixel(x,y),run,Vector2(x+0.5,y+0.5)/factor,Vector2(factor,factor)),"native outline fidelity at scale "+str(factor))
+		result.save_png(output.path_join("four-outline-faces-"+str(factor)+"x.png"))
 	lettering.free()
 	backdrop.free()
 	view.show()

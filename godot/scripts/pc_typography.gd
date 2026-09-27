@@ -12,6 +12,7 @@ var labels: Array[Control] = []
 var fixed_labels_enabled := false
 var status_numbers_enabled := false
 var dialogue_glyphs: Dictionary = {}
+var outline_fonts = preload("res://scripts/pc_outline_fonts.gd").new()
 # These words are confirmed in the source screens. Each candidate still has to
 # match every original font bit and every UI pixel before it may be redrawn.
 const FIXED_LABELS = [
@@ -30,6 +31,9 @@ class RunLabel extends Control:
 	func _draw() -> void:
 		if run.is_empty(): return
 		draw_rect(Rect2(Vector2.ZERO,size),run.background)
+		if run.get("outline_font") is Font:
+			preload("res://scripts/pc_outline_fonts.gd").draw_text(self,run.outline_font,run.text,Rect2(Vector2.ZERO,size),run.cell_size,run.foreground)
+			return
 		# Cache only this label's current text. No unbounded cache of live values.
 		var key: String = run.font_sha256+run.text
 		if key!=mesh_key:
@@ -100,6 +104,7 @@ func load_sources(directory: String) -> bool:
 		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=FONT_SOURCES[name]: return false
 		found[FONT_SOURCES[name]] = FileAccess.get_file_as_bytes(path)
 	fonts = found
+	outline_fonts.load_sources(directory.get_base_dir())
 	for sha in fonts: font_geometry[sha] = glyph_geometry(fonts[sha])
 	var dialogue: PackedByteArray = fonts[FONT_SOURCES["8X8.FNT"]]
 	for code in range(32,127):
@@ -157,6 +162,32 @@ func set_office_dialogue(source: Image, border_y: int) -> void:
 	var palette: Array = []
 	for i in 16: palette.append([255,255,255] if i==1 else [0,0,0])
 	set_frame(source,ui,{"text_runs":candidates,"palette_rgb":palette})
+
+func set_information_page(source: Image, fields: Array) -> void:
+	# Caller proves the complete original page. Each text cell is checked again
+	# against the original font before applying its existing presentation colours.
+	clear_runs()
+	if fonts.is_empty(): return
+	var candidates: Array=[]
+	var palette: Array=[]
+	for field in fields:
+		if not palette.has(field.source_foreground): palette.append(field.source_foreground)
+		var candidate:=_fixed_candidate(field.text,Vector2i(field.rect[0],field.rect[1]),source,field.font)
+		candidate.foreground=palette.find(field.source_foreground)
+		candidate.uniform_background_rgb=field.source_background
+		candidate.kind="verified_information_text"
+		candidates.append(candidate)
+	while palette.size()<16: palette.append([0,0,0])
+	var ui:=Image.create_empty(320,200,false,Image.FORMAT_L8)
+	ui.fill(Color.WHITE)
+	set_frame(source,ui,{"text_runs":candidates,"palette_rgb":palette})
+	for run in runs:
+		for field in fields:
+			if run.text!=field.text or run.rect.position!=Vector2(field.rect[0],field.rect[1]): continue
+			run.foreground=Color8(field.foreground[0],field.foreground[1],field.foreground[2])
+			run.background=Color8(field.background[0],field.background[1],field.background[2])
+			break
+	_layout()
 
 func _status_number(source: Image, y: int) -> Dictionary:
 	# Three original right-aligned digit cells. Exact glyph lookup, not OCR or
@@ -280,6 +311,7 @@ func verified_run(item: Variant, source: Image, ui: Image, palette: Array) -> Di
 	if hash.finish().hex_encode()!=item.get("pixel_sha256"): return {}
 	return {"text":words,"rect":Rect2(box),"foreground":foreground,"background":background,
 		"font_sha256":item.font_sha256,"cell_size":cell,"glyphs":font_geometry[item.font_sha256],
+		"outline_font":outline_fonts.fonts.get(item.font_sha256),
 		"kind":item.get("kind",""),"draw_sequence":item.get("draw_sequence",0)}
 
 func set_frame(source: Image, ui: Image, presentation: Dictionary) -> void:

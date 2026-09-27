@@ -161,6 +161,7 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}) 
 	if source==null or source.get_size()!=Vector2i(320,200): return false
 	if source.get_format()!=Image.FORMAT_RGB8: return false
 	if program.get("name")=="START":
+		intro_art.outline_text_enabled=text_enabled
 		if intro_art.set_frame(source,program):
 			texture = ImageTexture.create_from_image(source)
 			active = {"scene":"intro","name":intro_art.active.name}
@@ -170,6 +171,7 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}) 
 		if not information_art.set_frame(source,program): return false
 		texture = ImageTexture.create_from_image(source)
 		active = {"scene":"information","name":information_art.active.name}
+		if text_enabled: typography.set_information_page(source,information_art.active.text_runs)
 		visible = true
 		return true
 	if program.get("name")=="SIM": return _set_motor_pool(source,presentation)

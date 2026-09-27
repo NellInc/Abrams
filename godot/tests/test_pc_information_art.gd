@@ -9,6 +9,12 @@ var backdrop: TextureRect
 var native := false
 var output: String
 var samples: Array = []
+var outlines = preload("res://tests/pc_outline_oracle.gd").new()
+
+func text_run_at(p: Vector2) -> Dictionary:
+	for run in art.typography.runs:
+		if run.rect.has_point(p): return run
+	return {}
 
 func check(ok: bool, reason: String) -> void:
 	checks+=1
@@ -34,7 +40,10 @@ func render(source: Image, label: String) -> void:
 	for y in 800:
 		for x in 1280:
 			var p := Vector2i(x/4,y/4)
-			if not area.has_point(p): check(image.get_pixel(x,y)==source.get_pixelv(p),"protected source information: "+label)
+			var point:=Vector2(x+0.5,y+0.5)/4
+			var run:=text_run_at(point)
+			if not run.is_empty(): check(outlines.matches(image.get_pixel(x,y),run,point,Vector2(4,4)),"information outline contours: "+label)
+			elif not area.has_point(p): check(image.get_pixel(x,y)==source.get_pixelv(p),"protected source information: "+label)
 			elif image.get_pixel(x,y)!=source.get_pixelv(p): changed+=1
 	if not item.is_empty() and item.name!="crew":
 		check(changed>int(area.get_area()*4),"illustration visibly restored: "+label)
@@ -90,7 +99,9 @@ func verify_crew(source: Image, image: Image) -> void:
 					elif rgb==0xaa5500ff:
 						expected=Color8(98,32,0) if Rect2i(59,60,202,61).has_point(p) else Color8(205,101,32)
 			var actual:=image.get_pixel(x,y)
-			check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"complete crew donor/label/callout composition")
+			var run:=text_run_at(centre)
+			if run.is_empty(): check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"complete crew donor/label/callout composition")
+			else: check(outlines.matches(actual,run,centre,Vector2(4,4)),"complete crew outline label")
 
 func apply_frame(source: Image, program: Dictionary, presentation: Dictionary={}) -> bool:
 	if tandem!=null: tandem.set_frame(source,{},null)
@@ -98,6 +109,7 @@ func apply_frame(source: Image, program: Dictionary, presentation: Dictionary={}
 
 func run() -> void:
 	var root_path := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	outlines.load_sources(root_path)
 	var args := OS.get_cmdline_user_args()
 	native="--native" in args
 	var fixture := root_path.path_join("artifacts/pc-information-baseline-02/report.json")
@@ -136,11 +148,19 @@ func run() -> void:
 			check(enabled and art.active.get("scene")=="information","known page enabled: "+entry.label)
 			check(art.information_art.active.get("name")==entry.label.trim_suffix("-wait"),"correct illustration identity")
 			coverage[entry.label.trim_suffix("-wait")]=true
+			var expected_runs: int={"ax":19,"sabot":19,"coax":12,"cannon":16,"smoke":10,"crew":5}[entry.label.trim_suffix("-wait")]
+			check(art.typography.runs.size()==expected_runs,"every original information string becomes an outline run")
 		elif entry.label in ["heat","information-close"]:
 			check(not enabled,"unsupported pages and menus remain original: "+entry.label)
 		if native and entry.label in pages+["heat","information-close"]: await render(source,entry.label)
 		if entry.label=="crew":
 			check(art.information_art.active.layers.size()==5,"diagram plus four crew portraits")
+			if native:
+				art.text_enabled=false
+				check(apply_frame(source,program,{}),"original-text information mode")
+				check(art.typography.runs.is_empty(),"original-text retains source-shaped labels")
+				await render(source,"crew-original-text")
+				art.text_enabled=true
 			for at in [Vector2i(16,10),Vector2i(18,23),Vector2i(70,35),Vector2i(170,83),Vector2i(10,190)]:
 				var changed:=source.duplicate();changed.set_pixelv(at,Color.MAGENTA)
 				check(not apply_frame(changed,program,{}),"changed crew page pixel rejects full composition: "+str(at))

@@ -2,13 +2,93 @@
 
 The tandem bridge supplies read-only `presentation.text_runs` metadata for
 original labels. Every supplied run passes native glyph and presented-frame
-checks. The default cockpit view now replaces eligible runs with scalable
-original letterforms as resolution-independent meshes after a second, independent
-Godot pixel check. The source letters
+checks. Eligible runs now use locally reconstructed TrueType outlines of the
+four original faces after a second, independent Godot source-pixel check. The source letters
 remain available with `--original-text`. The READY-specific loader voice gate
 is described in `pc-audio-research.md`.
 
-## Original typefaces restored, 2026-09-27
+## High-resolution original-style outlines, 2026-09-27
+
+Nell's credit-card screenshot clarified that literal enlargement of the bitmap
+stair-steps was insufficient. The current default reconstructs clean angular
+contours from the four pinned original faces. The stencil cuts, protected serif
+corners, fixed cell widths, line spacing and original placement remain. This is
+a new outline interpretation of the supplied bitmap designs; no original vector
+master has been recovered. The earlier source-bit meshes remain a fallback.
+
+`tools/build_pc_outline_fonts.py` joins source boundary edges and simplifies
+alternating one-cell stairs into diagonals. It preserves rectilinear glyphs and
+selected serif/stem corners. All 380 printable face/character combinations have
+local TTF glyphs; 281 have simplified contours. Every unambiguous original pixel
+centre retains its ink/background classification. Points on a new diagonal
+boundary are explicitly treated as ambiguous. Identical source aliases retain
+identical outlines. Direct native-size Potrace and Scale2x/Potrace experiments
+distorted thin letters and serifs and were rejected; their evidence remains in
+`artifacts/pc-font-contour-study-01/`.
+
+Godot rasterizes these faces at the actual display size with grey antialiasing,
+no hinting and no subpixel positioning. No new words, inferred game values,
+line reflow or timing changes are introduced. Default coverage includes:
+
+* All eight intro credits and David "Ming" Kenny's dedication.
+* Verified briefing/debrief dialogue, cockpit readouts and arming-menu labels.
+* 81 source-matched headings, descriptions, specifications and crew-role labels
+  across the six currently supported information pages.
+
+The information bindings derive words from the pinned original loaded string
+table, then compare every complete font cell to the original page. They do not
+use OCR. Original PC specifications and the existing Genesis crew-label palette
+remain. Embedded bitmap captions, unsupported pages, unobserved text layouts and
+developer-only chrome remain outside this font binding. In particular, the small
+ABRAMS/M1A1 diagram captions remain source-shaped. HEAT's illustration blocker is
+unrelated and unchanged.
+
+Working if: diagonal edges render as outlines rather than enlarged pixel steps,
+all complete verified runs fit their original cells, every nontext pixel stays
+protected, and `--original-text` retains the source-shaped rendering.
+
+The local pack is `local-art/pc-outline-fonts-v1/manifest.json`, SHA-256
+`5301f992bf938ef537161b89bbb712d66ef7471d4c4305709008787634dd8a6b`.
+The loader verifies this manifest, every original FNT and every TTF payload.
+Generation uses the already available Python FontTools package:
+
+```sh
+python3 -m tools.build_pc_outline_fonts --output local-art/pc-outline-fonts-v1
+```
+
+Use a fresh output directory when rebuilding; generated fonts and catalogs stay
+ignored local derivatives. No redistribution permission is implied.
+
+Current evidence (the bitmap-only evidence below is historical):
+
+* `tests/test_pc_outline_fonts.py`: deterministic TTF bytes, actual TTF contour
+  coordinates, advances, 21,660 original cell centres, bounds and aliases.
+* `pc-outline-fonts-native-01/report.json`: 4,765,809 checks, zero errors, all
+  four faces on an empty backdrop at 1x, 3x, 3.5x, 4x and 8x, plus live cockpit
+  fixtures. The independent polygon oracle never invokes the font renderer.
+  Exact foreground/background interiors and exteriors are checked separately
+  from the subpixel edge band, which permits only their antialias mixtures.
+* `pc-outline-intro-native-01/report.json`: 2,840,243 checks, zero errors,
+  credit/dedication contours, original-text modes, protected panels and all
+  7,800 recorded PC boundaries.
+* `pc-outline-office-native-01/report.json`: 8,148,962 checks, zero errors.
+* `pc-outline-arming-native-01/report.json`: 1,068,308 checks, zero errors.
+* `pc-outline-cockpits-native-01/report.json`: 12,371,692 checks, zero errors.
+* `pc-outline-information-native-01/report.json`: 17,760,849 checks, zero errors,
+  all six supported pages, source-only fallbacks, original-text crew mode,
+  changed-source rejection and protected illustration/callout pixels.
+* Actual `Play.command` runs in `pc-outline-credits-live-01`,
+  `pc-outline-briefing-live-01` and `pc-outline-dedication-live-01` exited zero.
+  `pc-outline-launcher-receipt-01.json` confirms that all three live PNGs are
+  byte-identical to their independently checked native renders.
+* `validation-20260927T223817Z/results.txt`: all 28 repository stages passed,
+  including 218 Python tests and the original source-preservation check.
+
+The implementation, test oracles and visual review are by the same assistant.
+Nell's stylistic acceptance is separate. The optional Impeccable linter is absent;
+native Godot rendering supplies visual/layout evidence.
+
+## Earlier source-bit typeface pass, 2026-09-27 (superseded default)
 
 Nell requested the original font/typeface. The prior IBM Plex Mono substitution
 is removed from verified game text. The renderer now keeps the source font hash

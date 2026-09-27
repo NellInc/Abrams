@@ -1,9 +1,10 @@
 extends Control
 ## Stateless presentation: every pose and credit comes from a complete PC frame.
 ## There is deliberately no independent animation clock or input handling here.
-const CATALOG_SHA := "1d90451bca98d7c2311ba29c2c9ca09352193c3ef72213c59a895d473bc8e99b"
+const CATALOG_SHA := "302bf7dae0d9aa7605aaf3b849074f986ea7212bb3d9ec29bb09956b505f437f"
 const Geometry = preload("res://scripts/pc_information_art.gd")
 const Typography = preload("res://scripts/pc_typography.gd")
+const Outlines = preload("res://scripts/pc_outline_fonts.gd")
 const DEDICATION_RECT := Rect2(8,164,164,30)
 const DEDICATION_LINES := [
 	["Dedicated to the memory of","6X6.FNT",Vector2(12,168),Color8(170,170,170)],
@@ -15,6 +16,8 @@ var frames: Dictionary = {}
 var overlays: Dictionary = {}
 var active: Dictionary = {}
 var dedication := []
+var outline_fonts = Outlines.new()
+var outline_text_enabled := true
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -29,7 +32,7 @@ func clear() -> void:
 
 func load_sources(root_path: String) -> bool:
 	clear(); catalog.clear(); textures.clear(); frames.clear(); overlays.clear(); dedication.clear()
-	var path := root_path.path_join("local-art/pc-intro-v1/intro.json")
+	var path := root_path.path_join("local-art/pc-intro-v2/intro.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA: return false
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
 	for name in data.sources:
@@ -56,6 +59,7 @@ func load_sources(root_path: String) -> bool:
 		for overlay in entry.overlays:
 			items.append({"mesh":Geometry.span_mesh(overlay.rects),"colour":Color8(overlay.rgb[0],overlay.rgb[1],overlay.rgb[2])})
 		overlays[entry.name]=items
+	outline_fonts.load_sources(root_path)
 	catalog=data; textures=loaded; dedication=memorial
 	return true
 
@@ -78,17 +82,33 @@ static func rect(value: Array) -> Rect2:
 
 func _draw() -> void:
 	if active.is_empty(): return
-	draw_set_transform(Vector2.ZERO,0,size/Vector2(320,200))
+	var factor:=size/Vector2(320,200)
+	draw_set_transform(Vector2.ZERO,0,factor)
 	draw_texture_rect(textures.title,Rect2(0,0,320,200),false)
 	if int(active.flash)>0:
 		var flash: Dictionary=catalog.flashes[int(active.flash)-1]
 		draw_texture_rect_region(textures.flash,rect(flash.rect),rect(flash.source_rect))
 	for overlay in overlays[active.name]:
 		draw_mesh(overlay.mesh,null,Transform2D.IDENTITY,overlay.colour)
+	if outline_text_enabled:
+		for run in active.text_runs:
+			if not outline_fonts.names.has(run.font): continue
+			var box:=rect(run.rect)
+			draw_set_transform(Vector2.ZERO,0,factor)
+			draw_rect(box,Color.BLACK)
+			Outlines.draw_text(self,outline_fonts.names[run.font],run.text,Rect2(box.position*factor,box.size*factor),Vector2(run.cell[0],run.cell[1]),Color8(run.foreground[0],run.foreground[1],run.foreground[2]))
 	# Nell's dedication accompanies the final original copyright card. It never
 	# replaces an original credit or delays the PC-owned transition to the menu.
 	if active.dedication:
+		draw_set_transform(Vector2.ZERO,0,factor)
 		draw_rect(DEDICATION_RECT,Color8(255,85,85))
 		draw_rect(DEDICATION_RECT.grow(-1),Color.BLACK)
-		for line in dedication:
-			draw_mesh(line.mesh,null,Transform2D(0,line.position),line.colour)
+		for index in dedication.size():
+			var line: Dictionary=dedication[index]
+			var spec: Array=DEDICATION_LINES[index]
+			if outline_text_enabled and outline_fonts.names.has(spec[1]):
+				var cell:=Vector2(6,6) if spec[1]=="6X6.FNT" else Vector2(8,8)
+				Outlines.draw_text(self,outline_fonts.names[spec[1]],spec[0],Rect2(line.position*factor,Vector2(spec[0].length()*cell.x,cell.y)*factor),cell,line.colour)
+			else:
+				draw_set_transform(Vector2.ZERO,0,factor)
+				draw_mesh(line.mesh,null,Transform2D(0,line.position),line.colour)

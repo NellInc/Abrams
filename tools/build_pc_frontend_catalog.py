@@ -174,6 +174,58 @@ def crew_information(game, capture):
             'genesis_source_sha256':hashlib.sha256(genesis_path.read_bytes()).hexdigest()}
 
 
+def information_text(game, capture, name):
+    """Match original loaded strings to complete glyph cells, without OCR.
+
+    The fixed original string table is independently pinned. Longest complete
+    strings win over their substrings; every accepted foreground/background
+    pixel must equal its original font bit. Runtime still gates the entire page.
+    """
+    from PIL import Image
+    try:
+        from tools.pc_fonts import decode_font, text_pixels
+    except ModuleNotFoundError:
+        from pc_fonts import decode_font, text_pixels
+    ram=(capture/'ax.bin').read_bytes()
+    start=ram.index(b'C  R  E  W    S  T  A  T  I  O  N  S\0')
+    end=ram.index(b'BEGIN\0CONTINUE\0REVIEW\0ERASE\0',start)
+    table=ram[start:end]
+    if hashlib.sha256(table).hexdigest()!='183409cc8b714bee9206d31593607b36c314142b79651206f17e51b6d4ded9d1':
+        raise ValueError('original information string table differs')
+    words=sorted(set(table.split(b'\0'))-{b''},key=lambda w:(-len(w),w))
+    fonts={n:decode_font((game/n).read_bytes()) for n in ['6X6.FNT','8X6.FNT','8X8.FNT','STENCIL.FNT']}
+    colours=[(255,255,255),(0,170,0),(255,255,85),(85,255,255),(255,85,85),(170,85,0)]
+    pairs=[(colour,(0,0,0)) for colour in colours]
+    if name=='crew': pairs += [((0,0,0),colour) for colour in colours]
+    source=Image.open(capture/(name+'.png')).convert('RGB');rgb=source.tobytes()
+    runs=[];covered=set()
+    for word in words:
+        for face,font in fonts.items():
+            w,h,bits=text_pixels(font,word)
+            if w>320: continue
+            row=max(range(h),key=lambda y:sum(bits[y*w:(y+1)*w]))
+            for fg,bg in pairs:
+                pattern=bytes(c for bit in bits for c in (fg if bit else bg))
+                needle=pattern[row*w*3:(row+1)*w*3];at=rgb.find(needle)
+                while at>=0:
+                    pixel=at//3;x=pixel%320;y=pixel//320-row
+                    if at%3==0 and 0<=y and y+h<=175 and x+w<=320 and source.crop((x,y,x+w,y+h)).tobytes()==pattern:
+                        coords={(sx,sy) for sy in range(y,y+h) for sx in range(x,x+w)}
+                        if not covered.intersection(coords):
+                            covered |= coords
+                            runs.append({'text':word.decode('ascii'),'font':face,'font_sha256':font['sha256'],
+                                         'rect':[x,y,w,h],'cell':[font['width'],h],
+                                         'source_foreground':list(fg),'source_background':list(bg),
+                                         'foreground':list(fg),'background':list(bg)})
+                    at=rgb.find(needle,at+1)
+    if name=='crew':
+        palette={(0,170,0):(238,238,238),(255,255,85):(238,238,65),
+                 (85,255,255):(65,238,238),(255,85,85):(238,0,0),(170,85,0):(205,101,32)}
+        for run in runs:
+            for key in ['foreground','background']: run[key]=list(palette.get(tuple(run[key]),tuple(run[key])))
+    return sorted(runs,key=lambda r:(r['rect'][1],r['rect'][0]))
+
+
 def information(game, capture):
     from PIL import Image
     try:
@@ -219,8 +271,9 @@ def information(game, capture):
         layer['art_sha256']=hashlib.sha256(path.read_bytes()).hexdigest()
         with Image.open(path) as image: layer['size']=list(image.size)
     entries.append(crew)
-    return {'schema':2,'sources':pins,'recognition_height':INFORMATION_HEIGHT,'entries':entries,
-            'scope':'Exact original prefix and loaded bitmap proof. Five illustration boxes retain surrounding source pixels. The crew page additionally requires its complete frame hash before Genesis composition; original label glyphs and callout/seat relationships are retained as geometry.'}
+    for entry in entries: entry['text_runs']=information_text(game,capture,entry['name'])
+    return {'schema':3,'sources':pins,'recognition_height':INFORMATION_HEIGHT,'entries':entries,
+            'scope':'Exact original prefix and loaded bitmap proof. Five illustration boxes and complete source-matched text cells may be remastered. The crew page requires its complete frame hash before Genesis composition; original words and callout/seat relationships remain PC-owned.'}
 
 
 def main():

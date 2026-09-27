@@ -1,4 +1,5 @@
 extends SceneTree
+var outlines = preload("res://tests/pc_outline_oracle.gd").new()
 const Frame = preload("res://scripts/pc_tandem_frame.gd")
 const Instruments = preload("res://scripts/pc_instrument_art.gd")
 var errors: Array[String] = []
@@ -14,6 +15,7 @@ func _initialize() -> void: run.call_deferred()
 
 func run() -> void:
 	var root_path := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	outlines.load_sources(root_path)
 	viewport = SubViewport.new()
 	viewport.size = Vector2i(1280,800)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -131,7 +133,7 @@ func fixtures(path: String, output: String) -> void:
 				for label in frame.typography.runs:
 					if label.rect.has_point(Vector2(p)):
 						allowed = true
-						check(result.get_pixel(x,y).to_rgba32()==source.get_pixelv(p).to_rgba32(),"original cockpit letterform changed: "+entry.stage)
+						check(outlines.matches(result.get_pixel(x,y),label,Vector2(x+0.5,y+0.5)/4,Vector2(4,4)),"outline cockpit letterform: "+entry.stage)
 				var same := result.get_pixel(x,y).to_rgba32()==source.get_pixelv(p).to_rgba32()
 				if not allowed: check(same,"protected source pixel changed: %s %d,%d"%[entry.stage,x,y])
 				elif not same: changed+=1

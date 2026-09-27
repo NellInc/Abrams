@@ -63,7 +63,7 @@ class FrontendCatalogTests(unittest.TestCase):
 
     def test_information_sources_and_native_loaded_planes(self):
         data=information(ROOT/'GAME',ROOT/'artifacts/pc-information-baseline-02')
-        local=ROOT/'local-art/pc-information-v2/information.json'
+        local=ROOT/'local-art/pc-information-v3/information.json'
         self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),local.read_bytes())
         self.assertEqual(data['recognition_height'],175)
         self.assertEqual([e['name'] for e in data['entries']],['ax','sabot','coax','cannon','smoke','crew'])
@@ -88,6 +88,27 @@ class FrontendCatalogTests(unittest.TestCase):
         self.assertEqual(len({s['label'] for s in route}),len(route))
         self.assertEqual(route,json.loads((ROOT/'godot/tests/fixtures/pc_information_steps.json').read_text()))
         self.assertEqual([s['label'] for s in route if s['label'] in INFORMATION_PAGES],list(INFORMATION_PAGES))
+
+    def test_information_text_matches_every_original_font_bit(self):
+        from tools.pc_fonts import decode_font,text_pixels
+        data=json.loads((ROOT/'local-art/pc-information-v3/information.json').read_text())
+        counts={'ax':19,'sabot':19,'coax':12,'cannon':16,'smoke':10,'crew':5}
+        for entry in data['entries']:
+            image=Image.open(ROOT/'artifacts/pc-information-baseline-02'/(entry['name']+'.png')).convert('RGB')
+            occupied=set()
+            self.assertEqual(len(entry['text_runs']),counts[entry['name']])
+            for run in entry['text_runs']:
+                font=decode_font((ROOT/'GAME'/run['font']).read_bytes())
+                self.assertEqual(font['sha256'],run['font_sha256'])
+                w,h,bits=text_pixels(font,run['text'].encode('ascii'))
+                x,y,rw,rh=run['rect'];self.assertEqual((w,h),(rw,rh))
+                expected=bytes(c for bit in bits for c in (run['source_foreground'] if bit else run['source_background']))
+                self.assertEqual(image.crop((x,y,x+w,y+h)).tobytes(),expected)
+                cells={(sx,sy) for sy in range(y,y+h) for sx in range(x,x+w)}
+                self.assertFalse(occupied.intersection(cells));occupied |= cells
+                if entry['name']!='crew':
+                    ax,ay,aw,ah=entry['rect']
+                    self.assertFalse(any(ax<=sx<ax+aw and ay<=sy<ay+ah for sx,sy in cells))
 
 
 if __name__=='__main__':unittest.main()

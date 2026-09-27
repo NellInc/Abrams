@@ -11,6 +11,24 @@ var output: String
 var samples := []
 var replay_counts := {}
 var memorial_fonts := {}
+var outlines = preload("res://tests/pc_outline_oracle.gd").new()
+
+func text_run_at(entry: Dictionary, p: Vector2) -> Dictionary:
+	if not art.intro_art.outline_text_enabled: return {}
+	for run in entry.get("text_runs",[]):
+		var r: Array=run.rect
+		var box:=Rect2(r[0],r[1],r[2],r[3])
+		if box.has_point(p):
+			return {"text":run.text,"rect":box,"cell_size":Vector2(run.cell[0],run.cell[1]),"font_sha256":run.font_sha256,"foreground":Color8(run.foreground[0],run.foreground[1],run.foreground[2]),"background":Color.BLACK}
+	if entry.get("name")=="credit-8":
+		for line in [["Dedicated to the memory of","6X6.FNT",12,168,Color8(170,170,170)],
+			["David \"Ming\" Kenny","8X8.FNT",18,180,Color.WHITE]]:
+			var font: PackedByteArray=memorial_fonts[line[1]]
+			var box:=Rect2(line[2],line[3],line[0].length()*font[0],font[1])
+			if box.has_point(p):
+				var sha: String=preload("res://scripts/pc_typography.gd").FONT_SOURCES[line[1]]
+				return {"text":line[0],"rect":box,"cell_size":Vector2(font[0],font[1]),"font_sha256":sha,"foreground":line[4],"background":Color.BLACK}
+	return {}
 
 func memorial_pixel(p: Vector2i) -> Color:
 	# Independent source-font byte decoder for the user-authored dedication.
@@ -70,23 +88,32 @@ func render(source: Image, label: String) -> void:
 					if Rect2(r[0],r[1],r[2],r[3]).has_point(p): expected=source.get_pixel(int(p.x),int(p.y))
 				if entry.name=="credit-8" and Rect2(8,164,164,30).has_point(p): expected=memorial_pixel(Vector2i(p))
 			var actual:=image.get_pixel(x,y)
-			check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"native title/flash/card composition: "+label)
+			var run:=text_run_at(entry,p)
+			if run.is_empty(): check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"native title/flash/card composition: "+label)
+			else: check(outlines.matches(actual,run,p,Vector2(4,4)),"native credit/dedication contours: "+label)
 			if actual!=source.get_pixel(int(p.x),int(p.y)): changed+=1
 	if entry.has("credit_rect"):
 		var r: Array=entry.credit_rect
 		for y in range(int(r[1])*4,int(r[1]+r[3])*4):
 			for x in range(int(r[0])*4,int(r[0]+r[2])*4):
-				check(image.get_pixel(x,y)==source.get_pixel(x/4,y/4),"every original credit glyph/spacing/colour pixel: "+label)
+				var p:=Vector2(x+0.5,y+0.5)/4
+				var run:=text_run_at(entry,p)
+				if run.is_empty(): check(image.get_pixel(x,y)==source.get_pixel(x/4,y/4),"every protected credit pixel: "+label)
+				else: check(outlines.matches(image.get_pixel(x,y),run,p,Vector2(4,4)),"every credit contour pixel: "+label)
 	if entry.get("name")=="credit-8":
 		for y in range(164*4,194*4):
 			for x in range(8*4,172*4):
-				check(image.get_pixel(x,y)==memorial_pixel(Vector2i(x/4,y/4)),"every dedication glyph and panel pixel")
+				var p:=Vector2(x+0.5,y+0.5)/4
+				var run:=text_run_at(entry,p)
+				if run.is_empty(): check(image.get_pixel(x,y)==memorial_pixel(Vector2i(x/4,y/4)),"every protected dedication panel pixel")
+				else: check(outlines.matches(image.get_pixel(x,y),run,p,Vector2(4,4)),"every dedication contour pixel")
 	check(changed>10000 if not entry.is_empty() else changed==0,"restoration visible or exact fallback: "+label)
 	check(image.save_png(output.path_join(label+".png"))==OK,"save native intro frame")
 	samples.append({"label":label,"active":entry.get("name",""),"changed_samples":changed})
 
 func run() -> void:
 	var root_path:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	outlines.load_sources(root_path)
 	var args:=OS.get_cmdline_user_args()
 	native="--native" in args
 	output=root_path.path_join("artifacts/pc-intro-native")
@@ -99,6 +126,7 @@ func run() -> void:
 	check(tandem.load_genesis_art(root_path),"full tandem materials loaded")
 	art=tandem.frontend_art
 	check(not art.intro_art.catalog.is_empty(),"pinned intro sources loaded")
+	check(art.intro_art.outline_fonts.fonts.size()==4,"pinned outline faces loaded")
 	if art.intro_art.catalog.is_empty(): finish();return
 	for font in ["6X6.FNT","8X8.FNT"]: memorial_fonts[font]=FileAccess.get_file_as_bytes(root_path.path_join("GAME/"+font))
 	check(art.intro_art.DEDICATION_LINES[0][0]=="Dedicated to the memory of" and art.intro_art.DEDICATION_LINES[1][0]=="David \"Ming\" Kenny","Nell's exact dedication and name")
@@ -110,6 +138,11 @@ func run() -> void:
 		check(art.active.get("scene")=="intro" and art.intro_art.active.name==entry.name,"correct PC-selected pose/card")
 		check(art.intro_art.active.dedication==(entry.name=="credit-8"),"dedication only accompanies final credit")
 		if native: await render(source,entry.name)
+		if native and entry.name in ["credit-1","credit-8"]:
+			art.text_enabled=false
+			check(apply_frame(source,{"name":"START"}),"original-text fallback retains intro art")
+			await render(source,entry.name+"-original-text")
+			art.text_enabled=true
 		for at in [Vector2i(0,0),Vector2i(195,117),Vector2i(270,190)]:
 			var changed:=source.duplicate();changed.set_pixelv(at,Color.MAGENTA)
 			check(not apply_frame(changed,{"name":"START"}),"one changed pixel rejects complete binding")

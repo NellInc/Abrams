@@ -8,6 +8,7 @@ var art: TextureRect
 var samples: Array[Dictionary] = []
 var native := false
 var output: String
+var outlines = preload("res://tests/pc_outline_oracle.gd").new()
 
 func check(ok: bool, reason: String) -> void:
 	checks+=1
@@ -37,10 +38,10 @@ func render(source: Image, label: String) -> void:
 	for y in 800:
 		for x in 1280:
 			var same := image.get_pixel(x,y).to_rgba32()==source.get_pixel(x/4,y/4).to_rgba32()
-			var text_pixel := false
+			var text_run: Dictionary = {}
 			for run in art.typography.runs:
-				if run.rect.has_point(Vector2(x/4,y/4)): text_pixel=true; break
-			if text_pixel: check(same,"original office letterform changed: "+label)
+				if run.rect.has_point(Vector2(x/4,y/4)): text_run=run; break
+			if not text_run.is_empty(): check(outlines.matches(image.get_pixel(x,y),text_run,Vector2(x+0.5,y+0.5)/4,Vector2(4,4)),"outline office letterform: "+label)
 			elif y>=height*4: check(same,"protected original text/fallback changed: "+label)
 			elif not same: changed+=1
 	if height>0:
@@ -64,6 +65,7 @@ func render(source: Image, label: String) -> void:
 
 func run() -> void:
 	var root_path := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	outlines.load_sources(root_path)
 	var args := OS.get_cmdline_user_args()
 	native = "--native" in args
 	output = root_path.path_join("artifacts/pc-frontend-native")

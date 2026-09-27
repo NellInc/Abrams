@@ -30,6 +30,40 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## High-resolution original-style typefaces, 2026-09-27
+
+Nell supplied the DIRECTOR / DAMON SLYE credit screenshot and requested the very
+same typeface style at high resolution, including briefing text. The previous
+bitmap-shaped mesh pass was insufficient. The current pass reconstructs four
+local outline faces from the original FNT cells, preserving source spacing,
+proportions and stencil/serif details while simplifying diagonal stair chains.
+Direct Potrace and Scale2x/Potrace trials were rejected after visual inspection.
+
+Default integration covers all eight credits, the memorial, eligible cockpit,
+arming and office runs, and 81 exact source-string information-page runs. The
+last extension uses the pinned original loaded string table and full font-cell
+comparisons rather than OCR, keeping the PC wording/specifications. Small
+embedded diagram captions, unsupported pages and unknown states retain original
+pixels. This changes rendering only; the PC still owns inputs, content and timing.
+
+The local pack, catalog hashes, reproducible generation and independent geometry
+oracles are documented in `pc-text-research.md`. Source bits remain the recognition
+oracle and fallback. Native verification includes every printable glyph of every
+face at five scales, plus rendered credits, briefing, arming, cockpit and
+information fixtures. The assistant authored and reviewed these changes; Nell's
+stylistic acceptance remains separate. No original binaries, ROM, generated font
+payloads or derivative art are committed or published.
+
+Completed evidence: all six native font/screen tests passed (font specimens,
+intro, office, arming, cockpit and information), and actual Play captures passed
+for credits, briefing and dedication. All three live PNGs exactly match their
+native renders (`pc-outline-launcher-receipt-01.json`).
+`validation-20260927T223817Z` completed all 28 stages, including
+218 Python tests and source preservation. Native captures of all four faces and
+representative screens were visually inspected. Optional Impeccable is
+absent. The broader remaster goal remains open, with no new whole-game parity or
+publication claim.
+
 ## Original typeface request, 2026-09-27
 
 Nell requested the same fonts/typefaces as the originals. Removed the IBM Plex
@@ -1314,7 +1348,7 @@ kept distinct from the original credit evidence. The intro capture accepts
    Genesis portraits and wireframe. The title now has four Genesis-derived flash
    poses and eight original-font credit cards, driven by complete PC frames.
    Publisher splash and moving menu backdrop remain original.
-   Remaining information-page typography, frames
+   Embedded information-page captions, frames
    and top-down tank schematics remain open. Other gallery families need live bindings. Nine gunner illustration cells and
    scalable pixel-verified live/fixed text are enabled; remaining cockpit trims,
    bitmap instruments/labels, scenery-bearing text, recognition art,

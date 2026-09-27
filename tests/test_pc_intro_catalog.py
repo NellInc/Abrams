@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class IntroCatalogTests(unittest.TestCase):
     def test_source_composition_and_reproducible_catalog(self):
         data = build(ROOT,ROOT/'artifacts/pc-intro-trace-01')
-        self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),(ROOT/'local-art/pc-intro-v1/intro.json').read_bytes())
+        self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),(ROOT/'local-art/pc-intro-v2/intro.json').read_bytes())
         self.assertEqual(data['source_proof']['compared_rgb_pixels'],320000)
         self.assertEqual(len(data['entries']),13)
         self.assertEqual([e['flash'] for e in data['entries']],[0,1,2,3]+[4]*9)
