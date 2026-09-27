@@ -4,6 +4,7 @@ const Bridge = preload("res://scripts/pc_bridge.gd")
 const WorldView = preload("res://scripts/pc_world_view.gd")
 const DrawPass = preload("res://scripts/pc_draw_pass.gd")
 const PcCamera = preload("res://scripts/pc_camera.gd")
+const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
 var world_view: Node3D
 var draw_view: Node3D
 var trace_mode := false
@@ -11,6 +12,8 @@ var wire_mode := false
 var previous_presentation: Dictionary = {}
 var world_viewport: SubViewport
 var world_aspect: AspectRatioContainer
+var tandem_frame: TextureRect
+var tandem_viewport: SubViewport
 var bridge = Bridge.new()
 var camera: Camera3D
 var picture: TextureRect
@@ -85,7 +88,7 @@ func _build_ui() -> void:
 		var column := VBoxContainer.new()
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		panels.add_child(column)
-		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else (("GODOT: ORIGINAL SURFACES" if not wire_mode else "GODOT: ORIGINAL WIREFRAME") if trace_mode else "GODOT: ORIGINAL CAMERA / STATIC FACES"), 19))
+		column.add_child(_label("ORIGINAL PC FRAMEBUFFER" if side == 0 else (("GODOT WORLD / ORIGINAL COCKPIT" if not wire_mode else "GODOT WIREFRAME / ORIGINAL COCKPIT") if trace_mode else "GODOT: ORIGINAL CAMERA / STATIC FACES"), 19))
 		if side == 0:
 			var aspect := AspectRatioContainer.new()
 			aspect.ratio = 4.0 / 3.0
@@ -107,14 +110,28 @@ func _build_ui() -> void:
 			world_viewport.own_world_3d = true
 			world_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 			display.add_child(world_viewport)
-			display.texture = world_viewport.get_texture()
+			if trace_mode:
+				world_aspect.ratio = 4.0 / 3.0
+				tandem_viewport = SubViewport.new()
+				tandem_viewport.size = Vector2i(1280, 800)
+				tandem_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+				display.add_child(tandem_viewport)
+				# Explicit child-first viewport ordering: the composition must
+				# sample this pass's world, including the first resized frame.
+				world_viewport.reparent(tandem_viewport)
+				tandem_frame = TandemFrame.new()
+				tandem_frame.size = Vector2(1280, 800)
+				tandem_viewport.add_child(tandem_frame)
+				display.texture = tandem_viewport.get_texture()
+			else:
+				display.texture = world_viewport.get_texture()
 			_build_stage(world_viewport)
 	status = _label("Starting the locally supplied PC game...", 22)
 	stack.add_child(status)
 	caption = _label("", 18)
 	stack.add_child(caption)
 	stack.add_child(_label("Arrows: original keypad controls   5: stop/brake   C: hull/turret   Space: fire   F1 to F4: stations", 18))
-	stack.add_child(_label(("Original wireframe diagnostic. Omit --wire for filled surfaces." if wire_mode else "Live original surfaces, materials and bitmap effects. Cockpit/HUD, opaque commands and high-resolution replacement artwork remain open.") if trace_mode else "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
+	stack.add_child(_label(("Original wireframe diagnostic. Omit --wire for filled surfaces." if wire_mode else "Scanout-paired Godot world with original cockpit, reticle and messages. Source-resolution UI is temporary; high-resolution artwork and exact polygon edges remain open.") if trace_mode else "Original camera, draw queue, static detail selection and face rejection. Wireframe research view: dynamic vehicles, solid occlusion and materials are still pending.", 17))
 
 func _build_stage(viewport: SubViewport) -> void:
 	var world := Node3D.new()
@@ -211,7 +228,9 @@ func _apply_sample(message: Dictionary) -> void:
 		var dimensions: Vector2i = PcCamera.apply(camera, frame, Vector3.ZERO if trace_mode else world_view.anchor)
 		world_viewport.size = dimensions * 4
 		# Source 320x200 pixels stretch to 4:3 outside the 3D projection.
-		world_aspect.ratio = float(dimensions.x) / (float(dimensions.y) * 1.2)
+		if not trace_mode: world_aspect.ratio = float(dimensions.x) / (float(dimensions.y) * 1.2)
+	if trace_mode:
+		tandem_frame.set_frame(image, previous_presentation, world_viewport.get_texture())
 	status.text = "%s   HEADING %03d   SIGHT %03d   SPEED %d   FUEL %d" % [str(state.station).to_upper(), state.heading_degrees, state.bearing_degrees, state.speed_display, state.fuel_display]
 	caption.text = "HEAT %d   SABOT %d   AX %d   COAX %d     World: %s   Window: %s   Objects: %d" % [state.ammunition.HEAT, state.ammunition.SABOT, state.ammunition.AX, state.ammunition.COAX, str(position), str(state.world.window_origin), state.world.static.size()]
 	if trace_mode:
@@ -220,6 +239,8 @@ func _apply_sample(message: Dictionary) -> void:
 			caption.text += "\nDraw pass %d   Vehicle polygons %d   Sprites %d   Unsupported commands %d" % [int(drawing.sequence), draw_view.dynamic_polygon_count, draw_view.sprite_count, drawing.unsupported.size() + draw_view.render_warnings.size()]
 		else:
 			caption.text += "\nNo paired geometry: " + str(previous_presentation.get("reason", "awaiting scanout"))
+		if not tandem_frame.world_enabled:
+			caption.text += "\nORIGINAL FRAME FALLBACK: " + tandem_frame.fallback_reason
 	previous = state
 
 func _capture() -> void:
@@ -231,9 +252,12 @@ func _capture() -> void:
 	RenderingServer.force_sync()
 	root.get_texture().get_image().save_png(output.path_join("paired-view.png"))
 	world_viewport.get_texture().get_image().save_png(output.path_join("surface-view.png"))
+	if trace_mode: tandem_viewport.get_texture().get_image().save_png(output.path_join("tandem-frame.png"))
 	picture.texture.get_image().save_png(output.path_join("original-frame.png"))
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
-	file.store_string(JSON.stringify({"state": previous, "samples": samples, "presentation": previous_presentation, "scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired original surfaces, materials and bitmap effects; exact raster edges, HUD and opaque commands unresolved") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
+	file.store_string(JSON.stringify({"state": previous, "samples": samples, "presentation": previous_presentation,
+		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
+		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects with original source-resolution cockpit/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()
 

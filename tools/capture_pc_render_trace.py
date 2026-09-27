@@ -7,6 +7,7 @@ build without hooks; both modes retain full-RAM/framebuffer hashes per frame.
 """
 from __future__ import annotations
 import argparse
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -37,6 +38,7 @@ def main():
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--state-core-sha256', help='defaults to the selected reference or source-baseline pin')
     parser.add_argument('--capture-sprites', action='store_true', help='save first paired framebuffer for each observed effect image')
+    parser.add_argument('--capture-ui', action='store_true', help='save paired source/UI masks at end-of-stage samples')
     args = parser.parse_args()
     if not 1 <= args.frames <= 3000: parser.error('frames must be 1..3000')
     if args.output.resolve().is_relative_to((ROOT / 'GAME').resolve()): parser.error('output must be outside original GAME')
@@ -62,7 +64,7 @@ def main():
         if args.mode == 'trace':
             collector.attach(core, state['load_segment'])
         presentations = []
-        sprite_presentations, captured_sprites = [], set()
+        sprite_presentations, captured_sprites, ui_presentations = [], set(), []
         stages = {}
         if args.profile == 'controls':
             steps = STEPS + [('commander-key', 3, ['f2']), ('commander', 60, []),
@@ -72,11 +74,14 @@ def main():
             inputs = [('turn', ['c'] if i < 3 else ['kp6'] if 30 <= i < 90 else [], i == args.frames - 1)
                       for i in range(args.frames)]
         for i, (stage, keys, end_stage) in enumerate(inputs):
+            captured_sprite = False
             core.run(1, keys)
             if collector.error: raise collector.error
             if args.mode == 'trace':
                 paired = collector.paired_video(core.last_video)
-                presentations.append({k: v for k, v in paired.items() if k != 'draw_pass'} |
+                metadata = {k: v for k, v in paired.items() if k not in ('draw_pass', 'ui_overlay')}
+                metadata['ui_overlay'] = {k:v for k,v in (paired.get('ui_overlay') or {}).items() if k != 'mask_png'}
+                presentations.append(metadata |
                     {'draw_sequence': paired['draw_pass']['sequence'] if paired.get('draw_pass') else None,
                      'latest_complete_sequence': collector.passes[-1]['sequence'] if collector.passes else None})
                 if args.capture_sprites and paired.get('draw_pass'):
@@ -88,6 +93,14 @@ def main():
                         sprite_presentations.append({'draw_sequence': drawing['sequence'], 'frame_index': i,
                             'bitmap_indices': sorted(ids), 'image': filename})
                         captured_sprites.update(ids)
+                        captured_sprite = True
+                if args.capture_ui and (end_stage or captured_sprite) and paired.get('draw_pass') and paired.get('ui_overlay'):
+                    ui_stage = stage if end_stage else f'sprite-{drawing["sequence"]}'
+                    filename = f'ui-{ui_stage}-frame-{i:05d}'
+                    core.screenshot().save(args.output / (filename + '.png'))
+                    (args.output / (filename + '-mask.png')).write_bytes(base64.b64decode(paired['ui_overlay']['mask_png']))
+                    ui_presentations.append({'stage': ui_stage, 'draw_sequence': paired['draw_pass']['sequence'],
+                        'frame_index': i, 'image': filename + '.png', 'mask': filename + '-mask.png'})
             frames.append({'index': i, 'keys': keys, 'ram_sha256': hashlib.sha256(core.last_video_ram).hexdigest(),
                 'video_sha256': hashlib.sha256(core.last_video[0]).hexdigest()})
             if end_stage: stages[stage] = reader.read(core.last_video_ram)
@@ -99,6 +112,7 @@ def main():
             'original_vertices_checked': collector.vertices_checked,
             'effect_pixels_checked': collector.effect_pixels_checked,
             'sprite_presentations': sprite_presentations,
+            'ui_presentations': ui_presentations,
             'presentations': presentations, 'render_passes': list(collector.passes), 'incomplete_pass_at_stop': collector.active is not None,
             'scope': 'actual original normal-core instruction hooks; no guest writes; compare baseline/reference hashes separately'}
         (args.output / 'report.json').write_text(json.dumps(result, indent=2) + '\n')

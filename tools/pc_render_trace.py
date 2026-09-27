@@ -5,10 +5,13 @@ are deliberately absent. Video tags follow the core's triple-buffer slots.
 """
 from __future__ import annotations
 from collections import deque
+import base64
 import ctypes as C
 import hashlib
+import io
 from pathlib import Path
 import struct
+from PIL import Image
 
 try:
     from tools.pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
@@ -36,6 +39,7 @@ class Collector:
         self.pages = {}
         self.drawing_pages = set()
         self.scanout = None
+        self.ui_mask_slot = None
         self.buffers = {}
         self.presented = None
         self.scanout_sequence = 0
@@ -55,7 +59,7 @@ class Collector:
     def observe(self, event, registers, data, offset, length):
         try:
             raw = C.string_at(data, length)
-            if event in (10, 11, 12):
+            if event in (10, 11, 12, 19):
                 self.observe_video(event, offset, raw, registers)
                 return
             regs = dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'), registers[:12]))
@@ -210,16 +214,34 @@ class Collector:
 
     def observe_video(self, event, slot_or_page, raw, registers):
         if event == 10:
+            self.ui_mask_slot = None
             self.scanout_sequence += 1
             page = slot_or_page
             drawing = self.pages.get(page) if page not in self.drawing_pages else None
             self.scanout = {'scanout_sequence': self.scanout_sequence, 'page_offset': page,
                 'draw_pass': drawing, 'reason': None if drawing else 'no complete observed pass for scanned page',
                 'palette_rgb': [list(raw[i:i + 3]) for i in range(0, 64, 4)] if len(raw) == 64 else None}
+        elif event == 19:
+            if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
+            if raw and len(raw) != 320 * 200: raise ValueError('unsupported UI mask dimensions')
+            if any(v not in (0, 255) for v in raw): raise ValueError('invalid UI provenance mask')
+            self.ui_mask_slot = slot_or_page
+            if self.scanout:
+                self.scanout['ui_overlay'] = None
+                if raw:
+                    png = io.BytesIO()
+                    Image.frombytes('L', (320, 200), raw).save(png, format='PNG')
+                    self.scanout['ui_overlay'] = {'width': 320, 'height': 200,
+                        'mask_png': base64.b64encode(png.getvalue()).decode('ascii'),
+                        'mask_sha256': hashlib.sha256(raw).hexdigest(), 'ui_pixels': raw.count(255),
+                        'basis': 'EGA bit provenance sampled at original scanline time'}
         elif event == 11:
             if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
+            if self.ui_mask_slot is not None and self.ui_mask_slot != slot_or_page:
+                raise ValueError('UI mask and completed framebuffer slots differ')
             self.buffers[slot_or_page] = self.scanout
             self.scanout = None
+            self.ui_mask_slot = None
         elif event == 12:
             if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
             frame = self.buffers.get(slot_or_page)

@@ -1,5 +1,9 @@
 import ctypes as C
+import base64
+import hashlib
+import io
 import unittest
+from PIL import Image
 
 from tools.pc_render_trace import Collector
 
@@ -45,6 +49,46 @@ class RenderTraceTests(unittest.TestCase):
         self.assertEqual(self.present(c, 2)['draw_pass']['sequence'], 1)
         self.event(c, 11, 0)
         self.assertEqual(self.present(c, 0)['draw_pass']['sequence'], 2)
+
+    def test_ui_mask_follows_scanned_slot_and_survives_later_scanout(self):
+        c = self.collector()
+        self.finish_pass(c, 1, 0)
+        self.event(c, 10, 0)
+        mask = bytes([0,255]) * 32000
+        self.event(c, 19, 2, mask)
+        self.event(c, 11, 2)
+        self.event(c, 10, 8192)
+        self.event(c, 19, 0, bytes(64000))
+        self.event(c, 11, 0)
+        overlay = self.present(c, 2)['ui_overlay']
+        self.assertEqual(overlay['mask_sha256'], hashlib.sha256(mask).hexdigest())
+        self.assertEqual(overlay['ui_pixels'], 32000)
+        with Image.open(io.BytesIO(base64.b64decode(overlay['mask_png']))) as image:
+            self.assertEqual(image.size, (320,200))
+            self.assertEqual(image.mode, 'L')
+            self.assertEqual(image.tobytes(), mask)
+        self.assertEqual(self.present(c, 0)['ui_overlay']['ui_pixels'], 0)
+
+    def test_missing_ui_provenance_is_explicit_and_not_reused(self):
+        c = self.collector()
+        self.event(c, 10, 0)
+        self.event(c, 19, 0, bytes([255])*64000)
+        self.event(c, 11, 0)
+        self.event(c, 10, 0)
+        self.event(c, 19, 0)
+        self.event(c, 11, 0)
+        self.assertIsNone(self.present(c, 0)['ui_overlay'])
+
+    def test_invalid_ui_mask_fails_instead_of_inventing_transparency(self):
+        for raw, error in [(b'\0', 'dimensions'), (bytes([254])*64000, 'provenance')]:
+            with self.subTest(error=error):
+                c = self.collector()
+                self.event(c, 10, 0)
+                with self.assertRaisesRegex(ValueError, error): self.event(c, 19, 0, raw)
+        c = self.collector()
+        self.event(c, 10, 0)
+        self.event(c, 19, 2, bytes(64000))
+        with self.assertRaisesRegex(ValueError, 'slots differ'): self.event(c, 11, 0)
 
     def test_redrawing_displayed_page_invalidates_scanout_even_if_pass_finishes(self):
         c = self.collector()

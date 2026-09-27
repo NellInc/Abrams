@@ -24,7 +24,8 @@ def main():
         raise ValueError('unreviewed DOSBox Pure source revision')
     status = subprocess.check_output(['git', '-C', str(SOURCE), 'status', '--porcelain', '--untracked-files=all'], text=True)
     allowed = {' M src/cpu/core_normal.cpp', '?? src/cpu/abrams_trace.h',
-               ' M dosbox_pure_libretro.cpp', ' M src/hardware/vga_draw.cpp'}
+               ' M dosbox_pure_libretro.cpp', ' M src/hardware/vga_draw.cpp',
+               ' M src/hardware/vga_memory.cpp', '?? src/cpu/abrams_vga_ownership.h'}
     if any(line not in allowed for line in status.splitlines()):
         raise ValueError('preserve unrecognized dependency changes; source build is not the reviewed input')
     target = SOURCE / 'src/cpu/core_normal.cpp'
@@ -38,6 +39,8 @@ def main():
     if not baseline.exists(): raise ValueError('build and retain unmodified source-baseline.dylib first')
     header = ROOT / 'tools/pc_core/abrams_trace.h'
     shutil.copyfile(header, target.with_name('abrams_trace.h'))
+    ownership = ROOT / 'tools/pc_core/abrams_vga_ownership.h'
+    shutil.copyfile(ownership, target.with_name(ownership.name))
     target.write_text(changed)
     patches = {
         'src/hardware/vga_draw.cpp': [
@@ -57,6 +60,26 @@ def main():
              '\t\tvideo_cb(buf.video, view_width, view_height, view_width * 4);\n\t}')]
     }
     patch_hashes = {}
+    extra = {
+        'src/hardware/vga_draw.cpp': [
+            ('static VGA_Line_Handler VGA_DrawLine;',
+             'static VGA_Line_Handler VGA_DrawLine;\n'
+             'extern "C" void AbramsTraceRasterLine(Bit32u address, Bit32u row, Bit32u width, Bit32u wrap_mask);\n'
+             'static Bit8u* AbramsTraceDrawLine(Bitu address, Bitu line) {\n'
+             '\tAbramsTraceRasterLine(address, vga.draw.lines_done, render.src.width, vga.draw.linear_mask);\n'
+             '\treturn VGA_DrawLine(address, line);\n}\n', 1),
+            ('Bit8u * data=VGA_DrawLine( vga.draw.address, vga.draw.address_line );',
+             'Bit8u * data=AbramsTraceDrawLine( vga.draw.address, vga.draw.address_line );', 2),
+            ('Bit8u * data=VGA_DrawLine(address, vga.draw.address_line );',
+             'Bit8u * data=AbramsTraceDrawLine(address, vga.draw.address_line );', 1)]}
+    patches['src/hardware/vga_memory.cpp'] = [
+        ('#include "setup.h"', '#include "setup.h"\n'
+         'extern "C" void AbramsTraceVgaRead(Bit32u address);\n'
+         'extern "C" void AbramsTraceVgaWrite(Bit32u address, Bit8u value);'),
+        ('\t\tvga.latch.d=((Bit32u*)vga.mem.linear)[start];',
+         '\t\tvga.latch.d=((Bit32u*)vga.mem.linear)[start];\n\t\tAbramsTraceVgaRead((Bit32u)start);'),
+        ('class VGA_UnchainedEGA_Handler : public VGA_UnchainedRead_Handler {\npublic:\n\tvoid writeHandler(PhysPt start, Bit8u val) {',
+         'class VGA_UnchainedEGA_Handler : public VGA_UnchainedRead_Handler {\npublic:\n\tvoid writeHandler(PhysPt start, Bit8u val) {\n\t\tAbramsTraceVgaWrite((Bit32u)start, val);')]
     for name, replacements in patches.items():
         path = SOURCE / name
         before = subprocess.check_output(['git', '-C', str(SOURCE), 'show', 'HEAD:' + name], text=True)
@@ -64,7 +87,11 @@ def main():
         for old, new in replacements:
             if after.count(old) != 1: raise ValueError('unexpected source anchor: ' + name)
             after = after.replace(old, new, 1)
-        if path.read_text() not in (before, after): raise ValueError('preserve unrecognized edits: ' + name)
+        previous = after
+        for old, new, count in extra.get(name, []):
+            if after.count(old) != count: raise ValueError('unexpected ownership source anchor: ' + name)
+            after = after.replace(old, new)
+        if path.read_text() not in (before, previous, after): raise ValueError('preserve unrecognized edits: ' + name)
         path.write_text(after)
         patch_hashes[name] = {'original': hashlib.sha256(before.encode()).hexdigest(), 'patched': sha(path)}
     subprocess.run(['make', '-C', str(SOURCE), '-j4'], check=True)
@@ -73,6 +100,7 @@ def main():
     manifest = {'schema': 2, 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
         'source_core_normal_sha256': hashlib.sha256(original.encode()).hexdigest(),
         'patched_core_normal_sha256': sha(target), 'trace_header_sha256': sha(header),
+        'ownership_header_sha256': sha(ownership),
         'baseline_sha256': sha(baseline), 'trace_sha256': sha(output),
         'build': ['make', '-j4'], 'compiler': subprocess.check_output(['c++', '--version'], text=True).splitlines()[0],
         'license': 'GPL-2.0-or-later; upstream LICENSE and notices retained in source checkout',

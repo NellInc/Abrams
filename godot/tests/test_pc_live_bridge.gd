@@ -1,6 +1,7 @@
 extends SceneTree
 const Bridge = preload("res://scripts/pc_bridge.gd")
 const DrawPass = preload("res://scripts/pc_draw_pass.gd")
+const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
 var bridge = Bridge.new()
 var steps := [[3, ["f4"]], [30, []], [60, ["kp8"]], [60, []],
 	[3, ["kp5"]], [240, []], [3, ["f1"]], [30, []], [3, ["c"]], [30, []],
@@ -17,6 +18,8 @@ var vehicle_polygons := 0
 var unsupported_count := 0
 var presentations: Array = []
 var draw_view: Node3D
+var tandem_frame: TextureRect
+var ui_paired_count := 0
 
 func _initialize() -> void:
 	var root_path := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
@@ -25,6 +28,9 @@ func _initialize() -> void:
 	draw_view = DrawPass.new()
 	draw_view.solid_enabled = trace_mode
 	root.add_child(draw_view)
+	if trace_mode:
+		tandem_frame = TandemFrame.new()
+		root.add_child(tandem_frame)
 	DirAccess.make_dir_recursive_absolute(output)
 	started = Time.get_ticks_msec()
 	var python := OS.get_environment("ABRAMS_PYTHON")
@@ -53,6 +59,12 @@ func _process(_delta: float) -> bool:
 				paired_count += 1
 				vehicle_polygons += draw_view.dynamic_polygon_count
 				unsupported_count += drawing.unsupported.size()
+				var original := Image.new()
+				if original.load_png_from_buffer(Marshalls.base64_to_raw(message.png)) == OK:
+					if tandem_frame.set_frame(original,presentation,ImageTexture.create_from_image(original)):
+						ui_paired_count += 1
+					else: errors.append("paired UI unavailable: " + tandem_frame.fallback_reason)
+				else: errors.append("paired UI source PNG unavailable")
 				presentations.append({"sequence": message.sequence, "scanout": presentation.scanout_sequence,
 					"page": presentation.page_offset, "draw": drawing.sequence, "polygons": draw_view.polygon_count,
 					"vehicle_polygons": draw_view.dynamic_polygon_count, "unsupported": drawing.unsupported})
@@ -84,6 +96,8 @@ func _process(_delta: float) -> bool:
 			if snapshots[-1].ammunition.HEAT != initial.ammunition.HEAT - 1: errors.append("HEAT consumption mismatch")
 			if trace_mode and (paired_count < 12 or vehicle_polygons == 0):
 				errors.append("scanout-paired vehicle geometry missing")
+			if trace_mode and ui_paired_count != paired_count:
+				errors.append("scanout-paired UI masks missing")
 			var image := Image.new()
 			if image.load_png_from_buffer(Marshalls.base64_to_raw(message.png)) != OK:
 				errors.append("Original framebuffer PNG failed to decode")
@@ -96,11 +110,11 @@ func _process(_delta: float) -> bool:
 	if stopping and bridge.has_exited():
 		if bridge.exit_code() != 0: errors.append("Host exit code %s" % bridge.exit_code())
 		var report := {"errors": errors, "initial": initial, "snapshots": snapshots, "host_exit": bridge.exit_code(), "backend": "trace" if trace_mode else "reference",
-			"paired_count": paired_count, "vehicle_polygons": vehicle_polygons, "unsupported_count": unsupported_count, "presentations": presentations}
+			"paired_count": paired_count, "ui_paired_count": ui_paired_count, "vehicle_polygons": vehicle_polygons, "unsupported_count": unsupported_count, "presentations": presentations}
 		var file := FileAccess.open(output.path_join("report.json"), FileAccess.WRITE)
 		file.store_string(JSON.stringify(report, "  "))
 		if errors.is_empty():
-			print("PC_LIVE_BRIDGE: original movement, stations, braking, turret, firing and child shutdown passed; paired draws %d, vehicle polygons %d, unsupported commands %d" % [paired_count, vehicle_polygons, unsupported_count])
+			print("PC_LIVE_BRIDGE: original movement, stations, braking, turret, firing and child shutdown passed; paired draws %d, UI masks %d, vehicle polygons %d, unsupported commands %d" % [paired_count, ui_paired_count, vehicle_polygons, unsupported_count])
 		else:
 			for error in errors: printerr("FAIL: " + error)
 		quit(0 if errors.is_empty() else 1)

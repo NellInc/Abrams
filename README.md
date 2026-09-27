@@ -11,8 +11,10 @@ music and sound-effect references for a faithful presentation upgrade.
 * Open **PC Bridge.command** for the local original-PC/Godot pose research view.
   It requires the ignored local emulator, content ZIP and mission snapshot.
   Run `./PC\ Bridge.command --trace` for the source-built tandem renderer with
-  original solid geometry, EGA materials, live vehicles and bitmap effects. Add `--wire` for its
-  wireframe diagnostic. See `docs/pc-surfaces-research.md` for evidence and limits.
+  original solid geometry, EGA materials, live vehicles and bitmap effects beneath
+  the original cockpit/HUD. The cockpit is still source-resolution artwork.
+  Add `--wire` for its wireframe diagnostic. See `docs/pc-ui-research.md` for
+  composition evidence and limits.
 * Alternatively import `godot/project.godot` in Godot 4 and run the main scene.
 * Set `GODOT_BIN` to the engine executable if the launcher cannot find it.
 
@@ -52,6 +54,7 @@ Earlier mixed recordings are retained only as comparison material.
 * `docs/pc-live-bridge.md`: original-executable authority, live Godot bridge and replay evidence.
 * `docs/pc-surfaces-research.md`: live original surfaces, material patterns and native colour checks.
 * `docs/pc-sprites-research.md`: native effect extraction, original bitmap-blitter checks and tandem playback.
+* `docs/pc-ui-research.md`: scanline UI provenance, transparent cockpit edges and native composition checks.
 * `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
 * `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.
 * `docs/voice-workflow.md`: generative crew speech and performance directions.
@@ -60,7 +63,8 @@ Earlier mixed recordings are retained only as comparison material.
 Run `./tools/validate.sh` for the local test gate. Python resource tests need the
 supplied PC reference files; Genesis capture tests additionally need local
 captures. Pillow is required for graphics tests and extraction. Godot 4 is
-required for simulation and runtime checks.
+required for simulation and runtime checks. The UI ownership test compiles the
+actual read-only C++ observer with the local `c++` compiler.
 
 ## Distribution boundary
 

@@ -358,6 +358,40 @@ All thirteen aggregate stages and 113 Python tests pass in
 `validation-20260927T012101Z`. Detailed proof, limitations, hashes and commands:
 `pc-sprites-research.md`. No content was published; the parent goal remains open.
 
+## Original cockpit/UI composition, 27 September 2026
+
+Added a read-only EGA bit-provenance observer and scanline-sampled UI masks to
+the same original-core presentation stream. Godot now draws the paired world
+under the original cockpit, reticle, target box, instruments and messages, with
+explicit full-original fallback when attribution is unavailable. Pixels outside
+the paired main camera, including the commander's map, remain original. This is
+temporary source-resolution UI, not finished high-resolution artwork.
+
+The first mask prototype retained scenery rectangles around transparent cockpit
+bitmaps. Original-driver inspection identified CPU read/modify/write ORs outside
+the VGA raster-op register. Observing the loaded preservation mask for the
+duration of that blit fixes those edges while leaving all original operations
+intact. The compiled observer passes 4,096 hardware-mode combinations and
+2,048,000 bitmap-provenance pixel comparisons. The final four-station run's
+1,167 input/RAM/video records and 23 stage states equal the unmodified source
+baseline, with 261 complete passes and no unsupported commands in this scenario.
+
+The first native composition test's retained-UI checks passed, but its world
+coverage was inadequate. Visual review found blank commander/cupola scenery.
+A controlled one-draw test reproduced the viewport-order defect. Nesting the
+world viewport under the composition viewport fixes it without extra PC frames
+or redraws. The extended test passes 3,648,005 native RGB checks, including all
+659,422 replacement-world sample positions and the five original reticle pixels
+that covered effects in the preceding sprite milestone. All four station
+captures were inspected by their author. The failed/insufficient receipts remain.
+
+All 14 aggregate stages and 117 Python tests pass in
+`validation-20260927T015107Z`; the subsequent viewport-order repair is covered by
+the single-draw native regression. Live pipe integration passes with 15 paired
+draws/UI masks and graceful child exit. Full evidence, pins, limitations and
+commands are in `pc-ui-research.md`. No content was published. The overall goal
+remains active.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -398,12 +432,13 @@ All thirteen aggregate stages and 113 Python tests pass in
    bounded instruction/projection evidence; current
    snapshots are VGA-frame-boundary samples; original UI drawing may lag them.
    Calibrate real-time input/CPU pacing against the standalone reference.
-2. Recover remaining opaque drawing commands, cockpit/HUD and integer polygon
-   edge coverage. Solid geometry, original materials and bitmap effects now run
-   in the live scanout-paired renderer. Expand live coverage beyond the three
+2. Recover remaining opaque drawing commands and integer polygon edge coverage.
+   Solid geometry, original materials and bitmap effects now run under the
+   original source-resolution cockpit/HUD in the scanout-paired renderer. Recover
+   UI semantics and assets for a faithful high-resolution replacement. Expand live coverage beyond the three
    observed effect IDs. Validate arbitrary dark colours separately before new
    high-resolution materials. Evidence is in `pc-surfaces-research.md` and
-   `pc-sprites-research.md`.
+   `pc-sprites-research.md` and `pc-ui-research.md`.
 3. Extend original-executable replay coverage to station/weapon modes, enemy
    state, damage, mission outcomes and campaign/persistence, one scenario at a
    time. Current bridge receipts and limitations are in `pc-live-bridge.md`.
