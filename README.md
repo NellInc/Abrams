@@ -1,32 +1,36 @@
 # Abrams Battle Tank reconstruction
 
 A local Godot remaster project for Dynamix's PC **Abrams Battle Tank**.
-The PC version is definitive for gameplay. The Genesis version supplies artwork,
+The PC version is definitive for gameplay. The Genesis version is the primary artwork source wherever available, and supplies
 music and sound-effect references for a faithful presentation upgrade.
 
 ## Play the current local build
 
-* Open **Play.command** for the authored calibration range.
+* Open **Play.command** for the original-PC/Godot tandem remaster.
+* Open **Calibration Range.command** for the separate authored test range.
 * Open **Art Review.command** for original/remaster artwork comparisons.
 * Open **PC Bridge.command** for the original-PC/Godot tandem research view.
   It cold-boots the original menus, briefings and missions, using the ignored
   local tracing core and content ZIP. Mission exit and reentry stay in the
   original game. Its Godot view shows
   original solid geometry, live vehicles and bitmap effects with high-resolution
-  cockpit material donors and a colour study drawn from the extracted Genesis
+  cockpit material donors redrawn from Genesis sources and a colour study drawn from the extracted Genesis
   palette. Original PC instruments, map, text and visibility remain authoritative.
   The driver's overhead assembly follows its original turret-relative drawing.
   Grass and road surfaces now carry world-anchored high-resolution detail.
   Pixel-verified instrument values, weapon status and eligible crew messages
   now use scalable lettering inside their original display cells.
-  Vehicle models, other terrain materials and bitmap instruments remain unfinished.
+  Nine gunner instrument illustrations and the systems-status artwork now use
+  Genesis-derived high-resolution assets. Actual PC damage indicators and live
+  values remain authoritative. Other instruments, models and terrain are unfinished.
   Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
   `--pc-colours` to keep the new cockpit materials with original world colours.
   `--flat-world` disables terrain detail while retaining cockpit art and colours.
   `--original-text` keeps the source lettering without disabling other artwork.
   `--gunner-art` selects the earlier gunner-only pilot. `--cockpit-art` explicitly
-  selects the default four-station pass. Missing local assets or provenance
-  retain the original. See `docs/pc-ui-art-workflow.md` for coverage and limits.
+  selects the default Genesis four-station/status pass. Missing local assets or
+  provenance retain the original. See `docs/genesis-cockpit-integration.md` and
+  `docs/graphics-coverage.md` for current coverage and remaining work.
   Add `--wire` for the wireframe diagnostic. `--trace` retains the old mission
   snapshot probe; `--reference` selects the older static research backend.
   See `docs/pc-live-bridge.md` for controls, snapshot limits and lifecycle evidence.
@@ -37,7 +41,8 @@ music and sound-effect references for a faithful presentation upgrade.
   reports, gated on complete original displayed messages. Bearings speak by digit.
   F5 and original pause mute them. Remaining dialogue and music are unfinished;
   see `docs/pc-audio-research.md`.
-* Alternatively import `godot/project.godot` in Godot 4 and run the main scene.
+* Importing `godot/project.godot` in Godot 4 still runs the authored calibration
+  range as its main scene. Use **Play.command** for the PC-authoritative game.
 * Set `GODOT_BIN` to the engine executable if the launcher cannot find it.
 
 The range supports four stations, driving/turret modes, target selection/lock,
@@ -54,8 +59,11 @@ range is authored test content. Original missions, enemy AI, exact movement,
 damage, scoring and campaign parity remain unfinished. Passing internal tests
 does not prove that the original game logic has been recreated.
 
-The first remastered artwork collection includes the title, Colonel Wilson,
-his office and the motor pool. It is available locally under
+The local artwork collection includes the title, Colonel Wilson and a second
+gesture, his office, motor pool, four crew portraits, four cockpit plates,
+systems status, and two ammunition illustrations. The gallery has 15 comparison
+pages. Portraits and information illustrations still need live PC binding.
+Assets are available locally under
 `local-art/genesis/`. Untouched PNG extracts, original layered OpenRaster,
 palettes, exact prompts and source receipts accompany it. The original cartridge
 and derived art are excluded from Git and normal project exports.
@@ -80,6 +88,8 @@ Earlier mixed recordings are retained only as comparison material.
 * `docs/pc-text-research.md`: native fonts, visibility gates and scalable live typography.
 * `docs/pc-ui-art-workflow.md`: native PC cockpit plates/struts and high-resolution material studies.
 * `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
+* `docs/genesis-cockpit-integration.md`: Genesis-first live cockpit/status integration and native proof.
+* `docs/graphics-coverage.md`: whole-graphics scope, source precedence and remaining families.
 * `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.
 * `docs/pc-audio-research.md`: original sound requests, bounded transport and native playback proof.
 * `docs/voice-workflow.md`: generative crew speech and performance directions.
@@ -87,7 +97,8 @@ Earlier mixed recordings are retained only as comparison material.
 
 Run `./tools/validate.sh` for the local test gate. Python resource tests need the
 supplied PC reference files; Genesis capture tests additionally need local
-captures. Pillow is required for graphics tests and extraction. Godot 4 is
+captures. The Genesis cockpit test needs the local fingerprinted remaster set.
+Pillow is required for graphics tests and extraction. Godot 4 is
 required for simulation and runtime checks. The UI ownership test compiles the
 actual read-only C++ observer with the local `c++` compiler.
 

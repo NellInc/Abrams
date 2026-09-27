@@ -1,5 +1,11 @@
 # PC cockpit art preparation
 
+**Current visual direction:** the default tandem now uses the Genesis-derived
+set described in `genesis-cockpit-integration.md`. The PC-first donor studies
+below are retained historical research and an explicit diagnostic option.
+PC source plates remain the layout, provenance and visibility oracle, while
+Genesis artwork takes precedence as the visual source wherever available.
+
 ## Native sources
 
 `tools/extract_pc_ui.py` extends the existing PC resource/bitmap decoders.

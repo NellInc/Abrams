@@ -71,14 +71,11 @@ func _initialize() -> void:
 	if trace_mode and "--audio" in args:
 		pc_audio = PcAudio.new()
 		root.add_child(pc_audio)
-	if trace_mode and gunner_art_requested:
+	if trace_mode and cockpit_art_requested:
+		tandem_frame.load_genesis_art(directory)
+	elif trace_mode and gunner_art_requested:
 		var art_path := directory.path_join("local-art/pc-ui-remastered/gunner-plate-v2.png")
 		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
-	if trace_mode and cockpit_art_requested:
-		for id in [2,3,4]:
-			var filename: String = {2:"commander",3:"cupola",4:"driver"}[id]+"-plate-v1.png"
-			var path := directory.path_join("local-art/pc-ui-remastered/cockpit-set-v1/"+filename)
-			if FileAccess.file_exists(path): tandem_frame.set_cockpit_art(id,Image.load_from_file(path))
 	var python := OS.get_environment("ABRAMS_PYTHON")
 	if python.is_empty(): python = "/opt/homebrew/bin/python3"
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
@@ -299,7 +296,8 @@ func _apply_sample(message: Dictionary) -> void:
 		if not tandem_frame.world_enabled:
 			caption.text += "\nORIGINAL FRAME FALLBACK: " + tandem_frame.fallback_reason
 		if cockpit_art_requested:
-			caption.text += "\nHIGH-RES COCKPIT PLATES: " + str(tandem_frame.cockpit_art_ids) + " | original instruments retained"
+			caption.text += "\nGENESIS-DERIVED COCKPITS: " + str(tandem_frame.cockpit_art_ids) + " | PC live values"
+			caption.text += " | illustrated instrument cells: %d" % tandem_frame.instrument_art.active.size()
 			caption.text += " | moving driver assembly" if tandem_frame.driver_assembly_enabled else ""
 			caption.text += " | Genesis colour study" if genesis_colours_requested and not genesis_style.palette.is_empty() else ""
 			caption.text += " | terrain detail" if draw_view.terrain_active else ""
@@ -330,6 +328,8 @@ func _capture() -> void:
 		"terrain_detail": draw_view.terrain_active if trace_mode else false,
 		"terrain_polygons": draw_view.terrain_polygon_count if trace_mode else 0,
 		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],
+		"genesis_art": tandem_frame.genesis_art_enabled if trace_mode else false,
+		"instrument_art": tandem_frame.instrument_art.active.map(func(item): return item.name) if trace_mode else [],
 		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects; optional proven-pixel cockpit materials with original instruments/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()

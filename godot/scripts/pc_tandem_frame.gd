@@ -3,6 +3,14 @@ extends TextureRect
 ## Missing attribution shows the actual source frame, never stale scenery.
 const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
 var typography = preload("res://scripts/pc_typography.gd").new()
+var instrument_art = preload("res://scripts/pc_instrument_art.gd").new()
+var genesis_art_enabled := false
+const GENESIS_ART = {
+	1:["gunner","f396cd9ade02fb6a6e6aeb7d13cd2e72dde0eabb79bf1a77f218c979d507f41a"],
+	2:["commander","4182083afd976950281f1bb3d303311b783e3ee68148858c7fb5b2a19227e180"],
+	3:["cupola","6daec85d79914aedbb28233c021beeaa2f478ea0db643b71625dc6bc3314ab0b"],
+	4:["driver","7429042e9b42eb89e340cf87e80632894d6d9f7a83a37c1bde99041190ecf1b2"],
+	5:["systems-status","b14de0de38209c593f2fcb59463428729ccd51f4af8ba9ccfd5c288307f93d83"]}
 var world_enabled := false
 var fallback_reason := "awaiting original framebuffer"
 const ART_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
@@ -12,7 +20,11 @@ const COCKPIT_SOURCES = {
 	1: ["GPS.BIN", GUNNER_SOURCE_SHA256],
 	2: ["TC.BIN", "493e8867dca57f6c6588e0288a5e7e3b5d83b2e96a041a85dfedfecd8db94884"],
 	3: ["AA.BIN", "d047d71587940c6cf0b7e7072edda8e0b383b179cdf2d238e41a38f4a15d316a"],
-	4: ["DRIVER.BIN", "4644f41a098323bf2ea85d2a989725594a0591c6e221a1a91b863cfc216b4b9b"]}
+	4: ["DRIVER.BIN", "4644f41a098323bf2ea85d2a989725594a0591c6e221a1a91b863cfc216b4b9b"],
+	5: ["STATUS.BIN", "7d2abcfd40a79002087bd1534c9ac74ba846dd1cbf03b93f3f66314068b62166"]}
+var status_art_texture: Texture2D
+var commander_status_atlas: Texture2D
+var status_diagram_verified := false
 var cockpit_art_textures: Dictionary = {}
 var cockpit_art_ids: Array[int] = []
 var driver_assembly_enabled := false
@@ -26,6 +38,8 @@ func _init() -> void:
 	var shader_material := ShaderMaterial.new()
 	shader_material.shader = COMPOSITOR
 	material = shader_material
+	add_child(instrument_art)
+	instrument_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(typography)
 	typography.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
@@ -38,6 +52,33 @@ func _fallback(reason: String) -> bool:
 	material.set_shader_parameter("ui_mask", null)
 	_disable_art("original frame fallback")
 	return false
+
+func load_genesis_art(root: String) -> bool:
+	# Validate the complete set before replacing any existing textures.
+	var images := {}
+	for id in GENESIS_ART:
+		var entry: Array = GENESIS_ART[id]
+		var path := root.path_join("local-art/genesis/cockpit-v2/"+entry[0]+"-genesis-v1.png")
+		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=entry[1]: return false
+		var image := Image.load_from_file(path)
+		if image==null or image.get_size()!=Vector2i(1586,992): return false
+		images[id] = image
+	set_gunner_art(images[1])
+	for id in [2,3,4]: set_cockpit_art(id,images[id])
+	status_art_texture = ImageTexture.create_from_image(images[5])
+	# Keep the compositor within its working Compatibility sampler budget.
+	# This lossless two-image atlas also supports mixed commander/STATUS frames.
+	var atlas := Image.create_empty(1586,1984,false,Image.FORMAT_RGBA8)
+	for id in [2,5]:
+		var part: Image = images[id].duplicate()
+		part.convert(Image.FORMAT_RGBA8)
+		atlas.blit_rect(part,Rect2i(0,0,1586,992),Vector2i(0,0 if id==2 else 992))
+	commander_status_atlas = ImageTexture.create_from_image(atlas)
+	genesis_art_enabled = true
+	material.set_shader_parameter("genesis_art",true)
+	typography.fixed_labels_enabled = true
+	instrument_art.load_sources(root,images[1])
+	return true
 
 func set_gunner_art(image: Image) -> bool:
 	gunner_art_texture = null
@@ -59,6 +100,10 @@ func set_cockpit_art(plate_id: int, image: Image) -> bool:
 	return true
 
 func _disable_art(reason: String) -> void:
+	instrument_art.clear()
+	status_diagram_verified = false
+	material.set_shader_parameter("status_art_enabled",false)
+	material.set_shader_parameter("status_diagram_verified",false)
 	gunner_art_enabled = false
 	driver_assembly_enabled = false
 	material.set_shader_parameter("driver_assembly_enabled", false)
@@ -83,7 +128,7 @@ func _art_palette_matches(palette: Variant) -> bool:
 
 func _set_art(presentation: Dictionary, ui: Image) -> void:
 	_disable_art("material pilot disabled")
-	if gunner_art_texture == null and cockpit_art_textures.is_empty(): return
+	if gunner_art_texture == null and cockpit_art_textures.is_empty() and status_art_texture==null: return
 	gunner_art_reason = "no supported plate provenance"
 	if not _art_palette_matches(presentation.get("palette_rgb")):
 		gunner_art_reason = "palette differs from material study"
@@ -105,6 +150,7 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 		if tags[at] != 0: present[int(tags[at])] = true
 	var available := cockpit_art_textures.duplicate()
 	if gunner_art_texture != null: available[1] = gunner_art_texture
+	if status_art_texture != null: available[5] = status_art_texture
 	for id in available:
 		if not present.has(id): continue
 		var source = plates.get(str(id))
@@ -116,12 +162,23 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 		gunner_art_reason = "no surviving supported cockpit plate pixels"
 		return
 	for id in [2,3,4]:
-		material.set_shader_parameter(["commander_art","cupola_art","driver_art"][id-2], available.get(id))
+		var donor = commander_status_atlas if id==2 and genesis_art_enabled else available.get(id)
+		material.set_shader_parameter(["commander_art","cupola_art","driver_art"][id-2], donor)
 	material.set_shader_parameter("station_art_enabled", Vector3(1 if 2 in cockpit_art_ids else 0, 1 if 3 in cockpit_art_ids else 0, 1 if 4 in cockpit_art_ids else 0))
 	material.set_shader_parameter("gunner_art", gunner_art_texture)
 	material.set_shader_parameter("plate_mask", ImageTexture.create_from_image(mask))
 	gunner_art_enabled = 1 in cockpit_art_ids
 	material.set_shader_parameter("gunner_art_enabled", gunner_art_enabled)
+	material.set_shader_parameter("status_art_enabled",5 in cockpit_art_ids)
+	if 5 in cockpit_art_ids:
+		status_diagram_verified = true
+		for y in range(37,100):
+			for x in range(123,305):
+				if tags[y*320+x]!=5:
+					status_diagram_verified = false
+					break
+			if not status_diagram_verified: break
+	material.set_shader_parameter("status_diagram_verified",status_diagram_verified)
 	gunner_art_reason = "" if gunner_art_enabled else "no surviving gunner plate pixels"
 
 func _set_driver_assembly(presentation: Dictionary, ui: Image) -> void:
@@ -187,5 +244,10 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> boo
 	fallback_reason = ""
 	_set_art(presentation,mask)
 	_set_driver_assembly(presentation,mask)
+	typography.status_numbers_enabled = genesis_art_enabled and 5 in cockpit_art_ids
+	if genesis_art_enabled and gunner_art_enabled:
+		var tags := Image.new()
+		if tags.load_png_from_buffer(Marshalls.base64_to_raw(presentation.plate_overlay.mask_png))==OK:
+			instrument_art.set_frame(source,mask,tags)
 	typography.set_frame(source,mask,presentation)
 	return true

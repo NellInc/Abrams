@@ -9,6 +9,18 @@ const FONT_SOURCES = {
 var fonts: Dictionary = {}
 var runs: Array[Dictionary] = []
 var labels: Array[Control] = []
+var fixed_labels_enabled := false
+var status_numbers_enabled := false
+# These words are confirmed in the source screens. Each candidate still has to
+# match every original font bit and every UI pixel before it may be redrawn.
+const FIXED_LABELS = [
+	["HDG",66,191],["SPD",114,191],["FUEL",156,191],["TMP",210,191],
+	["ID:",16,143],["RANGE",16,154],["HEADING",128,188],
+	["HEADING",216,134],["E",104,179],["F",154,179],
+	["GPS",35,110],["Smoke Dischargers",35,123],["COAX machine gun",35,136],
+	["Main Gun",35,149],["Ballistic Computer",35,162],["Thermal Equipment",35,175],
+	["Radio Equipment",166,110],["Halon",166,123],["Turret Motors",166,136],
+	["Left Tread",166,149],["Right Tread",166,162],["Engine",166,175]]
 
 class RunLabel extends Control:
 	var run: Dictionary
@@ -58,6 +70,39 @@ func load_sources(directory: String) -> bool:
 func clear_runs() -> void:
 	runs.clear()
 	for label in labels: label.hide()
+
+func _fixed_candidate(words: String, at: Vector2i, source: Image) -> Dictionary:
+	var box := Rect2i(at,Vector2i(words.length()*6,6))
+	var crop := source.get_region(box)
+	crop.convert(Image.FORMAT_RGB8)
+	var hash := HashingContext.new()
+	hash.start(HashingContext.HASH_SHA256)
+	hash.update(crop.get_data())
+	return {"text":words,"rect":[box.position.x,box.position.y,box.size.x,box.size.y],
+		"font_sha256":FONT_SOURCES["6X6.FNT"],"cell_size":[6,6],"foreground":1,
+		"uniform_background_rgb":[0,0,0],"pixel_sha256":hash.finish().hex_encode(),"kind":"verified_fixed_cell"}
+
+func _status_number(source: Image, y: int) -> Dictionary:
+	# Three original right-aligned digit cells. Exact glyph lookup, not OCR or
+	# a value from current simulation RAM; only the already visible digits count.
+	if not fonts.has(FONT_SOURCES["6X6.FNT"]): return {}
+	var bytes: PackedByteArray = fonts[FONT_SOURCES["6X6.FNT"]]
+	var words := ""
+	for cell in 3:
+		var matches := ""
+		for character in " 0123456789":
+			var code := character.unicode_at(0)
+			var same := true
+			for dy in 6:
+				for dx in 6:
+					var ink := (int(bytes[4+(code-32)*6+dy])&(128>>dx))!=0
+					if source.get_pixel(83+cell*6+dx,y+dy).to_rgba32()!=(Color.WHITE if ink else Color.BLACK).to_rgba32(): same=false; break
+				if not same: break
+			if same: matches+=character
+		if matches.length()!=1: return {}
+		words+=matches
+	if words.strip_edges().is_empty(): return {}
+	return _fixed_candidate(words,Vector2i(83,y),source)
 
 static func integers(value: Variant, count: int, low: int, high: int) -> bool:
 	if not value is Array or value.size()!=count: return false
@@ -111,6 +156,13 @@ func set_frame(source: Image, ui: Image, presentation: Dictionary) -> void:
 	if source==null or source.get_size()!=Vector2i(320,200) or ui==null or ui.get_size()!=Vector2i(320,200) or ui.get_format()!=Image.FORMAT_L8: return
 	var candidates: Array = presentation.text_runs.duplicate()
 	if candidates.size()>256: return
+	if fixed_labels_enabled:
+		for entry in FIXED_LABELS:
+			candidates.push_front(_fixed_candidate(entry[0],Vector2i(entry[1],entry[2]),source))
+	if status_numbers_enabled:
+		for y in [52,60,68,76,84,92]:
+			var candidate := _status_number(source,y)
+			if not candidate.is_empty(): candidates.push_front(candidate)
 	# Latest completed writes win when identical surviving candidates overlap.
 	candidates.reverse()
 	for item in candidates:

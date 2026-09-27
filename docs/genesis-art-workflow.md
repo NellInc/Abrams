@@ -6,7 +6,11 @@ Nell supplied the ROM and requested local graphic extraction and faithful
 high-resolution remastering. Her subsequent clarification makes the **PC version
 definitive for gameplay**. Genesis provides presentation references. Nell later
 also authorized music and sound extraction, recorded in `genesis-audio-workflow.md`.
-No Genesis gameplay rule has been adopted in the simulation.
+No Genesis gameplay rule has been adopted in the simulation. Nell's latest
+direction makes Genesis the primary visual basis wherever an equivalent asset
+exists. PC EGA plates remain layout/visibility evidence and a fallback for
+genuine Genesis gaps. Current runtime and family coverage are tracked in
+`genesis-cockpit-integration.md` and `graphics-coverage.md`.
 
 Working if: simulation rules cite PC evidence, and a Genesis-only behaviour is
 never treated as a parity oracle without an explicit decision.
@@ -79,10 +83,12 @@ normal-intensity, full-window, 64x32 nametable configuration. It reports
 unsupported configurations instead of pretending they match. Sprite-limit and
 mid-frame palette effects are not generalized from this sample.
 
-Ten distinct captures reconstruct exactly: briefing, motor pool, firing title,
-information screen, title menu, clean title, gunner, commander, cupola and driver.
-Each comparison covers 71,680 pixels. Their total is 716,800 compared pixels with
-zero differences. These checks establish the captured scenes' decoding, not
+The initial ten captures reconstruct exactly: briefing, motor pool, firing title,
+information menu, title menu, clean title, gunner, commander, cupola and driver.
+The expanded test also checks STATUS, two observed Wilson poses, crew information,
+three ammunition pages and three armament pages. Each comparison covers 71,680
+pixels; the twenty recorded captures total 1,433,600 compared pixels with zero
+differences. These checks establish the captured scenes' decoding, not
 exhaustive extraction of every ROM asset or gameplay parity.
 
 Reproduction examples, from the project root:
@@ -146,13 +152,31 @@ Godot menu. Left/right or buttons select a scene; Tab compares original and
 remaster; Escape returns to the garage. Artwork is loaded from the ignored local
 folder at runtime, so it is never silently bundled into a source-only export.
 
-Verified: native Godot capture of all three scenes in both modes at 1440x810 and
-1920x1080, alpha-composited briefing, source framing and readable review controls. The optional Impeccable
+The expanded gallery has 15 pages: the original three scenes, four stations,
+STATUS, a second Wilson pose, four crew portraits, and AX/SABOT illustrations.
+New plates are under `cockpit-v2/`; portraits and ammunition are under
+`remastered/crew-v1/` and `remastered/info-v1/`. The crew images measure
+1254x1254, ammunition images 2172x724, and the lower-hand Wilson pose 1294x1216.
+Gunner/driver coarse-outline first passes are retained but excluded from selection.
+The complete crew-information study added portrait boxes and drifted in placement;
+it is also excluded. HEAT's cleanup revision hit an image-tool safety rejection,
+recorded in its manifest. It remains unfinished, without a PC-art substitution.
+
+The four crew portraits are native 48x48 crops of
+`reference/genesis/graphics-crew-02/crew-settled`. A executes the selected original
+information-menu item; C closes a menu. Single-frame down presses with release
+gaps selected the observed ammo/armament entries. Every capture retains its exact
+sequence, restored state and VDP reconstruction receipt. Menu names are source
+identities, not a claim that Genesis specifications define PC mechanics.
+
+Verified historically: native Godot capture of the original three scenes at 1440x810 and
+1920x1080, alpha-composited briefing, source framing and readable review controls.
+The expanded native gallery evidence is recorded in `WORK_LEDGER.md`. The optional Impeccable
 frontend linter is unavailable; no dependency was installed for this native
 Godot surface. The screen capture is the visual validation evidence.
 
 Remaining: other dialogue/portrait animation frames, vehicle-recognition artwork,
-all menu/information states, high-resolution cockpit panels, and consistent
-in-world geometry. The low-polygon playfield is rendered by the original program;
+complete menu/information states and live bindings, remaining dynamic cockpit
+instruments, and consistent in-world geometry. The low-polygon playfield is rendered by the original program;
 a framebuffer extract does not recover the underlying model or world semantics.
 PC instrument information and controls must survive any visual redesign.

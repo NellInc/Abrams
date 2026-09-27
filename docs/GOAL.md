@@ -1,6 +1,6 @@
 # Abrams remaster goal
 
-Reconstruct and remaster Dynamix's **Abrams Battle Tank** in Godot, preserving the definitive PC version's gameplay while giving its presentation a faithful high-resolution restoration. The Genesis edition supplies audiovisual references, including music and sound effects for later upgrading. Preserve the original art's recognizable composition, silhouettes, palette and illustrated character; use extracted resources as evidence and editable sources. Any proposed gameplay departure requires Nell's agreement.
+Reconstruct and remaster Dynamix's **Abrams Battle Tank** in Godot, preserving the definitive PC version's gameplay while giving its presentation a faithful high-resolution restoration. Genesis artwork is the primary visual basis wherever available; PC EGA art is reserved for genuine Genesis gaps and for layout/visibility verification. Genesis also supplies music and sound-effect references for later upgrading. Preserve recognizable composition, silhouettes, palette and illustrated character; use extracted resources as evidence and editable sources. Any proposed gameplay departure requires Nell's agreement.
 
 Preserve the PC missions, objectives, controls, crew stations, movement, targeting, ammunition, enemy behaviour, damage, repairs, fuel, difficulty, scoring, campaign progression, timing and meaningful quirks. Add new sound effects and crew voices, clear captions, scalable interfaces and presentation-only accessibility options without changing simulation outcomes or revealing additional tactical information.
 

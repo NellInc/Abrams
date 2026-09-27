@@ -2,8 +2,22 @@ extends Control
 ## Local-only visual review. Extracted and derivative art remains outside res://.
 const ART := [
 	{"name":"TITLE", "source":"title-original.png", "remaster":"title-v1.png"},
-	{"name":"WILSON'S BRIEFING", "source":"office-background-original.png", "remaster":"office-background-v1.png"},
+	{"name":"WILSON'S BRIEFING", "source":"office-background-original.png", "remaster":"office-background-v1.png",
+		"portrait_source":"wilson-original.png","portrait_remaster":"wilson-v1.png"},
 	{"name":"MOTOR POOL", "source":"motor-pool-original.png", "remaster":"motor-pool-v1.png"},
+	{"name":"GUNNER COCKPIT", "source":"gunner-original.png", "remaster":"gunner-genesis-v1.png","collection":"cockpit-v2"},
+	{"name":"COMMANDER COCKPIT", "source":"commander-original.png", "remaster":"commander-genesis-v1.png","collection":"cockpit-v2"},
+	{"name":"CUPOLA", "source":"cupola-original.png", "remaster":"cupola-genesis-v1.png","collection":"cockpit-v2"},
+	{"name":"DRIVER", "source":"driver-original.png", "remaster":"driver-genesis-v1.png","collection":"cockpit-v2"},
+	{"name":"SYSTEMS STATUS", "source":"systems-status-original.png", "remaster":"systems-status-genesis-v1.png","collection":"cockpit-v2"},
+	{"name":"WILSON'S BRIEFING: GESTURE", "source":"office-background-original.png", "remaster":"office-background-v1.png",
+		"portrait_source":"wilson-animation-v1/pose-01.png","portrait_remaster":"wilson-gesture-v2.png"},
+	{"name":"CREW: GUNNER", "source":"crew-gunner-original.png", "remaster":"gunner-v2.png","collection":"remastered/crew-v1","square":true},
+	{"name":"CREW: COMMANDER", "source":"crew-commander-original.png", "remaster":"commander-v1.png","collection":"remastered/crew-v1","square":true},
+	{"name":"CREW: DRIVER", "source":"crew-driver-original.png", "remaster":"driver-v2.png","collection":"remastered/crew-v1","square":true},
+	{"name":"CREW: LOADER", "source":"crew-loader-original.png", "remaster":"loader-v1.png","collection":"remastered/crew-v1","square":true},
+	{"name":"AX ILLUSTRATION", "source":"info-v1/ammo-ax-illustration.png", "remaster":"ammo-ax-v2.png","collection":"remastered/info-v1","wide":true},
+	{"name":"SABOT ILLUSTRATION", "source":"info-v1/ammo-sabot-illustration.png", "remaster":"ammo-sabot-v2.png","collection":"remastered/info-v1","wide":true},
 ]
 var page := 0
 var original := false
@@ -17,9 +31,10 @@ func _ready() -> void:
 	var root := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-art/genesis")
 	for entry in ART:
 		_load_art(root.path_join("source/"+entry.source),entry.source)
-		_load_art(root.path_join("remastered/"+entry.remaster),entry.remaster)
-	_load_art(root.path_join("source/wilson-original.png"),"wilson-original.png")
-	_load_art(root.path_join("remastered/wilson-v1.png"),"wilson-v1.png")
+		_load_art(root.path_join(entry.get("collection","remastered")+"/"+entry.remaster),entry.remaster)
+		if entry.has("portrait_source"):
+			_load_art(root.path_join("source/"+entry.portrait_source),entry.portrait_source)
+			_load_art(root.path_join("remastered/"+entry.portrait_remaster),entry.portrait_remaster)
 	_add_button("PREVIOUS",Rect2(32,842,170,40),func(): _change(-1))
 	_add_button("NEXT",Rect2(214,842,150,40),func(): _change(1))
 	_add_button("ORIGINAL / REMASTER  [TAB]",Rect2(390,842,390,40),_toggle)
@@ -87,18 +102,20 @@ func _draw() -> void:
 	draw_string(heading,Vector2(32,39),label,HORIZONTAL_ALIGNMENT_LEFT,-1,30,Color("e1e4cd"))
 	draw_string(font,Vector2(760,35),"PC GAMEPLAY  /  GENESIS VISUAL REFERENCE",HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color("a6b2a2"))
 	var art_rect := Rect2(188,63,1224,765) # Native 8:5 framing retained.
+	if ART[page].get("square",false): art_rect=Rect2(417.5,63,765,765)
+	if ART[page].get("wide",false): art_rect=Rect2(188,241.5,1224,408)
 	var key: String = ART[page].source if original else ART[page].remaster
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if original else CanvasItem.TEXTURE_FILTER_LINEAR
 	if textures.has(key):
 		draw_texture_rect(textures[key],art_rect,false)
-		if page == 1:
-			var portrait := "wilson-original.png" if original else "wilson-v1.png"
+		if ART[page].has("portrait_source"):
+			var portrait: String = ART[page].portrait_source if original else ART[page].portrait_remaster
 			if textures.has(portrait):
 				var rect := Rect2(art_rect.position+Vector2(80,32)*(art_rect.size/Vector2(320,200)),Vector2(136,128)*(art_rect.size/Vector2(320,200)))
 				draw_texture_rect(textures[portrait],rect,false)
 	else:
 		draw_string(font,Vector2(250,430),error_message,HORIZONTAL_ALIGNMENT_LEFT,-1,20,Color("e7b566"))
-	draw_string(font,Vector2(820,868),"ORIGINAL" if original else "REMASTER  v1",HORIZONTAL_ALIGNMENT_LEFT,-1,18,Color("e7b566"))
+	draw_string(font,Vector2(820,868),"ORIGINAL GENESIS" if original else "LOCAL REMASTER",HORIZONTAL_ALIGNMENT_LEFT,-1,18,Color("e7b566"))
 
 func _capture() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -120,5 +137,5 @@ func _capture() -> void:
 			if result != OK:
 				get_tree().quit(1)
 				return
-	print("ART_REVIEW_PASS: three scenes, original/remaster, external textures, source framing")
+	print("ART_REVIEW_PASS: %d scenes, original/remaster, external textures, source framing"%ART.size())
 	get_tree().quit()

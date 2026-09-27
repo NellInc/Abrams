@@ -100,6 +100,27 @@ class SyntheticGraphicsTests(unittest.TestCase):
 
 
 class LocalOriginalGraphicsTests(unittest.TestCase):
+    @unittest.skipUnless((ROOT / "reference/genesis/graphics-crew-02/crew-settled").exists(), "Requires local reference capture")
+    def test_crew_and_information_pages_reconstruct_exactly(self):
+        captures = ["graphics-crew-02/crew-settled", "wilson-animation-v1/pose-00", "wilson-animation-v1/pose-01",
+                    "graphics-ammo-pages-01/ax", "graphics-ammo-heat-01/page", "graphics-ammo-sabot-01/page",
+                    "graphics-weapon-coax-01/page", "graphics-weapon-cannon-01/page", "graphics-weapon-smoke-01/page"]
+        with tempfile.TemporaryDirectory() as temp:
+            for index, name in enumerate(captures):
+                with self.subTest(capture=name):
+                    vdp = VDP(ROOT / "reference/genesis" / name)
+                    self.assertEqual(vdp.receipt["rom_sha256"], ROM_HASH)
+                    result = vdp.export(Path(temp) / str(index))
+                    self.assertEqual(result["compositor"], {"compared_pixels": 71680, "mismatched_pixels": 0, "exact": True})
+
+    @unittest.skipUnless((ROOT / "reference/genesis/graphics-status-action-01/status").exists(), "Requires local reference capture")
+    def test_systems_status_reconstructs_exactly(self):
+        with tempfile.TemporaryDirectory() as temp:
+            vdp = VDP(ROOT / "reference/genesis/graphics-status-action-01/status")
+            self.assertEqual(vdp.receipt["rom_sha256"], ROM_HASH)
+            result = vdp.export(Path(temp) / "status")
+            self.assertEqual(result["compositor"], {"compared_pixels": 71680, "mismatched_pixels": 0, "exact": True})
+
     @unittest.skipUnless((ROOT / "reference/genesis/mission/brief2").exists(), "Requires local reference captures")
     def test_ten_original_captures_reconstruct_exactly(self):
         captures = ["mission/brief2", "mission/action", "boot/title", "navigation/title_wait",

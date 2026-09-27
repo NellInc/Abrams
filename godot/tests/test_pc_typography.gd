@@ -108,6 +108,39 @@ func run() -> void:
 	check(view.typography.labels[0].position==Vector2(label.rect[0]*3,label.rect[1]*3) and view.typography.labels[0].size==Vector2(label.rect[2]*3,label.rect[3]*3),"resized label left original cell bounds")
 	view.size = viewport.size
 	await process_frame
+	# Bitmap and unobserved fixed labels require the same full glyph/UI proof.
+	view.typography.fixed_labels_enabled = true
+	words("HDG",66,191)
+	view.set_frame(source,presentation([]),world)
+	check(view.typography.runs.size()==1 and view.typography.runs[0].text=="HDG","verified driver label not restored")
+	source.set_pixel(66,191,Color.MAGENTA)
+	view.set_frame(source,presentation([]),world)
+	check(view.typography.runs.is_empty(),"overwritten fixed label replaced")
+	words("HDG",66,191)
+	ui.set_pixel(66,191,Color.BLACK)
+	view.set_frame(source,presentation([]),world)
+	check(view.typography.runs.is_empty(),"fixed label covered non-UI pixel")
+	ui.fill(Color.WHITE)
+	var longer := words("HDG  0",66,191)
+	view.set_frame(source,presentation([longer]),world)
+	check(view.typography.runs.size()==1 and view.typography.runs[0].text=="HDG  0","fixed candidate displaced original observed value")
+	view.typography.fixed_labels_enabled = false
+	view.typography.status_numbers_enabled = true
+	for value in [0,1,9,10,80,100,999]:
+		source.fill(Color8(85,85,85))
+		var digits := "%3d"%value
+		words(digits,83,52)
+		view.typography.set_frame(source,ui,presentation([]))
+		check(view.typography.runs.size()==1 and view.typography.runs[0].text==digits,"visible stores number differs: "+digits)
+	words(" 10",83,52)
+	ui.set_pixel(83,52,Color.BLACK)
+	view.typography.set_frame(source,ui,presentation([]))
+	check(view.typography.runs.is_empty(),"stores number covered non-UI pixel")
+	ui.fill(Color.WHITE)
+	source.set_pixel(83,52,Color.MAGENTA)
+	view.typography.set_frame(source,ui,presentation([]))
+	check(view.typography.runs.is_empty(),"ambiguous stores digit accepted")
+	view.typography.status_numbers_enabled = false
 	if native and "--fixture" in args: await fixtures(args[args.find("--fixture")+1],output)
 	check(not view.typography.load_sources(directory.path_join("artifacts/missing-original-font-directory")),"missing fonts accepted")
 	check(view.typography.fonts.is_empty() and view.typography.runs.is_empty(),"failed font load retained stale typography")

@@ -882,6 +882,64 @@ mission outcomes and release packaging remain unfinished. No historical timing,
 full-game parity, human art approval or publication is claimed. Local only; the
 parent goal remains active.
 
+## Genesis-first restoration, 2026-09-27
+
+Nell clarified that Genesis artwork takes precedence wherever available. The
+default tandem now loads five fingerprinted Genesis-only material illustrations,
+covering all four stations and STATUS, rather than the previous PC-first studies.
+Original PC camera, UI ownership, live values, layout and drawing offsets remain
+authoritative. Nine unchanged gunner illustration cells now use remastered donor
+regions; original overwrites reject the entire affected cell. Twenty-two fixed
+label candidates and six STATUS numeric wells require exact original glyph/pixel
+agreement before scalable redraw. A single write into the STATUS tank schematic
+preserves that complete original schematic, avoiding a misleading pristine tank.
+
+Native-08 passes 11,944,300 checks across 21 recorded station/status frames and a
+synthetic damage overwrite, with exit 0. The actual moving-driver fixture reports
+10,537,279 checks and no errors. The legacy native renderer passes 4,096,017 checks
+and exit 0. Cold-boot captures show the new default art. A shared-state comparison
+matches the prior build's complete presentation/state, original framebuffer and
+world image while changing the composite. Precise receipts, including lost
+terminal-handle boundaries on two earlier runs, are in
+`docs/genesis-cockpit-integration.md`. The tracing core remains unchanged at
+`537c524451028b5b5a2952901a40fc2abbf8a5af77adb5e8caba792d2fd7b024`.
+
+Native review caught duplicate gauge framing, driver registration drift and a
+white STATUS texture. Component registration and a lossless two-row texture
+atlas repair those observed faults. Native probes now check actual STATUS artwork
+in addition to protected pixels. A mistaken missing-fixture invocation exposed
+a broken test that could print zero failures after a script error; explicit
+argument/path/structure rejection now returns exit 1. Failed receipts remain.
+
+The Genesis catalog now additionally includes exact STATUS, two Wilson poses,
+four crew portraits, and six ammo/armament information pages. Twenty recorded
+frames reconstruct all 1,433,600 pixels exactly. New selected local illustrations
+include the second Wilson gesture, four crew portraits and AX/SABOT ammunition.
+The HEAT revision was rejected by the image tool's output safety filter; its
+coarse candidate remains excluded. No alternate bypass was attempted. The crew
+information whole-page study was rejected for layout drift and added boxes.
+
+`Play.command` now launches the original-PC tandem; the authored range has a
+separate `Calibration Range.command`. Art Review now forwards capture arguments
+instead of silently opening an interactive window. A launcher unit test verifies
+all three dispatch paths, spaces and forwarded arguments without running a game.
+The inadvertently opened review window was closed normally through its own UI;
+no process was killed. The new gallery contains fifteen comparison pages.
+
+The same assistant implemented and reviewed the art/code; this is not independent
+art acceptance. The final 23-stage gate in
+`artifacts/validation-20260927T174003Z/results.txt` passes, including **198 Python
+tests**, original-file preservation, 31 typography checks and 150 audio checks.
+The fifteen-page native gallery exits 0 with thirty 1440x810 PNGs, audited in
+`artifacts/genesis-art-review-v5/capture-audit.json`. The public Play launcher
+cold-boot run `pc-genesis-play-boot-01` also exits 0. The optional Impeccable
+linter is absent; no dependency was installed, and native render checks provide
+the visual evidence. `docs/graphics-coverage.md` retains the entire all-graphics scope,
+including the distinction between gallery assets and live bindings. Dynamic
+gauges, reticles, maps, remaining portraits/animation, all informational/menu
+flows, world models and effects remain unfinished. Local only. The parent goal
+remains active; this milestone does not close it.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -899,9 +957,11 @@ parent goal remains active.
    Underlying OpenGL defect remains undiagnosed; source files stayed unchanged.
 4. **Campaign/persistence:** original progression, scores, ranks and save format
    remain; the range's save/restore is separate developer functionality.
-5. **Visual restoration:** first four static assets complete as v1 local artwork.
-   Proven-pixel material donors now cover all four stations in the default
-   tandem view. Scalable pixel-verified live text is now enabled; remaining cockpit trims,
+5. **Visual restoration:** Genesis-first material donors now cover all four
+   stations and STATUS in the default tandem. Four crew portraits, another Wilson
+   gesture and two ammunition illustrations join the first static collection in
+   the gallery; these need live bindings. Nine gunner illustration cells and
+   scalable pixel-verified live/fixed text are enabled; remaining cockpit trims,
    bitmap instruments/labels, scenery-bearing text, recognition art,
    Wilson animation, in-world models, effects and all
    UI states remain. Preserve PC information density and four-station controls.
@@ -940,8 +1000,12 @@ parent goal remains active.
 3. Extend original-executable replay coverage to station/weapon modes, enemy
    state, damage, mission outcomes and campaign/persistence, one scenario at a
    time. Current bridge receipts and limitations are in `pc-live-bridge.md`.
-4. Continue the now-proven Genesis capture/extraction pipeline for remaining
-   artwork, then remaster with unchanged source layers retained for comparison.
+4. Continue the Genesis-first restoration register in `graphics-coverage.md`:
+   bind restored static flows to original visible content, complete dynamic
+   instruments, recover remaining portrait/effect variants, then restore world
+   objects. Keep untouched extracts beside derivatives. Resolve the recorded
+   image-tool HEAT rejection without silently substituting PC art or claiming
+   that illustration complete.
 
 No completed subtask closes the parent goal. No exact-gameplay or finished-remake
 claim is supported by the current range and artwork milestones.
