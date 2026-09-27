@@ -14,6 +14,11 @@ run_check() {
       echo "FAIL: $name (engine error despite successful process exit)" >&2
       exit 1
     fi
+    if [ "$name" = pc_information_art ] && ! grep -Eq '^PC_INFORMATION_ART: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (bounded run did not report completion)" >&2
+      exit 1
+    fi
     if [ "$name" = pc_frontend_art ] && ! grep -Eq '^PC_FRONTEND_ART: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
       cat "$OUT/$name.log"
       echo "FAIL: $name (bounded run did not report completion)" >&2
@@ -53,6 +58,7 @@ run_check pc_genesis_cockpits ./tools/godot.sh --headless --script res://tests/t
 run_check pc_portrait_art ./tools/godot.sh --headless --script res://tests/test_pc_portrait_art.gd
 run_check pc_frontend_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_frontend_art.gd
 run_check pc_motor_pool_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_motor_pool_art.gd -- --text
+run_check pc_information_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_information_art.gd
 run_check pc_typography ./tools/godot.sh --headless --script res://tests/test_pc_typography.gd
 run_check geometry ./tools/godot.sh --headless --script res://tests/test_geometry.gd
 run_check audio ./tools/godot.sh --headless --script res://tests/test_audio.gd

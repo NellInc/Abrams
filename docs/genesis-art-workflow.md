@@ -173,8 +173,9 @@ background padding. Their original external illustrations remain the visual
 reference. The first generated set drifted toward a yellow-green grid and
 saturated cyan. The second pass corrected the palette using sampled Genesis
 RGB references. Both sets and exact built-in image-tool prompts are retained.
-These are selected gallery illustrations, not live information-screen bindings
-or pixel-exact enlargements. The implementing assistant reviewed both source
+These selected illustrations now bind to the original PC information pages,
+as documented in `genesis-information-integration.md`. They are not pixel-exact
+enlargements or a complete restoration of those pages. The implementing assistant reviewed both source
 and generated art. `artifacts/genesis-armament-gallery-02` contains all 36 native
 original/remaster captures; the process reports `ART_REVIEW_PASS: 18 scenes`.
 

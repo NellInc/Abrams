@@ -17,6 +17,7 @@ var motor_indices := PackedByteArray()
 var portraits: Array[Texture2D] = []
 var active: Dictionary = {}
 var text_enabled := true
+var information_art = preload("res://scripts/pc_information_art.gd").new()
 var arming_panel = preload("res://scripts/pc_arming_panel_art.gd").new()
 var typography = preload("res://scripts/pc_typography.gd").new()
 
@@ -27,6 +28,8 @@ func _init() -> void:
 	var effect := ShaderMaterial.new()
 	effect.shader = preload("res://scripts/pc_frontend_art.gdshader")
 	material = effect
+	add_child(information_art)
+	information_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(arming_panel)
 	arming_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(typography)
@@ -35,6 +38,7 @@ func _init() -> void:
 
 func clear() -> void:
 	active.clear()
+	information_art.clear()
 	arming_panel.clear()
 	typography.clear_runs()
 	visible = false
@@ -46,6 +50,7 @@ func load_sources(root_path: String) -> bool:
 	catalog.clear()
 	portraits.clear()
 	_load_motor_pool(root_path)
+	information_art.load_sources(root_path)
 	arming_panel.load_sources(root_path)
 	var path := root_path.path_join("local-art/pc-frontend-v1/office.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA: return false
@@ -150,6 +155,12 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}) 
 	clear()
 	if source==null or source.get_size()!=Vector2i(320,200): return false
 	if source.get_format()!=Image.FORMAT_RGB8: return false
+	if program.get("name")=="START":
+		if not information_art.set_frame(source,program): return false
+		texture = ImageTexture.create_from_image(source)
+		active = {"scene":"information","name":information_art.active.name}
+		visible = true
+		return true
 	if program.get("name")=="SIM": return _set_motor_pool(source,presentation)
 	if catalog.is_empty() or program.get("name") not in ["BRIEF","END"]: return false
 	var bytes := source.get_data()

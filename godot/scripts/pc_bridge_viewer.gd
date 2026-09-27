@@ -95,6 +95,22 @@ func _initialize() -> void:
 		if not boot_mode or "--capture-briefing" in args or "--capture-station" in args or "--capture-crew" in args:
 			bridge.failure = "Motor-pool capture requires cold boot and no other capture route"
 		else: auto_steps = auto_steps.slice(0,23)
+	if capture and "--capture-information" in args:
+		var index := args.find("--capture-information")+1
+		var page: String = args[index] if index<args.size() else ""
+		var conflict := ["--capture-briefing","--capture-motor-pool","--capture-station","--capture-crew"].any(func(flag):return flag in args)
+		if not boot_mode or conflict or page not in ["crew","ax","heat","sabot","coax","cannon","smoke"]:
+			bridge.failure = "Information capture requires cold boot, a supported page, and no other route"
+		else:
+			auto_steps.clear()
+			var route: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_information_steps.json"))
+			for step in route:
+				var remaining := int(step.frames)
+				while remaining>0:
+					var chunk := mini(remaining,600)
+					auto_steps.append([chunk,step.keys])
+					remaining-=chunk
+				if step.label==page: break
 
 	if capture and "--capture-station" in args:
 		var station_arg := args.find("--capture-station")+1
@@ -277,7 +293,7 @@ func _apply_sample(message: Dictionary) -> void:
 		status.text = "ORIGINAL PC: " + str(previous_program.get("name","STARTING"))
 		caption.text = "Original menu/briefing or SIM initialization. Showing the original framebuffer; no substitute simulation."
 		if trace_mode and cockpit_art_requested and tandem_frame.frontend_art.set_frame(image,previous_program,previous_presentation):
-			caption.text = "GENESIS OFFICE / WILSON: " + tandem_frame.frontend_art.active.name + " | original PC dialogue, timing and controls"
+			caption.text = "GENESIS ART: " + tandem_frame.frontend_art.active.name + " | original PC content, timing and controls"
 		return
 	if message.has("static_wire_geometry"):
 		world_view.set_geometry(message.static_wire_geometry)

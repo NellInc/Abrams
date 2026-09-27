@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 from PIL import Image
 
-from tools.build_pc_frontend_catalog import build, compose, motor_pool, arming_panel, PALETTE
+from tools.build_pc_frontend_catalog import build, compose, motor_pool, arming_panel, information, PALETTE
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -60,6 +60,27 @@ class FrontendCatalogTests(unittest.TestCase):
         self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),local.read_bytes())
         ram=ROOT/'artifacts/pc-motor-pool-loader-diagnostic-01/boot-21.bin'
         if ram.exists():self.assertEqual(verify_loaded(ram.read_bytes(),sprite)['pixels_checked'],9944)
+
+    def test_information_sources_and_native_loaded_planes(self):
+        data=information(ROOT/'GAME',ROOT/'artifacts/pc-information-baseline-02')
+        local=ROOT/'local-art/pc-information-v1/information.json'
+        self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),local.read_bytes())
+        self.assertEqual(data['recognition_height'],175)
+        self.assertEqual([e['name'] for e in data['entries']],['ax','sabot','coax','cannon','smoke'])
+        for entry in data['entries']:
+            x,y,w,h=entry['rect']
+            self.assertLess(y+h,175)
+            for proof in entry['loaded_source_proof']:
+                self.assertEqual(proof['pixels_checked'],proof['mask_bits_checked'])
+
+    def test_information_route_and_native_launcher_fixture_agree(self):
+        from tools.capture_pc_session import information_steps, INFORMATION_PAGES
+        route=information_steps()
+        self.assertEqual(len(route),72)
+        self.assertEqual(sum(s['frames'] for s in route),5749)
+        self.assertEqual(len({s['label'] for s in route}),len(route))
+        self.assertEqual(route,json.loads((ROOT/'godot/tests/fixtures/pc_information_steps.json').read_text()))
+        self.assertEqual([s['label'] for s in route if s['label'] in INFORMATION_PAGES],list(INFORMATION_PAGES))
 
 
 if __name__=='__main__':unittest.main()

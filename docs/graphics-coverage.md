@@ -30,8 +30,8 @@ is still being recovered; no overall completion percentage is justified.
 | Crew portraits | Four native crew-information portraits extracted | Four 1254x1254 derivatives; fully matched source faces bind to live crew lines, native gunner and loader verified | Live commander/driver evidence, injury/talking/other poses and radio bindings |
 | Motor pool | Native scene and menu extracted | Clean-contour v2 live; seven verified scalable text runs and complete-source-gated Genesis panel; governor, all three allocation fields and mission reentry checked | Partial/unrecognized drawing retains PC pixels; remaining limits, settings and transition variants |
 | Crew information | Native diagram and portrait placements extracted | Four portrait derivatives; whole-page study rejected for added boxes/layout drift | Faithful complete page composition and PC information-flow binding |
-| Ammunition information | AX, HEAT and SABOT pages reconstructed exactly | AX and SABOT illustrations at 2172x724 in gallery; HEAT revision blocked by image tool | HEAT art, original text/layout composition, animation variants and PC binding |
-| Armament information | Coax, cannon and smoke pages reconstructed exactly | Three high-resolution Genesis-derived illustrations in gallery, palette revision selected | Live labels/values, correct PC content and bindings; animation/state variants |
+| Ammunition information | AX, HEAT and SABOT pages reconstructed exactly | AX and SABOT illustrations at 2172x724 in gallery and original-PC pages; HEAT revision blocked by image tool | HEAT art, scalable original text/layout, remaining variants |
+| Armament information | Coax, cannon and smoke pages reconstructed exactly | Three high-resolution Genesis-derived illustrations in gallery and original-PC pages, palette revision selected | Scalable PC labels/values, top-down tank highlights and page frames; remaining variants |
 | Recognition information | Genesis counterpart not yet fully inventoried | PC IDENTIFY only a format/layout oracle | Find Genesis equivalents before selecting visual donors; all vehicle identities and pages |
 | Maps and mission information | Commander map visible; long-range and mission pages incomplete | Original PC map retained live | Complete Genesis references, scalable map symbols, original information/visibility, briefing/debrief mission variants |
 | Menus, pause, saves, scores, endings | Some Genesis menus captured; full families unverified | Original PC flows retained | Inventory complete states, source-matched hi-res frames/type, original focus/input/saved-game behaviour |
@@ -66,5 +66,6 @@ illustrations. The cockpit/status, verified instrument cells, eligible crew port
 matched office/Wilson scenes and the motor pool bind these images into the original-PC tandem.
 Portrait evidence is in `genesis-portrait-integration.md`; the extra live
 facepalm derivative and briefing evidence are in `genesis-briefing-integration.md`;
-motor-pool evidence is in `genesis-motor-pool-integration.md`. Gallery availability must
+motor-pool evidence is in `genesis-motor-pool-integration.md`; five information
+illustration bindings are in `genesis-information-integration.md`. Gallery availability must
 never be reported as completed live-game integration.

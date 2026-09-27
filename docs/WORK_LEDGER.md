@@ -1131,6 +1131,59 @@ Impeccable tool remains absent. These three assets are gallery-ready only;
 original-PC information screen bindings, layouts, labels and variants remain.
 No HEAT generation retry, public upload, publication or proprietary-art commit.
 
+## Genesis information-page bindings (2026-09-27)
+
+All seven original M1-Info pages were reached through ordinary PC keys. The
+three-level menus need sufficiently long input pulses; diagnostic labels in
+`pc-information-probe-01` through `07` describe attempted inputs, not always the
+actual selected page. The final authoritative route is `information_steps()`
+in `capture_pc_session.py`, mirrored by the tested native launcher fixture.
+The PC START executable owns every transition and remains active throughout.
+
+Five Genesis illustrations now bind to AX, SABOT, coax, cannon and smoke pages.
+A full 320x175 content-prefix match is required, plus pinned original executable,
+bitmap, recognition catalog and generated image hashes. Six native bitmap
+instances verify 40,456 original pixels and preservation-mask bits. The first
+full-frame hash gate failed six pages because row 175 retains variable pixels
+from the animated menu. Direct comparison isolated every difference to that
+untouched border row. Rows 175 through 199 remain original in every replacement.
+Changed captions, partial draws and unsupported crew/HEAT pages also stay original.
+
+Verified evidence:
+
+* `pc-information-baseline-02` and `pc-information-trace-01`: every one of 5,749
+  RAM/video/input records, all 72 stage states and original program boundaries
+  agree. All seven information pages and their settled waits match their source
+  fingerprints. The two raw report arrays were compared again directly.
+* `pc-information-native-01`: 11,559,472 native checks, zero errors; all five
+  illustrations, source-prefix/caption/image rejection, unsupported-page
+  fallback, exact protected pixels and Genesis donor/filter probes. Native
+  source and remastered screenshots were visually inspected by their implementer.
+* `pc-information-headless-01`: 37 checks, zero errors. Focused Python catalog,
+  route, session and launcher tests: 14 passed.
+* `validation-20260927T202710Z`: terminal exit 0, all 27 stages pass, including
+  210 Python tests, unchanged original files, frontend/audio and runtime gates.
+* `pc-information-live-02` and `pc-information-original-live-02`: both actual
+  Play captures exit 0. The receipt `pc-information-launcher-parity-02.json`
+  confirms equal source PNG, state, program, presentation and all 60 samples;
+  only the remastered composite has the active Genesis cannon illustration.
+
+The first live/original launcher attempts failed the bridge's 600-frame request
+limit at the 720-frame boot wait. The launcher now partitions such waits while
+preserving their duration and key state. Both failed-01 logs remain. Their
+corrected-02 terminal results and rendered image were inspected. No emulator
+instruction, simulation rule, proprietary reference file or original input event
+was replaced. Optional Impeccable remains unavailable; no tool was installed.
+The earlier idle test PID 87427 was confirmed still sleeping and was not signalled,
+respecting the pending unanswered cleanup request.
+
+Details and reproduction are in `genesis-information-integration.md`. Typography,
+outer frames, top-down weapon-location diagrams, complete crew composition and
+HEAT art remain open. The existing AX/SABOT grid palette also merits comparison
+against the sampled native Genesis palette before declaring those families
+finished. The new armament v2 palette correction should guide that pass.
+No assets were published or committed, and the whole remaster goal remains active.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting
@@ -1155,8 +1208,9 @@ No HEAT generation retry, public upload, publication or proprietary-art commit.
    with native gunner and loader evidence. The office and three Wilson poses now
    bind to original briefing/debrief frames with exact visible dialogue decoding;
    the motor pool now has its Genesis background, verified scalable arming panel and
-   text live, including governor/focus variants. Other gallery families need live
-   bindings. Nine gunner illustration cells and
+   text live, including governor/focus variants. Five information illustrations
+   now bind to original START pages; their page typography, frames and tank
+   schematics remain open. Other gallery families need live bindings. Nine gunner illustration cells and
    scalable pixel-verified live/fixed text are enabled; remaining cockpit trims,
    bitmap instruments/labels, scenery-bearing text, recognition art,
    Wilson animation, in-world models, effects and all

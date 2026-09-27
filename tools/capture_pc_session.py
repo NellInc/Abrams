@@ -25,6 +25,39 @@ except ModuleNotFoundError:
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Exact first 175 rows: the original leaves variable menu residue in row 175.
+# This row and all later pixels remain untouched by presentation replacement.
+INFORMATION_HEIGHT = 175
+INFORMATION_PAGES = {
+    'crew':'ea3537272108eef43162fb682f854fe51fee92ad26eed41e24a413e06a84e4c8',
+    'ax':'7bade03c6160c7ffde9c1bba75f848c1f24a3ddf5d6e958cf3983ccc2d8836b5',
+    'heat':'c96c35c736bea17133812caf4103ee1f59c5e21e76680fa131cb2eb3e7b55816',
+    'sabot':'6eaa9f227c3002c35b0b5cdecb18d8b0bed82c3e80edb3309a3e40fbe1ee9a76',
+    'coax':'ef61948e2b478e785fd5d0282b79b07d277f348a163a0ecad8ca8870e58c66ec',
+    'cannon':'e91b9cf3a1e51e999b74fa6e1fc74115deceb96ba647ed01527a4c83d36d7c01',
+    'smoke':'a12eaba06e9e7186efe795bab66ce88cfb9ce20302b283dc58530375630e961e'}
+
+
+def information_steps():
+    try:
+        from tools.bootstrap_pc_source import STEPS
+    except ModuleNotFoundError:
+        from bootstrap_pc_source import STEPS
+    route=[{'label':f'boot-{i:02d}','frames':n,'keys':keys} for i,(n,keys) in enumerate(STEPS[:9])]
+    actions=[('campaign-select','right'),('information-select','right'),('information-menu','return'),
+             ('crew','return'),('crew-close','escape'),('ammo-select','down'),('ammo-menu','return'),
+             ('ax','return'),('ax-close','escape'),('heat-select','down'),('heat','return'),
+             ('heat-close','escape'),('sabot-select','down'),('sabot','return'),('sabot-close','escape'),
+             ('ammo-close','escape'),('armament-select','down'),('armament-menu','return'),
+             ('coax','return'),('coax-close','escape'),('cannon-select','down'),('cannon','return'),
+             ('cannon-close','escape'),('smoke-select','down'),('smoke','return'),('smoke-close','escape'),
+             ('armament-close','escape'),('information-close','escape')]
+    for label,key in actions:
+        route.extend([{'label':label+'-press','frames':10,'keys':[key]},
+                      {'label':label,'frames':90,'keys':[]}])
+        if label in INFORMATION_PAGES: route.append({'label':label+'-wait','frames':180,'keys':[]})
+    return route
+
 
 def steps(motor_pool_controls=False, motor_pool_allocations=False):
     fixture = ROOT / 'godot/tests/fixtures'
@@ -57,7 +90,10 @@ def main():
     p.add_argument('--capture-ui', action='store_true', help='save paired original UI/plate masks at stage boundaries')
     p.add_argument('--motor-pool-controls', action='store_true', help='exercise the original governor menu with ordinary arrow keys')
     p.add_argument('--motor-pool-allocations', action='store_true', help='exercise all original ammunition fields with ordinary arrow keys')
+    p.add_argument('--information', action='store_true', help='capture all seven original M1-Info pages and return to the main menu')
     args = p.parse_args()
+    if args.information and (args.motor_pool_controls or args.motor_pool_allocations):
+        p.error('information and motor-pool routes are separate')
     other = json.loads(args.compare.read_text()) if args.compare else None
     if any(args.output.resolve().is_relative_to((ROOT / name).resolve()) for name in ('GAME','GENESIS')):
         p.error('output must be outside original source directories')
@@ -82,7 +118,8 @@ def main():
             core.run(1)  # Native framebuffer priming after snapshot restore.
             program = active_program(core.conventional_memory())
             if not program or program['name'] != 'START': raise ValueError('comparison requires a neutral START snapshot')
-        for step in steps(args.motor_pool_controls,args.motor_pool_allocations):
+        route=information_steps() if args.information else steps(args.motor_pool_controls,args.motor_pool_allocations)
+        for step in route:
             for _ in range(step['frames']):
                 session.step(1,step['keys'])
                 records.append({'frame':core.frame, 'keys':step['keys'],
@@ -92,6 +129,8 @@ def main():
             sample["audio"] = session.drain_audio()
             filename = step['label']+'.png'
             core.screenshot().save(args.output/filename)
+            if args.information and step['label'] in INFORMATION_PAGES:
+                (args.output/(step['label']+'.bin')).write_bytes(core.last_video_ram)
             samples.append(step | sample | {'frame':core.frame, 'image':filename})
             view=sample['presentation']
             if args.capture_ui and (view.get('plate_overlay') or {}).get('mask_png'):
@@ -105,19 +144,28 @@ def main():
                     'image':filename,'mask':mask,'plate_mask':plate})
         by_name = {sample['label']:sample for sample in samples}
         programs = [entry['program']['name'] if entry['program'] else None for entry in session.transitions]
-        checks = {
-            'program_lifecycle': programs == ['START','BRIEF','SIM','END','START','BRIEF','SIM'],
-            'debrief_is_original_END': by_name['debrief']['program']['name']=='END',
-            'menus_have_no_SIM_state_or_geometry': all(
-                s['state'] is None and s['presentation'].get('draw_pass') is None
-                for s in samples if not s['program'] or s['program']['name']!='SIM'),
-            'second_mission_initialized': bool(by_name['second-mission']['state']) and
-                by_name['second-mission']['state']['scenario_resource_index']==6,
-        }
-        if args.mode == 'trace':
-            checks['fresh_second_render_epoch'] = by_name['second-mission']['render_epoch']==2
-            checks['second_mission_paired'] = bool(by_name['second-mission']['presentation'].get('draw_pass'))
-            checks['quit_dialog_fully_original'] = by_name['quit-dialog']['presentation'].get('ui_overlay',{}).get('ui_pixels')==64000
+        if args.information:
+            checks={'START_owns_information': programs==['START'],
+                    'no_SIM_state_or_geometry':all(s['state'] is None and s['presentation'].get('draw_pass') is None for s in samples)}
+            for name,pin in INFORMATION_PAGES.items():
+                from PIL import Image
+                picture=Image.open(args.output/(name+'.png')).convert('RGB')
+                checks['original_page_'+name]=hashlib.sha256(picture.crop((0,0,320,INFORMATION_HEIGHT)).tobytes()).hexdigest()==pin
+                checks['stable_page_'+name]=(args.output/(name+'.png')).read_bytes()==(args.output/(name+'-wait.png')).read_bytes()
+        else:
+            checks = {
+                'program_lifecycle': programs == ['START','BRIEF','SIM','END','START','BRIEF','SIM'],
+                'debrief_is_original_END': by_name['debrief']['program']['name']=='END',
+                'menus_have_no_SIM_state_or_geometry': all(
+                    s['state'] is None and s['presentation'].get('draw_pass') is None
+                    for s in samples if not s['program'] or s['program']['name']!='SIM'),
+                'second_mission_initialized': bool(by_name['second-mission']['state']) and
+                    by_name['second-mission']['state']['scenario_resource_index']==6,
+            }
+            if args.mode == 'trace':
+                checks['fresh_second_render_epoch'] = by_name['second-mission']['render_epoch']==2
+                checks['second_mission_paired'] = bool(by_name['second-mission']['presentation'].get('draw_pass'))
+                checks['quit_dialog_fully_original'] = by_name['quit-dialog']['presentation'].get('ui_overlay',{}).get('ui_pixels')==64000
         report = {'mode':args.mode,'core_sha256':core.core_sha256,'source_commit':manifest['commit'],
             'initial_unrecorded_frames':240,'records':records,'samples':samples,
             'boot_state_sha256':hashlib.sha256(args.boot_state.read_bytes()).hexdigest() if args.boot_state else None,
@@ -125,7 +173,7 @@ def main():
             'transitions':session.transitions,'checks':checks,
             'plate_epochs':[c.plates.report() for c in collectors],
             'ui_presentations':ui_presentations,'presentations':presentations,
-            'scope':'bounded original cold-boot, quit and reentry; compare full paired RAM/video/input records separately'}
+            'scope':('all seven original M1-Info pages; page recognition excludes preserved row 175 and lower border' if args.information else 'bounded original cold-boot, quit and reentry; compare full paired RAM/video/input records separately')}
         if args.compare:
             mismatches = [i for i,(a,b) in enumerate(zip(records,other['records'])) if a!=b]
             comparable = lambda r: [{k:s[k] for k in ('label','frame','keys','program','state')} for s in r['samples']]

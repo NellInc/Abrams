@@ -69,8 +69,9 @@ The local artwork collection includes the title, Colonel Wilson in three
 poses, his office, motor pool, four crew portraits, four cockpit plates,
 systems status, two ammunition illustrations and three armament illustrations. The gallery has 18 comparison
 pages. The additional facepalm variant appears in the live briefing restoration.
-Eligible crew portraits, office/Wilson scenes and the motor pool bind to the PC game; information
-illustrations and other frontend scenes still need live binding.
+Eligible crew portraits, office/Wilson scenes, the motor pool and five information
+illustrations bind to the PC game. Remaining information-page components and
+other frontend scenes still need restoration and live binding.
 Assets are available locally under
 `local-art/genesis/`. Untouched PNG extracts, original layered OpenRaster,
 palettes, exact prompts and source receipts accompany it. The original cartridge

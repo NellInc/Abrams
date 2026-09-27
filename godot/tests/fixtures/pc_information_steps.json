@@ -1,0 +1,426 @@
+[
+  {
+    "label": "boot-00",
+    "frames": 3,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "boot-01",
+    "frames": 720,
+    "keys": []
+  },
+  {
+    "label": "boot-02",
+    "frames": 3,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "boot-03",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "boot-04",
+    "frames": 3,
+    "keys": [
+      "space"
+    ]
+  },
+  {
+    "label": "boot-05",
+    "frames": 300,
+    "keys": []
+  },
+  {
+    "label": "boot-06",
+    "frames": 60,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "boot-07",
+    "frames": 120,
+    "keys": []
+  },
+  {
+    "label": "boot-08",
+    "frames": 300,
+    "keys": []
+  },
+  {
+    "label": "campaign-select-press",
+    "frames": 10,
+    "keys": [
+      "right"
+    ]
+  },
+  {
+    "label": "campaign-select",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "information-select-press",
+    "frames": 10,
+    "keys": [
+      "right"
+    ]
+  },
+  {
+    "label": "information-select",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "information-menu-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "information-menu",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "crew-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "crew",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "crew-wait",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "crew-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "crew-close",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "ammo-select-press",
+    "frames": 10,
+    "keys": [
+      "down"
+    ]
+  },
+  {
+    "label": "ammo-select",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "ammo-menu-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "ammo-menu",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "ax-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "ax",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "ax-wait",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "ax-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "ax-close",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "heat-select-press",
+    "frames": 10,
+    "keys": [
+      "down"
+    ]
+  },
+  {
+    "label": "heat-select",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "heat-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "heat",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "heat-wait",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "heat-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "heat-close",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "sabot-select-press",
+    "frames": 10,
+    "keys": [
+      "down"
+    ]
+  },
+  {
+    "label": "sabot-select",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "sabot-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "sabot",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "sabot-wait",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "sabot-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "sabot-close",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "ammo-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "ammo-close",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "armament-select-press",
+    "frames": 10,
+    "keys": [
+      "down"
+    ]
+  },
+  {
+    "label": "armament-select",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "armament-menu-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "armament-menu",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "coax-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "coax",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "coax-wait",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "coax-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "coax-close",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "cannon-select-press",
+    "frames": 10,
+    "keys": [
+      "down"
+    ]
+  },
+  {
+    "label": "cannon-select",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "cannon-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "cannon",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "cannon-wait",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "cannon-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "cannon-close",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "smoke-select-press",
+    "frames": 10,
+    "keys": [
+      "down"
+    ]
+  },
+  {
+    "label": "smoke-select",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "smoke-press",
+    "frames": 10,
+    "keys": [
+      "return"
+    ]
+  },
+  {
+    "label": "smoke",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "smoke-wait",
+    "frames": 180,
+    "keys": []
+  },
+  {
+    "label": "smoke-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "smoke-close",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "armament-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "armament-close",
+    "frames": 90,
+    "keys": []
+  },
+  {
+    "label": "information-close-press",
+    "frames": 10,
+    "keys": [
+      "escape"
+    ]
+  },
+  {
+    "label": "information-close",
+    "frames": 90,
+    "keys": []
+  }
+]
