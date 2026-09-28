@@ -209,3 +209,98 @@ occurrence and human performance/mix acceptance remain open.
 Working if: all 24 source captions select their own verified dry take only after
 the complete original message is displayed, while unrecognized, partial, old or
 muted messages never catch up audibly later.
+
+## Source warnings and outcome calls, 28 September 2026
+
+`godot/data/pc_warning_voice_script.json` adds eight dry Gemini 3.8 Flash TTS
+performances: out of fuel, overheating, assigned-area boundary, non-amphibious
+vehicle, steep slope, inoperable smoke dischargers, exhausted smoke mortars and
+destroyed convoy. The original captions are unchanged. Orus, Iapetus and Algenib
+are authored casting choices for original portrait indices 0, 1 and 2. These
+indices do not establish named crew roles. The PC message catalogue now has
+392 performances, including its 360 bearings and 24 damage reports.
+
+`tools/pc_warning_voice_oracle.py` executes nine original assignment blocks in
+pinned Unicorn 2.1.4. The assigned-area caption has two distinct original pointer
+variants. Eight blocks use setter completion 3d8e; overheating uses 3dd2. The
+oracle proves wording, portrait index, pointers and setter identity after the
+caller selects the branch. It does not prove branch eligibility, whole-routine
+behaviour, timing or occurrence during play. No live RAM or original instruction
+is modified. The fixture is `godot/tests/fixtures/pc_warning_voice_oracle.json`.
+
+Generation and blind-transcription masters are retained under
+`local-audio/pc-warning-gemini-3.8-v1`. Seven transcriptions matched immediately.
+The eighth transcribed “M1” as the correctly spoken “M one”. The comparator now
+accepts that exact lexical equivalence only when the expected script contains
+the designation M1. It rejects M two, M eleven, M won and M1A1; bearings retain
+their separate digit-word checks. The original failed comparison is preserved
+as `qa-first/transcription-check-original.json`. The corrected report reevaluates
+the same raw recognition response offline, with an explicit revalidation record.
+Neither speech nor transcript was changed and no second recognition was claimed.
+
+`godot/assets/audio/pc_warning_provenance.json` retains the model, authored voice,
+request, unmodified WAV hashes, original transcript, corrected comparison and
+revalidation custody. All eight installed files equal their generated masters.
+They are mono 16-bit 24 kHz WAVs. Automated wording checks do not substitute for
+human listening or final mix acceptance.
+
+Python and Godot both require the exact source caption, portrait, assignment IP
+and an allowed pointer sequence. Single-part warnings qualify only with their
+single expected part; the overheating prefix and suffix must both be complete.
+Existing pixel ownership, current-frame visibility, monotone message identity,
+epoch, age and original sound gates remain authoritative. Headless and native
+Godot checks each pass 731 assertions, including all eight new sample players
+and both assigned-area source variants. These per-cue tests use qualified
+synthetic packets; seven of the new calls still lack individual live occurrence
+evidence. Smoke exhaustion has a separate real-source/native route below.
+
+```sh
+.runtime/pc-analysis-venv/bin/python tools/pc_warning_voice_oracle.py \
+  --check-fixture godot/tests/fixtures/pc_warning_voice_oracle.json \
+  --output artifacts/pc-warning-oracle-check.json
+python3 tools/install_pc_crew_voice.py --bank warning \
+  --source local-audio/pc-warning-gemini-3.8-v1 --dry-run
+```
+
+Working if: each installed warning can speak only on its complete original
+displayed assignment, and a warning first displayed under F5 mute is consumed
+silently without replay when sound returns.
+
+### Live smoke-warning acceptance
+
+`pc_warning_steps.json` uses ordinary F2/F1 station changes to reestablish
+original cockpit provenance after the diagnostic RAM snapshot. It exhausts all
+six smoke mortars, requests an empty discharge, mutes with F5, requests another,
+restores sound and requests a fresh warning. The initial neutral frame matches
+the production host's ready packet; each later request advances one PC frame.
+
+`artifacts/pc-warning-trace-03/comparison.json` passes eleven checks. All 1,060
+original input, paired RAM, framebuffer and queued-message records match
+`pc-warning-baseline-03`. The final source state/program matches. Complete
+warnings first appear at route indices 631, 759 and 944, with sound gates true,
+false and true and identities 1, 2 and 3.
+
+`artifacts/pc-warning-native-02/report.json` passes 7,549 checks through the actual
+production viewer and source host. All source RAM/video boundaries and audio
+events match the parity-tested trace. Every warning's current RGB crop matches
+its original hash; high-resolution type, portrait and Genesis cockpit are active.
+Two generated sample starts and one silent consumption are observed. The 98
+frames after F5 restore before the fresh warning stay silent. The native process
+and its original-PC child exit successfully, with no script/engine errors.
+
+```sh
+python3 tools/capture_pc_dialogue.py --mode trace --warnings --capture-ui \
+  --state artifacts/pc-source-boot-01/mission-entry/reference.state \
+  --output artifacts/pc-warning-trace-new
+python3 tools/capture_pc_dialogue.py --mode baseline --warnings \
+  --state artifacts/pc-source-boot-01/mission-entry/reference.state \
+  --output artifacts/pc-warning-baseline-new
+python3 tools/verify_pc_dialogue.py \
+  --trace artifacts/pc-warning-trace-new/report.json \
+  --baseline artifacts/pc-warning-baseline-new/report.json \
+  --output artifacts/pc-warning-trace-new/comparison.json
+./tools/godot.sh --script res://tests/test_pc_warning_bridge.gd -- \
+  --fixture "$PWD/artifacts/pc-warning-trace-new/report.json" \
+  --output "$PWD/artifacts/pc-warning-native-new" \
+  --capture --trace --play --frame-audit
+```

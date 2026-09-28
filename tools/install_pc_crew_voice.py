@@ -13,11 +13,11 @@ import re
 try:
     from tools.check_crew_transcripts import normalized,wording_matches
     from tools.generate_crew_voice import validate_wav,pronounce_headings,PREFERRED
-    from tools.pc_crew_voice import SCRIPT,DAMAGE
+    from tools.pc_crew_voice import SCRIPT,DAMAGE,WARNINGS
 except ModuleNotFoundError:
     from check_crew_transcripts import normalized,wording_matches
     from generate_crew_voice import validate_wav,pronounce_headings,PREFERRED
-    from pc_crew_voice import SCRIPT,DAMAGE
+    from pc_crew_voice import SCRIPT,DAMAGE,WARNINGS
 
 DIGITS='zero one two three four five six seven eight nine'.split()
 ROOT=Path(__file__).resolve().parents[1]
@@ -45,7 +45,8 @@ def prepare(source,script_path=SCRIPT):
     if manifest['script_sha256']!=hashlib.sha256(script_path.read_bytes()).hexdigest():raise ValueError('generation script changed')
     if manifest['voices'].keys()!=script['cues'].keys():raise ValueError('catalogue coverage differs')
     qa=source/'qa-first/transcription-check.json';numbers=source/'qa-bearing-delivery/number-delivery-check.json'
-    transcripts=json.loads(qa.read_text())['results'];delivery=json.loads(numbers.read_text()) if numbers.exists() else {}
+    qa_report=json.loads(qa.read_text())
+    transcripts=qa_report['results'];delivery=json.loads(numbers.read_text()) if numbers.exists() else {}
     if transcripts.keys()!=manifest['voices'].keys():raise ValueError('QA coverage differs')
     voices={};payloads={};dest=ROOT/'godot/assets/audio'
     for name,voice in manifest['voices'].items():
@@ -65,14 +66,15 @@ def prepare(source,script_path=SCRIPT):
     receipt={'scope':script['scope'],'status':'Automated wording checked; digit delivery checked where required; human listening review pending',
              'script_sha256':manifest['script_sha256'],'voices':voices,
              'qa_inputs':[{'path':str(f),'sha256':hashlib.sha256(f.read_bytes()).hexdigest()} for f in (qa,numbers) if f.exists()]}
+    if 'revalidation' in qa_report:receipt['qa_revalidation']=qa_report['revalidation']
     return payloads,receipt
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--source',type=Path,required=True);p.add_argument('--dry-run',action='store_true')
-    p.add_argument('--bank',choices=('crew','damage'),default='crew');a=p.parse_args()
-    payloads,receipt=prepare(a.source,DAMAGE if a.bank=='damage' else SCRIPT)
+    p.add_argument('--bank',choices=('crew','damage','warning'),default='crew');a=p.parse_args()
+    payloads,receipt=prepare(a.source,{'crew':SCRIPT,'damage':DAMAGE,'warning':WARNINGS}[a.bank])
     if not a.dry_run:
         for path,raw in payloads.items():path.write_bytes(raw)
         (ROOT/'godot/assets/audio'/f'pc_{a.bank}_provenance.json').write_text(json.dumps(receipt,indent=2)+'\n')

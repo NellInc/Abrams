@@ -1,0 +1,143 @@
+{
+  "source_sha256": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099",
+  "engine": "unicorn-2.1.4/x86-16",
+  "unpack": {
+    "source_sha256": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099",
+    "decoded_sha256": "33f5f41dd5f5579d29cccc7e2f6f6942a9463883afca0c3a838c1b6ccc321eea",
+    "relocated_sha256": "777097ff83a8eafb83dfa075195d2238dbab77caced64d22d3707b29607f6002",
+    "decoded_bytes": 129712,
+    "relocations": 671,
+    "status": "exact CPU comparison"
+  },
+  "scope": "Execute original warning assignment blocks, after their branch is selected.\n\nNo live memory or original instruction is modified. Caller-selected basic blocks\nprove wording, portrait, pointers and setter identity, not trigger eligibility,\nwhole-routine behaviour, timing, or visible occurrence in a running mission.\n",
+  "rows": [
+    {
+      "name": "out_of_fuel",
+      "entry_ip": 28749,
+      "return_ip": 28760,
+      "assignment_ip": 15758,
+      "speaker": 2,
+      "pointers": [
+        3342
+      ],
+      "parts": [
+        "we are out of fuel"
+      ],
+      "caption": "we are out of fuel"
+    },
+    {
+      "name": "engine_overheating",
+      "entry_ip": 28800,
+      "return_ip": 28816,
+      "assignment_ip": 15826,
+      "speaker": 2,
+      "pointers": [
+        3210,
+        3361
+      ],
+      "parts": [
+        "Engine",
+        " is overheating"
+      ],
+      "caption": "Engine is overheating"
+    },
+    {
+      "name": "assigned_area",
+      "entry_ip": 30350,
+      "return_ip": 30360,
+      "assignment_ip": 15758,
+      "speaker": 0,
+      "pointers": [
+        3404
+      ],
+      "parts": [
+        "We cannot leave the assigned area"
+      ],
+      "caption": "We cannot leave the assigned area"
+    },
+    {
+      "name": "assigned_area",
+      "entry_ip": 8397,
+      "return_ip": 8407,
+      "assignment_ip": 15758,
+      "speaker": 0,
+      "pointers": [
+        626
+      ],
+      "parts": [
+        "We cannot leave the assigned area"
+      ],
+      "caption": "We cannot leave the assigned area"
+    },
+    {
+      "name": "not_amphibious",
+      "entry_ip": 30413,
+      "return_ip": 30360,
+      "assignment_ip": 15758,
+      "speaker": 2,
+      "pointers": [
+        3438
+      ],
+      "parts": [
+        "Sir, the M1 is not amphibious."
+      ],
+      "caption": "Sir, the M1 is not amphibious."
+    },
+    {
+      "name": "slope_too_steep",
+      "entry_ip": 30515,
+      "return_ip": 30360,
+      "assignment_ip": 15758,
+      "speaker": 2,
+      "pointers": [
+        3469
+      ],
+      "parts": [
+        "Sir, that slope is too steep."
+      ],
+      "caption": "Sir, that slope is too steep."
+    },
+    {
+      "name": "smoke_inoperable",
+      "entry_ip": 31711,
+      "return_ip": 31722,
+      "assignment_ip": 15758,
+      "speaker": 1,
+      "pointers": [
+        3955
+      ],
+      "parts": [
+        "Smoke dischargers are inoperable"
+      ],
+      "caption": "Smoke dischargers are inoperable"
+    },
+    {
+      "name": "no_smoke_mortars",
+      "entry_ip": 31735,
+      "return_ip": 31722,
+      "assignment_ip": 15758,
+      "speaker": 1,
+      "pointers": [
+        3988
+      ],
+      "parts": [
+        "No smoke mortars left"
+      ],
+      "caption": "No smoke mortars left"
+    },
+    {
+      "name": "convoy_destroyed",
+      "entry_ip": 7058,
+      "return_ip": 7068,
+      "assignment_ip": 15758,
+      "speaker": 0,
+      "pointers": [
+        544
+      ],
+      "parts": [
+        "Convoy completely destroyed!"
+      ],
+      "caption": "Convoy completely destroyed!"
+    }
+  ]
+}

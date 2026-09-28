@@ -41,9 +41,34 @@ func _initialize() -> void: run.call_deferred()
 func run() -> void:
 	var audio := PcAudio.new()
 	root.add_child(audio)
-	check(audio.crew_catalogue.size()==384,"24 damage reports plus all 360 original bearings")
+	check(audio.crew_catalogue.size()==392,"24 damage reports, 360 bearings and eight warnings/outcome calls")
 	for cue: String in audio.crew_catalogue:
 		check(audio.get_stream("voice_"+cue)!=null,"generated full-sentence resource: "+cue)
+	var warnings: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_warning_voice_script.json"))
+	for cue: String in warnings.cues:
+		var spec: Dictionary=warnings.cues[cue]
+		for variant: Array in spec.source_variants:
+			var warning_audio := PcAudio.new()
+			root.add_child(warning_audio)
+			var event := crew(1,10)
+			event.voice=cue;event.text=spec.caption;event.ip=spec.assignment_ip;event.speaker=spec.speaker
+			event.parts=event.parts.slice(0,variant.size())
+			for i in variant.size(): event.parts[i].source_pointer=variant[i]
+			check(warning_audio.apply_audio(JSON.parse_string(JSON.stringify(packet(10,1,[event])))),"qualified original warning: "+cue)
+			check(warning_audio.voice.playing and warning_audio.last_voice==cue,"actual warning sample player: "+cue)
+			check(warning_audio.apply_audio(packet(10,1,[event])) and warning_audio.delivered==1,"warning identity consumed once")
+			for fault in ["speaker","pointer","ip","parts","caption"]:
+				var bad := event.duplicate(true)
+				match fault:
+					"speaker":bad.speaker=3
+					"pointer":bad.parts[0].source_pointer+=1
+					"ip":bad.ip=0x3d6a
+					"parts":bad.parts=[]
+					"caption":bad.text+="!"
+				check(not audio._valid_crew(bad),"warning rejects wrong "+fault)
+			check(await warning_audio.drain_for_shutdown(),"warning shutdown")
+			warning_audio.queue_free()
+			await process_frame
 	var damage: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_damage_voice_script.json"))
 	for cue: String in damage.cues:
 		var damage_audio := PcAudio.new()

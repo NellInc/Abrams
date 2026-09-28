@@ -3,9 +3,10 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
-from tools.pc_crew_voice import CrewBarks,SCRIPT,BEARINGS,DAMAGE
+from tools.pc_crew_voice import CrewBarks,SCRIPT,BEARINGS,DAMAGE,WARNINGS
 from tools.install_pc_crew_voice import check_take
 from tools.generate_crew_voice import validate_wav
+from tools.verify_pc_dialogue import verify
 from tests import test_pc_session
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -24,6 +25,76 @@ class CrewTests(unittest.TestCase):
 
     def step(self,messages,status=None):
         return self.gate.advance({'messages':messages},status or self.status)
+
+    def test_warning_blocks_and_every_pointer_variant_match_visible_gate(self):
+        fixture=json.loads((ROOT/'godot/tests/fixtures/pc_warning_voice_oracle.json').read_text())
+        self.assertEqual(fixture['source_sha256'],hashlib.sha256((ROOT/'GAME/SIM.EXE').read_bytes()).hexdigest())
+        self.assertEqual(len(fixture['rows']),9)
+        cues=json.loads(WARNINGS.read_text())['cues']
+        self.assertEqual(len(cues),8)
+        self.assertFalse(cues.keys() & (json.loads(SCRIPT.read_text())['cues'].keys()|json.loads(BEARINGS.read_text())['cues'].keys()|json.loads(DAMAGE.read_text())['cues'].keys()))
+        for index,row in enumerate(fixture['rows'],1):
+            cue=cues['pc_'+row['name']]
+            self.assertEqual((cue['caption'],cue['speaker'],cue['assignment_ip']),(row['caption'],row['speaker'],row['assignment_ip']))
+            self.assertIn(row['pointers'],cue['source_variants'])
+            parts=[];x=46
+            for pointer,text in zip(row['pointers'],row['parts']):
+                parts.append({'rect':[x,112,len(text)*6,6],'source_pointer':pointer,'draw_sequence':index,'pixel_sha256':'a'*64})
+                x+=len(text)*6
+            item=message(index,text=row['caption'],speaker=row['speaker'],assignment_ip=row['assignment_ip'],parts=parts)
+            event,=self.step([item]);self.assertEqual(event['voice'],'pc_'+row['name'])
+            self.assertEqual(self.step([item]),[])
+            wrong=copy.deepcopy(parts);wrong[0]['source_pointer']+=1
+            for change in ({'speaker':3},{'assignment_ip':0x3d6a},{'channel':'radio'},{'parts':[]},{'parts':wrong}):
+                self.assertEqual(CrewBarks().advance({'messages':[item|change]},self.status),[])
+            gate=CrewBarks()
+            muted,=gate.advance({'messages':[item]},self.status|{'enabled':False})
+            self.assertFalse(muted['enabled'])
+            self.assertEqual(gate.advance({'messages':[item]},self.status),[])
+
+    def test_warning_masters_match_script_generated_bytes_and_blind_qa(self):
+        script=json.loads(WARNINGS.read_text());folder=ROOT/'godot/assets/audio'
+        receipt=json.loads((folder/'pc_warning_provenance.json').read_text())
+        self.assertEqual(receipt['script_sha256'],hashlib.sha256(WARNINGS.read_bytes()).hexdigest())
+        self.assertEqual(receipt['voices'].keys(),script['cues'].keys())
+        for name,voice in receipt['voices'].items():
+            self.assertEqual(voice['generator'],'gemini-3.8-flash-tts')
+            self.assertEqual(voice['text'],script['cues'][name]['caption'])
+            for key,value in validate_wav((folder/f'voice_{name}.wav').read_bytes()).items():self.assertEqual(voice[key],value)
+            check_take(voice,voice['transcript_qa'],voice['number_delivery_qa'])
+
+    def test_warning_parity_gate_rejects_changed_source_or_warning_timeline(self):
+        changes=[];barks=[]
+        for index,identity,enabled in [(631,1,True),(759,2,False),(944,3,True)]:
+            item=message(identity,text='No smoke mortars left',speaker=1,assignment_ip=0x3d8e,
+                parts=[{'source_pointer':0xf94}])
+            changes.append({'frame_index':index,'messages':[item]})
+            event,=CrewBarks().advance({'messages':[item]},self.status|{'enabled':enabled})
+            barks.append(event|{'frame_index':index})
+        steps=json.loads((ROOT/'godot/tests/fixtures/pc_warning_steps.json').read_text())
+        keys=[held for count,held in steps for _ in range(count)]
+        self.assertEqual(len(keys),1060)
+        trace={'profile':'smoke-warnings','changes':changes,'audio_events':barks,
+            'state_sha256':'same-state','state_core_sha256':'baseline',
+            'frames':[{'index':i,'keys':keys[i],'ram_sha256':str(i),'video_sha256':str(i)} for i in range(1060)],
+            'final_state':{},'final_program':{'name':'SIM'},'text_epochs':[],
+            'message_epochs':[{'assignments':[{'id':i} for i in [1,2,3]]}]}
+        baseline=copy.deepcopy(trace)|{'core_sha256':'baseline'}
+        self.assertTrue(all(verify(trace,baseline)['checks'].values()))
+        for fault in ('ram','video','keys','frame','mute','duplicate','missing','pointer','speaker','caption','snapshot','epoch'):
+            bad=copy.deepcopy(trace)
+            if fault in ('ram','video'):bad['frames'][700][fault+'_sha256']='changed'
+            elif fault=='keys':bad['frames'][700]['keys']=['escape']
+            elif fault=='frame':bad['audio_events'][1]['frame_index']+=1
+            elif fault=='mute':bad['audio_events'][1]['enabled']=True
+            elif fault=='duplicate':bad['audio_events'].append(bad['audio_events'][0])
+            elif fault=='missing':bad['audio_events']=[]
+            elif fault=='pointer':bad['audio_events'][0]['parts'][0]['source_pointer']+=1
+            elif fault=='speaker':bad['audio_events'][0]['speaker']=2
+            elif fault=='caption':bad['audio_events'][0]['text']='Invented warning'
+            elif fault=='snapshot':bad['state_sha256']='changed'
+            elif fault=='epoch':bad['message_epochs']=[]
+            self.assertFalse(all(verify(bad,baseline)['checks'].values()),fault)
 
     def test_visible_assignment_once_repeated_words_distinct_and_old_pages_silent(self):
         first,=self.step([message()]);self.assertEqual(first['voice'],'pc_hit_zero_four_three')

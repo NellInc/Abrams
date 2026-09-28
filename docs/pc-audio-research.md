@@ -15,9 +15,14 @@ viewer drains Godot playback and gracefully closes its own PC helper.
 
 This is partial sound coverage. Engine/turret loops now follow their original
 sound channels. Full-sentence generated takes cover all 360 incoming-hit
-bearings and 24 damage reports, triggered by fully visible original messages.
+bearings, 24 damage reports and eight warning/outcome calls, triggered by fully
+visible original messages.
 Nine damage reports have live occurrence evidence; the 15 additions have original
 isolated-routine, wording-QA and native-player coverage, not live occurrence proof.
+The warning bank adds authored voices for original portraits 0, 1 and 2.
+Smoke exhaustion has live source-parity, mute/restore and native-player proof;
+the other seven calls have assignment-block, wording and native-player checks.
+Their individual live occurrence remains unproven.
 Bearings read each digit, with both nine and niner accepted. See
 `voice-workflow.md` for generation and installed-master custody.
 Radio, warning sounds, wider crew/readiness coverage, briefings and music remain.
@@ -453,3 +458,28 @@ python3 tools/verify_pc_dialogue.py \
   --reference "$PWD/artifacts/pc-crew-trace-new/report.json" \
   --output "$PWD/artifacts/pc-crew-native-new"
 ```
+
+## Warning/outcome speech extension, 28 September 2026
+
+Eight full-sentence performances now supplement the bearing and damage banks.
+Original single-part setter completion 3d8e and two-part 3dd2, portrait indices
+0/1/2 and exact catalogue pointer variants are checked in Python and Godot.
+The new oracle executes nine caller-selected assignment blocks, without altering
+live RAM or skipping original instructions. This proves assignment contents;
+trigger eligibility and live occurrence are separate evidence.
+
+The native smoke-exhaustion route covers 1,060 source frames, all byte-identical
+to the untouched baseline. It displays three distinct original empty-mortar
+assignments: audible, muted, audible. Native Godot starts the two selected dry
+streams, consumes the muted assignment, and stays silent for all 98 observed
+frames between sound restoration and the fresh warning. All three current
+message RGB hashes match and the Genesis cockpit, portrait and scalable type
+are active. Receipt `pc-warning-native-02/report.json` records 7,549 checks;
+native process and original child exit 0. No gameplay mix was recorded.
+
+Generation uses Gemini 3.8 Flash TTS. The source catalogue now totals 392
+message performances. The warning masters, blind wording comparison, narrow
+M1/M one recognition-format correction and reproducible source/native checks
+are documented in [the voice workflow](voice-workflow.md#source-warnings-and-outcome-calls-28-september-2026).
+Other warnings' live occurrences, radio, remaining dialogue, music and listening
+acceptance remain open.

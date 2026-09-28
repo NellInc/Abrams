@@ -49,6 +49,7 @@ func _ready() -> void:
 	crew_catalogue = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_crew_voice_script.json")).cues
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_bearing_voice_script.json")).cues)
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_damage_voice_script.json")).cues)
+	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_warning_voice_script.json")).cues)
 	turret = AudioStreamPlayer.new()
 	add_child(turret)
 	var stream := load("res://assets/audio/turret.wav").duplicate() as AudioStreamWAV
@@ -123,20 +124,25 @@ func _valid_readiness(event: Dictionary) -> bool:
 
 func _valid_crew(event: Dictionary) -> bool:
 	if not _integer(event.get("message_id")) or int(event.message_id) < 1: return false
-	if not _integer(event.get("speaker")) or int(event.speaker) != 3: return false
 	if event.get("voice") not in crew_catalogue: return false
-	if event.get("text") != crew_catalogue[event.voice].caption: return false
+	var cue: Dictionary=crew_catalogue[event.voice]
+	var warning := cue.has("source_variants")
+	if not _integer(event.get("speaker")) or int(event.speaker)!=(int(cue.speaker) if warning else 3): return false
+	if event.get("text") != cue.caption: return false
 	var bearing: bool = event.voice.begins_with("pc_hit_")
-	if int(event.ip) != (0x3d6a if bearing else 0x3dd2) or int(event.return_ip) != 0 or int(event.value) != 0:
+	var expected_ip: int=int(cue.assignment_ip) if warning else (0x3d6a if bearing else 0x3dd2)
+	if int(event.ip) != expected_ip or int(event.return_ip) != 0 or int(event.value) != 0:
 		return false
 	var parts = event.get("parts")
-	if not parts is Array or parts.size() != 2: return false
+	if not parts is Array or parts.size() != (cue.source_variants[0].size() if warning else 2): return false
 	var previous: Array = []
+	var pointers: Array = []
 	for part in parts:
 		if not part is Dictionary: return false
 		for field in ["draw_sequence", "source_pointer"]:
 			if not _integer(part.get(field)) or int(part[field]) < 1: return false
 		if int(part.source_pointer) > 65535: return false
+		pointers.append(int(part.source_pointer))
 		var rect = part.get("rect")
 		if not rect is Array or rect.size() != 4: return false
 		for value in rect:
@@ -150,6 +156,7 @@ func _valid_crew(event: Dictionary) -> bool:
 		if not digest is String or digest.length() != 64: return false
 		for i in digest.length():
 			if digest[i] not in "0123456789abcdef": return false
+	if warning and not cue.source_variants.any(func(variant): return variant.map(func(p): return int(p))==pointers): return false
 	return true
 
 func _reject(reason: String) -> bool:

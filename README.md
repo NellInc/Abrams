@@ -69,8 +69,9 @@ music and sound-effect references for a faithful presentation upgrade.
   Original-event sample playback is enabled by default, with generated firing/smoke
   crew calls, plus engine and turret loops driven by original sound channels.
   The loader says “Up!” once a completed reload has a verified visible READY label.
-  Generated full-sentence takes cover all 360 hit bearings and 24 source-verified
-  damage reports, gated on complete original displayed messages. Bearings speak
+  Generated full-sentence takes cover all 360 hit bearings, 24 damage reports and
+  eight source-verified warnings/outcome calls, gated on complete original
+  displayed messages. Bearings speak
   by digit, with both “nine” and “niner” accepted.
   F5 and original pause mute them; `--no-audio` disables remastered audio.
   The app's **Audio** menu controls master, effects, crew voices and engine/turret

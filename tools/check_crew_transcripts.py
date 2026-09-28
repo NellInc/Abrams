@@ -24,6 +24,10 @@ def normalized(text):
 
 
 def wording_matches(transcript, expected):
+    # The tank designation M1 is spoken "M one". This is an explicit lexical
+    # equivalence, not general number normalization (bearings stay digit words).
+    if re.search(r'\bM1\b',expected,re.I):
+        transcript=re.sub(r'\bM\s+one\b','M1',transcript,flags=re.I)
     # Nell explicitly accepts aviation "niner" for a bearing/heading digit.
     # Keep the exception scoped to numeric calls; whole-number phrases still fail.
     if re.search(r'\b(?:bearing|heading)\b',expected,re.I):

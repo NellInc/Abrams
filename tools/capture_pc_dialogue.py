@@ -44,6 +44,7 @@ def main():
     p.add_argument('--mode',choices=['trace','baseline'],required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--state',type=Path,required=True)
     p.add_argument('--capture-ui',action='store_true',help='save paired original masks/presentations with newly visible dialogue')
+    p.add_argument('--warnings',action='store_true',help='original smoke exhaustion, mute and re-warning route')
     p.add_argument('--frames',type=int,default=12000);a=p.parse_args()
     if not 1<=a.frames<=18000:p.error('frames must be 1..18000')
     if any(a.output.resolve().is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
@@ -59,11 +60,15 @@ def main():
         collector=Collector(*args,**kwargs);collectors.append(collector);return collector
     session=PresentationSession(core,reader,decode_resource((ROOT/'GAME/SHAPE.TBL').read_bytes()),trace=a.mode=='trace',collector_factory=factory)
     records=[];changes=[];audio=[];seen=set();prior=None;final=None;ui_presentations=[]
+    warning_keys=[]
+    if a.warnings:
+        for count,keys in json.loads((ROOT/'godot/tests/fixtures/pc_warning_steps.json').read_text()):
+            warning_keys.extend([keys]*count)
     try:
         core.run(240);core.restore(a.state,expected_source_sha256=manifest['baseline_sha256']);core.run(1)
         if not reader.read(core.conventional_memory()):raise ValueError('missing original SIM')
-        for i in range(a.frames):
-            keys=['r'] if i>=600 and (i-600)%1200<3 else []
+        for i in range(min(a.frames,len(warning_keys)) if a.warnings else a.frames):
+            keys=warning_keys[i] if a.warnings else (['r'] if i>=600 and (i-600)%1200<3 else [])
             session.step(1,keys)
             audio.extend(e|{'frame_index':i} for e in session.drain_audio()['events'])
             sample=session.sample();ram=core.last_video_ram;program=sample['program']
@@ -97,6 +102,7 @@ def main():
         final=session.sample()
         core.screenshot().save(a.output/'last-frame.png')
         report={'mode':a.mode,'core_sha256':core.core_sha256,'frames':records,'changes':changes,
+                'profile':'smoke-warnings' if a.warnings else 'incoming-damage',
                 'audio_events':audio,'final_state':final['state'],'final_program':final['program'],
                 'state_sha256':hashlib.sha256(a.state.read_bytes()).hexdigest(),
                 'state_core_sha256':manifest['baseline_sha256'],

@@ -1,0 +1,135 @@
+{
+  "scope": "Eight source-verified warnings/outcome calls from nine original assignment blocks. Portrait-index casting is authored. Eligibility, timing and live occurrence remain separately verified. Speech requires the complete pixel-verified original displayed message.",
+  "roles": {
+    "pc_crew_0": {
+      "voice": "Orus",
+      "style": "An experienced, firm and controlled American tank crew member on a close dry intercom microphone. No recording artefacts or background noise."
+    },
+    "pc_crew_1": {
+      "voice": "Iapetus",
+      "style": "A clear, alert and clipped American tank crew member on a close dry intercom microphone. No recording artefacts or background noise."
+    },
+    "pc_crew_2": {
+      "voice": "Algenib",
+      "style": "A low, slightly gravelly and matter-of-fact American tank crew member on a close dry intercom microphone. No recording artefacts or background noise."
+    }
+  },
+  "cues": {
+    "pc_out_of_fuel": {
+      "role": "pc_crew_2",
+      "caption": "we are out of fuel",
+      "text": "we are out of fuel",
+      "direction": "A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 2,
+      "assignment_ip": 15758,
+      "source_variants": [
+        [
+          3342
+        ]
+      ],
+      "evidence": "godot/tests/fixtures/pc_warning_voice_oracle.json; original assignment block only. Runtime requires the complete visible source message."
+    },
+    "pc_engine_overheating": {
+      "role": "pc_crew_2",
+      "caption": "Engine is overheating",
+      "text": "Engine is overheating",
+      "direction": "A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 2,
+      "assignment_ip": 15826,
+      "source_variants": [
+        [
+          3210,
+          3361
+        ]
+      ],
+      "evidence": "godot/tests/fixtures/pc_warning_voice_oracle.json; original assignment block only. Runtime requires the complete visible source message."
+    },
+    "pc_assigned_area": {
+      "role": "pc_crew_0",
+      "caption": "We cannot leave the assigned area",
+      "text": "We cannot leave the assigned area",
+      "direction": "A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "source_variants": [
+        [
+          3404
+        ],
+        [
+          626
+        ]
+      ],
+      "evidence": "godot/tests/fixtures/pc_warning_voice_oracle.json; original assignment block only. Runtime requires the complete visible source message."
+    },
+    "pc_not_amphibious": {
+      "role": "pc_crew_2",
+      "caption": "Sir, the M1 is not amphibious.",
+      "text": "Sir, the M1 is not amphibious.",
+      "direction": "A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 2,
+      "assignment_ip": 15758,
+      "source_variants": [
+        [
+          3438
+        ]
+      ],
+      "evidence": "godot/tests/fixtures/pc_warning_voice_oracle.json; original assignment block only. Runtime requires the complete visible source message."
+    },
+    "pc_slope_too_steep": {
+      "role": "pc_crew_2",
+      "caption": "Sir, that slope is too steep.",
+      "text": "Sir, that slope is too steep.",
+      "direction": "A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 2,
+      "assignment_ip": 15758,
+      "source_variants": [
+        [
+          3469
+        ]
+      ],
+      "evidence": "godot/tests/fixtures/pc_warning_voice_oracle.json; original assignment block only. Runtime requires the complete visible source message."
+    },
+    "pc_smoke_inoperable": {
+      "role": "pc_crew_1",
+      "caption": "Smoke dischargers are inoperable",
+      "text": "Smoke dischargers are inoperable",
+      "direction": "A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 1,
+      "assignment_ip": 15758,
+      "source_variants": [
+        [
+          3955
+        ]
+      ],
+      "evidence": "godot/tests/fixtures/pc_warning_voice_oracle.json; original assignment block only. Runtime requires the complete visible source message."
+    },
+    "pc_no_smoke_mortars": {
+      "role": "pc_crew_1",
+      "caption": "No smoke mortars left",
+      "text": "No smoke mortars left",
+      "direction": "A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 1,
+      "assignment_ip": 15758,
+      "source_variants": [
+        [
+          3988
+        ]
+      ],
+      "evidence": "godot/tests/fixtures/pc_warning_voice_oracle.json; original assignment block only. Runtime requires the complete visible source message."
+    },
+    "pc_convoy_destroyed": {
+      "role": "pc_crew_0",
+      "caption": "Convoy completely destroyed!",
+      "text": "Convoy completely destroyed!",
+      "direction": "A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "source_variants": [
+        [
+          544
+        ]
+      ],
+      "evidence": "godot/tests/fixtures/pc_warning_voice_oracle.json; original assignment block only. Runtime requires the complete visible source message."
+    }
+  }
+}

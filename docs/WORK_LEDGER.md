@@ -2573,3 +2573,84 @@ Near-target local pacing is now evidenced for the full six-cycle route. Avoid an
 unbounded optimization loop: the next material remaining lane is wider original
 crew/warning/radio speech or mission victory/campaign acceptance, with historical
 speed and cross-machine calibration still recorded as open requirements.
+
+## Original warning voices and live mute/restore parity (2026-09-28)
+
+Continues the active local remaster goal after `26e045d`. Nell's “Niner is fine”
+remains implemented: both nine/niner qualify as individual bearing digits,
+with no permission for whole-number delivery. This pass adds eight original
+warning/outcome captions and keeps all simulation authority in original SIM.
+
+Pinned Unicorn source oracle executes nine already-selected argument/assignment
+blocks. Results recover eight distinct captions, portraits 0/1/2, setter
+completion 3d8e or 3dd2 and exact pointer variants. Assigned-area text has two
+source pointers. No live RAM or original instruction is modified. Branch
+eligibility, timing and whole trigger routines are not proved by this oracle.
+`pc-warning-work-01/oracle-check.json` matches the committed fixture exactly.
+
+Eight Gemini 3.8 Flash TTS takes are installed unchanged, with Orus, Iapetus and
+Algenib authored by original portrait index. No named crew role was invented.
+The installed PC message catalogue totals 392 (360 bearings, 24 damage, eight
+warnings/outcome calls). Provenance retains original dry hashes, casting, request,
+transcripts and comparison metadata. Generated samples alone were submitted for
+blind recognition; no original binary or mixed gameplay recording was sent.
+
+Seven initial blind transcripts matched. “M one” versus expected “M1” was a
+lexical-format false negative. Added a narrowly scoped comparator equivalence
+and rejection tests. The original failed report and raw recognition are retained;
+the same unchanged transcripts were reevaluated offline. Corrected QA and the
+installed receipt explicitly retain this custody, without claiming a fresh
+recognition or changing a transcript. Human listening/mix acceptance stays open.
+
+Both Python and Godot require exact source caption, speaker, assignment IP and
+pointer variant. Existing complete visible-message, pixel, age, epoch, once-only,
+F5/pause and source sound gates remain. Actual native and headless audio tests
+pass 731 checks each, including all eight new streams and both area pointers.
+Those per-cue player tests are synthetic source-qualified packets, not live
+occurrences for every warning.
+
+First actual smoke route `pc-warning-trace-01` matched all 1,023 baseline records.
+`pc-warning-native-01` passed 7,284 checks and observed two audible warnings plus
+one muted call. Self-review of its screenshot exposed an inadequate visual test
+setup: a restored RAM-only snapshot has no historical plate-load provenance, so
+cockpit artwork correctly stayed original. The implementer reviewed their own
+existing presentation; this was not external art approval. No guard was weakened.
+
+The final route reloads stations using ordinary F2/F1 input. An intermediate
+1,059-frame capture pair (`trace-02`/`baseline-02`) matched, but began on F2 while
+the production host's ready packet always uses neutral input. It was not used
+for native acceptance. The corrected fixture starts with one neutral frame,
+then the station reload and the same smoke/F5 sequence: 1,060 source frames.
+`pc-warning-trace-03/comparison.json` passes eleven checks against baseline-03,
+including every input, complete paired RAM/video and queued state, final state,
+three source assignments and their exact visible frame/identity/sound gates.
+The comparator also requires the committed input sequence, and mutation tests
+reject altered RAM, video, keys, wording, identity, timing, gate or provenance.
+
+`pc-warning-native-02` passes 7,549 checks, terminal exit 0. Actual production
+viewer and original child reproduce all 1,060 RAM/video boundaries and every
+source audio event. All three warning RGB crops match their original hashes.
+Genesis cockpit, high-resolution portrait and type are active on every warning.
+Two generated streams start, one muted warning is consumed, and all 98 frames
+between F5 restore and the fresh warning remain silent. The implementer visually
+inspected the native first warning, including the original smoke-obscured view.
+No vehicle textures were enabled. No visual style/layout was changed, so an
+optional frontend design linter was not applicable to this audio/test change.
+
+Aggregate `validation-20260928T111639Z` passes all 41 stages, terminal exit 0:
+290 Python tests, 185,967 typography checks, 14,003 gauges, 731 PC audio checks,
+97 mix checks and 82 scheduling checks. After final diagnostic route/comparator
+changes, full Python discovery again passes 290 tests (`python-final-route.log`)
+and the final native route above passes. Relevant import/headless/native/aggregate
+logs contain no script, parse or engine errors. Reference inventory and
+`git diff --check` pass. All validation sessions completed; no owned process was
+left running. Unrelated vehicle studies and generated UID files remain untouched.
+
+This closes the bounded warning-bank integration, not the whole remaster.
+Seven new calls still need live occurrence coverage. Radio, remaining dialogue,
+music, graphics families, victories/campaign outcomes, historical/cross-hardware
+pacing, listening/art acceptance and portable packaging remain. Next useful
+source lane is remaining dialogue/radio selection and visibility, with music
+extraction/arrangement another open presentation lane. Existing source utilities
+and provenance should be extended rather than inventing trigger rules.
+Work remains local only, with no push, publication, release or redistribution.

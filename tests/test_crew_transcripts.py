@@ -4,10 +4,19 @@ from pathlib import Path
 import tempfile
 import unittest
 import wave
-from tools.check_crew_transcripts import prepare,evaluate,normalized
+from tools.check_crew_transcripts import prepare,evaluate,normalized,wording_matches
 
 
 class TranscriptTests(unittest.TestCase):
+    def test_M1_designation_accepts_literal_M_one_only_in_designation_scripts(self):
+        expected='Sir, the M1 is not amphibious.'
+        self.assertTrue(wording_matches('Sir, the M one is not amphibious.',expected))
+        self.assertTrue(wording_matches(expected,expected))
+        for wrong in ('M two','M eleven','M won','one','M','M1A1'):
+            self.assertFalse(wording_matches('Sir, the '+wrong+' is not amphibious.',expected))
+        self.assertFalse(wording_matches('Bearing 043','Bearing zero four three'))
+        self.assertFalse(wording_matches('M one','M2'))
+
     def test_number_words_never_accept_whole_number_or_numeric_transcript(self):
         expected="We've been hit! Bearing zero four three"
         self.assertEqual(normalized(expected),normalized("WE'VE been hit, bearing zero, four, three."))

@@ -1,0 +1,202 @@
+{
+  "scope": "Eight source-verified warnings/outcome calls from nine original assignment blocks. Portrait-index casting is authored. Eligibility, timing and live occurrence remain separately verified. Speech requires the complete pixel-verified original displayed message.",
+  "status": "Automated wording checked; digit delivery checked where required; human listening review pending",
+  "script_sha256": "37cf3392a70cd3d0b84a9468690b5422edeccca69fefb1be20b0db9dc84b5301",
+  "voices": {
+    "pc_out_of_fuel": {
+      "role": "pc_crew_2",
+      "voice": "Algenib",
+      "text": "we are out of fuel",
+      "performed_text": "we are out of fuel",
+      "direction": "A low, slightly gravelly and matter-of-fact American tank crew member on a close dry intercom microphone. No recording artefacts or background noise. A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 40320,
+      "duration_seconds": 1.68,
+      "sha256": "3a590a0564558d257aa14ac90e25428fe19fd5803f70ac538d29119a0bbd5d81",
+      "source_master": "local-audio/pc-warning-gemini-3.8-v1/voice_pc_out_of_fuel.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "We are out of fuel.",
+        "expected": "we are out of fuel",
+        "normalized_match": true,
+        "audio_sha256": "3a590a0564558d257aa14ac90e25428fe19fd5803f70ac538d29119a0bbd5d81"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_engine_overheating": {
+      "role": "pc_crew_2",
+      "voice": "Algenib",
+      "text": "Engine is overheating",
+      "performed_text": "Engine is overheating",
+      "direction": "A low, slightly gravelly and matter-of-fact American tank crew member on a close dry intercom microphone. No recording artefacts or background noise. A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 38400,
+      "duration_seconds": 1.6,
+      "sha256": "9e4ddc9901231289db411e0f24869154dd9f7705f8ad3d89f37a6cbd162a2d5b",
+      "source_master": "local-audio/pc-warning-gemini-3.8-v1/voice_pc_engine_overheating.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Engine is overheating.",
+        "expected": "Engine is overheating",
+        "normalized_match": true,
+        "audio_sha256": "9e4ddc9901231289db411e0f24869154dd9f7705f8ad3d89f37a6cbd162a2d5b"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_assigned_area": {
+      "role": "pc_crew_0",
+      "voice": "Orus",
+      "text": "We cannot leave the assigned area",
+      "performed_text": "We cannot leave the assigned area",
+      "direction": "An experienced, firm and controlled American tank crew member on a close dry intercom microphone. No recording artefacts or background noise. A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 66240,
+      "duration_seconds": 2.76,
+      "sha256": "23e0985f09054c30a03c45955eda5e2a12497e66f52dca54e718f6b4e023e933",
+      "source_master": "local-audio/pc-warning-gemini-3.8-v1/voice_pc_assigned_area.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "We cannot leave the assigned area.",
+        "expected": "We cannot leave the assigned area",
+        "normalized_match": true,
+        "audio_sha256": "23e0985f09054c30a03c45955eda5e2a12497e66f52dca54e718f6b4e023e933"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_not_amphibious": {
+      "role": "pc_crew_2",
+      "voice": "Algenib",
+      "text": "Sir, the M1 is not amphibious.",
+      "performed_text": "Sir, the M1 is not amphibious.",
+      "direction": "A low, slightly gravelly and matter-of-fact American tank crew member on a close dry intercom microphone. No recording artefacts or background noise. A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 72000,
+      "duration_seconds": 3.0,
+      "sha256": "77bea107ce54f109c1affff1ba95206adabde28a91d30d2a0d69a60523490349",
+      "source_master": "local-audio/pc-warning-gemini-3.8-v1/voice_pc_not_amphibious.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Sir, the M one is not amphibious.",
+        "expected": "Sir, the M1 is not amphibious.",
+        "normalized_match": true,
+        "audio_sha256": "77bea107ce54f109c1affff1ba95206adabde28a91d30d2a0d69a60523490349"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_slope_too_steep": {
+      "role": "pc_crew_2",
+      "voice": "Algenib",
+      "text": "Sir, that slope is too steep.",
+      "performed_text": "Sir, that slope is too steep.",
+      "direction": "A low, slightly gravelly and matter-of-fact American tank crew member on a close dry intercom microphone. No recording artefacts or background noise. A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 57600,
+      "duration_seconds": 2.4,
+      "sha256": "ef31011604019e9fef3c152dc433765a142dd174cc0c37894616ed555a5173af",
+      "source_master": "local-audio/pc-warning-gemini-3.8-v1/voice_pc_slope_too_steep.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Sir, that slope is too steep.",
+        "expected": "Sir, that slope is too steep.",
+        "normalized_match": true,
+        "audio_sha256": "ef31011604019e9fef3c152dc433765a142dd174cc0c37894616ed555a5173af"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_smoke_inoperable": {
+      "role": "pc_crew_1",
+      "voice": "Iapetus",
+      "text": "Smoke dischargers are inoperable",
+      "performed_text": "Smoke dischargers are inoperable",
+      "direction": "A clear, alert and clipped American tank crew member on a close dry intercom microphone. No recording artefacts or background noise. A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 48960,
+      "duration_seconds": 2.04,
+      "sha256": "fcff4736666d189542feaa8dd1659da8481fb954f75bcffa393d29519c81a120",
+      "source_master": "local-audio/pc-warning-gemini-3.8-v1/voice_pc_smoke_inoperable.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Smoke dischargers are inoperable.",
+        "expected": "Smoke dischargers are inoperable",
+        "normalized_match": true,
+        "audio_sha256": "fcff4736666d189542feaa8dd1659da8481fb954f75bcffa393d29519c81a120"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_no_smoke_mortars": {
+      "role": "pc_crew_1",
+      "voice": "Iapetus",
+      "text": "No smoke mortars left",
+      "performed_text": "No smoke mortars left",
+      "direction": "A clear, alert and clipped American tank crew member on a close dry intercom microphone. No recording artefacts or background noise. A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 40320,
+      "duration_seconds": 1.68,
+      "sha256": "937a1a2f2c1ce2109eee6e8d66401ae371d26e927101a749199c9c07e8ddbb69",
+      "source_master": "local-audio/pc-warning-gemini-3.8-v1/voice_pc_no_smoke_mortars.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "No smoke mortars left.",
+        "expected": "No smoke mortars left",
+        "normalized_match": true,
+        "audio_sha256": "937a1a2f2c1ce2109eee6e8d66401ae371d26e927101a749199c9c07e8ddbb69"
+      },
+      "number_delivery_qa": null
+    },
+    "pc_convoy_destroyed": {
+      "role": "pc_crew_0",
+      "voice": "Orus",
+      "text": "Convoy completely destroyed!",
+      "performed_text": "Convoy completely destroyed!",
+      "direction": "An experienced, firm and controlled American tank crew member on a close dry intercom microphone. No recording artefacts or background noise. A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "generator": "gemini-3.8-flash-tts",
+      "sample_rate": 24000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_frames": 48960,
+      "duration_seconds": 2.04,
+      "sha256": "ec3a09543f66f1effb7c742de977f80482b7ceb7b0d17628eb3c3231e83ba5b0",
+      "source_master": "local-audio/pc-warning-gemini-3.8-v1/voice_pc_convoy_destroyed.wav",
+      "processing": "Unmodified generated dry master",
+      "transcript_qa": {
+        "transcript": "Convoy completely destroyed.",
+        "expected": "Convoy completely destroyed!",
+        "normalized_match": true,
+        "audio_sha256": "ec3a09543f66f1effb7c742de977f80482b7ceb7b0d17628eb3c3231e83ba5b0"
+      },
+      "number_delivery_qa": null
+    }
+  },
+  "qa_inputs": [
+    {
+      "path": "/Users/nellwatson/Documents/GitHub/Abrams/local-audio/pc-warning-gemini-3.8-v1/qa-first/transcription-check.json",
+      "sha256": "f13683e0c2025bec5ff52d33b0404bcdfa4a7cb4e8c59d9f06ce08d32d7fb6a5"
+    }
+  ],
+  "qa_revalidation": {
+    "method": "Offline reevaluation of the unchanged blinded transcript; explicit M1 / M one designation equivalence. No new recognition or altered transcript.",
+    "original_report": "transcription-check-original.json",
+    "original_report_sha256": "f4462f99bae61900811f8b59b93a99d7d53bbf4936fc57c35540b0afde069690"
+  }
+}
