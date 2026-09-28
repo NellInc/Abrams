@@ -3,8 +3,10 @@ import hashlib
 import struct
 
 try:
+    from tools.pc_pixel_bytes import bgrx_rect_rgb, indexed_rgb
     from tools.pc_live_state import SIM_SHA256
 except ModuleNotFoundError:
+    from pc_pixel_bytes import bgrx_rect_rgb, indexed_rgb
     from pc_live_state import SIM_SHA256
 
 TABLE_SHA256 = 'b7cba01774ea26a79711b547634c0b0c46abebe9f9b214f110b37db594316a9c'
@@ -90,8 +92,8 @@ class ReticleRuns:
     def present(self,candidate,raw,width,height,palette):
         if candidate is None or (width,height)!=(320,200) or not palette or len(palette)!=16: return {}
         item,pixels=candidate;x,y,w,h=item['rect']
-        expected=bytes(channel for pixel in pixels for channel in palette[pixel])
-        actual=bytes(raw[((y+dy)*320+x+dx)*4+c] for dy in range(h) for dx in range(w) for c in (2,1,0))
+        expected=indexed_rgb(pixels,palette)
+        actual=bgrx_rect_rgb(raw,width,height,(x,y,w,h))
         if expected!=actual: self.counts['frame_mismatches']+=1;return {}
         self.counts['presented_draws']+=1
         return item|{'pixel_sha256':hashlib.sha256(actual).hexdigest(),

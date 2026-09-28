@@ -30,6 +30,66 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Exact observer optimization and live pacing, 2026-09-28
+
+Previous goal turn: progress, native-resolution Play committed as `4fcb4f6`.
+This continuation profiles the actual original-PC host and production Godot
+viewer, reduces exact pixel-processing overhead, and preserves fractional clock
+phase. Original source/core binaries, CPU settings, artwork and input batching
+remain unchanged. `docs/pc-pacing-research.md` records methods and limits.
+
+The initial native gunner probes achieved 27.80 and 29.55 fps. Matched 120-frame
+unpaced throughput now reaches 55.78 fps; mean sample application falls from
+15.73 to 5.49 ms. The final 1,200-frame actual interactive probes measure gunner
+54.23, driver 58.57, commander 59.10 and cupola 59.98 fps, against the original
+core's advertised 59.92 Hz. **Sustained pacing is still open**, especially gunner,
+combat, changing masks and optional audio. An intermediate phase-only gunner run
+measured 47.19 fps; the final result does not erase that earlier measurement.
+
+Repeated plate predicate validation falls from 7.47 to 0.18 ms, and the driver's
+moving-assembly predicate from 15.62 to 0.46 ms on unchanged frames. The latter
+baseline is the intermediate phase-corrected build. Bounded caches retain exact
+byte pairs only; current provenance, source hashes and artwork availability
+remain checked. Bulk Python RGB operations preserve all compared pixels. PNG
+encoding reuses exactly matching raw bytes only after current-frame validation.
+
+The old clock reset reproduced 1,800 requests in a steady 60-second 60 Hz
+fixture. Retaining fractional phase yields 3,595, with one outstanding request
+and no catch-up bursts or backdated input. Overload can still slow the original;
+this is not historical machine-speed or wall-clock input parity.
+
+Evidence, all root-run with terminal completion:
+
+* `artifacts/pc-pacing-profile-01/before-after-parity.json`: complete 1,458-frame
+  trace report and all 76 PNG files are byte-identical to the pre-change trace.
+  No fields excluded. Gunner and driver native capture JSON and all four PNG
+  outputs are also identical after the same input/frame sequence.
+* `artifacts/pc-pacing-profile-01/source-parity.json`: all 20 source-baseline and
+  visible-crop checks pass. There are 337 completed reticle draws, 1,207 verified
+  presented candidates and the same 246 rejected stale/overwritten candidates.
+* `artifacts/pc-pacing-profile-final-01/host-report.json`: all 147 paired original
+  RAM/video/input records match baseline. Mean traced step time is 6.31 ms,
+  versus 10.05 ms in the initial instrumented probe. Machine variance remains.
+* Native synthetic fixtures pass 1,024,000 gunner and 4,096,000 multi-station/
+  moving-roof RGB checks, plus current-metadata and warm-cache corruption cases.
+* `artifacts/pc-pacing-genesis-native-01/report.json`: all 12,238,012 checks pass
+  across 21 recorded cases. Actual Play also cold-boots the joystick menu with
+  complete capture metadata and all compared PNG bytes identical to its earlier
+  public-launcher capture (`menu-parity.json` in the profiling directory).
+* `artifacts/validation-20260928T034057Z`: aggregate terminal exit 0, all 35 stages
+  and 246 Python tests pass, including 49,159 deterministic clock checks.
+
+The implementing assistant inspected the actual gunner frame; this is self-review,
+not Nell's art approval. The repaired surround joins and ammunition proportions
+remain intact. No new styling or optional linter dependency was added. Local only;
+the same five unrelated untracked vehicle-study files remain untouched.
+
+Next pacing question is pipe-ready versus Godot-poll/render latency, followed by
+longer combat/audio and standalone-original timing comparisons. All remaining
+graphics/audio families, complete mission/campaign/save parity, cross-platform
+runtime and release custody conditions in `GOAL.md` remain open. This is progress
+within the active full-remaster goal, not completion of that goal.
+
 ## Native-resolution play window, 2026-09-28
 
 Previous goal turn: progress, committed source-verified graticule `b8c1dbb`.

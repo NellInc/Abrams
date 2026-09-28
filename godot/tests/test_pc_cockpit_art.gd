@@ -96,6 +96,30 @@ func run() -> void:
 						var ax: int = x-int(offset)*4
 						if ax%17 != 0: expected = Color8((ax%4)*70,200,100)
 					check(rendered.get_pixel(x,y).to_rgba32()==expected.to_rgba32(),"moving roof offset %d at %d,%d"%[offset,x,y])
+		# A warm predicate cache must still reject every changed mask/UI pair.
+		var claimed := Vector2i(100+offset,30)
+		while claimed.x%7==0: claimed.x+=1
+		for bad_colour in [Color8(0,128,255),Color8(0,64,1),Color8(1,0,0)]:
+			var bad_roof := roof.duplicate()
+			bad_roof.set_pixelv(claimed,bad_colour)
+			var bad := moving.duplicate(true)
+			bad.driver_overlay.mask_png=Marshalls.raw_to_base64(bad_roof.save_png_to_buffer())
+			check(composite.set_frame(source,bad,world) and not composite.driver_assembly_enabled,"changed driver channel rejected after cache hit")
+			check(composite.set_frame(source,moving,world) and composite.driver_assembly_enabled,"valid driver bytes restored")
+		var unclaimed := ui.duplicate()
+		unclaimed.set_pixelv(claimed,Color.BLACK)
+		var bad := moving.duplicate(true)
+		bad.ui_overlay.mask_png=Marshalls.raw_to_base64(unclaimed.save_png_to_buffer())
+		check(composite.set_frame(source,bad,world) and not composite.driver_assembly_enabled,"changed UI ownership rejects cached roof")
+		bad=moving.duplicate(true)
+		bad.driver_overlay.mask_png=Marshalls.raw_to_base64(image_of(Image.FORMAT_RGB8,Color.BLACK).save_png_to_buffer())
+		check(composite.set_frame(source,bad,world) and not composite.driver_assembly_enabled,"empty roof cannot reuse nonempty predicate")
+		check(composite.set_frame(source,moving,world) and composite.driver_assembly_enabled,"driver mask recovers after empty roof")
+		var driver_art: Texture2D=composite.cockpit_art_textures[4]
+		composite.cockpit_art_textures.erase(4)
+		check(composite.set_frame(source,moving,world) and not composite.driver_assembly_enabled,"cached predicate cannot restore absent artwork")
+		composite.cockpit_art_textures[4]=driver_art
+		check(composite.set_frame(source,moving,world) and composite.driver_assembly_enabled,"available artwork recovers from current provenance")
 		moving.driver_overlay.source_sha256 = "wrong"
 		check(composite.set_frame(source,moving,world) and not composite.driver_assembly_enabled,"wrong driver code rejected")
 	for id in [2,3,4]:

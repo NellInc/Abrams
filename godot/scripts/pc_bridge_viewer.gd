@@ -316,6 +316,12 @@ func _build_stage(viewport: SubViewport) -> void:
 	camera.add_child(draw_view)
 	world_view.visible = not trace_mode
 
+static func frame_remainder(elapsed_seconds: float, source_fps: float) -> float:
+	# Keep the fractional phase. Resetting to zero turns 59.92 Hz into 30 Hz
+	# under a steady 60 Hz redraw. Whole missed intervals are still discarded:
+	# never invent a catch-up batch or backdate a newly sampled key press.
+	return fmod(elapsed_seconds,1.0/source_fps)
+
 func _process(delta: float) -> bool:
 	elapsed += delta
 	for message in bridge.poll():
@@ -338,7 +344,7 @@ func _process(delta: float) -> bool:
 		elif elapsed >= 1.0 / fps:
 			# One outstanding request. Slow presentation never advances invented
 			# gameplay ticks or runs the authored range alongside the PC game.
-			elapsed = 0.0
+			elapsed = frame_remainder(elapsed,fps)
 			bridge.step(1, Keyboard.held())
 	if capture and Time.get_ticks_msec() - started > (180000 if boot_mode else 60000):
 		bridge.failure = "capture deadline"

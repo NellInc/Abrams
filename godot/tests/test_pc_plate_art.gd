@@ -4,9 +4,11 @@ var errors: Array[String] = []
 var viewport: SubViewport
 var composite: TextureRect
 var checks := 0
+var assertions := 0
 var changed_pixels := 0
 
 func check(ok: bool, why: String) -> void:
+	assertions+=1
 	if not ok and errors.size() < 15: errors.append(why)
 
 func packet(ui: Image, tags: Image) -> Dictionary:
@@ -72,6 +74,28 @@ func _run() -> void:
 					if art.get_pixel(x,ay).a == 1.0: expected = art.get_pixel(x,ay)
 				check(image.get_pixel(x,y).to_rgba32()==expected.to_rgba32(),"synthetic high-res/retained pixel %d,%d" % [x,y])
 				checks += 1
+	# A warm cache must still bind exact current bytes and current metadata.
+	for pos in [Vector2i(3,0),Vector2i(318,199)]:
+		check(composite.set_frame(source,presentation,world) and composite.gunner_art_enabled,"cache baseline")
+		var missing_ui := ui.duplicate()
+		missing_ui.set_pixelv(pos,Color.BLACK)
+		check(composite.set_frame(source,packet(missing_ui,tags),world) and not composite.gunner_art_enabled,"warm cache rejects one missing ownership bit")
+		check(composite.set_frame(source,presentation,world) and composite.gunner_art_enabled,"valid bytes recover after cache rejection")
+		var invalid_tag := tags.duplicate()
+		invalid_tag.set_pixelv(pos,Color(9.0/255,0,0))
+		check(composite.set_frame(source,packet(ui,invalid_tag),world) and not composite.gunner_art_enabled,"warm cache rejects changed tag")
+	var blank_tags := tags.duplicate()
+	blank_tags.fill(Color.BLACK)
+	check(composite.set_frame(source,packet(ui,blank_tags),world) and not composite.gunner_art_enabled,"empty provenance cannot reuse cached IDs")
+	check(composite.set_frame(source,presentation,world) and composite.gunner_art_enabled,"restored provenance accepted")
+	composite.set_gunner_art(null)
+	check(composite.set_frame(source,presentation,world) and not composite.gunner_art_enabled,"cached provenance cannot restore missing artwork")
+	composite.set_gunner_art(art)
+	for value in [1,127,254]:
+		var invalid_ui := ui.duplicate()
+		invalid_ui.set_pixel(319,199,Color(value/255.0,0,0))
+		check(not composite.set_frame(source,packet(invalid_ui,tags),world) and not composite.gunner_art_enabled,"bulk predicate rejects every nonbinary class")
+	check(composite.set_frame(source,presentation,world) and composite.gunner_art_enabled,"original byte pair survives caller mutations")
 	for kind in ["palette","source","dimensions","ids","world","missing"]:
 		var bad := presentation.duplicate(true)
 		match kind:
@@ -89,7 +113,7 @@ func _run() -> void:
 	if native and "--fixture" in args:
 		await _fixtures(args[args.find("--fixture")+1],args[args.find("--art")+1],args[args.find("--output")+1])
 	for error in errors: printerr("FAIL: "+error)
-	print("PC_PLATE_ART: %d exact RGB checks, %d changed source samples, %d failures" % [checks,changed_pixels,errors.size()])
+	print("PC_PLATE_ART: %d exact RGB checks, %d changed source samples, %d failures; %d assertions" % [checks,changed_pixels,errors.size(),assertions])
 	quit(0 if errors.is_empty() else 1)
 
 func _fixtures(path: String, art_path: String, output: String) -> void:

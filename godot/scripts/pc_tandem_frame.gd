@@ -34,6 +34,14 @@ var driver_assembly_enabled := false
 var gunner_art_texture: Texture2D
 var gunner_art_enabled := false
 var gunner_art_reason := "material pilot disabled"
+# One successful exact byte-pair cache per predicate. Only provenance is cached;
+# current source fingerprints, asset availability and every live cell still run.
+var _plate_tags := PackedByteArray()
+var _plate_ui := PackedByteArray()
+var _plate_ids: Dictionary = {}
+var _driver_bits := PackedByteArray()
+var _driver_ui := PackedByteArray()
+var _driver_nonempty := false
 
 func _init() -> void:
 	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -158,10 +166,17 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 	if mask.get_format() != Image.FORMAT_L8: return
 	var tags := mask.get_data()
 	var ui_bits := ui.get_data()
-	var present := {}
-	for at in tags.size():
-		if tags[at] > 8 or (tags[at] != 0 and ui_bits[at] != 255): return
-		if tags[at] != 0: present[int(tags[at])] = true
+	var present: Dictionary
+	if tags==_plate_tags and ui_bits==_plate_ui:
+		present=_plate_ids
+	else:
+		present={}
+		for at in tags.size():
+			if tags[at]>8 or (tags[at]!=0 and ui_bits[at]!=255): return
+			if tags[at]!=0: present[int(tags[at])]=true
+		_plate_tags=tags
+		_plate_ui=ui_bits
+		_plate_ids=present
 	var available := cockpit_art_textures.duplicate()
 	if gunner_art_texture != null: available[1] = gunner_art_texture
 	if status_art_texture != null: available[5] = status_art_texture
@@ -205,14 +220,19 @@ func _set_driver_assembly(presentation: Dictionary, ui: Image) -> void:
 	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png)) != OK or mask.get_size() != Vector2i(320,200) or mask.get_format() != Image.FORMAT_RGB8: return
 	var values := mask.get_data()
 	var ui_bits := ui.get_data()
-	var any := false
-	for at in 64000:
-		var i := at*3
-		if values[i+2] not in [0,255] or values[i+1] > 127: return
-		if values[i+2] == 0:
-			if values[i] != 0 or values[i+1] != 0: return
-		elif ui_bits[at] != 255: return
-		else: any = true
+	var any := _driver_nonempty
+	if values!=_driver_bits or ui_bits!=_driver_ui:
+		any=false
+		for at in 64000:
+			var i := at*3
+			if values[i+2] not in [0,255] or values[i+1] > 127: return
+			if values[i+2] == 0:
+				if values[i] != 0 or values[i+1] != 0: return
+			elif ui_bits[at] != 255: return
+			else: any = true
+		_driver_bits=values
+		_driver_ui=ui_bits
+		_driver_nonempty=any
 	if not any: return
 	material.set_shader_parameter("driver_art", cockpit_art_textures[4])
 	material.set_shader_parameter("driver_assembly_mask", ImageTexture.create_from_image(mask))
@@ -248,8 +268,8 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> boo
 	# malformed provenance, and keep explicitly opaque black UI intact.
 	if mask.get_format() != Image.FORMAT_L8:
 		return _fallback("unsupported UI mask format")
-	for value in mask.get_data():
-		if value != 0 and value != 255: return _fallback("nonbinary UI mask")
+	var mask_bytes := mask.get_data()
+	if mask_bytes.count(0)+mask_bytes.count(255)!=mask_bytes.size(): return _fallback("nonbinary UI mask")
 	if world == null: return _fallback("world texture unavailable")
 	material.set_shader_parameter("camera_rect", Vector4(clip[0], clip[1], clip[2]-clip[0]+1, clip[3]-clip[1]+1))
 	material.set_shader_parameter("world_texture", world)

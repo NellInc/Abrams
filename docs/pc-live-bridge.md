@@ -38,8 +38,9 @@ bounded driver probe. This is not a complete keyboard-layout test.
 
 Closing the window asks only its own helper to exit and waits for its exit. It
 does not signal the separately running DOSBox-X app. The authored range remains
-separate and is never instantiated by this bridge. Real-time pacing and final
-high-resolution presentation remain open.
+separate and is never instantiated by this bridge. The native Play window and
+supported high-resolution layers are live. Sustained pacing and remaining
+presentation families remain open; see [pacing measurements](pc-pacing-research.md).
 
 `--trace` retains the original mission-snapshot probe. `--reference` explicitly
 selects the historical nightly/static-wire backend. These are diagnostics.
@@ -179,8 +180,13 @@ restore contract. Restoring a recorded held-key snapshot is rejected.
 inherited stdin/stdout pipes. It exposes no network listener, memory-write
 operation, arbitrary file operation or replacement simulation. Core logs use
 stderr. Godot uses [nonblocking process pipes](https://docs.godotengine.org/en/stable/classes/class_os.html#class-os-method-execute-with-pipe)
-with one request outstanding. Interactive real-time pacing has not been
-calibrated against the standalone original; this remains a research view.
+with one request outstanding. Interactive pacing retains fractional clock phase
+and reuses only exactly matching observer/presentation byte predicates. Local
+1,200-frame station probes measured 54.23 to 59.98 fps against the core's 59.92 Hz
+rate. Slow presentation still slows the original instead of creating catch-up
+input batches. Standalone-original and historical-machine wall-clock calibration
+remain open; [pacing research](pc-pacing-research.md) records the measurements,
+unchanged-source evidence and limits.
 
 ## Read-only fields with evidence
 

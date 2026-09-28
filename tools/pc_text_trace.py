@@ -7,9 +7,11 @@ from collections import Counter
 import hashlib
 import struct
 try:
+    from tools.pc_pixel_bytes import bgrx_rect_rgb, indexed_rgb
     from tools.pc_fonts import FONT_NAMES, loaded_font, text_pixels
     from tools.pc_message_events import MessageAssignments
 except ModuleNotFoundError:
+    from pc_pixel_bytes import bgrx_rect_rgb, indexed_rgb
     from pc_fonts import FONT_NAMES, loaded_font, text_pixels
     from pc_message_events import MessageAssignments
 
@@ -117,9 +119,9 @@ class TextRuns:
         result=[]
         for item,pixels,ink in candidates:
             x,y,w,h=item['rect']
-            rgb=bytes(channel for pixel in pixels for channel in palette[pixel])
+            rgb=indexed_rgb(pixels,palette)
             # Native libretro framebuffer is BGRX, palette records are RGB.
-            actual=bytes(raw[((y+dy)*320+x+dx)*4+c] for dy in range(h) for dx in range(w) for c in (2,1,0))
+            actual=bgrx_rect_rgb(raw,width,height,(x,y,w,h))
             if rgb!=actual:
                 self.counts['frame_mismatches'] += 1
                 continue

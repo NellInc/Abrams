@@ -61,6 +61,7 @@ class Collector:
         self.scanout_ui_bits = b''
         self.buffers = {}
         self.presented = None
+        self.mask_png_cache = {}
         self.scanout_sequence = 0
         self.current = None
         self.composition_cx = None
@@ -301,6 +302,20 @@ class Collector:
         offsets = int.from_bytes(low, 'little') | int.from_bytes(high, 'little')
         return not (offsets & ~int.from_bytes(mask, 'little'))
 
+    def mask_png(self, event, raw):
+        # Cache encoding only, after the caller's current-frame guards. Exact
+        # immutable byte equality, one entry per mask kind, no unbounded history.
+        mode = {19: 'L', 24: 'L', 31: 'RGB'}[event]
+        raw = bytes(raw)
+        previous = self.mask_png_cache.get(event)
+        if previous is not None and previous[0] == raw:
+            return previous[1]
+        png = io.BytesIO()
+        Image.frombytes(mode, (320,200), raw).save(png, format='PNG')
+        encoded = base64.b64encode(png.getvalue()).decode('ascii')
+        self.mask_png_cache[event] = (raw, encoded)
+        return encoded
+
     def observe_video(self, event, slot_or_page, raw, registers):
         if event == 10:
             self.ui_mask_slot = None
@@ -324,10 +339,8 @@ class Collector:
             if self.scanout:
                 self.scanout['ui_overlay'] = None
                 if raw:
-                    png = io.BytesIO()
-                    Image.frombytes('L', (320, 200), raw).save(png, format='PNG')
                     self.scanout['ui_overlay'] = {'width': 320, 'height': 200,
-                        'mask_png': base64.b64encode(png.getvalue()).decode('ascii'),
+                        'mask_png': self.mask_png(event,raw),
                         'mask_sha256': hashlib.sha256(raw).hexdigest(), 'ui_pixels': raw.count(255),
                         'basis': 'EGA bit provenance sampled at original scanline time'}
         elif event == 31:
@@ -340,10 +353,8 @@ class Collector:
             if self.scanout:
                 self.scanout['driver_overlay'] = None
                 if raw and raw[2::3].count(255):
-                    png = io.BytesIO()
-                    Image.frombytes('RGB',(320,200),raw).save(png,format='PNG')
                     self.scanout['driver_overlay'] = {'width':320,'height':200,
-                        'mask_png':base64.b64encode(png.getvalue()).decode('ascii'),
+                        'mask_png':self.mask_png(event,raw),
                         'mask_sha256':hashlib.sha256(raw).hexdigest(),
                         'source':'SIM.EXE:5ba1..5da3','source_sha256':SIM_SHA256,
                         'basis':'original turret-relative driver assembly writes; per-bit offset sampled with each scanline'}
@@ -359,10 +370,8 @@ class Collector:
             if self.scanout:
                 self.scanout['plate_overlay'] = None
                 if raw:
-                    png = io.BytesIO()
-                    Image.frombytes('L', (320,200), raw).save(png, format='PNG')
                     self.scanout['plate_overlay'] = {'width':320, 'height':200,
-                        'mask_png':base64.b64encode(png.getvalue()).decode('ascii'),
+                        'mask_png':self.mask_png(event,raw),
                         'mask_sha256':hashlib.sha256(raw).hexdigest(),
                         'plates':{str(i+1):{'source':name,'pixels':raw.count(i+1),
                             'source_sha256':self.plates.resources[name][1]} for i,name in enumerate(PLATE_IDS)},

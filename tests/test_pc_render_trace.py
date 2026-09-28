@@ -41,6 +41,27 @@ class RenderTraceTests(unittest.TestCase):
         self.assertTrue(Collector.safe_driver_mask(b'',b''))
         self.assertFalse(Collector.outside_ui(b'',b''))
 
+    def test_mask_encoding_cache_is_exact_bounded_and_not_an_ownership_bypass(self):
+        from unittest.mock import patch
+        c = self.collector()
+        with patch('tools.pc_render_trace.Image.frombytes', wraps=Image.frombytes) as encode:
+            for event,mode,channels in [(19,'L',1),(24,'L',1),(31,'RGB',3)]:
+                raw = bytearray([255,0]*32000*channels)
+                first = c.mask_png(event,raw)
+                self.assertEqual(c.mask_png(event,bytes(raw)),first)
+                with Image.open(io.BytesIO(base64.b64decode(first))) as image:
+                    self.assertEqual((image.mode,image.size,image.tobytes()),(mode,(320,200),bytes(raw)))
+                raw[-1] ^= 1
+                self.assertNotEqual(c.mask_png(event,raw),first)
+                self.assertEqual(c.mask_png_cache[event][0],bytes(raw))
+            self.assertEqual(encode.call_count,6)
+        self.assertEqual(len(c.mask_png_cache),3)
+        # A cached PNG never overrides current ownership checks.
+        valid = bytes([1])*64000
+        c.mask_png(24,valid)
+        self.event(c,10,0);self.event(c,19,0,bytes(64000))
+        with self.assertRaisesRegex(ValueError,'world pixels'):self.event(c,24,0,valid)
+
     def collector(self):
         return Collector(None, history_limit=2)
 
