@@ -11,8 +11,9 @@ value, invented scale, glow, interpolation or additional precision is displayed.
 
 This pass was authored and reviewed within the same Codex session. Rendered
 inspection and executable checks are evidence; Nell's visual acceptance remains
-separate. Orientation, reticles, status-system lamps and further instrument
-variants remain open.
+separate. The subsequent orientation pass is documented in
+`pc-orientation-research.md`; reticles, status-system lamps and further
+instrument variants remain open.
 
 ## Original executable evidence
 

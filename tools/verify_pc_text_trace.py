@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check bounded text capture parity and independently crop saved source frames."""
+"""Check bounded presentation capture parity and crop saved source frames."""
 import argparse
 from collections import Counter
 import hashlib
@@ -54,12 +54,37 @@ def verify(trace_path, baseline_path):
                                  'sha256':actual,'matches':actual==run['pixel_sha256']})
     checks['saved_source_crops_match_runtime_evidence']=all(c['matches'] for c in captures)
     if trace['profile']=='text': checks['saved_crew_crop_exercised']=any(c['kind']=='crew_primary' for c in captures)
+    orientation_crops=[]
+    if trace['profile']=='orientation':
+        observation=trace['orientation_observation']
+        packets=[row['orientation'] for row in rows if row.get('orientation')]
+        checks['all_orientation_entries_completed']=observation.get('entries',0)>0 and observation['entries']==observation.get('completed_draws')
+        checks['no_orientation_rejections']=set(observation)<=set(('entries','completed_draws','presented_draws','frame_mismatches'))
+        checks['orientation_presented_count']=len(packets)==observation.get('presented_draws')
+        checks['orientation_visibility_gate_exercised']=observation.get('frame_mismatches',0)>0
+        checks['orientation_same_page']=all(row['orientation']['page_offset']==row['page_offset'] for row in rows if row.get('orientation'))
+        stages={}
+        for entry in trace['ui_presentations']:
+            item=rows[entry['frame_index']].get('orientation',{})
+            if not item: continue
+            stages[entry['stage']]=item
+            x,y,w,h=item['rect']
+            with Image.open(trace_path.parent/entry['image']) as image:
+                digest=hashlib.sha256(image.convert('RGB').crop((x,y,x+w,y+h)).tobytes()).hexdigest()
+            orientation_crops.append({'stage':entry['stage'],'matches':digest==item['pixel_sha256'],'sha256':digest})
+        checks['every_saved_orientation_present']=len(orientation_crops)==len(trace['ui_presentations'])
+        checks['every_saved_orientation_crop_matches']=all(c['matches'] for c in orientation_crops)
+        checks['both_orientation_stations']={p['station'] for p in packets}=={0,1}
+        checks['moving_orientation_grid']=len({str(p['grid']) for p in packets if p['station']==1})>2
+        checks['moving_hull_geometry']=stages['commander-settled']['quads'][1]['basis']!=stages['commander-stopped']['quads'][1]['basis']
+        turret=[stages[name] for name in ('turret-mode','turret-right','turret-left')]
+        checks['independent_turret_with_stationary_hull']=len({str(p['quads'][1]['basis']) for p in turret})==1 and len({str(p['quads'][2]['basis']) for p in turret})==3
     return {'checks':checks,'frames':len(trace['frames']),'text_observation':stats,
             'visible_runs':[{'kind':kind,'text':text,'frames':n} for (kind,text),n in sorted(counts.items())],
-            'saved_crops':captures,'readiness_delays':readiness_delays,
+            'saved_crops':captures,'orientation_crops':orientation_crops,'readiness_delays':readiness_delays,
             'inputs':[{'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
                       for path in (trace_path,baseline_path)],
-            'scope':'bounded source-text visibility and unchanged guest RAM/video/input; no voice scheduling or complete dialogue claim'}
+            'scope':'bounded source presentation visibility and unchanged guest RAM/video/input; no complete-game or timing parity claim'}
 
 
 def main():

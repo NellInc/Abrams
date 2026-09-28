@@ -30,6 +30,58 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Rotating hull/turret display, 2026-09-28
+
+Completed the next cockpit presentation slice under the existing local remaster
+authority. The PC executable remains definitive, with no replacement simulation.
+The read-only bridge now observes complete original orientation draws, checks
+fixed-point geometry and per-edge colours, and binds them to actual scanout RGB.
+Godot draws crisp, clipped vectors using the extracted Genesis display's visual
+language. The moving grid, independent hull/turret positions, black fill versus
+outline-only mode, component colours and original timing are retained. Heading
+text remains in its existing separately verified renderer.
+
+Evidence:
+
+* `docs/pc-orientation-research.md` records source hashes, instruction/data
+  addresses, isolated versus live claims, visual decisions and reproduction.
+* `artifacts/pc-orientation-cpu-01/oracle-integrated.json`: all 1,024 source-CPU
+  cases and observer bindings pass, covering both stations/themes/pages,
+  every hull and absolute turret angle, varied relative angles, fills and
+  component colours. Original raster bytes are retained; this is not an
+  independent polygon-fill or whole-game timing equivalence claim.
+* `artifacts/pc-orientation-live-parity-02.json`: all checks pass across 1,113
+  frames with identical trace/baseline RAM, video, input and stage states.
+  All 225 draws completed, 1,097 presentations matched, and eleven mismatches
+  retained original pixels. Source crops, moving grid, hull turning and
+  turret-relative movement with a stationary hull are directly checked.
+* `artifacts/pc-orientation-native-03/report.json`: 321,049 assertions, zero
+  errors, 59,904,000 full-frame pixel comparisons at 1280x800 and 1920x1200.
+  Changes remain inside the proven source rectangles. Both stations render;
+  missing plate provenance after snapshot restore correctly retains originals.
+  Eight additional original-CPU damage/theme examples were visually reviewed.
+* `artifacts/pc-orientation-play-02/`: actual Play capture passed with the new
+  diagram enabled, source RGB hash matched, and the rendered packet identical
+  to the presented observer packet. Final crisp output was visually inspected.
+* Final `./tools/validate.sh`: exit 0, 234 Python tests and all 31 stages pass,
+  completion receipt `artifacts/validation-20260928T014131Z`.
+
+Corrections made during verification: the first replay turned the hull rather
+than the turret until the original C control-mode key was added; Godot's JSON
+floats required explicit integral-array comparisons; snapshot-entry frames
+correctly lacked plate provenance and must remain original; the first rendered
+antialiasing fringe scaled with source pixels and was replaced with display-
+pixel smoothing. These failed/intermediate artifacts remain separate from the
+final evidence. The work was authored and reviewed in the same Codex session;
+Nell's aesthetic acceptance is not claimed. Optional Impeccable is unavailable,
+with no installation or dependency-policy workaround.
+
+Next: source-verified reticles and bearing text over nonuniform world imagery,
+remaining cockpit/status variants, then broader world/effect restoration.
+No live damage-event reachability, all-mission parity, completed audio package,
+or release candidate is claimed. The overall goal remains active. No remote
+publication occurred; the five unrelated vehicle-study files remain untouched.
+
 ## R and cap/baseline correction, 2026-09-28
 
 Nell identified the remaining R defect and unequal lower-row letter heights in

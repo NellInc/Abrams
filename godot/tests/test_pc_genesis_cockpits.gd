@@ -130,6 +130,7 @@ func fixtures(path: String, output: String) -> void:
 				if not assembly.is_empty() and assembly.get_pixelv(p).b==1.0: allowed = true
 				for cell in frame.instrument_art.active+frame.instrument_art.gauges:
 					if cell.source.has_point(p): allowed = true
+				if frame.instrument_art.orientation.source_rect.has_point(p): allowed = true
 				for label in frame.typography.runs:
 					if label.rect.has_point(Vector2(p)):
 						allowed = true

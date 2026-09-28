@@ -259,7 +259,7 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> boo
 	if genesis_art_enabled and not cockpit_art_ids.is_empty():
 		var tags := Image.new()
 		if tags.load_png_from_buffer(Marshalls.base64_to_raw(presentation.plate_overlay.mask_png))==OK:
-			instrument_art.set_frame(source,mask,tags)
+			instrument_art.set_frame(source,mask,tags,presentation.get("orientation",{}))
 	if genesis_art_enabled: portrait_art.set_frame(source,mask,presentation)
 	typography.set_frame(source,mask,presentation)
 	return true

@@ -399,6 +399,7 @@ func _capture() -> void:
 		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],
 		"genesis_art": tandem_frame.genesis_art_enabled if trace_mode else false,
 		"instrument_art": tandem_frame.instrument_art.active.map(func(item): return item.name) if trace_mode else [],
+		"orientation_art": tandem_frame.instrument_art.orientation.packet if trace_mode else {},
 		"instrument_gauges": tandem_frame.instrument_art.gauges.map(func(item): return item.name) if trace_mode else [],
 		"portrait_art": {"id":tandem_frame.portrait_art.active.id,"name":tandem_frame.portrait_art.active.name} if trace_mode and not tandem_frame.portrait_art.active.is_empty() else null,
 		"frontend_art": tandem_frame.frontend_art.active if trace_mode else {},

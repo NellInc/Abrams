@@ -36,6 +36,8 @@ static Bit32u abrams_plate_begin, abrams_plate_end, abrams_plate_page;
 static bool abrams_plate_copy_active = false;
 static Bit16u abrams_plate_copy_return_ip, abrams_plate_copy_return_cs;
 static Bit32u abrams_plate_copy_source, abrams_plate_copy_dest;
+static bool abrams_orientation_active = false;
+static Bit16u abrams_orientation_rect[5];
 static bool abrams_text_active = false;
 static bool abrams_frontend_text_mode = false;
 static Bit16u abrams_text_rect[6];
@@ -61,6 +63,7 @@ void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
     abrams_motor_pool_claiming = false;
     abrams_plate_copy_active = false;
     abrams_text_active = false;
+    abrams_orientation_active = false;
     abrams_ownership.reset();
     abrams_plates.reset();
 }
@@ -280,11 +283,69 @@ static INLINE void AbramsTraceInstruction() {
         && ip != 0x020a && ip != 0x0259
         && ip != 0x3d0c && ip != 0x3d6a && ip != 0x3d8e && ip != 0x3db0 && ip != 0x3dd2
         && ip != 0x3c90 && ip != 0x3cd4 && ip != 0x3f73
+        && ip != 0x6040 && ip != 0x5f81 && ip != 0x62a6
+        && ip != 0x567f && ip != 0x56a5 && ip != 0x56dd
+        && ip != 0x5fa5 && ip != 0x5fc3 && ip != 0x5fe1 && ip != 0x5fff
         && ip != 0x5ba1 && ip != 0x5c50 && ip != 0x5da3) return;
     if (SegValue(ds) != abrams_trace_load + 0x19e0) return;
     Bit32u segment = SegValue(cs), event = 0, start = 0, length = 0;
     const Bit32u base = SegPhys(ds);
     if (base + 65536 > 640 * 1024) return;
+    if (segment == abrams_trace_load && (ip == 0x6040 || (abrams_orientation_active &&
+        (ip == 0x5f81 || ip == 0x62a6 || ip == 0x567f || ip == 0x56a5 || ip == 0x56dd ||
+         ip == 0x5fa5 || ip == 0x5fc3 || ip == 0x5fe1 || ip == 0x5fff)))) {
+        const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
+            reg_bp,reg_sp,SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+        if (ip == 0x6040) {
+            MEM_BlockRead(base,abrams_trace_snapshot,65536);
+            abrams_trace_callback(33,regs,abrams_trace_snapshot,0,65536);
+            unsigned station=mem_readb(base+0x799d), page=mem_readw(base+0x35a8);
+            if (station>1 || (page!=0xa000 && page!=0xa200) || vga.mode!=M_EGA) {
+                abrams_trace_callback(35,regs,NULL,0,0);abrams_orientation_active=false;return;
+            }
+            abrams_orientation_rect[0]=station==0 ? 128 : 216;
+            abrams_orientation_rect[1]=station==0 ? 137 : 83;
+            abrams_orientation_rect[2]=62;abrams_orientation_rect[3]=44;
+            abrams_orientation_rect[4]=(page-0xa000)*16;
+            abrams_orientation_active=true;
+        } else if (ip == 0x62a6) {
+            unsigned x=abrams_orientation_rect[0], y=abrams_orientation_rect[1], page=abrams_orientation_rect[4];
+            for (unsigned i=0;i<5;++i) {
+                abrams_trace_snapshot[2*i]=Bit8u(abrams_orientation_rect[i]);
+                abrams_trace_snapshot[2*i+1]=Bit8u(abrams_orientation_rect[i]>>8);
+            }
+            // Host backing planes only; guest reads would mutate VGA latches.
+            for (unsigned dy=0;dy<44;++dy) for (unsigned dx=0;dx<62;++dx) {
+                unsigned at=page+(y+dy)*40+(x+dx)/8, color=0;
+                for (unsigned p=0;p<4;++p)
+                    if (vga.mem.linear[at*4+p] & (128u>>((x+dx)&7))) color|=1u<<p;
+                abrams_trace_snapshot[10+dy*62+dx]=Bit8u(color);
+            }
+            abrams_trace_callback(35,regs,abrams_trace_snapshot,0,10+62*44);
+            abrams_orientation_active=false;
+        } else {
+            unsigned stack=SegPhys(ss)+(ip==0x5f81 ? reg_bp : reg_sp);
+            if (stack+8>640*1024) {
+                abrams_trace_callback(35,regs,NULL,0,0);abrams_orientation_active=false;return;
+            }
+            if (ip==0x5f81) {
+                MEM_BlockRead(base+0x359b,abrams_trace_snapshot,4);
+                MEM_BlockRead(base+0x35a8,abrams_trace_snapshot+4,2);
+                MEM_BlockRead(stack+4,abrams_trace_snapshot+6,2);
+                MEM_BlockRead(stack+2,abrams_trace_snapshot+8,2);
+                MEM_BlockRead(base+0x6486,abrams_trace_snapshot+10,40);
+                abrams_trace_callback(34,regs,abrams_trace_snapshot,0,50);
+            } else {
+                abrams_trace_snapshot[0]=Bit8u(ip);abrams_trace_snapshot[1]=Bit8u(ip>>8);
+                MEM_BlockRead(stack,abrams_trace_snapshot+2,8);
+                abrams_trace_snapshot[10]=mem_readb(base+0x359e);
+                abrams_trace_snapshot[11]=mem_readb(base+0x359b);
+                MEM_BlockRead(base+0x35a8,abrams_trace_snapshot+12,2);
+                abrams_trace_callback(36,regs,abrams_trace_snapshot,0,14);
+            }
+        }
+        return;
+    }
     if (segment == abrams_trace_load && (ip == 0x5ba1 || ip == 0x5c50 || ip == 0x5da3)) {
         abrams_driver_active = false;
         if (ip != 0x5da3 && reg_bp >= 2 && SegPhys(ss) + reg_bp < 640 * 1024) {

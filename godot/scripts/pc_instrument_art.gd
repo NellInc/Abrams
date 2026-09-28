@@ -20,6 +20,7 @@ var donor: Texture2D
 var active: Array[Dictionary] = []
 var gauges: Array[Dictionary] = []
 var plates: Dictionary = {}
+var orientation = preload("res://scripts/pc_orientation_art.gd").new()
 const PLATES = {
 	1:["gps-bin","83e46895044a85a4e3abdd8daf836605a40cbb475c02fe2c8b3fe0664da9e036"],
 	2:["tc-bin","c6c3691fc37cb6e7856e7f8f15ea1997facce823ecd724a89176226ee0b26b98"],
@@ -42,6 +43,9 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	resized.connect(queue_redraw)
+	resized.connect(_layout_orientation)
+	add_child(orientation)
+	orientation.clear()
 
 func load_sources(root: String, art: Image) -> bool:
 	clear()
@@ -64,13 +68,16 @@ func load_sources(root: String, art: Image) -> bool:
 func clear() -> void:
 	active.clear()
 	gauges.clear()
+	orientation.clear()
 	queue_redraw()
 
-func set_frame(source: Image, ui: Image, tags: Image) -> void:
+func set_frame(source: Image, ui: Image, tags: Image, diagram: Dictionary = {}) -> void:
 	clear()
 	if source_plate==null or donor==null: return
 	for image in [source,ui,tags]:
 		if image==null or image.get_size()!=Vector2i(320,200): return
+	orientation.set_frame(source,ui,tags,plates,diagram)
+	_layout_orientation()
 	for item in CELLS:
 		var box: Rect2i = item.source
 		var valid := true
@@ -156,3 +163,9 @@ func _draw() -> void:
 		else:
 			for i in gauge.count:
 				_beveled_cell(Rect2(gauge.source.position+Vector2i(i*2,0),Vector2(1,6)),gauge.colors[i],0.18)
+
+func _layout_orientation() -> void:
+	if orientation.source_rect.size==Vector2i.ZERO: return
+	var factor := size/Vector2(320,200)
+	orientation.position = Vector2(orientation.source_rect.position)*factor
+	orientation.size = Vector2(orientation.source_rect.size)*factor
