@@ -363,6 +363,7 @@ func _apply_sample(message: Dictionary) -> void:
 		if cockpit_art_requested:
 			caption.text += "\nGENESIS-DERIVED COCKPITS: " + str(tandem_frame.cockpit_art_ids) + " | PC live values"
 			caption.text += " | illustrated instrument cells: %d" % tandem_frame.instrument_art.active.size()
+			caption.text += " | vector gauges: %d" % tandem_frame.instrument_art.gauges.size()
 			if not tandem_frame.portrait_art.active.is_empty(): caption.text += " | Genesis " + tandem_frame.portrait_art.active.name + " portrait"
 			caption.text += " | moving driver assembly" if tandem_frame.driver_assembly_enabled else ""
 			caption.text += " | Genesis colour study" if genesis_colours_requested and not genesis_style.palette.is_empty() else ""
@@ -398,6 +399,7 @@ func _capture() -> void:
 		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],
 		"genesis_art": tandem_frame.genesis_art_enabled if trace_mode else false,
 		"instrument_art": tandem_frame.instrument_art.active.map(func(item): return item.name) if trace_mode else [],
+		"instrument_gauges": tandem_frame.instrument_art.gauges.map(func(item): return item.name) if trace_mode else [],
 		"portrait_art": {"id":tandem_frame.portrait_art.active.id,"name":tandem_frame.portrait_art.active.name} if trace_mode and not tandem_frame.portrait_art.active.is_empty() else null,
 		"frontend_art": tandem_frame.frontend_art.active if trace_mode else {},
 		"frontend_text": tandem_frame.frontend_art.typography.runs.map(func(r):return r.text) if trace_mode else [],

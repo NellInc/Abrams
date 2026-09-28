@@ -42,7 +42,9 @@ in each of nine gunner cells before replacing it: three ammunition icons, coax,
 smoke, temperature label, display, target and the speed-scale legend. A single
 overwrite rejects the whole affected cell. The PC GPS image is used for this
 verification only, not as the new illustration's visual reference. Ammunition
-counts, temperature state, speed bars and orientation diagram remain live.
+counts and the orientation diagram remain live. The subsequent
+[source-driven gauge pass](pc-gauges-research.md) adds scalable speed/fuel strips
+and temperature lamps, including the original displayed warning phases.
 
 Twenty-two fixed label candidates pass the same exact original-font and visible
 pixel checks as the existing observed text. Completed observed text has priority

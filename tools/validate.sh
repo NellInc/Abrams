@@ -39,6 +39,11 @@ run_check() {
       echo "FAIL: $name (bounded run did not report completion)" >&2
       exit 1
     fi
+    if [ "$name" = pc_gauges ] && ! grep -Eq '^PC_GAUGES: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (bounded run did not report completion)" >&2
+      exit 1
+    fi
     cat "$OUT/$name.log"
     printf 'PASS %s\n' "$name" >> "$OUT/results.txt"
   else
@@ -65,6 +70,7 @@ run_check pc_genesis_style ./tools/godot.sh --headless --script res://tests/test
 run_check pc_terrain_style ./tools/godot.sh --headless --script res://tests/test_pc_terrain_style.gd
 run_check pc_cockpit_art ./tools/godot.sh --headless --script res://tests/test_pc_cockpit_art.gd
 run_check pc_genesis_cockpits ./tools/godot.sh --headless --script res://tests/test_pc_genesis_cockpits.gd
+run_check pc_gauges ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_gauges.gd
 run_check pc_portrait_art ./tools/godot.sh --headless --script res://tests/test_pc_portrait_art.gd
 run_check pc_frontend_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_frontend_art.gd
 run_check pc_intro_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_intro_art.gd

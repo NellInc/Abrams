@@ -128,7 +128,7 @@ func fixtures(path: String, output: String) -> void:
 				var id := roundi(tags.get_pixelv(p).r*255)
 				var allowed: bool = ui.get_pixelv(p).r==1.0 and id in frame.cockpit_art_ids and material_allowed(id,p,camera)
 				if not assembly.is_empty() and assembly.get_pixelv(p).b==1.0: allowed = true
-				for cell in frame.instrument_art.active:
+				for cell in frame.instrument_art.active+frame.instrument_art.gauges:
 					if cell.source.has_point(p): allowed = true
 				for label in frame.typography.runs:
 					if label.rect.has_point(Vector2(p)):
@@ -140,7 +140,7 @@ func fixtures(path: String, output: String) -> void:
 		for id in frame.cockpit_art_ids: coverage[id]+=1
 		changed_total += changed
 		result.save_png(output.path_join(entry.stage+".png"))
-		samples.append({"stage":entry.stage,"plates":frame.cockpit_art_ids.duplicate(),"instrument_cells":frame.instrument_art.active.map(func(cell): return cell.name),"labels":frame.typography.runs.map(func(label):return label.text),"changed_pixels":changed})
+		samples.append({"stage":entry.stage,"plates":frame.cockpit_art_ids.duplicate(),"instrument_cells":frame.instrument_art.active.map(func(cell): return cell.name),"gauges":frame.instrument_art.gauges.map(func(cell): return cell.name),"labels":frame.typography.runs.map(func(label):return label.text),"changed_pixels":changed})
 		if entry.stage=="damage-settled": await damaged_schematic(source,ui,tags,packet,world,output)
 	check(changed_total>100000,"real high-resolution materials are visible")
 	var file := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)

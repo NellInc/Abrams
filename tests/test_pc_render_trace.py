@@ -10,6 +10,37 @@ from tools.pc_render_trace import Collector
 
 
 class RenderTraceTests(unittest.TestCase):
+    def test_bulk_masks_match_each_original_byte_predicate(self):
+        for value in range(256):
+            self.assertEqual(Collector.binary_mask(bytes([value])), value in (0,255))
+            for ui in range(256):
+                self.assertEqual(Collector.outside_ui(bytes([value]),bytes([ui])),bool(value and ui!=255))
+                for low,high in [(0,0),(1,0),(255,127),(0,128)]:
+                    expected = not (value not in (0,255) or high>127 or
+                        (value and ui!=255) or (not value and (low or high)))
+                    self.assertEqual(Collector.safe_driver_mask(bytes([low,high,value]),bytes([ui])),expected)
+
+    def test_bulk_masks_keep_pixel_lanes_separate(self):
+        import random
+        rng=random.Random(230928)
+        ui=bytes(rng.choice((0,255)) for _ in range(64000))
+        plates=bytes(rng.randrange(9) if owned else 0 for owned in ui)
+        self.assertFalse(Collector.outside_ui(plates,ui))
+        raw=bytearray(64000*3)
+        for i,owned in enumerate(ui):
+            if owned:raw[i*3:i*3+3]=bytes([rng.randrange(256),rng.randrange(128),255])
+        self.assertTrue(Collector.safe_driver_mask(raw,ui))
+        for i in (0,1,319,320,63999):
+            changed=raw.copy();changed[i*3:i*3+3]=bytes([0,0,255])
+            missing=bytearray(ui);missing[i]=0
+            self.assertFalse(Collector.safe_driver_mask(changed,missing))
+            changed[i*3:i*3+3]=bytes([1,0,0])
+            self.assertFalse(Collector.safe_driver_mask(changed,ui))
+            changed[i*3:i*3+3]=bytes([0,128,255])
+            self.assertFalse(Collector.safe_driver_mask(changed,bytes([255])*64000))
+        self.assertTrue(Collector.safe_driver_mask(b'',b''))
+        self.assertFalse(Collector.outside_ui(b'',b''))
+
     def collector(self):
         return Collector(None, history_limit=2)
 

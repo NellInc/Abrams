@@ -1422,6 +1422,53 @@ and its duration remains the original final-card hold. This new authored text is
 kept distinct from the original credit evidence. The intro capture accepts
 `--capture-intro dedication` to verify the final card through the actual launcher.
 
+## Source-driven speed, fuel and temperature (2026-09-28)
+
+Continued after the roadmap-only turn, which added no implementation progress.
+Nell's earlier tandem/Genesis-first authorization remains in force, with no
+space-saving constraint imposed on this pass. The goal remains the complete
+remaster, original PC gameplay, all missions/campaign/persistence and the local
+release candidate; no publication, push or source redistribution is authorized.
+
+Added vector speed bars in both applicable stations, commander fuel, and gunner
+and driver temperature lamps to the existing instrument component. The visible
+original pixels select every lit segment, colour and blink phase. Exact source
+context, UI ownership, post-plate writes and original gaps must all match.
+Unknown or partial content remains original. Geometry is confined to the proven
+rectangles and follows the Genesis donor's clipped, lightly beveled cells.
+
+The original-instruction oracle covers 1,332 cases and 349,175,808 VGA plane
+bytes, including negative speed, narrowing overflow, both warning thresholds
+and blink phases. It established the six-row endpoint-excluding bar raster.
+Native tests cover every bar fill count and both warning colours/off phases;
+507 applicable CPU-oracle outputs feed the actual Godot recognizer. Two-scale
+native replay compares 56,576,000 pixels with zero errors. Original forward,
+reverse, coast, brake and station sequences match baseline RAM/video/input for
+1,608 frames. A captured speed 40 RAM value with only 18 visible strips proves
+why the binding must stay presentation-driven. Fuel remained 100 and temperature
+green in that replay; warning reachability is isolated-source/synthetic evidence.
+
+Actual Play initially failed a 30-second response timeout. A direct host probe
+measured a valid 300-frame request at 53.029 seconds; profiling located Python
+per-pixel provenance scans. Replaced those scans with equivalent bulk byte
+predicates, retaining all guards. Exhaustive byte-pair tests and full-mask
+corruptions pass. All 22 replay report fields and 51 PNGs are identical before
+and after the optimization. The unchanged Play capture deadlines then passed,
+with both gunner gauges active and native output inspected. Failed evidence is
+retained. No guest code, trace core, input or simulation rule was modified.
+
+Final aggregate gate `artifacts/validation-20260928T010215Z`: 229 Python
+tests and all 30 stages pass, exit 0. Reference files verify unchanged.
+
+Evidence and reproduction: `docs/pc-gauges-research.md`. Actual captures and
+receipts are under `artifacts/pc-gauges-*`. Optional Impeccable was unavailable;
+no dependency was installed. The five pre-existing untracked vehicle-study
+files remain untouched. This is local work only. Orientation, reticles, other
+instrument variants, world art, audiovisual completion, mission/campaign/save
+parity and release remain open. Orientation source notes exist at
+`artifacts/pc-orientation-source-01/findings.md`; those static findings still
+need root original-instruction/runtime verification before implementation.
+
 ## Open outcome matrix
 
 1. **Exact PC simulation:** retain the original as authority rather than porting

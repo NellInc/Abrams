@@ -256,7 +256,7 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> boo
 	_set_art(presentation,mask)
 	_set_driver_assembly(presentation,mask)
 	typography.status_numbers_enabled = genesis_art_enabled and 5 in cockpit_art_ids
-	if genesis_art_enabled and gunner_art_enabled:
+	if genesis_art_enabled and not cockpit_art_ids.is_empty():
 		var tags := Image.new()
 		if tags.load_png_from_buffer(Marshalls.base64_to_raw(presentation.plate_overlay.mask_png))==OK:
 			instrument_art.set_frame(source,mask,tags)

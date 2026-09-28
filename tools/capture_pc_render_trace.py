@@ -36,7 +36,7 @@ def main():
     parser.add_argument('--mode', choices=['trace','baseline','reference'], default='trace')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=180)
-    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio', 'text', 'cockpit', 'driver'], default='turn')
+    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio', 'text', 'cockpit', 'driver', 'gauges'], default='turn')
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--state-core-sha256', help='defaults to the selected reference or source-baseline pin')
     parser.add_argument('--capture-sprites', action='store_true', help='save first paired framebuffer for each observed effect image')
@@ -68,7 +68,17 @@ def main():
         presentations = []
         sprite_presentations, captured_sprites, ui_presentations = [], set(), []
         stages = {}
-        if args.profile == 'driver':
+        if args.profile == 'gauges':
+            steps=[('baseline',30,[]),('commander-key',3,['f2']),('commander-settled',240,[]),
+                   ('forward-key',60,['kp8']),('forward-coast',120,[]),
+                   ('gunner-key',3,['f1']),('gunner-settled',240,[]),
+                   ('brake-key',3,['kp5']),('gunner-stopped',120,[]),
+                   ('reverse-key',60,['kp2']),('reverse-coast',120,[]),
+                   ('commander-return-key',3,['f2']),('commander-reversing',240,[]),
+                   ('stop-key',3,['kp5']),('commander-stopped',120,[]),
+                   ('driver-key',3,['f4']),('driver-settled',240,[])]
+            inputs=[(name,keys,n==count-1) for name,count,keys in steps for n in range(count)]
+        elif args.profile == 'driver':
             steps=[('baseline',30,[]),('commander-key',3,['f2']),('commander',240,[]),
                    ('driver-key',3,['f4']),('driver-centered',240,[]),
                    ('turret-mode-key',3,['c']),('turret-mode',30,[]),

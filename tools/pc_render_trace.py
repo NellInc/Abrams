@@ -40,6 +40,7 @@ except ModuleNotFoundError:
 
 ROOT = Path(__file__).resolve().parents[1]
 CALLBACK = C.CFUNCTYPE(None, C.c_uint32, C.POINTER(C.c_uint16), C.c_void_p, C.c_uint32, C.c_uint32)
+FULL_UI_BYTES = bytes(255) + b'\xff'
 
 
 class Collector:
@@ -264,6 +265,25 @@ class Collector:
             self.active = None
 
 
+    @staticmethod
+    def binary_mask(raw):
+        return raw.count(0) + raw.count(255) == len(raw)
+
+    @staticmethod
+    def outside_ui(raw, ui):
+        # Each byte is an independent bit lane. Only exactly 255 grants UI
+        # ownership, preserving the old predicate even for malformed UI bytes.
+        owned = ui.translate(FULL_UI_BYTES)
+        return bool(int.from_bytes(raw, 'little') & ~int.from_bytes(owned, 'little'))
+
+    @staticmethod
+    def safe_driver_mask(raw, ui):
+        low, high, mask = raw[0::3], raw[1::3], raw[2::3]
+        if not Collector.binary_mask(mask) or max(high, default=0) > 127: return False
+        if Collector.outside_ui(mask, ui): return False
+        offsets = int.from_bytes(low, 'little') | int.from_bytes(high, 'little')
+        return not (offsets & ~int.from_bytes(mask, 'little'))
+
     def observe_video(self, event, slot_or_page, raw, registers):
         if event == 10:
             self.ui_mask_slot = None
@@ -279,7 +299,7 @@ class Collector:
         elif event == 19:
             if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
             if raw and len(raw) != 320 * 200: raise ValueError('unsupported UI mask dimensions')
-            if any(v not in (0, 255) for v in raw): raise ValueError('invalid UI provenance mask')
+            if not self.binary_mask(raw): raise ValueError('invalid UI provenance mask')
             self.ui_mask_slot = slot_or_page
             self.scanout_ui_bits = raw
             if self.scanout:
@@ -296,13 +316,11 @@ class Collector:
                 raise ValueError('invalid original driver mask frame')
             if raw and (self.ui_mask_slot != slot_or_page or len(self.scanout_ui_bits) != 64000):
                 raise ValueError('driver mask lacks paired UI provenance')
-            if any(raw[i+2] not in (0,255) or raw[i+1] > 127 or
-                   (raw[i+2] and self.scanout_ui_bits[i//3] != 255) or
-                   (not raw[i+2] and (raw[i] or raw[i+1])) for i in range(0,len(raw),3)):
+            if not self.safe_driver_mask(raw, self.scanout_ui_bits):
                 raise ValueError('unsafe original driver provenance')
             if self.scanout:
                 self.scanout['driver_overlay'] = None
-                if raw and any(raw[2::3]):
+                if raw and raw[2::3].count(255):
                     png = io.BytesIO()
                     Image.frombytes('RGB',(320,200),raw).save(png,format='PNG')
                     self.scanout['driver_overlay'] = {'width':320,'height':200,
@@ -313,10 +331,10 @@ class Collector:
         elif event == 24:
             if slot_or_page not in range(3): raise ValueError('unknown core framebuffer slot')
             if raw and len(raw) != 64000: raise ValueError('unsupported plate mask dimensions')
-            if any(value > len(PLATE_IDS) for value in raw): raise ValueError('invalid plate provenance mask')
+            if max(raw, default=0) > len(PLATE_IDS): raise ValueError('invalid plate provenance mask')
             if raw and (self.ui_mask_slot != slot_or_page or len(self.scanout_ui_bits) != 64000):
                 raise ValueError('plate mask lacks paired UI provenance')
-            if any(plate and ui != 255 for plate, ui in zip(raw,self.scanout_ui_bits)):
+            if self.outside_ui(raw, self.scanout_ui_bits):
                 raise ValueError('plate mask covers original world pixels')
             self.plate_mask_slot = slot_or_page
             if self.scanout:
