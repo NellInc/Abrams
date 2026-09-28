@@ -116,3 +116,11 @@ private alongside voice scripts. Tests needing them or original game files requi
 the corresponding local inputs. Pure packaging and launcher tests run from the
 source kit without those inputs. The private kit's managed Play entry intentionally
 differs from the research launcher's command contract tested by `test_launchers`.
+
+## Repository and installation gates
+
+The dependency-free source gate and read-only staged/history exclusions are
+specified in [source-ci.md](source-ci.md). Fresh installs, profile-preserving
+upgrades, rollback and the native Windows/Linux boundary are documented in
+[install-recovery.md](install-recovery.md). Source CI does not certify gameplay,
+rights clearance, signing, or a supported native port.

@@ -43,7 +43,7 @@ func reject_corruption(spec: Dictionary) -> void:
 	var p: Vector2i = spec.source.position
 	var g: Vector2i = spec.guard.position
 	for failure in ["pixel","partial","ownership","tag","guard_pixel","guard_ui","guard_tag"]:
-		var images := fixture(spec,3,Instruments.GREEN)
+		var images := fixture(spec,3,Instruments.RED if spec.has("lock") else Instruments.GREEN)
 		match failure:
 			"pixel": images[0].set_pixelv(p,Color.CYAN)
 			"partial": images[0].set_pixelv(spec.source.end-Vector2i.ONE,Color.CYAN)
@@ -82,7 +82,7 @@ func run() -> void:
 			if instruments.gauges.size()==1: check(instruments.gauges[0].lit==lit,"visible quantization "+spec.name)
 		reject_corruption(spec)
 	for spec in Instruments.LAMPS:
-		for color in [Instruments.GREEN,Instruments.YELLOW,Instruments.RED,Color.BLACK]:
+		for color in ([Instruments.RED,Color.BLACK] if spec.has("lock") else [Instruments.GREEN,Instruments.YELLOW,Instruments.RED,Color.BLACK]):
 			bind(fixture(spec,0,color))
 			check(instruments.gauges.size()==1 and instruments.gauges[0].color==color,"lamp colour and blink phase "+spec.name)
 		reject_corruption(spec)
@@ -172,7 +172,14 @@ func region_checks() -> void:
 	check(not Instruments._owned_region(ui,tags,box,1),"non-L8 nonopaque ownership rejects")
 
 func original_cases(path: String) -> void:
-	var report: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not FileAccess.file_exists(path):
+		check(false,"original-instruction oracle file is missing: "+path)
+		return
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not parsed is Dictionary:
+		check(false,"original-instruction oracle is malformed")
+		return
+	var report: Dictionary = parsed
 	check(report.case_count==1332,"complete original-instruction oracle")
 	var checked := 0
 	for item in report.cases:
@@ -211,7 +218,7 @@ func synthetic_native(viewport: SubViewport, frame: TextureRect, output: String,
 	# Original-instruction tests prove these warning colours; these constructed
 	# presentation fixtures exercise drawing, not live warning reachability.
 	for spec in Instruments.LAMPS:
-		for color in [Instruments.GREEN,Instruments.YELLOW,Instruments.RED,Color.BLACK]:
+		for color in ([Instruments.RED,Color.BLACK] if spec.has("lock") else [Instruments.GREEN,Instruments.YELLOW,Instruments.RED,Color.BLACK]):
 			var images := fixture(spec,0,color)
 			var packet := packet_for(images)
 			var world := ImageTexture.create_from_image(images[0].get_region(Rect2i(0,0,320,136)))
@@ -276,7 +283,7 @@ func native(path: String, output: String) -> void:
 						var x: int = (gauge.source.position.x+2*i)*scale+scale/2
 						check(after.get_pixel(x,189*scale).to_rgba32()==gauge.colors[i].to_rgba32(),"exact strip colour "+gauge.name)
 				else:
-					var p: Vector2i = gauge.source.get_center()*scale
+					var p := Vector2i((Vector2(gauge.source.position)+Vector2(gauge.source.size)*0.5)*scale)
 					check(after.get_pixelv(p).to_rgba32()==gauge.color.to_rgba32(),"exact lamp colour "+gauge.name)
 			check(gauges.is_empty() or changed>0,"native gauge geometry is visible "+entry.stage)
 			if entry.stage.ends_with("settled") or entry.stage=="gunner-restored":

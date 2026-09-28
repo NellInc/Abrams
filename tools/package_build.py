@@ -17,7 +17,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = 'tools/package/allowlist.json'
 RECEIPT = 'PACKAGE.json'
-BANNED = {'.git', '.godot', '__pycache__', 'artifacts', 'capture', 'saves', 'states', 'GENESIS'}
+BANNED = {'.git', '.godot', '__pycache__', 'artifacts', 'capture', 'saves', 'states', '.ssh', '.aws'}
 SOURCE_SUFFIXES = {'.py', '.sh', '.h', '.gd', '.gdshader', '.tscn', '.godot', '.md', '.json', '.command', '.txt'}
 
 
@@ -29,12 +29,14 @@ def validate_name(name, kind):
     p = PurePosixPath(name)
     if not name or '\\' in name or p.is_absolute() or str(p) != name or '..' in p.parts:
         raise ValueError(f'Unsafe package path: {name}')
-    if any(x in BANNED or x.startswith('.env') for x in p.parts) or p.suffix in {'.state', '.pyc', '.log', '.tmp'}:
+    if any(x.lower() in BANNED or x.lower().startswith('.env') or x.lower().endswith('.env') for x in p.parts) or p.suffix.lower() in {'.state', '.pyc', '.log', '.tmp', '.pem', '.key', '.p12', '.pfx'}:
         raise ValueError(f'Forbidden private state: {name}')
+    if any(x.lower() == 'genesis' for x in p.parts) and not (kind == 'private' and name.startswith(('local-art/genesis/', 'reference/genesis/'))):
+        raise ValueError(f'Original ROM directory: {name}')
     if p.parts[0] == 'local-audio' and not (kind == 'private' and name.startswith('local-audio/frontend-music-v1/')):
         raise ValueError(f'Unreviewed audio working files: {name}')
     if kind == 'source':
-        if p.parts[0] in {'GAME', 'reference', 'local-art', '.runtime'} or name.startswith(('godot/assets/', 'godot/data/')):
+        if p.parts[0].lower() in {'game', 'reference', 'local-art', '.runtime'} or name.startswith(('godot/assets/', 'godot/data/')):
             raise ValueError(f'Non-source member in source kit: {name}')
         if name.startswith('godot/tests/fixtures/') and not (p.name.endswith('_steps.json') or p.name in {'pc_bearings.json', 'pc_request_sound_oracle.json'}):
             raise ValueError(f'Extracted dialogue fixture: {name}')
@@ -131,7 +133,8 @@ def verify_private_inputs(root):
     if digest((root / '.runtime/pc-core/abrams-trace.dylib').read_bytes()) != core['trace_sha256']:
         raise ValueError('Core differs from its build receipt')
     headers = {'trace': 'abrams_trace.h', 'ownership': 'abrams_vga_ownership.h',
-               'plate_ownership': 'abrams_plate_ownership.h', 'state_overlay': 'abrams_state_overlay.h'}
+               'plate_ownership': 'abrams_plate_ownership.h', 'state_overlay': 'abrams_state_overlay.h',
+               'observer_checkpoint': 'abrams_observer_checkpoint.h'}
     for key, name in headers.items():
         if digest((root / 'tools/pc_core' / name).read_bytes()) != core.get(key + '_header_sha256'):
             raise ValueError(f'Core build source differs from its receipt: {name}')

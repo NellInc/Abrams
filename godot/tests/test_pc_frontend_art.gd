@@ -106,7 +106,13 @@ func run() -> void:
 		if enabled and art.active.get("scene")=="office": coverage[art.active.pose]+=1
 		if entry.label in ["boot-15","boot-17","boot-19","debrief"]: check(enabled,"observed office must restore: "+entry.label)
 		if program.get("name") not in ["BRIEF","END"]:
-			check(not enabled or (program.get("name")=="START" and art.active.get("scene")=="intro"),"non-office program only permits separately verified intro")
+			var scene: String=art.active.get("scene","")
+			check(not enabled or (program.get("name")=="START" and scene in ["intro","information","map_frame","splash_aftermath"]),"non-office program only permits source-verified START families")
+			if enabled:
+				var binding: Dictionary={"intro":art.intro_art.active,"information":art.information_art.active,
+					"map_frame":art.map_art.active,"splash_aftermath":art.splash_aftermath_art.active}
+				check(not binding.get(scene,{}).is_empty(),"selected START child has its own current source proof")
+				check(not art.active.has("pose"),"START restoration never retains an office pose")
 		if native and program.get("name") in ["BRIEF","END"]: await render(source,entry.label)
 		if entry.label=="boot-17":
 			var changed := source.duplicate()

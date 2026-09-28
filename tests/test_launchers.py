@@ -11,6 +11,23 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class LauncherTests(unittest.TestCase):
+    def test_managed_templates_forward_paths_and_arguments(self):
+        with tempfile.TemporaryDirectory(prefix='abrams managed launch ') as temp:
+            root = Path(temp)
+            (root / 'tools/package').mkdir(parents=True)
+            shutil.copy2(ROOT / 'tools/package/Play.command', root / 'Play.command')
+            shutil.copy2(ROOT / 'tools/package/Launch.command', root / 'tools/package/Launch.command')
+            stub = root / 'python stub'
+            stub.write_text('#!/usr/bin/env python3\nimport json,sys\nprint(json.dumps(sys.argv[1:]))\n')
+            stub.chmod(0o755)
+            for launcher in [root / 'Play.command', root / 'tools/package/Launch.command']:
+                result = subprocess.run(['sh', str(launcher), '--check', '--window-size', '1920x1080'],
+                                        cwd='/', env=dict(os.environ, ABRAMS_PYTHON=str(stub)),
+                                        check=True, text=True, capture_output=True)
+                arguments = json.loads(result.stdout)
+                self.assertEqual(Path(arguments[0]).resolve(), root.resolve() / 'tools/package_runtime.py')
+                self.assertEqual(arguments[1:], ['--check', '--window-size', '1920x1080'])
+
     def test_launch_targets_and_arguments(self):
         with tempfile.TemporaryDirectory(prefix='abrams launch ') as temp:
             root = Path(temp)

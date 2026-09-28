@@ -1,111 +1,79 @@
 # Whole-graphics restoration register
 
-## Source precedence and completion criteria
+## Scope and source precedence
 
-The scope remains **all graphics**, including gauges, portraits, information
-screens, menus, world art and effects. Genesis is the primary visual basis
-wherever its corresponding graphic exists. The original PC executable owns
-gameplay, information, controls, layout constraints and visibility.
+The original PC executables retain all gameplay, information, visibility and
+outcome authority. Genesis supplies the corresponding visual donors wherever
+verified. Upscaled artwork preserves that style and the PC layout. EGA remains
+untouched; Genesis mode uses native extractions; Modern remains unavailable.
 
-A family is finished only when its required variants are inventoried, its
-Genesis availability is checked, its high-resolution assets are authored and
-reviewed against the source, its live PC binding preserves displayed information,
-and its applicable native transition/damage/motion checks pass. A gallery image
-or exact source decode alone does not satisfy this gate.
+The finite external resource inventory contains 16 plates, 120 bitmaps in 11
+containers, and five font files representing four distinct faces. Procedural
+world geometry, source-drawn instruments and transitions have separate checks.
+A bitmap count is not a completion percentage or a count of missing paintings.
 
-Working if: a completed family has source, authored-asset, live-binding and
-native-proof pointers; any PC-derived visual has an explicit Genesis-gap reason.
+Working if: each restored family has source identity, authored presentation,
+live binding and rendered evidence; unmatched or incomplete draws retain the
+original pixels without disclosing hidden information.
 
-This is a finite family-level work register. The complete per-variant denominator
-is still being recovered; no overall completion percentage is justified.
+## Non-Modern family register
 
-| Family | Genesis source availability | Authored art / live status | Required remaining work |
-|---|---|---|---|
-| Four cockpit surrounds | All four extracted | Five-image cockpit/status pack; four stations live with original visibility and moving roof | Remaining trims and aliasing at original silhouettes; all state variants and motion acceptance |
-| Gunner static instruments | Present in gunner extract | Nine illustrated cells live, pixel/provenance gated; ammunition and adjacent symbols now use tight, aspect-preserving crops after Nell rejected the stretched bindings | Other symbols and colour/state variants; human art acceptance |
-| Dynamic gauges and reticles | Corresponding Genesis gauges and gunner sight visible | PC values use verified scalable type; speed/fuel/temperature gauges and rotating hull/turret diagrams live; bearing text outlined; eight-stroke gunner sight now source-draw/visible-frame verified with resolution-independent edges, original endpoint quirks and live thermal/zoom evidence | Target box and other symbols, further warning/state variants, remaining display acceptance and human acceptance; no hidden information |
-| Systems status | Native CHECK DAMAGE captured exactly | Genesis background and pristine schematic live; twelve labels and six values scalable | Actual damaged schematics and lamp art; original fallback remains until verified |
-| Title and credits | Title and all four expanding flash poses extracted with exact VDP reconstruction | Title, four hi-res flash poses and eight original-font credit cards live, selected by complete original PC frames | Publisher splash, other transition variants and human art acceptance; moving 3D menu backdrop remains original |
-| Briefing office and Wilson | Office and two observed Wilson poses extracted | Office, neutral/speaking Wilson and a Genesis-derived facepalm live; exact visible 8x8 dialogue gets scalable lettering | Other CO poses, mouth variants, all dialogue layouts and partial-draw transitions |
-| Crew portraits | Four native crew-information portraits extracted | Four 1254x1254 derivatives; fully matched source faces bind to live crew lines, native gunner and loader verified | Live commander/driver evidence, injury/talking/other poses and radio bindings |
-| Motor pool | Native scene and menu extracted | Clean-contour v2 live; seven verified scalable text runs and complete-source-gated Genesis panel; governor, all three allocation fields and mission reentry checked | Partial/unrecognized drawing retains PC pixels; remaining limits, settings and transition variants |
-| Crew information | Native diagram and all four portrait placements extracted | Four Genesis portraits and clean-contour wireframe live in the original PC page; five outlined stencil labels and source-shaped callouts use Genesis colours | Other footer/transition variants and human art acceptance; unknown complete frames retain original pixels |
-| Ammunition information | AX, HEAT and SABOT pages reconstructed exactly | AX and SABOT illustrations at 2172x724 live with 38 original-style outline text runs; original font-rendered HEAT text now receives the same outlines | HEAT illustration revision remains blocked by image tool; embedded bitmap captions, page layout and remaining variants |
-| Armament information | Coax, cannon and smoke pages reconstructed exactly | Three high-resolution Genesis-derived illustrations live with 38 verified outline text runs, palette revision selected | Embedded bitmap captions, top-down tank highlights and page frames; remaining variants |
-| Recognition information | Genesis counterpart not yet fully inventoried | PC IDENTIFY only a format/layout oracle | Find Genesis equivalents before selecting visual donors; all vehicle identities and pages |
-| Maps and mission information | Commander map visible; long-range and mission pages incomplete | Original PC map retained live | Complete Genesis references, scalable map symbols, original information/visibility, briefing/debrief mission variants |
-| Menus, pause, saves, scores, endings | Some Genesis menus captured; full families unverified | Original joystick prompt, main/submenus, scenario values, typed names, mission headings and summary/score text use refined outlines; original selection colours, cursor and input remain | Remaining saved-game/end-state variants and nonuniform-background text; menu frames and moving backdrop remain original |
-| World vehicles and objects | 53 Genesis model programs recovered, including shared replacements and both procedural truck paths; 585 PC polygons have exact Genesis topology/material counterparts, truck differs | Original flat-colour geometry retained. Nell rejected the experimental side panels; they are disconnected from Play and retained as research only. Bevel studies are also not live | Replacement models and texture work deferred; verify original vehicle visibility and gameplay while completing playability and audio |
-| Terrain, buildings and vegetation | Native scenes/palette, including an exactly reconstructed Genesis hillside capture | Grass, seven flat surfaces and 81 faces across 49 PC hill/plateau shapes have authored detail; hills resolve the Genesis dither into continuous colour, with verified vertical-face projection | Remaining terrain/building/vegetation materials, horizon variants, full motion and human acceptance |
-| Explosions, smoke, tracers and damage overlays | All 64 native masked Genesis bitmaps extracted; shapes and masks match PC, with Genesis palette differences; original-blitter oracle and two native effect frames verified | Three Genesis-derived impact phases live across nine PC-selected detail variants; source gates, clip, ordered occlusion and original-boundary replay verified | Remaining 55 bitmaps and palette/overlay families, broader runtime visibility, authored transparency/tactical-readability review and human art acceptance |
-| Fonts, cursors and interface symbols | Four PC faces decoded; all 95 printable Genesis stencil glyphs match PC STENCIL | Four optically refined outline faces cover credits, dedication, verified cockpit/arming/office text and original font draws across START/BRIEF/END; fixed cells and current highlight colours remain | Bitmap-baked captions/logos, other nonuniform-background text, remaining Genesis font families and symbols; the independently verified menu cursor intentionally remains original pixel art |
+| Family | Current presentation and finite coverage | Evidence and remaining boundary |
+|---|---|---|
+| Four cockpits and STATUS surround | Genesis-derived high-resolution surrounds, source-owned composition, moving driver roof and seven source STRUTS entries | `genesis-cockpit-integration.md`; clipped strut/cursor continuation recorded separately; fractional rendering and hardware acceptance remain distinct |
+| Instruments and sights | Nine gunner illustrated cells, scalable gauges and hull/turret diagrams, bearing digits, eight sight strokes, four target-box sides, 24 status lamps and target-lock indicator | `pc-gauges-research.md`, `pc-orientation-research.md`, `pc-reticle-research.md`, `pc-reticle-target-research.md`, `pc-instrument-status-research.md`; source pixels/ownership govern every value |
+| Damage schematic | Five Genesis damage counterparts, selected as 32 combinations by exact visible original schematic and ownership | Damage catalog and original bitmap-driver oracle; no condition inferred from hidden RAM |
+| Intro and credits | Title, four expanding flash poses, eight original-font credit cards, PC-specific Dynamix publisher splash | `genesis-intro-integration.md`, `pc-splash-aftermath.md`; dedication to David "Ming" Kenny retained |
+| Wilson and office | Six source pose entries including arm-lowered, pistol-raised and thumbs-up, seven source dialogue heights, BRIEF and END bindings | `wilson-completion.md`; three added performances use approved Genesis Wilson identity, without claiming exact extracted Genesis pose counterparts |
+| Crew portraits | Four FACES roles and the same four roles in CREW, bound to four Genesis-derived portraits | `portrait-coverage.md`; all 146 driver transition frames checked, first complete face replaces immediately; no speculative missing injury/talking bitmap family |
+| Motor pool | Genesis-derived scene, seven verified original text runs, governor spacing, source-authoritative allocation and settings | `genesis-motor-pool-integration.md`; unknown partial states retain PC pixels |
+| Crew information | Four portraits, source-shaped tank/seat diagram, refined labels and baked ABRAMS/M1A1 captions; four observed complete footer variants | `genesis-information-integration.md`; unknown frames reject illustration replacement while an independently verified common frame may still restore |
+| Ammunition information | AX and SABOT illustrations and original-style outline text; HEAT text is outlined | **HEAT illustration remains blocked** by the recorded image-tool rejection. No alternate generation route attempted |
+| Armament information | Three Genesis-derived main illustrations, three top-down highlights, source-shaped M1A1 captions and verified page surrounds/footers | `genesis-information-integration.md`; exact original page masks keep readable information authoritative |
+| Mission maps and summaries | Scalable FRAME bevel/rule/fasteners, preserved content/footer; commander overview cells and local marker draw at native resolution from observed original calls | `pc-map-restoration.md`; source 3×2 overview cells and 2×2 marker remain those shapes; no invented roads or hidden objects |
+| Menus, saves, scores and ending text | Four refined font faces (380 printable glyphs), original cell placement/selection colours, scalable source-selected cursor | `pc-text-research.md`; per-frame source glyph matching, full frontend lifecycle regression and cursor/strut follow-up |
+| Three ending newspapers | Victory, defeat and stalemate decoded from Genesis and remastered; full-paper and later text phases separately gated | `pc-newspaper-integration.md`; native EGA/Genesis/Upscaled fixtures verify all three. PC thresholds and prose retained. Full campaign arrival remains untested |
+| Two aftermath scenes | Source-grounded Genesis extractions and remastered scenes, exact original whole-frame selection | `pc-splash-aftermath.md`; original-instruction fixtures do not claim spontaneous gameplay arrival |
+| Effects | All 64 masked source sprites use 20 authored donors across original detail levels, clipping and draw order | `pc-effect-art-completion.md`, `pc-effect-display-modes.md`; normal and thermal use the same verified RGB palette; STATUS occludes all effects. Human tactical-readability review remains |
+| Terrain | Seven flat surfaces and 81 faces on 49 hill/plateau shapes, Genesis-derived continuous treatment | `pc-hill-art-integration.md`; original topology, projection, materials and visibility preserved |
+| Vehicles, buildings and vegetation | Original flat-colour polygons rasterize natively through Godot; 188 shape records, 992 primitives, 6,163 static world instances | Keep this source-flat style for the non-Modern pass. The 45 used static shape IDs without terrain textures are geometry, not missing bitmap assets. Rejected vehicle textures stay disconnected; replacement models belong to deferred Modern work |
 
-## Current source and output pointers
+## Legacy resources outside active presentation
 
-* `local-art/genesis/source/source-manifest.json`: original first collection.
-* `source/systems-status-receipt.json`: STATUS crop and exact VDP reconstruction.
-* `source/wilson-animation-v1/manifest.json`: two observed poses, not all poses.
-* `source/crew-information-receipt.json`: four 48x48 portrait crops and full page.
-* `source/info-v1/manifest.json`: six information pages and illustration crops.
-* `source/intro-v1/manifest.json`: four lossless Genesis flash poses.
-* `local-art/genesis/remastered/intro-v1/manifest.json`: generated flash atlas,
-  source references, donor regions and exact prompt.
-* `local-art/genesis/cockpit-v2/manifest.json`: default runtime set and hashes.
-* `local-art/genesis/remastered/crew-v1/manifest.json`: four selected portraits,
-  original prompts and rejected coarse-outline variants.
-* `local-art/genesis/remastered/armament-v1/manifest.json`: three armament illustrations,
-  source and image hashes, exact prompts and superseded palette candidates.
-* `local-art/genesis/remastered/info-v1/manifest.json`: ammunition illustrations,
-  failed candidates and exact HEAT safety-filter rejection.
+The 13 TANKS.BMP identification silhouettes remain inventoried by exact source
+identity. The supplied START executable unconditionally jumps over its manual
+quiz at 0D69 to 0DBA. The remaster does not patch the game to expose it, and those
+unreachable resources are not counted as missing live information-page artwork.
+`tools/inspect_pc_recognition.py` records the instructions and identities.
 
-Paths abbreviated with `source/` above are under `local-art/genesis/`.
-The image tool rejected the HEAT contour-cleanup revision with HTTP 400 at output
-moderation, category `illicit`. No replacement image was returned. It was not
-retried through a differently worded request or another image route. The earlier
-coarse candidate is retained and excluded from the selected gallery set.
+TITLE.PTL belongs to the third-party distributor RUNME.BAT flow. Production
+launches ABRAMS.COM EGA and does not show that distributor screen. VM.FNT duplicates
+6X6.FNT; it is not a fifth missing typeface.
 
-The art-review gallery has 19 pages, including isolated portrait, crew-diagram, ammunition and armament
-illustrations. The cockpit/status, verified instrument cells, eligible crew portraits and
-matched office/Wilson scenes and the motor pool bind these images into the original-PC tandem.
-Portrait evidence is in `genesis-portrait-integration.md`; the extra live
-facepalm derivative and briefing evidence are in `genesis-briefing-integration.md`;
-motor-pool evidence is in `genesis-motor-pool-integration.md`; the crew page and five information
-illustration bindings are in `genesis-information-integration.md`; title animation
-and credits evidence are in `genesis-intro-integration.md`. Gallery availability must
-never be reported as completed live-game integration.
+## Assets and proof custody
 
-Dynamic orientation evidence, source references and bounded acceptance are in
-`pc-orientation-research.md`. Other instrument-family items remain open.
+Originals, extracted donors, generated images, prompts and source catalogs stay
+in ignored local storage. Selected runtime assets are hash-pinned and explicitly
+listed for private packaging. They are excluded from the source-review ZIP and
+Git. Main catalog locations include:
 
-The transparent bearing strip now has source-verified outlines over the paired
-world; receipts and remaining boundaries are in `pc-world-bearing-text.md`.
+* `local-art/pc-newspapers-v1/newspapers.json`
+* `local-art/pc-wilson-completion-v1/office.json`
+* `local-art/pc-information-completion-v1/information.json`
+* `local-art/pc-splash-aftermath-v1/catalog.json`
+* `local-art/pc-map-frame-v1/frame.json`
+* `local-art/genesis/status-damage-v1/manifest.json`
+* `local-art/genesis/remastered/effects-v1/` and `effects-v2/`
+* `local-art/pc-outline-fonts-v3/manifest.json`
 
-The gunner frame-join and ammunition correction is documented in
-`genesis-cockpit-integration.md`. Earlier passing preservation checks did not
-prove coherent composition; native join and icon-sampling regressions now cover
-the reported faults. This correction does not close the cockpit family.
+The current programme receipts are under `artifacts/finish-20260928/`. Root
+reconciliation passed all 61 aggregate gates (418 Python tests included), the
+158-frame native graphics switch regression, and separate native damage,
+effect-mode, portrait and map integration gates. Those checks remain separate
+from individual live-occurrence and human review claims. Source-fixture coverage, live occurrence, native pixel checks and
+human art acceptance must not be represented as equivalent evidence.
 
-The source-verified gunner graticule is documented in `pc-reticle-research.md`.
-Its integer-scale footprint deliberately remains identical. Fractional-resolution
-edge coverage is verified separately. Play now uses a native-resolution 4:3 game
-window; the optional comparison viewer retains its fixed diagnostic target.
-Display evidence is in `pc-display-research.md`. The original target-selection
-box and remaining display/platform acceptance remain open work.
-
-Genesis effect resource offsets, original-instruction checks, native palette
-evidence and capture-provenance repair are documented in
-`genesis-effects-research.md`. The three selected high-resolution impact donors,
-nine original-PC bindings, native colour/occlusion checks and 1,020-frame
-source-boundary comparison are documented in `pc-effect-art-integration.md`.
-This subset does not close the effect family or prove unchanged tactical
-readability of the redrawn transparency.
-
-The initial 32-shape hillside pass and 17-shape plateau extension, Genesis
-source/colour evidence, vertical-face
-projection and bounded native proof are in `pc-hill-art-integration.md`. Source
-geometry and occlusion remain original; other world-object families remain open.
-
-The first three vehicle-panel derivatives, exact source-face/colour bindings,
-native perspective/clipping checks and remaining scope are documented in
-`pc-vehicle-art-integration.md`. The original PC polygons retain all visibility
-and gameplay authority; whole Blender model unions are not installed live.
+The HEAT illustration revision returned HTTP 400 at output moderation with
+category `illicit`, and no replacement image. The earlier coarse candidate is
+retained outside the selected gallery set. This specific unfinished illustration
+prevents a claim that literally all requested graphics have been completed.

@@ -35,13 +35,20 @@ class StrutDraws:
         if any(actual[k]!=source[k] for k in ('width','height','pixels')) or actual['opaque']!=[c!=0 for c in source['pixels']]:
             raise ValueError('original strut differs from supplied source')
         self.counts['source_draws']+=1
+        self.counts[f'source_draws_index_{index}']+=1
         w,h=source['width'],source['height'];page=(word(0x35A8)-0xA000)*16
-        if x<0 or y<0 or x+w>320 or y+h>200 or page not in (0,8192) or ram[ds+0x359F]!=15:
+        caller=struct.unpack_from('<HH',ram,stack)
+        # Original cupola call0D8D deliberately draws STRUT5 seven pixels
+        # beyond the right edge. Only this exact source route may use clipped
+        # placement proof; all other offscreen layouts remain unsupported.
+        clipped_cupola=(index==5 and (w,h,x,y)==(168,7,159,110) and caller==(0x0D92,load))
+        if ((x<0 or y<0 or x+w>320 or y+h>200) and not clipped_cupola) or page not in (0,8192) or ram[ds+0x359F]!=15:
             self.counts['unsupported_layout']+=1;return
         # This relationship uses the actual named source bitmap and its original
         # placement, including pixels outside clipping, not the displayed frame.
         occupied=[((y+sy)*320+x+sx,source['pixels'][sy*w+sx])
-                  for sy in range(h) for sx in range(w) if source['pixels'][sy*w+sx]!=0]
+                  for sy in range(h) for sx in range(w)
+                  if source['pixels'][sy*w+sx]!=0 and 0<=x+sx<320 and 0<=y+sy<200]
         candidates=[plate for plate,pixels in self.plates.items() if occupied and all(pixels[at]==c for at,c in occupied)]
         if len(candidates)!=1:
             self.counts['unmapped_source_placement']+=1;return
@@ -50,7 +57,7 @@ class StrutDraws:
         if not 0<=left<=right<320 or not 0<=top<=bottom<200:raise ValueError('unsupported strut clip')
         visible=[(at,c) for at,c in occupied if left<=at%320<=right and top<=at//320<=bottom]
         self.pending={'plate':candidates[0],'page':page,'pixels':visible,'index':index,'origin':[x,y],
-                      'caller':struct.unpack_from('<HH',ram,stack)}
+                      'caller':caller,'source_clipped_cupola':clipped_cupola}
 
     def finish(self,pixels,page):
         pending,self.pending=self.pending,None
@@ -62,6 +69,7 @@ class StrutDraws:
         masks=bytearray(8000)
         for at,_ in pending['pixels']:masks[at//8]|=128>>(at&7)
         self.counts['verified_draws']+=1;self.counts['verified_pixels']+=len(pending['pixels'])
+        self.counts[f"verified_draws_index_{pending['index']}"]+=1
         self.draws.append({k:v for k,v in pending.items() if k!='pixels'}|{'opaque_pixels':len(pending['pixels'])})
         return pending['plate'],bytes(masks)
 

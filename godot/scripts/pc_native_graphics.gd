@@ -1,6 +1,8 @@
 extends TextureRect
 ## Extracted native donors only. No high-resolution art or world rerendering.
 const CATALOG_SHA := "ead9537897d343e115aef73b02c9fdecf797172812c108228217c33c276c08db"
+var splash_aftermath_art=preload("res://scripts/pc_splash_aftermath_art.gd").new()
+var newspaper_art=preload("res://scripts/pc_newspaper_art.gd").new()
 var catalog: Dictionary = {}
 var catalogs: Dictionary = {}
 var images: Dictionary = {}
@@ -21,10 +23,16 @@ func _init() -> void:
 	var effect:=ShaderMaterial.new()
 	effect.shader=preload("res://scripts/pc_native_graphics.gdshader")
 	material=effect
+	add_child(splash_aftermath_art)
+	newspaper_art.high_resolution=false
+	add_child(newspaper_art)
+	newspaper_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	visible=false
 
 func load_sources(root: String) -> bool:
 	load_count+=1
+	newspaper_art.load_sources(root)
+	splash_aftermath_art.load_sources(root)
 	loaded=false;catalog.clear();catalogs.clear();images.clear();fonts.clear()
 	var path:=root.path_join("local-art/pc-graphics-native-v1/graphics.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA:return false
@@ -150,6 +158,7 @@ func _frontend(source: Image, program: String) -> Image:
 	cached_frontend=result;cached_active=active.duplicate(true);return result
 
 func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> void:
+	newspaper_art.clear()
 	material.set_shader_parameter("plates_enabled",false)
 	active={"fallback":"Native donor pack unavailable","donors":[]}
 	if source==null:
@@ -158,7 +167,12 @@ func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> 
 	if not loaded or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8:
 		texture=ImageTexture.create_from_image(source);return
 	var composed:Image=_frontend(source,str(program.get("name",""))).duplicate()
+	var aftermath:Image=splash_aftermath_art.native_frame(source,program)
+	if aftermath!=source:
+		composed=aftermath.duplicate()
+		active.donors.append("aftermath:"+splash_aftermath_art.match_frame(source,program).name)
 	texture=ImageTexture.create_from_image(composed)
+	if newspaper_art.set_frame(source,program): active.donors.append("newspaper:"+newspaper_art.active.name)
 	var plate=presentation.get("plate_overlay",{})
 	var ui=presentation.get("ui_overlay",{})
 	if not plate is Dictionary or not ui is Dictionary:return

@@ -47,6 +47,12 @@ def rewrite(path, transform):
     with zipfile.ZipFile(path,'w') as z:
         for name, raw in files.items(): z.writestr(name, raw)
 
+def provenance(packet):
+    presentation = packet.get('presentation') or {}
+    return {name: (presentation.get(name) or {}).get('mask_sha256')
+            for name in ('ui_overlay', 'plate_overlay', 'driver_overlay')}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True)
@@ -66,14 +72,37 @@ def main():
         for frames,keys in json.loads((ROOT/'godot/tests/fixtures/pc_boot_steps.json').read_text()): last = client.step(frames,keys)
         checks['original_sim_reached'] = last['program']['name'] == 'SIM'
         held = client.step(5,['kp6'])
+        saved_provenance = provenance(held)
+        checks['checkpoint_has_observed_cockpit'] = bool(saved_provenance['plate_overlay']) and any(
+            p['pixels'] > 0 for p in held['presentation']['plate_overlay']['plates'].values())
+        # An independent, uninterrupted native run is the reference, rather
+        # than comparing two equally broken post-save observers.
+        baseline = Client(args.output/'uninterrupted-saves', log)
+        try:
+            for frames, keys in json.loads((ROOT/'godot/tests/fixtures/pc_boot_steps.json').read_text()): baseline.step(frames, keys)
+            baseline_held = baseline.step(5, ['kp6'])
+            baseline.step(1, ['kp6'])
+            uninterrupted = [baseline.step(1, ['kp6'] if i < 3 else []) for i in range(12)]
+        finally:
+            baseline.close()
         result = client.request('save_state',slot=1)
         assert result['success'], result
         saved_audit = held['frame_audit']
         checks['save_has_no_display_advance'] = result['restored']['frame_audit'] == saved_audit and result['restored']['sequence'] == held['sequence']
         held_transition = client.step(1,['kp6'])
         checks['stale_native_frame_is_held'] = held_transition.get('held_frame') is True and held_transition['frame_audit'] == saved_audit
-        expected = []
-        for index in range(12): expected.append(client.step(1, ['kp6'] if index < 3 else [])['frame_audit'])
+        observed = [client.step(1, ['kp6'] if i < 3 else []) for i in range(12)]
+        (args.output/'observer-continuation.json').write_text(json.dumps({
+            'saved_boundary': held['frame_audit'], 'independent_boundary': baseline_held['frame_audit'],
+            'uninterrupted': [{'native':p['frame_audit'],'provenance':provenance(p)} for p in uninterrupted],
+            'after_save': [{'native':p['frame_audit'],'provenance':provenance(p)} for p in observed]},indent=2)+'\n')
+        expected = [p['frame_audit'] for p in observed]
+        # Independent cold boots already differ in RAM at the saved boundary
+        # before any save; same-state native parity is checked separately.
+        checks['save_video_matches_uninterrupted'] = [p['frame_audit']['video_sha256'] for p in observed] == [p['frame_audit']['video_sha256'] for p in uninterrupted]
+        expected_provenance = [provenance(p) for p in uninterrupted]
+        checks['save_provenance_matches_uninterrupted'] = [provenance(p) for p in observed] == expected_provenance
+        checks['save_provenance_not_stale_packet'] = all(not p.get('held_frame') for p in observed)
         changed = client.step(30)
         result = client.request('load_state',slot=1)
         assert result['success'],result
@@ -81,15 +110,32 @@ def main():
         recovery_bytes = (saves/'states/slot-0.zip').read_bytes()
         checks['recovery_saved_current_timeline'] = json.loads(zipfile.ZipFile(io.BytesIO(recovery_bytes)).read('resume.json'))['packet']['frame_audit'] == changed['frame_audit']
         client.step(1,['kp6'])
-        actual = [client.step(1,['kp6'] if i < 3 else [])['frame_audit'] for i in range(12)]
+        replay = [client.step(1,['kp6'] if i < 3 else []) for i in range(12)]
+        actual = [p['frame_audit'] for p in replay]
+        checks['load_provenance_matches_uninterrupted'] = [provenance(p) for p in replay] == expected_provenance
         checks['held_then_released_keys_repeat_identically'] = actual == expected
+        # Same native checkpoint with no observer is an exact-timeline control:
+        # observer restoration must not change native input/RAM/video semantics.
+        (saves/'states/slot-3.zip').write_bytes((saves/'states/slot-1.zip').read_bytes())
+        def legacy_observer(files):
+            files.pop('observer.bin')
+            manifest=json.loads(files['manifest.json']); manifest['files'].pop('observer.bin')
+            files['manifest.json']=json.dumps(manifest).encode()
+        rewrite(saves/'states/slot-3.zip', legacy_observer)
+        result=client.request('load_state',slot=3)
+        assert result['success'],result
+        client.step(1,['kp6'])
+        no_observer=[client.step(1,['kp6'] if i<3 else [])['frame_audit'] for i in range(12)]
+        checks['observer_restore_native_parity'] = no_observer == expected
         # A whole new supervisor proves persistence across application restarts.
         client.close(); client = Client(saves,log)
         result = client.request('load_state',slot=1)
         assert result['success'],result
         checks['cross_process_reload'] = result['restored']['frame_audit'] == saved_audit
         client.step(1,['kp6'])
-        actual = [client.step(1,['kp6'] if i < 3 else [])['frame_audit'] for i in range(12)]
+        replay = [client.step(1,['kp6'] if i < 3 else []) for i in range(12)]
+        actual = [p['frame_audit'] for p in replay]
+        checks['cross_process_provenance_matches_uninterrupted'] = [provenance(p) for p in replay] == expected_provenance
         checks['cross_process_native_continuation'] = actual == expected
         original = (saves/'states/slot-1.zip').read_bytes()
         (saves/'states/slot-2.zip').write_bytes(original)
@@ -144,7 +190,7 @@ def main():
         if client: client.close()
         log.close()
         (args.output/'report.json').write_text(json.dumps({'checks':checks,'passed':all(checks.values()),
-            'scope':'Native RAM and disk persistence; held-frame transition explicitly excluded from fresh-video claims. Trace ownership is reacquired from observed original draws.'},indent=2)+'\n')
+            'scope':'Native RAM/disk persistence and host-only EGA provenance continuation against an uninterrupted run; held-frame transition excluded from fresh-video claims.'},indent=2)+'\n')
     print(json.dumps(checks,indent=2))
     return 0 if all(checks.values()) else 1
 

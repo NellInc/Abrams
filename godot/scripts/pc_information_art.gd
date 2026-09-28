@@ -3,6 +3,9 @@ extends Control
 ## Original contents, page order and navigation stay PC-owned. Full-page crew art
 ## additionally requires the complete frame, including its otherwise variable footer.
 const CATALOG_SHA := "c42a5917374dea8eeb918c32bb5f163f8d8456a7471a5fcb2632b2e44d422d84"
+const COMPLETION_SHA := "c42932294fa7bd300894309f69d9f7eb1996c4c9e4be248e78a15a1895f83ab9"
+var caption_text_enabled := true
+var caption_fonts: Dictionary = {}
 var catalog: Dictionary = {}
 var textures: Dictionary = {}
 var active: Dictionary = {}
@@ -20,7 +23,7 @@ func clear() -> void:
 	queue_redraw()
 
 func load_sources(root_path: String) -> bool:
-	clear(); catalog.clear(); textures.clear(); overlays.clear()
+	clear(); catalog.clear(); textures.clear(); overlays.clear(); caption_fonts.clear()
 	var path := root_path.path_join("local-art/pc-information-v3/information.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA: return false
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -39,7 +42,46 @@ func load_sources(root_path: String) -> bool:
 		for overlay in entry.get("overlays",[]):
 			items.append({"mesh":span_mesh(overlay.rects),"colour":Color8(overlay.rgb[0],overlay.rgb[1],overlay.rgb[2])})
 		overlays[entry.name]=items
+	if not load_completion(root_path,data,loaded):
+		overlays.clear()
+		return false
 	catalog = data; textures = loaded
+	return true
+
+func load_completion(root_path: String, data: Dictionary, loaded: Dictionary) -> bool:
+	# The supplement adds only independently source-checked diagram rectangles.
+	# It cannot introduce another page identity or broaden the recognition gate.
+	var path := root_path.path_join("local-art/pc-information-completion-v1/information.json")
+	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=COMPLETION_SHA: return false
+	var supplement: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
+	for item in supplement.entries:
+		var matches: Array=data.entries.filter(func(e):return e.name==item.name and e.rgb_sha256==item.rgb_sha256)
+		if matches.size()!=1: return false
+		var layer: Dictionary=item.layer
+		path=root_path.path_join("local-art/genesis/remastered/"+layer.art)
+		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=layer.art_sha256: return false
+		var image:=Image.load_from_file(path)
+		if image==null or image.get_size()!=Vector2i(layer.size[0],layer.size[1]): return false
+		loaded[layer.name]=ImageTexture.create_from_image(image)
+		matches[0].layers=[matches[0].duplicate(true),layer]
+	for frame in supplement.frames:
+		var matches: Array=data.entries.filter(func(e):return e.name==frame.name and e.rgb_sha256==frame.rgb_sha256)
+		if matches.size()!=1: return false
+		matches[0].page_frame=frame
+	for caption in supplement.crew_captions+supplement.overhead_captions:
+		path=root_path.path_join("local-art/genesis/remastered/"+caption.art)
+		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=caption.art_sha256: return false
+		var font:=FontFile.new()
+		font.data=FileAccess.get_file_as_bytes(path)
+		font.antialiasing=TextServer.FONT_ANTIALIASING_GRAY
+		font.hinting=TextServer.HINTING_NONE
+		font.subpixel_positioning=TextServer.SUBPIXEL_POSITIONING_DISABLED
+		caption_fonts[caption.art_sha256]=font
+	for entry in data.entries:
+		if entry.name=="crew":
+			entry.captions=supplement.crew_captions
+			entry.observed_full_rgb_sha256=supplement.crew_frames.full_rgb_sha256
+		else: entry.captions=supplement.overhead_captions.filter(func(c):return c.page==entry.name)
 	return true
 
 func set_frame(source: Image, program: Dictionary) -> bool:
@@ -54,8 +96,14 @@ func set_frame(source: Image, program: Dictionary) -> bool:
 	if matches.size()!=1: return false
 	if matches[0].has("full_rgb_sha256"):
 		hash.start(HashingContext.HASH_SHA256); hash.update(source.get_data())
-		if hash.finish().hex_encode()!=matches[0].full_rgb_sha256: return false
+		if hash.finish().hex_encode() not in matches[0].get("observed_full_rgb_sha256",[matches[0].full_rgb_sha256]): return false
 	active = matches[0].duplicate(true)
+	if active.has("page_frame"):
+		active.frame_rects=active.page_frame.rects.duplicate(true)
+		hash.start(HashingContext.HASH_SHA256)
+		hash.update(source.get_data().slice(320*175*3))
+		if hash.finish().hex_encode() in active.page_frame.footer_sha256:
+			active.frame_rects.append(active.page_frame.footer_rect)
 	visible = true
 	queue_redraw()
 	return true
@@ -100,6 +148,8 @@ static func span_mesh(rectangles: Array) -> ArrayMesh:
 func _draw() -> void:
 	if active.is_empty(): return
 	draw_set_transform(Vector2.ZERO,0,size/Vector2(320,200))
+	for r in active.get("frame_rects",[]):
+		draw_rect(Rect2(r[0],r[1],r[2],r[3]),Color.BLACK)
 	if active.has("background_rgb"):
 		var rgb: Array=active.background_rgb
 		draw_rect(art_rect(),Color8(rgb[0],rgb[1],rgb[2]))
@@ -111,3 +161,21 @@ func _draw() -> void:
 		draw_texture_rect_region(textures[item.name],target,donor_rect(item))
 	for overlay in overlays[active.name]:
 		draw_mesh(overlay.mesh,null,Transform2D.IDENTITY,overlay.colour)
+	for caption in active.get("captions",[]):
+		if not caption_text_enabled and not caption.has("original_mask"): continue
+		var r: Array=caption.rect
+		var c: Array=caption.get("clear_rect",r)
+		var fg: Array=caption.foreground; var bg: Array=caption.background
+		draw_set_transform(Vector2.ZERO,0,size/Vector2(320,200))
+		draw_rect(Rect2(c[0],c[1],c[2],c[3]),Color8(bg[0],bg[1],bg[2]))
+		if not caption_text_enabled:
+			# Original mode deliberately retains each PC source caption cell.
+			var original: Array=caption.original_rect
+			for i in caption.original_mask.size():
+				if caption.original_mask[i]:
+					draw_rect(Rect2(original[0]+i%int(original[2]),original[1]+i/int(original[2]),1,1),Color8(fg[0],fg[1],fg[2]))
+			continue
+		# Native vector contours follow the source caption, not a substitute face.
+		var box:=Rect2(Vector2(r[0],r[1])*size/Vector2(320,200),Vector2(r[2],r[3])*size/Vector2(320,200))
+		draw_set_transform(Vector2.ZERO)
+		preload("res://scripts/pc_outline_fonts.gd").draw_text(self,caption_fonts[caption.art_sha256],caption.glyph,box,Vector2(r[2],r[3]),Color8(fg[0],fg[1],fg[2]))

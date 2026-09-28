@@ -2878,3 +2878,79 @@ Mission victory/campaign completion, wider individual cue occurrence, independen
 listening/art acceptance, modern models and supported-platform standalone
 installers remain outside this delivered local slice. The whole remaster goal
 is not declared complete.
+
+
+## 2026-09-28: Non-Modern completion programme
+
+Nell authorized the six-part completion programme and all remaining graphics,
+explicitly deferring Modern. This pass preserves original PC authority and
+Genesis donor precedence. Original games, ROM, extracted assets and private
+kits remain ignored and excluded from Git. No public release is authorized.
+
+Delivered all three source-selected ending newspapers with distinct full-paper
+and later PC-prose phases, two aftermath scenes, PC publisher card, three added
+Wilson performances, four-role portrait coverage, crew/armament diagram and
+caption completion, five STATUS damage overlays covering 32 combinations,
+24 systems lamps and the red/off lock lamp, observed target box, map surround
+and source-defined dynamic map geometry, source-vector cursor and clipped strut
+custody. All 64 masked effect bindings use 20 authored donors. The unreachable
+13-image manual quiz and distributor-only banner remain explicitly inventoried.
+Original flat world polygons remain the selected non-Modern geometry style;
+rejected vehicle textures and replacement models stay disconnected.
+
+Checkpoint archives now preserve validated host EGA ownership alongside the
+native machine and campaign disk. Root native verification passes 26 checks,
+including source-video/ownership continuity against uninterrupted rendering,
+cross-process reload and rollback. Fresh scanlines rebuild masks; partial draw
+candidates and stale audio do not replay. Old core fingerprints remain incompatible.
+
+The finite audio audit accounts for 30 sound and 21 message/radio callsites,
+345 original captions and 449 installed caption takes. All 476 WAVs pass PCM,
+provenance, silence and sample-clipping checks after repairing bearing 182 with
+a new dry Gemini 3.8 take. A dedicated PC-only limiter prevents sample-domain
+mixed-output overload; Master and calibration audio remain untouched.
+
+Root aggregate validation: `artifacts/validation-20260928T162843Z`, all 61 gates
+pass, including 418 Python tests. The earlier gate correctly failed an obsolete
+frontend test that allowed only intro outside office programs. The test now
+requires a valid current child binding for each newly supported START family
+and independently excludes stale office poses; no production guard was weakened.
+Root native graphics switching: 10,253,369 checks across 158 frames. Root native
+damage: 899 checks / 96 renders; lock: 83; portraits: 825; effect modes: 19,930,986;
+complete-map integration: 84. Root newspapers: 780,124 checks; information: 22,375,982; Wilson: 2,392;
+publisher/aftermath: all three scenes. Clean stdlib-only source kit: 401 files,
+37 tests passing (two private-input skips). Full receipts are
+under `artifacts/finish-20260928/`, alongside retained diagnostic failures.
+
+Final-core root endurance passes 71,873 original frames and 2,839 checks across
+all eight scenarios,32 stations,19 checkpoint replays, information screens and
+cold campaign Continue. Native resize covered six transitions including fullscreen.
+Earlier long native pacing measured 26.41 to 31.28 fps. Profiling led to two exact
+fast paths: reuse only the identical immutable RAM snapshot's completed locate
+result, and prove an entire zero driver-mask byte array directly. All 1,200
+before/after inputs, full packets and RAM/video hashes match. Ordinary/audited
+playback improved from 42.61/37.92 to 53.58/53.75 fps, still below 59.5 fps. This is
+reported as improved, sub-target throughput, not a full-speed acceptance claim.
+
+Source-only CI now excludes owned inputs and runs from a temporary stdlib-only
+source kit. The staged/history boundary rejects known original hashes, private
+paths, recognizable secrets, nonregular entries and files over 50 MB. Importer
+reconstruction validates the complete archive before destination writes.
+Managed private-kit installation keeps profiles outside replaceable kit files.
+Packaging, dependency and recovery evidence is separate from native OS support.
+
+The HEAT illustration remains externally blocked by the recorded image-tool
+rejection; no retry or alternate route was used. Modern remains deferred.
+Independent aesthetic/listening acceptance, naturally occurring mission outcomes,
+historical speed calibration, native non-macOS ports and redistribution/licence
+clearance are not claimed. This is local implementation and machine evidence.
+
+
+Final private packaging: two deterministic builds, two clean installations and
+three real managed native cold boots (the third independently run by root).
+All 1,224 installed files and three existing synthetic profile/checkpoint files
+remain unchanged. Invalid checkpoint archives and managed-path overrides reject.
+Root verified every packaged input against the checkout and installed tree.
+Final closing-doc rebuild retains byte-identical runtime content. Staged/index
+and reachable-history guards pass; originals, ROMs and private kits are excluded
+from Git. No push, hosted CI execution or public release is claimed.

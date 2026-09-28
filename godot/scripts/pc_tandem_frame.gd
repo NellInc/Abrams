@@ -3,7 +3,10 @@ extends TextureRect
 ## Missing attribution shows the actual source frame, never stale scenery.
 const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
 var typography = preload("res://scripts/pc_typography.gd").new()
+var damage_art = preload("res://scripts/pc_instrument_damage_art.gd").new()
+var dynamic_map_art = preload("res://scripts/pc_dynamic_map_art.gd").new()
 var instrument_art = preload("res://scripts/pc_instrument_art.gd").new()
+var target_box_art = preload("res://scripts/pc_reticle_target_art.gd").new()
 var reticle_art = preload("res://scripts/pc_reticle_art.gd").new()
 var portrait_art = preload("res://scripts/pc_portrait_art.gd").new()
 var frontend_art = preload("res://scripts/pc_frontend_art.gd").new()
@@ -57,10 +60,16 @@ func _init() -> void:
 	shader_material.shader = COMPOSITOR
 	material = shader_material
 	_upscaled_material = shader_material
+	add_child(damage_art)
+	damage_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(dynamic_map_art)
+	dynamic_map_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(instrument_art)
 	instrument_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(reticle_art)
 	reticle_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(target_box_art)
+	target_box_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(portrait_art)
 	portrait_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(typography)
@@ -71,7 +80,10 @@ func _init() -> void:
 	native_graphics.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 func _fallback(reason: String) -> bool:
+	damage_art.clear()
+	dynamic_map_art.clear()
 	reticle_art.clear()
+	target_box_art.clear()
 	frontend_art.clear()
 	world_enabled = false
 	typography.clear_runs()
@@ -107,6 +119,7 @@ func load_genesis_art(root: String) -> bool:
 	material.set_shader_parameter("genesis_art",true)
 	typography.fixed_labels_enabled = true
 	instrument_art.load_sources(root,images[1])
+	damage_art.load_sources(root)
 	portrait_art.load_sources(root)
 	frontend_art.load_sources(root)
 	return true
@@ -277,7 +290,7 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	_cached_world=world
 	_cached_program=program
 	material=_upscaled_material
-	for child in [instrument_art,reticle_art,portrait_art,typography]:child.visible=graphics_mode=="upscaled"
+	for child in [damage_art,dynamic_map_art,instrument_art,reticle_art,target_box_art,portrait_art,typography]:child.visible=graphics_mode=="upscaled"
 	native_graphics.visible=graphics_mode=="genesis"
 	if graphics_mode!="upscaled":
 		_fallback("Untouched original EGA" if graphics_mode=="ega" else "Native Genesis donors with original PC fallback")
@@ -286,6 +299,8 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 		if graphics_mode=="genesis":native_graphics.set_frame(source,presentation,program)
 		return texture!=null
 	frontend_art.clear()
+	damage_art.clear()
+	dynamic_map_art.clear()
 	texture = ImageTexture.create_from_image(source) if source != null and not source.is_empty() else null
 	if texture == null or source.get_size() != Vector2i(320, 200):
 		return _fallback("unsupported original framebuffer")
@@ -329,15 +344,21 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 		var tags := Image.new()
 		if tags.load_png_from_buffer(Marshalls.base64_to_raw(presentation.plate_overlay.mask_png))==OK:
 			instrument_art.set_frame(source,mask,tags,presentation.get("orientation",{}))
+			damage_art.set_frame(source,mask,tags)
 	if genesis_art_enabled: portrait_art.set_frame(source,mask,presentation)
+	dynamic_map_art.set_frame(source,presentation)
 	typography.set_frame(source,mask,presentation,null,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1))
 	reticle_art.clear()
-	if _art_palette_matches(presentation.get("palette_rgb")): reticle_art.set_frame(source,mask,presentation)
-	if not typography.world_ink.is_empty() or not reticle_art.ink.is_empty():
+	target_box_art.clear()
+	if _art_palette_matches(presentation.get("palette_rgb")):
+		reticle_art.set_frame(source,mask,presentation)
+		target_box_art.set_frame(source,mask,presentation)
+	if not typography.world_ink.is_empty() or not reticle_art.ink.is_empty() or not target_box_art.ink.is_empty():
 		# Retain the unmodified provenance mask for all art checks above. Only
 		# proven bearing and sight ink yield to this same frame's underlying world.
 		var composed_mask: Image = mask.duplicate()
 		for pixel in typography.world_ink: composed_mask.set_pixelv(pixel,Color.BLACK)
 		for pixel in reticle_art.ink: composed_mask.set_pixelv(pixel,Color.BLACK)
+		for pixel in target_box_art.ink: composed_mask.set_pixelv(pixel,Color.BLACK)
 		material.set_shader_parameter("ui_mask",ImageTexture.create_from_image(composed_mask))
 	return true

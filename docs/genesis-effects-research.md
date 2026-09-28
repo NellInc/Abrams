@@ -1,5 +1,11 @@
 # Native Genesis effect resources
 
+Current ordinary-palette coverage is now all 64 source-bound bitmaps through
+20 authored donors. See [the complete atlas extension](pc-effect-art-completion.md)
+for current evidence and remaining palette/live-sequence/human-review limits.
+The sections below retain the earlier bounded checkpoint.
+
+
 ## Recovered source
 
 The supplied Genesis ROM contains **64 masked bitmap effects**. This family is

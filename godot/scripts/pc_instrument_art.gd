@@ -28,7 +28,8 @@ var orientation = preload("res://scripts/pc_orientation_art.gd").new()
 const PLATES = {
 	1:["gps-bin","83e46895044a85a4e3abdd8daf836605a40cbb475c02fe2c8b3fe0664da9e036"],
 	2:["tc-bin","c6c3691fc37cb6e7856e7f8f15ea1997facce823ecd724a89176226ee0b26b98"],
-	4:["driver-bin","914d1605f7afa79f293e666a29e81d6c001cac41e0f89d14897c3ec61fecf32b"]}
+	4:["driver-bin","914d1605f7afa79f293e666a29e81d6c001cac41e0f89d14897c3ec61fecf32b"],
+	5:["status-bin","0ab4bd6ad016bad0c1a6ce5993a5e016705f5f2fee651b9173ab6702b628385e"]}
 # Six-row strips are proved by the original line rasterizer, not an inclusive
 # interpretation of its (y,y+6) arguments. All rectangles are source pixels.
 const BARS = [
@@ -36,8 +37,25 @@ const BARS = [
 	{"name":"commander_speed","plate":2,"source":Rect2i(16,186,77,6),"guard":Rect2i(14,176,80,18),"count":39,"red":0},
 	{"name":"commander_fuel","plate":2,"source":Rect2i(103,186,55,6),"guard":Rect2i(101,176,61,18),"count":28,"red":4}]
 const LAMPS = [
+	{"name":"gunner_target_lock","plate":1,"source":Rect2i(271,180,13,11),"guard":Rect2i(269,179,16,13),"lock":true},
 	{"name":"gunner_temperature","plate":1,"source":Rect2i(271,154,13,11),"guard":Rect2i(269,153,16,13)},
 	{"name":"driver_temperature","plate":4,"source":Rect2i(233,190,19,7),"guard":Rect2i(233,187,20,1)}]
+# SIM 6d18 and 6d8c: the same twelve source-selected system states in
+# commander miniature and full STATUS placements. No blink/off state here.
+const SYSTEM_NAMES = ["gps","smoke_dischargers","coax","main_gun","ballistic_computer","thermal_equipment",
+	"radio","halon","turret_motors","left_tread","right_tread","engine"]
+
+static func system_lamps() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for station in [2,5]:
+		for i in 12:
+			var right := i>=6
+			var row := i%6
+			var box := Rect2i(284 if right else 208,172+row*2,3,1) if station==2 else Rect2i(301 if right else 11,109+row*13,10,6)
+			result.append({"name":("commander_" if station==2 else "status_")+SYSTEM_NAMES[i],
+				"plate":station,"source":box,"guard":box.grow(1),"system":i})
+	return result
+
 const INACTIVE = Color8(85,85,85)
 const GREEN = Color8(0,170,0)
 const RED = Color8(170,0,0)
@@ -106,10 +124,13 @@ func set_frame(source: Image, ui: Image, tags: Image, diagram: Dictionary = {}) 
 					if source.get_pixel(x+1,y).to_rgba32()!=Color.BLACK.to_rgba32() or ui.get_pixel(x+1,y).r!=1.0 or roundi(tags.get_pixel(x+1,y).r*255)!=spec.plate: valid = false
 			colors.append(color)
 		if valid: gauges.append(spec.merged({"kind":"bar","colors":colors,"lit":lit}))
-	for spec in LAMPS:
+	for spec in LAMPS+system_lamps():
 		if not _guard_matches(spec,source,ui,tags): continue
 		var color := source.get_pixelv(spec.source.position)
-		if color.to_rgba32() not in [GREEN.to_rgba32(),RED.to_rgba32(),YELLOW.to_rgba32(),Color.BLACK.to_rgba32()]: continue
+		var allowed := [GREEN.to_rgba32(),RED.to_rgba32(),YELLOW.to_rgba32()]
+		if not spec.has("system"): allowed.append(Color.BLACK.to_rgba32())
+		if spec.has("lock"): allowed = [RED.to_rgba32(),Color.BLACK.to_rgba32()]
+		if color.to_rgba32() not in allowed: continue
 		var valid := true
 		for y in range(spec.source.position.y,spec.source.end.y):
 			for x in range(spec.source.position.x,spec.source.end.x):
@@ -205,7 +226,7 @@ func _draw() -> void:
 			draw_polygon(points,PackedColorArray([Color.WHITE]),uv,donor)
 		else: draw_texture_rect_region(donor,box,item.donor)
 	for gauge in gauges:
-		if gauge.kind=="lamp": _beveled_cell(Rect2(gauge.source),gauge.color,0.4)
+		if gauge.kind=="lamp": _beveled_cell(Rect2(gauge.source),gauge.color,minf(0.4,float(gauge.source.size.y)*0.18))
 		else:
 			for i in gauge.count:
 				_beveled_cell(Rect2(gauge.source.position+Vector2i(i*2,0),Vector2(1,6)),gauge.colors[i],0.18)

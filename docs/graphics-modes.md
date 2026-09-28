@@ -46,7 +46,14 @@ crew-information portraits use native crops; HEAT uses a pinned complete PC
 baseline frame. The crew diagram uses its original 200×61 crop. Live crew faces
 require all original opaque face pixels and UI ownership to match.
 
-Recognition pages, unknown transitions, menus without matched illustrations,
+The three ending papers and two aftermath scenes now use their exact decoded
+Genesis donors. Upscaled uses the corresponding authored versions. Later PC
+newspaper prose remains original-authoritative and is handled separately from
+the full-paper artwork. The publisher card preserves PC Dynamix identity.
+Additional authored Wilson performances have no proven native-pose counterpart,
+so Genesis retains conservative original-PC pose fallbacks.
+
+Unknown transitions, menus without matched illustrations,
 world geometry and effects retain PC pixels in Genesis. Existing native source
 availability does not imply that every variant has a verified live binding.
 

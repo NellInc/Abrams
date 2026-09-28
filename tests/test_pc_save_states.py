@@ -51,6 +51,21 @@ class SaveStateTests(unittest.TestCase):
         with zipfile.ZipFile(self.store.path(1),'w') as z:
             for name,data in files.items(): z.writestr(name,data)
 
+    def test_optional_observer_roundtrip_and_integrity(self):
+        # Old schema-1 archives stay readable without an observer companion.
+        self.store.write(1, self.capture)
+        self.assertNotIn('observer.bin', self.store.read(1)[1])
+        (self.capture/'observer.bin').write_bytes(b'host-only-observer')
+        self.store.write(1, self.capture)
+        self.assertEqual(self.store.read(1)[1]['observer.bin'], b'host-only-observer')
+        self.rewrite(lambda files: files.update({'observer.bin': b'changed'}))
+        with self.assertRaisesRegex(ValueError, 'integrity'): self.store.read(1)
+
+    def test_observer_is_bounded(self):
+        (self.capture/'observer.bin').write_bytes(bytes(2 * 1024 * 1024 + 1))
+        with self.assertRaisesRegex(ValueError, 'size limit'): self.store.write(1, self.capture)
+        self.assertFalse(self.store.path(1).exists())
+
     def test_corruption_rejected(self):
         self.store.write(1,self.capture)
         self.rewrite(lambda files: files.update({'state.bin': b'tampered'}))

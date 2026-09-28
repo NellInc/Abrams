@@ -55,10 +55,24 @@ class SimStateReader:
         # These instruction spans have no relocations and no mutable globals.
         self.anchors = [(offset, decoded[offset:offset + length]) for offset, length
                         in ((0x56EA, 62), (0x6790, 24), (0x91F8, 10))]
+        self._located_ram = None
+        self._located_base = None
 
     def locate(self, ram: bytes) -> int | None:
         if len(ram) != 640 * 1024:
             raise ValueError("expected the physical 640 KiB conventional-memory image")
+        # A received bytes object is an immutable snapshot. sample() and read()
+        # ask about that exact object twice; retain only that completed result.
+        # Different snapshots (even equal bytes), mutable buffers and subclasses
+        # still perform the complete scan and ambiguous-image check.
+        if type(ram) is bytes and ram is self._located_ram:
+            return self._located_base
+        result = self._locate_snapshot(ram)
+        if type(ram) is bytes:
+            self._located_ram, self._located_base = ram, result
+        return result
+
+    def _locate_snapshot(self, ram: bytes) -> int | None:
         offset, anchor = self.anchors[0]
         candidates, at = [], ram.find(anchor)
         while at >= 0:

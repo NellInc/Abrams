@@ -29,7 +29,7 @@ func object_for(index: int, origin: Array = [128,50]) -> Dictionary:
 	sprite.origin = origin
 	sprite.clip = frame.clip.duplicate()
 	return {"kind":"sprite","sprite_status":"observed","bitmap_index":index,"root":Art.ROOTS[index],
-		"shape_index":183+int(Art.DONORS[index]),"dynamic_instance":true,"sprite":sprite,"polygons":[]}
+		"shape_index":Art.SHAPES[index],"dynamic_instance":true,"sprite":sprite,"polygons":[]}
 
 func sample(object: Dictionary) -> Dictionary:
 	var materials := []
@@ -65,8 +65,8 @@ func compare_outside(a: Image, b: Image, box: Rect2, message: String) -> int:
 	changed_pixels += changed
 	return changed
 
-func check_authored_colors(image: Image, mapping: Dictionary) -> void:
-	var source: Image = style.textures[int(mapping.donor)].get_image()
+func check_authored_colors(image: Image, mapping: Dictionary, background: Image = null) -> void:
+	var source: Image = style.atlas.get_image()
 	var box: Rect2 = mapping.rect
 	var target: Rect2 = mapping.target
 	var source_uv: Rect2 = mapping.source_uv
@@ -85,12 +85,13 @@ func check_authored_colors(image: Image, mapping: Dictionary) -> void:
 				var p: Vector2i = (lo+offset).clamp(Vector2i.ZERO,source.get_size()-Vector2i.ONE)
 				colors.append(source.get_pixelv(p))
 			var expected := colors[0].lerp(colors[1],fraction.x).lerp(colors[2].lerp(colors[3],fraction.x),fraction.y)
-			if expected.a<0.99: continue # Edge-alpha threshold has a separate cutout check.
+			if expected.a>0.49 and expected.a<0.51: continue # Floating cutout boundary tolerance only.
+			if expected.a<0.5: expected = background.get_pixel(x,y) if background else Color(0,170.0/255.0,0,1)
 			var actual := image.get_pixel(x,y)
 			for c in 3:
 				var error := absi(roundi(actual[c]*255)-roundi(expected[c]*255))
 				max_color_error = maxi(max_color_error,error)
-				check(error<=1,"authored RGB differs from independently sampled texture")
+				check(error<=1,"authored RGB/transparent cutout differs from independent sampler")
 			color_samples += 1
 
 func run() -> void:
@@ -103,13 +104,31 @@ func run() -> void:
 	check(not style.load_assets(directory.path_join("absent")),"missing assets accepted")
 	check(style.textures.is_empty(),"failed load retained textures")
 	check(style.load_assets(directory),"pinned source/art unavailable")
-	if style.textures.size()!=3: finish(); return
+	if style.textures.size()!=Art.ASSETS.size(): finish(); return
+	var packed: Image = style.atlas.get_image()
+	check(not packed.has_mipmaps(),"effect atlas unexpectedly has mipmaps")
+	for donor in Art.ASSETS.size():
+		var start := Vector2i((donor%Art.COLUMNS)*Art.STRIDE,(donor/Art.COLUMNS)*Art.STRIDE)
+		var interior := Rect2i(start+Vector2i(Art.PAD,Art.PAD),Vector2i(Art.TILE,Art.TILE))
+		check(packed.get_region(interior).get_data()==style.textures[donor].get_image().get_data(),"atlas donor bytes changed")
+		for y in Art.STRIDE:
+			for x in Art.STRIDE:
+				if x>=Art.PAD and x<Art.PAD+Art.TILE and y>=Art.PAD and y<Art.PAD+Art.TILE: continue
+				check(packed.get_pixelv(start+Vector2i(x,y)).a==0.0,"atlas transparent gutter contaminated")
 	for index: int in Art.DONORS:
 		var object := object_for(index)
 		var mapping: Dictionary = style.mapping(object,frame,Art.PC_PALETTE)
 		check(not mapping.is_empty(),"verified source rejected: %d" % index)
 		check(mapping.donor==Art.DONORS[index],"original detail-level donor mismatch")
-		check(mapping.rect==Rect2(Vector2(128,50),style.bounds[index].size),"source anchor or padding changed")
+		var uv: Rect2 = mapping.source_uv
+		var donor: int = mapping.donor
+		var slot := Rect2(Vector2((donor%Art.COLUMNS)*Art.STRIDE+Art.PAD,(donor/Art.COLUMNS)*Art.STRIDE+Art.PAD),Vector2(Art.TILE,Art.TILE))
+		var texel_uv := Rect2(uv.position*Vector2(packed.get_size()),uv.size*Vector2(packed.get_size()))
+		check(slot.grow(0.001).encloses(texel_uv),"effect UV escapes isolated donor slot")
+		var alternate := Art.PC_PALETTE.duplicate(true)
+		alternate[2] = [1,2,3]
+		check(style.mapping(object,frame,alternate).is_empty(),"unknown palette accepted for bitmap %d" % index)
+		check(mapping.rect==Rect2(Vector2(128,50)+style.bounds[index].position,style.bounds[index].size),"source anchor or padding changed")
 		var damaged := object.duplicate(true)
 		damaged.sprite.pixels[0] = 15
 		check(style.mapping(damaged,frame,Art.PC_PALETTE).is_empty(),"changed source pixel accepted")
@@ -129,7 +148,7 @@ func run() -> void:
 			check(actual.is_empty() if not expected.has_area() else actual.rect==expected,"source clip changes registration")
 	var unknown := Art.PC_PALETTE.duplicate(true)
 	unknown[6] = [1,2,3]
-	check(style.mapping(object_for(51),frame,unknown).is_empty(),"unknown/thermal palette accepted")
+	check(style.mapping(object_for(51),frame,unknown).is_empty(),"unknown palette accepted")
 	var unsupported := object_for(51)
 	unsupported.sprite.flags = 0
 	check(style.mapping(unsupported,frame,Art.PC_PALETTE).is_empty(),"unknown native flags accepted")
@@ -143,8 +162,8 @@ func run() -> void:
 	viewport.own_world_3d = true
 	var native_scale := 4
 	if "--native-scale" in args: native_scale = int(args[args.find("--native-scale")+1])
-	check(native_scale in [4,5],"unsupported native test scale")
-	if native_scale not in [4,5]: finish(); return
+	check(native_scale in [1,4,5],"unsupported native test scale")
+	if native_scale not in [1,4,5]: finish(); return
 	viewport.size = Vector2i(256,97)*native_scale
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	root.add_child(viewport)
@@ -179,6 +198,11 @@ func run() -> void:
 			check(view.effect_art_ids==[index],"native effect not active")
 			check(compare_outside(original,remaster,mapping.rect,"effect escaped original bounds")>0,"art made no visible change")
 			check_authored_colors(remaster,mapping)
+			var visible_pixels := 0
+			for y in remaster.get_height():
+				for x in remaster.get_width():
+					if remaster.get_pixel(x,y).to_rgba32()!=Color(0,170.0/255.0,0,1).to_rgba32(): visible_pixels+=1
+			check(visible_pixels>0,"authored effect became wholly invisible: %d" % index)
 			original.save_png(output.path_join("effect-%02d-original.png" % index))
 			remaster.save_png(output.path_join("effect-%02d-remastered.png" % index))
 		# Both painter orders, even when a later polygon is farther away.
@@ -198,12 +222,17 @@ func run() -> void:
 		var fallback_original := await snapshot(data,false)
 		var fallback_styled := await snapshot(data,true)
 		check(fallback_original.get_data()==fallback_styled.get_data() and view.effect_art_ids.is_empty(),"unknown palette did not preserve fallback")
-		for origin in [[29,12],[283,107]]:
-			data = sample(object_for(15,origin))
-			var a := await snapshot(data,false)
-			var b := await snapshot(data,true)
-			var mapping: Dictionary = style.mapping(data.objects[0],frame,Art.PC_PALETTE)
-			check(compare_outside(a,b,mapping.rect,"clipped art leaked outside source rectangle")>0,"clipped art missing")
+		for index: int in Art.BASES:
+			for origin in [[29,12],[283,107]]:
+				data = sample(object_for(index,origin))
+				var a := await snapshot(data,false)
+				var b := await snapshot(data,true)
+				var mapping: Dictionary = style.mapping(data.objects[0],frame,Art.PC_PALETTE)
+				if mapping.is_empty():
+					check(a.get_data()==b.get_data(),"fully clipped source changed")
+				else:
+					compare_outside(a,b,mapping.rect,"clipped donor leaked outside source rectangle")
+
 	view.apply_pass({"objects":[]})
 	check(view.effect_art_ids.is_empty() and view.mesh_node.mesh==null,"stale effect survived missing original frame")
 	finish()

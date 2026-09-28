@@ -187,7 +187,11 @@ def main():
             # overlay into native memory before unserialize recreates handles.
             core.local_overlay('reload')
             core.restore_local((args.local_resume / 'state.bin').read_bytes(), resume['keys'], resume['frame'], resume['ram_sha256'])
-            if args.backend == 'trace': session = PresentationSession(core, reader, shape_bytes)
+            if args.backend == 'trace':
+                session = PresentationSession(core, reader, shape_bytes)
+                session.before_frame()  # Attach before restoring host-only ownership.
+                observer = args.local_resume / 'observer.bin'
+                if observer.exists(): core.observer_checkpoint(observer.read_bytes())
         elif args.backend == "trace":
             if session is None:session = PresentationSession(core,reader,shape_bytes)
             session.step(1)
@@ -215,7 +219,8 @@ def main():
         ready = (resume['packet'] | {'type': 'ready', 'id': -1, 'timeline_reset': True,
                  'held_frame': True}) if args.local_resume else packet("ready", -1)
         # No pending audio is replayed from a checkpoint. Observer counters
-        # restart and attribution is reacquired only from newly executed draws.
+        # restart. EGA ownership resumes separately; raster masks and drawing
+        # candidates are reacquired from freshly observed original execution.
         if args.local_resume and 'audio' in ready:
             ready['audio'] = {'schema': 3, 'frame': core.frame, 'epoch': 0,
                               'last_id': 0, 'events': [], 'active': False, 'enabled': False}
@@ -250,6 +255,8 @@ def main():
                     core.local_overlay('flush')
                     raw = core.serialize_local()
                     (destination / 'state.bin').write_bytes(raw)
+                    if session:
+                        (destination / 'observer.bin').write_bytes(core.observer_checkpoint())
                     inverse_keys = {value: key for key, value in KEYS.items()}
                     snapshot = {'frame': core.frame, 'sequence': sequence,
                                 'keys': [inverse_keys[key] for key in sorted(core.pressed)],

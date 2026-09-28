@@ -4,15 +4,22 @@ extends "res://scripts/pc_bridge_viewer.gd"
 var resize_errors: Array[String] = []
 var resize_samples: Array = []
 
-func _settled() -> void:
+func _settled(mode: int, expected_size: Vector2i=Vector2i.ZERO) -> void:
+	# macOS mode transitions are asynchronous. Twenty unthrottled frames can
+	# elapse before the native animation even starts; require elapsed stability.
 	var prior := root.size
-	var stable := 0
-	var deadline := Time.get_ticks_msec()+6000
-	while Time.get_ticks_msec()<deadline and stable<20:
+	var stable_since := Time.get_ticks_msec()
+	var deadline := stable_since+10000
+	while Time.get_ticks_msec()<deadline:
 		await process_frame
-		if root.size==prior: stable+=1
-		else: stable=0;prior=root.size
-	if stable<20: resize_errors.append("window never settled")
+		var ready := root.mode==mode and root.size.x>0 and root.size.y>0
+		ready=ready and (expected_size==Vector2i.ZERO or root.size==expected_size)
+		if not ready or root.size!=prior:
+			stable_since=Time.get_ticks_msec()
+			prior=root.size
+		elif Time.get_ticks_msec()-stable_since>=750:
+			return
+	resize_errors.append("window mode/size never stable for 750 ms: mode=%d expected=%s actual=%s"%[mode,expected_size,root.size])
 
 func _capture() -> void:
 	if not play_mode:
@@ -28,9 +35,9 @@ func _capture() -> void:
 		var target_mode := Window.MODE_FULLSCREEN if fullscreen else Window.MODE_WINDOWED
 		if root.mode!=target_mode:
 			root.mode=target_mode
-			await _settled()
+			await _settled(target_mode)
 		if not fullscreen: root.size=Vector2i(item[0],item[1])
-		await _settled()
+		await _settled(target_mode,Vector2i.ZERO if fullscreen else Vector2i(item[0],item[1]))
 		RenderingServer.force_draw(false)
 		RenderingServer.force_sync()
 		var image := root.get_texture().get_image()

@@ -15,6 +15,7 @@ import zipfile
 MAX_STATE = 128 * 1024 * 1024
 MAX_DISK = 64 * 1024 * 1024
 MAX_RESUME = 32 * 1024 * 1024
+OPTIONAL_LIMITS = {'observer.bin': 2 * 1024 * 1024}
 LIMITS = {'state.bin': MAX_STATE, 'resume.json': MAX_RESUME, 'campaign.zip': MAX_DISK}
 
 def sha(raw):
@@ -81,19 +82,21 @@ class StateStore:
     def read(self, slot):
         path = self.path(slot)
         if not path.exists(): raise ValueError(f'Slot {slot} is empty')
-        raw = read_bounded(path, sum(LIMITS.values()) + 65536)
+        raw = read_bounded(path, sum(LIMITS.values()) + sum(OPTIONAL_LIMITS.values()) + 65536)
         with zipfile.ZipFile(io.BytesIO(raw)) as archive:
             infos = archive.infolist()
-            if len(infos) != 4 or {i.filename for i in infos} != {*LIMITS, 'manifest.json'}:
+            names = {i.filename for i in infos}
+            if (len(infos) != len(names) or not {*LIMITS, 'manifest.json'} <= names
+                    or names - {*LIMITS, *OPTIONAL_LIMITS, 'manifest.json'}):
                 raise ValueError('invalid checkpoint members')
             for item in infos:
-                if item.file_size > (LIMITS.get(item.filename, 65536)) or item.flag_bits & 1:
+                if item.file_size > ((LIMITS | OPTIONAL_LIMITS).get(item.filename, 65536)) or item.flag_bits & 1:
                     raise ValueError('checkpoint member exceeds limit or is encrypted')
             manifest = json.loads(archive.read('manifest.json'))
             if not isinstance(manifest, dict): raise ValueError('invalid checkpoint manifest')
             if manifest.get('compatibility') != self.compatibility:
                 raise ValueError('Checkpoint belongs to a different core, game, or platform')
-            files = {name: archive.read(name) for name in LIMITS}
+            files = {name: archive.read(name) for name in (LIMITS | OPTIONAL_LIMITS) if name in names}
         if not files['state.bin']: raise ValueError('empty native checkpoint')
         if manifest.get('files') != {name: {'size': len(data), 'sha256': sha(data)} for name, data in files.items()}:
             raise ValueError('Checkpoint integrity check failed')
@@ -113,6 +116,8 @@ class StateStore:
 
     def write(self, slot, capture):
         files = {name: read_bounded(Path(capture) / name, limit) for name, limit in LIMITS.items()}
+        files.update({name: read_bounded(Path(capture) / name, limit)
+                      for name, limit in OPTIONAL_LIMITS.items() if (Path(capture) / name).exists()})
         validate_disk(files['campaign.zip'])
         resume = json.loads(files['resume.json'])
         packet = resume['packet']
@@ -125,7 +130,7 @@ class StateStore:
             archive.writestr('manifest.json', json.dumps(manifest))
             for name, raw in files.items(): archive.writestr(name, raw)
         target = self.path(slot)
-        if target.exists(): atomic_write(target.with_suffix('.previous.zip'), read_bounded(target, sum(LIMITS.values()) + 65536))
+        if target.exists(): atomic_write(target.with_suffix('.previous.zip'), read_bounded(target, sum(LIMITS.values()) + sum(OPTIONAL_LIMITS.values()) + 65536))
         atomic_write(target, buffer.getvalue())
         self.read(slot)
 

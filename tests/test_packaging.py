@@ -64,7 +64,7 @@ class PackagingTests(unittest.TestCase):
 
     def test_save_state_secrets_and_traversal_rejected_for_both_kinds(self):
         for kind in ['private', 'source']:
-            for name in ['../escape.py', '/escape.py', 'tools/../escape.py', 'saves/state.json', 'states/slot.json', 'artifacts/capture.json', '.env', 'tools/a.state', 'tools\\a.py']:
+            for name in ['../escape.py', '/escape.py', 'tools/../escape.py', 'saves/state.json', 'states/slot.json', 'artifacts/capture.json', '.env', 'tools/a.state', 'tools\\a.py', 'SAVES/state.json', 'secret.env', '.SSH/id_rsa', 'key.PEM', 'genesis/rom.md']:
                 with self.subTest(name=name, kind=kind), self.assertRaises(ValueError):
                     package.validate_name(name, kind)
 

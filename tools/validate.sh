@@ -89,10 +89,38 @@ run_check() {
       echo "FAIL: $name (bounded run did not report completion)" >&2
       exit 1
     fi
+    if [ "$name" = pc_splash_aftermath ] && ! grep -Eq '^SPLASH_AFTERMATH_TEST: failures=0 entries=3$' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing complete three-scene receipt)" >&2
+      exit 1
+    fi
+    case "$name" in
+      pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
+        if ! grep -Eq '^(PC_[A-Z_]+|CURSOR_STRUTS): [1-9][0-9]* checks, 0 errors([,;].*)?$' "$OUT/$name.log"; then
+          cat "$OUT/$name.log"
+          echo "FAIL: $name (missing successful completion receipt)" >&2
+          exit 1
+        fi
+        ;;
+    esac
     cat "$OUT/$name.log"
     printf 'PASS %s\n' "$name" >> "$OUT/results.txt"
   else
     rc=$?
+    if [ "$name" = pc_splash_aftermath ] && ! grep -Eq '^SPLASH_AFTERMATH_TEST: failures=0 entries=3$' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing complete three-scene receipt)" >&2
+      exit 1
+    fi
+    case "$name" in
+      pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
+        if ! grep -Eq '^(PC_[A-Z_]+|CURSOR_STRUTS): [1-9][0-9]* checks, 0 errors([,;].*)?$' "$OUT/$name.log"; then
+          cat "$OUT/$name.log"
+          echo "FAIL: $name (missing successful completion receipt)" >&2
+          exit 1
+        fi
+        ;;
+    esac
     cat "$OUT/$name.log"
     printf 'FAIL %s exit=%s\n' "$name" "$rc" >> "$OUT/results.txt"
     exit "$rc"
@@ -100,6 +128,7 @@ run_check() {
 }
 run_check reference python3 -m unittest discover -s tests -v
 run_check preservation python3 tools/reference_inventory.py --verify
+run_check pc_audio_assets python3 tools/audit_pc_audio.py --output "$OUT/pc-audio-assets.json"
 run_check simulation ./tools/godot.sh --headless --script res://tests/test_simulation.gd
 run_check pc_rules ./tools/godot.sh --headless --script res://tests/test_pc_rules.gd
 run_check pc_world ./tools/godot.sh --headless --script res://tests/test_pc_world_view.gd
@@ -115,6 +144,7 @@ run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_
 run_check pc_surfaces ./tools/godot.sh --headless --script res://tests/test_pc_surfaces.gd
 run_check pc_colour ./tools/godot.sh --headless --script res://tests/test_pc_colour.gd
 run_check pc_sprites ./tools/godot.sh --headless --script res://tests/test_pc_sprites.gd
+run_check pc_effect_modes ./tools/godot.sh --headless --script res://tests/test_pc_effect_modes.gd
 run_check pc_effect_art ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_effect_art.gd
 run_check pc_tandem_frame ./tools/godot.sh --headless --script res://tests/test_pc_tandem_frame.gd
 run_check pc_plate_art ./tools/godot.sh --headless --script res://tests/test_pc_plate_art.gd
@@ -128,9 +158,20 @@ run_check pc_genesis_cockpits ./tools/godot.sh --headless --script res://tests/t
 run_check pc_world_bearing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_world_bearing.gd
 run_check pc_orientation ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_orientation.gd
 run_check pc_reticle ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_reticle.gd
+run_check pc_instrument_lock ./tools/godot.sh --headless --script res://tests/test_pc_instrument_lock.gd
+run_check pc_instrument_damage ./tools/godot.sh --headless --script res://tests/test_pc_instrument_damage.gd
+run_check pc_instrument_status ./tools/godot.sh --headless --script res://tests/test_pc_instrument_status.gd
+run_check pc_reticle_target ./tools/godot.sh --headless --script res://tests/test_pc_reticle_target.gd
 run_check pc_gauges ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_gauges.gd
+run_check pc_portrait_coverage ./tools/godot.sh --headless --script res://tests/test_pc_portrait_coverage.gd
 run_check pc_portrait_art ./tools/godot.sh --headless --script res://tests/test_pc_portrait_art.gd
 run_check pc_frontend_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_frontend_art.gd
+run_check pc_newspapers ./tools/godot.sh --headless --script res://tests/test_pc_newspaper_art.gd
+run_check pc_wilson_completion ./tools/godot.sh --headless --script res://tests/test_pc_wilson_completion.gd
+run_check pc_splash_aftermath ./tools/godot.sh --headless --script res://tests/test_pc_splash_aftermath.gd
+run_check pc_dynamic_map ./tools/godot.sh --headless --script res://tests/test_pc_dynamic_map.gd
+run_check pc_cursor_struts ./tools/godot.sh --headless --script res://tests/test_pc_cursor_struts.gd
+run_check pc_map_art ./tools/godot.sh --headless --script res://tests/test_pc_map_art.gd
 run_check pc_intro_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_intro_art.gd
 run_check pc_motor_pool_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_motor_pool_art.gd -- --text
 run_check pc_information_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_information_art.gd -- --tandem
@@ -140,6 +181,7 @@ run_check geometry ./tools/godot.sh --headless --script res://tests/test_geometr
 run_check audio ./tools/godot.sh --headless --script res://tests/test_audio.gd
 run_check pc_audio ./tools/godot.sh --headless --script res://tests/test_pc_audio.gd
 run_check pc_radio ./tools/godot.sh --headless --script res://tests/test_pc_radio.gd
+run_check pc_audio_limiter ./tools/godot.sh --headless --script res://tests/test_pc_audio_limiter.gd
 run_check pc_audio_mix ./tools/godot.sh --headless --script res://tests/test_pc_audio_mix.gd
 run_check pc_frontend_music ./tools/godot.sh --headless --script res://tests/test_pc_frontend_music.gd
 run_check pc_remaining_audio ./tools/godot.sh --headless --script res://tests/test_pc_remaining_audio.gd

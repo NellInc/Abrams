@@ -8,9 +8,11 @@ func check(ok: bool, label: String) -> void:
 	if not ok: failures.append(label)
 
 func sound(id: int, frame: int, sample: String = "cannon", enabled: bool = true, epoch: int = 1) -> Dictionary:
-	return {"kind":"sound", "ip":0x9107, "return_ip":0x33c4, "value":1, "backend":0,
+	var request: int = {"cannon":1,"smoke":3,"machinegun":2}.get(sample,1)
+	var caller: int = {1:0x33c4,2:0x32fa,3:0x7c07}[request]
+	return {"kind":"sound", "ip":0x9107, "return_ip":caller, "value":request, "backend":0,
 		"id":id, "frame":frame, "epoch":epoch, "sample":sample,
-		"voice":"on_the_way" if sample == "cannon" else null, "enabled":enabled}
+		"voice":{"cannon":"on_the_way","smoke":"smoke"}.get(sample), "enabled":enabled}
 
 func packet(frame: int, id: int, events: Array, enabled: bool = true, epoch: int = 1) -> Dictionary:
 	return {"schema":3, "frame":frame, "epoch":epoch, "last_id":id,
@@ -90,6 +92,21 @@ func run() -> void:
 	check(audio._valid_crew(fresh_bearing),"newly encountered digit-wise bearing retains original source gate")
 	fresh_bearing.text="We've been hit! Bearing 059"
 	check(not audio._valid_crew(fresh_bearing),"bearing cannot select another number's performance")
+	for fault in ["ip","return_ip","value","sample","voice","backend"]:
+		var guarded:=PcAudio.new()
+		root.add_child(guarded)
+		var invalid_source:=sound(1,1)
+		match fault:
+			"ip": invalid_source.ip=0x9108
+			"return_ip": invalid_source.return_ip=0x33c5
+			"value": invalid_source.value=2
+			"sample": invalid_source.sample="impact"
+			"voice": invalid_source.voice=null
+			"backend": invalid_source.backend=2
+		check(not guarded.apply_audio(packet(1,1,[invalid_source])),"forged sound "+fault+" rejected")
+		check(guarded.cursor==0 and not guarded.voice.playing,"forged request fails before playback")
+		check(await guarded.drain_for_shutdown(),"forged source drains")
+		guarded.queue_free()
 	var first := packet(10,1,[sound(1,10)])
 	# The real pipe uses JSON floats, not hand-authored integer dictionaries.
 	check(audio.apply_audio(JSON.parse_string(JSON.stringify(first))),"JSON first event")

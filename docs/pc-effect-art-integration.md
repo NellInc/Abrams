@@ -1,5 +1,11 @@
 # PC-selected, Genesis-derived impact artwork
 
+Current ordinary-palette coverage is now all 64 source-bound bitmaps through
+20 authored donors. See [the complete atlas extension](pc-effect-art-completion.md)
+for current evidence and remaining palette/live-sequence/human-review limits.
+The sections below retain the earlier bounded checkpoint.
+
+
 ## Bounded result
 
 Three high-resolution Genesis-derived images now replace nine verified PC

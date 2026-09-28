@@ -13,8 +13,9 @@ neither records the emulator's mixed output nor runs the calibration-range
 simulation. Original F5 sound-off and pause stop effects and voices. Closing the
 viewer drains Godot playback and gracefully closes its own PC helper.
 
-This is partial sound coverage. Engine/turret loops now follow their original
-sound channels. Full-sentence generated takes cover all 360 incoming-hit
+The identified in-mission sound and message families now have complete installed
+coverage within the finite source audit in `pc-audio-completeness.md`.
+Engine/turret loops follow their original sound channels. Full-sentence generated takes cover all 360 incoming-hit
 bearings, 24 damage reports and eight warning/outcome calls, triggered by fully
 visible original messages.
 Nine damage reports have live occurrence evidence; the 15 additions have original

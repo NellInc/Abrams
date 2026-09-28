@@ -442,3 +442,15 @@ contract before narration can safely follow their visible text.
 Working if: each of the 54 source assignments resolves to its own checked take,
 only complete displayed source messages can speak, and transport/mute release
 never plays previously consumed lines.
+
+## Bearing 182 PCM repair, 28 September 2026
+
+The complete PCM audit found three full-scale samples in the previously installed
+182 take. `local-audio/pc-bearing-182-repair-20260928` retains a fresh Gemini 3.8
+Flash TTS dry master, blind transcription and separate spoken-number QA. Both
+checks identify “one eight two”; the replacement has zero full-scale samples
+and a -1.18 dBFS sample peak. Only that installed WAV and its provenance entry
+changed. The prior master remains at its original path, and the receipt records
+its hash. This is an automated wording, custody and sample-headroom result,
+without an independent human listening verdict. See `pc-audio-completeness.md`
+for the complete source denominator and asset gate.

@@ -292,6 +292,25 @@ class PcReferenceCore:
         if not function(): raise ValueError("Native checkpoint overlay " + operation + " failed")
         self.pause_at_frame_end()
 
+    def observer_checkpoint(self, raw=None):
+        """Exact-core, host-only EGA ownership companion at the native fence."""
+        self.pause_at_frame_end()
+        abi = self.core.abrams_observer_checkpoint_abi
+        abi.argtypes, abi.restype = [], C.c_uint
+        size_fn = self.core.abrams_observer_checkpoint_size
+        size_fn.argtypes, size_fn.restype = [], C.c_size_t
+        size = size_fn()
+        if abi() != 1 or not 0 < size <= 2 * 1024 * 1024:
+            raise ValueError("unsupported observer checkpoint ABI")
+        if raw is not None and len(raw) != size:
+            raise ValueError("invalid observer checkpoint size")
+        buffer = C.create_string_buffer(size) if raw is None else C.create_string_buffer(raw, size)
+        function = getattr(self.core, 'abrams_observer_checkpoint_' + ('save' if raw is None else 'load'))
+        function.argtypes, function.restype = [C.c_void_p, C.c_size_t], C.c_bool
+        if not function(buffer, size):
+            raise ValueError("Observer checkpoint does not match the restored native display")
+        return buffer.raw
+
     def serialize_local(self):
         """Native bytes at the paused logical boundary, without keyboard edits."""
         self.pause_at_frame_end()

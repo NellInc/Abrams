@@ -3,6 +3,13 @@ extends "res://scripts/audio.gd"
 ## Batched diagnostic steps retain all events, but stale audio is never replayed.
 const MAX_AGE_FRAMES := 6
 const SAMPLES := ["cannon", "machinegun", "smoke", "impact", "switch", "radio", "pc_request_07", "pc_request_09", "pc_request_10", "pc_request_15", "pc_request_16"]
+# Mirror the source-qualified Python dispatcher; names alone are not authority.
+const REQUEST_CALLS := {1:[0x33c4],2:[0x32fa],3:[0x7c07],6:[0x6b25,0x74e5,0x7547],
+	7:[0x19d1],8:[0x6b25,0x74e5,0x7547],9:[0x0527],10:[0x0974,0x7790],
+	11:[0x3c97,0x3cdb],14:[0x15e4,0x15ff,0x1640,0x814d,0x81cf,0x81f3],
+	15:[0x034f],16:[0x8219,0x8256]}
+const REQUEST_SAMPLES := {1:"cannon",2:"machinegun",3:"smoke",6:"impact",7:"pc_request_07",
+	8:"impact",9:"pc_request_09",10:"pc_request_10",11:"radio",14:"switch",15:"pc_request_15",16:"pc_request_16"}
 const VOICES := {"cannon": "on_the_way", "smoke": "smoke"}
 var crew_catalogue: Dictionary = {}
 var last_crew_message := 0
@@ -30,6 +37,29 @@ var transport_muted := false
 var mix := {"master":100,"effects":100,"voice":100,"motors":100}
 var motor_volume := 1.0
 var current_loops: Dictionary = {}
+const LIMITER_CEILING_DB := -1.0
+var presentation_bus := ""
+
+func _create_presentation_bus() -> void:
+	# Limit only this PC presentation. Never modify Master or the range mixer.
+	presentation_bus="PCPresentation_%s" % get_instance_id()
+	AudioServer.add_bus()
+	var index:=AudioServer.bus_count-1
+	AudioServer.set_bus_name(index,presentation_bus)
+	AudioServer.set_bus_send(index,"Master")
+	var limiter:=AudioEffectHardLimiter.new()
+	limiter.ceiling_db=LIMITER_CEILING_DB
+	limiter.pre_gain_db=0.0
+	limiter.release=0.1
+	AudioServer.add_bus_effect(index,limiter)
+	for player in [engine,voice,turret,music]+effects:
+		player.bus=presentation_bus
+
+func _exit_tree() -> void:
+	super._exit_tree()
+	var index:=AudioServer.get_bus_index(presentation_bus)
+	if index>0: AudioServer.remove_bus(index)
+	presentation_bus=""
 
 func set_mix(settings: Dictionary) -> bool:
 	if settings.keys().size() not in [4,5]: return false
@@ -78,6 +108,7 @@ func _ready() -> void:
 	turret.stream = stream
 	music=AudioStreamPlayer.new()
 	add_child(music)
+	_create_presentation_bus()
 	set_mix(mix)
 
 func _stop_source_audio() -> void:
@@ -214,6 +245,13 @@ func _sync_loops(loops: Dictionary) -> void:
 func _integer(value) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and float(value) == floorf(float(value))
 
+func _valid_sound(event: Dictionary) -> bool:
+	if int(event.ip)!=0x9107: return false
+	var request:=int(event.value)
+	var mapped: bool = request in REQUEST_CALLS and int(event.return_ip) in REQUEST_CALLS[request]
+	var expected = REQUEST_SAMPLES[request] if mapped else null
+	return event.get("sample")==expected and event.get("voice")==VOICES.get(expected)
+
 func _valid_readiness(event: Dictionary) -> bool:
 	for key in ["completion_frame", "text_sequence", "text_draw_sequence", "text_return_ip", "text_pointer"]:
 		if not _integer(event.get(key)) or int(event[key]) < 0: return false
@@ -312,6 +350,10 @@ func apply_audio(packet: Dictionary) -> bool:
 		var speech = event.get("voice")
 		if sample != null and (event.kind != "sound" or sample not in SAMPLES):
 			return _reject("Unknown remastered sample")
+		if event.kind == "sound" and not _valid_sound(event):
+			return _reject("Invalid original sound request identity")
+		if event.enabled and int(event.backend) not in [0,1]:
+			return _reject("Unsupported enabled original sound backend")
 		if event.kind == "readiness_visible":
 			if sample != null or speech != "loaded" or not _valid_readiness(event):
 				return _reject("Invalid visible original readiness")

@@ -181,9 +181,7 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 		material.set_shader_parameter("hill_mean",TerrainStyle.HILL_MEAN)
 		material.set_shader_parameter("material_means",_mean_texture)
 	if not effect_art_ids.is_empty():
-		material.set_shader_parameter("impact_burst",effect_art.textures[0])
-		material.set_shader_parameter("impact_fading",effect_art.textures[1])
-		material.set_shader_parameter("impact_smoke",effect_art.textures[2])
+		material.set_shader_parameter("impact_burst",effect_art.atlas)
 		material.set_shader_parameter("effect_correction",effect_art.correction)
 	if terrain_active:
 		material.set_shader_parameter("field_detail",terrain_style.textures.field)
@@ -212,5 +210,5 @@ func _add_effect(vertices: PackedVector3Array, materials: PackedVector2Array, ef
 	for index in [0,1,2,0,2,3]:
 		var point: Vector2 = points[index]
 		vertices.append(camera_point(SurfaceGeometry.unproject(point,1024.0,frame)))
-		materials.append(Vector2(0,4+int(effect.donor)))
+		materials.append(Vector2(0,4))
 		_effect_uvs.append(uv.position+(point-target.position)/target.size*uv.size)

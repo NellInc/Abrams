@@ -1,10 +1,11 @@
 # Presentation audio controls
 
-Play's **Audio** menu has four independent levels: master, sound effects, crew
-voices, and engine/turret motors. Each offers Off and 10% steps through 100%.
-Restore default mix returns all four to 100%, preserving the previous authored
-mix (including its existing 0.65 overall gain). No music control is exposed while
-the music implementation remains unfinished.
+Play's **Audio** menu has five independent levels: master, sound effects, crew
+voices, engine/turret motors, and frontend music. Each offers Off and 10% steps through 100%.
+Restore default mix returns the original four levels to 100% and music to 70%,
+preserving the authored gains (including the existing 0.65 overall gain).
+Frontend music plays only in source-qualified title, menu, briefing and debrief
+contexts. In-mission gameplay remains musically quiet.
 
 macOS uses the system menu bar, leaving the game image untouched. The non-native
 fallback reserves a small header above the largest complete 4:3 game view. No
@@ -72,3 +73,12 @@ pacing and historical speed calibration remain open; no 60 fps claim is made.
 Working if: mix changes affect only audible presentation, leave original
 input/state/render records unchanged for the same delivered controls, retain the
 original sound gate, and persist separately from original game saves.
+
+## Overlap protection
+
+The existing per-player/category gains now feed a dedicated PC-only hard-limiter
+bus, with a -1 dB ceiling and no added pre-gain. Master and calibration buses are
+unchanged. This preserves volume controls while protecting against coincident
+peak overload from the eight-effect pool, voice and motors. The bus is removed
+with its owning scene. Synthetic actual-mixer overload and latency results are
+recorded in `pc-audio-completeness.md`; they do not substitute for listening.

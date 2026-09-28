@@ -1,0 +1,42 @@
+import struct,unittest
+from tools.pc_dynamic_map import MapRuns,RECT
+from tools.pc_pixel_bytes import indexed_rgb
+
+class DynamicMapTests(unittest.TestCase):
+ def fixture(self,mode=0,page=0):
+  observer=MapRuns();pixels=bytearray([2])*(144*96)
+  def line(caller,x1,y,x2,color):
+   observer.line(struct.pack('<H4hBBHBB',caller,x1,y,x2,y,color,mode,page,1,mode))
+   pixels[(y-63)*144+x1-16:(y-63)*144+x2-15]=bytes([color])*(x2-x1+1)
+  def finish(caller):observer.finish(struct.pack('<5H',*RECT,page)+pixels,caller)
+  if mode==0:
+   observer.begin(struct.pack('<H4B',page,2,1,0,16))
+   line(0x1011,16,63,18,4);line(0x102c,16,64,18,4);finish(0x1052)
+   line(0x1197,80,90,80,5);finish(0x11ae)
+  else:
+   line(0x1263,87,110,88,1);line(0x1279,87,111,88,1);finish(0x1285)
+  palette=[[i*16,i*8,i*4] for i in range(16)];rgb=indexed_rgb(pixels,palette);raw=bytearray(320*200*4)
+  for y in range(96):
+   for x in range(144):
+    i=(y*144+x)*3;a=((y+63)*320+x+16)*4;raw[a:a+3]=rgb[i:i+3][::-1]
+  return observer,bytes(raw),palette
+ def test_both_modes_both_pages_and_whole_map_occlusion(self):
+  for mode in (0,1):
+   for page in (0,8192):
+    o,raw,p=self.fixture(mode,page);candidate=o.scanout(page)
+    self.assertEqual(o.present(candidate,raw,320,200,p)['mode'],mode)
+    self.assertIsNone(o.scanout(8192-page))
+    changed=bytearray(raw);changed[(100*320+100)*4]^=1
+    self.assertEqual(o.present(candidate,changed,320,200,p),{})
+ def test_mid_draw_attach_falls_back(self):
+  o=MapRuns();o.line(struct.pack('<H4hBBHBB',0x1011,16,63,18,63,1,0,0,1,0));o.finish(struct.pack('<5H',*RECT,0)+bytes([1])*13824,0x1052)
+  self.assertIsNone(o.scanout(0));self.assertEqual(o.counts['unobserved_entry'],2)
+ def test_wrong_station_rejects(self):
+  o=MapRuns();o.begin(struct.pack('<H4B',0,2,0,0,16));o.finish(struct.pack('<5H',*RECT,0)+bytes([2])*13824,0x1052)
+  self.assertEqual(o.terrain,{})
+ def test_new_refresh_invalidates(self):
+  o,_,_=self.fixture();self.assertIsNotNone(o.scanout(0));o.begin(struct.pack('<H4B',0,2,1,0,16));self.assertIsNone(o.scanout(0))
+ def test_incomplete_or_wrong_local_marker_rejected(self):
+  o=MapRuns();o.line(struct.pack('<H4hBBHBB',0x1263,86,110,88,110,1,1,0,1,1));o.finish(struct.pack('<5H',*RECT,0)+bytes([1])*13824,0x1285)
+  self.assertIsNone(o.scanout(0))
+if __name__=='__main__':unittest.main()

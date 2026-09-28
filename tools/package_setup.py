@@ -6,6 +6,7 @@ No game download. Original input is read-only. Existing targets are never change
 from __future__ import annotations
 import argparse
 import hashlib
+import io
 import json
 from pathlib import Path
 import zipfile
@@ -22,33 +23,39 @@ def prepare(source, destination, records):
     archive = destination / '.runtime/pc-core/abrams-ref.zip'
     if not archive.resolve().is_relative_to(destination.resolve()):
         raise ValueError('Runtime destination must remain inside the kit')
-    if target.exists() or archive.exists():
+    if target.exists() or target.is_symlink() or archive.exists() or archive.is_symlink():
         raise ValueError('GAME or content ZIP already exists; existing files are preserved')
     payload = {}
     for record in records:
         name = record['name']
-        if Path(name).name != name or name in {'.', '..'}:
+        if not isinstance(name, str) or not name or '\\' in name or Path(name).name != name or name in {'.', '..'} or name in payload or name == 'dosbox.conf':
             raise ValueError('Unsafe original filename')
         path = source / name
-        if path.is_symlink():
+        if path.is_symlink() or not path.is_file():
             raise ValueError('Original inputs must be regular files')
         data = path.read_bytes()
         if hashlib.sha256(data).hexdigest() != record['sha256']:
             raise ValueError(f'Unsupported or modified original: {name}')
         payload[name] = data
-    target.mkdir(parents=True, exist_ok=False)
-    archive.parent.mkdir(parents=True, exist_ok=True)
-    for name, data in payload.items():
-        (target / name).write_bytes(data)
-    with archive.open('xb') as handle, zipfile.ZipFile(handle, 'w', compression=zipfile.ZIP_STORED) as out:
+    # Validate the complete reconstruction before creating any destination files.
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', compression=zipfile.ZIP_STORED) as out:
         for name, data in [*payload.items(), ('dosbox.conf', CONFIG.encode())]:
             info = zipfile.ZipInfo(name, (2026, 9, 26, 22, 55, 24))
             info.create_system = 3
             info.external_attr = 0o600 << 16
             out.writestr(info, data)
-    actual = hashlib.sha256(archive.read_bytes()).hexdigest()
+    reconstructed = buffer.getvalue()
+    actual = hashlib.sha256(reconstructed).hexdigest()
     if actual != CONTENT_SHA:
         raise ValueError('ZIP reconstruction did not match the pinned input; do not launch')
+    target.mkdir(parents=True, exist_ok=False)
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    for name, data in payload.items():
+        with (target / name).open('xb') as output:
+            output.write(data)
+    with archive.open('xb') as output:
+        output.write(reconstructed)
     return actual
 
 

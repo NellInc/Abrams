@@ -3205,19 +3205,33 @@
       "sample_rate": 24000,
       "channels": 1,
       "bits_per_sample": 16,
-      "sample_frames": 59520,
-      "duration_seconds": 2.48,
-      "sha256": "14fdd59edd8b69058e0db0296e64aa141e2d1806d008c2cda9f8ff92f129b80c",
-      "source_master": "local-audio/pc-bearings-gemini-3.8-v2/batch-1/voice_pc_hit_one_eight_two.wav",
+      "sample_frames": 65280,
+      "duration_seconds": 2.72,
+      "sha256": "b6bef2982337f903b5354a7fd1a4464ee5698886e1ab46c48429a88d276604d2",
+      "source_master": "local-audio/pc-bearing-182-repair-20260928/voice_pc_hit_one_eight_two.wav",
       "processing": "Unmodified generated dry master",
       "transcript_qa": {
-        "transcript": "We've been hit, bearing one eight two.",
+        "transcript": "We've been hit! Bearing one eight two!",
         "expected": "We've been hit! Bearing one eight two",
         "normalized_match": true,
-        "audio_sha256": "14fdd59edd8b69058e0db0296e64aa141e2d1806d008c2cda9f8ff92f129b80c"
+        "audio_sha256": "b6bef2982337f903b5354a7fd1a4464ee5698886e1ab46c48429a88d276604d2"
       },
-      "previous_take_sha256": null,
-      "number_delivery_qa": null
+      "number_delivery_qa": {
+        "number_delivery": "individual_digits",
+        "spoken_number_words": [
+          "one",
+          "eight",
+          "two"
+        ],
+        "audio_sha256": "b6bef2982337f903b5354a7fd1a4464ee5698886e1ab46c48429a88d276604d2",
+        "expected_number_words": [
+          "one",
+          "eight",
+          "two"
+        ],
+        "match": true
+      },
+      "previous_take_sha256": "14fdd59edd8b69058e0db0296e64aa141e2d1806d008c2cda9f8ff92f129b80c"
     },
     "pc_hit_one_eight_six": {
       "role": "pc_crew_3",

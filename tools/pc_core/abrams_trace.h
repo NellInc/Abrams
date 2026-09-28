@@ -40,6 +40,8 @@ static bool abrams_orientation_active = false;
 static Bit16u abrams_orientation_rect[5];
 static bool abrams_reticle_active = false;
 static unsigned abrams_reticle_page = 0;
+static bool abrams_target_active = false;
+static unsigned abrams_target_page = 0;
 static bool abrams_text_active = false;
 static bool abrams_frontend_text_mode = false;
 static Bit16u abrams_text_rect[6];
@@ -67,6 +69,7 @@ void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
     abrams_text_active = false;
     abrams_orientation_active = false;
     abrams_reticle_active = false;
+    abrams_target_active = false;
     abrams_ownership.reset();
     abrams_plates.reset();
 }
@@ -289,12 +292,100 @@ static INLINE void AbramsTraceInstruction() {
         && ip != 0x6040 && ip != 0x5f81 && ip != 0x62a6
         && ip != 0x567f && ip != 0x56a5 && ip != 0x56dd
         && ip != 0x5fa5 && ip != 0x5fc3 && ip != 0x5fe1 && ip != 0x5fff
+        && ip != 0x66a9 && ip != 0x66db && ip != 0x66f9 && ip != 0x6717 && ip != 0x6735 && ip != 0x6760
         && ip != 0x65f1 && ip != 0x6620 && ip != 0x6631
+        && ip != 0x0f73 && ip != 0x1011 && ip != 0x102c && ip != 0x1052
+        && ip != 0x1197 && ip != 0x11ae && ip != 0x1263 && ip != 0x1279 && ip != 0x1285
         && ip != 0x5ba1 && ip != 0x5c50 && ip != 0x5da3) return;
     if (SegValue(ds) != abrams_trace_load + 0x19e0) return;
     Bit32u segment = SegValue(cs), event = 0, start = 0, length = 0;
     const Bit32u base = SegPhys(ds);
     if (base + 65536 > 640 * 1024) return;
+    // Map calls only: observed visible primitive arguments and completed page
+    // pixels. No object coordinates or scenario-memory reconstruction is exposed.
+    // Stateless return hooks introduce no checkpoint lifetime or guest writes.
+    if (segment == abrams_trace_load && (ip == 0x0f73 || ip == 0x1011 || ip == 0x102c ||
+        ip == 0x1052 || ip == 0x1197 || ip == 0x11ae || ip == 0x1263 || ip == 0x1279 || ip == 0x1285)) {
+        const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
+            reg_bp,reg_sp,SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+        unsigned page = mem_readw(base+0x35a8);
+        if (page != 0xa000 && page != 0xa200) return;
+        page = (page-0xa000)*16;
+        if (ip == 0x0f73) {
+            abrams_trace_snapshot[0]=Bit8u(page);abrams_trace_snapshot[1]=Bit8u(page>>8);
+            abrams_trace_snapshot[2]=mem_readb(base+0x359e);
+            // The clear colour is assigned just after this observation point.
+            abrams_trace_snapshot[2]=mem_readb(base+0x777a);
+            abrams_trace_snapshot[3]=mem_readb(base+0x799d);
+            abrams_trace_snapshot[4]=mem_readb(base+0x799f);
+            abrams_trace_snapshot[5]=mem_readb(base+0x35ae);
+            abrams_trace_callback(43,regs,abrams_trace_snapshot,ip,6);
+        } else if (ip == 0x1052 || ip == 0x11ae || ip == 0x1285) {
+            const unsigned rect[5]={16,63,144,96,page};
+            for (unsigned i=0;i<5;++i) {
+                abrams_trace_snapshot[2*i]=Bit8u(rect[i]);abrams_trace_snapshot[2*i+1]=Bit8u(rect[i]>>8);
+            }
+            for (unsigned y=0;y<96;++y) for (unsigned x=0;x<144;++x) {
+                unsigned at=page+(63+y)*40+(16+x)/8,color=0;
+                for (unsigned plane=0;plane<4;++plane)
+                    if (vga.mem.linear[at*4+plane] & (128u>>((16+x)&7))) color|=1u<<plane;
+                abrams_trace_snapshot[10+y*144+x]=Bit8u(color);
+            }
+            abrams_trace_callback(45,regs,abrams_trace_snapshot,ip,10+144*96);
+        } else {
+            unsigned stack=SegPhys(ss)+reg_sp;
+            if (stack+8>640*1024) return;
+            abrams_trace_snapshot[0]=Bit8u(ip);abrams_trace_snapshot[1]=Bit8u(ip>>8);
+            MEM_BlockRead(stack,abrams_trace_snapshot+2,8);
+            if (ip == 0x1197) MEM_BlockRead(stack,abrams_trace_snapshot+6,4);
+            abrams_trace_snapshot[10]=ip==0x1197?mem_readb(stack+4):mem_readb(base+0x359e);
+            abrams_trace_snapshot[11]=mem_readb(base+0x359b);
+            abrams_trace_snapshot[12]=Bit8u(page);abrams_trace_snapshot[13]=Bit8u(page>>8);
+            abrams_trace_snapshot[14]=mem_readb(base+0x799d);
+            abrams_trace_snapshot[15]=mem_readb(base+0x799f);
+            abrams_trace_callback(44,regs,abrams_trace_snapshot,ip,16);
+        }
+        return;
+    }
+    if (segment == abrams_trace_load && (ip == 0x66a9 || (abrams_target_active &&
+        (ip == 0x66db || ip == 0x66f9 || ip == 0x6717 || ip == 0x6735 || ip == 0x6760)))) {
+        const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
+            reg_bp,reg_sp,SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+        if (ip == 0x66a9) {
+            MEM_BlockRead(base,abrams_trace_snapshot,65536);
+            abrams_trace_callback(40,regs,abrams_trace_snapshot,0,65536);
+            unsigned page=mem_readw(base+0x35a8);
+            if ((page!=0xa000 && page!=0xa200) || vga.mode!=M_EGA) {
+                abrams_trace_callback(42,regs,NULL,0,0);abrams_target_active=false;return;
+            }
+            abrams_target_page=(page-0xa000)*16;abrams_target_active=true;
+        } else if (ip != 0x6760) {
+            unsigned stack=SegPhys(ss)+reg_sp;
+            if (stack+8>640*1024) {
+                abrams_trace_callback(42,regs,NULL,0,0);abrams_target_active=false;return;
+            }
+            MEM_BlockRead(stack,abrams_trace_snapshot,8);
+            abrams_trace_snapshot[8]=mem_readb(base+0x359e);
+            abrams_trace_snapshot[9]=mem_readb(base+0x359b);
+            MEM_BlockRead(base+0x35a8,abrams_trace_snapshot+10,2);
+            abrams_trace_callback(41,regs,abrams_trace_snapshot,0,12);
+        } else {
+            // Finish after all original gunner cosmetics and instruments. Comparing
+            // the whole visible sight rejects later occlusion and stale pages.
+            const Bit16u rect[5]={32,13,256,97,Bit16u(abrams_target_page)};
+            for (unsigned i=0;i<5;++i) {
+                abrams_trace_snapshot[2*i]=Bit8u(rect[i]);abrams_trace_snapshot[2*i+1]=Bit8u(rect[i]>>8);
+            }
+            for (unsigned y=0;y<97;++y) for (unsigned x=0;x<256;++x) {
+                unsigned at=abrams_target_page+(13+y)*40+(32+x)/8, color=0;
+                for (unsigned p=0;p<4;++p)
+                    if (vga.mem.linear[at*4+p] & (128u>>((32+x)&7))) color|=1u<<p;
+                abrams_trace_snapshot[10+y*256+x]=Bit8u(color);
+            }
+            abrams_trace_callback(42,regs,abrams_trace_snapshot,0,10+256*97);abrams_target_active=false;
+        }
+        return;
+    }
     if (segment == abrams_trace_load && (ip == 0x65f1 ||
         (abrams_reticle_active && (ip == 0x6620 || ip == 0x6631)))) {
         const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
@@ -657,3 +748,5 @@ static INLINE void AbramsTraceInstruction() {
     if (length) MEM_BlockRead((event == 1 || event == 17) ? 0 : (event == 15 ? SegPhys(ss) : ((event == 7 || event == 8) ? SegPhys(es) : base)) + start, abrams_trace_snapshot, length);
     abrams_trace_callback(event, regs, abrams_trace_snapshot, start, length);
 }
+
+#include "abrams_observer_checkpoint.h"

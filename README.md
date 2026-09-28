@@ -10,7 +10,7 @@ This project revisits a childhood favourite with clearer artwork, original-style
 
 The **PC version is the gameplay authority**. The **Genesis version supplies the preferred visual references wherever suitable equivalents exist**. Its artwork, palette and native sound resources guide the restoration; its simpler game logic does not replace the PC simulation.
 
-Development is active. The current local build runs the original menus, briefings, motor pool, missions and debriefing flow through a Godot presentation layer. Full mission-outcome coverage, remaining presentation work and a community-ready installer are still outstanding. This is an independent fan project.
+Development is active. The current local build runs the original menus, briefings, motor pool, missions and debriefing flow through a Godot presentation layer. Three ending newspapers, the remaining source effect families, damage displays and frontend artwork now have source-bound restoration paths. The HEAT illustration, full mission-outcome acceptance and community-ready cross-platform installers remain outstanding. This is an independent fan project.
 
 ## How it works
 
@@ -195,7 +195,8 @@ The full local gate needs the separately supplied originals, pinned runtime, ref
 Packaging and launcher contracts can be checked without the original games:
 
 ```sh
-python3 -m unittest tests.test_packaging tests.test_launchers
+python3 -m tools.package.source_ci
+python3 -m tools.package.git_boundary
 ```
 
 Validation combines original-versus-observed replay comparisons, RAM/video/input checks, source-pixel verification, native rendered captures, audio event checks and checkpoint persistence tests. Recorded routes cover all eight scenario entries, four stations, weapon inputs, pause/mute, quit/debrief, a combat-loss route and a campaign save/continue route. These bounded routes do not establish complete mission or campaign parity.
@@ -203,10 +204,10 @@ Validation combines original-versus-observed replay comparisons, RAM/video/input
 Remaining work includes:
 
 * Complete victory, defeat and campaign-outcome coverage.
-* Remaining graphics families and unsupported frontend transitions.
-* Retaining remastered cockpit provenance through checkpoint continuation.
+* The blocked HEAT illustration and conservative fallbacks for unrecognized frontend transitions.
+* Independent art acceptance of the completed non-Modern families, including original-derived ending fixtures.
 * Wider live occurrence checks and independent listening review for speech, effects and music.
-* Longer-session performance and historical speed calibration across machines.
+* Sustained playback performance and historical speed calibration across machines; current long-run measurements and any regressions are recorded separately from correctness.
 * Supported-platform installers, asset redistribution decisions and project licensing.
 
 [Playability status](docs/playability-status.md) records what has actually been exercised. [The work ledger](docs/WORK_LEDGER.md) retains the detailed evidence and open outcomes.
@@ -220,7 +221,8 @@ Remaining work includes:
 * [Cockpits](docs/genesis-cockpit-integration.md), [portraits](docs/genesis-portrait-integration.md), [briefings](docs/genesis-briefing-integration.md), [motor pool](docs/genesis-motor-pool-integration.md) and [intro](docs/genesis-intro-integration.md).
 * [Genesis model research](docs/genesis-models-research.md), [graphics coverage](docs/graphics-coverage.md) and [graphics modes](docs/graphics-modes.md).
 * [Audio research](docs/pc-audio-research.md), [Genesis audio extraction](docs/genesis-audio-workflow.md) and [voice production](docs/voice-workflow.md).
-* [Remaster controls](docs/play-controls.md), [packaging](docs/packaging.md) and [rights/dependency review](docs/release-rights.md).
+* [Remaster controls](docs/play-controls.md), [packaging](docs/packaging.md), [installation and recovery](docs/install-recovery.md), [source CI](docs/source-ci.md) and [rights/dependency review](docs/release-rights.md).
+* [Ending newspapers](docs/pc-newspaper-integration.md), [Wilson poses](docs/wilson-completion.md), [maps](docs/pc-map-restoration.md), [effects](docs/pc-effect-art-completion.md), [audio audit](docs/pc-audio-completeness.md) and [endurance](docs/pc-endurance.md).
 
 ## Contributing and distribution
 

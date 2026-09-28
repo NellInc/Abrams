@@ -2,12 +2,14 @@
 
 The original PC executables own gameplay, mission logic, menus and disk saves.
 Godot renders the supported high-resolution layers and plays event-driven audio.
-The authored calibration range is separate. The whole remaster is unfinished.
+The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate. The blocked
+HEAT illustration, target-rate performance and release acceptance remain open.
 
 ## Verified flows (28 September 2026)
 
 | Surface | Evidence | Limit |
 |---|---|---|
+| Final non-Modern endurance | `artifacts/finish-20260928/root-endurance-final/report.json`: 71,873 original frames, 2,839 checks, all eight scenarios, 32 stations, 19 checkpoint cycles and cold campaign Continue | Correctness under bounded routes; no mission victory or indefinite leak claim. Current-core root rerun |
 | All eight scenarios | `artifacts/pc-all-scenarios-trace-01/report.json`: 54,657 original frames, 118 passing checks, byte-identical RAM/video/input records against `pc-all-scenarios-baseline-02` | Entry, four stations, pause/resume, sound toggle, cannon, coax, smoke, quit, debrief and return to menus; mission victories/defeats are not covered |
 | All 32 scenario/station views | `artifacts/pc-all-scenario-frames-native-02/report.json`: 161 checks, zero errors, production Godot rendering of the recorded original packets | Rendering replay, not a second live execution |
 | Actual combat loss, debrief, menu and reentry | `artifacts/pc-combat-loss-trace-01/report.json`: all 15,122 RAM/video/input records match the unmodified baseline; `pc-combat-loss-native-03/report.json`: 1,841 checks, 187 stages, zero errors | Original enemy damage ends Mossel Defense without a quit key or live RAM edits. Native production host reruns from the same neutral START boundary and fresh disk; other outcomes remain open |
@@ -19,9 +21,9 @@ The authored calibration range is separate. The whole remaster is unfinished.
 | Shift+3 | `artifacts/pc-modifiers-trace-01/report.json`: all 530 RAM/video/input records equal the unmodified core | Original speed index cycles 0, 1, 2. Original scancode polling also selects AX. This side effect is preserved |
 | Plain vehicles | `artifacts/pc-vehicle-flat-play-01/verification.json`: original 1,679-frame close approach, zero textured vehicle polygons | Replacement models are deferred |
 | Adjustable audio mix | `artifacts/pc-audio-menu-native-04/menu-report.json`: all 15 checks pass using real macOS menu clicks; `pc-audio-mix-native-02/mix-report.json`: 1,020 original input/RAM/video records unchanged during nine mix changes; current five-channel mix unit gate: 110 checks | Native macOS verified; non-native menu layout rendered on macOS, other OS acceptance remains open |
-| Full checkpoints | `artifacts/pc-state-root-native-01/report.json`: 19/19 checks pass, including cross-process native continuation, exact campaign ZIP restoration and failed-load rollback | First restored video transition is held; draw ownership is reacquired from actual original rendering. States are pinned to core/game/platform |
+| Full checkpoints | `artifacts/finish-20260928/root-checkpoint-final/report.json`: 26/26 root checks pass, including uninterrupted-video/ownership comparison, observer-on/off native parity, cross-process continuation, campaign restoration and failed-load rollback | Validated host ownership persists; fresh scanlines rebuild masks. The first restored video transition is held. States remain pinned to core/game/platform |
 | Live graphics and fast forward | `artifacts/pc-conveniences-native-02/conveniences-report.json`: 113 checks, zero errors; production menu callbacks, save/load and identical source RAM/video after 15 normal frames versus 1+2+4+8-frame requests | Bounded input route; no mission victory claim. Modern is deliberately unavailable |
-| Graphics transition regression | `artifacts/pc-graphics-root-native-02/report.json`: 10,253,369 checks across 158 frames, zero errors; authentic donor exclusions independently tested | Root self-review found and repaired lower-gunner donor widget leakage. Both affected consoles conservatively retain PC pixels in Genesis mode |
+| Graphics transition regression | `artifacts/finish-20260928/root-graphics-modes-report.json`: 10,253,369 root checks across 158 native frames, zero errors; authentic donor exclusions independently tested | All three live modes preserve their source boundaries. Both lower gunner consoles conservatively retain PC pixels in Genesis mode |
 | New checkpoint core ordinary-run parity | `artifacts/pc-conveniences-parity-01/comparison.json`: 13 checks, all 3,716 paired original RAM/video/input records match the unmodified core | Ordinary radio route; checkpoint-specific continuation is covered separately |
 | Additional speech, effects and frontend music | Native root gates: 165 remaining-audio checks and 47 music/transport checks, zero errors; original CPU oracles: 54 crew assignments and seven sound-request blocks | Source assignment and native player proof; every new cue has not occurred in a live mission, and independent listening acceptance remains open |
 
@@ -121,23 +123,24 @@ Python/Pillow and its included owner-supplied inputs. See
 
 ## Open acceptance work
 
-* Sustained live frame pacing is now close to target in the latest local probe.
-  `pc-typography-sustained-01/comparison.json` covers 6,120 consecutive SIM frames
-  over 103.38 seconds at 59.20 fps versus 59.47 advertised, with healthy audio.
-  Every full packet, original one-frame request, final metadata and rendered
-  image matches the preceding six-cycle route. Segment rates span 58.89 to 59.54.
-  Earlier loaded-host runs measured substantially less, including 45.39 fps for
-  that same route. Historical speed calibration, longer campaigns, other hardware
-  and performance under varying load remain open. Exact instrument comparisons
-  and bounded expected-glyph reuse reduce presentation work without skipping any
-  current source pixel, changing emulated CPU speed or batching live input.
+* Current endurance and pacing measurements are recorded in `pc-endurance.md`
+  and `artifacts/finish-20260928/endurance-report.md`. The new instrumented
+  3,600-frame run measured 26.41 to 31.28 fps; the subsequent ordinary-loop
+  diagnostic measured 42.61 fps. Exact immutable-snapshot and empty-mask fast
+  paths then improved ordinary/audited playback to 53.58/53.75 fps. All 1,200
+  compared inputs, RAM/video hashes and complete packets remained identical.
+  These rates remain below the roughly 59.5-fps target.
+  The older 59.20-fps receipt describes a different candidate and route and
+  must not substitute for current runtime measurements. Final-candidate bounded
+  proof does not establish historical speed calibration or all-machine pacing.
 * Victories, additional defeats, campaign progression and longer-session outcomes.
 * Wider individual dialogue/SFX occurrence coverage and independent listening/mix
   review. Frontend paragraphs have no new narration; they lack a complete source
   utterance/interruption identity. Sample-based arrangements and five-channel
   mixing are now implemented.
-* Remaining unmatched graphics families, preserving Genesis precedence and
-  original PC visibility. Vehicle replacement and Modern graphics are deferred.
+* The blocked HEAT illustration and unrecognized transition fallbacks, preserving
+  Genesis precedence and original PC visibility. The finite non-Modern register
+  is in `graphics-coverage.md`. Vehicle replacement and Modern are deferred.
 * Supported-platform standalone installers and community-release clearance.
   A rights/provenance inventory now records the unresolved permissions and
   licence decisions. Work is local only; nothing has been published.

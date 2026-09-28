@@ -26,7 +26,7 @@ def main():
     allowed = {' M src/cpu/core_normal.cpp', '?? src/cpu/abrams_trace.h',
                ' M dosbox_pure_libretro.cpp', ' M src/hardware/vga_draw.cpp',
                ' M src/hardware/vga_memory.cpp', '?? src/cpu/abrams_vga_ownership.h',
-               '?? src/cpu/abrams_plate_ownership.h', ' M src/dos/drives.h',
+               '?? src/cpu/abrams_plate_ownership.h', '?? src/cpu/abrams_observer_checkpoint.h', ' M src/dos/drives.h',
                ' M src/dos/drive_union.cpp', '?? src/dos/abrams_state_overlay.h'}
     if any(line not in allowed for line in status.splitlines()):
         raise ValueError('preserve unrecognized dependency changes; source build is not the reviewed input')
@@ -45,6 +45,8 @@ def main():
     shutil.copyfile(ownership, target.with_name(ownership.name))
     plates = ROOT / 'tools/pc_core/abrams_plate_ownership.h'
     shutil.copyfile(plates, target.with_name(plates.name))
+    observer = ROOT / 'tools/pc_core/abrams_observer_checkpoint.h'
+    shutil.copyfile(observer, target.with_name(observer.name))
     target.write_text(changed)
     state_overlay = ROOT / 'tools/pc_core/abrams_state_overlay.h'
     shutil.copyfile(state_overlay, SOURCE / 'src/dos/abrams_state_overlay.h')
@@ -113,7 +115,7 @@ def main():
     staged=output.with_suffix('.next')
     shutil.copyfile(SOURCE / 'dosbox_pure_libretro.dylib', staged)
     staged.replace(output)
-    manifest = {'schema': 2, 'audio_event_schema': 1, 'text_event_schema': 2, 'message_event_schema': 1, 'strut_event_schema': 1, 'driver_overlay_schema': 1, 'state_overlay_schema': 1, 'state_overlay_header_sha256': sha(state_overlay), 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
+    manifest = {'schema': 2, 'audio_event_schema': 1, 'text_event_schema': 2, 'message_event_schema': 1, 'strut_event_schema': 1, 'driver_overlay_schema': 1, 'state_overlay_schema': 1, 'observer_checkpoint_schema': 1, 'observer_checkpoint_header_sha256': sha(observer), 'state_overlay_header_sha256': sha(state_overlay), 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
         'source_core_normal_sha256': hashlib.sha256(original.encode()).hexdigest(),
         'patched_core_normal_sha256': sha(target), 'trace_header_sha256': sha(header),
         'ownership_header_sha256': sha(ownership), 'motor_pool_plate_schema': 1, 'frontend_text_schema': 1, 'orientation_schema': 1,

@@ -22,6 +22,8 @@ try:
     from tools.pc_audio_events import AudioEvents
     from tools.pc_orientation import OrientationRuns
     from tools.pc_reticle import ReticleRuns
+    from tools.pc_reticle_target import TargetBoxRuns
+    from tools.pc_dynamic_map import MapRuns
     from tools.pc_text_trace import TextRuns
     from tools.pc_strut_trace import StrutDraws
     from tools.pc_live_state import SIM_SHA256
@@ -36,6 +38,8 @@ except ModuleNotFoundError:
     from pc_audio_events import AudioEvents
     from pc_orientation import OrientationRuns
     from pc_reticle import ReticleRuns
+    from pc_reticle_target import TargetBoxRuns
+    from pc_dynamic_map import MapRuns
     from pc_text_trace import TextRuns
     from pc_strut_trace import StrutDraws
     from pc_live_state import SIM_SHA256
@@ -45,6 +49,7 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parents[1]
 CALLBACK = C.CFUNCTYPE(None, C.c_uint32, C.POINTER(C.c_uint16), C.c_void_p, C.c_uint32, C.c_uint32)
 FULL_UI_BYTES = bytes(255) + b'\xff'
+EMPTY_DRIVER_MASK = bytes(320 * 200 * 3)
 INVALID_DRIVER_HIGH = bytes(int(i > 127) for i in range(256))
 INVALID_PLATE = bytes(int(i > len(PLATE_IDS)) for i in range(256))
 
@@ -75,6 +80,8 @@ class Collector:
         self.audio = AudioEvents()
         self.orientation = OrientationRuns()
         self.reticle = ReticleRuns()
+        self.target_box = TargetBoxRuns()
+        self.dynamic_map = MapRuns()
         self.text = TextRuns(ROOT / "GAME")
         self.plates = PlateLoads(ROOT / 'GAME')
         self.struts = StrutDraws(ROOT / 'GAME', self.plates)
@@ -96,6 +103,16 @@ class Collector:
                 self.observe_video(event, offset, raw, registers)
                 return
             regs = dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'), registers[:12]))
+            if event in (43,44,45):
+                if event==43: self.dynamic_map.begin(raw)
+                elif event==44: self.dynamic_map.line(raw)
+                else: self.dynamic_map.finish(raw,offset)
+                return
+            if event in (40,41,42):
+                if event==40: self.target_box.begin(raw,regs)
+                elif event==41: self.target_box.line(raw)
+                else: self.target_box.finish(raw)
+                return
             if event in (37,38,39):
                 if event==37: self.reticle.begin(raw,regs)
                 elif event==38: self.reticle.line(raw)
@@ -298,6 +315,9 @@ class Collector:
 
     @staticmethod
     def safe_driver_mask(raw, ui):
+        # Exact full-byte proof of no driver writes. No offsets or ownership
+        # bits exist in this common non-driver frame, regardless of UI values.
+        if raw == EMPTY_DRIVER_MASK: return True
         low, high, mask = raw[0::3], raw[1::3], raw[2::3]
         if not Collector.binary_mask(mask) or high.translate(INVALID_DRIVER_HIGH).count(1): return False
         if Collector.outside_ui(mask, ui): return False
@@ -330,6 +350,8 @@ class Collector:
                 '_text_candidates': self.text.scanout(page),
                 '_orientation_candidate': self.orientation.scanout(page),
                 '_reticle_candidate': self.reticle.scanout(page),
+                '_target_box_candidate': self.target_box.scanout(page),
+                '_dynamic_map_candidate': self.dynamic_map.scanout(page),
                 'draw_pass': drawing, 'reason': None if drawing else 'no complete observed pass for scanned page',
                 'palette_rgb': [list(raw[i:i + 3]) for i in range(0, 64, 4)] if len(raw) == 64 else None}
         elif event == 19:
@@ -401,10 +423,14 @@ class Collector:
                                                    (frame or {}).get('palette_rgb'))
             reticle = self.reticle.present((frame or {}).get('_reticle_candidate'),raw,width,height,
                                            (frame or {}).get('palette_rgb'))
-            metadata = {k:v for k,v in (frame or {}).items() if k not in ('_text_candidates','_orientation_candidate','_reticle_candidate')}
+            target_box = self.target_box.present((frame or {}).get('_target_box_candidate'),raw,width,height,
+                                                 (frame or {}).get('palette_rgb'))
+            dynamic_map = self.dynamic_map.present((frame or {}).get('_dynamic_map_candidate'),raw,width,height,
+                                                   (frame or {}).get('palette_rgb'))
+            metadata = {k:v for k,v in (frame or {}).items() if k not in ('_text_candidates','_orientation_candidate','_reticle_candidate','_target_box_candidate','_dynamic_map_candidate')}
             self.presented = {**(metadata or {'draw_pass': None, 'reason': 'unobserved framebuffer'}),
                 'text_runs': visible, 'messages': visible_messages(visible), 'orientation': orientation,
-                'reticle': reticle,
+                'reticle': reticle, 'target_box': target_box, 'dynamic_map': dynamic_map,
                 'buffer_slot': slot_or_page, 'video_sha256': hashlib.sha256(raw).hexdigest(),
                 'width': width, 'height': height}
 

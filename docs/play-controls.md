@@ -49,11 +49,13 @@ native core, emulation options and platform; they are not portable interchange
 files or a substitute for backups. A core update can make old states incompatible.
 The original auto-save and Take R+R system remains available independently.
 
-Current presentation limitation: save/load restarts the observer, which loses
-cockpit-pixel provenance after the restored display frame. Some remastered
-cockpit artwork then falls back to original PC artwork until the original game
-redraws those elements. The saved native game state and campaign disk still
-restore together. Keyboard shortcuts use this same existing checkpoint path.
+New checkpoints preserve validated host-side EGA artwork ownership alongside
+native state. Save/load, cross-process continuation and campaign rollback are
+checked against uninterrupted original rendering. Fresh scanlines regenerate
+display masks; pending audio and partially observed drawing candidates are not
+replayed. Legacy same-core checkpoints without the ownership companion remain
+loadable with conservative original-pixel fallback. Older core fingerprints
+remain incompatible. Keyboard shortcuts use this same checkpoint path.
 
 ## Fast forward
 

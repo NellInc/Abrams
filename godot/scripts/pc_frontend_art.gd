@@ -17,6 +17,9 @@ var motor_indices := PackedByteArray()
 var portraits: Array[Texture2D] = []
 var active: Dictionary = {}
 var text_enabled := true
+var splash_aftermath_art = preload("res://scripts/pc_splash_aftermath_art.gd").new()
+var map_art = preload("res://scripts/pc_map_art.gd").new()
+var newspaper_art = preload("res://scripts/pc_newspaper_art.gd").new()
 var intro_art = preload("res://scripts/pc_intro_art.gd").new()
 var information_art = preload("res://scripts/pc_information_art.gd").new()
 var arming_panel = preload("res://scripts/pc_arming_panel_art.gd").new()
@@ -31,6 +34,12 @@ func _init() -> void:
 	var effect := ShaderMaterial.new()
 	effect.shader = preload("res://scripts/pc_frontend_art.gdshader")
 	material = effect
+	add_child(splash_aftermath_art)
+	splash_aftermath_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(map_art)
+	map_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(newspaper_art)
+	newspaper_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(intro_art)
 	intro_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(information_art)
@@ -48,6 +57,9 @@ func _init() -> void:
 func clear() -> void:
 	active.clear()
 	intro_art.clear()
+	newspaper_art.clear()
+	map_art.clear()
+	splash_aftermath_art.clear()
 	information_art.clear()
 	arming_panel.clear()
 	typography.clear_runs()
@@ -65,6 +77,9 @@ func load_sources(root_path: String) -> bool:
 	original_cursor.load_sources(root_path)
 	_load_motor_pool(root_path)
 	intro_art.load_sources(root_path)
+	newspaper_art.load_sources(root_path)
+	map_art.load_sources(root_path)
+	splash_aftermath_art.load_sources(root_path)
 	information_art.load_sources(root_path)
 	arming_panel.load_sources(root_path)
 	var path := root_path.path_join("local-art/pc-frontend-v1/office.json")
@@ -82,8 +97,28 @@ func load_sources(root_path: String) -> bool:
 		textures.append(ImageTexture.create_from_image(image))
 	material.set_shader_parameter("office",textures[0])
 	portraits.assign(textures.slice(1))
+	if not _load_wilson_completion(root_path,data): return false
 	catalog = data
 	typography.load_sources(root_path.path_join("GAME"))
+	return true
+
+func _load_wilson_completion(root_path:String,data:Dictionary) -> bool:
+	var path:=root_path.path_join("local-art/pc-wilson-completion-v1/office.json")
+	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!="496ebda60cee99c10f386bd49588239b0bb26118947b997e4f8f1e3df73b137a":return false
+	var supplement:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
+	for source in supplement.sources:
+		path=root_path.path_join("GAME/"+source)
+		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=supplement.sources[source]:return false
+	var extra:Array[Texture2D]=[]
+	for entry in supplement.templates:
+		if int(entry.pose)!=3+extra.size():return false
+		path=root_path.path_join("local-art/genesis/remastered/"+entry.art.file)
+		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=entry.art.sha256:return false
+		var image:=Image.load_from_file(path)
+		if image==null or image.get_size()!=Vector2i(entry.art.size[0],entry.art.size[1]):return false
+		extra.append(ImageTexture.create_from_image(image))
+	portraits.append_array(extra)
+	data.templates.append_array(supplement.templates)
 	return true
 
 func panel_border(source: Image, y: int) -> bool:
@@ -200,6 +235,16 @@ func _set_art_frame(source: Image, program: Dictionary, presentation: Dictionary
 	clear()
 	if source==null or source.get_size()!=Vector2i(320,200): return false
 	if source.get_format()!=Image.FORMAT_RGB8: return false
+	if splash_aftermath_art.set_frame(source,program):
+		texture=ImageTexture.create_from_image(source)
+		active={"scene":"splash_aftermath","name":splash_aftermath_art.active.name}
+		visible=true
+		return true
+	if newspaper_art.set_frame(source,program):
+		texture=ImageTexture.create_from_image(source)
+		active={"scene":"newspaper","name":newspaper_art.active.name,"height":newspaper_art.active.height}
+		visible=true
+		return true
 	if program.get("name")=="START":
 		intro_art.outline_text_enabled=text_enabled
 		if intro_art.set_frame(source,program):
@@ -208,11 +253,19 @@ func _set_art_frame(source: Image, program: Dictionary, presentation: Dictionary
 			if intro_art.active.dedication: active.dedication="David \"Ming\" Kenny"
 			visible = true
 			return true
-		if not information_art.set_frame(source,program): return false
-		texture = ImageTexture.create_from_image(source)
-		active = {"scene":"information","name":information_art.active.name}
-		if text_enabled: typography.set_information_page(source,information_art.active.text_runs)
-		visible = true
+		information_art.caption_text_enabled=text_enabled
+		# Information pages share FRAME's border. Their full-frame binding must
+		# precede the generic border-only restoration.
+		if information_art.set_frame(source,program):
+			texture = ImageTexture.create_from_image(source)
+			active = {"scene":"information","name":information_art.active.name}
+			if text_enabled: typography.set_information_page(source,information_art.active.text_runs)
+			visible = true
+			return true
+	if map_art.set_frame(source,program,presentation):
+		texture=ImageTexture.create_from_image(source)
+		active={"scene":"map_frame","name":"Mission summary frame"}
+		visible=true
 		return true
 	if program.get("name")=="SIM": return _set_motor_pool(source,presentation)
 	if catalog.is_empty() or program.get("name") not in ["BRIEF","END"]: return false
