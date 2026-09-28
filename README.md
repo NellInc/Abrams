@@ -12,6 +12,29 @@ presentation. Raw originals are excluded from the app. See
 [setup, PC-only behavior and rollback](docs/standalone-macos.md).
 This remains local/private pending redistribution clearance and release signing.
 
+## Artwork and screenshots
+
+<p align="center">
+  <img src="docs/images/abrams-cover-remastered.png" width="300" alt="Remastered Abrams Battle Tank box art, by Dynamix, Fan Remaster">
+  &nbsp;&nbsp;
+  <img src="docs/images/abrams-icon.png" width="160" alt="Box-art-inspired Abrams Fan Remaster app icon">
+</p>
+
+The original box-art composition returns in the restored cover and app icon,
+with **by Dynamix** retained and **Fan Remaster** in the matching stencil style.
+
+### One PC frame, three presentations
+
+These are unedited captures from the current local development build. The
+original PC simulation, instrument values and scene are identical in all three.
+Genesis mode uses donor artwork where supported; unmatched areas retain PC art.
+
+| EGA, original PC | Genesis donor mode | Upscaled, remastered |
+| --- | --- | --- |
+| [![Original EGA gunner station](docs/images/gunner-ega.png)](docs/images/gunner-ega.png) | [![Genesis donor gunner station](docs/images/gunner-genesis.png)](docs/images/gunner-genesis.png) | [![High-resolution remastered gunner station](docs/images/gunner-upscaled.png)](docs/images/gunner-upscaled.png) |
+
+Open an image to see it at full resolution. [Image notes](docs/images/README.md).
+
 ## About
 
 This project revisits a childhood favourite with clearer artwork, original-style scalable lettering, new sound effects and generated crew speech. The aim is to preserve the character and complexity of the PC game while making it comfortable to play on modern displays.
