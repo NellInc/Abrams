@@ -1,13 +1,13 @@
 # Release rights and dependency review
 
-Reviewed 28 September 2026. **Local only. Community release is blocked.**
+Reviewed 28 September 2026. **Private development repository. Community release is not cleared.**
 This inventory records evidenced provenance and missing decisions; it is not
 legal advice or a permission grant. Possession, extraction, a paid generation
 account and byte-perfect provenance do not establish redistribution rights.
 
 | Family | Evidence and licence | Package handling / unresolved gate |
 |---|---|---|
-| Newly written project code | No project licence has been selected. | Source review kit only. Owner must choose a licence and review compatibility before publication. |
+| Newly written project code | No project licence has been selected. | Private repository and source review kit only. Owner must choose a licence and review compatibility before public distribution. |
 | PC game executables, data and native fonts | Supplied original files; exact fingerprints in `tools/package/game-inputs.json`. No redistribution permission found in supplied materials. | Private kit only. No download route or public game bundle. Ownership/use and distribution authorization remain separate. |
 | Genesis originals, palette and extracted art/audio | Existing extraction receipts tie outputs to the supplied cartridge. | No ROM or standalone native-audio collection in either kit. Required palette, art donors and music containing derived percussion are private-only. Redistribution permission is unestablished. |
 | Genesis/PC-derived remasters and outline fonts | Existing local source hashes, prompts, recognition catalogues and generated-asset receipts. | Private-only, even where a generator produced the final bytes. Underlying art/font rights remain unresolved. |

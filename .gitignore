@@ -1,6 +1,8 @@
 .DS_Store
-GAME/
-GENESIS/
+# Original games stay local, including case variants and nested copies.
+# Working if: git check-ignore GAME/SIM.EXE GENESIS/game.md game/SIM.EXE succeeds.
+[Gg][Aa][Mm][Ee]/
+[Gg][Ee][Nn][Ee][Ss][Ii][Ss]/
 local-art/
 local-audio/
 *.pdf

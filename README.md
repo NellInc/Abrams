@@ -1,188 +1,233 @@
-# Abrams Battle Tank reconstruction
+# Abrams Battle Tank Remaster
 
-A local Godot remaster project for Dynamix's PC **Abrams Battle Tank**.
-The PC version is definitive for gameplay. The Genesis version is the primary artwork source wherever available, and supplies
-music and sound-effect references for a faithful presentation upgrade.
+A faithful, high-resolution Godot remaster of Dynamix's **Abrams Battle Tank**, with the original PC game running underneath.
 
-## Play the current local build
+**Dedicated to the memory of David “Ming” Kenny.** The dedication appears in the remastered intro credits.
 
-* Open **Play.command** for the original-PC/Godot tandem remaster in a clean,
-  resizable game window. The original 4:3 display is letterboxed rather than
-  cropped or widened. Graphics and lettering render at the actual window size.
-  Use `./Play.command --fullscreen` for fullscreen, or the native window controls.
-  `--window-size 1920x1080` selects a starting window size. Original game keys
-  remain untouched. `--compare` restores the side-by-side research view.
-  See `docs/pc-display-research.md` for rendering and resize evidence.
-  Campaigns use the original auto-save and Take R+R flow. Normal Play retains its
-  local disk overlay in `artifacts/pc-boot-viewer/saves`; keep that directory when
-  clearing diagnostic output. `--saves /absolute/path` chooses a separate profile.
-  Concurrent windows cannot write the same save directory. No source game files
-  are modified. See `docs/playability-status.md` for tested flows and limits.
-  **Session** now offers five save-state slots, Undo last load, and 2x/4x/8x
-  fast forward. States include the campaign disk, so loading rewinds both.
-  **Graphics** switches the current frame immediately between untouched EGA,
-  authentic original-resolution Genesis donor art, and the Upscaled remaster.
-  Modern is visible but unavailable. See `docs/play-controls.md` for controls,
-  compatibility and exact coverage. No new vehicle models or textures are enabled.
-  On macOS: **Cmd+S** saves slot 1, **Cmd+L** loads it, **Cmd+Shift+L** undoes
-  the last load, and **Cmd+G** cycles graphics. Other platforms use **Ctrl+Alt**
-  instead of Cmd. Original unmodified game keys remain unchanged.
-* Open **Calibration Range.command** for the separate authored test range.
-* Open **Art Review.command** for original/remaster artwork comparisons.
-* Open **PC Bridge.command** for the original-PC/Godot tandem research view.
-  It cold-boots the original menus, briefings and missions, using the ignored
-  local tracing core and content ZIP. Mission exit and reentry stay in the
-  original game. Its Godot view shows
-  original solid geometry, live vehicles and bitmap effects with high-resolution
-  cockpit material donors redrawn from Genesis sources and a colour study drawn from the extracted Genesis
-  palette. Original PC instruments, map, text and visibility remain authoritative.
-  The driver's overhead assembly follows its original turret-relative drawing.
-  Grass and road surfaces now carry world-anchored high-resolution detail.
-  Vehicles retain their original flat-colour geometry. The experimental vehicle
-  texture panels were rejected and are no longer loaded by Play. Model replacement
-  is deferred while complete playability, graphics correctness and audio take priority.
-  Pixel-verified instrument values, weapon status and eligible crew messages
-  now use high-resolution outline reconstructions of the original typefaces
-  inside their original display cells.
-  Nine gunner instrument illustrations and the systems-status artwork now use
-  Genesis-derived high-resolution assets. Actual PC damage indicators and live
-  values remain authoritative. Verified visible crew faces use the four Genesis
-  portrait derivatives; unsupported or partial faces retain the original.
-  Original briefing/debriefing scenes now use the Genesis office and three
-  Wilson poses, with exactly decoded scalable dialogue. Unknown poses and
-  transitions retain the original. The motor pool now uses a clean-contour Genesis
-  remaster with pixel-verified scalable arming labels and values; the original PC
-  menu still owns selections and loadout. Other instruments, models and terrain are unfinished.
-  The title now uses its Genesis-derived remaster, four high-resolution flash
-  poses and the original credit lettering, selected by original PC frames.
-  Its final credit screen dedicates the remaster to David "Ming" Kenny.
-  Credits, briefings and 81 verified information-page text runs share those
-  original-style outlines, preserving their wording, spacing and colours.
-  Optical shaping regularizes letter weights, diagonal joins and stencil gaps.
-  The same faces now cover the original joystick prompt, game menus, changing
-  scenario options, typed names, mission titles and summary/score text. A read-only
-  frontend observer verifies original font draws and current pixels, including
-  selection colours; original controls and wording are unchanged.
-  The publisher splash and moving 3D menu backdrop remain original.
-  Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
-  `--pc-colours` to keep the new cockpit materials with original world colours.
-  `--flat-world` disables terrain detail while retaining cockpit art and colours.
-  `--original-text` keeps the source lettering without disabling other artwork.
-  `--gunner-art` selects the earlier gunner-only pilot. `--cockpit-art` explicitly
-  selects the default Genesis four-station/status pass. Missing local assets or
-  provenance retain the original. See `docs/genesis-cockpit-integration.md` and
-  `docs/graphics-coverage.md` for current coverage and remaining work.
-  Add `--wire` for the wireframe diagnostic. `--trace` retains the old mission
-  snapshot probe; `--reference` selects the older static research backend.
-  See `docs/pc-live-bridge.md` for controls, snapshot limits and lifecycle evidence.
-  Original-event sample playback is enabled by default, with generated firing/smoke
-  crew calls, plus engine and turret loops driven by original sound channels.
-  The loader says “Up!” once a completed reload has a verified visible READY label.
-  Generated full-sentence takes cover all 360 hit bearings, 24 damage reports and
-  eight source-verified warnings/outcome calls, gated on complete original
-  displayed messages. Seven original radio reports use dry Gemini speech; the
-  notification sounds on arrival, and R retrieves the original displayed report.
-  Bearings speak
-  by digit, with both “nine” and “niner” accepted.
-  F5 and original pause mute them; `--no-audio` disables remastered audio.
-  A further 50 source-verified scenario, vehicle-destruction and speed-setting
-  captions now have generated performances. Five additional sound-request families
-  use individual synthesized samples. Four sample-based frontend arrangements
-  accompany recognized intro, menu, briefing and debrief screens.
-  The app's **Audio** menu controls master, effects, crew voices, engine/turret
-  and music volumes independently, and remembers the mix. Original F5/pause
-  still gate gameplay sound; frontend music follows its separate Music/Master
-  controls. On macOS the menu occupies no cockpit space. Wider live occurrence
-  coverage and independent listening review remain open;
-  see `docs/pc-audio-research.md`.
-* Importing `godot/project.godot` in Godot 4 still runs the authored calibration
-  range as its main scene. Use **Play.command** for the PC-authoritative game.
-* Set `GODOT_BIN` to the engine executable if the launcher cannot find it.
-* Local source-review and private playable kits can be assembled using
-  `tools/package_build.py`. The private launcher keeps profiles outside the kit.
-  These are local-only review builds with prerequisites, not standalone signed
-  installers or cleared community releases. See `docs/packaging.md` and
-  `docs/release-rights.md`.
+## About
 
-The range supports four stations, driving/turret modes, target selection/lock,
-three main ammunition types, machine gun, smoke effects, zoom, a thermal preview,
-captions and crew voice, pause/settings and local range save/restore.
-F1-F4 select stations; C changes control mode; arrows move; Enter selects a
-target; L locks; Space fires; M fires the machine gun; 1/2/3 select ammunition;
-Z zooms; T toggles thermal; H shows help; Escape pauses.
+This project revisits a childhood favourite with clearer artwork, original-style scalable lettering, new sound effects and generated crew speech. The aim is to preserve the character and complexity of the PC game while making it comfortable to play on modern displays.
 
-## Current boundary
+The **PC version is the gameplay authority**. The **Genesis version supplies the preferred visual references wherever suitable equivalents exist**. Its artwork, palette and native sound resources guide the restoration; its simpler game logic does not replace the PC simulation.
 
-**This is an in-progress remaster.** Play runs the original PC executable, which
-owns missions, enemy behaviour, movement, damage and scoring. All eight scenario
-entries, four stations, weapon inputs, pause/mute, quit and debrief flows now have
-an unchanged-original replay comparison across 54,657 frames. A separate
-15,122-frame combat-loss, debrief and reentry route also matches the unmodified
-original and passes native Godot rendering checks. Complete victory,
-defeat and campaign-outcome coverage, remaining audio/graphics and historical
-speed calibration are still open. The calibration range remains separate authored
-content and is never the authoritative game.
+Development is active. The current local build runs the original menus, briefings, motor pool, missions and debriefing flow through a Godot presentation layer. Full mission-outcome coverage, remaining presentation work and a community-ready installer are still outstanding. This is an independent fan project.
 
-The local artwork collection includes the title, Colonel Wilson in three
-poses, his office, motor pool, four crew portraits, four cockpit plates,
-systems status, two ammunition illustrations and three armament illustrations. The gallery has 19 comparison
-pages. The additional facepalm variant appears in the live briefing restoration.
-Eligible crew portraits, office/Wilson scenes, the motor pool, crew information page and five information
-illustrations bind to the PC game. The title/fire/credits sequence is also live;
-see `docs/genesis-intro-integration.md` for source and animation evidence.
-Remaining information-page components and
-other frontend scenes still need restoration and live binding.
-Assets are available locally under
-`local-art/genesis/`. Untouched PNG extracts, original layered OpenRaster,
-palettes, exact prompts and source receipts accompany it. The original cartridge
-and derived art are excluded from Git and normal project exports.
+## How it works
 
-Directly extracted Genesis audio assets are in `local-audio/genesis-native-v1/`:
-ten PCM samples, 25 FM patches and four native music containers. WAV wrappers
-preserve every sample byte. These remain excluded from Git and game exports.
-Earlier mixed recordings are retained only as comparison material.
+The remaster uses a **tandem architecture**:
 
-## Research and validation
+```text
+Original keyboard input
+        |
+        v
+Original PC executables running in a pinned DOSBox Pure core
+        |
+        +--> Original missions, simulation, damage, scoring and campaign saves
+        |
+        +--> Read-only observer: displayed pixels, draw calls, state and events
+                    |
+                    v
+             Python bridge
+                    |
+                    v
+             Godot presentation
+             Graphics, lettering, sampled audio and crew speech
+```
 
-* `docs/GOAL.md`: full objective, under 3,800 characters.
-* `docs/WORK_LEDGER.md`: current evidence, open outcomes and next actions.
-* `docs/original-mechanics.md`: manual-derived PC requirements and unknowns.
-* `docs/reference-formats.md`: PC compression and scenario/world storage.
-* `docs/shape-format.md`: bounded PC vector-geometry recovery.
-* `docs/pc-executable-research.md`: unpacked PC code and executable bearing comparisons.
-* `docs/pc-live-bridge.md`: original-executable authority, live Godot bridge and replay evidence.
-* `docs/pc-surfaces-research.md`: live original surfaces, material patterns and native colour checks.
-* `docs/pc-sprites-research.md`: native effect extraction, original bitmap-blitter checks and tandem playback.
-* `docs/pc-ui-research.md`: scanline UI provenance, transparent cockpit edges and native composition checks.
-* `docs/pc-text-research.md`: native fonts, visibility gates and scalable live typography.
-* `docs/pc-ui-art-workflow.md`: native PC cockpit plates/struts and high-resolution material studies.
-* `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
-* `docs/genesis-models-research.md`: recovered Genesis model programs, PC face correspondence and editable vehicle studies.
-* `docs/genesis-cockpit-integration.md`: Genesis-first live cockpit/status integration and native proof.
-* `docs/genesis-portrait-integration.md`: Genesis faces, original visibility matching and native proof.
-* `docs/genesis-briefing-integration.md`: restored office/Wilson poses and exact visible-dialogue decoding.
-* `docs/genesis-motor-pool-integration.md`: Genesis background, original arming controls and replay proof.
-* `docs/graphics-coverage.md`: whole-graphics scope, source precedence and remaining families.
-* `docs/genesis-audio-workflow.md`: native sample extraction and music-data boundaries.
-* `docs/pc-audio-research.md`: original sound requests, bounded transport and native playback proof.
-* `docs/voice-workflow.md`: generative crew speech and performance directions.
-* `docs/simulation-contract.md`: provisional range behaviour and test boundaries.
+The original executables retain control of gameplay, including movement, targeting, ammunition, enemy behaviour, fuel, damage, repairs, difficulty and campaign progression. Godot consumes observed game output and forwards original input. The original renderer continues running because its work can affect the game.
 
-Run `./tools/validate.sh` for the local test gate. Python resource tests need the
-supplied PC reference files; Genesis capture tests additionally need local
-captures. The Genesis cockpit and frontend tests need the local fingerprinted
-remaster sets and recognition catalogs described in their integration documents.
-The Genesis vehicle study check needs the local generated glTF set described
-in `docs/genesis-models-research.md`; it is an authoring check, not live gameplay.
-Pillow is required for graphics tests and extraction. Godot 4 is
-required for simulation and runtime checks. The UI ownership test compiles the
-actual read-only C++ observer with the local `c++` compiler.
+Visual substitutions require matching source content and visibility information. Unknown scenes, unsupported drawing commands and unverified artwork fall back to the original PC presentation. A separate authored **calibration range** exists for development; it is not the original game and does not determine remaster gameplay.
 
-## Distribution boundary
+## Features
 
-Nothing has been published or deployed. Supplied game files and extracted or
-derived artwork have no redistribution permission established by this work.
-Newly written code is unlicensed pending the project's licensing decision.
-Font licenses are retained beside their files. Current effects are newly
-synthesized. Crew speech uses generated performances; final casting and listening
-review remain open. Emulator libraries are local research dependencies only.
+### Graphics and interfaces
+
+* **Resizable, high-resolution presentation** with a complete, letterboxed 4:3 game image, fullscreen support and rendering at the actual window resolution.
+* **Genesis-first restoration** of supported cockpit plates, crew portraits, Colonel Wilson and his office, the motor pool, systems-status artwork and information illustrations.
+* **Original-style scalable typefaces** for supported credits, briefings, the joystick prompt, menus, mission titles, information pages and live instruments. Text is reconstructed from verified original glyphs and screen content.
+* **Source-driven intro animation**, including restored title/fire poses, original credit timing and the memorial dedication.
+* **Live PC instruments and values** remain authoritative. Original damage indicators, map information, crew visibility, selections and loadouts retain their game-defined behaviour.
+* **Terrain and effect treatment** follows observed original geometry and drawing order.
+* **Original flat-colour vehicles** remain in Play. Experimental vehicle texture panels are disabled; replacement models and realistic rendering are deferred.
+
+Coverage varies by screen. The publisher splash, moving menu backdrop and unsupported transitions retain original artwork. See [graphics coverage](docs/graphics-coverage.md) and [Genesis cockpit integration](docs/genesis-cockpit-integration.md).
+
+### Sound, music and crew speech
+
+* Event-driven cannon, coax, smoke, impact, loader, engine and turret sounds use individual samples.
+* Crew calls use generated performances, with Gemini voice workflows and character-specific direction. Hit bearings are spoken digit by digit, including leading zeroes; “niner” is accepted.
+* Generated takes cover bearing calls, damage reports, warnings, radio messages and further source-verified captions. Resource coverage does not mean every line has independently occurred in live testing.
+* Four sample-based frontend arrangements accompany recognized intro, menu, briefing and debrief screens. They are authored arrangements, not recovered original scores.
+* The **Audio** menu independently controls master, effects, voices, motors and music, and remembers the mix.
+* Original **F5** and pause still govern gameplay sound. Muted or fast-forwarded events do not produce a backlog of speech when normal playback resumes.
+
+Mixed gameplay recordings are not used as live samples. Direct Genesis sample extractions and music-data research stay in the excluded local reference directories. See [audio research](docs/pc-audio-research.md), [Genesis audio workflow](docs/genesis-audio-workflow.md) and [voice workflow](docs/voice-workflow.md).
+
+### Save states and fast forward
+
+* **Five numbered save-state slots**, plus **Undo last load**.
+* A checkpoint includes the native emulated machine and its writable campaign disk. Loading rewinds both.
+* Quick save/load uses **slot 1**. The Session menu provides all five slots.
+* Overwriting a numbered slot retains its preceding archive. A load also saves a recovery checkpoint of the current session.
+* **2x, 4x and 8x fast forward** executes every original frame in sequence, with presentation audio muted. The original emulated CPU settings remain unchanged.
+* The original auto-save and **Take R+R** flow remains available separately.
+
+Checkpoints are tied to the supported game bytes, native core and platform. Preserve the whole save directory and back it up before upgrades. They are not portable interchange files.
+
+**Current save-state graphics limitation:** saving or loading restarts the observer. After the restored display frame, some remastered cockpit artwork falls back to PC artwork until the original game redraws those elements. Native game state and campaign-disk restoration are separate from this presentation limitation.
+
+## Controls
+
+### Keyboard shortcuts
+
+These shortcuts apply to **Play**, including fullscreen and original game menus/briefings:
+
+| Action | macOS | PC / other platforms |
+| --- | --- | --- |
+| Quick save to slot 1 | **Cmd+S** | **Ctrl+Alt+S** |
+| Quick load from slot 1 | **Cmd+L** | **Ctrl+Alt+L** |
+| Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
+| Cycle graphics | **Cmd+G** | **Ctrl+Alt+G** |
+
+On PC, the modifier is **Ctrl+Alt together**. Alt alone is not a shortcut. Holding a shortcut does not repeatedly save, load or switch modes. Shortcut keys are withheld from the original game until released; unmodified S, L, G and the original function keys keep their original roles. A brief message confirms the action.
+
+### Menus
+
+* **Session → Save state / Load state → Slot 1 to 5**: choose a checkpoint explicitly.
+* **Session → Load state → Undo last load**: restore the recovery checkpoint.
+* **Session → Fast forward**: select normal speed, 2x, 4x or 8x.
+* **Graphics**: choose a presentation directly.
+* **Audio**: adjust the independent volume channels.
+
+On macOS these menus appear in the system menu bar. The original game continues running while a remaster menu is open; use its pause control when needed. There is no permanent on-screen button toolbar.
+
+### Graphics modes
+
+| Mode | Presentation |
+| --- | --- |
+| **EGA** | Untouched original PC framebuffer and lettering. |
+| **Genesis** | Verified original-resolution Genesis donor artwork where available, with original PC pixels in unmatched areas. PC gameplay and geometry remain authoritative. |
+| **Upscaled** | The high-resolution remaster, including reconstructed original-style lettering. Default mode. |
+| **Modern** | Reserved for future models and realistic graphics. Currently disabled. |
+
+The shortcut cycles **EGA → Genesis → Upscaled → EGA**, skipping Modern. Switching recomposes the current frame from preloaded resources without restarting or advancing the original game.
+
+See [the full control guide](docs/play-controls.md) for checkpoint behaviour, audio rules and [graphics-mode coverage](docs/graphics-modes.md) for exact source boundaries.
+
+## Getting started
+
+### Requirements and platform status
+
+The currently validated native setup is **ARM64 macOS**, Python **3.10+** with Pillow, and **Godot 4.4+**. Local checks currently use Godot **4.7.2**; earlier engine versions are not separately certified. The native tracing-core build also needs Apple's command-line developer tools, Git and make.
+
+The PC shortcut mapping is implemented, but a Windows/Linux runtime package has not been validated or supplied. This repository is a development checkout, not a signed standalone installer.
+
+### Original games are supplied separately
+
+**This repository does not contain the PC game or the Genesis ROM.** Supply your own appropriate original files locally:
+
+| Local path | Purpose | In Git? |
+| --- | --- | --- |
+| `GAME/` | Supported PC executables and data. | **No** |
+| `GENESIS/` | Genesis cartridge input for reference extraction. | **No** |
+| `.runtime/` | Locally built emulator cores, content ZIP and build receipts. | **No** |
+| `reference/` | Extracted resources, captures and fingerprint inventories. | **No** |
+| `local-art/` | Extracted/remastered graphics and authoring files. | **No** |
+| `local-audio/` | Native samples, music arrangements and audio working files. | **No** |
+| `artifacts/` | Test evidence, captures and default checkout saves. | **No** |
+| `builds/` | Local review kits, including private playable archives. | **No** |
+
+A fresh clone cannot immediately run the tandem game. Follow [local setup and packaging](docs/packaging.md) for the supported PC input importer, pinned core build and presentation-resource requirements. The helpers do not download the original games or supply missing remastered artwork.
+
+### Launch an equipped local checkout
+
+```sh
+./Play.command
+./Play.command --fullscreen
+./Play.command --window-size 1920x1080
+./Play.command --graphics ega
+./Play.command --saves /absolute/path/to/a/separate/profile
+```
+
+Set `GODOT_BIN` or `ABRAMS_PYTHON` to existing executables if the launcher cannot find the appropriate runtime. `./Play.command --compare` opens the side-by-side original/remaster research view.
+
+| Entry point | Purpose |
+| --- | --- |
+| `Play.command` | Original-PC/Godot tandem game. |
+| `PC Bridge.command` | Side-by-side bridge and rendering research. |
+| `Art Review.command` | Local original/remaster artwork comparisons. |
+| `Calibration Range.command` | Separate authored test range. |
+| `godot/project.godot` | Godot editor project; its default main scene is the calibration range. Use Play for the original game. |
+
+Useful rendering diagnostics include `--pc-colours`, `--flat-world`, `--original-text`, `--original-effects` and `--no-audio`. `--wire`, `--trace` and `--reference` are research modes with separate local dependencies. See [the bridge guide](docs/pc-live-bridge.md) before using them.
+
+### Where saves live
+
+* **Checkout Play:** `artifacts/pc-boot-viewer/saves/`, or the directory selected with `--saves`.
+* **Managed private kit:** `~/Library/Application Support/Abrams/saves/`, with an optional external profile selected through `ABRAMS_DATA_HOME`.
+* **Save-state slots:** `states/` beneath the chosen save directory.
+
+**Do not delete `artifacts/` indiscriminately: it contains the checkout's default player saves.** An exclusive session lock prevents two game windows from writing the same campaign overlay. The supplied original game files remain unchanged. Audio preferences are kept separately in Godot's user-data location.
+
+## Repository layout
+
+| Directory | Contents |
+| --- | --- |
+| `godot/scripts/` | Presentation, bridge client, typography, audio and remaster controls. |
+| `godot/scenes/` | Authored range and art-review scenes. |
+| `godot/assets/`, `godot/data/` | Tracked presentation resources, generated audio, scripts and provenance metadata. These do not include the original games. |
+| `godot/tests/` | Headless checks and native Godot acceptance fixtures. |
+| `tools/` | Original-resource inspection, extraction, bridge host, emulation observers, asset builders and local packaging. |
+| `tools/pc_core/` | Read-only native tracing and checkpoint support sources. |
+| `tests/` | Python unit and contract tests. |
+| `docs/` | Project goal, implementation evidence, workflows and remaining differences. |
+
+Vehicle-authoring tools and studies are development material. Their presence in the repository does not enable replacement vehicles in Play.
+
+## Validation and current limits
+
+```sh
+./tools/validate.sh
+```
+
+The full local gate needs the separately supplied originals, pinned runtime, reference captures and fingerprinted local remaster sets. Pillow supports graphics tests; Godot runs presentation and simulation checks; some observer tests compile C++ locally. Missing private inputs mean the full gate cannot run from a bare clone.
+
+Packaging and launcher contracts can be checked without the original games:
+
+```sh
+python3 -m unittest tests.test_packaging tests.test_launchers
+```
+
+Validation combines original-versus-observed replay comparisons, RAM/video/input checks, source-pixel verification, native rendered captures, audio event checks and checkpoint persistence tests. Recorded routes cover all eight scenario entries, four stations, weapon inputs, pause/mute, quit/debrief, a combat-loss route and a campaign save/continue route. These bounded routes do not establish complete mission or campaign parity.
+
+Remaining work includes:
+
+* Complete victory, defeat and campaign-outcome coverage.
+* Remaining graphics families and unsupported frontend transitions.
+* Retaining remastered cockpit provenance through checkpoint continuation.
+* Wider live occurrence checks and independent listening review for speech, effects and music.
+* Longer-session performance and historical speed calibration across machines.
+* Supported-platform installers, asset redistribution decisions and project licensing.
+
+[Playability status](docs/playability-status.md) records what has actually been exercised. [The work ledger](docs/WORK_LEDGER.md) retains the detailed evidence and open outcomes.
+
+## Documentation
+
+* [Project goal](docs/GOAL.md), [original mechanics](docs/original-mechanics.md) and [simulation contract](docs/simulation-contract.md).
+* [PC bridge](docs/pc-live-bridge.md), [display and resizing](docs/pc-display-research.md), [executable research](docs/pc-executable-research.md) and [reference formats](docs/reference-formats.md).
+* [Shape format](docs/shape-format.md), [surfaces](docs/pc-surfaces-research.md), [sprites](docs/pc-sprites-research.md) and [UI composition](docs/pc-ui-research.md).
+* [Typography](docs/pc-text-research.md), [PC UI art workflow](docs/pc-ui-art-workflow.md) and [Genesis art workflow](docs/genesis-art-workflow.md).
+* [Cockpits](docs/genesis-cockpit-integration.md), [portraits](docs/genesis-portrait-integration.md), [briefings](docs/genesis-briefing-integration.md), [motor pool](docs/genesis-motor-pool-integration.md) and [intro](docs/genesis-intro-integration.md).
+* [Genesis model research](docs/genesis-models-research.md), [graphics coverage](docs/graphics-coverage.md) and [graphics modes](docs/graphics-modes.md).
+* [Audio research](docs/pc-audio-research.md), [Genesis audio extraction](docs/genesis-audio-workflow.md) and [voice production](docs/voice-workflow.md).
+* [Remaster controls](docs/play-controls.md), [packaging](docs/packaging.md) and [rights/dependency review](docs/release-rights.md).
+
+## Contributing and distribution
+
+Keep the PC simulation authoritative, reproduce issues with the original input route where possible, and separate observed behaviour from assumptions. Include relevant tests or rendered evidence with a change. Gameplay departures, replacement vehicle integration and changes to asset sourcing require project discussion.
+
+Never commit the PC game, Genesis ROM, extracted game resources, local native cores, personal saves, private kits or credentials. Keep original inputs in their ignored directories. Asset extraction and byte-perfect provenance do not grant redistribution rights.
+
+Before pushing, `git ls-files GAME GENESIS reference local-art local-audio .runtime artifacts builds` should return no paths. Review outgoing history as well as the current tree; an ignored file can still exist in an earlier commit.
+
+The GitHub repository is private during development. No project-wide licence has been selected, and no public game release is available. Existing third-party components retain their own notices and licence terms. The generated samples and other tracked presentation resources still require their recorded rights and review decisions before public distribution. See [release rights](docs/release-rights.md).
