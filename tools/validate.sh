@@ -113,6 +113,7 @@ run_check pc_plate_art ./tools/godot.sh --headless --script res://tests/test_pc_
 run_check pc_genesis_style ./tools/godot.sh --headless --script res://tests/test_pc_genesis_style.gd
 run_check pc_terrain_style ./tools/godot.sh --headless --script res://tests/test_pc_terrain_style.gd
 run_check pc_hill_art ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_hill_art.gd
+run_check genesis_vehicle_studies ./tools/godot.sh --headless --script res://tests/test_genesis_vehicle_studies.gd
 run_check pc_cockpit_art ./tools/godot.sh --headless --script res://tests/test_pc_cockpit_art.gd
 run_check pc_genesis_cockpits ./tools/godot.sh --headless --script res://tests/test_pc_genesis_cockpits.gd
 run_check pc_world_bearing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_world_bearing.gd

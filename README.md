@@ -117,6 +117,7 @@ Earlier mixed recordings are retained only as comparison material.
 * `docs/pc-text-research.md`: native fonts, visibility gates and scalable live typography.
 * `docs/pc-ui-art-workflow.md`: native PC cockpit plates/struts and high-resolution material studies.
 * `docs/genesis-art-workflow.md`: exact graphic extraction and remaster workflow.
+* `docs/genesis-models-research.md`: recovered Genesis model programs, PC face correspondence and editable vehicle studies.
 * `docs/genesis-cockpit-integration.md`: Genesis-first live cockpit/status integration and native proof.
 * `docs/genesis-portrait-integration.md`: Genesis faces, original visibility matching and native proof.
 * `docs/genesis-briefing-integration.md`: restored office/Wilson poses and exact visible-dialogue decoding.
@@ -131,6 +132,8 @@ Run `./tools/validate.sh` for the local test gate. Python resource tests need th
 supplied PC reference files; Genesis capture tests additionally need local
 captures. The Genesis cockpit and frontend tests need the local fingerprinted
 remaster sets and recognition catalogs described in their integration documents.
+The Genesis vehicle study check needs the local generated glTF set described
+in `docs/genesis-models-research.md`; it is an authoring check, not live gameplay.
 Pillow is required for graphics tests and extraction. Godot 4 is
 required for simulation and runtime checks. The UI ownership test compiles the
 actual read-only C++ observer with the local `c++` compiler.

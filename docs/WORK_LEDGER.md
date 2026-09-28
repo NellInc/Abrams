@@ -2077,3 +2077,60 @@ Receipts: `artifacts/pc-hill-art-01/play-parity-final.json` and
 `replay-parity-final.json`. This is source noninterference on that replay, not a
 claim of finished gameplay parity across all missions. Optional Impeccable was
 unavailable; native rendering was verified instead. No goal completion is claimed.
+
+## Genesis model recovery and editable vehicle studies (2026-09-28)
+
+The preceding goal turn made bounded verification progress: the corrected
+cockpit passed a fresh 12,238,012-check native run and public-launcher capture.
+The current continuation resumes the incomplete world-vehicle art outcome.
+The overall goal remains active; `docs/GOAL.md` retains the PC-authoritative,
+Genesis-first tandem scope.
+
+Recovered 53 Genesis drawing programs, rather than treating their ROM bytes as
+ordinary XYZ meshes. Control-flow traversal retains 1,423 distinct commands,
+34 literal vertex blocks, nineteen references to shared replacement geometry,
+and both procedurally constructed truck paths. Editable local exports include
+53 full program JSONs, 54 OBJ pose unions, original materials and explicit
+PC-polygon-to-Genesis-command correspondence. Original VM conditions and special
+circle commands remain visible instead of becoming invented mesh semantics.
+
+For 52 indices, all PC primitive-used coordinates and unique polygons match
+Genesis definitions after the source axis conversion. There are 585 matched
+unique polygons; one of the 52 records contains no polygon. Material bytes also
+correspond as Genesis = PC + 16. The truck differs and is explicitly excluded
+from an equivalence claim. No live renderer or original gameplay changed.
+
+Original-instruction oracle `artifacts/genesis-model-research-01/oracle-02.json`
+passes with read/execute-only ROM: 188 pointers and extents, 54 neutral poses,
+528 construction commands, 221,184 workspace bytes, 62 control cases, 1,166
+clipped polygon cases, 94 clipped line cases, 26 sorted call lists and 16 material
+lookups, zero mismatches, terminal exit 0. This is synthetic source recovery,
+not visible vehicle-frame, nontrivial depth-order or gameplay parity proof.
+
+Created three Genesis-based editable Blender/glTF bevel studies, T-62, M1-A1 and
+M113. Original colours, proportions and VM component boundaries are retained.
+These are initial authoring foundations, with no new joints or detailed parts,
+and remain disabled in live gameplay. The assistant created and visually reviewed
+the studies, including native side/rear views; this is not Nell's acceptance.
+
+Native final receipt `artifacts/genesis-vehicle-studies-native-02/report.json`:
+580,234 checks, zero errors, terminal exit 0. All nine views import/render;
+48,616 sampled model pixels show materials and 527,384 sampled outside pixels
+retain the empty background. Measured axis expansion stays below the declared
+0.45 raw-unit envelope. The first native run failed an unsuitable minimum-colour
+quota; inspecting the actual frames established correct limited-palette models.
+The repaired test checks independent geometry ownership, not extra colours.
+The failed initial run remains retained. Earlier CPU exploration also failed
+at the truck branch before its two construction paths were recovered.
+
+Final aggregate `artifacts/validation-20260928T063107Z` completed with terminal
+exit 0: all 39 stages and 269 Python tests pass, including twelve new model
+tests and unchanged reference inventory. No dependency was installed. Research,
+commands, limitations and local output pointers are in `genesis-models-research.md`.
+The five pre-existing untracked PC vehicle-study files remain untouched.
+
+Continue detailed Genesis-first vehicle surfaces and source-selected face
+integration, then animation and remaining classes/states. Truck mapping, special
+draws and visible original-Genesis comparison are still required. Whole-goal
+audio, pacing, mission/campaign/save parity and release-candidate work remain
+open. All source/derived media stay local; no push or publication occurred.
