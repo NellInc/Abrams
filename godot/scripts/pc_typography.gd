@@ -14,6 +14,11 @@ var fixed_labels_enabled := false
 var status_numbers_enabled := false
 var dialogue_glyphs: Dictionary = {}
 var outline_fonts = preload("res://scripts/pc_outline_fonts.gd").new()
+# Bounded expected glyph bytes only. Never cache source/UI validity, pixel
+# hashes, event identities or caller-visible run dictionaries. Colours are part
+# of the expected-byte key, never inherited from an earlier source packet.
+var _expected_text: Dictionary = {}
+const EXPECTED_TEXT_LIMIT := 64
 # These words are confirmed in the source screens. Each candidate still has to
 # match every original font bit and every UI pixel before it may be redrawn.
 const FIXED_LABELS = [
@@ -96,6 +101,7 @@ func _init() -> void:
 
 func load_sources(directory: String) -> bool:
 	fonts.clear()
+	_expected_text.clear()
 	font_geometry.clear()
 	dialogue_glyphs.clear()
 	clear_runs()
@@ -274,6 +280,30 @@ static func integers(value: Variant, count: int, low: int, high: int) -> bool:
 		if not (n is int or n is float) or not is_finite(float(n)) or n!=floorf(n) or n<low or n>high: return false
 	return true
 
+func _expected_pixels(words: String, bytes: PackedByteArray, foreground: Color, background: Color, font_id: String) -> Dictionary:
+	var key := "%s/%08x/%08x/"%[font_id,foreground.to_rgba32(),background.to_rgba32()]+words
+	var cached: Dictionary = _expected_text.get(key,{})
+	if not cached.is_empty() and cached.font==bytes: return cached
+	var cell := Vector2i(bytes[0],bytes[1])
+	var stride := (cell.x+7)/8
+	var expected := Image.create_empty(words.length()*cell.x,cell.y,false,Image.FORMAT_RGBA8)
+	expected.fill(background)
+	var visible_ink := false
+	for i in words.length():
+		var code := words.unicode_at(i)
+		if code<32 or code>126 or code<int(bytes[2]) or code>=int(bytes[2])+int(bytes[3]): return {}
+		for y in cell.y:
+			for x in cell.x:
+				var at := 4+((code-int(bytes[2]))*cell.y+y)*stride+x/8
+				if (int(bytes[at])&(128>>(x%8)))!=0:
+					expected.set_pixel(i*cell.x+x,y,foreground)
+					visible_ink=true
+	if _expected_text.size()>=EXPECTED_TEXT_LIMIT and not _expected_text.has(key):
+		_expected_text.erase(_expected_text.keys()[0])
+	cached={"font":bytes.duplicate(),"pixels":expected.get_data(),"visible_ink":visible_ink}
+	_expected_text[key]=cached
+	return cached
+
 func verified_run(item: Variant, source: Image, ui: Image, palette: Array, cursor_mask: Image=null) -> Dictionary:
 	if not item is Dictionary or not item.get("text") is String: return {}
 	var words: String = item.text
@@ -292,19 +322,29 @@ func verified_run(item: Variant, source: Image, ui: Image, palette: Array, curso
 	if foreground==background: return {}
 	var stride := (cell.x+7)/8
 	var visible_ink := false
-	for i in words.length():
-		var code := words.unicode_at(i)
-		if code<32 or code>126 or code<int(bytes[2]) or code>=int(bytes[2])+int(bytes[3]): return {}
-		for y in cell.y:
-			for x in cell.x:
-				var at := 4+((code-int(bytes[2]))*cell.y+y)*stride+x/8
-				var ink := (int(bytes[at]) & (128>>(x%8)))!=0
-				var px := box.position.x+i*cell.x+x
-				var py := box.position.y+y
-				if ui.get_pixel(px,py).r!=1.0: return {}
-				if cursor_mask!=null and cursor_mask.get_pixel(px,py).r==1.0: continue
-				visible_ink = visible_ink or ink
-				if source.get_pixel(px,py).to_rgba32()!=(foreground if ink else background).to_rgba32(): return {}
+	if cursor_mask==null and ui.get_format()==Image.FORMAT_L8 and source.get_format() in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8]:
+		if ui.get_region(box).get_data().count(255)!=box.size.x*box.size.y: return {}
+		var expected := _expected_pixels(words,bytes,foreground,background,item.font_sha256)
+		if expected.is_empty() or not expected.visible_ink: return {}
+		var actual := source.get_region(box)
+		actual.convert(Image.FORMAT_RGBA8)
+		if actual.get_data()!=expected.pixels: return {}
+		visible_ink=true
+	else:
+		# Cursor exclusions and other pixel formats retain the original predicate.
+		for i in words.length():
+			var code := words.unicode_at(i)
+			if code<32 or code>126 or code<int(bytes[2]) or code>=int(bytes[2])+int(bytes[3]): return {}
+			for y in cell.y:
+				for x in cell.x:
+					var at := 4+((code-int(bytes[2]))*cell.y+y)*stride+x/8
+					var ink := (int(bytes[at]) & (128>>(x%8)))!=0
+					var px := box.position.x+i*cell.x+x
+					var py := box.position.y+y
+					if ui.get_pixel(px,py).r!=1.0: return {}
+					if cursor_mask!=null and cursor_mask.get_pixel(px,py).r==1.0: continue
+					visible_ink = visible_ink or ink
+					if source.get_pixel(px,py).to_rgba32()!=(foreground if ink else background).to_rgba32(): return {}
 	if not visible_ink: return {}
 	var crop := source.get_region(box)
 	crop.convert(Image.FORMAT_RGB8)

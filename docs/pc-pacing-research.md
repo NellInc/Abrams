@@ -93,6 +93,60 @@ input or changed emulated CPU rate was used to conceal that result.
   --output "$PWD/artifacts/pacing-sustained-NEW"
 ```
 
+## Exact expected-glyph reuse, 28 September 2026
+
+Typography now retains up to 64 expected bitmap runs, keyed by exact font ID,
+text, foreground and background RGBA values, and guarded by a complete copy of
+the actual font bytes. This is expected-pattern reuse only: current source RGBA
+bytes, every current UI ownership byte, current RGB hash and current metadata
+are still checked on each draw. Every returned run carries the current event's
+draw sequence and resources. Font reloads clear the cache, including failed loads.
+Cursor exclusions and non-RGB8/RGBA8 source or non-L8 mask formats use the unchanged
+pixel-loop path. Transparent bearing text and authored outline contours are
+unchanged.
+
+Working if: warm expected bytes never authorize changed source pixels, alpha,
+ownership, font bytes, hash or event identity; cache size stays at most 64; cursor
+coverage keeps its original semantics; complete source traces and rendered pixels
+remain equal to the preceding implementation.
+
+`pc_typography_pixel_oracle.gd` freezes the prior `verified_run` implementation
+from commit `1bc962e` for direct comparison. Focused cases cover all printable
+glyphs of all four fonts, every pixel of a representative warm text run, source
+format/alpha changes, cursor-covered glyphs, actual font mutation, repeated event
+identities, eviction and current colour pairs. Alternating in-process timing of
+500 calls per implementation in six rounds recorded about 14 microseconds for
+the new verifier and 116 microseconds for the old loop. This is predicate cost,
+not a whole-game performance claim.
+
+The native 1,020-frame control route `pc-typography-pacing-native-01/comparison.json`
+compares with `pc-pacing-cache-after-01`: every complete packet hash, original
+request, final metadata and all four decoded images match. It measured 59.61 fps
+against the final advertised 59.47, with typography component time 0.66 ms versus
+3.36 ms in the preceding run. Other components also ran faster, so changed host
+load contributes to this different-time comparison. Sustained/historical pacing
+needs its own evidence, independent of this short probe.
+
+The subsequent six-cycle run `pc-typography-sustained-01/comparison.json` completed
+6,120 consecutive SIM frames in 103.38 seconds at **59.20 fps against 59.47
+advertised**. Its six segment rates span 58.89 to 59.54 fps. Every complete packet
+hash, one-frame request, final capture metadata and all four decoded images equal
+`pc-pacing-sustained-01`, extending the exact before/after comparison to the full
+longer route. Audio stays healthy. This is a near-target local sustained probe,
+not proof of long campaigns, historical-machine pacing, other hardware or
+performance under arbitrary load. The earlier 45.39-fps result remains retained;
+host load was not controlled across the two runs.
+
+Final gates: `validation-20260928T104953Z` passes 41 stages and 286 Python tests,
+including 185,967 typography checks. Native station replay retains all
+39,321,600 pixels across 32 cases. Native menu replay passes 46,080,268 checks;
+its complete report and 45 images (46,080,000 pixels) are identical to the
+frozen previous verifier running with current assets. See
+`pc-typography-menus-01/oracle-comparison.json`. The first comparison used an
+older menu receipt predating the corrected R/terminal font pass; that failed
+historical comparison is retained and is not used as immediate regression proof.
+The diagnostic `--pixel-oracle` mode changes only the test's verifier nodes.
+
 ## Follow-up: overlap original dispatch and presentation
 
 The production viewer now dispatches the next clock-eligible original frame

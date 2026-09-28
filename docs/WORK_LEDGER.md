@@ -2501,3 +2501,75 @@ plus host/poll latency under varying load. Do not change historical CPU speed or
 live input batching to meet a presentation benchmark. Wider goal outcomes above
 remain required; this optimization and longer-run receipt close no aggregate
 completion gate.
+
+
+## Expected-glyph reuse and longer-route parity (2026-09-28)
+
+Previous goal turn was progress (`1bc962e`), reducing instrument checks and
+recording a 6,120-frame run below the core's target rate. This pass addresses
+its next measured presentation cost, typography, while retaining all current
+pixel, ownership, hash and event checks. No historical CPU/input/timing policy,
+original font, outline contour, palette or game rule changed.
+
+A bounded 64-entry expected-glyph byte store is keyed by exact font identity,
+words and both colours, with complete actual font-byte equality before reuse.
+Current source RGBA bytes and L8 ownership are compared in native operations;
+current RGB hashes and metadata still qualify each individual run. A font reload,
+including failure, clears expected bytes. Cursors and other source/mask formats
+retain the previous pixel loop. No result/validity/run/event cache was introduced.
+
+The test-only pixel oracle's complete verified_run function is byte-identical to
+commit `1bc962e`. Focused comparison covers every printable character of all four
+faces, each pixel of a warm text field, source alpha/formats, red-only mask
+semantics, cursor exclusions and UI ownership, actual font mutations, bounded
+storage eviction, current event identities, hashes and every palette pair.
+Six alternating in-process batches initially measured about 14 us per new
+verification versus 116 us for the prior loop, with no timing pass threshold.
+
+Native short route `pc-typography-pacing-native-01` compares all 1,020 complete
+packets, original requests, capture metadata and final decoded image pixels with
+the previous instrument-only optimization. All match. Recorded rate is 59.61 fps;
+repeated typography component cost is 0.66 ms. Other components also ran faster,
+so these different-time process timings do not isolate a whole-game speedup.
+
+Native longer route `pc-typography-sustained-01` completes 6,120 consecutive SIM
+frames in 103.38 seconds at 59.20 fps versus 59.47 advertised, healthy audio and
+all original one-frame inputs unchanged. All 6,120 complete packets, final
+capture metadata and four decoded images equal `pc-pacing-sustained-01` (formerly
+only its first 1,020 frames had a full packet comparison). Segment rates span
+58.89 to 59.54. This is a near-target local sustained probe, not historical-machine
+calibration, an arbitrary-load guarantee or complete campaign acceptance. The
+earlier 45.39-fps run remains retained. No unrelated processes were controlled.
+
+The whole remaster is still active and incomplete: remaining dialogue/radio,
+music, graphics families, victories/campaign outcomes, longer/cross-machine
+pacing and portable packaging remain. Work is local only, with no publication,
+external upload, push or changes to original reference files or user saves.
+
+Aggregate `validation-20260928T104953Z` passes all 41 stages on the final production
+source, terminal exit 0: 286 Python tests, 185,967 typography checks, 14,003 gauge
+checks, 642 existing audio checks, 97 mix checks and 82 scheduling checks. Native
+32-station replay passes 161 checks and retains every one of 39,321,600 pixels
+and all case metadata. Native menu replay passes 46,080,268 checks across 45
+frames, 211 text runs. Root inspected the current joystick frame (self-review).
+
+An attempted menu byte comparison with `pc-menu-text-native-02` failed. That
+receipt predates the R/terminal refinement commit `07bcb77` (report UTC 23:54 on
+27 September, refinement 00:25 on 28 September), so it is an invalid immediate
+before/after baseline. The failure is retained at the new menu comparison receipt.
+Added a diagnostic-only `--pixel-oracle` mode which substitutes the frozen prior
+verifier into current frontend typography nodes before loading current sources.
+This avoids restoring old code/assets in the working tree or trusting stale art.
+
+The current-assets frozen-verifier native menu run completes with the same
+46,080,268 passing checks. Its complete report and all 45 images (46,080,000
+pixels) equal the optimized version; `pc-typography-menus-01/oracle-comparison.json`
+passes all 47 comparisons. Original failed historical comparison is retained.
+No production style/layout changed, so no design linter was required. Exact
+before/after code diff, bounded cache lifetime and all current-source predicates
+were reviewed by the implementing assistant.
+
+Near-target local pacing is now evidenced for the full six-cycle route. Avoid an
+unbounded optimization loop: the next material remaining lane is wider original
+crew/warning/radio speech or mission victory/campaign acceptance, with historical
+speed and cross-machine calibration still recorded as open requirements.

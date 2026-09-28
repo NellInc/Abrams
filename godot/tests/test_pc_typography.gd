@@ -11,6 +11,7 @@ var ui: Image
 var world: Texture2D
 var directory: String
 var outlines = preload("res://tests/pc_outline_oracle.gd").new()
+var predicate_timings: Array = []
 
 func check(ok: bool, why: String) -> void:
 	checks += 1
@@ -146,15 +147,109 @@ func run() -> void:
 	view.typography.set_frame(source,ui,presentation([]))
 	check(view.typography.runs.is_empty(),"ambiguous stores digit accepted")
 	view.typography.status_numbers_enabled = false
+	cache_contracts()
 	if native: await specimen(output)
 	if native and "--fixture" in args: await fixtures(args[args.find("--fixture")+1],output)
 	check(not view.typography.load_sources(directory.path_join("artifacts/missing-original-font-directory")),"missing fonts accepted")
-	check(view.typography.fonts.is_empty() and view.typography.font_geometry.is_empty() and view.typography.runs.is_empty(),"failed font load retained stale typography")
+	check(view.typography.fonts.is_empty() and view.typography.font_geometry.is_empty() and view.typography.runs.is_empty() and view.typography._expected_text.is_empty(),"failed font load retained stale typography")
 	for error in errors: printerr(error)
-	var report := {"checks":checks,"errors":errors,"native":native,"pixels":pixels,"changed":changed}
+	var report := {"checks":checks,"errors":errors,"native":native,"pixels":pixels,"changed":changed,"predicate_timings":predicate_timings}
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print("PC_TYPOGRAPHY: ",JSON.stringify(report))
 	quit(0 if errors.is_empty() else 1)
+
+func same_predicate(oracle: Control, item: Dictionary, cursor: Image=null) -> Dictionary:
+	var actual: Dictionary=view.typography.verified_run(item,source,ui,Frame.ART_PALETTE,cursor)
+	var expected: Dictionary=oracle.verified_run(item,source,ui,Frame.ART_PALETTE,cursor)
+	check(actual==expected,"exact pre-optimization pixel-loop result")
+	return actual
+
+func cache_contracts() -> void:
+	var oracle := preload("res://tests/pc_typography_pixel_oracle.gd").new()
+	# Same actual font resources, separately executed frozen pixel predicate.
+	oracle.fonts=view.typography.fonts
+	oracle.font_geometry=view.typography.font_geometry
+	oracle.outline_fonts=view.typography.outline_fonts
+	for name in view.typography.FONT_SOURCES:
+		for code in range(32,127):
+			var label := words(String.chr(code),16,20,1,0,name)
+			same_predicate(oracle,label)
+			same_predicate(oracle,label) # warm expected bytes, fresh current proof
+	var label := words("HEAT READY",12,165)
+	var box := Rect2i(12,165,60,6)
+	check(not same_predicate(oracle,label).is_empty(),"warm text accepted")
+	for y in range(box.position.y,box.end.y):
+		for x in range(box.position.x,box.end.x):
+			var old := source.get_pixel(x,y)
+			source.set_pixel(x,y,Color.MAGENTA)
+			# Supply the CURRENT hash: glyph equality must reject independently.
+			label.pixel_sha256=digest(source.get_region(box))
+			check(same_predicate(oracle,label).is_empty(),"every changed glyph/background pixel rejects after cache hit")
+			source.set_pixel(x,y,old)
+			label.pixel_sha256=digest(source.get_region(box))
+			ui.set_pixel(x,y,Color.BLACK)
+			check(same_predicate(oracle,label).is_empty(),"every missing ownership pixel rejects after cache hit")
+			ui.set_pixel(x,y,Color.WHITE)
+	for format in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8,Image.FORMAT_RGBAF]:
+		source.convert(format)
+		check(not same_predicate(oracle,label).is_empty(),"exact source format")
+		if format!=Image.FORMAT_RGB8:
+			var old := source.get_pixelv(box.position)
+			source.set_pixelv(box.position,Color(old.r,old.g,old.b,0.5))
+			check(same_predicate(oracle,label).is_empty(),"alpha mismatch rejects independently of RGB hash")
+			source.set_pixelv(box.position,old)
+	source.convert(Image.FORMAT_RGB8)
+	ui.convert(Image.FORMAT_RGBA8)
+	ui.fill(Color(1,0,0,0))
+	check(not same_predicate(oracle,label).is_empty(),"non-L8 ownership retains red-channel semantics")
+	ui=Image.create_empty(320,200,false,Image.FORMAT_L8)
+	ui.fill(Color.WHITE)
+	var cursor := Image.create_empty(320,200,false,Image.FORMAT_L8)
+	cursor.fill(Color.BLACK)
+	cursor.fill_rect(box,Color.WHITE)
+	check(same_predicate(oracle,label,cursor).is_empty(),"fully covered glyph has no visible ink")
+	cursor.fill(Color.BLACK)
+	cursor.set_pixelv(box.position,Color.WHITE)
+	source.set_pixelv(box.position,Color.MAGENTA)
+	label.pixel_sha256=digest(source.get_region(box))
+	check(not same_predicate(oracle,label,cursor).is_empty(),"cursor may cover its own pixel with current hash")
+	ui.set_pixelv(box.position,Color.BLACK)
+	check(same_predicate(oracle,label,cursor).is_empty(),"cursor never excuses missing UI ownership")
+	ui.fill(Color.WHITE)
+	label=words("HEAT READY",12,165)
+	var sha: String=label.font_sha256
+	var original: PackedByteArray=view.typography.fonts[sha].duplicate()
+	check(not same_predicate(oracle,label).is_empty(),"warm font data")
+	view.typography.fonts[sha][4+("H".unicode_at(0)-32)*6]^=128
+	check(same_predicate(oracle,label).is_empty(),"changed font bytes invalidate expected glyph bytes")
+	view.typography.fonts[sha]=original
+	check(not same_predicate(oracle,label).is_empty(),"restored actual font bytes recover")
+	for sequence in range(100):
+		label=words("%03d"%sequence,12,165)
+		label.draw_sequence=sequence
+		check(same_predicate(oracle,label).draw_sequence==sequence,"current event metadata is never cached")
+		check(view.typography._expected_text.size()<=view.typography.EXPECTED_TEXT_LIMIT,"expected glyph storage bounded")
+	for foreground in 16:
+		for background in 16:
+			label=words("HEAT READY",12,165,foreground,background)
+			var result := same_predicate(oracle,label)
+			check(result.is_empty()==(Frame.ART_PALETTE[foreground]==Frame.ART_PALETTE[background]),"every palette/background combination and zero-contrast rejection")
+	label=words("HEAT READY",12,165)
+	for field in ["pixel_sha256","text"]:
+		var bad := label.duplicate(true)
+		bad[field]="bad"
+		check(same_predicate(oracle,bad).is_empty(),"current metadata cannot inherit cached proof")
+	# Alternating in-process timing, informational only. No speed threshold gate.
+	for round_index in 6:
+		var row := {}
+		for name in (["current","oracle"] if round_index%2==0 else ["oracle","current"]):
+			var target: Control=view.typography if name=="current" else oracle
+			var start := Time.get_ticks_usec()
+			for i in 500: target.verified_run(label,source,ui,Frame.ART_PALETTE)
+			row[name+"_us"]=(Time.get_ticks_usec()-start)/500.0
+		predicate_timings.append(row)
+	oracle.free()
+
 func fixtures(path: String, output: String) -> void:
 	var report: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
 	var observations := []

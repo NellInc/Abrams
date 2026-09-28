@@ -60,20 +60,16 @@ Diagnostic captures still exit nonzero on failures.
 
 ## Open acceptance work
 
-* Sustained live frame pacing remains below target. The newest six-cycle control
-  run (`pc-pacing-sustained-01/verification.json`) completed 6,120 consecutive SIM
-  frames over 134.84 seconds, healthy audio, exact scripted one-frame controls,
-  at 45.39 fps against 59.47 advertised. Its first 1,020 complete source packets
-  match the before-change reference; full 6,120-frame parity is unproven.
-  Native byte comparisons for static instrument cells and gauge surrounds keep
-  every source pixel authoritative, with 14,003 focused checks.
-  Earlier 600-frame native probes measured 23.68,
-  53.41 and 48.10 original frames per second across the performance investigation.
-  A final 1,200-frame stationary probe reached 59.03 against the core's 59.47 fps
-  target; the matched 1,020-frame moving/control replay reached 57.93 fps with
-  every paired RAM/video hash unchanged. These short runs do not establish long-session speed.
-  Exact-byte font caching and bulk mask validation reduce read-only overhead;
-  emulated CPU rate, frame count, input policy and synchronization remain unchanged.
+* Sustained live frame pacing is now close to target in the latest local probe.
+  `pc-typography-sustained-01/comparison.json` covers 6,120 consecutive SIM frames
+  over 103.38 seconds at 59.20 fps versus 59.47 advertised, with healthy audio.
+  Every full packet, original one-frame request, final metadata and rendered
+  image matches the preceding six-cycle route. Segment rates span 58.89 to 59.54.
+  Earlier loaded-host runs measured substantially less, including 45.39 fps for
+  that same route. Historical speed calibration, longer campaigns, other hardware
+  and performance under varying load remain open. Exact instrument comparisons
+  and bounded expected-glyph reuse reduce presentation work without skipping any
+  current source pixel, changing emulated CPU speed or batching live input.
 * Victories, additional defeats, campaign progression and longer-session outcomes.
 * Remaining dialogue, radio/warnings, music and listening/mix review. Volume
   controls are implemented; a finished musical arrangement and mix are not.

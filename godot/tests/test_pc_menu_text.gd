@@ -32,6 +32,19 @@ func run()->void:
 	view=SubViewport.new();view.size=Vector2i(1280,800);view.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(view)
 	original=TextureRect.new();original.size=view.size;original.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;original.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST;view.add_child(original)
 	art=Frontend.new();art.size=view.size;view.add_child(art)
+	# Current art/fonts with the frozen previous pixel verifier, for exact
+	# same-version native A/B checks. Historical screenshots may predate art edits.
+	if "--pixel-oracle" in args:
+		for field in ["typography","flow_typography"]:
+			var prior: Control=art.get(field)
+			var index := prior.get_index()
+			art.remove_child(prior)
+			prior.free()
+			var replacement := preload("res://tests/pc_typography_pixel_oracle.gd").new()
+			art.add_child(replacement)
+			art.move_child(replacement,index)
+			replacement.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			art.set(field,replacement)
 	check(art.load_sources(root_path),"source art/fonts load")
 	var data:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(fixture))
 	var labels:=0
