@@ -30,6 +30,32 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## R and cap/baseline correction, 2026-09-28
+
+Nell identified the remaining R defect and unequal lower-row letter heights in
+the enlarged credit card. The earlier outlines used inset, open stroke ends;
+these shortened A/M/Y and N's right stem and left R's foot slanted. The new v3
+pack corrects outer terminal geometry within the original cells, gives R a level
+foot and preserves its continuous stencil channel. Stroke weights and fixed
+advances remain; lowercase and symbols are unchanged. Existing credits, menus,
+briefings and other verified text bindings share the correction.
+
+Two targeted regressions reject the old pack, including local endpoint checks
+that the earlier whole-glyph bounds test could not cover. Both now pass alongside
+the original reproducibility, binary-outline, spacing, weight and alias tests.
+The old pack and unselected studies are preserved locally. No original binaries,
+font sources, input/game logic, artwork or unrelated vehicle files were edited.
+The assistant authored and reviewed the correction. Exact pack hash, rendering
+evidence and scope are recorded in `pc-text-research.md`. Local only.
+
+Validation completed: 227 Python tests, all 29 repository stages, native specimens
+at five scales, all intro cards/dedication and office scenes. The Play credit PNG
+matches its native fixture exactly. The enlarged lower row measures one common
+60-pixel cap height and baseline for every letter, and both R feet/channel masks
+pass direct native pixel checks. Evidence is in
+`artifacts/pc-font-terminals-recap-01/receipt.json`. Optional Impeccable is absent.
+No push or publication; the broader remaster goal remains open.
+
 ## Menu and frontend typography coverage, 2026-09-28
 
 Nell requested the same polishing for the joystick prompt, game menus and other

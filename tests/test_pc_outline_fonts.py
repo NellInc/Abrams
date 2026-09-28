@@ -8,7 +8,7 @@ from tools.pc_fonts import decode_font
 from tools.build_pc_outline_fonts import build_face
 
 ROOT=Path(__file__).resolve().parents[1]
-DIRECTORY=ROOT/'local-art/pc-outline-fonts-v2'
+DIRECTORY=ROOT/'local-art/pc-outline-fonts-v3'
 
 
 def classify(point,contours):
@@ -137,6 +137,39 @@ class OutlineFontTests(unittest.TestCase):
                 for sign in [-1,1]:
                     self.assertTrue(classify((1.5+sign*normal[0]*0.4,1.5+sign*normal[1]*0.4),glyphs['X']))
                     self.assertFalse(classify((1.5+sign*normal[0]*0.6,1.5+sign*normal[1]*0.6),glyphs['X']))
+
+    def test_cap_heights_and_open_terminals_reach_source_lines(self):
+        manifest=json.loads((DIRECTORY/'manifest.json').read_text())
+        for face in manifest['faces']:
+            source=decode_font((ROOT/'GAME'/face['source']).read_bytes())
+            glyphs={chr(g['code']):g['contours'] for g in face['glyphs']}
+            for char in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':
+                rows=[i//source['width'] for i,b in enumerate(source['glyphs'][ord(char)-32]) if b]
+                ys=[y for p in glyphs[char] for x,y in p]
+                self.assertEqual((min(ys),max(ys)),(min(rows),max(rows)+1),(face['source'],char))
+            if face['source']=='8X6.FNT':
+                # The reported DAMON SLYE defect was local to open terminals,
+                # not just each glyph's overall bounding box (N already passed).
+                for char,x,y in [('A',0.5,5.99),('M',0.5,5.99),('M',6.5,5.99),
+                                 ('N',6.5,1.01),('Y',0.5,1.01),('Y',6.5,1.01),('Y',3.5,5.99)]:
+                    self.assertTrue(classify((x,y),glyphs[char]),(char,x,y))
+
+    def test_r_has_level_foot_open_counter_and_continuous_stencil_channel(self):
+        manifest=json.loads((DIRECTORY/'manifest.json').read_text())
+        for face in manifest['faces']:
+            glyph=next(g['contours'] for g in face['glyphs'] if g['code']==ord('R'))
+            baseline=max(y for p in glyph for x,y in p)
+            # Check a complete right-leg horizontal edge at the baseline, not
+            # the left stem/serif which hid the slanted foot in old bbox tests.
+            feet=[abs(b[0]-a[0]) for p in glyph for a,b in zip(p,p[1:]+p[:1])
+                  if a[1]==b[1]==baseline and min(a[0],b[0])>3]
+            self.assertTrue(feet,face['source'])
+            self.assertGreater(max(feet),0.8,face['source'])
+            if face['source']=='STENCIL.FNT':
+                for y in [i/20 for i in range(1,140)]:
+                    self.assertFalse(classify((3.4,y),glyph),y)
+                self.assertFalse(classify((4.3,1.7),glyph))
+                self.assertTrue(classify((6.3,6.99),glyph))
 
 
 if __name__=='__main__':unittest.main()

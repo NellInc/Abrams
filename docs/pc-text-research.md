@@ -7,9 +7,56 @@ four original faces after a second, independent Godot source-pixel check. The so
 remain available with `--original-text`. The READY-specific loader voice gate
 is described in `pc-audio-research.md`.
 
+## R and cap/baseline correction, 2026-09-28
+
+Nell's enlarged DIRECTOR / DAMON SLYE screenshot exposed two remaining defects:
+the R leg had an angled, short foot and a nearly closed stencil channel; open
+strokes in A/M/N/Y stopped short of their intended cap/baseline. Whole-glyph
+bounding-box checks missed N's short right stem because its other corner already
+reached the cap line. The source letters themselves have consistent heights.
+
+`tools/pc_font_optical.py` now extends exposed uppercase/digit terminals along
+their existing stroke direction before clipping at the original glyph bounds.
+The extension accounts for the inset corner of diagonal strokes. R's diagonal
+targets the actual baseline centre to retain its foot width, and its stencil
+channel remains open for the complete height. There is no vertical stretching,
+change to fixed advances, replacement of lower-case/symbol shapes, or per-string
+credit-screen workaround. The shared pack applies to every existing font binding.
+
+The current pack is `local-art/pc-outline-fonts-v3/manifest.json`, SHA-256
+`a9d68ef60adbca97c3f3917817c272dacf6f81f5e92171a8cb8cab837fe1b099`.
+Build it into a fresh directory with the existing `build_pc_outline_fonts` tool.
+The v2 pack is preserved. All 380 glyph/face combinations and 203 authored
+alphanumeric shapes remain; 68 uppercase/digit contour records changed.
+
+Working if: all capitals/digits reach their original cap/baseline, the reported
+open stem ends pass local ink probes, each R has a horizontal right-leg foot,
+and the stencil channel and counter remain open. Existing stem/bar weights,
+diagonal weight, source aliases and fixed-cell checks must still pass.
+
+Both new regression tests reject v2 and pass v3. An initial candidate's terminal
+extension left the small technical R foot too narrow; the baseline-centre
+correction fixed it before selection. Study packs remain under
+`artifacts/pc-font-terminals-study-01/`. The same-scale production-renderer recap
+is `artifacts/pc-font-terminals-recap-01/credits-before-after.png`.
+The assistant authored and reviewed this correction; Nell's stylistic judgment
+remains separate. Source recognition, PC logic and original resources are unchanged.
+
+Completed proof is in `artifacts/pc-font-terminals-recap-01/receipt.json`:
+227 Python tests and all 29 validation stages pass in
+`validation-20260928T001833Z`. Native all-face/five-scale, intro and office checks
+report 3,421,787; 2,840,243; and 8,148,962 checks, respectively, with zero errors.
+The actual Play credit capture is byte-identical to the native credit fixture.
+In the enlarged production-renderer credit, all nine lower-row letters occupy
+exactly rows 264 through 323; both R channels are open and both feet reach the
+same baseline. `credit-corrected.png` is the current close-up. The optional
+Impeccable linter remains unavailable; the checks above use native Godot rendering.
+Existing live windows retain the font data loaded at startup; the selected pack
+is used on the next ordinary launch. No unrelated running process was stopped.
+
 ## Menu and remaining frontend text, 2026-09-28
 
-The refined v2 faces now extend to the original joystick prompt, main and nested
+The refined faces now extend to the original joystick prompt, main and nested
 menus, changing scenario/time/skill values, campaign name entry, mission-title
 letters, information-page prose (including HEAT), and END summary/score/kill text.
 No substitute menu, game value or wording is authored. Existing fitted credits,
@@ -135,12 +182,13 @@ Working if: related glyphs have measured consistent stems and bevels, stencil
 gaps and counters remain open, and native text still fits every verified original
 cell without changing protected pixels or displayed wording.
 
-The selected pack is `local-art/pc-outline-fonts-v2/manifest.json`, SHA-256
+That pass selected `local-art/pc-outline-fonts-v2/manifest.json`, SHA-256
 `3d87b1ade72efd6f975895e10d16b1082d49f6eec6a6776da85c1d1091d6f574`.
-Generate with the existing Python FontTools dependency into a fresh directory:
+The current v3 correction above supersedes it. Generate the current shapes with
+the existing Python FontTools dependency into a fresh directory:
 
 ```sh
-python3 -m tools.build_pc_outline_fonts --output local-art/pc-outline-fonts-v2
+python3 -m tools.build_pc_outline_fonts --output local-art/pc-outline-fonts-v3
 ```
 
 The v1 pack remains available for comparison. Development studies are under

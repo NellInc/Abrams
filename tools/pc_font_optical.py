@@ -45,7 +45,7 @@ def cut(polys,box):
     return [p for p in out if len(p)>2 and abs(area(p))>1e-6]
 
 
-def stroke(points,weight=(1,1),closed=False):
+def stroke(points,weight=(1,1),closed=False,caps=(0,0)):
     # Miter joins in the face's contrast space. Widths are perpendicular to
     # the centre line, avoiding the thin diagonals produced by pixel bevels.
     wx,wy=weight
@@ -55,6 +55,13 @@ def stroke(points,weight=(1,1),closed=False):
         if not p or value!=p[-1]:p.append(value)
     n=len(p)
     if n<2:return []
+    # Extend only exposed outer terminals. The final source-cell clip supplies
+    # level cap/baseline cuts without scaling the glyph or thickening its bars.
+    if not closed:
+        for index,near,amount in [(0,1,caps[0]),(n-1,n-2,caps[1])]:
+            if not amount:continue
+            x,y=p[index];dx,dy=x-p[near][0],y-p[near][1];length=hypot(dx,dy)
+            p[index]=(x+amount*dx/length,y+amount*dy/length)
     def side(sign):
         out=[]
         for i,(x,y) in enumerate(p):
@@ -99,7 +106,20 @@ def shape(font,code,name):
     mid=(top+bottom)/2;cx=(left+right)/2
     bevel=min(0.75,(right-left)/3,(bottom-top)/3)
     out=[]
-    def line(p,closed=False,weights=weight):out.extend(stroke(p,weights,closed))
+    def line(p,closed=False,weights=weight):
+        caps=[]
+        for q,near in [(p[0],p[1]),(p[-1],p[-2])]:
+            amount=0
+            if (char.isupper() or char.isdigit()) and q[1] in (y0,top,bottom,y1) and q[1]!=near[1]:
+                dx,dy=(q[0]-near[0])/weights[0],(q[1]-near[1])/weights[1]
+                length=hypot(dx,dy)
+                target=y0 if q[1] in (y0,top) else y1
+                # Even the inset corner of a diagonal terminal must reach the
+                # cap/baseline before clipping; extending by a fixed distance
+                # leaves steep diagonals with a slanted, prematurely cut foot.
+                amount=(abs(target-q[1])/weights[1]*length+abs(dx)/2)/abs(dy)+1e-5
+            caps.append(amount)
+        out.extend(stroke(p,weights,closed,caps))
     def bowl(l,r,t,b,c=bevel):
         c=min(c,(r-l)/3,(b-t)/3)
         return [(l+c,t),(r-c,t),(r,t+c),(r,b-c),(r-c,b),(l+c,b),(l,b-c),(l,t+c)]
@@ -126,7 +146,9 @@ def shape(font,code,name):
         line([(left,bottom),(left,top)])
         line(cap_curve(top,mid))
         if char=='B':line(cap_curve(mid,bottom))
-        if char=='R':line([(cx,mid),(right,bottom)])
+        # Aim R's leg at its actual baseline centre, so clipping does not shave
+        # away the foot's width after extending the formerly slanted terminal.
+        if char=='R':line([(cx,mid),(right,y1)])
     elif char=='H':
         line([(left,top),(left,bottom)]);line([(right,top),(right,bottom)]);line([(left,mid),(right,mid)])
     elif char=='J':line([(right,top),(right,bottom-bevel),(right-bevel,bottom),(left+bevel,bottom),(left,bottom-bevel)])
@@ -216,7 +238,11 @@ def shape(font,code,name):
     if stencil:
         # Deliberate regular-width stencil bridges in the original regions.
         gap=0.75
-        if char in 'BDOPR0':
+        if char=='R':
+            # The original R has a continuous channel between its slab stem
+            # and bowl/leg. Short cuts left a near-touching knee and stray nib.
+            out=cut(out,(3.0,y0,0.875,y1-y0))
+        elif char in 'BDOP0':
             for y in [y0,y1-1] if char in 'BDO0' else [y0,mid-0.5]:out=cut(out,(3.125,y,gap,1))
         elif char in 'CGS6':
             for y in [y0,y1-1]:out=cut(out,(2.125,y,gap,1))
