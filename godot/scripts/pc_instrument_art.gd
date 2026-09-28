@@ -84,14 +84,7 @@ func set_frame(source: Image, ui: Image, tags: Image, diagram: Dictionary = {}) 
 	_layout_orientation()
 	for item in CELLS:
 		var box: Rect2i = item.source
-		var valid := true
-		for y in range(box.position.y,box.end.y):
-			for x in range(box.position.x,box.end.x):
-				if ui.get_pixel(x,y).r!=1.0 or roundi(tags.get_pixel(x,y).r*255)!=1 or source.get_pixel(x,y).to_rgba32()!=source_plate.get_pixel(x,y).to_rgba32():
-					valid = false
-					break
-			if not valid: break
-		if valid: active.append(item)
+		if _owned_region(ui,tags,box,1) and _same_region(source,source_plate,box): active.append(item)
 	for spec in BARS:
 		if not _guard_matches(spec,source,ui,tags): continue
 		var colors: Array[Color] = []
@@ -133,13 +126,45 @@ func set_frame(source: Image, ui: Image, tags: Image, diagram: Dictionary = {}) 
 
 func _guard_matches(spec: Dictionary, source: Image, ui: Image, tags: Image) -> bool:
 	if not plates.has(spec.plate): return false
-	for y in range(spec.guard.position.y,spec.guard.end.y):
-		for x in range(spec.guard.position.x,spec.guard.end.x):
-			var p := Vector2i(x,y)
-			if spec.source.has_point(p): continue
-			if ui.get_pixelv(p).r!=1.0 or roundi(tags.get_pixelv(p).r*255)!=spec.plate: return false
-			if source.get_pixelv(p).to_rgba32()!=plates[spec.plate].get_pixelv(p).to_rgba32(): return false
+	for box in _outside(spec.guard,spec.source):
+		if not _owned_region(ui,tags,box,spec.plate) or not _same_region(source,plates[spec.plate],box): return false
 	return true
+
+# Compare every current pixel, without a cached validity decision. PNG's RGB8
+# and RGBA8 formats have exactly the same byte semantics as to_rgba32(). Other
+# formats retain the original per-pixel predicate, including mask red-channel
+# semantics (converting coloured masks to luminance would change ownership).
+static func _same_region(source: Image, original: Image, box: Rect2i) -> bool:
+	if source.get_format() in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8] and original.get_format() in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8]:
+		var a := source.get_region(box)
+		var b := original.get_region(box)
+		if a.get_format()!=b.get_format():
+			a.convert(Image.FORMAT_RGBA8)
+			b.convert(Image.FORMAT_RGBA8)
+		return a.get_data()==b.get_data()
+	for y in range(box.position.y,box.end.y):
+		for x in range(box.position.x,box.end.x):
+			if source.get_pixel(x,y).to_rgba32()!=original.get_pixel(x,y).to_rgba32(): return false
+	return true
+
+static func _owned_region(ui: Image, tags: Image, box: Rect2i, plate: int) -> bool:
+	if ui.get_format()==Image.FORMAT_L8 and tags.get_format()==Image.FORMAT_L8:
+		var count := box.size.x*box.size.y
+		return ui.get_region(box).get_data().count(255)==count and tags.get_region(box).get_data().count(plate)==count
+	for y in range(box.position.y,box.end.y):
+		for x in range(box.position.x,box.end.x):
+			if ui.get_pixel(x,y).r!=1.0 or roundi(tags.get_pixel(x,y).r*255)!=plate: return false
+	return true
+
+static func _outside(guard: Rect2i, inner: Rect2i) -> Array[Rect2i]:
+	if not guard.intersects(inner): return [guard]
+	var cut := guard.intersection(inner)
+	var regions: Array[Rect2i] = [
+		Rect2i(guard.position,Vector2i(guard.size.x,cut.position.y-guard.position.y)),
+		Rect2i(guard.position.x,cut.end.y,guard.size.x,guard.end.y-cut.end.y),
+		Rect2i(guard.position.x,cut.position.y,cut.position.x-guard.position.x,cut.size.y),
+		Rect2i(cut.end.x,cut.position.y,guard.end.x-cut.end.x,cut.size.y)]
+	return regions.filter(func(box): return box.has_area())
 
 func _dynamic_pixel(source: Image, ui: Image, tags: Image, p: Vector2i, color: Color) -> bool:
 	return ui.get_pixelv(p).r==1.0 and tags.get_pixelv(p).r==0.0 and source.get_pixelv(p).to_rgba32()==color.to_rgba32()

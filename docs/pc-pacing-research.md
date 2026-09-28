@@ -29,6 +29,70 @@ The final receipt is `artifacts/pc-play-final-pacing-01/pacing.json`; its mean
 interval was 16.94 ms. Sustained moving-gameplay and historical-speed calibration
 remain distinct acceptance requirements.
 
+## Exact instrument-region checks, 28 September 2026
+
+The instrument layer now checks static icon rectangles and gauge surrounds with
+native byte operations for RGB8/RGBA8 source images and L8 ownership masks. Every
+current pixel remains part of the predicate. RGB and RGBA are compared with exact
+opaque-alpha expansion when needed; alpha differences still reject. Other image
+formats retain the prior per-pixel comparison. Coloured ownership masks retain
+red-channel semantics, rather than being converted to luminance. Guard rectangles
+are split around their dynamic interiors, including the driver's separate lamp
+guard. Dynamic gauge values, orientation geometry and all rendering are unchanged.
+No cached validity result, palette tolerance, approximate matching or omitted
+source region was introduced.
+
+Working if: changing any icon RGB/alpha byte, UI ownership bit or plate tag
+rejects that cell, all guard pixels are tested exactly once, and matching source
+traces produce identical presentation metadata and native pixels.
+
+`pc-pacing-cache-work-01/comparison.json` compares the native before/after route:
+all 1,020 complete packet hashes (including paired RAM/video audits), original
+requests, final capture metadata and all four decoded images match exactly.
+The measured repeated instrument predicate fell from 4.83 to 1.96 ms; overall
+frame rate was 20.04 then 30.17 fps. These are different-time runs on a loaded
+machine, so they do not isolate a causal whole-game speedup or prove target-rate
+acceptance. Unrelated processes were left untouched.
+
+`test_pc_gauges.gd` additionally checks every pixel in all nine icon regions,
+every mask byte value, RGB/RGBA/float-format comparisons, alpha differences, and
+all guard complements against a separate pixel-loop definition. The focused run
+passes 14,003 checks. An initial test-only image type-inference error was repaired;
+its failed log is retained, superseded by `gauges-02.log`.
+
+Final verification: `validation-20260928T103922Z` passes all 41 stages and
+286 Python tests, including the 14,003 gauge checks. The separate retained
+original-instruction gauge oracle passes 14,939 checks. Native scenario replay
+`pc-instrument-regions-stations-01` passes 161 checks across all 32 station/scenario
+cases; every case's metadata and all 39,321,600 rendered pixels match the previous
+reference. Original files remain unchanged.
+
+The existing native profiler now supports up to 20 repetitions of its original
+1,020-frame control route (`--replay-cycles`, requiring `--replay-controls`). Each
+request still advances one original frame. Its bounded timeout scales with the
+requested diagnostic length; normal Play timing and limits are unchanged. Rows
+record the original program and audio failure state so a long run ending in a
+menu cannot silently masquerade as sustained combat.
+
+The longer native run `pc-pacing-sustained-01/verification.json` completed 6,120
+consecutive interactive frames over 134.84 seconds, all inside SIM, with healthy
+remastered audio and no rejected vehicle textures. Every one-frame request
+matches the six-cycle control script. Its first 1,020 complete packets equal the
+before/after route above; the remaining 5,100 paired RAM/video audits are recorded
+without a second original execution, so full longer-route parity is unproven.
+Measured rate was **45.39 fps against 59.47 advertised**, with six segment rates
+46.33, 51.76, 52.96, 51.14, 44.71 and 32.80. This demonstrates longer-session
+stability, and also demonstrates that sustained target-rate acceptance is still
+**failing on this loaded host**. No catch-up, dropped source frame, batched live
+input or changed emulated CPU rate was used to conceal that result.
+
+```sh
+./tools/godot.sh --script res://tests/profile_pc_play.gd -- \
+  --play --trace --capture --capture-station gunner --interactive-clock \
+  --replay-controls --replay-cycles 6 --frame-audit \
+  --output "$PWD/artifacts/pacing-sustained-NEW"
+```
+
 ## Follow-up: overlap original dispatch and presentation
 
 The production viewer now dispatches the next clock-eligible original frame
@@ -50,8 +114,8 @@ phase and exact diagnostic batch boundaries. Its optional `--invalid-png` case
 deliberately produces libpng/engine corruption diagnostics, then verifies no
 request was sent. This negative case runs separately from the aggregate's
 no-engine-errors gate. Ordinary capture timeouts remain 60 seconds for a restored
-mission and 180 seconds for cold boot. The profiler has its own bounded 90-second
-deadline, including final capture, rather than falling back to 60 seconds there.
+mission and 180 seconds for cold boot. The profiler has its own bounded deadline, at least 90 seconds including final
+capture, scaled for sustained diagnostics as described above.
 
 The opt-in `--frame-audit` diagnostic fingerprints **already paired** conventional
 RAM and native framebuffer bytes. It performs no extra guest read, fence or step,

@@ -74,6 +74,7 @@ func run() -> void:
 	instruments = Instruments.new()
 	root.add_child(instruments)
 	check(instruments.load_sources(repo,Image.load_from_file(repo.path_join("local-art/genesis/cockpit-v2/gunner-genesis-v1.png"))),"source art loaded")
+	region_checks()
 	for spec in Instruments.BARS:
 		for lit in range(spec.count+1):
 			bind(fixture(spec,lit))
@@ -97,6 +98,78 @@ func run() -> void:
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_GAUGES: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)
+
+func region_checks() -> void:
+	# Independent pixel-loop oracle for all guard complements, including a guard
+	# outside the dynamic cell (the driver lamp) and partial/whole intersections.
+	var boxes: Array = Instruments.BARS+Instruments.LAMPS
+	for inner in [Rect2i(0,0,20,20),Rect2i(2,2,3,3),Rect2i(0,0,3,3),Rect2i(8,8,4,4),Rect2i(20,20,1,1)]:
+		boxes.append({"guard":Rect2i(1,1,9,9),"source":inner})
+	for spec in boxes:
+		var regions := Instruments._outside(spec.guard,spec.source)
+		for y in range(spec.guard.position.y-1,spec.guard.end.y+1):
+			for x in range(spec.guard.position.x-1,spec.guard.end.x+1):
+				var p := Vector2i(x,y)
+				var count := 0
+				for box in regions:
+					if box.has_point(p): count+=1
+				check(count==int(spec.guard.has_point(p) and not spec.source.has_point(p)),"guard complement has every pixel exactly once")
+	var ui := Image.create_empty(320,200,false,Image.FORMAT_L8)
+	ui.fill(Color.WHITE)
+	var tags := Image.create_empty(320,200,false,Image.FORMAT_L8)
+	tags.fill(Color(1.0/255,0,0))
+	var plate: Image=instruments.source_plate
+	for cell in Instruments.CELLS:
+		var box: Rect2i=cell.source
+		check(Instruments._owned_region(ui,tags,box,1),"complete icon ownership")
+		var changed: Image = plate.duplicate()
+		check(Instruments._same_region(changed,plate,box),"exact original icon")
+		# Every icon pixel is load bearing, including its edge and black pixels.
+		for y in range(box.position.y,box.end.y):
+			for x in range(box.position.x,box.end.x):
+				var old := changed.get_pixel(x,y)
+				changed.set_pixel(x,y,Color(1.0-old.r,old.g,old.b,old.a))
+				check(not Instruments._same_region(changed,plate,box),"one changed icon pixel rejects")
+				changed.set_pixel(x,y,old)
+				ui.set_pixel(x,y,Color.BLACK)
+				check(not Instruments._owned_region(ui,tags,box,1),"one world-owned icon pixel rejects")
+				ui.set_pixel(x,y,Color.WHITE)
+				tags.set_pixel(x,y,Color.BLACK)
+				check(not Instruments._owned_region(ui,tags,box,1),"one wrong plate pixel rejects")
+				tags.set_pixel(x,y,Color(1.0/255,0,0))
+		check(Instruments._same_region(changed,plate,box) and Instruments._owned_region(ui,tags,box,1),"restored source accepted without stale decision")
+	var box: Rect2i=Instruments.CELLS[0].source
+	# RGB/RGBA conversion preserves opaque bytes; alpha differences still reject.
+	for a_format in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8,Image.FORMAT_RGBAF]:
+		for b_format in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8,Image.FORMAT_RGBAF]:
+			var a: Image = plate.duplicate()
+			var b: Image = plate.duplicate()
+			a.convert(a_format)
+			b.convert(b_format)
+			check(Instruments._same_region(a,b,box),"exact mixed-format pixels")
+			var old := a.get_pixelv(box.position)
+			a.set_pixelv(box.position,Color(1.0-old.r,old.g,old.b))
+			check(not Instruments._same_region(a,b,box),"mixed-format changed pixel rejects")
+	var alpha: Image = plate.duplicate()
+	alpha.convert(Image.FORMAT_RGBA8)
+	var old := alpha.get_pixelv(box.position)
+	alpha.set_pixelv(box.position,Color(old.r,old.g,old.b,0.5))
+	check(not Instruments._same_region(alpha,plate,box),"alpha is part of equality")
+	for value in range(0,255):
+		ui.set_pixelv(box.position,Color(float(value)/255,0,0))
+		check(not Instruments._owned_region(ui,tags,box,1),"only fully UI-owned pixels qualify")
+	ui.fill(Color.WHITE)
+	for value in range(256):
+		tags.set_pixelv(box.position,Color(float(value)/255,0,0))
+		check(Instruments._owned_region(ui,tags,box,1)==(value==1),"exact plate tag byte")
+	# Non-luminance masks retain the prior red-only semantics, never luminance.
+	ui.convert(Image.FORMAT_RGBA8)
+	tags.convert(Image.FORMAT_RGBA8)
+	ui.fill(Color(1,0,0,0))
+	tags.fill(Color(1.0/255,1,1,0))
+	check(Instruments._owned_region(ui,tags,box,1),"non-L8 mask uses original red channel only")
+	ui.set_pixelv(box.position,Color(0.99,1,1))
+	check(not Instruments._owned_region(ui,tags,box,1),"non-L8 nonopaque ownership rejects")
 
 func original_cases(path: String) -> void:
 	var report: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))

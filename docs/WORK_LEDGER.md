@@ -2443,3 +2443,61 @@ Remaining goal outcomes are unchanged except adjustable volume controls are now
 implemented. Music, wider speech/warnings, remaining graphics, victories and
 campaign progression, sustained pacing, listening/art acceptance and portable
 packaging are still incomplete. No push, publication or redistribution occurred.
+
+
+## Exact instrument checks and sustained playback (2026-09-28)
+
+Previous goal turn was progress, committed as `258349b`: persistent source-gated
+mix controls. The whole remaster remains active, not complete. This pass addresses
+playability/frame pacing without changing the original executable, timing, live
+input cadence, game rules, source palettes or authored art.
+
+Measured the current moving/station/firing route first. Native sample application
+was expensive; repeated instrument checks took 4.83 ms and typography 4.07 ms.
+Static icons and gauge surrounds now compare current source RGB/RGBA bytes and
+L8 mask/tag bytes in native operations, rather than thousands of per-pixel script
+calls. Guard complements cover exactly the old pixels. Mixed RGB/RGBA comparison
+includes alpha; unsupported formats retain original pixel predicates, and colour
+masks retain red-channel semantics. There is no cached validity or tolerance.
+Dynamic gauge/state recognition and drawing are unchanged.
+
+Focused tests pass 14,003 checks, including each icon pixel corrupted separately,
+all mask byte values, alpha/mixed-format handling and exact guard coverage. The
+source-instruction gauge oracle extension passes 14,939 checks. Initial test-only
+image type inference failed and was repaired; its failed log is retained.
+
+Native before/after evidence: `pc-pacing-cache-work-01/comparison.json` proves all
+1,020 full source packets, original requests, final metadata and all four decoded
+native/source images equal. Root visually inspected the resulting gunner frame;
+this is self-review of existing artwork, not new user art approval. Repeated
+instrument-check time was 4.83 then 1.96 ms. Overall rate was 20.04 then 30.17 fps.
+Host load varied; these different-time timings are not a controlled causal claim.
+
+Extended only the diagnostic profiler to support repeated control cycles with a
+bounded length-aware deadline and per-frame original-program/audio status. The
+six-cycle run `pc-pacing-sustained-01` exits 0 with 6,120 consecutive SIM frames,
+134.84 seconds, all exact one-frame scripted controls, 25 delivered audio events,
+healthy audio and zero textured vehicle polygons. The first 1,020 complete packets
+match the retained prior route; remaining 5,100 audits are recorded without a
+second original execution. Full long-route parity remains unproven. Sustained
+rate was 45.39 against 59.47 target, with final segment 32.80. Target-rate
+acceptance is failing on this loaded host; no timing substitution was made.
+
+No unrelated process, original file, user campaign save or rejected vehicle study
+was modified. No external upload, publication or push occurred. Remaining speech,
+music, graphics, campaign outcomes, target-rate pacing and portable packaging
+remain outcomes of the active goal.
+
+Final gate `validation-20260928T103922Z` completes all 41 stages, terminal exit 0:
+286 Python tests, 14,003 gauge checks, 642 existing audio checks, 97 mix checks and
+82 scheduling checks. Reference preservation and `git diff --check` pass.
+`pc-instrument-regions-stations-01` passes 161 native replay checks across all
+32 scenario/station cases. Complete case metadata and all 39,321,600 rendered
+pixels equal `pc-all-scenario-frames-native-02`; comparison receipt saved beside
+its report. No visual styling changed, so no design linter was required.
+
+Next measured performance surface is typography (3.36 ms in the after probe),
+plus host/poll latency under varying load. Do not change historical CPU speed or
+live input batching to meet a presentation benchmark. Wider goal outcomes above
+remain required; this optimization and longer-run receipt close no aggregate
+completion gate.

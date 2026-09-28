@@ -14,6 +14,8 @@ var applying_sample := false
 var replay_keys: Array = []
 var replay_held: Array = []
 var sample_hashes: Array = []
+var profile_deadline_ms := 90000
+var replay_cycles := 1
 
 class ProbeBridge extends "res://scripts/pc_bridge.gd":
 	var rows: Array = []
@@ -56,23 +58,33 @@ func _initialize() -> void:
 	for step in auto_steps: warmup_sequence+=int(step[0])
 	if "--profile-frames" in args:
 		var index := args.find("--profile-frames")+1
-		if index>=args.size() or not args[index].is_valid_int() or int(args[index])<1 or int(args[index])>1800:
-			bridge.failure="profile frames must be 1..1800"
+		if index>=args.size() or not args[index].is_valid_int() or int(args[index])<1 or int(args[index])>20400:
+			bridge.failure="profile frames must be 1..20400"
 			return
 		profile_frames=int(args[index])
+	if "--replay-cycles" in args:
+		var index := args.find("--replay-cycles")+1
+		if "--replay-controls" not in args or index>=args.size() or not args[index].is_valid_int() or int(args[index])<1 or int(args[index])>20:
+			bridge.failure="replay cycles require --replay-controls and 1..20 cycles"
+			return
+		replay_cycles=int(args[index])
 	interactive_clock="--interactive-clock" in args
 	if "--replay-controls" in args:
 		if not interactive_clock:
 			bridge.failure="Control replay requires --interactive-clock"
 			return
 		var steps: Array=JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_play_control_steps.json"))
-		for step in steps:
-			for i in int(step[0]): replay_keys.append(step[1])
+		for cycle in replay_cycles:
+			for step in steps:
+				for i in int(step[0]): replay_keys.append(step[1])
 		profile_frames=replay_keys.size()
+	# Diagnostics keep one original frame per request, with a bounded allowance
+	# for sustained routes on a loaded host and final capture.
+	profile_deadline_ms=maxi(90000,30000+profile_frames*100)
 	if not interactive_clock:
 		for i in profile_frames: auto_steps.append([1,[]])
 
-func _capture_deadline_msec() -> int: return 90000
+func _capture_deadline_msec() -> int: return profile_deadline_ms
 
 func _advance_live_frame() -> bool:
 	# A/B diagnostic reproduces the previous post-presentation dispatch policy.
@@ -121,7 +133,8 @@ func _apply_sample(message: Dictionary) -> void:
 		if interactive_clock: capture=false
 		return
 	profile_rows.append({"sequence":int(message.sequence),"arrival_gap_ms":(start-profile_previous)/1000.0,
-		"apply_ms":(end-start)/1000.0,"interval_ms":(end-profile_previous)/1000.0})
+		"apply_ms":(end-start)/1000.0,"interval_ms":(end-profile_previous)/1000.0,
+		"program":previous_program.get("name",""),"audio_failure":pc_audio.failure if pc_audio else ""})
 	profile_previous=end
 	if interactive_clock and profile_rows.size()==profile_frames:
 		capture=true
@@ -130,7 +143,7 @@ func _apply_sample(message: Dictionary) -> void:
 
 func _process(delta: float) -> bool:
 	var start := Time.get_ticks_usec()
-	if not closing and Time.get_ticks_msec()-started>90000: bridge.failure="live profiler deadline"
+	if not closing and Time.get_ticks_msec()-started>profile_deadline_ms: bridge.failure="live profiler deadline"
 	var count := profile_rows.size()
 	var result := super._process(delta)
 	if profile_rows.size()>count: profile_rows[-1].process_ms=(Time.get_ticks_usec()-start)/1000.0
@@ -167,6 +180,7 @@ func components() -> Dictionary:
 func _capture() -> void:
 	var elapsed_ms := (profile_previous-profile_begin)/1000.0
 	var summary := {"samples":profile_rows.size(),"elapsed_ms":elapsed_ms,
+		"replay_cycles":replay_cycles,"deadline_ms":profile_deadline_ms,
 		"effective_fps":profile_rows.size()*1000.0/elapsed_ms,"advertised_fps":fps,"interactive_clock":interactive_clock,
 		"rows":profile_rows,"display":play_display.description() if play_mode else {"mode":"comparison"},
 		"scope":"Bounded sequential single-frame requests (capture-neutral or the actual interactive keyboard path) in the real capture pipeline, including native rendering; no claim of historical CPU speed calibration"}

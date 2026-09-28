@@ -60,7 +60,14 @@ Diagnostic captures still exit nonzero on failures.
 
 ## Open acceptance work
 
-* Sustained live frame pacing. Recent 600-frame native probes measured 23.68,
+* Sustained live frame pacing remains below target. The newest six-cycle control
+  run (`pc-pacing-sustained-01/verification.json`) completed 6,120 consecutive SIM
+  frames over 134.84 seconds, healthy audio, exact scripted one-frame controls,
+  at 45.39 fps against 59.47 advertised. Its first 1,020 complete source packets
+  match the before-change reference; full 6,120-frame parity is unproven.
+  Native byte comparisons for static instrument cells and gauge surrounds keep
+  every source pixel authoritative, with 14,003 focused checks.
+  Earlier 600-frame native probes measured 23.68,
   53.41 and 48.10 original frames per second across the performance investigation.
   A final 1,200-frame stationary probe reached 59.03 against the core's 59.47 fps
   target; the matched 1,020-frame moving/control replay reached 57.93 fps with
