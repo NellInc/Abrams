@@ -1,5 +1,9 @@
 # High-resolution terrain detail
 
+This document records the first flat-terrain material pass. The later
+32-shape hillside pass, including Genesis colour evidence and vertical faces,
+is documented separately in `pc-hill-art-integration.md`.
+
 ## Scope and source identities
 
 The tandem renderer now applies authored grass and asphalt detail to the original

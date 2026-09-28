@@ -2014,3 +2014,66 @@ families, remaining high-resolution world/UI/animation art, complete audio,
 pacing, mission/campaign/save parity and a reproducible release candidate. Keep
 the parent goal open. All five pre-existing untracked vehicle-study files remain
 untouched; local source and generated media remain excluded from distribution.
+
+
+## Genesis-coloured hillside restoration (2026-09-28)
+
+The previous goal turn made substantive progress in local commit `87da9e3`:
+three Genesis-derived impact phases now bind to nine original PC bitmap variants,
+with native and 1,020-frame source-boundary evidence. The goal remains active.
+This continuation addresses the enlarged checkerboard hills visible behind the
+impact capture, advancing the unfinished world-art outcome.
+
+Fresh Genesis turn captures expose the hillside at original bearing 078. The
+frame reconstructs from VDP state with 71,680 exact pixels. Three interior probes
+contain equal black and (172,170,0) swatches, establishing the olive source mean.
+The built-in image tool generated a neutral terrain-detail image from that
+selected reference; its unchanged 1254-square output, prompt and hashes are kept
+locally. Only the selected image was submitted, never game binaries or workspace.
+
+The runtime now resolves the dither and adds restrained world-anchored detail to
+49 source faces across PC shapes 2 through 33. All roots and primitive/material
+pairs are verified directly against pinned SHAPE.TBL. Seventeen vertical faces
+receive source-fixed XZ/YZ projection; ordinary slopes use XY. Original triangles,
+material identities, ordering and gameplay remain unchanged. Unsupported palettes,
+source identities and missing assets retain the old renderer. `--original-hills`
+allows a direct A/B comparison without turning off other remastered components.
+
+Native final gate: 4,571,057 checks, zero errors, covering 4,838,656 rendered pixels.
+All 4,490,887 pixels outside the selected visible hill faces are unchanged.
+There are six visible cases and two fully occluded cases, plus 244 analytic slope
+and 152 vertical-coordinate samples. A 20,000-pixel neutral-colour check, both
+painter orders and exact unknown-palette fallback pass. All 261 recorded passes
+retain geometry, material IDs and source packets. Evidence and exact failed-run
+explanations are in `pc-hill-art-integration.md`.
+
+The source test initially miscounted 50 faces instead of 49; source decoding
+corrected the denominator. The first native/aggregate attempt failed on a test
+Dictionary type inference error. The next native attempt incorrectly demanded
+changes where the source hills were fully occluded. Original ownership masks
+proved those two zero-change cases correct, and the final gate tests them
+explicitly. Further source inspection exposed 17 vertical faces needing height
+coordinates; that incomplete XY-only mapping was repaired and independently
+checked before final acceptance. Earlier receipts remain retained as intermediate
+or failed evidence rather than relabelled as final passes.
+
+This work was generated, implemented and visually reviewed by the same assistant.
+It does not establish Nell's visual/motion acceptance, all-map graphics coverage,
+subjective tactical readability or finished high-resolution vehicles/buildings.
+Whole-goal audio, remaining art/animations, pacing, full mission/campaign/save
+parity and a reproducible release candidate remain open. Source files and the
+five pre-existing untracked vehicle-study files remain untouched. No push or
+publication is authorized or performed.
+
+Final acceptance receipts: aggregate `artifacts/validation-20260928T053853Z`
+completed with terminal exit 0, all 38 stages and 257 Python tests pass. The final
+native effect regression passes 4,719,653 checks and the arbitrary-colour gate
+passes 1,280 exact RGB samples. Actual Play A/B captures have identical original
+framebuffers and metadata except the new surface counters; all 53,733 changed
+composite pixels stay in the hillside region. Final native captures were viewed.
+The final 1,020-frame replay has identical requests, complete packet hashes,
+full conventional-RAM digests and packed original-video digests at every boundary.
+Receipts: `artifacts/pc-hill-art-01/play-parity-final.json` and
+`replay-parity-final.json`. This is source noninterference on that replay, not a
+claim of finished gameplay parity across all missions. Optional Impeccable was
+unavailable; native rendering was verified instead. No goal completion is claimed.

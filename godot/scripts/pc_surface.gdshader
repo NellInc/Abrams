@@ -10,6 +10,9 @@ uniform float pattern_width = 64.0;
 uniform float detail_levels = 1.0;
 uniform sampler2D field_detail : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D road_detail : filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D hill_detail : filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D material_means : source_color, filter_nearest, repeat_disable;
+uniform float hill_mean;
 uniform mat3 camera_to_local;
 uniform vec3 world_origin;
 uniform sampler2D impact_burst : filter_linear, repeat_disable;
@@ -23,7 +26,7 @@ void vertex() {
 }
 
 void fragment() {
-    if (UV.y > 3.5) {
+    if (UV.y > 3.5 && UV.y < 6.5) {
         vec4 effect;
         if (UV.y < 4.5) effect = texture(impact_burst,UV2);
         else if (UV.y < 5.5) effect = texture(impact_fading,UV2);
@@ -42,7 +45,7 @@ void fragment() {
     if (detail_levels > 1.0 && UV.y > 0.5) {
         vec3 local = camera_to_local*original_view;
         bool usable = true;
-        if (UV.y > 2.5) {
+        if (UV.y > 2.5 && UV.y < 3.5) {
             // The original flat background has no depth. Project only its
             // existing ground pixels onto z=0; the original horizon stays fixed.
             usable = world_origin.z > 0.0 && local.z < -0.0001;
@@ -53,11 +56,24 @@ void fragment() {
             bool road = UV.y > 1.5 && UV.y < 2.5;
             float detail = road ? texture(road_detail,ground/256.0).r-0.4546305661
                                 : texture(field_detail,ground/512.0).r-0.4323640162;
+            if (UV.y > 6.5) {
+                vec3 position = world_origin+vec3(local.x,-local.y,local.z);
+                vec2 hill_uv = ground;
+                if (UV.y > 8.5) hill_uv = position.xz;
+                else if (UV.y > 7.5) hill_uv = position.yz;
+                detail = texture(hill_detail,hill_uv/768.0).r-hill_mean;
+            }
             float fade = 1.0-smoothstep(2048.0,8192.0,length(local.xy));
+            if (UV.y > 6.5) fade = 1.0-smoothstep(8192.0,32768.0,length(local.xy));
             level = clamp(round(16.0+detail*64.0*fade),0.0,32.0);
         }
     }
     vec2 lookup = (vec2(round(UV.x)*2.0,level*2.0)+phase+vec2(0.5))/vec2(pattern_width,detail_levels*2.0);
-    ALBEDO = texture(material_patterns, lookup).rgb;
+    if (UV.y > 6.5) {
+        // Restore the colour represented by the old 2x2 dither; retain the
+        // original facet and painter stream, with no new geometry or lighting.
+        ALBEDO = texture(material_means,vec2((round(UV.x)+0.5)/(pattern_width*0.5),
+                         (level+0.5)/detail_levels)).rgb;
+    } else ALBEDO = texture(material_patterns, lookup).rgb;
     }
 }

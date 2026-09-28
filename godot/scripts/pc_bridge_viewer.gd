@@ -90,6 +90,7 @@ func _initialize() -> void:
 	if trace_mode and cockpit_art_requested and not wire_mode and "--flat-world" not in args:
 		var terrain := preload("res://scripts/pc_terrain_style.gd").new()
 		if terrain.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")):
+			if "--original-hills" not in args: terrain.load_hills(directory)
 			draw_view.terrain_style = terrain
 	if trace_mode and cockpit_art_requested and not wire_mode and "--original-effects" not in args:
 		var effects := preload("res://scripts/pc_effect_art.gd").new()
@@ -492,6 +493,7 @@ func _capture() -> void:
 		"high_resolution_text_runs": tandem_frame.typography.runs.size() if trace_mode else 0,
 		"terrain_detail": draw_view.terrain_active if trace_mode else false,
 		"terrain_polygons": draw_view.terrain_polygon_count if trace_mode else 0,
+		"hill_polygons": draw_view.hill_polygon_count if trace_mode else 0,
 		"effect_art": draw_view.effect_art_ids if trace_mode else [],
 		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],
 		"genesis_art": tandem_frame.genesis_art_enabled if trace_mode else false,

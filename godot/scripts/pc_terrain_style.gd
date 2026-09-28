@@ -6,7 +6,39 @@ const ASSETS = {
 	"road": "737334a62f68cde25b62a61356c468888a12071fa1352bace2c32594af8be480"}
 const LEVELS = 33
 const NEUTRAL = 16
+const HILL_HASH := "116177af6cbf7bed7ed484a9cc44267e239e6dfcba90d99ec41cf8895260d123"
+const HILL_MEAN := 118.11901436932915/255.0
+# Exact roots and filled primitive/material identities in pinned PC SHAPE.TBL.
+const HILLS := {
+	2: [828, {846:19,854:28,861:28}], 3: [946, {964:19,972:28,979:28}],
+	4: [1064, {1082:17,1090:26,1098:26}], 5: [1196, {1214:17,1222:26,1230:26}],
+	6: [1328, {1342:19}], 7: [1397, {1411:19}], 8: [1466, {1480:28}], 9: [1535, {1549:28}],
+	10: [1604, {1618:19}], 11: [1673, {1687:19}], 12: [1742, {1756:19}], 13: [1811, {1825:19}],
+	14: [1880, {1894:28}], 15: [1956, {1970:28}], 16: [2032, {2046:28}], 17: [2108, {2122:28}],
+	18: [2184, {2198:28}], 19: [2260, {2274:19}], 20: [2336, {2350:19}], 21: [2412, {2426:19}],
+	22: [2488, {2502:19}], 23: [2564, {2584:28,2592:19,2600:19,2608:19}],
+	24: [2712, {2734:28,2742:19,2750:19,2758:19,2766:19}],
+	25: [2876, {2892:28,2899:19}], 26: [2966, {2982:28,2989:19}],
+	27: [3056, {3070:17}], 28: [3132, {3146:26}], 29: [3208, {3222:17}],
+	30: [3284, {3298:26}], 31: [3360, {3374:17}], 32: [3429, {3443:26}], 33: [3498, {3512:26}]}
+# Vertical source faces need height in their UVs. The axis is source-fixed,
+# never chosen from a moving camera or a noisy interpolated normal.
+const HILL_VERTICAL := {
+	854:9,861:9,972:9,979:9,1090:9,1098:9,1222:9,1230:9,
+	2592:9,2600:9,2608:8,2742:8,2750:9,2758:9,2766:8,2899:8,2989:8}
 var textures: Dictionary = {}
+var hill_texture: Texture2D
+
+func load_hills(root: String) -> bool:
+	hill_texture = null
+	if FileAccess.get_sha256(root.path_join("GAME/SHAPE.TBL")) != "81cf10917d8647e8ac187e49887494992828277333f17d6c1926e59581f0a193": return false
+	var path := root.path_join("local-art/genesis/remastered/terrain-v1/hill.png")
+	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=HILL_HASH: return false
+	var image := Image.load_from_file(path)
+	if image==null or image.is_empty(): return false
+	image.generate_mipmaps()
+	hill_texture = ImageTexture.create_from_image(image)
+	return true
 
 func load_assets(directory: String) -> bool:
 	textures.clear()
@@ -37,7 +69,7 @@ func mapping(frame: Dictionary, palette: Array) -> Dictionary:
 	if absf(basis.determinant()) < 0.5 or absf(basis.determinant()) > 1.5: return {}
 	return {"inverse":basis.inverse(), "origin":Vector3(position[0],position[1],position[2])}
 
-static func surface_kind(object: Dictionary, polygon: Dictionary) -> int:
+static func surface_kind(object: Dictionary, polygon: Dictionary, hills := false) -> int:
 	# Explicit source identities, rather than matching colours on arbitrary actors.
 	if object.get("dynamic_instance",true) or not object.get("static_path",false): return 0
 	if int(polygon.get("fill_mode",0)) == 0 or polygon.get("camera_vertices",[]).size() < 3: return 0
@@ -47,7 +79,19 @@ static func surface_kind(object: Dictionary, polygon: Dictionary) -> int:
 	if colors.size() != 2: return 0
 	if shape == 48 and primitive == 5123 and colors[0] == 8 and colors[1] == 8: return 1
 	if shape >= 49 and shape <= 54 and primitive == 5199+(shape-49)*76 and colors[0] == 3 and colors[1] == 3: return 2
+	if hills and shape in HILLS and int(object.get("root",-1))==HILLS[shape][0]:
+		var expected: int = HILLS[shape][1].get(primitive,-1)
+		if expected>=0 and colors[0]==expected and colors[1]==expected: return HILL_VERTICAL.get(primitive,7)
 	return 0
+
+static func material_mean(palette: Array, words: Array) -> Array:
+	var total := [0.0,0.0,0.0]
+	for y in 2:
+		for x in 2:
+			var word: int = int(words[y])
+			var index: int = int(words[0])&15 if words[0]==words[1] else (word>>(8 if x==0 else 0))&15
+			for c in 3: total[c] += float(palette[index][c])/4.0
+	return total
 
 static func detail_rgb(rgb: Array, level: int) -> Array:
 	var factor := 0.75+float(clampi(level,0,LEVELS-1))/64.0

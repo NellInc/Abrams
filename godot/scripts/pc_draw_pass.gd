@@ -13,8 +13,10 @@ var effect_art_ids: Array[int] = []
 var _effect_uvs := PackedVector2Array()
 var terrain_active := false
 var terrain_polygon_count := 0
+var hill_polygon_count := 0
 var _pattern_key := ""
 var _pattern_texture: Texture2D
+var _mean_texture: Texture2D
 var render_warnings: Array[String] = []
 const DISPLAY_SCALE := 64.0
 var mesh_node: MeshInstance3D
@@ -36,6 +38,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 	effect_art_ids.clear()
 	terrain_active = false
 	terrain_polygon_count = 0
+	hill_polygon_count = 0
 	if solid_enabled:
 		_apply_surfaces(pass_data)
 		return
@@ -88,14 +91,18 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	var mapping: Dictionary = terrain_style.mapping(frame,pass_data.palette_rgb) if terrain_style else {}
 	terrain_active = not mapping.is_empty()
 	var levels: int = TerrainStyle.LEVELS if terrain_active else 1
+	var hills: bool = terrain_active and terrain_style.hill_texture!=null
 	# Cache the compensated RGB ramps; the original palette/patterns never change.
 	var key := JSON.stringify([palette,pass_data.materials,levels])
 	if key != _pattern_key:
 		var compatibility := RenderingServer.get_current_rendering_method() == "gl_compatibility"
 		var texture := Image.create((material_count+16)*2,levels*2,false,Image.FORMAT_RGBAF if compatibility else Image.FORMAT_RGBA8)
+		var means := Image.create(material_count+16,levels,false,Image.FORMAT_RGBAF if compatibility else Image.FORMAT_RGBA8)
 		for level in levels:
 			for index in material_count+16:
 				var words: Array = pass_data.materials[index] if index < material_count else [index-material_count,index-material_count]
+				var mean_rgb := TerrainStyle.material_mean(palette,words)
+				means.set_pixel(index,level,Colour.input_color(TerrainStyle.detail_rgb(mean_rgb,level) if terrain_active else mean_rgb,compatibility))
 				for y in 2:
 					for x in 2:
 						var word: int = int(words[0]) if y == 1 else int(words[1])
@@ -103,6 +110,7 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 						var rgb: Array = TerrainStyle.detail_rgb(palette[value],level) if terrain_active else palette[value]
 						texture.set_pixel(index*2+x,level*2+y,Colour.input_color(rgb,compatibility))
 		_pattern_texture = ImageTexture.create_from_image(texture)
+		_mean_texture = ImageTexture.create_from_image(means)
 		_pattern_key = key
 	if pass_data.get("background") is Dictionary:
 		var backgrounds: Array = SurfaceGeometry.background_polygons(pass_data.background, frame)
@@ -135,8 +143,9 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 			var fill := int(polygon.get("fill_mode", 0)) != 0 and points.size() >= 3
 			if fill:
 				var triangles: Array = SurfaceGeometry.triangle_vertices(points, frame)
-				var kind: int = TerrainStyle.surface_kind(object,polygon) if terrain_active else 0
+				var kind: int = TerrainStyle.surface_kind(object,polygon,hills) if terrain_active else 0
 				if kind != 0: terrain_polygon_count += 1
+				if kind >= 7: hill_polygon_count += 1
 				_add_triangles(vertices, materials, triangles, int(polygon.colors[1]), pass_data.materials.size(),kind)
 			if not fill or polygon.colors[0] != polygon.colors[1]:
 				var edges: int = points.size() if points.size() > 2 else 1
@@ -155,6 +164,10 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	material.set_shader_parameter("material_patterns",_pattern_texture)
 	material.set_shader_parameter("pattern_width",float(_pattern_texture.get_width()))
 	material.set_shader_parameter("detail_levels",float(levels))
+	if hill_polygon_count>0:
+		material.set_shader_parameter("hill_detail",terrain_style.hill_texture)
+		material.set_shader_parameter("hill_mean",TerrainStyle.HILL_MEAN)
+		material.set_shader_parameter("material_means",_mean_texture)
 	if not effect_art_ids.is_empty():
 		material.set_shader_parameter("impact_burst",effect_art.textures[0])
 		material.set_shader_parameter("impact_fading",effect_art.textures[1])
