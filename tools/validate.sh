@@ -69,6 +69,11 @@ run_check() {
       echo "FAIL: $name (bounded run did not report completion)" >&2
       exit 1
     fi
+    if [ "$name" = pc_effect_art ] && ! grep -Eq '^PC_EFFECT_ART: [1-9][0-9]* checks, 0 errors;' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (bounded run did not report completion)" >&2
+      exit 1
+    fi
     if [ "$name" = pc_gauges ] && ! grep -Eq '^PC_GAUGES: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
       cat "$OUT/$name.log"
       echo "FAIL: $name (bounded run did not report completion)" >&2
@@ -97,6 +102,7 @@ run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_
 run_check pc_surfaces ./tools/godot.sh --headless --script res://tests/test_pc_surfaces.gd
 run_check pc_colour ./tools/godot.sh --headless --script res://tests/test_pc_colour.gd
 run_check pc_sprites ./tools/godot.sh --headless --script res://tests/test_pc_sprites.gd
+run_check pc_effect_art ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_effect_art.gd
 run_check pc_tandem_frame ./tools/godot.sh --headless --script res://tests/test_pc_tandem_frame.gd
 run_check pc_plate_art ./tools/godot.sh --headless --script res://tests/test_pc_plate_art.gd
 run_check pc_genesis_style ./tools/godot.sh --headless --script res://tests/test_pc_genesis_style.gd

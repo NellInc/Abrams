@@ -10,6 +10,7 @@ from tools.extract_genesis_effects import COUNT, DATA_START, ROM_HASH, TABLE, de
 from tools.extract_genesis_vdp import VDP, word
 from tools.inspect_scenarios import decode_resource
 from tools.pc_bitmaps import decode_bitmaps
+from tools.inspect_shapes import inspect_shapes
 
 ROOT = Path(__file__).resolve().parents[1]
 ROM = ROOT / "GENESIS/M-1 Abrams Battle Tank (USA, Europe).md"
@@ -38,6 +39,15 @@ class GenesisEffectDecoderTests(unittest.TestCase):
 
 @unittest.skipUnless(ROM.exists(), "Requires the user's local Genesis ROM")
 class LocalGenesisEffectsTests(unittest.TestCase):
+    def test_pc_shape_roots_define_the_nine_bound_detail_variants(self):
+        shapes = inspect_shapes(decode_resource((ROOT / "GAME/SHAPE.TBL").read_bytes()))["shapes"]
+        for phase in range(3):
+            source = shapes[183 + phase]
+            self.assertEqual(source["index"], 183 + phase)
+            self.assertEqual([s["word"] for s in source["selectors"]], [16, 8, 4])
+            self.assertEqual([s["target"] for s in source["selectors"]], [33696 + phase * 26 + lod * 2 for lod in range(3)])
+            self.assertEqual([s["hex"] for s in source["opaque_commands"]], [f"80 {15 + phase + lod * 18:02x}" for lod in range(3)])
+
     def test_pinned_directory_and_complete_pc_pixel_correspondence(self):
         rom = ROM.read_bytes()
         self.assertEqual(hashlib.sha256(rom).hexdigest(), ROM_HASH)

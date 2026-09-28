@@ -1954,3 +1954,63 @@ and the reproducible release candidate. Continue with effect selection/timing
 and complete animation sets before enabling their PC-driven bindings. Source
 extracts and generated media remain ignored/local. No push or publication.
 The five pre-existing untracked vehicle-study files remain untouched.
+
+
+## PC-selected high-resolution impact integration (2026-09-28)
+
+The preceding continuation produced source-recovery checkpoint `cff6041`, with
+64 verified native Genesis bitmaps and three unselected art studies. This
+continuation integrated those three individual donors across nine verified PC
+impact bitmaps. The broader remaster goal remains active and incomplete.
+
+The original `SHAPE.TBL` proves the three roots/detail variants for each of
+shapes 183, 184 and 185. Runtime selection requires an observed original sprite,
+exact source pixels/mask/dimensions/flags, matching shape/root/bitmap and known
+ordinary palette. Original bounds, row padding, clips and ordered draw stream
+own placement and occlusion. Unknown/thermal palettes or missing art retain the
+original renderer. `--original-effects` provides an explicit comparison mode.
+The three high-resolution images are selected in the local manifest; earlier
+rejected atlases and all prompts, hashes and unchanged extracts remain retained.
+
+Self-review: the implementing assistant selected and viewed these generated
+images and the native Play capture. This is not Nell's art acceptance. Alpha
+contours are redrawn, with an alpha-0.5 runtime cutout; original silhouette masks
+are not preserved pixel-for-pixel. Tactical readability remains a review boundary.
+There is no gameplay-state mutation, additional visibility query or effect timer.
+
+Native Compatibility tests at 4x and 5x span 12,217,344 rendered pixels and
+27,521 independent authored-colour samples, maximum RGB channel error one byte.
+Outside-bound changes are zero; both painter orders, clips and original palette
+fallback pass. Existing original-sprite regression passes 57,546 exact pixel
+checks. All 261 recorded render passes retain their source packets and select
+exactly the original seven observed impact draws. Full receipts and reproduction
+commands are in `pc-effect-art-integration.md`.
+
+Actual Play A/B captures stop on source effect 52 at original sequence 712. The
+original image and source metadata match, and the 552 changed presentation pixels
+remain inside the effect. Four UI-owned fractional reticle-edge pixels initially
+failed a naive equality check. Their existing 80% sight/20% scenery blend predicts
+both original and new RGB exactly; no unexplained UI changes remain. No reticle
+code was changed to hide the comparison failure.
+
+The separate 1,020-frame native input replay has identical requests, bridge
+packet hashes, full conventional-RAM hashes and packed original-video hashes
+with art enabled and disabled. Per run this audits 668,467,200 RAM bytes and
+261,120,000 callback-video bytes, sequences 607 through 1626. Final source frames
+and metadata also match. This is a bounded replay proof, not all-game parity or
+whole-emulator-state identity.
+
+An initial headless failure (`source animation sequence changed`) exposed a
+false palette rejection: nested Godot array equality distinguished JSON floats
+from constant ints. Per-channel numeric checks fixed it; the retained second
+headless run passes 648 checks. Aggregate `artifacts/validation-20260928T050146Z`
+has terminal exit 0, all 37 stages and 255 Python tests pass. The later test-only
+native-scale option passed in the completed 5x run. Optional Impeccable was not
+available; no dependency was installed. No original game, emulator or reference
+files changed, and no push or publication was performed.
+
+Remaining outcomes include the other 55 effect bitmaps and palette/overlay
+families, remaining high-resolution world/UI/animation art, complete audio,
+pacing, mission/campaign/save parity and a reproducible release candidate. Keep
+the parent goal open. All five pre-existing untracked vehicle-study files remain
+untouched; local source and generated media remain excluded from distribution.

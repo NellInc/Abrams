@@ -37,7 +37,7 @@ is still being recovered; no overall completion percentage is justified.
 | Menus, pause, saves, scores, endings | Some Genesis menus captured; full families unverified | Original joystick prompt, main/submenus, scenario values, typed names, mission headings and summary/score text use refined outlines; original selection colours, cursor and input remain | Remaining saved-game/end-state variants and nonuniform-background text; menu frames and moving backdrop remain original |
 | World vehicles and objects | Genesis imagery/palette available; geometry/variant correspondence incomplete | Original PC geometry and visibility live; earlier PC model studies are unaccepted | Genesis-first materials/detail for each class; maintain PC silhouettes where visibility matters; all views, damage and effects |
 | Terrain, buildings and vegetation | Native scenes and palette captured in part | Grass and seven selected original surfaces have detail | Remaining terrain/object materials, horizon variants and source-consistent silhouettes |
-| Explosions, smoke, tracers and damage overlays | All 64 native masked Genesis bitmaps extracted; shapes and masks match PC, with Genesis palette differences; original-blitter oracle and two native effect frames verified | Three isolated high-resolution impact/smoke studies remain unselected; original PC effects retained live | Recover animation-family selection and other palette/overlay variants, finish all authored frames, bind to original timing and occlusion |
+| Explosions, smoke, tracers and damage overlays | All 64 native masked Genesis bitmaps extracted; shapes and masks match PC, with Genesis palette differences; original-blitter oracle and two native effect frames verified | Three Genesis-derived impact phases live across nine PC-selected detail variants; source gates, clip, ordered occlusion and original-boundary replay verified | Remaining 55 bitmaps and palette/overlay families, broader runtime visibility, authored transparency/tactical-readability review and human art acceptance |
 | Fonts, cursors and interface symbols | Four PC faces decoded; all 95 printable Genesis stencil glyphs match PC STENCIL | Four optically refined outline faces cover credits, dedication, verified cockpit/arming/office text and original font draws across START/BRIEF/END; fixed cells and current highlight colours remain | Bitmap-baked captions/logos, other nonuniform-background text, remaining Genesis font families and symbols; the independently verified menu cursor intentionally remains original pixel art |
 
 ## Current source and output pointers
@@ -93,6 +93,9 @@ Display evidence is in `pc-display-research.md`. The original target-selection
 box and remaining display/platform acceptance remain open work.
 
 Genesis effect resource offsets, original-instruction checks, native palette
-evidence, capture-provenance repair and unselected art studies are documented
-in `genesis-effects-research.md`. Extracted resources are a source milestone;
-they do not close the animation family or prove live remaster acceptance.
+evidence and capture-provenance repair are documented in
+`genesis-effects-research.md`. The three selected high-resolution impact donors,
+nine original-PC bindings, native colour/occlusion checks and 1,020-frame
+source-boundary comparison are documented in `pc-effect-art-integration.md`.
+This subset does not close the effect family or prove unchanged tactical
+readability of the redrawn transparency.

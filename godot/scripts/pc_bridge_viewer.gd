@@ -40,6 +40,8 @@ var fps := 59.9227
 var closing := false
 var capture := false
 var capture_done := false
+var capture_effect := -1
+var capture_effect_seen := false
 var samples := 0
 var output: String
 var auto_steps := [[3, ["c"]], [30, []], [30, ["kp6"]], [30, []], [3, ["kp5"]], [60, []], [3, ["space"]], [300, []]]
@@ -89,6 +91,9 @@ func _initialize() -> void:
 		var terrain := preload("res://scripts/pc_terrain_style.gd").new()
 		if terrain.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")):
 			draw_view.terrain_style = terrain
+	if trace_mode and cockpit_art_requested and not wire_mode and "--original-effects" not in args:
+		var effects := preload("res://scripts/pc_effect_art.gd").new()
+		if effects.load_assets(directory): draw_view.effect_art = effects
 	if trace_mode and cockpit_art_requested and "--original-text" not in args:
 		tandem_frame.typography.load_sources(directory.path_join("GAME"))
 	if trace_mode and "--audio" in args:
@@ -178,6 +183,17 @@ func _initialize() -> void:
 			# Same ordinary input pulses as capture_pc_render_trace.py's text
 			# profile. No RAM edits or presentation-created crew messages.
 			for i in 7: auto_steps.append_array([[3,["s"]],[30,[]]])
+	if capture and "--capture-effect" in args:
+		var index := args.find("--capture-effect")+1
+		var requested: String = args[index] if index<args.size() else ""
+		var conflict := ["--capture-crew","--capture-station","--capture-information","--capture-menu","--capture-intro","--capture-briefing","--capture-motor-pool"].any(func(flag):return flag in args)
+		if boot_mode or not trace_mode or conflict or requested not in ["51","52","53"]:
+			bridge.failure = "Effect capture requires --trace, a supported bitmap (51/52/53), and no other capture route"
+		else:
+			capture_effect = int(requested)
+			auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_effect_steps.json"))
+			# Observe each original frame after firing; never synthesize a phase.
+			for i in 300: auto_steps.append([1,[]])
 
 func _label(text: String, size: int) -> Label:
 	var label := Label.new()
@@ -350,7 +366,10 @@ func _process(delta: float) -> bool:
 				bridge.step(step[0], step[1])
 			elif not capture_done:
 				capture_done = true
-				_capture.call_deferred()
+				if capture_effect>=0 and not capture_effect_seen:
+					bridge.failure = "Original effect was not observed before capture route ended"
+					_close()
+				else: _capture.call_deferred()
 		else:
 			_advance_live_frame()
 	if capture and Time.get_ticks_msec() - started > _capture_deadline_msec():
@@ -403,6 +422,11 @@ func _apply_sample(message: Dictionary) -> void:
 				displayed.palette_rgb = previous_presentation.palette_rgb
 			draw_view.presentation_palette = genesis_style.for_original(displayed.palette_rgb) if genesis_colours_requested else []
 			draw_view.apply_pass(displayed)
+			if capture_effect>=0 and not capture_effect_seen:
+				for object: Dictionary in displayed.objects:
+					if object.get("sprite_status","")=="observed" and int(object.get("bitmap_index",-1))==capture_effect:
+						capture_effect_seen = true
+						auto_index = auto_steps.size()
 			frame = drawing.camera.duplicate(true)
 			frame.matrix_q14_columns = [16384,0,0,0,16384,0,0,0,16384]
 			frame.world_position_raw = [0,0,0]
@@ -468,6 +492,7 @@ func _capture() -> void:
 		"high_resolution_text_runs": tandem_frame.typography.runs.size() if trace_mode else 0,
 		"terrain_detail": draw_view.terrain_active if trace_mode else false,
 		"terrain_polygons": draw_view.terrain_polygon_count if trace_mode else 0,
+		"effect_art": draw_view.effect_art_ids if trace_mode else [],
 		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],
 		"genesis_art": tandem_frame.genesis_art_enabled if trace_mode else false,
 		"instrument_art": tandem_frame.instrument_art.active.map(func(item): return item.name) if trace_mode else [],

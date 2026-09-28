@@ -101,7 +101,9 @@ the earlier valid frame-24 capture. Receipt:
 
 Built-in image generation produced three individual native-reference studies
 for the bright burst, fading fragments and smoke-ring frames 15, 16 and 17.
-They remain **unselected art candidates**, with original live effects unchanged.
+At the source-recovery checkpoint they remained unselected. The subsequent
+integration selected all three for nine verified PC impact bitmaps; current
+binding, native proof and remaining limits are in `pc-effect-art-integration.md`.
 The implementing assistant produced and visually reviewed these candidates;
 that is self-review, not independent art acceptance.
 
@@ -116,14 +118,14 @@ the inner smoke curl. Their native-scale mask overlap scores are approximately
 
 The smoke candidate's conspicuous preview speckles are very low-alpha residue:
 there are no colored/white residue pixels above alpha 31/255, and proper
-compositing is visually clean. Filtering and edge-touching components still need
-checking before a runtime selection. The authored transparency is retained.
+compositing is visually clean. The later runtime uses linear filtering and
+an alpha-0.5 cutout, tested with native clipping and painter ordering. The
+source file and its authored transparency remain unchanged.
 
-Next work is animation-family selection/timing recovery, a consistent authored
-set for all required phases/detail levels, and PC-driven binding with verified
-size, placement, clip, painter order and visibility. Do not infer timing from
-the ordering of files, substitute Genesis gameplay, or mark the effect family
-complete from these source extracts or art studies.
+The impact subset now has PC-selected timing and detail levels, with verified
+bounds, clipping and painter ordering. Remaining work covers the other 55
+bitmaps, palette/overlay families, wider runtime visibility and art acceptance.
+The source extracts and this bounded integration do not complete the family.
 
 ## Reproduction and gate
 
@@ -137,7 +139,7 @@ python3 -m unittest tests.test_genesis_effects tests.test_genesis_graphics -v
 ./tools/validate.sh
 ```
 
-The focused gate passes 19 tests. The aggregate gate
+At the source-recovery checkpoint the focused gate passed 19 tests. Its aggregate gate
 `artifacts/validation-20260928T043521Z` exits zero: **36 stages and 254 Python
 tests pass**, including original-reference preservation. No Godot runtime
 graphics were changed in this pass. No push, publication or redistribution.

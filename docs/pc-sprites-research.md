@@ -8,9 +8,12 @@ screen position, clipping rectangle and draw order come from the running origina
 The seven sprite omissions in the preceding four-station trace are now rendered.
 Godot never decides when an effect advances, appears or disappears.
 
-This is native sample extraction and faithful playback. The effects remain
-original-resolution artwork pending remastering. Cockpit/HUD, four-byte opaque
-commands, integer polygon edges and full game/campaign parity remain open.
+This document records native sample extraction and faithful original playback.
+A later integration now selects three Genesis-derived high-resolution impact
+images across nine verified PC bitmap variants; see `pc-effect-art-integration.md`
+for its source gates, native checks and limits. Other effects retain original
+art. Four-byte opaque commands, integer polygon edges, remaining graphics and
+full game/campaign parity remain open.
 
 ## Resource and runtime layout
 
@@ -149,6 +152,8 @@ python3 tools/extract_pc_effects.py \
 ./tools/validate.sh
 ```
 
-The whole remaster goal remains open. High-resolution effects should replace
-these samples only after matching their original anchors, extents, timing and
-information visibility, with full palette/alpha validation of the new artwork.
+The whole remaster goal remains open. The later impact-art integration preserves
+original anchors, bounds, clips, source timing and painter order, with native
+colour tests. Its authored alpha contours differ from the original pixel masks;
+broader tactical-readability and human acceptance remain separate open gates.
+All unsupported source identities and palettes keep the original fallback.
