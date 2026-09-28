@@ -32,6 +32,7 @@ func run() -> void:
 	ui.fill(Color.WHITE)
 	frame.instrument_art.set_frame(source,ui,tags)
 	check(frame.instrument_art.active.size()==9,"all nine unchanged source instrument cells qualify")
+	icon_geometry()
 	for kind in ["pixel","ownership","plate"]:
 		var changed := source.duplicate()
 		var mask := ui.duplicate()
@@ -144,10 +145,69 @@ func fixtures(path: String, output: String) -> void:
 		changed_total += changed
 		result.save_png(output.path_join(entry.stage+".png"))
 		samples.append({"stage":entry.stage,"plates":frame.cockpit_art_ids.duplicate(),"instrument_cells":frame.instrument_art.active.map(func(cell): return cell.name),"gauges":frame.instrument_art.gauges.map(func(cell): return cell.name),"labels":frame.typography.runs.map(func(label):return label.text),"changed_pixels":changed})
+		if entry.stage=="gunner-settled":
+			gunner_join(result)
+			icon_sampling(result,4)
+			viewport.size=Vector2i(1920,1200)
+			frame.size=Vector2(1920,1200)
+			await process_frame
+			RenderingServer.force_draw(false)
+			RenderingServer.force_sync()
+			var large := viewport.get_texture().get_image()
+			icon_sampling(large,6)
+			large.save_png(output.path_join("gunner-settled-1920.png"))
+			viewport.size=Vector2i(1280,800)
+			frame.size=Vector2(1280,800)
 		if entry.stage=="damage-settled": await damaged_schematic(source,ui,tags,packet,world,output)
 	check(changed_total>100000,"real high-resolution materials are visible")
 	var file := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
 	file.store_string(JSON.stringify({"fixture":path,"fixture_sha256":FileAccess.get_sha256(path),"checks":checks,"errors":errors,"coverage":coverage,"changed_pixels":changed_total,"samples":samples},"  "))
+
+# Independently measured illustration bounds, excluding the blank donor count
+# wells. The old full-cell crops squeezed the actual shells into stubby bullets.
+const ICON_CROPS = [Rect2(1182,652,126,44),Rect2(1182,736,116,40),
+	Rect2(1182,812,119,43),Rect2(1182,893,124,48),Rect2(1461,651,58,44),
+	Rect2(1451,739,85,32),Rect2(1440,817,102,38),Rect2(1438,892,98,52)]
+
+func icon_geometry() -> void:
+	for i in ICON_CROPS.size():
+		var item: Dictionary = Instruments.CELLS[i]
+		var box := Instruments.fitted_icon_rect(item)
+		check(item.donor==ICON_CROPS[i],"tight original-aspect illustration crop: "+item.name)
+		check(Rect2(item.source).grow(-1).encloses(box),"icon fits with one-pixel inset: "+item.name)
+		check(box.get_center().is_equal_approx(Rect2(item.source).get_center()),"icon centred: "+item.name)
+		check(is_equal_approx(box.size.x/box.size.y,ICON_CROPS[i].size.x/ICON_CROPS[i].size.y),"no anisotropic icon stretch: "+item.name)
+
+func gunner_join(result: Image) -> void:
+	var art: Image = frame.gunner_art_texture.get_image()
+	# Upper/lower samples straddle the former y=123 tear. Last probes require
+	# real right-side frame/screws rather than an enlarged blank silver strip.
+	var probes := [Vector4i(68,491,84,584),Vector4i(68,492,84,585),
+		Vector4i(76,491,94,584),Vector4i(76,492,94,585),Vector4i(92,492,114,585),
+		Vector4i(1208,491,1497,584),Vector4i(1208,492,1497,585),Vector4i(1248,492,1546,585),
+		Vector4i(880,520,1084,608),Vector4i(880,780,1084,963),Vector4i(1252,600,1566,701),
+		Vector4i(466,722,563,854),Vector4i(466,730,541,864),Vector4i(466,735,534,887),
+		Vector4i(810,730,1046,864),Vector4i(810,735,1052,887)]
+	for p in probes:
+		check(result.get_pixel(p.x,p.y).to_rgba32()==art.get_pixel(p.z,p.w).to_rgba32(),"continuous gunner shell/right surround: "+str(p))
+
+func icon_sampling(result: Image, scale: int) -> void:
+	var art: Image = frame.gunner_art_texture.get_image()
+	for i in ICON_CROPS.size():
+		var cell: Rect2i = Instruments.CELLS[i].source
+		var crop: Rect2 = ICON_CROPS[i]
+		var factor := minf((cell.size.x-2.0)/crop.size.x,(cell.size.y-2.0)/crop.size.y)
+		var extent := crop.size*factor
+		var start := Vector2(cell.position)+Vector2(cell.size)/2.0-extent/2.0
+		for fraction in [0.15,0.35,0.55,0.75,0.85]:
+			var p := Vector2i((start+extent*Vector2(fraction,0.5))*scale)
+			var uv := ((Vector2(p)+Vector2(0.5,0.5))/scale-start)/extent
+			var donor_point := crop.position+uv*crop.size-Vector2(0.5,0.5)
+			var a := Vector2i(donor_point.floor())
+			var f := donor_point-Vector2(a)
+			var expected := art.get_pixelv(a).lerp(art.get_pixelv(a+Vector2i(1,0)),f.x).lerp(art.get_pixelv(a+Vector2i(0,1)).lerp(art.get_pixelv(a+Vector2i(1,1)),f.x),f.y)
+			var actual := result.get_pixelv(p)
+			check(absf(expected.r-actual.r)<=3.0/255 and absf(expected.g-actual.g)<=3.0/255 and absf(expected.b-actual.b)<=3.0/255,"uniform native icon sampling %dx %s at %s"%[scale,Instruments.CELLS[i].name,p])
 
 func damaged_schematic(source: Image, ui: Image, tags: Image, packet: Dictionary, world: Texture2D, output: String) -> void:
 	# A single original overwrite must retain the ENTIRE original schematic,

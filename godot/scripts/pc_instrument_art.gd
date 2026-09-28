@@ -5,14 +5,18 @@ const SOURCE_HASH = "83e46895044a85a4e3abdd8daf836605a40cbb475c02fe2c8b3fe0664da
 # Source rectangles are PC coordinates. Donor rectangles are measured pixels
 # in the Genesis-derived 1586x992 illustration, never guessed gameplay values.
 const CELLS = [
-	{"name":"heat_icon","source":Rect2i(240,141,23,12),"donor":Rect2(1106,649,205,51)},
-	{"name":"sabot_icon","source":Rect2i(240,154,23,11),"donor":Rect2(1106,730,205,49)},
-	{"name":"ax_icon","source":Rect2i(240,167,23,11),"donor":Rect2(1106,810,205,51)},
-	{"name":"coax_icon","source":Rect2i(240,180,23,11),"donor":Rect2(1106,893,205,47)},
-	{"name":"smoke_icon","source":Rect2i(285,141,23,12),"donor":Rect2(1347,652,198,44)},
-	{"name":"temperature_label","source":Rect2i(285,154,23,11),"donor":Rect2(1347,732,198,45)},
-	{"name":"display_icon","source":Rect2i(285,167,23,11),"donor":Rect2(1347,811,198,44)},
-	{"name":"target_icon","source":Rect2i(285,180,23,11),"donor":Rect2(1347,894,198,45)},
+	{"name":"heat_icon","source":Rect2i(240,141,23,12),"donor":Rect2(1182,652,126,44),
+		"outline":[Vector2(0,0),Vector2(20,0),Vector2(20,3),Vector2(82,3),Vector2(82,7),Vector2(91,7),Vector2(118,17),Vector2(126,22),Vector2(118,28),Vector2(91,37),Vector2(82,37),Vector2(82,41),Vector2(20,41),Vector2(20,44),Vector2(0,44)]},
+	{"name":"sabot_icon","source":Rect2i(240,154,23,11),"donor":Rect2(1182,736,116,40),
+		"outline":[Vector2(0,0),Vector2(19,0),Vector2(19,3),Vector2(70,3),Vector2(70,6),Vector2(81,8),Vector2(116,20),Vector2(81,32),Vector2(70,34),Vector2(70,37),Vector2(19,37),Vector2(19,40),Vector2(0,40)]},
+	{"name":"ax_icon","source":Rect2i(240,167,23,11),"donor":Rect2(1182,812,119,43),
+		"outline":[Vector2(0,0),Vector2(20,0),Vector2(20,3),Vector2(81,3),Vector2(81,8),Vector2(90,8),Vector2(119,21),Vector2(90,35),Vector2(81,35),Vector2(81,40),Vector2(20,40),Vector2(20,43),Vector2(0,43)]},
+	{"name":"coax_icon","source":Rect2i(240,180,23,11),"donor":Rect2(1182,893,124,48),
+		"outline":[Vector2(0,48),Vector2(0,13),Vector2(6,1),Vector2(12,12),Vector2(19,1),Vector2(25,12),Vector2(32,1),Vector2(39,12),Vector2(45,1),Vector2(52,12),Vector2(59,1),Vector2(65,12),Vector2(72,1),Vector2(79,12),Vector2(85,1),Vector2(92,12),Vector2(99,1),Vector2(106,13),Vector2(109,4),Vector2(118,1),Vector2(124,8),Vector2(124,48)]},
+	{"name":"smoke_icon","source":Rect2i(285,141,23,12),"donor":Rect2(1461,651,58,44)},
+	{"name":"temperature_label","source":Rect2i(285,154,23,11),"donor":Rect2(1451,739,85,32)},
+	{"name":"display_icon","source":Rect2i(285,167,23,11),"donor":Rect2(1440,817,102,38)},
+	{"name":"target_icon","source":Rect2i(285,180,23,11),"donor":Rect2(1438,892,98,52)},
 	{"name":"speed_scale","source":Rect2i(13,178,78,7),"donor":Rect2(76,868,357,29)},
 ]
 var source_plate: Image
@@ -157,12 +161,35 @@ func _beveled_cell(box: Rect2, color: Color, bevel: float) -> void:
 func _draw() -> void:
 	if donor==null: return
 	draw_set_transform(Vector2.ZERO,0,size/Vector2(320,200))
-	for item in active: draw_texture_rect_region(donor,Rect2(item.source),item.donor)
+	for item in active:
+		if item.name=="speed_scale":
+			draw_texture_rect_region(donor,Rect2(item.source),item.donor)
+			continue
+		# The illustration contains blank space for a count to its left. That
+		# space is NOT part of the icon. Fit the tight artwork crop uniformly,
+		# centred in the proven cell, over the original well's flat background.
+		var box := fitted_icon_rect(item)
+		draw_rect(Rect2(item.source),source_plate.get_pixelv(item.source.position))
+		if item.has("outline"):
+			var points := PackedVector2Array()
+			var uv := PackedVector2Array()
+			for point: Vector2 in item.outline:
+				points.append(box.position+point*box.size/item.donor.size)
+				uv.append((item.donor.position+point)/Vector2(donor.get_size()))
+			# Textured silhouettes avoid importing the generated well colours.
+			draw_polygon(points,PackedColorArray([Color.WHITE]),uv,donor)
+		else: draw_texture_rect_region(donor,box,item.donor)
 	for gauge in gauges:
 		if gauge.kind=="lamp": _beveled_cell(Rect2(gauge.source),gauge.color,0.4)
 		else:
 			for i in gauge.count:
 				_beveled_cell(Rect2(gauge.source.position+Vector2i(i*2,0),Vector2(1,6)),gauge.colors[i],0.18)
+
+static func fitted_icon_rect(item: Dictionary) -> Rect2:
+	var cell := Rect2(item.source).grow(-1.0)
+	var factor: float = minf(cell.size.x/item.donor.size.x,cell.size.y/item.donor.size.y)
+	var extent: Vector2 = item.donor.size*factor
+	return Rect2(cell.get_center()-extent/2.0,extent)
 
 func _layout_orientation() -> void:
 	if orientation.source_rect.size==Vector2i.ZERO: return

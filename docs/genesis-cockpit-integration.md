@@ -65,6 +65,35 @@ unknown or overwritten regions fall back to the actual current PC pixels.
 
 ## Rendering repairs and retained failures
 
+### Gunner composition correction, 2026-09-28
+
+Nell rejected the assembled gunner screen for a horizontal tear and distorted
+ammunition. Earlier protected-pixel checks passed while these visual defects
+remained. The previous visual review was insufficient.
+
+At PC row 123 the upper and lower frame used discontinuous horizontal donor
+coordinates. The right console sampled a seven-pixel-high blank silver strip
+instead of its actual surround. The corrected mapping joins the outer diagonals
+at identical coordinates, transitions only the side metalwork, and retains the
+right surround and screws. The central bevel now flares continuously into the
+wider heading opening instead of switching horizontal anchors at row 184.
+
+The eight icon cells previously compressed whole donor wells, including their
+empty count areas. Tight illustration crops now fit uniformly with a one-source-
+pixel inset. Textured silhouette polygons isolate the four coloured ammunition
+illustrations from the generated well backgrounds; the original verified well
+colours remain. Smoke, temperature, display and target symbols also retain their
+aspect ratios. The existing donor PNG, source rectangles, original counts,
+ownership guards and fallback rules are unchanged. No raster assets were edited.
+
+The repaired native test checks independent donor probes at the joins and right
+surround, tight crops, containment, centring and uniform icon sampling at both
+1280x800 and 1920x1200. These tests supplement whole-frame visual inspection;
+they do not establish artistic acceptance. The retained pre-repair Play capture
+fails eight of the first eleven join/surround probes.
+
+Current repair evidence and terminal results are in `WORK_LEDGER.md`.
+
 Initial native captures exposed duplicated gauges and displaced driver framing.
 Component-specific donor registration corrected them. The old captures remain
 under `pc-genesis-gunner-viewer-01` and `pc-genesis-driver-viewer-01`.

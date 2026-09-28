@@ -30,6 +30,49 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Gunner frame and ammunition correction, 2026-09-28
+
+Nell's `download.png` exposed a broken join across the gunner surround and
+incorrect ammunition proportions. The prior visual acceptance claim was wrong;
+passing source-ownership checks had not caught bad component registration.
+
+Corrected the side-frame join at PC row 123, restored the donor's actual right
+surround instead of stretching a blank silver strip, and made the central bevel
+transition continuously into the wider heading frame. Eight instrument icons
+now use tight, uniformly scaled crops; four coloured ammunition silhouettes
+are drawn over the original verified cell background. No donor image, original
+count, source rectangle, visibility guard, emulator or input path changed.
+
+Evidence:
+
+* `artifacts/pc-cockpit-repair-native-02/report.json`: 21 recorded station/status
+  frames, all five plate IDs, 12,238,012 checks, zero errors, terminal exit 0.
+  New crop/aspect/centering checks and native icon sampling cover 1280x800 and
+  1920x1200; sixteen donor probes cover both repaired joins and the right frame.
+  Existing protected-pixel and damage-fallback checks still pass.
+* `artifacts/pc-cockpit-repair-play-03/`: actual public launcher capture,
+  terminal exit 0. The complete 1280x800 composite and native 1920x1200 fixture
+  were visually inspected. This is the implementing assistant's self-review,
+  not Nell's art acceptance. The fixture deliberately uses source-crop scenery;
+  the actual Play capture shows the paired high-resolution world.
+* `artifacts/pc-cockpit-repair-01/before-after-final.json`: original framebuffer,
+  Godot world image and complete capture metadata are identical to the rejected
+  `pc-world-bearing-play-01` capture. The old composite passes only four of
+  sixteen new join probes; the repaired composite passes all sixteen.
+* `artifacts/validation-20260928T021709Z`: final aggregate exit 0, all 32 stages
+  and 234 Python tests pass. Source reference preservation passes. Optional
+  Impeccable was unavailable; no dependency was installed.
+
+The first local repair capture retained screw shear from blending every panel
+column; blending only the outer side-frame columns corrected it. A subsequent
+1920-pixel inspection exposed the central heading-bevel cut, now also corrected.
+Those intermediate captures remain under `pc-cockpit-repair-play-01/02` and
+`pc-cockpit-repair-native-01`; they are superseded, not final acceptance images.
+
+This fixes the reported composition faults. Cockpit-family completion and the
+broad remaster remain open. Local only, no remote publication. Five unrelated
+untracked vehicle-study files remain untouched.
+
 ## Transparent bearing lettering, 2026-09-28
 
 Completed the next text presentation pass: the original BEARING label and its

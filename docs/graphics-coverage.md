@@ -22,7 +22,7 @@ is still being recovered; no overall completion percentage is justified.
 | Family | Genesis source availability | Authored art / live status | Required remaining work |
 |---|---|---|---|
 | Four cockpit surrounds | All four extracted | Five-image cockpit/status pack; four stations live with original visibility and moving roof | Remaining trims and aliasing at original silhouettes; all state variants and motion acceptance |
-| Gunner static instruments | Present in gunner extract | Nine illustrated cells live, pixel/provenance gated | Other symbols and colour/state variants |
+| Gunner static instruments | Present in gunner extract | Nine illustrated cells live, pixel/provenance gated; ammunition and adjacent symbols now use tight, aspect-preserving crops after Nell rejected the stretched bindings | Other symbols and colour/state variants; human art acceptance |
 | Dynamic gauges and reticles | Corresponding Genesis gauges visible | PC values use verified scalable type; gunner/commander speed, commander fuel and gunner/driver temperature now have visible-pixel-verified vector geometry; source-draw/visible-frame-verified rotating hull/turret diagram and moving grid live in both stations; transparent bearing label/value now use polished original-style outlines | Reticles, further warning/state variants and native acceptance; no hidden information |
 | Systems status | Native CHECK DAMAGE captured exactly | Genesis background and pristine schematic live; twelve labels and six values scalable | Actual damaged schematics and lamp art; original fallback remains until verified |
 | Title and credits | Title and all four expanding flash poses extracted with exact VDP reconstruction | Title, four hi-res flash poses and eight original-font credit cards live, selected by complete original PC frames | Publisher splash, other transition variants and human art acceptance; moving 3D menu backdrop remains original |
@@ -79,3 +79,8 @@ Dynamic orientation evidence, source references and bounded acceptance are in
 
 The transparent bearing strip now has source-verified outlines over the paired
 world; receipts and remaining boundaries are in `pc-world-bearing-text.md`.
+
+The gunner frame-join and ammunition correction is documented in
+`genesis-cockpit-integration.md`. Earlier passing preservation checks did not
+prove coherent composition; native join and icon-sampling regressions now cover
+the reported faults. This correction does not close the cockpit family.

@@ -148,26 +148,40 @@ vec2 gunner_donor(vec2 p) {
 	vec2 q = p;
 	if (p.x < 103.0) {
 		q.x = p.x < 11.0 ? p.x*5.5/11.0 : (p.x < 94.0 ? mix(5.5,101.0,(p.x-11.0)/83.0) : mix(101.0,104.0,(p.x-94.0)/9.0));
-		if (p.y < 139.0) q.y = mix(118.2,136.4,(p.y-123.0)/16.0);
+		if (p.y < 139.0) q.y = mix(118.0,136.4,(p.y-123.0)/16.0);
 		else if (p.y < 174.0) q.y = mix(136.4,166.7,(p.y-139.0)/35.0);
 		else if (p.y < 176.0) q.y = mix(166.7,170.4,(p.y-174.0)/2.0);
 		else if (p.y < 194.0) q.y = mix(170.4,191.6,(p.y-176.0)/18.0);
 		else q.y = mix(191.6,200.0,(p.y-194.0)/6.0);
 	} else if (p.x < 216.0) {
-		float l = p.y < 184.0 ? 125.0 : 110.0;
-		float r = p.y < 184.0 ? 195.0 : 210.0;
+		// The heading opening is wider than the orientation screen. Flare the
+		// intervening bevel continuously instead of cutting both side rails.
+		float heading = smoothstep(178.0,184.0,p.y);
+		float l = mix(125.0,110.0,heading);
+		float r = mix(195.0,210.0,heading);
 		q.x = p.x < 124.0 ? mix(104.0,l,(p.x-103.0)/21.0) : (p.x < 194.0 ? mix(l,r,(p.x-124.0)/70.0) : mix(r,216.0,(p.x-194.0)/22.0));
-		if (p.y < 136.0) q.y = mix(118.2,130.3,(p.y-123.0)/13.0);
+		if (p.y < 136.0) q.y = mix(118.0,130.3,(p.y-123.0)/13.0);
 		else if (p.y < 183.0) q.y = mix(130.3,174.6,(p.y-136.0)/47.0);
 		else if (p.y < 184.0) q.y = mix(174.6,179.5,p.y-183.0);
 		else if (p.y < 197.0) q.y = mix(179.5,193.3,(p.y-184.0)/13.0);
 		else q.y = mix(193.3,200.0,(p.y-197.0)/3.0);
 	} else {
-		// The six source-owned instrument rectangles retain exact PC positions;
-		// use only the donor's unmarked silver strip for the surrounding chassis.
-		q.x = mix(228.0,280.0,(p.x-216.0)/104.0);
-		q.y = mix(120.0,127.0,(p.y-123.0)/77.0);
+		// Register the actual bank surround, including its outer diagonal and
+		// screws. Stretching a blank silver strip here severed the side frame.
+		if (p.x < 224.0) q.x = mix(216.0,221.5,(p.x-216.0)/8.0);
+		else if (p.x < 265.0) q.x = mix(221.5,266.4,(p.x-224.0)/41.0);
+		else if (p.x < 269.0) q.x = mix(266.4,270.0,(p.x-265.0)/4.0);
+		else if (p.x < 310.0) q.x = mix(270.0,314.3,(p.x-269.0)/41.0);
+		else q.x = mix(314.3,320.0,(p.x-310.0)/10.0);
+		if (p.y < 139.0) q.y = mix(118.0,128.5,(p.y-123.0)/16.0);
+		else if (p.y < 193.0) q.y = mix(128.5,191.7,(p.y-139.0)/54.0);
+		else q.y = mix(191.7,200.0,(p.y-193.0)/7.0);
 	}
+	// The outer diagonal metalwork meets the upper shell at identical x/y.
+	// Ease only those sides into the lower anchors. Warping the entire panel's
+	// x map vertically would shear its screw heads and internal straight edges.
+	float side = 1.0-smoothstep(30.0,45.0,p.x)+smoothstep(278.0,292.0,p.x);
+	q.x = mix(q.x,p.x,side*(1.0-smoothstep(123.0,136.0,p.y)));
 	return q;
 }
 
