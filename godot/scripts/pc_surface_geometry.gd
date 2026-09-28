@@ -10,7 +10,11 @@ static func near_clip(points: Array, near_y: float) -> Array:
 		var b_in := float(b[1]) >= near_y
 		if a_in != b_in:
 			var t := (near_y - float(a[1])) / (float(b[1]) - float(a[1]))
-			result.append([lerpf(a[0], b[0], t), near_y, lerpf(a[2], b[2], t)])
+			var cut: Array=[lerpf(a[0], b[0], t), near_y, lerpf(a[2], b[2], t)]
+			# Optional surface UVs follow the exact same clipping intersection.
+			if a.size()==5 and b.size()==5:
+				cut.append_array([lerpf(a[3],b[3],t),lerpf(a[4],b[4],t)])
+			result.append(cut)
 		if b_in: result.append(b)
 		a = b
 	return result
@@ -49,6 +53,13 @@ static func line_vertices(a: Array, b: Array, camera: Dictionary) -> Array:
 	var q := [unproject(pa + perpendicular, a[1], camera), unproject(pa - perpendicular, a[1], camera),
 		unproject(pb - perpendicular, b[1], camera), unproject(pb + perpendicular, b[1], camera)]
 	return [q[0], q[1], q[2], q[0], q[2], q[3]]
+
+static func textured_triangles(points: Array, uv: Array, camera: Dictionary) -> Array:
+	if points.size()!=uv.size(): return []
+	var attributed: Array=[]
+	for i in points.size():
+		attributed.append([points[i][0],points[i][1],points[i][2],uv[i].x,uv[i].y])
+	return triangle_vertices(attributed,camera)
 
 static func background_polygons(background: Dictionary, camera: Dictionary) -> Array:
 	var clip: Array = camera.clip

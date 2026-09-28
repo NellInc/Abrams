@@ -95,6 +95,9 @@ func _initialize() -> void:
 	if trace_mode and cockpit_art_requested and not wire_mode and "--original-effects" not in args:
 		var effects := preload("res://scripts/pc_effect_art.gd").new()
 		if effects.load_assets(directory): draw_view.effect_art = effects
+	if trace_mode and cockpit_art_requested and not wire_mode and "--original-vehicles" not in args:
+		var vehicles:=preload("res://scripts/pc_vehicle_art.gd").new()
+		if vehicles.load_assets(directory): draw_view.vehicle_art=vehicles
 	if trace_mode and cockpit_art_requested and "--original-text" not in args:
 		tandem_frame.typography.load_sources(directory.path_join("GAME"))
 	if trace_mode and "--audio" in args:
@@ -494,6 +497,7 @@ func _capture() -> void:
 		"terrain_detail": draw_view.terrain_active if trace_mode else false,
 		"terrain_polygons": draw_view.terrain_polygon_count if trace_mode else 0,
 		"hill_polygons": draw_view.hill_polygon_count if trace_mode else 0,
+		"vehicle_polygons": draw_view.vehicle_polygon_count if trace_mode else 0,
 		"effect_art": draw_view.effect_art_ids if trace_mode else [],
 		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],
 		"genesis_art": tandem_frame.genesis_art_enabled if trace_mode else false,

@@ -9,6 +9,8 @@ var solid_enabled := false
 var presentation_palette: Array = []
 var terrain_style: RefCounted
 var effect_art: RefCounted
+var vehicle_art: RefCounted
+var vehicle_polygon_count := 0
 var effect_art_ids: Array[int] = []
 var _effect_uvs := PackedVector2Array()
 var terrain_active := false
@@ -39,6 +41,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 	terrain_active = false
 	terrain_polygon_count = 0
 	hill_polygon_count = 0
+	vehicle_polygon_count = 0
 	if solid_enabled:
 		_apply_surfaces(pass_data)
 		return
@@ -146,6 +149,11 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 				var kind: int = TerrainStyle.surface_kind(object,polygon,hills) if terrain_active else 0
 				if kind != 0: terrain_polygon_count += 1
 				if kind >= 7: hill_polygon_count += 1
+				var panel: Dictionary=vehicle_art.mapping(object,polygon,pass_data.palette_rgb) if vehicle_art else {}
+				if not panel.is_empty():
+					if not panel.uv.is_empty(): triangles=SurfaceGeometry.textured_triangles(points,panel.uv,frame)
+					kind=panel.kind
+					vehicle_polygon_count+=1
 				_add_triangles(vertices, materials, triangles, int(polygon.colors[1]), pass_data.materials.size(),kind)
 			if not fill or polygon.colors[0] != polygon.colors[1]:
 				var edges: int = points.size() if points.size() > 2 else 1
@@ -164,6 +172,10 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	material.set_shader_parameter("material_patterns",_pattern_texture)
 	material.set_shader_parameter("pattern_width",float(_pattern_texture.get_width()))
 	material.set_shader_parameter("detail_levels",float(levels))
+	if vehicle_polygon_count>0:
+		material.set_shader_parameter("vehicle_panels",vehicle_art.atlas)
+		material.set_shader_parameter("vehicle_colours",vehicle_art.colours(palette,pass_data.materials))
+		material.set_shader_parameter("vehicle_materials",float(material_count))
 	if hill_polygon_count>0:
 		material.set_shader_parameter("hill_detail",terrain_style.hill_texture)
 		material.set_shader_parameter("hill_mean",TerrainStyle.HILL_MEAN)
@@ -190,7 +202,7 @@ func _add_triangles(vertices: PackedVector3Array, materials: PackedVector2Array,
 	for point: Array in points:
 		vertices.append(camera_point(point))
 		materials.append(Vector2(material,kind))
-		_effect_uvs.append(Vector2.ZERO)
+		_effect_uvs.append(Vector2(point[3],point[4]) if kind>=10 and point.size()==5 else Vector2.ZERO)
 
 func _add_effect(vertices: PackedVector3Array, materials: PackedVector2Array, effect: Dictionary, frame: Dictionary) -> void:
 	var rect: Rect2 = effect.rect

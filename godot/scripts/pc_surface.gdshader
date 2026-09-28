@@ -19,6 +19,9 @@ uniform sampler2D impact_burst : filter_linear, repeat_disable;
 uniform sampler2D impact_fading : filter_linear, repeat_disable;
 uniform sampler2D impact_smoke : filter_linear, repeat_disable;
 uniform sampler2D effect_correction : filter_linear, repeat_disable;
+uniform sampler2D vehicle_panels : filter_linear_mipmap_anisotropic, repeat_disable;
+uniform sampler2D vehicle_colours : source_color, filter_nearest, repeat_disable;
+uniform float vehicle_materials;
 varying vec3 original_view;
 
 void vertex() {
@@ -26,7 +29,16 @@ void vertex() {
 }
 
 void fragment() {
-    if (UV.y > 3.5 && UV.y < 6.5) {
+    if (UV.y > 9.5) {
+        vec4 panel = texture(vehicle_panels,UV2);
+        float mean = UV.y < 10.5 ? 0.2262180410 : (UV.y < 11.5 ? 0.2180028921 : 0.2656186350);
+        float fade = 1.0-smoothstep(1024.0,4096.0,original_view.y);
+        // Alpha controls detail only: transparent pixels retain the original
+        // facet. Never discard a vehicle fragment or expose a hidden surface.
+        float level = clamp(round(32.0+(panel.r-mean)*128.0*smoothstep(0.5,0.9,panel.a)*fade),0.0,64.0);
+        if (UV.y > 12.5) level=32.0;
+        ALBEDO=texture(vehicle_colours,vec2((round(UV.x)+0.5)/vehicle_materials,(level+0.5)/65.0)).rgb;
+    } else if (UV.y > 3.5 && UV.y < 6.5) {
         vec4 effect;
         if (UV.y < 4.5) effect = texture(impact_burst,UV2);
         else if (UV.y < 5.5) effect = texture(impact_fading,UV2);

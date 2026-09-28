@@ -24,6 +24,11 @@ music and sound-effect references for a faithful presentation upgrade.
   palette. Original PC instruments, map, text and visibility remain authoritative.
   The driver's overhead assembly follows its original turret-relative drawing.
   Grass and road surfaces now carry world-anchored high-resolution detail.
+  T-62, M1A1 and M113 side faces now carry Genesis-derived track/armour detail,
+  with source-proportioned UVs and model-specific Genesis greys. Their original
+  visible faces and drawing order remain authoritative. `--original-vehicles`
+  restores the previous vehicle presentation. Other vehicle surfaces and types
+  remain unfinished; see `docs/pc-vehicle-art-integration.md`.
   Pixel-verified instrument values, weapon status and eligible crew messages
   now use high-resolution outline reconstructions of the original typefaces
   inside their original display cells.

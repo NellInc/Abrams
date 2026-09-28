@@ -2134,3 +2134,61 @@ integration, then animation and remaining classes/states. Truck mapping, special
 draws and visible original-Genesis comparison are still required. Whole-goal
 audio, pacing, mission/campaign/save parity and release-candidate work remain
 open. All source/derived media stay local; no push or publication occurred.
+
+## First Genesis-derived vehicle surfaces (2026-09-28)
+
+The immediately preceding response verified the already repaired cockpit and
+showed a fresh matching Play capture. It did not advance the remaining art
+families. This continuation makes implementation progress on the unfinished
+vehicle outcome rather than repeating that cockpit gate. The whole goal remains
+active and PC-authoritative; no replacement simulation is introduced.
+
+Authored and integrated three high-resolution running-gear/side-armour panels
+from the recovered Genesis T-62, M1A1 and M113 side views. Exact prompts, unchanged
+PNGs, hashes and generation provenance remain under
+`local-art/genesis/remastered/vehicles-v1/`. Six source faces now receive uniformly
+fitted, perspective-correct texture coordinates in the PC's exact triangle stream.
+Near-plane clipping, painter order, source vertices/material identities and
+unknown-palette fallback are retained. Alpha changes detail strength only;
+it never exposes another actor or creates new silhouette pixels.
+
+The first native view revealed that the previous global world colour study used
+its road grey for vehicles. Original Genesis model evidence establishes the
+correct (65,68,65) shade. Six textured sides and seven other verified dark-grey
+faces now use that model-specific colour. PC-colour mode remains (85,85,85).
+No other model or arbitrary world surface is silently recoloured.
+
+Native final gate `pc-vehicle-art-native-02` passes 19,783,292 checks with zero
+errors and terminal exit 0. It checks all six sides at two scales plus near-plane
+views, 261 original recorded draw passes, independent ray/plane UVs, both painter
+orders, unknown palettes and 280,000 exact PC/Genesis grey probes. All 18,707,238
+pixels outside the selected visible faces are unchanged. The close-up images
+are isolated synthetic authoring views, not claimed reachable game positions.
+The same assistant generated, implemented and visually reviewed this work.
+
+The complete aggregate at `artifacts/validation-20260928T074431Z` passes all 40
+stages and 273 Python tests with terminal exit 0, including source preservation.
+Fresh native shared-shader hill/effect regressions pass 4,571,057 and 4,719,653
+checks. Two actual 1,020-frame interactive-control replays have identical complete
+source packets, conventional RAM digests and original packed-video digests at
+every boundary. Their final view has no selected vehicle faces, so visible-art
+evidence comes from the native fixtures rather than that unchanged final image.
+The replay audit measured 31.10/34.40 fps, not sustained unaudited speed proof.
+The actual public launcher capture also exits 0 and retains every prior metadata
+field; one distant vehicle face changes exactly 30 pixels in a 6x5 region, with
+the repaired cockpit unchanged. Its capture and comparison receipt are retained
+under `pc-vehicle-art-play-remastered-01` and `pc-vehicle-art-play-parity-01.json`.
+
+The initial test calls had two setup errors, then a gutter-extent assertion was
+corrected. The first native run passed mechanical tests with the wrong road grey;
+the final run includes the corrected model colour and explicit RGB checks.
+Earlier receipts remain retained. Full details and reproduction commands are in
+`docs/pc-vehicle-art-integration.md`. Optional Impeccable was unavailable and was
+not installed. The five pre-existing untracked vehicle-study files are untouched.
+
+Remaining work includes other vehicle surfaces/types/LODs and damaged states,
+truck mapping, movement/animation and representative close-range gameplay review.
+The whole remaster's other graphics, music/voice coverage, pacing, all-mission,
+campaign/save parity and release-candidate requirements remain open. No broad
+completion or artistic acceptance is claimed. Everything remains local; no push
+or publication occurred.
