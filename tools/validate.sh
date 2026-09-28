@@ -59,6 +59,11 @@ run_check() {
       echo "FAIL: $name (bounded run did not report completion)" >&2
       exit 1
     fi
+    if [ "$name" = pc_live_scheduling ] && ! grep -Eq '^PC_LIVE_SCHEDULING: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (bounded run did not report completion)" >&2
+      exit 1
+    fi
     if [ "$name" = pc_reticle ] && ! grep -Eq '^PC_RETICLE: [1-9][0-9]* checks, 0 errors;' "$OUT/$name.log"; then
       cat "$OUT/$name.log"
       echo "FAIL: $name (bounded run did not report completion)" >&2
@@ -87,6 +92,7 @@ run_check pc_keyboard ./tools/godot.sh --headless --script res://tests/test_pc_k
 run_check pc_camera ./tools/godot.sh --headless --script res://tests/test_pc_camera.gd
 run_check pc_play_display ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_play_display.gd
 run_check pc_frame_pacing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_frame_pacing.gd
+run_check pc_live_scheduling ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_live_scheduling.gd
 run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_draw_pass.gd
 run_check pc_surfaces ./tools/godot.sh --headless --script res://tests/test_pc_surfaces.gd
 run_check pc_colour ./tools/godot.sh --headless --script res://tests/test_pc_colour.gd

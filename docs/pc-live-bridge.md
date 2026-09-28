@@ -181,11 +181,17 @@ inherited stdin/stdout pipes. It exposes no network listener, memory-write
 operation, arbitrary file operation or replacement simulation. Core logs use
 stderr. Godot uses [nonblocking process pipes](https://docs.godotengine.org/en/stable/classes/class_os.html#class-os-method-execute-with-pipe)
 with one request outstanding. Interactive pacing retains fractional clock phase
-and reuses only exactly matching observer/presentation byte predicates. Local
-1,200-frame station probes measured 54.23 to 59.98 fps against the core's 59.92 Hz
-rate. Slow presentation still slows the original instead of creating catch-up
-input batches. Standalone-original and historical-machine wall-clock calibration
-remain open; [pacing research](pc-pacing-research.md) records the measurements,
+and reuses only exactly matching observer/presentation byte predicates. After
+source/audio/PNG validation, the next eligible one-frame request can run while
+Godot builds the current picture. Captures retain their explicit batch ordering.
+An optional `--frame-audit` diagnostic hashes the existing paired conventional RAM
+and framebuffer without another guest read or step; normal Play omits that work.
+The 1,020-frame control/audio A/B replay matches every paired RAM/video hash and
+packet. Local timing results vary under load; latest stationary probes measured
+57.21 fps gunner and 59.91 driver against the core's 59.92 Hz rate. Slow execution
+still slows the original instead of creating catch-up input batches.
+Standalone-original and historical-machine wall-clock calibration remain open;
+[pacing research](pc-pacing-research.md) records both faster and slower A/B runs,
 unchanged-source evidence and limits.
 
 ## Read-only fields with evidence

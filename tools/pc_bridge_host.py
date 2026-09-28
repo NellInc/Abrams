@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import io
 import json
 import os
@@ -31,6 +32,19 @@ except ModuleNotFoundError:
     from pc_session import PresentationSession
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def frame_audit(core):
+    """Fingerprint the already paired boundary, without another guest read/run."""
+    if core.last_video is None or core.last_video_ram is None:
+        raise ValueError('frame audit requires a paired original boundary')
+    raw, width, height, pitch = core.last_video
+    if len(core.last_video_ram) != 640*1024 or len(raw) != pitch*height:
+        raise ValueError('incomplete paired original audit bytes')
+    return {'ram_sha256': hashlib.sha256(core.last_video_ram).hexdigest(),
+            'video_sha256': hashlib.sha256(raw).hexdigest(),
+            'ram_bytes': len(core.last_video_ram), 'video_bytes': len(raw),
+            'width': width, 'height': height, 'pitch': pitch}
 
 
 def validate_command(command):
@@ -60,6 +74,7 @@ def main():
     p.add_argument("--core", type=Path, default=ROOT / ".runtime/pc-core/dosbox_pure_libretro.dylib")
     p.add_argument("--backend", choices=["reference", "trace"], default="reference")
     p.add_argument("--content", type=Path, default=ROOT / ".runtime/pc-core/abrams-ref.zip")
+    p.add_argument("--frame-audit", action="store_true", help="diagnostic hashes of paired original RAM and framebuffer; no memory dumps")
     args = p.parse_args()
     if args.state is None and args.backend != 'trace': p.error('cold boot requires the trace backend')
     # Core printf/log output must never corrupt the JSON channel.
@@ -123,6 +138,8 @@ def main():
             if session:
                 result.update(sample)
                 result["audio"] = session.drain_audio()
+            if args.frame_audit:
+                result["frame_audit"] = frame_audit(core)
             return result
 
         ready = packet("ready", -1)

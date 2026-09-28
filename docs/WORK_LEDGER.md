@@ -30,6 +30,71 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Original-frame dispatch overlap and boundary audit, 2026-09-28
+
+Previous goal turn: progress, exact observer/clock work committed as `85165ba`.
+The next clock-eligible original frame now dispatches after the current packet's
+existing audio, required-state and PNG checks, before Godot constructs its
+presentation. There is still one outstanding request, current held-key sampling,
+one original frame per interactive request, and no catch-up queue. Capture batches
+retain their old ordering. No original/core/artwork bytes changed.
+
+`docs/pc-pacing-research.md` records the ordering, reproduction and remaining
+limits. A diagnostic-only `--frame-audit` option hashes the existing paired
+conventional RAM and native video buffers; it neither advances nor re-reads the
+guest, writes no memory dumps, and is off during ordinary Play. It was added to
+prove this scheduling change against more than decoded state alone.
+
+Evidence:
+
+* `artifacts/pc-transport-profile-01/full-boundary-parity.json`: all 1,020 original
+  input requests, complete packet hashes and paired conventional-RAM/framebuffer
+  hashes match between late and early dispatch. The hashes cover 668,467,200 RAM
+  bytes and 261,120,000 framebuffer bytes. Exact consecutive-frame counts and
+  expanded control-fixture keys pass. Final metadata, all four native PNGs and
+  audio receipts/loop transitions match. The replay uses the real Godot keyboard
+  path for movement, braking, turret, firing, smoke and four station routes.
+* The non-audited control/audio A/B pair also matches every complete packet and
+  request, with final native image equality. Its measured rate is 44.33 fps late
+  versus 55.29 early. **The audit-enabled pair reverses this: 51.04 late versus
+  46.19 early.** Both results are retained. A general performance gain under
+  variable machine load is unproven; the verified change removes a mandatory
+  serialized wait, and sustained target-rate acceptance remains open.
+* Final 1,200-frame stationary probes measure 57.21 fps gunner and 59.91 driver.
+  The original advertises 59.92 Hz. These roughly twenty-second local tests do
+  not establish historical machine-speed or full wall-clock input parity.
+* `artifacts/validation-20260928T040422Z`: final aggregate terminal exit 0,
+  all 36 stages and 247 Python tests pass. The production scheduling fixture
+  passes 54 checks, including exact held-key identity, pending/closing/error
+  guards, phase, capture ordering and original capture deadlines.
+* The opt-in corrupt-PNG test passes 55 assertions and deliberately emits the
+  decoder's corruption errors. It verifies that invalid image data cannot send
+  another original frame. This negative case is separate from the aggregate's
+  unchanged no-engine-errors check.
+
+An initial transport probe failed its 60-second final-capture deadline at
+19.08 fps. An uninstrumented control was similarly slow at 19.04 fps, with frame
+application exceeding 14 ms instead of roughly 5 ms. System load average was
+15.85; unrelated processes were left alone. No probe recorded a partial JSON
+prefix, so packet splitting was not supported as the cause. The bounded profiler
+now retains its explicit 90-second deadline through final capture; ordinary
+mission/cold-boot capture timeouts remain 60/180 seconds.
+
+The initial public-launcher visual comparison was incorrectly paired with a
+different-sized reference (1440x900 versus 1440x810). Original/world images and
+every non-display metadata field matched. The failed receipt is retained; it is
+not treated as a passing screenshot comparison. The correctly size-matched rerun
+exits 0 and passes complete capture metadata and original/world/tandem/window PNG
+equality, as does the cold-boot joystick menu comparison:
+`artifacts/pc-transport-profile-01/public-matched-parity.json`.
+
+The implementing assistant inspected the control-run native image. This remains
+self-review of assistant-produced work, not Nell's art acceptance. Local only;
+the same five unrelated untracked vehicle-study files remain untouched. The
+overall remaster remains active. Sustained timing calibration, remaining
+graphics/audio, all mission/campaign/save flows, cross-platform acceptance and
+release custody still require work under the unchanged full goal.
+
 ## Exact observer optimization and live pacing, 2026-09-28
 
 Previous goal turn: progress, native-resolution Play committed as `4fcb4f6`.

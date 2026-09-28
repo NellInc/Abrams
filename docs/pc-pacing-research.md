@@ -1,6 +1,99 @@
 # Live presentation pacing
 
+## Follow-up: overlap original dispatch and presentation
+
+The production viewer now dispatches the next clock-eligible original frame
+after the received packet passes the existing audio, required-state and PNG
+checks, before constructing its Godot presentation. The complete received packet
+owns its bytes, so advancing the child cannot change the picture being built.
+There is still one outstanding request, one original frame per interactive
+request, current held-key sampling, and no catch-up queue. Scene construction
+stays on Godot's main thread. Explicit capture batches retain their old ordering.
+
+Working if: a valid interactive response dispatches before scene construction,
+invalid source/audio/image packets cannot dispatch, capture ends without an extra
+frame, and changing held keys cannot alter an already outstanding request.
+
+`test_pc_live_scheduling.gd` exercises the actual production loop with a local
+transport fixture and Godot input events. It covers key holds/releases, keypad
+versus top-row identities, early ordering, pending/closing/error gates, clock
+phase and exact diagnostic batch boundaries. Its optional `--invalid-png` case
+deliberately produces libpng/engine corruption diagnostics, then verifies no
+request was sent. This negative case runs separately from the aggregate's
+no-engine-errors gate. Ordinary capture timeouts remain 60 seconds for a restored
+mission and 180 seconds for cold boot. The profiler has its own bounded 90-second
+deadline, including final capture, rather than falling back to 60 seconds there.
+
+The opt-in `--frame-audit` diagnostic fingerprints **already paired** conventional
+RAM and native framebuffer bytes. It performs no extra guest read, fence or step,
+and emits only hashes and dimensions in the local pipe. Normal Play does not pay
+this hashing cost. The protocol's existing fields and original core are unchanged.
+
+### Evidence and timing limits
+
+* `artifacts/pc-transport-profile-01/full-boundary-parity.json`: all 1,020 original
+  one-frame requests match the control fixture through the real Godot keyboard
+  path. Every complete packet hash and every paired 640 KiB conventional-RAM and
+  320x200 framebuffer hash matches between previous and early dispatch policies.
+  That covers 668,467,200 RAM bytes and 261,120,000 framebuffer bytes. Movement,
+  braking, turret control, firing, smoke and all four station key routes are
+  exercised. Final native images and all recorded audio receipts/loop transitions
+  match too. No packet fields or memory regions were excluded.
+* `artifacts/pc-transport-profile-01/controls-parity.json` records a second,
+  non-audited 1,020-frame A/B comparison with identical complete packets, requests,
+  final metadata and native images. Both runs include remastered audio, with
+  cannon/on-the-way, loaded and smoke cues, plus engine/turret loop transitions.
+  This is bounded replay parity, not full campaign or historical timing parity.
+* That non-audited control run measured **44.33 fps late / 55.29 fps early**.
+  The later audit-enabled comparison measured **51.04 late / 46.19 early**, the
+  opposite ordering. System contention and instrumentation affect these runs;
+  a general performance improvement is not established by them. Neither result
+  is discarded. The change removes a mandatory serialized presentation wait;
+  sustained target-rate acceptance remains open.
+* Final 1,200-frame stationary interactive probes without audit instrumentation
+  measured **57.21 fps gunner** and **59.91 fps driver**. These are local,
+  roughly twenty-second measurements, not a sustained-rate guarantee.
+* The initial instrumented gunner run failed with `PC_VIEW_FAILED: capture
+  deadline` at 19.08 fps. An uninstrumented control measured 19.04 fps, with
+  sample application above 14 ms versus roughly 5 ms in the earlier run.
+  The machine load average was 15.85. Unrelated processes were left alone.
+  All transport probes recorded zero partial JSON prefixes, so packet splitting
+  was not supported as the cause of these measured delays.
+* `artifacts/validation-20260928T040422Z`: the final aggregate exits 0, all 36
+  stages and 247 Python tests pass. Production-loop scheduling contributes 54
+  checks. Its separately invoked corrupt-PNG case passes 55 checks and reports
+  the expected PNG decoder diagnostics without dispatching a new original frame.
+* `artifacts/pc-transport-profile-01/public-matched-parity.json`: actual public
+  Play and cold-boot joystick captures match earlier complete capture metadata
+  and all four PNGs. The first gunner comparison wrongly used a 1440x900 window
+  against a 1440x810 reference and failed; matching the actual reference size
+  resolves that test setup error without changing production code.
+
+Reproduce the controlled A/B run with fresh output directories:
+
+```sh
+./tools/godot.sh --script res://tests/profile_pc_play.gd -- \
+  --play --trace --capture --capture-station gunner --interactive-clock \
+  --replay-controls --audio --frame-audit --late-dispatch \
+  --output "$PWD/artifacts/control-late-NEW"
+./tools/godot.sh --script res://tests/profile_pc_play.gd -- \
+  --play --trace --capture --capture-station gunner --interactive-clock \
+  --replay-controls --audio --frame-audit \
+  --output "$PWD/artifacts/control-overlap-NEW"
+```
+
+Compare `sample_hashes` and `requests` in the two `pacing.json` files, require
+exactly 1,020 consecutive frames and the expanded keys from
+`godot/tests/fixtures/pc_play_control_steps.json`, and compare the complete
+`capture.json` plus all four captured PNGs. The source audit records must each
+contain 655,360 RAM bytes and 256,000 native-video bytes. Packet hashing is over
+Godot's sorted JSON representation; source RAM/video hashes are over raw bytes.
+`--late-dispatch` is a profiler-only A/B option, not an alternative gameplay mode.
+
 ## Scope and measured result
+
+The following measurements describe the preceding byte-optimization pass. See
+the follow-up above for the newer dispatch ordering and its mixed timing results.
 
 The original PC executable still advances one requested VGA frame at a time.
 Godot forwards the current original keys with one pipe request outstanding.
@@ -124,8 +217,7 @@ for repeated CPU component measurements on the last frame. Neither mode is a
 standalone-original wall-clock calibration. Interactive mode polls the actual
 keyboard; input during a run must be considered when comparing its final state.
 
-Remaining pacing work: instrument pipe-ready versus Godot-poll latency and the
-native rendering schedule, test combat and remastered audio over longer runs,
-then calibrate against the standalone pinned original. A transport/scheduling
-change must preserve original key identity and sampling evidence. No catch-up
-policy or broader timing parity is implied by this optimization.
+Remaining pacing work: isolate host-ready versus Godot-poll/render latency under
+controlled machine load, test sustained combat and audio beyond the bounded
+replay above, then calibrate against the standalone pinned original. No catch-up
+policy or broader timing parity is implied by these optimizations.

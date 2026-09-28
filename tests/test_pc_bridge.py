@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 from tools.pc_live_state import SimStateReader, bearing
 from tools.pc_reference_core import PcReferenceCore, KEYS, MemoryDescriptor, ThrottleState
-from tools.pc_bridge_host import validate_command
+from tools.pc_bridge_host import validate_command, frame_audit
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -94,6 +94,24 @@ class PcBridgeTests(unittest.TestCase):
         state = ThrottleState()
         self.assertTrue(core._environment(71 | 0x10000, C.byref(state)))
         self.assertEqual((state.mode, state.rate), (1, 0.0))
+
+    def test_opt_in_frame_audit_uses_only_already_paired_complete_bytes(self):
+        ram = bytes((i*13+7)%256 for i in range(640*1024))
+        video = bytes((i*19+2)%256 for i in range(320*200*4))
+        core = SimpleNamespace(last_video=(video,320,200,1280),last_video_ram=ram)
+        audit = frame_audit(core)
+        self.assertEqual(audit, {'ram_sha256':hashlib.sha256(ram).hexdigest(),
+            'video_sha256':hashlib.sha256(video).hexdigest(),'ram_bytes':655360,
+            'video_bytes':256000,'width':320,'height':200,'pitch':1280})
+        self.assertIs(core.last_video_ram,ram)
+        self.assertIs(core.last_video[0],video)
+        # No core methods exist on this object: the audit cannot fence, read or
+        # advance the guest again and accidentally hash the next VGA boundary.
+        for bad in [SimpleNamespace(last_video=None,last_video_ram=ram),
+                    SimpleNamespace(last_video=core.last_video,last_video_ram=None),
+                    SimpleNamespace(last_video=core.last_video,last_video_ram=ram[:-1]),
+                    SimpleNamespace(last_video=(video[:-1],320,200,1280),last_video_ram=ram)]:
+            with self.assertRaises(ValueError): frame_audit(bad)
 
     def test_alternative_core_still_requires_an_exact_explicit_pin(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -108,7 +108,7 @@ func _initialize() -> void:
 	if boot_mode and capture and "--capture-intro" in args:
 		startup_state=directory.path_join("artifacts/pc-neutral-boot-01/neutral-boot/reference.state")
 	bridge.start(python, startup_state, output.path_join("saves"),
-		output.path_join("host.log"), "trace" if trace_mode else "reference")
+		output.path_join("host.log"), "trace" if trace_mode else "reference", "--frame-audit" in args)
 	if boot_mode and capture:
 		auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_boot_steps.json"))
 	if capture and "--capture-menu" in args:
@@ -322,6 +322,16 @@ static func frame_remainder(elapsed_seconds: float, source_fps: float) -> float:
 	# never invent a catch-up batch or backdate a newly sampled key press.
 	return fmod(elapsed_seconds,1.0/source_fps)
 
+func _advance_live_frame() -> bool:
+	if capture or closing or bridge.pending or not bridge.failure.is_empty() or elapsed<1.0/fps:
+		return false
+	elapsed=frame_remainder(elapsed,fps)
+	# Sample current original keys once, never queue a second outstanding frame.
+	return bridge.step(1,Keyboard.held())
+
+func _capture_deadline_msec() -> int:
+	return 180000 if boot_mode else 60000
+
 func _process(delta: float) -> bool:
 	elapsed += delta
 	for message in bridge.poll():
@@ -341,12 +351,9 @@ func _process(delta: float) -> bool:
 			elif not capture_done:
 				capture_done = true
 				_capture.call_deferred()
-		elif elapsed >= 1.0 / fps:
-			# One outstanding request. Slow presentation never advances invented
-			# gameplay ticks or runs the authored range alongside the PC game.
-			elapsed = frame_remainder(elapsed,fps)
-			bridge.step(1, Keyboard.held())
-	if capture and Time.get_ticks_msec() - started > (180000 if boot_mode else 60000):
+		else:
+			_advance_live_frame()
+	if capture and Time.get_ticks_msec() - started > _capture_deadline_msec():
 		bridge.failure = "capture deadline"
 		_close()
 	return false
@@ -366,6 +373,10 @@ func _apply_sample(message: Dictionary) -> void:
 	if image.load_png_from_buffer(Marshalls.base64_to_raw(message.png)) != OK:
 		bridge.failure = "invalid original framebuffer"
 		return
+	# The completed packet owns its pixels and metadata. Once validated, the
+	# original host may compute the next frame while we build this presentation.
+	# All Godot scene work remains on the main thread; capture never prefetches.
+	_advance_live_frame()
 	picture.texture = ImageTexture.create_from_image(image)
 	if play_mode: status.hide()
 	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
