@@ -81,6 +81,52 @@ def steps(motor_pool_controls=False, motor_pool_allocations=False):
     return route
 
 
+def scenario_steps(session=None):
+    """Visit every original scenario, all stations, pause/mute and quit/debrief.
+
+    Menu pulses use the independently observed 10/90-frame cadence. Shorter
+    three-frame repeats can be missed while START redraws its model backdrop.
+    This is an input trace, not a reimplementation of any menu or mission rule.
+    """
+    fixture = ROOT / 'godot/tests/fixtures'
+    boot = json.loads((fixture / 'pc_boot_steps.json').read_text())
+    end = json.loads((fixture / 'pc_reentry_steps.json').read_text())[:11]
+    route = [{'label':'ready','frames':1,'keys':[]}]
+    route += [{'label':f'boot-{i:02d}','frames':n,'keys':keys} for i,(n,keys) in enumerate(boot[:12])]
+    def pulse(label,key):
+        return [{'label':label+'-press','frames':10,'keys':[key]},
+                {'label':label,'frames':90,'keys':[]}]
+    yield from route
+    for scenario in range(8):
+        route=[]
+        prefix=f'scenario-{scenario}'
+        if scenario:
+            route += pulse(prefix+'-menu','return')
+            for i in range(3): route += pulse(prefix+f'-select-up-{i}','up')
+            # START resets the selected mission after returning from END.
+            for choice in range(scenario): route += pulse(prefix+f'-next-{choice}','return')
+            for i in range(3): route += pulse(prefix+f'-select-down-{i}','down')
+        route += [{'label':prefix+f'-entry-{i:02d}','frames':n,'keys':keys}
+                  for i,(n,keys) in enumerate(boot[12:])]
+        for station,key in [('commander','f2'),('cupola','f3'),('driver','f4'),('gunner','f1')]:
+            route += pulse(prefix+'-'+station,key)
+        for name,key in [('sound-off','f5'),('sound-on','f5'),('pause','escape'),('resume','space'),
+                         ('cannon','space'),('coax','m'),('smoke','s')]:
+            route += pulse(prefix+'-'+name,key)
+        route += [{'label':prefix+'-'+step['label'],'frames':step['frames'],'keys':step['keys']}
+                  for step in end]
+        yield from route
+        # END has a variable number of original review pages after combat.
+        # Advance by ordinary Space input until the original returns to START.
+        # This diagnostic never synthesizes an outcome or overwrites guest RAM.
+        yield {'label':prefix+'-menu-wait','frames':600,'keys':[]}
+        for page in range(6):
+            if session is None or (session.sample()['program'] or {}).get('name')=='START':break
+            yield {'label':prefix+f'-review-{page}-press','frames':10,'keys':['space']}
+            yield {'label':prefix+f'-review-{page}','frames':600,'keys':[]}
+        yield {'label':prefix+'-main-menu','frames':300,'keys':[]}
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--mode', choices=['trace','baseline'], required=True)
@@ -91,7 +137,10 @@ def main():
     p.add_argument('--motor-pool-controls', action='store_true', help='exercise the original governor menu with ordinary arrow keys')
     p.add_argument('--motor-pool-allocations', action='store_true', help='exercise all original ammunition fields with ordinary arrow keys')
     p.add_argument('--information', action='store_true', help='capture all seven original M1-Info pages and return to the main menu')
+    p.add_argument('--all-scenarios', action='store_true', help='ordinary-input entry, four stations, weapons, pause/mute and quit/debrief for all eight scenarios')
     args = p.parse_args()
+    if args.all_scenarios and (args.information or args.motor_pool_controls or args.motor_pool_allocations):
+        p.error('all-scenarios is a separate route')
     if args.information and (args.motor_pool_controls or args.motor_pool_allocations):
         p.error('information and motor-pool routes are separate')
     other = json.loads(args.compare.read_text()) if args.compare else None
@@ -118,7 +167,7 @@ def main():
             core.run(1)  # Native framebuffer priming after snapshot restore.
             program = active_program(core.conventional_memory())
             if not program or program['name'] != 'START': raise ValueError('comparison requires a neutral START snapshot')
-        route=information_steps() if args.information else steps(args.motor_pool_controls,args.motor_pool_allocations)
+        route=scenario_steps(session) if args.all_scenarios else information_steps() if args.information else steps(args.motor_pool_controls,args.motor_pool_allocations)
         for step in route:
             for _ in range(step['frames']):
                 session.step(1,step['keys'])
@@ -144,7 +193,29 @@ def main():
                     'image':filename,'mask':mask,'plate_mask':plate})
         by_name = {sample['label']:sample for sample in samples}
         programs = [entry['program']['name'] if entry['program'] else None for entry in session.transitions]
-        if args.information:
+        if args.all_scenarios:
+            visited=[]
+            checks={}
+            for index in range(8):
+                prefix=f'scenario-{index}'
+                gunner=by_name[prefix+'-gunner']
+                state=gunner['state'] or {}
+                visited.append(state.get('scenario_resource_index'))
+                for station in ('commander','cupola','driver','gunner'):
+                    at=by_name[prefix+'-'+station]
+                    checks[prefix+'-'+station]=bool(at['state']) and at['state']['station']==station
+                    if args.mode=='trace':
+                        checks[prefix+'-'+station+'-paired']=bool(at['presentation'].get('draw_pass'))
+                if args.mode=='trace':
+                    checks[prefix+'-mute']=not by_name[prefix+'-sound-off']['audio']['enabled']
+                    checks[prefix+'-unmute']=bool(by_name[prefix+'-sound-on']['audio']['enabled'])
+                    checks[prefix+'-pause']=not by_name[prefix+'-pause']['audio']['enabled']
+                    checks[prefix+'-resume']=bool(by_name[prefix+'-resume']['audio']['enabled'])
+                checks[prefix+'-debrief']=by_name[prefix+'-debrief']['program']['name']=='END'
+                checks[prefix+'-menu']=by_name[prefix+'-main-menu']['program']['name']=='START'
+            checks['eight_distinct_original_scenarios']=set(visited)==set(range(8))
+            checks['eight_original_mission_lifecycles']=programs==['START']+['BRIEF','SIM','END','START']*8
+        elif args.information:
             checks={'START_owns_information': programs==['START'],
                     'no_SIM_state_or_geometry':all(s['state'] is None and s['presentation'].get('draw_pass') is None for s in samples)}
             for name,pin in INFORMATION_PAGES.items():
@@ -173,7 +244,7 @@ def main():
             'transitions':session.transitions,'checks':checks,
             'plate_epochs':[c.plates.report() for c in collectors],
             'ui_presentations':ui_presentations,'presentations':presentations,
-            'scope':('all seven original M1-Info pages; page recognition excludes preserved row 175 and lower border' if args.information else 'bounded original cold-boot, quit and reentry; compare full paired RAM/video/input records separately')}
+            'scope':('all eight original scenario entries, station and weapon inputs, pause/mute and quit/debrief; victory/campaign outcomes are separate' if args.all_scenarios else 'all seven original M1-Info pages; page recognition excludes preserved row 175 and lower border' if args.information else 'bounded original cold-boot, quit and reentry; compare full paired RAM/video/input records separately')}
         if args.compare:
             mismatches = [i for i,(a,b) in enumerate(zip(records,other['records'])) if a!=b]
             comparable = lambda r: [{k:s[k] for k in ('label','frame','keys','program','state')} for s in r['samples']]

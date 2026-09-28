@@ -20,7 +20,7 @@ except ModuleNotFoundError:
 
 CORE_SHA256 = "f21c70074c8432a634d82e9daa187a9424c629d9d503270a7a663d0751ebc3d8"
 KEYS = {"backspace": 8, "tab": 9, "return": 13, "escape": 27, "space": 32, "up": 273,
-        "down": 274, "right": 275, "left": 276,
+        "down": 274, "right": 275, "left": 276, "shift": 304, "ctrl": 306, "alt": 308,
         **{f"kp{i}": 256 + i for i in range(10)},
         **{f"f{i}": 281 + i for i in range(1, 13)},
         **{chr(i): i for i in range(48, 58)}, **{chr(i): i for i in range(97, 123)}}
@@ -188,7 +188,10 @@ class PcReferenceCore:
             raise RuntimeError("keyboard callback not registered")
         for key in sorted(self.pressed - keys):
             self.keyboard(False, key, 0, 0)
-        for key in sorted(keys - self.pressed):
+        # Physical modifier down must precede the printable key in one held
+        # input set, so original DOS receives its Shift+3 (#) speed command.
+        # The original also polls scancode 3 for AX; preserve that side effect.
+        for key in sorted(keys - self.pressed, key=lambda k: (k not in (304,306,308),k)):
             self.keyboard(True, key, key if 32 <= key < 127 else 0, 0)
         self.pressed = keys
 

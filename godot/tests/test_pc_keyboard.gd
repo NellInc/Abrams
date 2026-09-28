@@ -11,7 +11,8 @@ func _initialize() -> void:
 		[[KEY_ENTER,KEY_KP_ENTER,KEY_ENTER],["return"]],
 		[[KEY_ESCAPE,KEY_BACKSPACE,KEY_TAB],["escape","backspace","tab"]],
 		[[KEY_F1,KEY_F4,KEY_F12],["f1","f4","f12"]],
-		[[KEY_SHIFT,KEY_META],[]]]
+		[[KEY_SHIFT,KEY_3],["shift","3"]],
+		[[KEY_CTRL,KEY_ALT,KEY_META],["ctrl","alt"]]]
 	for entry in cases:
 		if Keyboard.encode(entry[0]) != entry[1]: errors.append(str(entry))
 	for error in errors: printerr("FAIL: keyboard identity " + error)

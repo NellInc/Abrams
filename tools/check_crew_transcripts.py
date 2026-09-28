@@ -23,6 +23,14 @@ def normalized(text):
     return re.sub(r'[^a-z0-9]','',re.sub(r'<[^>]+>','',text).lower())
 
 
+def wording_matches(transcript, expected):
+    # Nell explicitly accepts aviation "niner" for a bearing/heading digit.
+    # Keep the exception scoped to numeric calls; whole-number phrases still fail.
+    if re.search(r'\b(?:bearing|heading)\b',expected,re.I):
+        transcript=re.sub(r'\bniner\b','nine',transcript,flags=re.I)
+    return normalized(transcript)==normalized(expected)
+
+
 def prepare(directory,cues=None,*,number_delivery=False):
     manifest=json.loads((directory/'manifest.json').read_text())
     jobs={k:v for k,v in manifest['voices'].items() if not cues or k in cues}
@@ -72,11 +80,11 @@ def evaluate(response,inputs,*,number_delivery=False):
             if len(words)!=3 or any(w not in 'zero one two three four five six seven eight nine'.split() for w in words):
                 raise ValueError('expected bearing is not three number words')
             result[item['cue']]=value|{'audio_sha256':item['sha256'],'expected_number_words':words,
-                'match':value['number_delivery']=='individual_digits' and value['spoken_number_words']==words}
+                'match':value['number_delivery']=='individual_digits' and [('nine' if w=='niner' else w) for w in value['spoken_number_words']]==words}
         return result
     if any(not isinstance(t,str) for t in transcripts.values()):raise ValueError('invalid transcription types')
     return {item['cue']:{'transcript':transcripts[item['id']],'expected':item['expected'],
-            'normalized_match':normalized(transcripts[item['id']])==normalized(item['expected']),
+            'normalized_match':wording_matches(transcripts[item['id']],item['expected']),
             'audio_sha256':item['sha256']} for item in inputs}
 
 

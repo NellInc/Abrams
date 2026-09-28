@@ -87,13 +87,26 @@ func reply() -> void:
 	events.clear()
 
 func run() -> void:
+	check(audio_requested(true,[]),"original-event audio enabled by default")
+	check(audio_requested(true,["--audio"]),"legacy explicit audio remains supported")
+	check(not audio_requested(true,["--no-audio"]),"explicit diagnostic audio disable")
+	check(not audio_requested(false,[]),"reference-only protocol cannot enable trace audio")
+	var chunked := capture_chunks([[413,["up"]],[3,["kp5"]],[120,[]]])
+	var expanded: Array = []
+	for step: Array in chunked:
+		check(int(step[0])>0 and int(step[0])<=60,"bounded diagnostic requests")
+		for i in int(step[0]): expanded.append(step[1])
+	check(expanded.size()==536,"capture chunking retains total frames")
+	check(expanded.slice(0,413).all(func(keys):return keys==["up"]),"drive hold has no added key releases")
+	check(expanded.slice(413,416).all(func(keys):return keys==["kp5"]),"stop command retains original duration")
+	check(expanded.slice(416).all(func(keys):return keys==[]),"neutral tail retains original duration")
 	check(_capture_deadline_msec()==60000,"ordinary snapshot capture deadline unchanged")
 	boot_mode=true
 	check(_capture_deadline_msec()==180000,"ordinary cold-boot capture deadline unchanged")
 	boot_mode=false
 	var period := 1.0/fps
 	for codes in [[],[KEY_SPACE,KEY_KP_6],[KEY_5,KEY_KP_5],[KEY_F2],
-		[KEY_UP,KEY_KP_8],[KEY_ENTER,KEY_KP_ENTER],[KEY_Q],[]]:
+		[KEY_UP,KEY_KP_8],[KEY_ENTER,KEY_KP_ENTER],[KEY_Q],[KEY_SHIFT,KEY_3],[]]:
 		set_keys(codes)
 		var wanted := Keyboard.encode(codes)
 		wanted.sort()
@@ -164,6 +177,12 @@ func run() -> void:
 		_apply_sample(bad)
 		check(bridge.requests.size()==stopped_count and events.is_empty() and bridge.failure=="invalid original framebuffer","invalid original image cannot dispatch")
 	set_keys([])
+	capture=false
+	status.hide()
+	bridge.failure="synthetic occupied save directory"
+	super._process(period)
+	check(status.visible and status.text.contains(bridge.failure),"interactive launch errors remain visible")
+	check(bridge.stopped and not closing,"error gracefully closes only the child, leaving explanation visible")
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_LIVE_SCHEDULING: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

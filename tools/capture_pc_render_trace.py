@@ -36,7 +36,7 @@ def main():
     parser.add_argument('--mode', choices=['trace','baseline','reference'], default='trace')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=180)
-    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio', 'text', 'cockpit', 'driver', 'gauges', 'orientation', 'reticle'], default='turn')
+    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio', 'text', 'cockpit', 'driver', 'gauges', 'orientation', 'reticle', 'vehicle'], default='turn')
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--state-core-sha256', help='defaults to the selected reference or source-baseline pin')
     parser.add_argument('--capture-sprites', action='store_true', help='save first paired framebuffer for each observed effect image')
@@ -68,7 +68,13 @@ def main():
         presentations = []
         sprite_presentations, captured_sprites, ui_presentations = [], set(), []
         stages = {}
-        if args.profile == 'reticle':
+        if args.profile == 'vehicle':
+            # Recorded normal driving/stop/station/zoom controls. No actor or
+            # camera coordinates are written into the original simulation.
+            route = json.loads((ROOT / 'godot/tests/fixtures/pc_vehicle_approach_steps.json').read_text())
+            steps = [(f'vehicle-{i:02d}', n, keys) for i, (n, keys) in enumerate(route)]
+            inputs = [(name, keys, n == count-1) for name, count, keys in steps for n in range(count)]
+        elif args.profile == 'reticle':
             steps=[('baseline',30,[]),('commander-key',3,['f2']),('commander',120,[]),
                    ('gunner-key',3,['f1']),('gunner-settled',240,[]),
                    ('turret-mode-key',3,['c']),('turret-mode',30,[]),

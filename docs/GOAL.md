@@ -4,6 +4,8 @@ Reconstruct and remaster Dynamix's **Abrams Battle Tank** in Godot, preserving t
 
 Preserve the PC missions, objectives, controls, crew stations, movement, targeting, ammunition, enemy behaviour, damage, repairs, fuel, difficulty, scoring, campaign progression, timing and meaningful quirks. Add new sound effects and crew voices, clear captions, scalable interfaces and presentation-only accessibility options without changing simulation outcomes or revealing additional tactical information.
 
+Current priority (Nell, 28 September 2026): retain original flat-colour vehicle models. Rejected APC/tank texture panels stay out of live Play; replacement models are deferred. Prioritize complete playable flows, correct existing graphics, sound and TTS before further vehicle beautification.
+
 Completion requires:
 
 1. Fingerprinted, unchanged reference files; documented provenance; a working original-game comparison workflow; and an evidence ledger separating observed behaviour, manual descriptions, inferences and unknowns.

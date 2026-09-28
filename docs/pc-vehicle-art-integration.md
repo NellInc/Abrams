@@ -1,6 +1,13 @@
 # Genesis-derived vehicle surfaces
 
-## Source and scope
+## Rejected study, not live
+
+Nell rejected the appearance of these vehicle panels on 28 September 2026.
+Play no longer instantiates this renderer. Assets, authoring code and mechanical
+receipts below are retained as research only. They are not accepted artwork;
+original flat-colour vehicles remain live and model replacement is deferred.
+
+## Source and scope (historical)
 
 The original PC executable still selects each actor, detail level, visible face,
 transform, material and painter order. The recovered Genesis geometry supplies

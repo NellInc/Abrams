@@ -39,6 +39,14 @@ class FontTests(unittest.TestCase):
         ram[0x70000:0x70000+len(raw)-4]=raw[4:]
         catalog={'6X6.FNT':raw,'VM.FNT':raw}
         self.assertEqual(loaded_font(ram,ds,catalog)['sources'],['6X6.FNT','VM.FNT'])
+        first=loaded_font(ram,ds,catalog)
+        second=loaded_font(ram,ds,catalog)
+        self.assertIs(first['glyphs'],second['glyphs'])
+        self.assertEqual(text_pixels(first,b'BEARING 009'),text_pixels(decode_font(raw),b'BEARING 009'))
+        first['width']=999
+        self.assertEqual(loaded_font(ram,ds,catalog)['width'],raw[0])
+        with self.assertRaises(TypeError): first['glyphs'][0][0]=1
+        with self.assertRaisesRegex(ValueError,'differs'): loaded_font(ram,ds,{'foreign':b'wrong'})
         ram[0x70000]^=1
         with self.assertRaisesRegex(ValueError,'differs'): loaded_font(ram,ds,catalog)
         struct.pack_into('<H',ram,ds+0x369E,0xFFFF)

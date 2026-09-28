@@ -2192,3 +2192,127 @@ The whole remaster's other graphics, music/voice coverage, pacing, all-mission,
 campaign/save parity and release-candidate requirements remain open. No broad
 completion or artistic acceptance is claimed. Everything remains local; no push
 or publication occurred.
+
+## Playability priority, flat vehicles, full bearings (2026-09-28)
+
+Nell rejected the vehicle texture panels and deferred replacement models. Their
+live instantiation has been removed; existing authoring studies are preserved.
+The current priority is playable original-PC flows with correct graphics and
+audio. No original game files, CPU settings or game instructions were changed.
+The same assistant implemented and reviewed this pass. The whole goal stays open.
+
+### Completed local evidence
+
+* `pc-vehicle-flat-play-01/verification.json`: public Play, 1,679 ordinary-input
+  approach frames, zero textured vehicle polygons. Source frame, gameplay state,
+  program, presentation/cockpit/instrument metadata and baseline frame records
+  match the prior source route. The visible APC retains flat original faces.
+* `pc-play-default-audio-native-01/report.json`: audio is now on by default.
+  Original one-frame playback passes 1,712 frames and 3,426 loop comparisons,
+  including cannon, coax, smoke, impact, loader and motor playback; zero errors,
+  child exit 0. F5, pause, freshness, original-event and no-extra-information
+  gates remain. `--no-audio` disables presentation audio explicitly.
+* 355 additional full-sentence Gemini 3.8 Flash TTS masters complete bearings
+  000–359, retaining the five existing takes and nine existing damage reports.
+  All generated masters passed independent wording QA. `install_pc_bearings.py`
+  checks complete batch/repair script custody, caption, WAV metrics, hashes and
+  transcripts before installation. Re-running its dry-run verifies all 355.
+  This uses generated dry samples, never mixed gameplay recordings or stitched
+  number fragments. `pc_bearing_provenance.json` retains source/model/take hashes.
+* Nell explicitly accepts “niner”. Both transcript and digit-delivery QA now accept
+  that synonym within bearing/heading calls while rejecting wrong digits,
+  omissions and compound numbers. Two initial niner takes had already been
+  retaken; both earlier and selected masters remain preserved. No additional
+  regeneration was performed after that clarification.
+* `pc-full-bearings-native-01/report.json`: 1,680 packets from the real original
+  child, one complete displayed bearing 058, exactly one matching stream start,
+  zero errors and child exit 0. Godot unit checks load all 369 PC voice resources.
+* `pc-all-scenarios-baseline-02` / `pc-all-scenarios-trace-01`: all eight original
+  scenarios, all four stations, F5, pause/resume, cannon/coax/smoke inputs, quit,
+  debrief and return to the original menus. All 54,657 paired RAM/video/input
+  records and 561 stage states match; all 118 trace checks pass. HEAT decreases
+  10 to 9 and coax 80 to 79 in all eight stage records. This does not cover mission
+  victories, defeats or full campaign outcomes.
+* `pc-all-scenario-frames-native-02`: all 32 recorded scenario/station packets
+  pass through the actual production Godot renderer, 161 checks, zero errors.
+  These images are a rendering replay; simulation parity is established by the
+  separate original execution above. Review found a commander rail discontinuity.
+  The compositor now eases its donor mapping around the heading opening. Only
+  the eight commander surrounds change in an exact 32-image before/after
+  comparison; see `pc-commander-frame-join-01.json`. The fresh native protected-
+  pixel cockpit gate passes 12,238,012 checks with zero errors and exit 0 in
+  `pc-playability-cockpits-native-01`.
+* `pc-campaign-play-new-03` / `pc-campaign-play-continue-01`: real public Play
+  creates PLAYQA, executes original Take R+R, closes, then a second cold-boot Play
+  resumes it from the same original disk overlay. No RAM save state is restored.
+  Its 50-byte PLAYQA.TC survives byte-identically, SHA-256
+  `67a48985d2706258b7f94ff2cb4d8e2c213e6c932cea1d4d8e1268ff94bbbc54`.
+  `pc-campaign-play-verification-01.json` passes seven save/resume/audio/render
+  checks. Normal Play's existing save path remains unchanged. `--saves` allows
+  a separate profile; an exclusive lock prevents two bridge hosts writing it.
+  Original GAME/GENESIS paths are rejected as save destinations.
+* Fixed missing Shift/Ctrl/Alt forwarding. The original Shift+3 command now
+  cycles its speed index 0, 1, 2. Original scancode polling also selects AX;
+  preserve that source behavior. `pc-modifiers-baseline-02` / `pc-modifiers-trace-01`
+  agree on all 530 frame records and outcomes. Native keyboard/scheduler tests
+  cover the modifier chord and release order. No emulation speed setting changed.
+* Interactive launch/bridge failures now stay visible until the window closes.
+  Captures still exit nonzero. Large diagnostic steps are divided into at most
+  60-frame pipe requests, preserving every frame and held key. The 1,679-frame
+  approach remains byte-identical after this transport-only chunking.
+
+### Performance and validation
+
+Profiling identified repeated loaded-font decoding and mask validation overhead.
+An eight-entry immutable exact-byte font cache is used only after current loaded
+bytes match the supplied resource catalog. Bulk byte predicates retain the same
+mask rejection rules. The host caches one PNG only when every source framebuffer
+byte and its dimensions/pitch match. State, audio and presentation metadata are
+always fresh. `pc-playability-01/observer-parity/final-verification.json` proves
+all 601 complete audit-enabled host packets byte-identical before/after; the JSON
+stream SHA-256 is
+`1046f10252ae6b9a7733902153e5d8a61665fc24f3c2629cdc3ec89f32be0c67`.
+
+Initial 600-frame native probes measured 23.68, 53.41 and 48.10 fps during this
+investigation. The final 1,200-frame stationary run measured 59.03 fps against
+59.47 advertised by the core, mean interval 16.94 ms. Machine load varies;
+per-change causal speedups and sustained moving-gameplay acceptance are not
+claimed. No synchronization fence, source frame or input request was skipped.
+
+`validation-20260928T091102Z` passes all 40 stages and 281 Python tests, including
+source preservation, 522 Godot audio checks and 79 scheduling checks. This gate
+precedes the final one-frame PNG cache, whose focused 14 Python bridge tests and
+601-packet runtime comparison pass. Final aggregate/replay results are recorded
+below when terminal. Optional Impeccable is unavailable and was not installed.
+
+### Corrected diagnostic assumptions and remaining work
+
+The first all-scenario harness incorrectly expected baseline audio metadata,
+fixed-count END pages and persistent START mission selection. Original observations
+corrected those expectations; failed receipts remain retained. Campaign capture
+first used unsupported PackedStringArray.filter, then a fixed-page route selected
+Continue instead of R+R. The final driver recognizes the exact original prompt,
+uses ordinary keys, and validates its resulting program boundary. The first
+modifier test wrongly expected Shift+3 to leave HEAT selected; the original
+also selects AX and the corrected test preserves it.
+
+`docs/playability-status.md` now names the finite verified flows and remaining
+outcomes. Victory/defeat/progression, sustained pacing, remaining voices/warnings/
+music and graphics, mix controls, listening/art acceptance and portable release
+packaging remain open. Replacement vehicle models are deferred at Nell's request.
+The five pre-existing untracked vehicle-study files remain untouched. Everything
+is local only; no push, publication or proprietary redistribution occurred.
+
+Final gate: `validation-20260928T092053Z` passes all 40 stages and 282 Python
+tests, terminal exit 0, including the final PNG cache. A first attempted comparison
+of native controls used the default 459-frame warmup against the old explicit
+606-frame gunner warmup, so its source mismatch is not a regression finding.
+That failed comparison is retained in `pc-play-final-controls-01/verification.json`.
+The corrected `pc-play-final-controls-02/verification.json` compares the same
+1,020 original input frames and all paired RAM/video hashes. Diagnostic chunking
+changes pipe request IDs; those transport IDs are not gameplay parity fields.
+The corrected moving replay passes all checks and measures 57.93 original fps
+against 59.47 advertised, with default audio. Root inspected its native gunner
+capture and the commander station image. Original smoke obscures the world in
+the final gunner frame; the matched source framebuffer confirms this is gameplay,
+not a missing-world rendering failure. The commander joins are continuous.

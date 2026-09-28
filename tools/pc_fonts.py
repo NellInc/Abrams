@@ -5,6 +5,7 @@ Headers, not filenames, define cell width/height. 8X6.FNT actually declares an
 """
 import hashlib
 import struct
+from functools import lru_cache
 
 FONT_NAMES = ('6X6.FNT','8X6.FNT','8X8.FNT','STENCIL.FNT','VM.FNT')
 
@@ -25,16 +26,24 @@ def decode_font(data):
             'glyphs':glyphs,'sha256':hashlib.sha256(data).hexdigest()}
 
 
+@lru_cache(maxsize=8)
+def _immutable_font(raw):
+    # Cache decoding only. Every observation still checks the complete loaded
+    # resource against the supplied catalog before using this exact-byte key.
+    font = decode_font(raw)
+    return font | {'glyphs': tuple(bytes(glyph) for glyph in font['glyphs'])}
+
+
 def loaded_font(ram, ds, catalog, fields=(0x364E,0x3662,0x3676,0x368A,0x369E)):
     width,height,first,count = (ram[ds+at] for at in fields[:4])
     segment, = struct.unpack_from('<H',ram,ds+fields[4])
     size = ((width+7)//8)*height*count
     at = segment*16
     if not segment or at+size > len(ram): raise ValueError('loaded font payload outside RAM')
-    raw = bytes([width,height,first,count])+ram[at:at+size]
-    font=decode_font(raw)
+    raw = bytes([width,height,first,count])+bytes(ram[at:at+size])
     matches=[name for name,data in catalog.items() if data==raw]
     if not matches: raise ValueError('loaded font differs from supplied native resources')
+    font=_immutable_font(raw)
     return font | {'sources':sorted(matches),'segment':segment}
 
 

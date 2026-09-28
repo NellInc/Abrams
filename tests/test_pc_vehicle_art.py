@@ -1,6 +1,7 @@
 """Original face identities, Genesis correspondence and unchanged donor bytes."""
 import ast
 import hashlib
+import json
 from pathlib import Path
 import re
 import unittest
@@ -18,6 +19,18 @@ def constant(name, terminator):
 
 
 class VehicleArtSourceTests(unittest.TestCase):
+    def test_close_approach_route_is_bounded_original_keyboard_input(self):
+        from tools.pc_reference_core import KEYS
+        path = ROOT / 'godot/tests/fixtures/pc_vehicle_approach_steps.json'
+        route = json.loads(path.read_text())
+        self.assertEqual(sum(n for n, _ in route), 1679)
+        for frames, keys in route:
+            self.assertIsInstance(frames, int)
+            self.assertTrue(1 <= frames <= 600)
+            self.assertIsInstance(keys, list)
+            self.assertTrue(all(k in KEYS for k in keys))
+        self.assertEqual(route[-4:], [[3, ['f1']], [300, []], [3, ['z']], [90, []]])
+
     @unittest.skipUnless((ROOT / 'GAME/SHAPE.TBL').exists(), 'Local PC source required')
     def test_six_exact_faces_and_ordered_uv_coordinates(self):
         raw = (ROOT / 'GAME/SHAPE.TBL').read_bytes()

@@ -46,6 +46,9 @@ var samples := 0
 var output: String
 var auto_steps := [[3, ["c"]], [30, []], [30, ["kp6"]], [30, []], [3, ["kp5"]], [60, []], [3, ["space"]], [300, []]]
 var auto_index := 0
+var campaign_capture_phase := ""
+var campaign_review_pending := false
+var campaign_choice := ""
 var started: int
 
 func _initialize() -> void:
@@ -95,12 +98,11 @@ func _initialize() -> void:
 	if trace_mode and cockpit_art_requested and not wire_mode and "--original-effects" not in args:
 		var effects := preload("res://scripts/pc_effect_art.gd").new()
 		if effects.load_assets(directory): draw_view.effect_art = effects
-	if trace_mode and cockpit_art_requested and not wire_mode and "--original-vehicles" not in args:
-		var vehicles:=preload("res://scripts/pc_vehicle_art.gd").new()
-		if vehicles.load_assets(directory): draw_view.vehicle_art=vehicles
+	# Retain original flat vehicle faces. The panel studies were rejected;
+	# replacement models and textures are deliberately absent from live Play.
 	if trace_mode and cockpit_art_requested and "--original-text" not in args:
 		tandem_frame.typography.load_sources(directory.path_join("GAME"))
-	if trace_mode and "--audio" in args:
+	if audio_requested(trace_mode,args):
 		pc_audio = PcAudio.new()
 		root.add_child(pc_audio)
 	if trace_mode and cockpit_art_requested:
@@ -116,7 +118,15 @@ func _initialize() -> void:
 	# This diagnostic alone uses it; ordinary Play continues to cold boot.
 	if boot_mode and capture and "--capture-intro" in args:
 		startup_state=directory.path_join("artifacts/pc-neutral-boot-01/neutral-boot/reference.state")
-	bridge.start(python, startup_state, output.path_join("saves"),
+	var save_path := output.path_join("saves")
+	if "--saves" in args:
+		var index := args.find("--saves")+1
+		if index>=args.size() or args[index].begins_with("--"):
+			printerr("--saves requires a local save directory")
+			quit(2)
+			return
+		save_path=ProjectSettings.globalize_path(args[index])
+	bridge.start(python, startup_state, save_path,
 		output.path_join("host.log"), "trace" if trace_mode else "reference", "--frame-audit" in args)
 	if boot_mode and capture:
 		auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_boot_steps.json"))
@@ -198,6 +208,40 @@ func _initialize() -> void:
 			auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_effect_steps.json"))
 			# Observe each original frame after firing; never synthesize a phase.
 			for i in 300: auto_steps.append([1,[]])
+	if capture and "--capture-vehicle" in args:
+		var conflict := ["--capture-crew","--capture-station","--capture-information","--capture-menu","--capture-intro","--capture-briefing","--capture-motor-pool","--capture-effect"].any(func(flag):return flag in args)
+		if boot_mode or not trace_mode or conflict:
+			bridge.failure="Vehicle approach capture requires --trace and no other capture route"
+		else:
+			auto_steps=JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_vehicle_approach_steps.json"))
+
+	if capture and "--capture-campaign" in args:
+		var index := args.find("--capture-campaign")+1
+		var phase: String = args[index] if index<args.size() else ""
+		var conflicts := Array(args).filter(func(arg):return str(arg).begins_with("--capture-") and arg!="--capture-campaign")
+		if not boot_mode or not conflicts.is_empty() or phase not in ["new","continue"]:
+			bridge.failure="Campaign capture requires cold boot, new/continue, and no other route"
+		else:
+			campaign_capture_phase=phase
+			campaign_review_pending=phase=="new"
+			auto_steps=JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_campaign_steps.json"))[phase]
+
+	# Large diagnostic batches can exceed the transport deadline under load.
+	# Split only capture requests, preserving every frame and held-key value.
+	if capture: auto_steps = capture_chunks(auto_steps)
+
+static func audio_requested(tracing: bool, args: Array) -> bool:
+	return tracing and "--no-audio" not in args
+
+static func capture_chunks(steps: Array) -> Array:
+	var result: Array = []
+	for step: Array in steps:
+		var remaining := int(step[0])
+		while remaining>0:
+			var count := mini(remaining,60)
+			result.append([count,step[1].duplicate()])
+			remaining -= count
+	return result
 
 func _label(text: String, size: int) -> Label:
 	var label := Label.new()
@@ -224,6 +268,8 @@ func _build_play_ui() -> void:
 	# information or research furniture over the original game screen.
 	picture = TextureRect.new()
 	status = _label("Starting the original PC game...",22)
+	status.add_theme_constant_override("outline_size",4)
+	status.add_theme_color_override("font_outline_color",Color.BLACK)
 	caption = _label("",18)
 	for node in [picture,status,caption]: play_display.add_child(node)
 	picture.hide()
@@ -350,15 +396,21 @@ func _advance_live_frame() -> bool:
 	return bridge.step(1,Keyboard.held())
 
 func _capture_deadline_msec() -> int:
-	return 180000 if boot_mode else 60000
+	return 180000 if boot_mode or "--capture-vehicle" in OS.get_cmdline_user_args() else 60000
 
 func _process(delta: float) -> bool:
 	elapsed += delta
 	for message in bridge.poll():
 		_apply_sample(message)
 	if not bridge.failure.is_empty():
-		status.text = "Bridge stopped: " + bridge.failure
-		_close()
+		status.text = "Game stopped: " + bridge.failure + "\nClose this window to exit."
+		status.show()
+		if capture: _close()
+		elif not closing:
+			# Keep actionable failures visible instead of making Play disappear.
+			bridge.close()
+			if pc_audio: pc_audio.stop_all()
+			return false
 	if closing:
 		if bridge.has_exited() and audio_drained: quit(0 if bridge.failure.is_empty() and bridge.exit_code() == 0 else 1)
 		return false
@@ -368,6 +420,19 @@ func _process(delta: float) -> bool:
 				var step: Array = auto_steps[auto_index]
 				auto_index += 1
 				bridge.step(step[0], step[1])
+			elif campaign_review_pending:
+				# Diagnostic driver only: END may show a different number of review
+				# pages. Select R+R only after its exact original prompt is visible.
+				if not campaign_choice.is_empty():
+					if campaign_choice=="continue": auto_steps.append_array([[10,["left"]],[90,[]]])
+					auto_steps.append_array([[10,["return"]],[600,[]]])
+					campaign_review_pending=false
+				elif previous_program.get("name")=="END":
+					auto_steps.append_array([[10,["space"]],[90,[]]])
+				else:
+					bridge.failure="Campaign capture left END before the original R+R prompt"
+				# Rechunk the unconsumed suffix without changing the delivered prefix.
+				auto_steps=auto_steps.slice(0,auto_index)+capture_chunks(auto_steps.slice(auto_index))
 			elif not capture_done:
 				capture_done = true
 				if capture_effect>=0 and not capture_effect_seen:
@@ -396,6 +461,16 @@ func _apply_sample(message: Dictionary) -> void:
 	if image.load_png_from_buffer(Marshalls.base64_to_raw(message.png)) != OK:
 		bridge.failure = "invalid original framebuffer"
 		return
+	if campaign_review_pending:
+		var probe := image.duplicate()
+		probe.convert(Image.FORMAT_RGB8)
+		var digest := HashingContext.new()
+		digest.start(HashingContext.HASH_SHA256)
+		digest.update(probe.get_data())
+		campaign_choice={
+			"179660660519b1e466871e94b9bae9ecae5c35ce22a92a1b19d9f7b2c36ecfba":"continue",
+			"dd261b967d88052666983f1d36607c8935192ef56ed2bc2e9f0e406487662433":"rest"
+		}.get(digest.finish().hex_encode(),"")
 	# The completed packet owns its pixels and metadata. Once validated, the
 	# original host may compute the next frame while we build this presentation.
 	# All Godot scene work remains on the main thread; capture never prefetches.
@@ -474,6 +549,12 @@ func _apply_sample(message: Dictionary) -> void:
 	previous = state
 
 func _capture() -> void:
+	if not campaign_capture_phase.is_empty():
+		var expected_program := "START" if campaign_capture_phase=="new" else "SIM"
+		if previous_program.get("name")!=expected_program or (expected_program=="SIM" and previous.is_empty()):
+			bridge.failure="Campaign capture did not reach its original save/resume boundary"
+			_close()
+			return
 	print("PC_VIEW_CAPTURE_WAIT")
 	await process_frame
 	# Captures must not wait indefinitely for an OS-scheduled window redraw.

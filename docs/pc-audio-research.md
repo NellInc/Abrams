@@ -1,10 +1,10 @@
 # Original PC audio events
 
-The tandem audio pilot is opt-in:
+Tandem audio is now enabled by default (28 September 2026):
 
 ```sh
-./PC\ Bridge.command --audio
-./PC\ Bridge.command --audio --gunner-art
+./Play.command
+./Play.command --no-audio
 ```
 
 The original PC executable requests every sound. Godot plays the project's
@@ -14,10 +14,17 @@ simulation. Original F5 sound-off and pause stop effects and voices. Closing the
 viewer drains Godot playback and gracefully closes its own PC helper.
 
 This is partial sound coverage. Engine/turret loops now follow their original
-sound channels. Fourteen generated takes cover five observed incoming-hit
+sound channels. Full-sentence generated takes cover all 360 incoming-hit
 bearings and nine damage reports, triggered by fully visible original messages.
+Bearings read each digit, with both nine and niner accepted. See
+`voice-workflow.md` for generation and installed-master custody.
 Radio, warning sounds, wider crew/readiness coverage, briefings and music remain.
 Final mix and human listening approval are also open.
+
+Current native default-audio receipt:
+`artifacts/pc-play-default-audio-native-01/report.json`, 1,712 original frames,
+3,426 loop checks, zero errors and child exit 0. Earlier opt-in descriptions below
+are retained as historical evidence, rather than current launch instructions.
 
 ## Original code boundary
 

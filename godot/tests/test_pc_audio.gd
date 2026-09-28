@@ -41,6 +41,15 @@ func _initialize() -> void: run.call_deferred()
 func run() -> void:
 	var audio := PcAudio.new()
 	root.add_child(audio)
+	check(audio.crew_catalogue.size()==369,"nine damage reports plus all 360 original bearings")
+	for cue: String in audio.crew_catalogue:
+		check(audio.get_stream("voice_"+cue)!=null,"generated full-sentence resource: "+cue)
+	var fresh_bearing := crew(1,10)
+	fresh_bearing.voice="pc_hit_zero_five_eight"
+	fresh_bearing.text="We've been hit! Bearing 058"
+	check(audio._valid_crew(fresh_bearing),"newly encountered digit-wise bearing retains original source gate")
+	fresh_bearing.text="We've been hit! Bearing 059"
+	check(not audio._valid_crew(fresh_bearing),"bearing cannot select another number's performance")
 	var first := packet(10,1,[sound(1,10)])
 	# The real pipe uses JSON floats, not hand-authored integer dictionaries.
 	check(audio.apply_audio(JSON.parse_string(JSON.stringify(first))),"JSON first event")

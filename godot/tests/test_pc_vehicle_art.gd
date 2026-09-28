@@ -48,6 +48,7 @@ func run() -> void:
 	draw.presentation_palette=palette.palette
 	camera.add_child(draw)
 	var fixture:=directory.path_join("artifacts/pc-sprite-controls-02/report.json")
+	if "--fixture" in args: fixture=args[args.find("--fixture")+1]
 	check(FileAccess.file_exists(fixture),"source replay unavailable")
 	if not FileAccess.file_exists(fixture): finish(); return
 	var report: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(fixture))
@@ -55,7 +56,7 @@ func run() -> void:
 		geometry_invariant(packet)
 		passes+=1
 		selected+=draw.vehicle_polygon_count
-	check(passes==261 and selected>0,"replay vehicle coverage absent")
+	check(passes==report.render_passes.size() and passes>0 and selected>0,"replay vehicle coverage absent")
 	for shape: int in Art.MODELS:
 		for primitive: int in Art.MODELS[shape][2]:
 			var data:=panel_case(report.render_passes[0],shape,primitive,192.0,0.0)
@@ -85,6 +86,7 @@ func run() -> void:
 				await analytic_uv(data,shape,primitive)
 	if "--native" in args:
 		for index in [0,90,150]: await native_case(report.render_passes[index],4,"replay-%d"%index,false)
+		if "--fixture" in args: await native_case(report.render_passes[-1],4,"replay-final",true)
 		var unknown: Dictionary=report.render_passes[0].duplicate(true)
 		unknown.palette_rgb[7]=[1,2,3]
 		var old:=await render(unknown,false,4)

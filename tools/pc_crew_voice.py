@@ -1,6 +1,6 @@
 """Once-only speech for complete, pixel-verified original crew messages.
 
-The catalogue is deliberately bounded to observed portrait-3 damage reports.
+The catalogue covers portrait-3 damage reports and all 360 hit bearings.
 Unknown text remains original-only. Muted first appearances are consumed, and
 older page contents cannot replay when stations change. No guest state is read
 or changed here; message identity/visibility comes from the original draw trace.
@@ -9,11 +9,13 @@ import json
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[1]/'godot/data/pc_crew_voice_script.json'
+BEARINGS = SCRIPT.with_name('pc_bearing_voice_script.json')
 
 
 def catalogue():
     return {cue['caption']:(name,0x3D6A if name.startswith('pc_hit_') else 0x3DD2)
-            for name,cue in json.loads(SCRIPT.read_text())['cues'].items()}
+            for script in (SCRIPT, BEARINGS)
+            for name,cue in json.loads(script.read_text())['cues'].items()}
 
 
 class CrewBarks:

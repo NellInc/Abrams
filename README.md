@@ -13,6 +13,11 @@ music and sound-effect references for a faithful presentation upgrade.
   `--window-size 1920x1080` selects a starting window size. Original game keys
   remain untouched. `--compare` restores the side-by-side research view.
   See `docs/pc-display-research.md` for rendering and resize evidence.
+  Campaigns use the original auto-save and Take R+R flow. Normal Play retains its
+  local disk overlay in `artifacts/pc-boot-viewer/saves`; keep that directory when
+  clearing diagnostic output. `--saves /absolute/path` chooses a separate profile.
+  Concurrent windows cannot write the same save directory. No source game files
+  are modified. See `docs/playability-status.md` for tested flows and limits.
 * Open **Calibration Range.command** for the separate authored test range.
 * Open **Art Review.command** for original/remaster artwork comparisons.
 * Open **PC Bridge.command** for the original-PC/Godot tandem research view.
@@ -24,11 +29,9 @@ music and sound-effect references for a faithful presentation upgrade.
   palette. Original PC instruments, map, text and visibility remain authoritative.
   The driver's overhead assembly follows its original turret-relative drawing.
   Grass and road surfaces now carry world-anchored high-resolution detail.
-  T-62, M1A1 and M113 side faces now carry Genesis-derived track/armour detail,
-  with source-proportioned UVs and model-specific Genesis greys. Their original
-  visible faces and drawing order remain authoritative. `--original-vehicles`
-  restores the previous vehicle presentation. Other vehicle surfaces and types
-  remain unfinished; see `docs/pc-vehicle-art-integration.md`.
+  Vehicles retain their original flat-colour geometry. The experimental vehicle
+  texture panels were rejected and are no longer loaded by Play. Model replacement
+  is deferred while complete playability, graphics correctness and audio take priority.
   Pixel-verified instrument values, weapon status and eligible crew messages
   now use high-resolution outline reconstructions of the original typefaces
   inside their original display cells.
@@ -63,12 +66,14 @@ music and sound-effect references for a faithful presentation upgrade.
   Add `--wire` for the wireframe diagnostic. `--trace` retains the old mission
   snapshot probe; `--reference` selects the older static research backend.
   See `docs/pc-live-bridge.md` for controls, snapshot limits and lifecycle evidence.
-  Add `--audio` for original-event sample playback and generated firing/smoke
+  Original-event sample playback is enabled by default, with generated firing/smoke
   crew calls, plus engine and turret loops driven by original sound channels.
   The loader says “Up!” once a completed reload has a verified visible READY label.
-  Fourteen additional generated takes cover the observed hit-bearing and damage
-  reports, gated on complete original displayed messages. Bearings speak by digit.
-  F5 and original pause mute them. Remaining dialogue and music are unfinished;
+  Generated full-sentence takes cover all 360 hit bearings and nine observed
+  damage reports, gated on complete original displayed messages. Bearings speak
+  by digit, with both “nine” and “niner” accepted.
+  F5 and original pause mute them; `--no-audio` disables remastered audio.
+  Remaining dialogue and music are unfinished;
   see `docs/pc-audio-research.md`.
 * Importing `godot/project.godot` in Godot 4 still runs the authored calibration
   range as its main scene. Use **Play.command** for the PC-authoritative game.
@@ -83,10 +88,13 @@ Z zooms; T toggles thermal; H shows help; Escape pauses.
 
 ## Current boundary
 
-**This is an in-progress reconstruction, not a completed remake.** The current
-range is authored test content. Original missions, enemy AI, exact movement,
-damage, scoring and campaign parity remain unfinished. Passing internal tests
-does not prove that the original game logic has been recreated.
+**This is an in-progress remaster.** Play runs the original PC executable, which
+owns missions, enemy behaviour, movement, damage and scoring. All eight scenario
+entries, four stations, weapon inputs, pause/mute, quit and debrief flows now have
+an unchanged-original replay comparison across 54,657 frames. Complete victory,
+defeat and campaign-outcome coverage, remaining audio/graphics and historical
+speed calibration are still open. The calibration range remains separate authored
+content and is never the authoritative game.
 
 The local artwork collection includes the title, Colonel Wilson in three
 poses, his office, motor pool, four crew portraits, four cockpit plates,

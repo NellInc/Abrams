@@ -78,9 +78,11 @@ vec2 commander_donor(vec2 p) {
 	vec2 q = p;
 	if (p.x >= 190.0 && p.x < 305.0 && p.y >= 66.0) {
 		q.x = mix(188.0,308.0,(p.x-190.0)/115.0);
-		if (p.y>=131.0 && p.y<143.0) {
-			q.x = p.x<212.0 ? mix(188.0,196.0,(p.x-190.0)/22.0) : (p.x<282.0 ? mix(196.0,297.0,(p.x-212.0)/70.0) : mix(297.0,308.0,(p.x-282.0)/23.0));
-		}
+		// Ease the wider heading opening into the narrow display surround.
+		// Switching x maps at rows 131/143 cut both metal side rails in two.
+		float heading = smoothstep(128.0,131.0,p.y)*(1.0-smoothstep(143.0,147.0,p.y));
+		float heading_x = p.x<212.0 ? mix(188.0,196.0,(p.x-190.0)/22.0) : (p.x<282.0 ? mix(196.0,297.0,(p.x-212.0)/70.0) : mix(297.0,308.0,(p.x-282.0)/23.0));
+		q.x = mix(q.x,heading_x,heading);
 		if (p.y < 82.0) q.y = mix(68.5,80.5,(p.y-66.0)/16.0);
 		else if (p.y < 128.0) q.y = mix(80.5,121.0,(p.y-82.0)/46.0);
 		else if (p.y < 131.0) q.y = mix(121.0,127.5,(p.y-128.0)/3.0);

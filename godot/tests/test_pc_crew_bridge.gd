@@ -15,6 +15,8 @@ var barks: Array = []
 var expected: Array = []
 var final_program := ""
 var received_frames := 0
+var approach := false
+var approach_keys: Array = []
 
 func _initialize() -> void: start.call_deferred()
 
@@ -27,9 +29,15 @@ func start() -> void:
 		quit(1)
 		return
 	DirAccess.make_dir_recursive_absolute(output)
-	var reference := args[args.find("--reference")+1]
-	var report: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(reference))
-	expected = report.audio_events.filter(func(e): return e.kind == "crew_visible")
+	approach = "--approach" in args
+	if approach:
+		var steps: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_vehicle_approach_steps.json"))
+		for step: Array in steps:
+			for i in int(step[0]): approach_keys.append(step[1])
+	else:
+		var reference := args[args.find("--reference")+1]
+		var report: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(reference))
+		expected = report.audio_events.filter(func(e): return e.kind == "crew_visible")
 	audio = PcAudio.new()
 	root.add_child(audio)
 	var python := OS.get_environment("ABRAMS_PYTHON")
@@ -50,7 +58,8 @@ func _process(_delta: float) -> bool:
 			var matches: Array = visible.filter(func(m): return int(m.id) == int(event.message_id) and m.text == event.text and m.parts == event.parts)
 			if matches.size() != 1: errors.append("Bark lacks its complete presented original message")
 			var references: Array = expected.filter(func(e): return int(e.message_id) == int(event.message_id))
-			if references.size() != 1:
+			if approach: pass # Current presented pixels above own the native-event proof.
+			elif references.size() != 1:
 				errors.append("Unexpected original message identity")
 			elif int(references[0].frame_index) != index or references[0].voice != event.voice or references[0].parts != event.parts:
 				errors.append("Live crew event differs from parity-tested trace")
@@ -69,7 +78,12 @@ func _process(_delta: float) -> bool:
 		if drained and bridge.has_exited(): finish()
 	elif not errors.is_empty(): stop.call_deferred()
 	elif not bridge.pending:
-		if final_program != "SIM": stop.call_deferred()
+		if approach:
+			if index>=approach_keys.size(): stop.call_deferred()
+			else:
+				bridge.step(1,approach_keys[index])
+				index+=1
+		elif final_program != "SIM": stop.call_deferred()
 		else:
 			index += 1
 			if index >= 12000:
@@ -89,19 +103,26 @@ func stop() -> void:
 		drained = true
 
 func finish() -> void:
-	if received_frames != 8576: errors.append("Expected 8576 original fixture frames")
-	if final_program != "END": errors.append("Expected original END transition")
-	if barks.size() != 16 or heard.size() != 16: errors.append("Expected 16 once-only original visible crew performances")
+	if approach:
+		if received_frames != approach_keys.size()+1: errors.append("Approach route frame count differs")
+		if final_program != "SIM": errors.append("Approach unexpectedly left original mission")
+		if not heard.any(func(r):return r.voice=="pc_hit_zero_five_eight"): errors.append("New original bearing 058 never spoke")
+	else:
+		if received_frames != 8576: errors.append("Expected 8576 original fixture frames")
+		if final_program != "END": errors.append("Expected original END transition")
+		if barks.size() != 16 or heard.size() != 16: errors.append("Expected 16 once-only original visible crew performances")
 	var ids := {}
 	var cues := {}
 	for event in barks:
 		ids[int(event.message_id)] = true
 		cues[event.voice] = true
-	if ids.size() != 16 or ids.has(15) or cues.size() != 14: errors.append("Duplicate, hidden or missing crew messages")
+	if approach:
+		if ids.size()!=barks.size() or heard.size()!=barks.size(): errors.append("Approach repeated or omitted an original crew assignment")
+	elif ids.size() != 16 or ids.has(15) or cues.size() != 14: errors.append("Duplicate, hidden or missing crew messages")
 	if bridge.exit_code() != 0: errors.append("Original PC child exit failure")
 	var report := {"frames":received_frames,"final_program":final_program,"barks":barks,"heard":heard,
 		"voices":cues.keys(),"child_exit":bridge.exit_code(),"errors":errors,
-		"scope":"Actual native AudioStreamPlayer starts on parity-tested original source frames; no mixed recording or physical-device latency measurement"}
+		"scope":"Actual native AudioStreamPlayer starts paired with complete original visible messages; approach mode checks current frames, original mode also checks parity-trace receipts; no mixed recording or physical-device latency measurement"}
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print("PC_CREW_NATIVE: " + JSON.stringify({"frames":received_frames,"barks":barks.size(),"voices":cues.size(),"child_exit":bridge.exit_code(),"errors":errors}))
 	quit(0 if errors.is_empty() else 1)

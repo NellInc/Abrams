@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import fcntl
 import io
 import json
 import os
@@ -32,6 +33,37 @@ except ModuleNotFoundError:
     from pc_session import PresentationSession
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class FramePng:
+    """One immutable framebuffer encoding, without caching any live metadata."""
+    def __init__(self):
+        self.video = None
+        self.encoded = None
+
+    def encode(self, core):
+        if core.last_video is not None and core.last_video == self.video:
+            return self.encoded
+        image = io.BytesIO()
+        core.screenshot().save(image, format='PNG')
+        self.encoded = base64.b64encode(image.getvalue()).decode('ascii')
+        self.video = core.last_video
+        return self.encoded
+
+
+def lock_saves(directory):
+    """One host owns an overlay until its final original-game flush completes."""
+    directory=directory.resolve()
+    if any(directory.is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
+        raise ValueError('Save overlays must remain outside original source directories')
+    directory.mkdir(parents=True,exist_ok=True)
+    handle=(directory/'.abrams-session.lock').open('a+b')
+    try:
+        fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except BlockingIOError:
+        handle.close()
+        raise ValueError('This save directory is already open in another Abrams window. Close that window before reopening it.') from None
+    return handle
 
 
 def frame_audit(core):
@@ -85,11 +117,13 @@ def main():
     shapes = inspect_shapes(shape_bytes)["shapes"]
     core = None
     session = None
+    save_lock = None
 
     def send(message):
         output.write(json.dumps(message, separators=(",", ":")) + "\n")
 
     try:
+        save_lock = lock_saves(args.saves)
         pin, source_pin = CORE_SHA256, CORE_SHA256
         if args.backend == "trace":
             manifest = json.loads((ROOT / ".runtime/pc-core/abrams-trace.json").read_text())
@@ -124,16 +158,15 @@ def main():
         else:
             core.run(1)
         sequence = 0
+        frame_png = FramePng()
 
         def packet(kind, request_id):
             sample = session.sample() if session else {}
             state = sample.get('state') if session else reader.read(core.last_video_ram)
             if state is not None and session is None:
                 state["render_static_faces"] = static_faces_for_state(state, shapes)
-            image = io.BytesIO()
-            core.screenshot().save(image, format="PNG")
             result = {"type": kind, "id": request_id, "sequence": sequence,
-                    "state": state, "png": base64.b64encode(image.getvalue()).decode("ascii"),
+                    "state": state, "png": frame_png.encode(core),
                     "fps": core.pause_at_frame_end().timing.fps}
             if session:
                 result.update(sample)
@@ -183,6 +216,7 @@ def main():
         if core:
             if session: session.close()
             core.close()
+        if save_lock: save_lock.close()
         output.close()
 
 

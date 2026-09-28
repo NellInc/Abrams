@@ -24,17 +24,20 @@ diagnostic. See [UI research](pc-ui-research.md),
 [scanout research](pc-render-sync-research.md) and
 [surface research](pc-surfaces-research.md) for presentation evidence and limits.
 
-Optional `--audio` maps verified original sound requests to authored samples and
-generated firing/smoke calls. Original F5 and pause control the sound gate;
+Default audio maps verified original sound requests to authored samples and
+generated firing/smoke calls. `--no-audio` explicitly disables this presentation. Original F5 and pause control the sound gate;
 [PC audio research](pc-audio-research.md) records coverage and remaining sounds.
 
 Arrows, numeric keypad, alphabetic keys, digits, F1 through F12, Enter, Escape,
-Space, Tab and Backspace retain their original key identities. In particular,
+Space, Tab, Backspace and Shift/Ctrl/Alt retain their original key identities. In particular,
 top-row 5 is distinct from keypad 5, so name entry does not become tank braking.
 Use keypad 5 to stop/brake, C for control mode, Space to fire, F1 through F4 for
 stations, Q for the original mission-quit dialog and Enter to select. Original
 up/right and keypad 8/6 produced identical decoded states and framebuffers in a
 bounded driver probe. This is not a complete keyboard-layout test.
+Shift+3 reaches the original system-speed command. A 530-frame baseline/trace
+comparison cycles its original speed index through 0, 1 and 2. The original
+also selects AX when its scancode-3 poll sees that chord; this behavior is retained.
 
 Closing the window asks only its own helper to exit and waits for its exit. It
 does not signal the separately running DOSBox-X app. The authored range remains

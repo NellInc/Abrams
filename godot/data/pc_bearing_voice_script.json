@@ -1,0 +1,2141 @@
+{
+  "scope": "Full-sentence generative hit-bearing additions. Combined with the five existing PC bearing takes this covers 000 through 359. Only original pixel-verified messages select these samples; no predicted bearings or spoken backlog.",
+  "roles": {
+    "pc_crew_3": {
+      "voice": "Orus",
+      "style": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise."
+    }
+  },
+  "cues": {
+    "pc_hit_one_eight_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 188",
+      "text": "We've been hit! Bearing 188",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_eight_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 185",
+      "text": "We've been hit! Bearing 185",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_eight_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 184",
+      "text": "We've been hit! Bearing 184",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_eight_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 189",
+      "text": "We've been hit! Bearing 189",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_eight_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 181",
+      "text": "We've been hit! Bearing 181",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_eight_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 187",
+      "text": "We've been hit! Bearing 187",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_eight_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 186",
+      "text": "We've been hit! Bearing 186",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_eight_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 183",
+      "text": "We've been hit! Bearing 183",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_eight_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 182",
+      "text": "We've been hit! Bearing 182",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_eight_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 180",
+      "text": "We've been hit! Bearing 180",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 158",
+      "text": "We've been hit! Bearing 158",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 155",
+      "text": "We've been hit! Bearing 155",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 154",
+      "text": "We've been hit! Bearing 154",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 159",
+      "text": "We've been hit! Bearing 159",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 151",
+      "text": "We've been hit! Bearing 151",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 157",
+      "text": "We've been hit! Bearing 157",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 156",
+      "text": "We've been hit! Bearing 156",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 153",
+      "text": "We've been hit! Bearing 153",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 152",
+      "text": "We've been hit! Bearing 152",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_five_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 150",
+      "text": "We've been hit! Bearing 150",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_four_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 148",
+      "text": "We've been hit! Bearing 148",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_four_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 145",
+      "text": "We've been hit! Bearing 145",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_four_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 144",
+      "text": "We've been hit! Bearing 144",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_four_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 149",
+      "text": "We've been hit! Bearing 149",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_four_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 141",
+      "text": "We've been hit! Bearing 141",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_four_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 147",
+      "text": "We've been hit! Bearing 147",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_four_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 146",
+      "text": "We've been hit! Bearing 146",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_four_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 143",
+      "text": "We've been hit! Bearing 143",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_four_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 142",
+      "text": "We've been hit! Bearing 142",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 198",
+      "text": "We've been hit! Bearing 198",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 195",
+      "text": "We've been hit! Bearing 195",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 194",
+      "text": "We've been hit! Bearing 194",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 199",
+      "text": "We've been hit! Bearing 199",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 191",
+      "text": "We've been hit! Bearing 191",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 197",
+      "text": "We've been hit! Bearing 197",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 196",
+      "text": "We've been hit! Bearing 196",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 193",
+      "text": "We've been hit! Bearing 193",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 192",
+      "text": "We've been hit! Bearing 192",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_nine_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 190",
+      "text": "We've been hit! Bearing 190",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 118",
+      "text": "We've been hit! Bearing 118",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 115",
+      "text": "We've been hit! Bearing 115",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 114",
+      "text": "We've been hit! Bearing 114",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 119",
+      "text": "We've been hit! Bearing 119",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 111",
+      "text": "We've been hit! Bearing 111",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 117",
+      "text": "We've been hit! Bearing 117",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 116",
+      "text": "We've been hit! Bearing 116",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 113",
+      "text": "We've been hit! Bearing 113",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 112",
+      "text": "We've been hit! Bearing 112",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_one_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 110",
+      "text": "We've been hit! Bearing 110",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 178",
+      "text": "We've been hit! Bearing 178",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 175",
+      "text": "We've been hit! Bearing 175",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 174",
+      "text": "We've been hit! Bearing 174",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 179",
+      "text": "We've been hit! Bearing 179",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 171",
+      "text": "We've been hit! Bearing 171",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 177",
+      "text": "We've been hit! Bearing 177",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 176",
+      "text": "We've been hit! Bearing 176",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 173",
+      "text": "We've been hit! Bearing 173",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 172",
+      "text": "We've been hit! Bearing 172",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_seven_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 170",
+      "text": "We've been hit! Bearing 170",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 168",
+      "text": "We've been hit! Bearing 168",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 165",
+      "text": "We've been hit! Bearing 165",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 164",
+      "text": "We've been hit! Bearing 164",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 169",
+      "text": "We've been hit! Bearing 169",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 161",
+      "text": "We've been hit! Bearing 161",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 167",
+      "text": "We've been hit! Bearing 167",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 166",
+      "text": "We've been hit! Bearing 166",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 163",
+      "text": "We've been hit! Bearing 163",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 162",
+      "text": "We've been hit! Bearing 162",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_six_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 160",
+      "text": "We've been hit! Bearing 160",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_three_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 138",
+      "text": "We've been hit! Bearing 138",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_three_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 135",
+      "text": "We've been hit! Bearing 135",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_three_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 134",
+      "text": "We've been hit! Bearing 134",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_three_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 139",
+      "text": "We've been hit! Bearing 139",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_three_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 131",
+      "text": "We've been hit! Bearing 131",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_three_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 136",
+      "text": "We've been hit! Bearing 136",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_three_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 133",
+      "text": "We've been hit! Bearing 133",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_three_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 132",
+      "text": "We've been hit! Bearing 132",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_three_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 130",
+      "text": "We've been hit! Bearing 130",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 128",
+      "text": "We've been hit! Bearing 128",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 125",
+      "text": "We've been hit! Bearing 125",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 124",
+      "text": "We've been hit! Bearing 124",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 129",
+      "text": "We've been hit! Bearing 129",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 121",
+      "text": "We've been hit! Bearing 121",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 127",
+      "text": "We've been hit! Bearing 127",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 126",
+      "text": "We've been hit! Bearing 126",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 123",
+      "text": "We've been hit! Bearing 123",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 122",
+      "text": "We've been hit! Bearing 122",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_two_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 120",
+      "text": "We've been hit! Bearing 120",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 108",
+      "text": "We've been hit! Bearing 108",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 105",
+      "text": "We've been hit! Bearing 105",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 104",
+      "text": "We've been hit! Bearing 104",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 109",
+      "text": "We've been hit! Bearing 109",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 101",
+      "text": "We've been hit! Bearing 101",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 107",
+      "text": "We've been hit! Bearing 107",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 106",
+      "text": "We've been hit! Bearing 106",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 103",
+      "text": "We've been hit! Bearing 103",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 102",
+      "text": "We've been hit! Bearing 102",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_one_zero_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 100",
+      "text": "We've been hit! Bearing 100",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 358",
+      "text": "We've been hit! Bearing 358",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 355",
+      "text": "We've been hit! Bearing 355",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 354",
+      "text": "We've been hit! Bearing 354",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 359",
+      "text": "We've been hit! Bearing 359",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 351",
+      "text": "We've been hit! Bearing 351",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 357",
+      "text": "We've been hit! Bearing 357",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 356",
+      "text": "We've been hit! Bearing 356",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 353",
+      "text": "We've been hit! Bearing 353",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 352",
+      "text": "We've been hit! Bearing 352",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_five_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 350",
+      "text": "We've been hit! Bearing 350",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 348",
+      "text": "We've been hit! Bearing 348",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 345",
+      "text": "We've been hit! Bearing 345",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 344",
+      "text": "We've been hit! Bearing 344",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 349",
+      "text": "We've been hit! Bearing 349",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 341",
+      "text": "We've been hit! Bearing 341",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 347",
+      "text": "We've been hit! Bearing 347",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 346",
+      "text": "We've been hit! Bearing 346",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 343",
+      "text": "We've been hit! Bearing 343",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 342",
+      "text": "We've been hit! Bearing 342",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_four_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 340",
+      "text": "We've been hit! Bearing 340",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 318",
+      "text": "We've been hit! Bearing 318",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 315",
+      "text": "We've been hit! Bearing 315",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 314",
+      "text": "We've been hit! Bearing 314",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 319",
+      "text": "We've been hit! Bearing 319",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 311",
+      "text": "We've been hit! Bearing 311",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 317",
+      "text": "We've been hit! Bearing 317",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 316",
+      "text": "We've been hit! Bearing 316",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 313",
+      "text": "We've been hit! Bearing 313",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 312",
+      "text": "We've been hit! Bearing 312",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_one_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 310",
+      "text": "We've been hit! Bearing 310",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 338",
+      "text": "We've been hit! Bearing 338",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 335",
+      "text": "We've been hit! Bearing 335",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 334",
+      "text": "We've been hit! Bearing 334",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 339",
+      "text": "We've been hit! Bearing 339",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 331",
+      "text": "We've been hit! Bearing 331",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 337",
+      "text": "We've been hit! Bearing 337",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 336",
+      "text": "We've been hit! Bearing 336",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 333",
+      "text": "We've been hit! Bearing 333",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 332",
+      "text": "We've been hit! Bearing 332",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_three_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 330",
+      "text": "We've been hit! Bearing 330",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 328",
+      "text": "We've been hit! Bearing 328",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 325",
+      "text": "We've been hit! Bearing 325",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 324",
+      "text": "We've been hit! Bearing 324",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 329",
+      "text": "We've been hit! Bearing 329",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 321",
+      "text": "We've been hit! Bearing 321",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 327",
+      "text": "We've been hit! Bearing 327",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 326",
+      "text": "We've been hit! Bearing 326",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 323",
+      "text": "We've been hit! Bearing 323",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 322",
+      "text": "We've been hit! Bearing 322",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_two_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 320",
+      "text": "We've been hit! Bearing 320",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 308",
+      "text": "We've been hit! Bearing 308",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 305",
+      "text": "We've been hit! Bearing 305",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 304",
+      "text": "We've been hit! Bearing 304",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 309",
+      "text": "We've been hit! Bearing 309",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 301",
+      "text": "We've been hit! Bearing 301",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 307",
+      "text": "We've been hit! Bearing 307",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 306",
+      "text": "We've been hit! Bearing 306",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 303",
+      "text": "We've been hit! Bearing 303",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 302",
+      "text": "We've been hit! Bearing 302",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_three_zero_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 300",
+      "text": "We've been hit! Bearing 300",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 288",
+      "text": "We've been hit! Bearing 288",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 285",
+      "text": "We've been hit! Bearing 285",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 284",
+      "text": "We've been hit! Bearing 284",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 289",
+      "text": "We've been hit! Bearing 289",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 281",
+      "text": "We've been hit! Bearing 281",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 287",
+      "text": "We've been hit! Bearing 287",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 286",
+      "text": "We've been hit! Bearing 286",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 283",
+      "text": "We've been hit! Bearing 283",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 282",
+      "text": "We've been hit! Bearing 282",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_eight_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 280",
+      "text": "We've been hit! Bearing 280",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 258",
+      "text": "We've been hit! Bearing 258",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 255",
+      "text": "We've been hit! Bearing 255",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 254",
+      "text": "We've been hit! Bearing 254",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 259",
+      "text": "We've been hit! Bearing 259",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 251",
+      "text": "We've been hit! Bearing 251",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 257",
+      "text": "We've been hit! Bearing 257",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 256",
+      "text": "We've been hit! Bearing 256",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 253",
+      "text": "We've been hit! Bearing 253",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 252",
+      "text": "We've been hit! Bearing 252",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_five_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 250",
+      "text": "We've been hit! Bearing 250",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 248",
+      "text": "We've been hit! Bearing 248",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 245",
+      "text": "We've been hit! Bearing 245",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 244",
+      "text": "We've been hit! Bearing 244",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 249",
+      "text": "We've been hit! Bearing 249",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 241",
+      "text": "We've been hit! Bearing 241",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 247",
+      "text": "We've been hit! Bearing 247",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 246",
+      "text": "We've been hit! Bearing 246",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 243",
+      "text": "We've been hit! Bearing 243",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 242",
+      "text": "We've been hit! Bearing 242",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_four_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 240",
+      "text": "We've been hit! Bearing 240",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 298",
+      "text": "We've been hit! Bearing 298",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 295",
+      "text": "We've been hit! Bearing 295",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 294",
+      "text": "We've been hit! Bearing 294",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 299",
+      "text": "We've been hit! Bearing 299",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 291",
+      "text": "We've been hit! Bearing 291",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 297",
+      "text": "We've been hit! Bearing 297",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 296",
+      "text": "We've been hit! Bearing 296",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 293",
+      "text": "We've been hit! Bearing 293",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 292",
+      "text": "We've been hit! Bearing 292",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_nine_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 290",
+      "text": "We've been hit! Bearing 290",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 218",
+      "text": "We've been hit! Bearing 218",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 215",
+      "text": "We've been hit! Bearing 215",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 214",
+      "text": "We've been hit! Bearing 214",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 219",
+      "text": "We've been hit! Bearing 219",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 211",
+      "text": "We've been hit! Bearing 211",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 217",
+      "text": "We've been hit! Bearing 217",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 216",
+      "text": "We've been hit! Bearing 216",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 213",
+      "text": "We've been hit! Bearing 213",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 212",
+      "text": "We've been hit! Bearing 212",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_one_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 210",
+      "text": "We've been hit! Bearing 210",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 278",
+      "text": "We've been hit! Bearing 278",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 275",
+      "text": "We've been hit! Bearing 275",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 274",
+      "text": "We've been hit! Bearing 274",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 279",
+      "text": "We've been hit! Bearing 279",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 271",
+      "text": "We've been hit! Bearing 271",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 277",
+      "text": "We've been hit! Bearing 277",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 276",
+      "text": "We've been hit! Bearing 276",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 273",
+      "text": "We've been hit! Bearing 273",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 272",
+      "text": "We've been hit! Bearing 272",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_seven_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 270",
+      "text": "We've been hit! Bearing 270",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 268",
+      "text": "We've been hit! Bearing 268",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 265",
+      "text": "We've been hit! Bearing 265",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 264",
+      "text": "We've been hit! Bearing 264",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 269",
+      "text": "We've been hit! Bearing 269",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 261",
+      "text": "We've been hit! Bearing 261",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 267",
+      "text": "We've been hit! Bearing 267",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 266",
+      "text": "We've been hit! Bearing 266",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 263",
+      "text": "We've been hit! Bearing 263",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 262",
+      "text": "We've been hit! Bearing 262",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_six_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 260",
+      "text": "We've been hit! Bearing 260",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 238",
+      "text": "We've been hit! Bearing 238",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 235",
+      "text": "We've been hit! Bearing 235",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 234",
+      "text": "We've been hit! Bearing 234",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 239",
+      "text": "We've been hit! Bearing 239",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 231",
+      "text": "We've been hit! Bearing 231",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 237",
+      "text": "We've been hit! Bearing 237",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 236",
+      "text": "We've been hit! Bearing 236",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 233",
+      "text": "We've been hit! Bearing 233",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 232",
+      "text": "We've been hit! Bearing 232",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_three_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 230",
+      "text": "We've been hit! Bearing 230",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 228",
+      "text": "We've been hit! Bearing 228",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 225",
+      "text": "We've been hit! Bearing 225",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 224",
+      "text": "We've been hit! Bearing 224",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 229",
+      "text": "We've been hit! Bearing 229",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 221",
+      "text": "We've been hit! Bearing 221",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 227",
+      "text": "We've been hit! Bearing 227",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 226",
+      "text": "We've been hit! Bearing 226",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 223",
+      "text": "We've been hit! Bearing 223",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 222",
+      "text": "We've been hit! Bearing 222",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_two_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 220",
+      "text": "We've been hit! Bearing 220",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 208",
+      "text": "We've been hit! Bearing 208",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 205",
+      "text": "We've been hit! Bearing 205",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 204",
+      "text": "We've been hit! Bearing 204",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 209",
+      "text": "We've been hit! Bearing 209",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 201",
+      "text": "We've been hit! Bearing 201",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 207",
+      "text": "We've been hit! Bearing 207",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 206",
+      "text": "We've been hit! Bearing 206",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 203",
+      "text": "We've been hit! Bearing 203",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 202",
+      "text": "We've been hit! Bearing 202",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_two_zero_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 200",
+      "text": "We've been hit! Bearing 200",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 088",
+      "text": "We've been hit! Bearing 088",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 085",
+      "text": "We've been hit! Bearing 085",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 084",
+      "text": "We've been hit! Bearing 084",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 089",
+      "text": "We've been hit! Bearing 089",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 081",
+      "text": "We've been hit! Bearing 081",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 087",
+      "text": "We've been hit! Bearing 087",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 086",
+      "text": "We've been hit! Bearing 086",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 083",
+      "text": "We've been hit! Bearing 083",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 082",
+      "text": "We've been hit! Bearing 082",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_eight_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 080",
+      "text": "We've been hit! Bearing 080",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 058",
+      "text": "We've been hit! Bearing 058",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 055",
+      "text": "We've been hit! Bearing 055",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 054",
+      "text": "We've been hit! Bearing 054",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 059",
+      "text": "We've been hit! Bearing 059",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 051",
+      "text": "We've been hit! Bearing 051",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 057",
+      "text": "We've been hit! Bearing 057",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 056",
+      "text": "We've been hit! Bearing 056",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 053",
+      "text": "We've been hit! Bearing 053",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 052",
+      "text": "We've been hit! Bearing 052",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_five_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 050",
+      "text": "We've been hit! Bearing 050",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_four_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 048",
+      "text": "We've been hit! Bearing 048",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_four_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 045",
+      "text": "We've been hit! Bearing 045",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_four_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 044",
+      "text": "We've been hit! Bearing 044",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_four_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 049",
+      "text": "We've been hit! Bearing 049",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_four_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 047",
+      "text": "We've been hit! Bearing 047",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_four_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 046",
+      "text": "We've been hit! Bearing 046",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_four_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 042",
+      "text": "We've been hit! Bearing 042",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 098",
+      "text": "We've been hit! Bearing 098",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 095",
+      "text": "We've been hit! Bearing 095",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 094",
+      "text": "We've been hit! Bearing 094",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 099",
+      "text": "We've been hit! Bearing 099",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 091",
+      "text": "We've been hit! Bearing 091",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 097",
+      "text": "We've been hit! Bearing 097",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 096",
+      "text": "We've been hit! Bearing 096",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 093",
+      "text": "We've been hit! Bearing 093",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 092",
+      "text": "We've been hit! Bearing 092",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_nine_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 090",
+      "text": "We've been hit! Bearing 090",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 018",
+      "text": "We've been hit! Bearing 018",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 015",
+      "text": "We've been hit! Bearing 015",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 014",
+      "text": "We've been hit! Bearing 014",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 019",
+      "text": "We've been hit! Bearing 019",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 011",
+      "text": "We've been hit! Bearing 011",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 017",
+      "text": "We've been hit! Bearing 017",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 016",
+      "text": "We've been hit! Bearing 016",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 013",
+      "text": "We've been hit! Bearing 013",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 012",
+      "text": "We've been hit! Bearing 012",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_one_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 010",
+      "text": "We've been hit! Bearing 010",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 078",
+      "text": "We've been hit! Bearing 078",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 075",
+      "text": "We've been hit! Bearing 075",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 074",
+      "text": "We've been hit! Bearing 074",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 079",
+      "text": "We've been hit! Bearing 079",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 071",
+      "text": "We've been hit! Bearing 071",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 077",
+      "text": "We've been hit! Bearing 077",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 076",
+      "text": "We've been hit! Bearing 076",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 073",
+      "text": "We've been hit! Bearing 073",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 072",
+      "text": "We've been hit! Bearing 072",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_seven_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 070",
+      "text": "We've been hit! Bearing 070",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 068",
+      "text": "We've been hit! Bearing 068",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 065",
+      "text": "We've been hit! Bearing 065",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 064",
+      "text": "We've been hit! Bearing 064",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 069",
+      "text": "We've been hit! Bearing 069",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 061",
+      "text": "We've been hit! Bearing 061",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 067",
+      "text": "We've been hit! Bearing 067",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 066",
+      "text": "We've been hit! Bearing 066",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 063",
+      "text": "We've been hit! Bearing 063",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 062",
+      "text": "We've been hit! Bearing 062",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_six_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 060",
+      "text": "We've been hit! Bearing 060",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 038",
+      "text": "We've been hit! Bearing 038",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 035",
+      "text": "We've been hit! Bearing 035",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 034",
+      "text": "We've been hit! Bearing 034",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 039",
+      "text": "We've been hit! Bearing 039",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 031",
+      "text": "We've been hit! Bearing 031",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 037",
+      "text": "We've been hit! Bearing 037",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 036",
+      "text": "We've been hit! Bearing 036",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 033",
+      "text": "We've been hit! Bearing 033",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 032",
+      "text": "We've been hit! Bearing 032",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_three_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 030",
+      "text": "We've been hit! Bearing 030",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 028",
+      "text": "We've been hit! Bearing 028",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 025",
+      "text": "We've been hit! Bearing 025",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 024",
+      "text": "We've been hit! Bearing 024",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 029",
+      "text": "We've been hit! Bearing 029",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 021",
+      "text": "We've been hit! Bearing 021",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 027",
+      "text": "We've been hit! Bearing 027",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 026",
+      "text": "We've been hit! Bearing 026",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 023",
+      "text": "We've been hit! Bearing 023",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 022",
+      "text": "We've been hit! Bearing 022",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_two_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 020",
+      "text": "We've been hit! Bearing 020",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_eight": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 008",
+      "text": "We've been hit! Bearing 008",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_five": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 005",
+      "text": "We've been hit! Bearing 005",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_four": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 004",
+      "text": "We've been hit! Bearing 004",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_nine": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 009",
+      "text": "We've been hit! Bearing 009",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_one": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 001",
+      "text": "We've been hit! Bearing 001",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_seven": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 007",
+      "text": "We've been hit! Bearing 007",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_six": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 006",
+      "text": "We've been hit! Bearing 006",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_three": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 003",
+      "text": "We've been hit! Bearing 003",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_two": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 002",
+      "text": "We've been hit! Bearing 002",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    },
+    "pc_hit_zero_zero_zero": {
+      "role": "pc_crew_3",
+      "caption": "We've been hit! Bearing 000",
+      "text": "We've been hit! Bearing 000",
+      "direction": "An urgent but controlled combat report. Speak exactly the supplied transcript, including each bearing digit individually. No added words or vocal noises."
+    }
+  }
+}

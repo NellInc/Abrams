@@ -3,7 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
-from tools.pc_crew_voice import CrewBarks,SCRIPT
+from tools.pc_crew_voice import CrewBarks,SCRIPT,BEARINGS
 from tools.install_pc_crew_voice import check_take
 from tools.generate_crew_voice import validate_wav
 from tests import test_pc_session
@@ -33,6 +33,34 @@ class CrewTests(unittest.TestCase):
         second,=self.step([message(2)]);self.assertEqual(second['message_id'],2)
         self.assertEqual(self.step([message()]),[])
 
+    def test_every_displayed_three_digit_bearing_has_a_full_sentence(self):
+        words='zero one two three four five six seven eight nine'.split()
+        for bearing in range(360):
+            number=f'{bearing:03d}'
+            item=message(bearing+1,text="We've been hit! Bearing "+number)
+            event,=self.step([item])
+            self.assertEqual(event['voice'],'pc_hit_'+'_'.join(words[int(d)] for d in number))
+            self.assertEqual(event['text'],item['text'])
+        for invalid in ('360','-01','58','０５８','058 trailing text'):
+            self.gate=CrewBarks()
+            self.assertEqual(self.step([message(text="We've been hit! Bearing "+invalid)]),[])
+
+    def test_bearing_additions_are_disjoint_and_all_installed_takes_verified(self):
+        folder=ROOT/'godot/assets/audio'
+        old=json.loads(SCRIPT.read_text())['cues']
+        new=json.loads(BEARINGS.read_text())['cues']
+        self.assertFalse(old.keys() & new.keys())
+        self.assertEqual(len(new),355)
+        receipt=json.loads((folder/'pc_bearing_provenance.json').read_text())
+        self.assertEqual(receipt['script_sha256'],hashlib.sha256(BEARINGS.read_bytes()).hexdigest())
+        self.assertEqual(receipt['voices'].keys(),new.keys())
+        for cue,entry in receipt['voices'].items():
+            self.assertEqual(entry['generator'],'gemini-3.8-flash-tts')
+            self.assertEqual(entry['text'],new[cue]['caption'])
+            actual=validate_wav((folder/f'voice_{cue}.wav').read_bytes())
+            for key,value in actual.items():self.assertEqual(entry[key],value)
+            check_take(entry,entry['transcript_qa'],entry['number_delivery_qa'])
+
     def test_unknown_wrong_source_radio_and_partial_remain_silent(self):
         for change in ({'text':'Good hit!'}, {'speaker':1}, {'assignment_ip':0x3D0C},
                        {'channel':'radio'}, {'parts':[]}):
@@ -59,6 +87,15 @@ class CrewTests(unittest.TestCase):
         session.step(1);event,=session.drain_audio()['events']
         self.assertEqual((event['epoch'],event['id']),(2,2))
         session.close()
+
+    def test_niner_is_accepted_as_an_individual_nine_digit(self):
+        voice={'sha256':'a'*64,'performed_text':"We've been hit! Bearing two nine three"}
+        text={'audio_sha256':'a'*64,'expected':voice['performed_text'],
+              'transcript':"We've been hit, bearing two niner three."}
+        check_take(voice,text)
+        for wrong in ('two ninety three','two nine','two niner four','two ninety-three'):
+            with self.assertRaises(ValueError):
+                check_take(voice,text|{'transcript':"We've been hit, bearing "+wrong})
 
     def test_numeric_transcript_requires_independent_matching_digit_delivery(self):
         voice={'sha256':'a'*64,'performed_text':"We've been hit! Bearing zero four three"}

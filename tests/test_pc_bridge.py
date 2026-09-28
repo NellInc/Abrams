@@ -9,12 +9,35 @@ from types import SimpleNamespace
 
 from tools.pc_live_state import SimStateReader, bearing
 from tools.pc_reference_core import PcReferenceCore, KEYS, MemoryDescriptor, ThrottleState
-from tools.pc_bridge_host import validate_command, frame_audit
+from tools.pc_bridge_host import validate_command, frame_audit, lock_saves, FramePng
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class PcBridgeTests(unittest.TestCase):
+    def test_frame_png_cache_requires_all_current_bytes_and_dimensions(self):
+        import base64,io
+        from PIL import Image
+        calls=[]
+        core=SimpleNamespace(last_video=(bytes([1,2,3,0])*4,2,2,8))
+        def screenshot():
+            calls.append(core.last_video)
+            raw,w,h,pitch=core.last_video
+            return Image.frombytes('RGB',(w,h),raw,'raw','BGRX',pitch)
+        core.screenshot=screenshot
+        encoder=FramePng()
+        first=encoder.encode(core)
+        self.assertEqual(encoder.encode(core),first)
+        self.assertEqual(len(calls),1)
+        for video in [(bytes([1,2,3,0])*3+bytes([1,2,4,0]),2,2,8),
+                      (bytes([1,2,3,0])*4,4,1,16),calls[0]]:
+            core.last_video=video
+            value=encoder.encode(core)
+            self.assertEqual(Image.open(io.BytesIO(base64.b64decode(value))).tobytes(),screenshot().tobytes())
+        self.assertEqual(len(calls),7)
+        self.assertEqual(encoder.encode(core),first)
+        self.assertEqual(len(calls),7)
+
     @classmethod
     def setUpClass(cls):
         cls.reader = SimStateReader(ROOT / "GAME/SIM.EXE")
@@ -29,6 +52,20 @@ class PcBridgeTests(unittest.TestCase):
         struct.pack_into("<3H", ram, ds + body + 4, 2048, 2048, 50)
         struct.pack_into("<4h", ram, ds + 0x79B4, 80, 10, 6, 18)
         return ram, ds, body, turret
+
+    def test_only_one_host_can_own_a_save_overlay_and_lock_releases(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'saves'
+            first=lock_saves(path)
+            try:
+                with self.assertRaisesRegex(ValueError,'already open'):
+                    lock_saves(path)
+                with lock_saves(Path(directory)/'independent'):pass
+            finally:first.close()
+            with lock_saves(path):pass
+            for source in ('GAME','GENESIS'):
+                with self.assertRaisesRegex(ValueError,'outside original'):
+                    lock_saves(ROOT/source/'forbidden-saves')
 
     def test_anchor_rejects_absent_incomplete_and_ambiguous_images(self):
         self.assertIsNone(self.reader.read(bytes(640 * 1024)))
@@ -88,6 +125,19 @@ class PcBridgeTests(unittest.TestCase):
         self.assertEqual(core._input(0, 3, 0, KEYS["kp6"]), 0)
         self.assertEqual(core._input(1, 3, 0, KEYS["kp6"]), 0)
         self.assertEqual(core._input(0, 1, 0, KEYS["kp6"]), 0)
+
+    def test_original_modifiers_precede_printable_keys_and_release_after_them(self):
+        core=PcReferenceCore.__new__(PcReferenceCore)
+        core.pressed=set();events=[];core.keyboard=lambda *event:events.append(event)
+        core.set_keys(['3','shift'])
+        self.assertEqual([event[:2] for event in events],[(True,304),(True,51)])
+        self.assertEqual(core._input(0,3,0,304),1)
+        core.set_keys(['shift','3'])
+        self.assertEqual(len(events),2)
+        core.set_keys([])
+        self.assertEqual([event[:2] for event in events[2:]],[(False,51),(False,304)])
+        core.set_keys(['ctrl','alt','q'])
+        self.assertEqual([event[:2] for event in events[4:]],[(True,306),(True,308),(True,113)])
 
     def test_explicit_frame_stepping(self):
         core = PcReferenceCore.__new__(PcReferenceCore)

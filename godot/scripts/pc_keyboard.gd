@@ -1,6 +1,6 @@
 extends RefCounted
 ## Preserve original key identities in menus and gameplay, including digit 5.
-const SPECIAL = {KEY_UP: "up", KEY_DOWN: "down", KEY_LEFT: "left", KEY_RIGHT: "right",
+const SPECIAL = {KEY_SHIFT: "shift", KEY_CTRL: "ctrl", KEY_ALT: "alt", KEY_UP: "up", KEY_DOWN: "down", KEY_LEFT: "left", KEY_RIGHT: "right",
 	KEY_ESCAPE: "escape", KEY_BACKSPACE: "backspace", KEY_TAB: "tab",
 	KEY_SPACE: "space", KEY_ENTER: "return", KEY_KP_ENTER: "return"}
 

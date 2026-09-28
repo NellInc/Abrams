@@ -1,5 +1,34 @@
 # Live presentation pacing
 
+## Playability follow-up, 28 September 2026
+
+Profiling found repeated full-font decoding in `loaded_font`. Decoding now uses
+an eight-entry immutable exact-byte cache, after every observation verifies the
+complete loaded font against the supplied catalog. Caller-visible dictionaries
+are separate, and shared glyph bytes are immutable. Changed font bytes, catalog
+identity or bounds still reject the observation. Full-frame mask range checks
+use equivalent byte-translation predicates instead of Python element iteration.
+
+The host also retains exactly one encoded original framebuffer. Reuse requires
+equal complete framebuffer bytes, width, height and pitch. It does not cache
+state, text, drawing metadata, audio, event identities or the program lifecycle.
+Current per-frame checks, synchronization, CPU settings and input cadence remain.
+
+`artifacts/pc-playability-01/observer-parity/final-verification.json` compares
+601 complete audit-enabled host packets before and after these changes. The
+entire JSON stream is byte-identical, including every paired RAM/video hash,
+PNG, audio event and presentation field. Instrumented observer-only execution
+before PNG caching took 6.43 seconds before and 4.66 after; these durations are
+diagnostic throughput, not live-game speed claims.
+
+Native default-audio probes measured 23.68 fps initially, 53.41 with font caching,
+48.10 with bulk mask checks, and 59.03 in the final 1,200-frame stationary run
+with PNG caching. The original core advertised 59.47 fps. Machine load varied,
+so these results do not isolate the causal improvement from each optimization.
+The final receipt is `artifacts/pc-play-final-pacing-01/pacing.json`; its mean
+interval was 16.94 ms. Sustained moving-gameplay and historical-speed calibration
+remain distinct acceptance requirements.
+
 ## Follow-up: overlap original dispatch and presentation
 
 The production viewer now dispatches the next clock-eligible original frame
@@ -221,3 +250,12 @@ Remaining pacing work: isolate host-ready versus Godot-poll/render latency under
 controlled machine load, test sustained combat and audio beyond the bounded
 replay above, then calibrate against the standalone pinned original. No catch-up
 policy or broader timing parity is implied by these optimizations.
+
+The current matched 1,020-frame moving/station/firing replay is
+`artifacts/pc-play-final-controls-02/verification.json`: every original key input
+and paired RAM/video hash equals the retained reference, 57.93 effective fps
+against 59.47 advertised. Diagnostic chunking shifted request IDs by eight,
+so whole-packet hashes across those differently chunked runs are not compared.
+The separate 601-packet cache gate above compares complete packet bytes.
+An initial comparison used different warmup routes and correctly failed; it is
+retained at `pc-play-final-controls-01/verification.json` with the setup diagnosis.

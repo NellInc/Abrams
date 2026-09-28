@@ -1,4 +1,6 @@
 import struct
+import json
+from pathlib import Path
 import unittest
 from types import SimpleNamespace
 from tools.pc_live_state import active_program
@@ -20,6 +22,34 @@ def program_ram(name='SIM', psp=0x1DD):
 
 
 class SessionTests(unittest.TestCase):
+    def test_all_scenario_route_visits_eight_menus_without_guest_writes(self):
+        from tools.capture_pc_session import scenario_steps
+        route=list(scenario_steps())
+        labels=[s['label'] for s in route]
+        self.assertEqual(len(labels),len(set(labels)))
+        for mission in range(8):
+            prefix=f'scenario-{mission}'
+            changes=[s for s in route if s['label'].startswith(prefix+'-next-') and s['label'].endswith('-press')]
+            self.assertEqual(len(changes),mission)
+            for station in ('gunner','commander','cupola','driver'):
+                self.assertIn(prefix+'-'+station,labels)
+            self.assertIn(prefix+'-debrief',labels)
+            self.assertIn(prefix+'-main-menu',labels)
+        from tools.pc_reference_core import KEYS
+        for step in route:
+            self.assertTrue(1<=step['frames']<=600)
+            self.assertTrue(set(step['keys'])<=set(KEYS))
+
+    def test_campaign_capture_routes_use_only_original_inputs(self):
+        from tools.pc_reference_core import KEYS
+        routes=json.loads((Path(__file__).resolve().parents[1]/'godot/tests/fixtures/pc_campaign_steps.json').read_text())
+        self.assertEqual(set(routes),{'new','continue'})
+        for route in routes.values():
+            for frames,keys in route:
+                self.assertTrue(1<=frames<=600)
+                self.assertTrue(set(keys)<=set(KEYS))
+        self.assertEqual(routes['new'][-2:],[[3,['return']],[600,[]]])
+
     def test_active_psp_not_resident_code_decides_program(self):
         ram = program_ram('START')
         before = bytes(ram)

@@ -11,11 +11,11 @@ import json
 from pathlib import Path
 import re
 try:
-    from tools.check_crew_transcripts import normalized
+    from tools.check_crew_transcripts import normalized,wording_matches
     from tools.generate_crew_voice import validate_wav
     from tools.pc_crew_voice import SCRIPT
 except ModuleNotFoundError:
-    from check_crew_transcripts import normalized
+    from check_crew_transcripts import normalized,wording_matches
     from generate_crew_voice import validate_wav
     from pc_crew_voice import SCRIPT
 
@@ -26,7 +26,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def check_take(voice,transcription,delivery=None):
     if transcription['audio_sha256']!=voice['sha256'] or transcription['expected']!=voice['performed_text']:
         raise ValueError('transcription custody mismatch')
-    if normalized(transcription['transcript'])==normalized(voice['performed_text']):return
+    if wording_matches(transcription['transcript'],voice['performed_text']):return
     # Only space-separated single digits, never a whole-number transcript, can
     # use the separate phonetic classification to resolve recognizer formatting.
     match=re.fullmatch(r"(We've been hit[!,]? Bearing)\s+([0-9])\s+([0-9])\s+([0-9])[.!]?",transcription['transcript'],re.I)
@@ -36,7 +36,7 @@ def check_take(voice,transcription,delivery=None):
     if (normalized(expanded)!=normalized(voice['performed_text']) or
             delivery['audio_sha256']!=voice['sha256'] or
             delivery['number_delivery']!='individual_digits' or
-            delivery['spoken_number_words']!=words):
+            [('nine' if w=='niner' else w) for w in delivery['spoken_number_words']]!=words):
         raise ValueError('wording or number delivery mismatch')
 
 
