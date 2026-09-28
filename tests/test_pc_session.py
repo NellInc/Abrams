@@ -22,6 +22,30 @@ def program_ram(name='SIM', psp=0x1DD):
 
 
 class SessionTests(unittest.TestCase):
+    def test_combat_loss_route_waits_for_original_exit_without_quit(self):
+        from tools.capture_pc_session import combat_loss_steps
+        program='SIM'
+        session=SimpleNamespace(sample=lambda:{'program':{'name':program}})
+        route=[]
+        for step in combat_loss_steps(session):
+            route.append(step)
+            if step['label']=='combat-001':program='END'
+            if step['label']=='combat-review-1':program='START'
+        self.assertFalse(any('q' in s['keys'] for s in route))
+        waits=[s for s in route if s['label'][7:].isdigit() and s['label'].startswith('combat-')]
+        self.assertEqual([(s['frames'],s['keys']) for s in waits],[(60,[]),(60,[])])
+        self.assertEqual(route[-1]['label'],'second-mission')
+        self.assertTrue(all(1<=s['frames']<=600 for s in route))
+
+    def test_combat_loss_bound_cannot_substitute_quitting_or_fake_end(self):
+        from tools.capture_pc_session import combat_loss_steps
+        session=SimpleNamespace(sample=lambda:{'program':{'name':'SIM'}})
+        with self.assertRaisesRegex(ValueError,'18000 frames'):
+            list(combat_loss_steps(session))
+        session=SimpleNamespace(sample=lambda:{'program':{'name':'START'}})
+        with self.assertRaisesRegex(ValueError,'did not enter'):
+            list(combat_loss_steps(session))
+
     def test_all_scenario_route_visits_eight_menus_without_guest_writes(self):
         from tools.capture_pc_session import scenario_steps
         route=list(scenario_steps())

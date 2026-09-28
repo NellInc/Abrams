@@ -127,6 +127,35 @@ def scenario_steps(session=None):
         yield {'label':prefix+'-main-menu','frames':300,'keys':[]}
 
 
+def combat_loss_steps(session):
+    """Let original enemies destroy the stationary tank, then revisit a mission.
+
+    The live executable decides the outcome. No quit key, memory mutation or
+    mission-state restore can substitute for the observed SIM-to-END transition.
+    """
+    fixture = ROOT / 'godot/tests/fixtures'
+    boot = json.loads((fixture/'pc_boot_steps.json').read_text())
+    yield {'label':'ready','frames':1,'keys':[]}
+    for i,(frames,keys) in enumerate(boot):
+        yield {'label':f'boot-{i:02d}','frames':frames,'keys':keys}
+    if (session.sample()['program'] or {}).get('name')!='SIM':
+        raise ValueError('combat-loss route did not enter original SIM')
+    for i in range(300):
+        yield {'label':f'combat-{i:03d}','frames':60,'keys':[]}
+        if (session.sample()['program'] or {}).get('name')!='SIM':break
+    if (session.sample()['program'] or {}).get('name')!='END':
+        raise ValueError('original tank loss did not reach END within 18000 frames')
+    yield {'label':'combat-debrief','frames':600,'keys':[]}
+    for i in range(8):
+        if (session.sample()['program'] or {}).get('name')=='START':break
+        yield {'label':f'combat-review-{i}-press','frames':10,'keys':['space']}
+        yield {'label':f'combat-review-{i}','frames':600,'keys':[]}
+    yield {'label':'combat-main-menu','frames':300,'keys':[]}
+    if (session.sample()['program'] or {}).get('name')!='START':
+        raise ValueError('combat debrief did not return to the original menu')
+    yield from json.loads((fixture/'pc_reentry_steps.json').read_text())[12:]
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--mode', choices=['trace','baseline'], required=True)
@@ -138,7 +167,10 @@ def main():
     p.add_argument('--motor-pool-allocations', action='store_true', help='exercise all original ammunition fields with ordinary arrow keys')
     p.add_argument('--information', action='store_true', help='capture all seven original M1-Info pages and return to the main menu')
     p.add_argument('--all-scenarios', action='store_true', help='ordinary-input entry, four stations, weapons, pause/mute and quit/debrief for all eight scenarios')
+    p.add_argument('--combat-loss', action='store_true', help='wait for original enemy fire to end the mission, debrief and reenter')
     args = p.parse_args()
+    if args.combat_loss and (args.all_scenarios or args.information or args.motor_pool_controls or args.motor_pool_allocations):
+        p.error('combat-loss is a separate route')
     if args.all_scenarios and (args.information or args.motor_pool_controls or args.motor_pool_allocations):
         p.error('all-scenarios is a separate route')
     if args.information and (args.motor_pool_controls or args.motor_pool_allocations):
@@ -160,6 +192,7 @@ def main():
                                   decode_resource((ROOT/'GAME/SHAPE.TBL').read_bytes()),trace=args.mode=='trace',
                                   collector_factory=factory)
     records, samples, ui_presentations, presentations = [], [], [], []
+    damage_exit_frames = []
     try:
         core.run(240)  # Same original startup boundary as the live host.
         if args.boot_state:
@@ -167,13 +200,21 @@ def main():
             core.run(1)  # Native framebuffer priming after snapshot restore.
             program = active_program(core.conventional_memory())
             if not program or program['name'] != 'START': raise ValueError('comparison requires a neutral START snapshot')
-        route=scenario_steps(session) if args.all_scenarios else information_steps() if args.information else steps(args.motor_pool_controls,args.motor_pool_allocations)
+        route=combat_loss_steps(session) if args.combat_loss else scenario_steps(session) if args.all_scenarios else information_steps() if args.information else steps(args.motor_pool_controls,args.motor_pool_allocations)
         for step in route:
             for _ in range(step['frames']):
                 session.step(1,step['keys'])
                 records.append({'frame':core.frame, 'keys':step['keys'],
                     'ram_sha256':hashlib.sha256(core.last_video_ram).hexdigest(),
                     'video_sha256':hashlib.sha256(core.last_video[0]).hexdigest()})
+                if args.combat_loss:
+                    program=active_program(core.last_video_ram)
+                    if program and program['name']=='SIM':
+                        base=session.reader.locate(core.last_video_ram)
+                        # Original 699e sets this after armour damage; 2031
+                        # tests it before 1956(1). Observation only, not a cue.
+                        if base==program['load_segment']*16 and core.last_video_ram[base+0x19e00+0xcca]:
+                            damage_exit_frames.append(core.frame)
             sample = session.sample()
             sample["audio"] = session.drain_audio()
             filename = step['label']+'.png'
@@ -193,7 +234,23 @@ def main():
                     'image':filename,'mask':mask,'plate_mask':plate})
         by_name = {sample['label']:sample for sample in samples}
         programs = [entry['program']['name'] if entry['program'] else None for entry in session.transitions]
-        if args.all_scenarios:
+        if args.combat_loss:
+            combat=[s for s in samples if s['label'].startswith('combat-')]
+            checks={
+                'original_damage_exit_flag_observed':bool(damage_exit_frames),
+                'no_quit_command':all('q' not in r['keys'] for r in records),
+                'stationary_combat_no_inputs':all(not s['keys'] for s in combat if s['label'][7:].isdigit()),
+                'combat_debrief_is_END':by_name['combat-debrief']['program']['name']=='END',
+                'combat_returns_to_START':by_name['combat-main-menu']['program']['name']=='START',
+                'original_loss_and_reentry_lifecycle':programs==['START','BRIEF','SIM','END','START','BRIEF','SIM'],
+                'second_mission_initialized':bool(by_name['second-mission']['state']) and by_name['second-mission']['state']['scenario_resource_index']==6,
+            }
+            if args.mode=='trace':
+                checks['second_mission_fresh_render_epoch']=by_name['second-mission']['render_epoch']==2
+                checks['second_mission_paired']=bool(by_name['second-mission']['presentation'].get('draw_pass'))
+                checks['no_stale_SIM_presentation_in_debrief']=all(s['state'] is None and s['presentation'].get('draw_pass') is None
+                    for s in combat if s['program'] and s['program']['name']=='END')
+        elif args.all_scenarios:
             visited=[]
             checks={}
             for index in range(8):
@@ -245,6 +302,9 @@ def main():
             'plate_epochs':[c.plates.report() for c in collectors],
             'ui_presentations':ui_presentations,'presentations':presentations,
             'scope':('all eight original scenario entries, station and weapon inputs, pause/mute and quit/debrief; victory/campaign outcomes are separate' if args.all_scenarios else 'all seven original M1-Info pages; page recognition excludes preserved row 175 and lower border' if args.information else 'bounded original cold-boot, quit and reentry; compare full paired RAM/video/input records separately')}
+        if args.combat_loss:
+            report.update(damage_exit_frames=damage_exit_frames,
+                scope='ordinary boot, original stationary-tank combat loss, debrief, menu and second mission; no live RAM writes or mid-mission restoration')
         if args.compare:
             mismatches = [i for i,(a,b) in enumerate(zip(records,other['records'])) if a!=b]
             comparable = lambda r: [{k:s[k] for k in ('label','frame','keys','program','state')} for s in r['samples']]
@@ -252,6 +312,7 @@ def main():
             checks['all_RAM_video_and_inputs_identical'] = not mismatches
             checks['all_stage_states_identical'] = comparable(report)==comparable(other)
             checks['program_boundaries_identical'] = report['transitions']==other['transitions']
+            if args.combat_loss:checks['damage_exit_frames_identical']=damage_exit_frames==other.get('damage_exit_frames')
             report['comparison'] = {'path':str(args.compare),'core_sha256':other['core_sha256'],
                                     'mismatch_count':len(mismatches),'first_mismatches':mismatches[:20]}
         (args.output/'report.json').write_text(json.dumps(report,indent=2)+'\n')

@@ -1,0 +1,251 @@
+{
+  "scope": "15 additional original two-part subsystem and mobility reports. Together with the existing nine reports this covers all 24 damage captions from these two paths. Isolated source proof does not establish live occurrence; playback requires a complete pixel-verified original assignment.",
+  "roles": {
+    "pc_crew_3": {
+      "voice": "Orus",
+      "style": "An experienced American tank crew member speaking over a close dry intercom microphone inside an M1 turret. Firm, clear, clipped, alert under incoming fire. No radio effects or background noise."
+    }
+  },
+  "cues": {
+    "pc_gps_damaged": {
+      "role": "pc_crew_3",
+      "caption": "GPS damaged",
+      "text": "GPS damaged",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "subsystem",
+      "source_index": 0,
+      "condition_before": 0,
+      "source_pointers": [
+        3066,
+        3289
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_gps_destroyed": {
+      "role": "pc_crew_3",
+      "caption": "GPS destroyed",
+      "text": "GPS destroyed",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "subsystem",
+      "source_index": 0,
+      "condition_before": 1,
+      "source_pointers": [
+        3066,
+        3278
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_smoke_dischargers_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Smoke Dischargers damaged",
+      "text": "Smoke Dischargers damaged",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "subsystem",
+      "source_index": 1,
+      "condition_before": 0,
+      "source_pointers": [
+        3070,
+        3289
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_smoke_dischargers_destroyed": {
+      "role": "pc_crew_3",
+      "caption": "Smoke Dischargers destroyed",
+      "text": "Smoke Dischargers destroyed",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "subsystem",
+      "source_index": 1,
+      "condition_before": 1,
+      "source_pointers": [
+        3070,
+        3278
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_coax_machine_gun_destroyed": {
+      "role": "pc_crew_3",
+      "caption": "COAX machine gun destroyed",
+      "text": "COAX machine gun destroyed",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "subsystem",
+      "source_index": 2,
+      "condition_before": 1,
+      "source_pointers": [
+        3088,
+        3278
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_ballistic_computer_destroyed": {
+      "role": "pc_crew_3",
+      "caption": "Ballistic Computer destroyed",
+      "text": "Ballistic Computer destroyed",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "subsystem",
+      "source_index": 4,
+      "condition_before": 1,
+      "source_pointers": [
+        3114,
+        3278
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_thermal_equipment_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Thermal Equipment damaged",
+      "text": "Thermal Equipment damaged",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "subsystem",
+      "source_index": 5,
+      "condition_before": 0,
+      "source_pointers": [
+        3133,
+        3289
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_thermal_equipment_destroyed": {
+      "role": "pc_crew_3",
+      "caption": "Thermal Equipment destroyed",
+      "text": "Thermal Equipment destroyed",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "subsystem",
+      "source_index": 5,
+      "condition_before": 1,
+      "source_pointers": [
+        3133,
+        3278
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_radio_equipment_destroyed": {
+      "role": "pc_crew_3",
+      "caption": "Radio Equipment destroyed",
+      "text": "Radio Equipment destroyed",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "subsystem",
+      "source_index": 6,
+      "condition_before": 1,
+      "source_pointers": [
+        3151,
+        3278
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_left_tread_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Left Tread damaged",
+      "text": "Left Tread damaged",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "mobility",
+      "source_index": 0,
+      "condition_before": 0,
+      "source_pointers": [
+        3187,
+        3322
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_left_tread_is_getting_really_bad": {
+      "role": "pc_crew_3",
+      "caption": "Left Tread is getting really bad.",
+      "text": "Left Tread is getting really bad.",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "mobility",
+      "source_index": 0,
+      "condition_before": 1,
+      "source_pointers": [
+        3187,
+        3298
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_right_tread_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Right Tread damaged",
+      "text": "Right Tread damaged",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "mobility",
+      "source_index": 1,
+      "condition_before": 0,
+      "source_pointers": [
+        3198,
+        3322
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_right_tread_is_getting_really_bad": {
+      "role": "pc_crew_3",
+      "caption": "Right Tread is getting really bad.",
+      "text": "Right Tread is getting really bad.",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "mobility",
+      "source_index": 1,
+      "condition_before": 1,
+      "source_pointers": [
+        3198,
+        3298
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_engine_damaged": {
+      "role": "pc_crew_3",
+      "caption": "Engine damaged",
+      "text": "Engine damaged",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "mobility",
+      "source_index": 2,
+      "condition_before": 0,
+      "source_pointers": [
+        3210,
+        3322
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    },
+    "pc_engine_is_getting_really_bad": {
+      "role": "pc_crew_3",
+      "caption": "Engine is getting really bad.",
+      "text": "Engine is getting really bad.",
+      "direction": "An urgent but controlled equipment condition report. Speak exactly the supplied transcript. Pronounce GPS as the letters G P S, and COAX as coax. No added words or vocal noises.",
+      "source_family": "mobility",
+      "source_index": 2,
+      "condition_before": 1,
+      "source_pointers": [
+        3210,
+        3298
+      ],
+      "assignment_ip": 15826,
+      "speaker": 3,
+      "evidence": "godot/tests/fixtures/pc_damage_voice_oracle.json; original isolated instructions, runtime requires complete visible text"
+    }
+  }
+}

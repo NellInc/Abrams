@@ -1,0 +1,591 @@
+{
+  "source_sha256": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099",
+  "engine": "unicorn-2.1.4/x86-16",
+  "unpack": {
+    "source_sha256": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099",
+    "decoded_sha256": "33f5f41dd5f5579d29cccc7e2f6f6942a9463883afca0c3a838c1b6ccc321eea",
+    "relocated_sha256": "777097ff83a8eafb83dfa075195d2238dbab77caced64d22d3707b29607f6002",
+    "decoded_bytes": 129712,
+    "relocations": 671,
+    "status": "exact CPU comparison"
+  },
+  "scope": "Recover damage messages by executing the original isolated message paths.\n\nSubsystem cases start after the original random subsystem selection, with its\ntable index and stack locals supplied. Mobility cases run the whole damage\nroutine. No live game state/instructions are patched, and no occurrence, timing\nor visibility claim is made by this oracle.\n",
+  "rows": [
+    {
+      "family": "subsystem",
+      "index": 0,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3066,
+        3289
+      ],
+      "parts": [
+        "GPS",
+        " damaged"
+      ],
+      "caption": "GPS damaged"
+    },
+    {
+      "family": "subsystem",
+      "index": 0,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3066,
+        3278
+      ],
+      "parts": [
+        "GPS",
+        " destroyed"
+      ],
+      "caption": "GPS destroyed"
+    },
+    {
+      "family": "subsystem",
+      "index": 0,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "subsystem",
+      "index": 1,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3070,
+        3289
+      ],
+      "parts": [
+        "Smoke Dischargers",
+        " damaged"
+      ],
+      "caption": "Smoke Dischargers damaged"
+    },
+    {
+      "family": "subsystem",
+      "index": 1,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3070,
+        3278
+      ],
+      "parts": [
+        "Smoke Dischargers",
+        " destroyed"
+      ],
+      "caption": "Smoke Dischargers destroyed"
+    },
+    {
+      "family": "subsystem",
+      "index": 1,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "subsystem",
+      "index": 2,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3088,
+        3289
+      ],
+      "parts": [
+        "COAX machine gun",
+        " damaged"
+      ],
+      "caption": "COAX machine gun damaged"
+    },
+    {
+      "family": "subsystem",
+      "index": 2,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3088,
+        3278
+      ],
+      "parts": [
+        "COAX machine gun",
+        " destroyed"
+      ],
+      "caption": "COAX machine gun destroyed"
+    },
+    {
+      "family": "subsystem",
+      "index": 2,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "subsystem",
+      "index": 3,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3105,
+        3289
+      ],
+      "parts": [
+        "Main Gun",
+        " damaged"
+      ],
+      "caption": "Main Gun damaged"
+    },
+    {
+      "family": "subsystem",
+      "index": 3,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3105,
+        3278
+      ],
+      "parts": [
+        "Main Gun",
+        " destroyed"
+      ],
+      "caption": "Main Gun destroyed"
+    },
+    {
+      "family": "subsystem",
+      "index": 3,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "subsystem",
+      "index": 4,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3114,
+        3289
+      ],
+      "parts": [
+        "Ballistic Computer",
+        " damaged"
+      ],
+      "caption": "Ballistic Computer damaged"
+    },
+    {
+      "family": "subsystem",
+      "index": 4,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3114,
+        3278
+      ],
+      "parts": [
+        "Ballistic Computer",
+        " destroyed"
+      ],
+      "caption": "Ballistic Computer destroyed"
+    },
+    {
+      "family": "subsystem",
+      "index": 4,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "subsystem",
+      "index": 5,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3133,
+        3289
+      ],
+      "parts": [
+        "Thermal Equipment",
+        " damaged"
+      ],
+      "caption": "Thermal Equipment damaged"
+    },
+    {
+      "family": "subsystem",
+      "index": 5,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3133,
+        3278
+      ],
+      "parts": [
+        "Thermal Equipment",
+        " destroyed"
+      ],
+      "caption": "Thermal Equipment destroyed"
+    },
+    {
+      "family": "subsystem",
+      "index": 5,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "subsystem",
+      "index": 6,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3151,
+        3289
+      ],
+      "parts": [
+        "Radio Equipment",
+        " damaged"
+      ],
+      "caption": "Radio Equipment damaged"
+    },
+    {
+      "family": "subsystem",
+      "index": 6,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3151,
+        3278
+      ],
+      "parts": [
+        "Radio Equipment",
+        " destroyed"
+      ],
+      "caption": "Radio Equipment destroyed"
+    },
+    {
+      "family": "subsystem",
+      "index": 6,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "subsystem",
+      "index": 7,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3167,
+        3289
+      ],
+      "parts": [
+        "Halon",
+        " damaged"
+      ],
+      "caption": "Halon damaged"
+    },
+    {
+      "family": "subsystem",
+      "index": 7,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3167,
+        3278
+      ],
+      "parts": [
+        "Halon",
+        " destroyed"
+      ],
+      "caption": "Halon destroyed"
+    },
+    {
+      "family": "subsystem",
+      "index": 7,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "subsystem",
+      "index": 8,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3173,
+        3289
+      ],
+      "parts": [
+        "Turret Motors",
+        " damaged"
+      ],
+      "caption": "Turret Motors damaged"
+    },
+    {
+      "family": "subsystem",
+      "index": 8,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3173,
+        3278
+      ],
+      "parts": [
+        "Turret Motors",
+        " destroyed"
+      ],
+      "caption": "Turret Motors destroyed"
+    },
+    {
+      "family": "subsystem",
+      "index": 8,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "mobility",
+      "index": 0,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3187,
+        3322
+      ],
+      "parts": [
+        "Left Tread",
+        " damaged"
+      ],
+      "caption": "Left Tread damaged"
+    },
+    {
+      "family": "mobility",
+      "index": 0,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3187,
+        3298
+      ],
+      "parts": [
+        "Left Tread",
+        " is getting really bad."
+      ],
+      "caption": "Left Tread is getting really bad."
+    },
+    {
+      "family": "mobility",
+      "index": 0,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "mobility",
+      "index": 1,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3198,
+        3322
+      ],
+      "parts": [
+        "Right Tread",
+        " damaged"
+      ],
+      "caption": "Right Tread damaged"
+    },
+    {
+      "family": "mobility",
+      "index": 1,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3198,
+        3298
+      ],
+      "parts": [
+        "Right Tread",
+        " is getting really bad."
+      ],
+      "caption": "Right Tread is getting really bad."
+    },
+    {
+      "family": "mobility",
+      "index": 1,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    },
+    {
+      "family": "mobility",
+      "index": 2,
+      "condition_before": 0,
+      "condition_after": 1,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3210,
+        3322
+      ],
+      "parts": [
+        "Engine",
+        " damaged"
+      ],
+      "caption": "Engine damaged"
+    },
+    {
+      "family": "mobility",
+      "index": 2,
+      "condition_before": 1,
+      "condition_after": 2,
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "pointers": [
+        3210,
+        3298
+      ],
+      "parts": [
+        "Engine",
+        " is getting really bad."
+      ],
+      "caption": "Engine is getting really bad."
+    },
+    {
+      "family": "mobility",
+      "index": 2,
+      "condition_before": 2,
+      "condition_after": 2,
+      "speaker": null,
+      "assignment_ip": null,
+      "pointers": [
+        0,
+        0
+      ],
+      "parts": [],
+      "caption": ""
+    }
+  ]
+}

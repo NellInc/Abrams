@@ -166,3 +166,46 @@ layer. Human performance/mix acceptance and the other dialogue families remain o
 Working if: all 360 bearing captions select their own installed full-sentence
 sample, a new bearing speaks on its original visible frame, and muted, hidden,
 stale or repeated source messages cannot queue speech.
+
+## Remaining two-part damage reports, 28 September 2026
+
+`godot/data/pc_damage_voice_script.json` adds 15 Orus performances using Gemini
+3.8 Flash TTS. Together with the original nine reports, the bank covers 24
+captions: damaged/destroyed for nine turret subsystems, and damaged/getting
+really bad for left tread, right tread and engine. The latter suffix is the
+original wording; it is not replaced with an invented “destroyed” message.
+
+`tools/pc_damage_voice_oracle.py` executes original isolated instructions and
+matches `godot/tests/fixtures/pc_damage_voice_oracle.json`. All 36 cases pass:
+24 two-part assignments and 12 already-terminal-condition suppressions.
+Subsystem cases start after random subsystem selection, supplying the selected
+record and stack locals. Mobility cases execute the full original routine.
+Original data, source pointers, speaker 3 and assignment IP 3dd2 are recovered
+from actual CPU results. This is source-path evidence, not live occurrence or
+historical timing proof. Nothing writes live game RAM.
+
+Generation masters and blinded QA are in `local-audio/pc-damage-gemini-3.8-v1`.
+All 15 independent transcripts match, with expected words and cue names withheld
+from the model. `godot/assets/audio/pc_damage_provenance.json` retains each dry
+WAV hash, provider, request wording and QA result. No mixed recordings or original
+binary were sent. Installed audio is byte-identical to its generated master.
+
+```sh
+.runtime/pc-analysis-venv/bin/python tools/pc_damage_voice_oracle.py \
+  --check-fixture godot/tests/fixtures/pc_damage_voice_oracle.json \
+  --output artifacts/pc-damage-oracle-check.json
+python3 tools/install_pc_crew_voice.py --bank damage \
+  --source local-audio/pc-damage-gemini-3.8-v1 --dry-run
+```
+
+Python and Godot share the additional catalogue. The existing speaker, original
+assignment, complete two-part visibility, original sound gate, epoch, age and
+once-only checks are unchanged. Unknown or partial messages still stay silent.
+The native audio gate passes 642 checks, including actual player starts for all
+15 additions and repeat suppression (`pc-combat-outcome-work-01/damage-native-audio.log`).
+Those starts use source-qualified synthetic test packets. Individual live combat
+occurrence and human performance/mix acceptance remain open.
+
+Working if: all 24 source captions select their own verified dry take only after
+the complete original message is displayed, while unrecognized, partial, old or
+muted messages never catch up audibly later.

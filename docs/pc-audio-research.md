@@ -15,7 +15,9 @@ viewer drains Godot playback and gracefully closes its own PC helper.
 
 This is partial sound coverage. Engine/turret loops now follow their original
 sound channels. Full-sentence generated takes cover all 360 incoming-hit
-bearings and nine damage reports, triggered by fully visible original messages.
+bearings and 24 damage reports, triggered by fully visible original messages.
+Nine damage reports have live occurrence evidence; the 15 additions have original
+isolated-routine, wording-QA and native-player coverage, not live occurrence proof.
 Bearings read each digit, with both nine and niner accepted. See
 `voice-workflow.md` for generation and installed-master custody.
 Radio, warning sounds, wider crew/readiness coverage, briefings and music remain.

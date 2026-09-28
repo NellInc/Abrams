@@ -21,6 +21,7 @@ func _ready() -> void:
 	super._ready()
 	crew_catalogue = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_crew_voice_script.json")).cues
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_bearing_voice_script.json")).cues)
+	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_damage_voice_script.json")).cues)
 	turret = AudioStreamPlayer.new()
 	add_child(turret)
 	var stream := load("res://assets/audio/turret.wav").duplicate() as AudioStreamWAV

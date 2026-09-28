@@ -2316,3 +2316,78 @@ against 59.47 advertised, with default audio. Root inspected its native gunner
 capture and the commander station image. Original smoke obscures the world in
 the final gunner frame; the matched source framebuffer confirms this is gameplay,
 not a missing-world rendering failure. The commander joins are continuous.
+
+## Actual combat-loss flow and remaining damage voices (2026-09-28)
+
+Authority remains Nell's playable-first request: flat source vehicles, PC-owned
+logic, Genesis-priority presentation, sample-based effects and generative TTS.
+“Niner is fine” remains accepted for individual bearing digits. Original GAME
+and GENESIS files, default user saves and unrelated vehicle-study work are
+preserved. No push, publication or proprietary redistribution is authorized.
+
+### Original loss and native replay
+
+Added `--combat-loss` to `tools/capture_pc_session.py`: ordinary original boot
+inputs, then neutral combat until the original exits SIM, original END review
+keys, main menu and a second mission. It never presses Q, restores midmission
+RAM or manufactures an outcome. An 18,000-frame bound fails if END never occurs.
+Two unit tests cover the route and its failure boundary.
+
+`pc-combat-loss-baseline-01` and `pc-combat-loss-trace-01` compare all 15,122
+original frame records, 187 stages, program boundaries and damage-exit flag
+frames exactly. All 15 trace checks pass. Original DS:0cca becomes nonzero at
+frame 11625, END begins at 12150, START at 12783, and the second SIM at 14638.
+This is a genuine Mossel Defense combat loss, not a quit/debrief substitute.
+The neutral START snapshot is SHA-256
+`874330f12864965bbfdb5a57f52759bc8cadc78e2c90dc0a2dace3a840d09f53`;
+each run has its own fresh disk overlay.
+
+`godot/tests/test_pc_combat_outcome.gd` extends the actual production viewer and
+host. `pc-combat-loss-native-03` passes 1,841 checks over 271 received packets and
+all 187 original boundaries, terminal exit 0. Every received packet's complete
+paired RAM/video agrees with the baseline-compared fixture. All original frames
+execute, but diagnostic transport batches mean this is not 15,122 individually
+rendered Godot frames or a sustained-speed claim. Default audio and flat vehicle
+geometry survive END and reentry. Root viewed the damage, debrief, main-menu and
+second-mission native images. Source colours, actual loss text, original menu
+and a fresh high-resolution cockpit return correctly.
+
+The first native test captured synchronously inside scene mutation, producing
+white backgrounds and stale label placement even though the settled final frame
+was correct. This was a test capture defect. Deferred capture now lets the scene
+redraw without applying another packet. A follow-up test initially assumed an
+original border probe was black; its failed receipt is retained. Final probes
+compare exact original colours instead. No production renderer was modified
+for these test errors. Native 01's image acceptance is superseded by 03.
+
+### Additional generative damage samples
+
+Recovered 24 damage captions using original isolated CPU instructions: nine
+subsystem damaged/destroyed pairs and three mobility damaged/getting-really-bad
+pairs. The 36-case oracle also proves 12 terminal-condition repeat suppressions.
+The CPU fixture and reproducible oracle are committed. Subsystem selection is a
+supplied isolated context; no claim is made about random hit distribution or
+live occurrence of every caption.
+
+Fifteen missing takes were generated with Gemini 3.8 Flash TTS and existing Orus
+casting. All 15 blinded transcripts match. Dry 24 kHz mono 16-bit WAV masters
+are installed unchanged with provenance. Runtime only adds this catalogue to
+the existing two-part, speaker-3, IP-3dd2 visible-message route. No earlier speech,
+new tactical cue, source mutation or mixed recording is introduced. Unknown
+messages remain silent. Existing installer now supports a separate damage bank;
+the original 14-take bank still verifies unchanged. Native audio passes 642
+checks, including real stream/player starts for all 15 additions, exact imported
+format/duration and once-only delivery. These are synthetic source-qualified
+player packets, not proof every added report has occurred during live play.
+
+Remaining outcomes: victories and other defeats, campaign progression, longer
+sessions/pacing, other dialogue/radio/warnings/music, remaining art families,
+volume/mix controls, listening/art acceptance and portable packaging. The goal
+remains active and unfinished. Everything remains local only.
+
+Final gate: `artifacts/validation-20260928T095017Z` completed all 40 stages,
+286 Python tests and 642 Godot audio checks, terminal exit 0. The separate native
+OpenGL audio run also passes 642 checks, and the original 14-take installer dry
+run still passes. Source preservation and `git diff --check` pass. No production
+visual layout changed in this pass; the native outcome images validate the
+existing renderer and the repaired diagnostic capture timing.

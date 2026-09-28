@@ -3,7 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
-from tools.pc_crew_voice import CrewBarks,SCRIPT,BEARINGS
+from tools.pc_crew_voice import CrewBarks,SCRIPT,BEARINGS,DAMAGE
 from tools.install_pc_crew_voice import check_take
 from tools.generate_crew_voice import validate_wav
 from tests import test_pc_session
@@ -60,6 +60,49 @@ class CrewTests(unittest.TestCase):
             actual=validate_wav((folder/f'voice_{cue}.wav').read_bytes())
             for key,value in actual.items():self.assertEqual(entry[key],value)
             check_take(entry,entry['transcript_qa'],entry['number_delivery_qa'])
+
+    def test_all_damage_paths_match_original_oracle_and_once_only_visible_gate(self):
+        fixture=json.loads((ROOT/'godot/tests/fixtures/pc_damage_voice_oracle.json').read_text())
+        self.assertEqual(fixture['source_sha256'],hashlib.sha256((ROOT/'GAME/SIM.EXE').read_bytes()).hexdigest())
+        self.assertEqual(len(fixture['rows']),36)
+        rows=[row for row in fixture['rows'] if row['caption']]
+        self.assertEqual(len(rows),24)
+        old=json.loads(SCRIPT.read_text())['cues']
+        new=json.loads(DAMAGE.read_text())['cues']
+        self.assertEqual(len(new),15)
+        self.assertFalse(new.keys() & (old.keys() | json.loads(BEARINGS.read_text())['cues'].keys()))
+        captions={c['caption'] for n,c in (old|new).items() if not n.startswith('pc_hit_')}
+        self.assertEqual(captions,{row['caption'] for row in rows})
+        by_caption={c['caption']:c for c in new.values()}
+        for index,row in enumerate(rows,1):
+            self.assertEqual((row['speaker'],row['assignment_ip'],len(row['parts'])),(3,0x3dd2,2))
+            self.assertEqual(row['condition_after'],row['condition_before']+1)
+            if row['caption'] in by_caption:
+                self.assertEqual(by_caption[row['caption']]['source_pointers'],row['pointers'])
+            item=message(index,text=row['caption'],assignment_ip=row['assignment_ip'])
+            event,=self.step([item])
+            self.assertEqual(event['text'],row['caption'])
+            self.assertEqual(self.step([item]),[])
+            for change in ({'speaker':2},{'assignment_ip':0x3d6a},{'parts':[]},{'channel':'radio'}):
+                gate=CrewBarks()
+                self.assertEqual(gate.advance({'messages':[item|change]},self.status),[])
+        for row in fixture['rows']:
+            if not row['caption']:
+                self.assertEqual(row['condition_before'],2)
+                self.assertEqual((row['parts'],row['pointers']),([],[0,0]))
+
+    def test_damage_additions_installed_with_matching_source_script_and_wording_qa(self):
+        folder=ROOT/'godot/assets/audio'
+        script=json.loads(DAMAGE.read_text())
+        receipt=json.loads((folder/'pc_damage_provenance.json').read_text())
+        self.assertEqual(receipt['script_sha256'],hashlib.sha256(DAMAGE.read_bytes()).hexdigest())
+        self.assertEqual(receipt['voices'].keys(),script['cues'].keys())
+        for name,voice in receipt['voices'].items():
+            self.assertEqual(voice['generator'],'gemini-3.8-flash-tts')
+            self.assertEqual(voice['text'],script['cues'][name]['caption'])
+            for key,value in validate_wav((folder/f'voice_{name}.wav').read_bytes()).items():
+                self.assertEqual(voice[key],value)
+            check_take(voice,voice['transcript_qa'],voice['number_delivery_qa'])
 
     def test_unknown_wrong_source_radio_and_partial_remain_silent(self):
         for change in ({'text':'Good hit!'}, {'speaker':1}, {'assignment_ip':0x3D0C},

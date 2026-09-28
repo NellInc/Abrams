@@ -41,9 +41,24 @@ func _initialize() -> void: run.call_deferred()
 func run() -> void:
 	var audio := PcAudio.new()
 	root.add_child(audio)
-	check(audio.crew_catalogue.size()==369,"nine damage reports plus all 360 original bearings")
+	check(audio.crew_catalogue.size()==384,"24 damage reports plus all 360 original bearings")
 	for cue: String in audio.crew_catalogue:
 		check(audio.get_stream("voice_"+cue)!=null,"generated full-sentence resource: "+cue)
+	var damage: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_damage_voice_script.json"))
+	for cue: String in damage.cues:
+		var damage_audio := PcAudio.new()
+		root.add_child(damage_audio)
+		var event := crew(1,10)
+		event.voice=cue
+		event.text=damage.cues[cue].caption
+		event.ip=0x3dd2
+		for i in 2: event.parts[i].source_pointer=damage.cues[cue].source_pointers[i]
+		check(damage_audio.apply_audio(packet(10,1,[event])),"source-qualified damage event: "+cue)
+		check(damage_audio.last_voice==cue and damage_audio.voice.playing,"actual damage voice player: "+cue)
+		check(damage_audio.apply_audio(packet(10,1,[event])) and damage_audio.delivered==1,"damage assignment speaks once: "+cue)
+		check(await damage_audio.drain_for_shutdown(),"damage voice shutdown: "+cue)
+		damage_audio.queue_free()
+		await process_frame
 	var fresh_bearing := crew(1,10)
 	fresh_bearing.voice="pc_hit_zero_five_eight"
 	fresh_bearing.text="We've been hit! Bearing 058"
@@ -193,6 +208,8 @@ func run() -> void:
 		await process_frame
 	var pc_script: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_crew_voice_script.json"))
 	var pc_receipt: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio/pc_crew_provenance.json"))
+	pc_script.cues.merge(damage.cues)
+	pc_receipt.voices.merge(JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio/pc_damage_provenance.json")).voices)
 	for cue in pc_script.cues:
 		var stream := load("res://assets/audio/voice_%s.wav" % cue) as AudioStreamWAV
 		var entry: Dictionary = pc_receipt.voices[cue]

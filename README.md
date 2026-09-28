@@ -69,7 +69,7 @@ music and sound-effect references for a faithful presentation upgrade.
   Original-event sample playback is enabled by default, with generated firing/smoke
   crew calls, plus engine and turret loops driven by original sound channels.
   The loader says “Up!” once a completed reload has a verified visible READY label.
-  Generated full-sentence takes cover all 360 hit bearings and nine observed
+  Generated full-sentence takes cover all 360 hit bearings and 24 source-verified
   damage reports, gated on complete original displayed messages. Bearings speak
   by digit, with both “nine” and “niner” accepted.
   F5 and original pause mute them; `--no-audio` disables remastered audio.
@@ -91,7 +91,9 @@ Z zooms; T toggles thermal; H shows help; Escape pauses.
 **This is an in-progress remaster.** Play runs the original PC executable, which
 owns missions, enemy behaviour, movement, damage and scoring. All eight scenario
 entries, four stations, weapon inputs, pause/mute, quit and debrief flows now have
-an unchanged-original replay comparison across 54,657 frames. Complete victory,
+an unchanged-original replay comparison across 54,657 frames. A separate
+15,122-frame combat-loss, debrief and reentry route also matches the unmodified
+original and passes native Godot rendering checks. Complete victory,
 defeat and campaign-outcome coverage, remaining audio/graphics and historical
 speed calibration are still open. The calibration range remains separate authored
 content and is never the authoritative game.
