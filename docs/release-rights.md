@@ -8,21 +8,22 @@ account and byte-perfect provenance do not establish redistribution rights.
 | Family | Evidence and licence | Package handling / unresolved gate |
 |---|---|---|
 | Newly written project code | No project licence has been selected. | Private repository and source review kit only. Owner must choose a licence and review compatibility before public distribution. |
-| PC game executables, data and native fonts | Supplied original files; exact fingerprints in `tools/package/game-inputs.json`. No redistribution permission found in supplied materials. | Private kit only. No download route or public game bundle. Ownership/use and distribution authorization remain separate. |
+| PC game executables, data and native fonts | Supplied original files; exact fingerprints in `tools/package/game-inputs.json`. No redistribution permission found in supplied materials. | Excluded from the standalone app and Git. Players import their own PC files. The legacy private developer kit includes owner-supplied content and is not the tester handoff. |
 | Genesis originals, palette and extracted art/audio | Existing extraction receipts tie outputs to the supplied cartridge. | No ROM or standalone native-audio collection in either kit. Required palette, art donors and music containing derived percussion are private-only. Redistribution permission is unestablished. |
 | Genesis/PC-derived remasters and outline fonts | Existing local source hashes, prompts, recognition catalogues and generated-asset receipts. | Private-only, even where a generator produced the final bytes. Underlying art/font rights remain unresolved. |
 | Authored frontend score with Genesis percussion | Local `frontend-music-v1` score/asset manifest; the percussion is derived from original Genesis samples. | Private-only exception for this exact runtime directory. Authorship of the score does not clear the donor samples. |
 | Synthesized effects and generated speech | `godot/assets/audio/provenance.json` and provider-specific receipts where present; authored effects builder and voice-generation scripts. | All binaries and voice scripts private-only pending ownership, provider terms at generation, voice/casting and final listening review. No inference of clearance from provider provenance. |
-| DOSBox Pure, pinned commit `73e03aa...` | Upstream README and source headers state GPL version 2 or later; LICENSE is GPLv2. | Private native dylib only; licence text accompanies it. Before distributing a modified binary, prepare complete corresponding source, modifications, build scripts and notices under applicable GPL terms. Source kit has project patch/build code only and is not a corresponding-source distribution. |
-| Godot | MIT licence; engine also includes third-party components. | Not bundled. If bundling later, preserve the engine licence and applicable third-party notices. |
-| Python | PSF licence and historical/third-party notices. | Not bundled. A future embedded runtime needs its own matching notice inventory. |
-| Pillow | HPND licence, with additional component notices. | Not bundled. A future wheel/runtime bundle must preserve applicable notices. |
+| DOSBox Pure, pinned commit `73e03aa...` | Upstream README and source headers state GPL version 2 or later; LICENSE is GPLv2. | Bundled in the local standalone app with its licence text. Wider distribution still requires a corresponding-source package, build scripts and notices. The developer source kit is not a complete corresponding-source distribution. |
+| Godot | MIT licence; engine also includes third-party components. | Godot 4.7.2 is bundled in the standalone app. Engine and third-party notices are in `Contents/Resources/notices/Godot.json`. |
+| Python | PSF licence and historical/third-party notices. | Bundled in the standalone bridge runtime. Matching notices are in `Contents/Resources/notices/Python-runtime.json`. |
+| Pillow | HPND licence, with additional component notices. | Pillow 12.0.0 is bundled; its distribution notices are in `Contents/Resources/notices/Python-runtime.json`. |
+| PyInstaller | Build/runtime component notices are collected from the pinned 6.22.3 installation. | Frozen bridge runtime bundled; matching notices are in `Contents/Resources/notices/Python-runtime.json`. |
 | FontTools (outline builder) | MIT, according to upstream LICENSE. | Research/build dependency only, not bundled. Does not grant rights to input game fonts. |
 | Unicorn (CPU oracle tooling) | Upstream identifies GPLv2. | Research dependency only, not bundled; separate from DOSBox runtime. |
 | Genesis Plus GX (donor extraction) | Upstream licence contains multiple component terms, including noncommercial restrictions. | Research dependency only, excluded from both kits. Never assume DOSBox Pure terms cover it. |
 | Blender (vehicle authoring) | Official COPYING identifies the GNU GPL; component terms need a separate inventory if ever bundled. | Optional authoring tool only, not bundled or required by Play. No vehicle-study outputs included. |
 | EXEPACK 1.4.0 (independent comparison) | Local COPYING contains a CC0 waiver. | Research binary/source tree excluded. The project's Python unpacker remains in source. |
-| Barlow and IBM Plex fonts | SIL Open Font License 1.1, retained beside current font files. | Private kit retains both licence files. These licences do not clear reconstructed original-game fonts. |
+| Barlow and IBM Plex fonts | SIL Open Font License 1.1, retained beside current font files. | The standalone app and private developer kit retain both licence files. These licences do not clear reconstructed original-game fonts. |
 
 Primary sources consulted:
 

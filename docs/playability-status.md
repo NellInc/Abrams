@@ -5,7 +5,26 @@ Godot renders the supported high-resolution layers and plays event-driven audio.
 The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
-## Verified flows (28 September 2026)
+## Current standalone alpha (28 September 2026)
+
+The Apple Silicon macOS app bundles Godot and Python/Pillow. It requires the
+player's PC files, accepts Genesis optionally, and contains neither original
+game. Fresh PC-only launch, optional Genesis import, profile-preserving upgrades,
+checkpoint recovery and native fullscreen/focus/menu use have been exercised.
+The app is ad-hoc signed and remains local. The private GitHub repository contains
+source and selected gallery images; the latest application changes are still local.
+
+The packaged runtime completed 1,801 seconds of normal-speed SIM play, all four
+stations and 18 restores, with 271,348 checks and no errors. Full RAM auditing
+was enabled: the 36 to 38 original replies/second measured in that run are not
+an ordinary-play benchmark. Sustained unaudited performance still needs testing.
+Receipts: `artifacts/alpha-readiness-20260928/ACCEPTANCE.md`.
+
+New checkpoints preserve validated artwork ownership. Legacy same-core
+checkpoints without that data retain a conservative PC-art fallback. See
+[controls](play-controls.md) and [standalone installation](standalone-macos.md).
+
+## Recorded checks (28 September 2026)
 
 | Surface | Evidence | Limit |
 |---|---|---|
@@ -52,8 +71,7 @@ is removed. See `genesis-portrait-integration.md` for the before/after evidence.
 
 Audio is enabled by default. `--no-audio` disables presentation audio. Original
 F5 and pause still govern the original sound gate. All 360 bearing calls use
-full-sentence generative TTS with digits spoken separately, including leading
-zeroes. Both “nine” and “niner” are accepted. Nine damage reports also have
+full-sentence generative TTS. Nine damage reports also have
 live evidence. Fifteen further source-verified subsystem/mobility takes
 bring this bank to 24 damage reports; all load and start native sample players,
 with individual live occurrence still unproven for those additions. Eight new
@@ -118,11 +136,10 @@ Genesis donors and Upscaled artwork. Assets are preloaded. Genesis is explicitly
 partial, with original PC pixels in unmatched fields; Modern is disabled.
 See [play controls](play-controls.md) and [mode coverage](graphics-modes.md).
 
-Local packaging now has deterministic source-review and private playable-kit
-builders, dependency checks and an external persistent-profile launcher. Neither
-kit is approved for publication. The private kit requires installed Godot,
-Python/Pillow and its included owner-supplied inputs. See
-[packaging](packaging.md) and [rights review](release-rights.md).
+The current tester package is the standalone app described above. Legacy
+source-review/private developer kits remain available for development; their
+installed-runtime requirements and included PC inputs do not apply to the app.
+See [packaging](packaging.md) and [rights review](release-rights.md).
 
 ## Open acceptance work
 
@@ -145,9 +162,8 @@ Python/Pillow and its included owner-supplied inputs. See
 * Unrecognized transition fallbacks, preserving
   Genesis precedence and original PC visibility. The finite non-Modern register
   is in `graphics-coverage.md`. Vehicle replacement and Modern are deferred.
-* Supported-platform standalone installers and community-release clearance.
-  A rights/provenance inventory now records the unresolved permissions and
-  licence decisions. Work is local only; nothing has been published.
+* Intel Mac, Windows and Linux packages; Developer ID signing/notarization and
+  community-release clearance. The private GitHub gallery is published; the
+  application and its derived asset package have not been uploaded.
 
-These are remaining outcomes of the active goal, not optional extras. Each
-additional parity claim requires its own source comparison and runtime evidence.
+Each additional parity claim requires its own source comparison and runtime evidence.

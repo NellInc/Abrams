@@ -1,7 +1,8 @@
 # Remaster controls
 
-Open `Play.command`. The Audio, Session and Graphics menus sit outside the
-original display. On macOS they appear in the system menu bar. They reserve no
+Open `Abrams.app` and click **Play**, or use `Play.command` in an equipped
+source checkout. The Audio, Session and Graphics menus sit outside the original
+display. On macOS they appear in the system menu bar. They reserve no
 original game keys; menu navigation is withheld from the game until keys are
 released. The original continues running while a menu is open. Use its pause
 control first when you need time to choose.
@@ -95,9 +96,11 @@ restart, new game input or extra original frame.
 * **Modern**: disabled and explicitly labelled unavailable until new models and
   realistic assets exist.
 
-Upscaled is the default. `./Play.command --graphics ega` (or `genesis` or
-`upscaled`) selects the starting mode. Missing Genesis assets preserve the current
-mode and report the failure. See [graphics coverage](graphics-modes.md).
+Upscaled is the default. Without an imported Genesis ROM, the standalone app
+offers EGA and PC-only Upscaled; the shortcut skips Genesis. In an equipped
+checkout, `./Play.command --graphics ega` (or `genesis` or `upscaled`) selects the
+starting mode. Missing or invalid graphics resources leave the current mode
+unchanged. See [graphics coverage](graphics-modes.md).
 
 ## Audio
 
@@ -107,9 +110,6 @@ F5 and pause still govern gameplay audio. Frontend music has its own Music and
 Master gates, and stays silent on unrecognized screens and during simulation.
 The four new arrangements use individual samples, including extracted Genesis
 percussion. They are authored arrangements, not recovered original scores.
-
-Bearings retain complete generated sentences with digits spoken individually;
-“niner” is accepted. No mixed gameplay recordings are used as live samples.
 
 ## Verification boundary
 

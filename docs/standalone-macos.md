@@ -5,35 +5,49 @@ need no separately installed interpreter or engine. It targets macOS 14 or newer
 other OS versions and Intel Macs have not been validated. Windows packaging and
 Modern graphics remain deferred.
 
-## Original game inputs
+## Install and play
 
-**The original PC game is required. Genesis is optional.** The PC executable
-continues to run the simulation, menus, campaign and combat. Genesis supplies
-presentation references, never replacement gameplay rules.
+**PC files are required. The Genesis ROM is optional. Neither is bundled.**
 
-On first launch choose the extracted PC folder containing `ABRAMS.COM` and
-`SIM.EXE`. All 68 supported files are fingerprinted before import. The exact
-supported edition is recorded in `tools/package/game-inputs.json`. Filenames
-are case-insensitive; conflicting spellings, changed files and unsupported
-editions are rejected. There is no game downloader.
+1. Extract the private alpha ZIP, if supplied, and copy `Abrams.app` to a local
+   folder. Keep any previous app until you have tested the new one.
+2. Open `Abrams.app`. Click **Choose PC folder…** and select your extracted PC
+   game folder containing `ABRAMS.COM`, `SIM.EXE` and the remaining data files.
+3. Optionally click **Add Genesis ROM…** and select the supported raw ROM.
+   You can add it later through the same launcher.
+4. Once the launcher reports **Ready to play**, click **Play**.
 
-For the full current artwork, add the supported raw Genesis ROM with SHA-256
-`ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea`.
-The importer validates it and retains a small revision receipt, without copying
-the ROM. This receipt identifies the imported revision; it establishes no rights.
+You do not need to install Godot, Python or Pillow. The importer leaves your
+source files unchanged. Genesis alone cannot run the game.
 
-Without Genesis, EGA and PC-only Upscaled remain available. PC-only Upscaled
-retains high-resolution PC typography/world rendering, generated crew speech and
-synthesized gameplay samples. Cockpits, portraits and effects use the PC fallback;
-Genesis donor imagery, hills and frontend music stay disabled. Adding Genesis
-later enables the full Genesis/Upscaled presentation and the three-way graphics
-shortcut. Modern remains visibly unavailable.
+| Available content | Presentation |
+| --- | --- |
+| PC only | EGA and PC-only Upscaled, high-resolution lettering/world rendering, generated speech and synthesized gameplay sounds. PC graphics remain where Genesis assets would be used. |
+| PC and Genesis | Also enables Genesis mode, Genesis-based remastered artwork and frontend music. |
 
-The application excludes raw PC game files, the reconstructed PC content ZIP,
-and the Genesis ROM. Its reviewed derived assets are still private: removal of
-raw originals does not establish redistribution permission. This alpha uses an
-ad-hoc local signature, with no Developer ID signing or notarization. It has not
-been published or uploaded.
+Use **Cmd+S** to save, **Cmd+L** to load, **Cmd+Shift+L** to undo a load and
+**Cmd+G** to cycle the available graphics modes. The **Session** menu contains all
+five slots and fast-forward speeds; **Audio** controls the mix.
+
+### If installation stops
+
+* **PC import rejected:** select the complete extracted game folder, rather than
+  a ZIP or a folder containing only the executables. The importer checks all 68
+  files against the supported edition in `tools/package/game-inputs.json`.
+  Changed files, conflicting filename spellings and other editions are rejected.
+* **Genesis import rejected:** use the supported raw ROM, rather than a ZIP.
+  Its SHA-256 is `ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea`.
+  You can continue with PC-only play. The importer stores a revision receipt,
+  without copying the ROM into the profile.
+* **macOS blocks the app:** this private alpha is ad-hoc signed, without Developer
+  ID signing or notarization. Report the warning; do not disable system security
+  to run it.
+* **Startup error:** keep the displayed message and the profile's `logs/` folder.
+  Do not delete the profile or alter integrity receipts to work around an error.
+
+The application excludes the original PC game files, reconstructed PC content
+archive and Genesis ROM. Derived artwork remains subject to redistribution
+clearance. The app is local; no public download is available.
 
 ## Profiles, upgrades and rollback
 
@@ -90,9 +104,5 @@ A build or a short smoke alone does not satisfy those native gates. The bounded
 soak cycles the four original stations, EGA/Genesis/Upscaled, quick saves/restores
 and fast forward; it makes no mission-victory or human-listening claim.
 
-The 28 September local ARM64 candidate completed a 30-minute audited SIM soak,
-all four stations and 18 restores. Native import, PC-only play, graphics switching,
-checkpoint recovery and fullscreen/focus interactions have local receipts. The
-heavily instrumented run averaged about 36 to 38 original replies per second;
-sustained unaudited target-rate acceptance remains separate. Detailed local
-receipts are under `artifacts/alpha-readiness-20260928/ACCEPTANCE.md`.
+See [build status](playability-status.md) for the current runtime checks and
+remaining performance, mission and platform testing.

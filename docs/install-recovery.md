@@ -1,6 +1,29 @@
-# Private kit installation and recovery
+# Installation and recovery
 
-## Current platform boundary
+## Standalone app
+
+The tester package is `Abrams.app` for Apple Silicon macOS 14 or newer. Godot and
+Python/Pillow are bundled. **Supply the original PC files; Genesis is optional.
+Neither is bundled.** Open the app, choose the PC folder, optionally add the
+Genesis ROM, then click **Play**. See [the installation guide](standalone-macos.md)
+for the supported inputs and troubleshooting.
+
+Saves and imported content live in `~/Library/Application Support/Abrams/`, outside
+the app. Close the game and back up that whole folder before upgrading. Keep the
+previous app, copy the new app separately and use the same profile. Each app's
+payload installs into its own `versions/<build-id>/` directory; upgrades retain
+existing content, saves and older versions.
+
+New checkpoints preserve the remastered display as well as native game and
+campaign state. Legacy same-core checkpoints may temporarily show PC artwork
+until the game redraws it. A changed core can make checkpoints incompatible;
+retain the old app and profile backup rather than modifying receipt hashes.
+The original campaign save system remains separate from save-state slots.
+
+For an independent test profile, use the launcher's `--data-home /absolute/path`
+option. No profile is automatically deleted, migrated or repaired.
+
+## Developer-kit platform boundary
 
 | Task | macOS ARM64 | macOS Intel | Linux | Windows |
 | --- | --- | --- | --- | --- |
@@ -11,7 +34,7 @@
 The source CI workflow is intended to run on Ubuntu. A passing source job is not
 native Linux gameplay validation. No native Windows or Linux package is supplied.
 
-## Fresh installation
+## Legacy developer-kit installation
 
 1. Keep the original game and the previous kit unchanged. Extract the new private
    ZIP into a new writable directory, outside any player profile.
@@ -35,7 +58,7 @@ GAME directories or content ZIPs, including dangling symlinks, are never replace
 An I/O failure during final copying may leave a partial new destination; retain it
 for diagnosis and retry into a different empty directory after fixing the cause.
 
-## Upgrade and rollback
+## Legacy developer-kit upgrade and rollback
 
 Player data defaults to `~/Library/Application Support/Abrams`. Use an absolute
 `ABRAMS_DATA_HOME` outside the kit to select another profile. Keep that setting
