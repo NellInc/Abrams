@@ -393,6 +393,7 @@ func _capture() -> void:
 		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,
 		"driver_assembly": tandem_frame.driver_assembly_enabled if trace_mode else false,
 		"genesis_colours": genesis_colours_requested and not genesis_style.palette.is_empty(),
+		"world_bearing_text": tandem_frame.typography.runs.filter(func(r):return r.get("transparent_world",false)).map(func(r):return r.text) if trace_mode else [],
 		"high_resolution_text_runs": tandem_frame.typography.runs.size() if trace_mode else 0,
 		"terrain_detail": draw_view.terrain_active if trace_mode else false,
 		"terrain_polygons": draw_view.terrain_polygon_count if trace_mode else 0,

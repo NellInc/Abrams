@@ -134,7 +134,9 @@ func fixtures(path: String, output: String) -> void:
 				for label in frame.typography.runs:
 					if label.rect.has_point(Vector2(p)):
 						allowed = true
-						check(outlines.matches(result.get_pixel(x,y),label,Vector2(x+0.5,y+0.5)/4,Vector2(4,4)),"outline cockpit letterform: "+entry.stage)
+						var expected_label: Dictionary = label.duplicate()
+						if label.get("transparent_world",false): expected_label.background=source.get_pixelv(p)
+						check(outlines.matches(result.get_pixel(x,y),expected_label,Vector2(x+0.5,y+0.5)/4,Vector2(4,4)),"outline cockpit letterform: "+entry.stage)
 				var same := result.get_pixel(x,y).to_rgba32()==source.get_pixelv(p).to_rgba32()
 				if not allowed: check(same,"protected source pixel changed: %s %d,%d"%[entry.stage,x,y])
 				elif not same: changed+=1

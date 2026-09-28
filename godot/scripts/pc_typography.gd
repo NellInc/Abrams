@@ -9,6 +9,7 @@ var fonts: Dictionary = {}
 var font_geometry: Dictionary = {}
 var runs: Array[Dictionary] = []
 var labels: Array[Control] = []
+var world_ink: Array[Vector2i] = []
 var fixed_labels_enabled := false
 var status_numbers_enabled := false
 var dialogue_glyphs: Dictionary = {}
@@ -30,7 +31,7 @@ class RunLabel extends Control:
 	var mesh_key := ""
 	func _draw() -> void:
 		if run.is_empty(): return
-		draw_rect(Rect2(Vector2.ZERO,size),run.background)
+		if not run.get("transparent_world",false): draw_rect(Rect2(Vector2.ZERO,size),run.background)
 		if run.get("outline_font") is Font:
 			preload("res://scripts/pc_outline_fonts.gd").draw_text(self,run.outline_font,run.text,Rect2(Vector2.ZERO,size),run.cell_size,run.foreground)
 			return
@@ -116,6 +117,7 @@ func load_sources(directory: String) -> bool:
 
 func clear_runs() -> void:
 	runs.clear()
+	world_ink.clear()
 	for label in labels: label.hide()
 
 func _fixed_candidate(words: String, at: Vector2i, source: Image, font_name: String="6X6.FNT") -> Dictionary:
@@ -315,7 +317,59 @@ func verified_run(item: Variant, source: Image, ui: Image, palette: Array, curso
 		"outline_font":outline_fonts.fonts.get(item.font_sha256),
 		"kind":item.get("kind",""),"draw_sequence":item.get("draw_sequence",0)}
 
-func set_frame(source: Image, ui: Image, presentation: Dictionary, cursor_mask: Image=null) -> void:
+func verified_world_bearing(item: Variant, source: Image, ui: Image, presentation: Dictionary, camera: Rect2i) -> Dictionary:
+	# Only original 5728 bearing calls. Each glyph bit must be UI-owned and
+	# every non-ink bit world-owned, with the entire RGB crop matched to scanout.
+	if camera.size==Vector2i.ZERO or not item is Dictionary: return {}
+	if item.get("transparent")!=true or item.get("font_sha256")!=FONT_SOURCES["6X6.FNT"]: return {}
+	if item.get("page_offset")!=presentation.get("page_offset") or not integers([item.get("page_offset")],1,0,8192): return {}
+	if item.page_offset!=0 and item.page_offset!=8192: return {}
+	if not item.get("text") is String or not integers([item.get("return_ip")],1,0,65535): return {}
+	var words: String = item.text
+	var caller := int(item.return_ip)
+	if caller==0x5764:
+		if words!="BEARING": return {}
+	elif caller==0x57a2:
+		if words.length()!=3 or not words.is_valid_int() or int(words)<0 or int(words)>359: return {}
+		for c in words:
+			if c<"0" or c>"9": return {}
+	else: return {}
+	if not integers(item.get("rect"),4,0,320) or not integers(item.get("cell_size"),2,6,6): return {}
+	var box := Rect2i(item.rect[0],item.rect[1],item.rect[2],item.rect[3])
+	if box.position.x!=(128 if caller==0x5764 else 173) or box.position.y not in [12,17]: return {}
+	if box.size!=Vector2i(words.length()*6,6) or not camera.encloses(box): return {}
+	if item.get("foreground")!=0 and item.get("foreground")!=1: return {}
+	var palette: Array = presentation.palette_rgb
+	if palette.size()!=16 or not integers(palette[int(item.foreground)],3,0,255): return {}
+	var color: Array = palette[int(item.foreground)]
+	var foreground := Color8(color[0],color[1],color[2])
+	var bytes: PackedByteArray = fonts[item.font_sha256]
+	var ink_points: Array[Vector2i] = []
+	var contrast := false
+	for i in words.length():
+		for y in 6:
+			for x in 6:
+				var ink := (int(bytes[4+(words.unicode_at(i)-32)*6+y])&(128>>x))!=0
+				var p := box.position+Vector2i(i*6+x,y)
+				if ui.get_pixelv(p).r!=(1.0 if ink else 0.0): return {}
+				if ink:
+					if source.get_pixelv(p).to_rgba32()!=foreground.to_rgba32(): return {}
+					ink_points.append(p)
+				else: contrast = contrast or source.get_pixelv(p).to_rgba32()!=foreground.to_rgba32()
+	if ink_points.is_empty() or not contrast: return {}
+	var crop := source.get_region(box)
+	crop.convert(Image.FORMAT_RGB8)
+	var hash := HashingContext.new()
+	hash.start(HashingContext.HASH_SHA256)
+	hash.update(crop.get_data())
+	if hash.finish().hex_encode()!=item.get("pixel_sha256"): return {}
+	if not outline_fonts.fonts.get(item.font_sha256) is Font: return {}
+	return {"text":words,"rect":Rect2(box),"cell_size":Vector2i(6,6),"font_sha256":item.font_sha256,
+		"foreground":foreground,"background":Color.TRANSPARENT,"transparent_world":true,
+		"glyphs":font_geometry[item.font_sha256],"outline_font":outline_fonts.fonts[item.font_sha256],
+		"kind":"world_bearing","ink_points":ink_points,"draw_sequence":item.get("draw_sequence",0)}
+
+func set_frame(source: Image, ui: Image, presentation: Dictionary, cursor_mask: Image=null, world_camera: Rect2i=Rect2i()) -> void:
 	clear_runs()
 	if fonts.is_empty() or not presentation.get("text_runs") is Array or not presentation.get("palette_rgb") is Array: return
 	if source==null or source.get_size()!=Vector2i(320,200) or ui==null or ui.get_size()!=Vector2i(320,200) or ui.get_format()!=Image.FORMAT_L8: return
@@ -332,12 +386,15 @@ func set_frame(source: Image, ui: Image, presentation: Dictionary, cursor_mask: 
 	candidates.reverse()
 	for item in candidates:
 		var run := verified_run(item,source,ui,presentation.palette_rgb,cursor_mask)
+		if run.is_empty() and cursor_mask==null:
+			run = verified_world_bearing(item,source,ui,presentation,world_camera)
 		if run.is_empty(): continue
 		var overlaps := false
 		for old in runs:
 			if run.rect.intersects(old.rect): overlaps = true; break
 		if overlaps: continue
 		runs.append(run)
+		if run.get("transparent_world",false): world_ink.append_array(run.ink_points)
 		if runs.size()>labels.size():
 			var label := RunLabel.new()
 			label.clip_contents = true

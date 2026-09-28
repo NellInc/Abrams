@@ -179,6 +179,8 @@ func fixtures(path: String, output: String) -> void:
 				pixels += 1
 				if eligible.is_empty(): check(same,"font changed protected original pixel in "+sample.stage)
 				else:
+					eligible = eligible.duplicate()
+					if eligible.get("transparent_world",false): eligible.background=source.get_pixel(x,y)
 					check(outlines.matches(image.get_pixel(x*4+2,y*4+2),eligible,Vector2(x+0.625,y+0.625),Vector2(4,4)),"live outline letterform: "+sample.stage)
 					if not same: frame_changed += 1
 		changed += frame_changed

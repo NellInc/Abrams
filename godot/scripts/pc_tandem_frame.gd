@@ -261,5 +261,11 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> boo
 		if tags.load_png_from_buffer(Marshalls.base64_to_raw(presentation.plate_overlay.mask_png))==OK:
 			instrument_art.set_frame(source,mask,tags,presentation.get("orientation",{}))
 	if genesis_art_enabled: portrait_art.set_frame(source,mask,presentation)
-	typography.set_frame(source,mask,presentation)
+	typography.set_frame(source,mask,presentation,null,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1))
+	if not typography.world_ink.is_empty():
+		# Retain the unmodified provenance mask for all art checks above. Only
+		# proven bearing ink yields to this same frame's underlying world.
+		var composed_mask: Image = mask.duplicate()
+		for pixel in typography.world_ink: composed_mask.set_pixelv(pixel,Color.BLACK)
+		material.set_shader_parameter("ui_mask",ImageTexture.create_from_image(composed_mask))
 	return true

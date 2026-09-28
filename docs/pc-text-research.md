@@ -555,7 +555,9 @@ and native images change only within verified source UI rectangles.
 The source font bytes serve as evidence, rather than the new visible font.
 Static bitmap lettering, gauges, icons and text over scenery still use their
 original pixels. In particular, the bearing strip over the world remains
-source-rendered. Some static labels become eligible only on observed source
+source-rendered at this historical checkpoint. The subsequent bearing-only
+transparent-world restoration is documented in `pc-world-bearing-text.md`.
+Other scenery-backed labels remain unsupported. Some static labels become eligible only on observed source
 redraws. This pass does not claim complete high-resolution instruments or
 uniform text coverage across every state.
 

@@ -23,7 +23,7 @@ is still being recovered; no overall completion percentage is justified.
 |---|---|---|---|
 | Four cockpit surrounds | All four extracted | Five-image cockpit/status pack; four stations live with original visibility and moving roof | Remaining trims and aliasing at original silhouettes; all state variants and motion acceptance |
 | Gunner static instruments | Present in gunner extract | Nine illustrated cells live, pixel/provenance gated | Other symbols and colour/state variants |
-| Dynamic gauges and reticles | Corresponding Genesis gauges visible | PC values use verified scalable type; gunner/commander speed, commander fuel and gunner/driver temperature now have visible-pixel-verified vector geometry; source-draw/visible-frame-verified rotating hull/turret diagram and moving grid live in both stations | Bearing/reticle lettering, further warning/state variants and native acceptance; no hidden information |
+| Dynamic gauges and reticles | Corresponding Genesis gauges visible | PC values use verified scalable type; gunner/commander speed, commander fuel and gunner/driver temperature now have visible-pixel-verified vector geometry; source-draw/visible-frame-verified rotating hull/turret diagram and moving grid live in both stations; transparent bearing label/value now use polished original-style outlines | Reticles, further warning/state variants and native acceptance; no hidden information |
 | Systems status | Native CHECK DAMAGE captured exactly | Genesis background and pristine schematic live; twelve labels and six values scalable | Actual damaged schematics and lamp art; original fallback remains until verified |
 | Title and credits | Title and all four expanding flash poses extracted with exact VDP reconstruction | Title, four hi-res flash poses and eight original-font credit cards live, selected by complete original PC frames | Publisher splash, other transition variants and human art acceptance; moving 3D menu backdrop remains original |
 | Briefing office and Wilson | Office and two observed Wilson poses extracted | Office, neutral/speaking Wilson and a Genesis-derived facepalm live; exact visible 8x8 dialogue gets scalable lettering | Other CO poses, mouth variants, all dialogue layouts and partial-draw transitions |
@@ -38,7 +38,7 @@ is still being recovered; no overall completion percentage is justified.
 | World vehicles and objects | Genesis imagery/palette available; geometry/variant correspondence incomplete | Original PC geometry and visibility live; earlier PC model studies are unaccepted | Genesis-first materials/detail for each class; maintain PC silhouettes where visibility matters; all views, damage and effects |
 | Terrain, buildings and vegetation | Native scenes and palette captured in part | Grass and seven selected original surfaces have detail | Remaining terrain/object materials, horizon variants and source-consistent silhouettes |
 | Explosions, smoke, tracers and damage overlays | Native Genesis variant inventory incomplete | Original PC effects retained live | Extract Genesis effect families, remaster all frames, bind to original timing and occlusion |
-| Fonts, cursors and interface symbols | Four PC faces decoded; all 95 printable Genesis stencil glyphs match PC STENCIL | Four optically refined outline faces cover credits, dedication, verified cockpit/arming/office text and original font draws across START/BRIEF/END; fixed cells and current highlight colours remain | Bitmap-baked captions/logos, nonuniform-background text, remaining Genesis font families and symbols; the independently verified menu cursor intentionally remains original pixel art |
+| Fonts, cursors and interface symbols | Four PC faces decoded; all 95 printable Genesis stencil glyphs match PC STENCIL | Four optically refined outline faces cover credits, dedication, verified cockpit/arming/office text and original font draws across START/BRIEF/END; fixed cells and current highlight colours remain | Bitmap-baked captions/logos, other nonuniform-background text, remaining Genesis font families and symbols; the independently verified menu cursor intentionally remains original pixel art |
 
 ## Current source and output pointers
 
@@ -76,3 +76,6 @@ never be reported as completed live-game integration.
 
 Dynamic orientation evidence, source references and bounded acceptance are in
 `pc-orientation-research.md`. Other instrument-family items remain open.
+
+The transparent bearing strip now has source-verified outlines over the paired
+world; receipts and remaining boundaries are in `pc-world-bearing-text.md`.

@@ -30,6 +30,47 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Transparent bearing lettering, 2026-09-28
+
+Completed the next text presentation pass: the original BEARING label and its
+three-digit value now use the same polished 6x6-derived face over scenery in
+both original placements. Leading zeroes, words, colours, geometry and timing
+come from observed PC text calls, never current RAM. The Genesis source shows
+the same compact strip. Every original glyph ink bit must be UI-owned and every
+counter/background bit world-owned; the complete RGB crop, page and camera must
+match. Only accepted old ink is removed from a copy of the composition mask,
+revealing the paired world texture under transparent new outlines. No flat
+background rectangle, extra label or tactical value is introduced.
+
+No emulation, hook, input or audio code changed. Existing 1,113-frame parity
+receipts remain the bounded original authority. New evidence:
+
+* `docs/pc-world-bearing-text.md`: original call sites, source constraints,
+  independent composition checks and reproduction.
+* `artifacts/pc-world-bearing-native-01/report.json`: 374,947 assertions and
+  66,560,000 full-frame pixel comparisons pass across 40 native samples at
+  1280x800 and 1920x1200. Deliberately nonuniform clean world backgrounds prove
+  that old ink disappears and new counters expose the actual paired world.
+* Contract test: 387 checks pass, including all 000..359 synthetic labels,
+  black/white, both placements, JSON numbers, corruption, ownership conflicts,
+  page/camera mismatches, missing fonts, missing text and fallback clearing.
+* Existing four-station/status and typography native tests pass 12,237,884 and
+  4,573,806 checks respectively. Their supplied source-crop backgrounds are now
+  handled explicitly by the transparent-label oracle, not mistaken for uniform
+  backing colours.
+* `artifacts/pc-world-bearing-play-01/`: actual launcher capture exits 0, shows
+  polished BEARING 000 with Genesis art, vector gauges and orientation active;
+  both original text source hashes match independently. Final image inspected.
+* `artifacts/validation-20260928T015742Z`: final aggregate exit 0, 234 Python
+  tests and all 32 stages pass. Optional Impeccable is absent; none installed.
+
+The work was authored and reviewed in this session; Nell's visual acceptance
+is separate. Reticles remain original and are next, followed by further cockpit,
+status, maps, world/effect, audio and whole-game parity coverage. No live white-
+bearing reachability, whole-game parity, finished remaster or release candidate
+is claimed. The broad goal remains active. Local only, no remote publication;
+unrelated vehicle-study files are unchanged.
+
 ## Rotating hull/turret display, 2026-09-28
 
 Completed the next cockpit presentation slice under the existing local remaster
