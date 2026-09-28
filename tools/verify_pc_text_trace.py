@@ -79,9 +79,31 @@ def verify(trace_path, baseline_path):
         checks['moving_hull_geometry']=stages['commander-settled']['quads'][1]['basis']!=stages['commander-stopped']['quads'][1]['basis']
         turret=[stages[name] for name in ('turret-mode','turret-right','turret-left')]
         checks['independent_turret_with_stationary_hull']=len({str(p['quads'][1]['basis']) for p in turret})==1 and len({str(p['quads'][2]['basis']) for p in turret})==3
+    reticle_crops=[]
+    if trace['profile']=='reticle':
+        observation=trace['reticle_observation'];packets=[p['reticle'] for p in rows if p.get('reticle')]
+        checks['all_reticle_entries_completed']=observation.get('entries',0)>0 and observation['entries']==observation.get('completed_draws')
+        checks['no_reticle_rejections']=set(observation)<=set(('entries','completed_draws','presented_draws','frame_mismatches'))
+        checks['reticle_presented_count']=len(packets)==observation.get('presented_draws')
+        checks['reticle_visibility_gate_exercised']=observation.get('frame_mismatches',0)>0
+        checks['reticle_same_page']=all(p['reticle']['page_offset']==p['page_offset'] for p in rows if p.get('reticle'))
+        checks['both_reticle_colours']={p['color'] for p in packets}=={0,1}
+        checks['moving_reticle_centres']=len({p['center_y'] for p in packets})>=3
+        stages={}
+        for sample in trace['ui_presentations']:
+            item=rows[sample['frame_index']].get('reticle',{});stages[sample['stage']]=item
+            if not item: continue
+            x,y,w,h=item['rect']
+            with Image.open(trace_path.parent/sample['image']) as image:
+                actual=hashlib.sha256(image.convert('RGB').crop((x,y,x+w,y+h)).tobytes()).hexdigest()
+            reticle_crops.append({'stage':sample['stage'],'matches':actual==item['pixel_sha256'],'sha256':actual})
+        checks['saved_reticle_crops_match']=len(reticle_crops)>5 and all(c['matches'] for c in reticle_crops)
+        checks['commander_has_no_graticule']=not stages['commander'] and not stages['commander-return']
+        checks['thermal_colour_returns']=stages['thermal']['color']==1 and stages['thermal-off']['color']==0
+        checks['zoom_changes_visible_projection']=stages['aim-stopped']['center_y']!=stages['zoom']['center_y']!=stages['zoom-again']['center_y']
     return {'checks':checks,'frames':len(trace['frames']),'text_observation':stats,
             'visible_runs':[{'kind':kind,'text':text,'frames':n} for (kind,text),n in sorted(counts.items())],
-            'saved_crops':captures,'orientation_crops':orientation_crops,'readiness_delays':readiness_delays,
+            'saved_crops':captures,'orientation_crops':orientation_crops,'reticle_crops':reticle_crops,'readiness_delays':readiness_delays,
             'inputs':[{'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
                       for path in (trace_path,baseline_path)],
             'scope':'bounded source presentation visibility and unchanged guest RAM/video/input; no complete-game or timing parity claim'}

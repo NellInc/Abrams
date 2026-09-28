@@ -21,6 +21,7 @@ try:
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from tools.pc_audio_events import AudioEvents
     from tools.pc_orientation import OrientationRuns
+    from tools.pc_reticle import ReticleRuns
     from tools.pc_text_trace import TextRuns
     from tools.pc_strut_trace import StrutDraws
     from tools.pc_live_state import SIM_SHA256
@@ -34,6 +35,7 @@ except ModuleNotFoundError:
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from pc_audio_events import AudioEvents
     from pc_orientation import OrientationRuns
+    from pc_reticle import ReticleRuns
     from pc_text_trace import TextRuns
     from pc_strut_trace import StrutDraws
     from pc_live_state import SIM_SHA256
@@ -69,6 +71,7 @@ class Collector:
         self.sequence = 0
         self.audio = AudioEvents()
         self.orientation = OrientationRuns()
+        self.reticle = ReticleRuns()
         self.text = TextRuns(ROOT / "GAME")
         self.plates = PlateLoads(ROOT / 'GAME')
         self.struts = StrutDraws(ROOT / 'GAME', self.plates)
@@ -90,6 +93,11 @@ class Collector:
                 self.observe_video(event, offset, raw, registers)
                 return
             regs = dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'), registers[:12]))
+            if event in (37,38,39):
+                if event==37: self.reticle.begin(raw,regs)
+                elif event==38: self.reticle.line(raw)
+                else: self.reticle.finish(raw)
+                return
             if event in (33,34,35,36):
                 if event==33: self.orientation.begin(raw,regs)
                 elif event==34: self.orientation.quad(raw)
@@ -304,6 +312,7 @@ class Collector:
             self.scanout = {'scanout_sequence': self.scanout_sequence, 'page_offset': page,
                 '_text_candidates': self.text.scanout(page),
                 '_orientation_candidate': self.orientation.scanout(page),
+                '_reticle_candidate': self.reticle.scanout(page),
                 'draw_pass': drawing, 'reason': None if drawing else 'no complete observed pass for scanned page',
                 'palette_rgb': [list(raw[i:i + 3]) for i in range(0, 64, 4)] if len(raw) == 64 else None}
         elif event == 19:
@@ -379,9 +388,12 @@ class Collector:
                                         (frame or {}).get('palette_rgb'))
             orientation = self.orientation.present((frame or {}).get('_orientation_candidate'),raw,width,height,
                                                    (frame or {}).get('palette_rgb'))
-            metadata = {k:v for k,v in (frame or {}).items() if k not in ('_text_candidates','_orientation_candidate')}
+            reticle = self.reticle.present((frame or {}).get('_reticle_candidate'),raw,width,height,
+                                           (frame or {}).get('palette_rgb'))
+            metadata = {k:v for k,v in (frame or {}).items() if k not in ('_text_candidates','_orientation_candidate','_reticle_candidate')}
             self.presented = {**(metadata or {'draw_pass': None, 'reason': 'unobserved framebuffer'}),
                 'text_runs': visible, 'messages': visible_messages(visible), 'orientation': orientation,
+                'reticle': reticle,
                 'buffer_slot': slot_or_page, 'video_sha256': hashlib.sha256(raw).hexdigest(),
                 'width': width, 'height': height}
 

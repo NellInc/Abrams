@@ -36,7 +36,7 @@ def main():
     parser.add_argument('--mode', choices=['trace','baseline','reference'], default='trace')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=180)
-    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio', 'text', 'cockpit', 'driver', 'gauges', 'orientation'], default='turn')
+    parser.add_argument('--profile', choices=['turn', 'controls', 'plates', 'audio', 'text', 'cockpit', 'driver', 'gauges', 'orientation', 'reticle'], default='turn')
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--state-core-sha256', help='defaults to the selected reference or source-baseline pin')
     parser.add_argument('--capture-sprites', action='store_true', help='save first paired framebuffer for each observed effect image')
@@ -68,7 +68,21 @@ def main():
         presentations = []
         sprite_presentations, captured_sprites, ui_presentations = [], set(), []
         stages = {}
-        if args.profile == 'orientation':
+        if args.profile == 'reticle':
+            steps=[('baseline',30,[]),('commander-key',3,['f2']),('commander',120,[]),
+                   ('gunner-key',3,['f1']),('gunner-settled',240,[]),
+                   ('turret-mode-key',3,['c']),('turret-mode',30,[]),
+                   ('aim-up-key',6,['up']),('aim-up',90,[]),
+                   ('aim-down-key',12,['down']),('aim-down',90,[]),
+                   ('aim-stop-key',3,['kp5']),('aim-stopped',90,[]),
+                   ('zoom-key',3,['z']),('zoom',90,[]),
+                   ('zoom-again-key',3,['z']),('zoom-again',90,[]),
+                   ('thermal-key',3,['t']),('thermal',90,[]),
+                   ('thermal-off-key',3,['t']),('thermal-off',90,[]),
+                   ('commander-return-key',3,['f2']),('commander-return',120,[]),
+                   ('gunner-return-key',3,['f1']),('gunner-return',240,[])]
+            inputs=[(name,keys,n==count-1) for name,count,keys in steps for n in range(count)]
+        elif args.profile == 'orientation':
             steps=[('baseline',30,[]),('commander-key',3,['f2']),('commander-settled',240,[]),
                    ('forward-key',24,['kp8']),('hull-right-key',18,['kp6']),('hull-right',90,[]),
                    ('brake-key',3,['kp5']),('commander-stopped',120,[]),
@@ -188,6 +202,7 @@ def main():
             'original_vertices_checked': collector.vertices_checked,
             'effect_pixels_checked': collector.effect_pixels_checked,
             'plate_loads': collector.plates.report(), 'strut_draws': collector.struts.report(), 'text_observation': collector.text.report(), 'orientation_observation': collector.orientation.report(),
+            'reticle_observation': collector.reticle.report(),
             'sprite_presentations': sprite_presentations,
             'ui_presentations': ui_presentations,
             'presentations': presentations, 'render_passes': list(collector.passes), 'incomplete_pass_at_stop': collector.active is not None,

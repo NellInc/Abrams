@@ -4,6 +4,7 @@ extends TextureRect
 const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
 var typography = preload("res://scripts/pc_typography.gd").new()
 var instrument_art = preload("res://scripts/pc_instrument_art.gd").new()
+var reticle_art = preload("res://scripts/pc_reticle_art.gd").new()
 var portrait_art = preload("res://scripts/pc_portrait_art.gd").new()
 var frontend_art = preload("res://scripts/pc_frontend_art.gd").new()
 var genesis_art_enabled := false
@@ -42,6 +43,8 @@ func _init() -> void:
 	material = shader_material
 	add_child(instrument_art)
 	instrument_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(reticle_art)
+	reticle_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(portrait_art)
 	portrait_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(typography)
@@ -50,6 +53,7 @@ func _init() -> void:
 	frontend_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 func _fallback(reason: String) -> bool:
+	reticle_art.clear()
 	frontend_art.clear()
 	world_enabled = false
 	typography.clear_runs()
@@ -262,10 +266,13 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> boo
 			instrument_art.set_frame(source,mask,tags,presentation.get("orientation",{}))
 	if genesis_art_enabled: portrait_art.set_frame(source,mask,presentation)
 	typography.set_frame(source,mask,presentation,null,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1))
-	if not typography.world_ink.is_empty():
+	reticle_art.clear()
+	if _art_palette_matches(presentation.get("palette_rgb")): reticle_art.set_frame(source,mask,presentation)
+	if not typography.world_ink.is_empty() or not reticle_art.ink.is_empty():
 		# Retain the unmodified provenance mask for all art checks above. Only
-		# proven bearing ink yields to this same frame's underlying world.
+		# proven bearing and sight ink yield to this same frame's underlying world.
 		var composed_mask: Image = mask.duplicate()
 		for pixel in typography.world_ink: composed_mask.set_pixelv(pixel,Color.BLACK)
+		for pixel in reticle_art.ink: composed_mask.set_pixelv(pixel,Color.BLACK)
 		material.set_shader_parameter("ui_mask",ImageTexture.create_from_image(composed_mask))
 	return true

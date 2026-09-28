@@ -30,6 +30,50 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Source-verified gunner graticule, 2026-09-28
+
+Continued the local remaster after the frame/ammunition repair in `1bc6bd3`.
+The eight-stroke gunner sight now has a resolution-independent Godot layer,
+retaining the Genesis reference's square-ended, open-centre style and the PC
+executable's exact geometry, projected centre, clipping, colour and timing.
+Read-only native observations bind completed original draws to full scanout RGB.
+Unknown or altered frames retain the original content. No guest logic or input
+path changed. `docs/pc-reticle-research.md` records source and reproduction.
+
+Evidence:
+
+* `artifacts/pc-reticle-cpu-03/oracle.json`: 522 whole-routine fixtures and 304
+  original line-wrapper clipping fixtures pass. All 331 executed instruction
+  locations match the supplied executable, and 216,530,944 VGA plane bytes
+  compare exactly. Isolated fixture coverage is not a live-reachability claim.
+* `artifacts/pc-reticle-live-parity-02.json`: all 20 checks pass across 1,458
+  frames; trace and baseline RAM, video, inputs and stage states match. All 337
+  observed draws complete, with 1,207 scanout matches and 246 rejected stale or
+  overwritten candidates. Live zoom, four centres, both thermal colours,
+  return to normal colour and station transitions are covered.
+* `artifacts/pc-reticle-native-01/report.json`: 30 samples at 1280x800,
+  1728x1080 and 1920x1200 pass 1,003 assertions and 51,942,400 full-frame pixel
+  comparisons. Integer output is identical. Fractional edge changes stay
+  within original ink and match analytic coverage over an unrelated test world.
+  The expanded headless comparison passes 1,154 checks against all 826 CPU
+  fixtures; seven Python tests cover observer corruption and lifecycle.
+* `artifacts/pc-reticle-play-01/reticle-verification.json`: actual Play launcher
+  exits 0 with the new layer active. Source metadata/crop hashes match, original
+  state and framebuffer are unchanged, and the complete 1280x800 remastered
+  image is byte-identical to the repaired cockpit capture. This intentionally
+  preserves integer-scale sight appearance, rather than inventing a new reticle.
+* `artifacts/validation-20260928T024325Z`: final aggregate exits 0, all 33 stages
+  and 241 Python tests pass, including reference preservation. Optional
+  Impeccable remains unavailable; no dependency was installed.
+
+The implementing assistant inspected both actual Play art and the fractional
+white-sight fixture. This is self-review, not Nell's aesthetic acceptance.
+The research viewer remains fixed at 1280x800 internally; native-resolution
+window/fullscreen configuration needs separate camera-aspect validation. The
+TADS target-selection box still uses original pixels. Whole-game parity and the
+broader remaster remain open. Local only, no remote publication; five unrelated
+untracked vehicle-study files remain untouched.
+
 ## Gunner frame and ammunition correction, 2026-09-28
 
 Nell's `download.png` exposed a broken join across the gunner surround and
