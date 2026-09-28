@@ -109,6 +109,7 @@ run_check pc_play_display ./tools/godot.sh --headless --quit-after 1200 --script
 run_check pc_frame_pacing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_frame_pacing.gd
 run_check pc_live_scheduling ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_live_scheduling.gd
 run_check pc_play_menu ./tools/godot.sh --headless --script res://tests/test_pc_play_menu.gd
+run_check pc_play_shortcuts ./tools/godot.sh --headless --script res://tests/test_pc_play_shortcuts.gd
 run_check pc_graphics_modes ./tools/godot.sh --headless --script res://tests/test_pc_graphics_modes.gd
 run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_draw_pass.gd
 run_check pc_surfaces ./tools/godot.sh --headless --script res://tests/test_pc_surfaces.gd

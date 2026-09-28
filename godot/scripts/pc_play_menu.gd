@@ -3,6 +3,8 @@ extends "res://scripts/pc_audio_menu.gd"
 signal graphics_selected(mode: String)
 signal speed_selected(multiplier: int)
 signal state_requested(operation: String, slot: int)
+signal control_notice(message: String)
+var shortcut_is_macos := OS.get_name()=="macOS"
 const MODES := ["ega","genesis","upscaled","modern"]
 var graphics_mode := "upscaled"
 var speed := 1
@@ -46,7 +48,40 @@ func _ready() -> void:
 		graphics_popup.add_radio_check_item(["EGA (original PC)","Genesis (original artwork)","Upscaled (remastered)","Modern (not available yet)"][index],index)
 	graphics_popup.set_item_disabled(3,true)
 	graphics_popup.id_pressed.connect(func(index):choose_graphics(MODES[index]))
+	graphics_popup.add_separator()
+	graphics_popup.add_item("Cycle graphics: "+shortcut_prefix()+"G",100)
+	graphics_popup.set_item_disabled(graphics_popup.get_item_index(100),true)
 	refresh_controls()
+
+func shortcut_prefix() -> String:
+	return "Cmd+" if shortcut_is_macos else "Ctrl+Alt+"
+
+func _input(event: InputEvent) -> void:
+	if handle_shortcut(event):get_viewport().set_input_as_handled()
+
+func handle_shortcut(event: InputEvent) -> bool:
+	if not event is InputEventKey:return false
+	var modifier: bool=event.meta_pressed and not event.ctrl_pressed and not event.alt_pressed if shortcut_is_macos else event.ctrl_pressed and event.alt_pressed and not event.meta_pressed
+	if not modifier:return false
+	var code: int=event.keycode if event.keycode!=0 else event.physical_keycode
+	if code not in [KEY_S,KEY_L,KEY_G] or (event.shift_pressed and code!=KEY_L):return false
+	# Claim the entire chord, including repeats and its release. The bridge polls
+	# Input directly, so marking the event handled alone cannot protect the guest.
+	release_keys=true
+	if not event.pressed or event.echo or not open_menus.is_empty():return true
+	match code:
+		KEY_S:request_state("save_state",1)
+		KEY_L:
+			var slot := 0 if event.shift_pressed else 1
+			if not busy and not request_state("load_state",slot):
+				control_notice.emit("No recovery state available" if slot==0 else "Slot 1 is empty or unavailable")
+		KEY_G:choose_graphics(MODES[(MODES.find(graphics_mode)+1)%3])
+	return true
+
+func game_keys(held: Array) -> Array:
+	var modifier := Input.is_key_pressed(KEY_META) if shortcut_is_macos else Input.is_key_pressed(KEY_CTRL) and Input.is_key_pressed(KEY_ALT)
+	if modifier:release_keys=true;return []
+	return super.game_keys(held)
 
 func _submenu(parent: PopupMenu, title: String) -> PopupMenu:
 	var menu := PopupMenu.new()
@@ -61,6 +96,7 @@ func choose_graphics(mode: String) -> bool:
 	graphics_mode=mode
 	graphics_selected.emit(mode)
 	refresh_controls()
+	control_notice.emit("Graphics: "+{"ega":"EGA","genesis":"Genesis","upscaled":"Upscaled"}[graphics_mode])
 	return true
 
 func choose_speed(multiplier: int) -> bool:
@@ -77,6 +113,7 @@ func request_state(operation: String, slot: int) -> bool:
 	busy=true
 	state_message="Saving state..." if operation=="save_state" else "Loading state..."
 	refresh_controls()
+	control_notice.emit(state_message)
 	state_requested.emit(operation,slot)
 	return true
 
@@ -88,6 +125,7 @@ func set_state_status(slots: Array, message: String="") -> void:
 	busy=false
 	if not message.is_empty(): state_message=message
 	refresh_controls()
+	if not message.is_empty():control_notice.emit(message)
 
 func refresh_controls() -> void:
 	if graphics_popup==null: return
@@ -97,12 +135,14 @@ func refresh_controls() -> void:
 		speed_popup.set_item_disabled(index,busy)
 	for slot in range(1,6):
 		save_popup.set_item_disabled(save_popup.get_item_index(slot),busy)
+		save_popup.set_item_text(save_popup.get_item_index(slot),"Slot %d"%slot+(" ("+shortcut_prefix()+"S)" if slot==1 else ""))
 		var available := _has_slot(slot)
 		load_popup.set_item_disabled(load_popup.get_item_index(slot),busy or not available)
 		var description := "Slot %d (empty)"%slot
 		for entry in state_slots:
 			if entry is Dictionary and int(entry.get("slot",-1))==slot and entry.get("exists",true):
 				description="Slot %d (%s)"%[slot,str(entry.get("saved_at","saved")) if available else "invalid or incompatible"]
-		load_popup.set_item_text(load_popup.get_item_index(slot),description)
+		load_popup.set_item_text(load_popup.get_item_index(slot),description+(" ("+shortcut_prefix()+"L)" if slot==1 else ""))
 	load_popup.set_item_disabled(load_popup.get_item_index(0),busy or not _has_slot(0))
+	load_popup.set_item_text(load_popup.get_item_index(0),"Undo last load ("+shortcut_prefix()+"Shift+L)")
 	session_popup.set_item_text(session_popup.get_item_index(100),state_message)

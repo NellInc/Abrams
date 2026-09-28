@@ -6,6 +6,22 @@ original game keys; menu navigation is withheld from the game until keys are
 released. The original continues running while a menu is open. Use its pause
 control first when you need time to choose.
 
+## Keyboard shortcuts
+
+| Action | macOS | Other platforms |
+| --- | --- | --- |
+| Quick save to slot 1 | **Cmd+S** | **Ctrl+Alt+S** |
+| Quick load from slot 1 | **Cmd+L** | **Ctrl+Alt+L** |
+| Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
+| Cycle EGA → Genesis → Upscaled | **Cmd+G** | **Ctrl+Alt+G** |
+
+Shortcuts work in Play, including fullscreen, menus and briefings. A brief
+on-screen message confirms the action. Graphics changes immediately and skips
+the unavailable Modern mode. Holding a shortcut never repeats saves or switches.
+The chord is withheld from the original game until its keys are released; bare
+S, L, G and the original function keys remain unchanged. Quick save overwrites
+slot 1 while retaining its preceding archive. Use Session for slots 2 to 5.
+
 ## Save states
 
 Choose **Session > Save state > Slot 1 to 5**. Choose the corresponding entry under
@@ -32,6 +48,12 @@ Preserve the whole save directory. Checkpoints are pinned to the game bytes,
 native core, emulation options and platform; they are not portable interchange
 files or a substitute for backups. A core update can make old states incompatible.
 The original auto-save and Take R+R system remains available independently.
+
+Current presentation limitation: save/load restarts the observer, which loses
+cockpit-pixel provenance after the restored display frame. Some remastered
+cockpit artwork then falls back to original PC artwork until the original game
+redraws those elements. The saved native game state and campaign disk still
+restore together. Keyboard shortcuts use this same existing checkpoint path.
 
 ## Fast forward
 

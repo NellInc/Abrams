@@ -150,6 +150,7 @@
     "godot/tests/test_pc_play_display.gd",
     "godot/tests/test_pc_play_menu.gd",
     "godot/tests/test_pc_play_resize.gd",
+    "godot/tests/test_pc_play_shortcuts.gd",
     "godot/tests/test_pc_portrait_art.gd",
     "godot/tests/test_pc_radio.gd",
     "godot/tests/test_pc_radio_bridge.gd",

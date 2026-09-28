@@ -103,6 +103,11 @@ before replacing the live session. Fast forward requests 2, 4 or 8 original
 frames at a time, with presentation sound muted and no stale speech catch-up.
 The original CPU/game-speed settings remain untouched.
 
+Play also accepts Cmd+S / Cmd+L for quick save/load in slot 1, Cmd+Shift+L for
+Undo last load, and Cmd+G to cycle graphics. Other platforms use Ctrl+Alt in
+place of Cmd. Shortcut chords are withheld from the source game, including
+trailing key releases, and show brief feedback without reserving a function key.
+
 Graphics switches the cached current frame among exact PC EGA, verified native
 Genesis donors and Upscaled artwork. Assets are preloaded. Genesis is explicitly
 partial, with original PC pixels in unmatched fields; Modern is disabled.

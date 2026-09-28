@@ -24,6 +24,9 @@ music and sound-effect references for a faithful presentation upgrade.
   authentic original-resolution Genesis donor art, and the Upscaled remaster.
   Modern is visible but unavailable. See `docs/play-controls.md` for controls,
   compatibility and exact coverage. No new vehicle models or textures are enabled.
+  On macOS: **Cmd+S** saves slot 1, **Cmd+L** loads it, **Cmd+Shift+L** undoes
+  the last load, and **Cmd+G** cycles graphics. Other platforms use **Ctrl+Alt**
+  instead of Cmd. Original unmodified game keys remain unchanged.
 * Open **Calibration Range.command** for the separate authored test range.
 * Open **Art Review.command** for original/remaster artwork comparisons.
 * Open **PC Bridge.command** for the original-PC/Godot tandem research view.

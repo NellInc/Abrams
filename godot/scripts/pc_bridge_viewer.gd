@@ -14,6 +14,8 @@ var requested_window_size := Vector2i.ZERO
 var requested_fullscreen := false
 var pc_audio: Node
 var audio_menu: MenuBar
+var control_notice: Label
+var notice_until := 0
 var audio_drained := true
 var world_view: Node3D
 var draw_view: Node3D
@@ -120,6 +122,7 @@ func _initialize() -> void:
 		audio_menu.graphics_selected.connect(_choose_graphics)
 		audio_menu.speed_selected.connect(_choose_speed)
 		audio_menu.state_requested.connect(_request_state)
+		audio_menu.control_notice.connect(_show_control_notice)
 		audio_menu.resized.connect(_layout_audio_menu)
 		_layout_audio_menu.call_deferred()
 	if trace_mode and cockpit_art_requested:
@@ -309,7 +312,23 @@ func _build_play_ui() -> void:
 	picture.hide()
 	caption.hide()
 	status.position = Vector2(24,24)
+	control_notice=_label("",18)
+	control_notice.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	control_notice.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	control_notice.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	control_notice.add_theme_constant_override("outline_size",5)
+	control_notice.add_theme_color_override("font_outline_color",Color.BLACK)
+	play_display.add_child(control_notice)
+	control_notice.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	control_notice.offset_left=24;control_notice.offset_right=-24;control_notice.offset_top=12
+	control_notice.hide()
 	_build_stage(world_viewport)
+
+func _show_control_notice(message: String) -> void:
+	if not is_instance_valid(control_notice):return
+	control_notice.text=message
+	notice_until=Time.get_ticks_msec()+2500
+	control_notice.show()
 
 func _build_ui() -> void:
 	if play_mode:
@@ -474,6 +493,7 @@ func _capture_deadline_msec() -> int:
 	return 180000 if boot_mode or "--capture-vehicle" in OS.get_cmdline_user_args() else 60000
 
 func _process(delta: float) -> bool:
+	if is_instance_valid(control_notice) and Time.get_ticks_msec()>=notice_until:control_notice.hide()
 	elapsed += delta
 	for message in bridge.poll():
 		if message.type=="state_result": _state_result(message)
