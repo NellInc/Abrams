@@ -1,7 +1,8 @@
 # Remaster controls
 
-Open `Play.command`. The Audio, Session and Graphics menus sit outside the
-original display. On macOS they appear in the system menu bar. They reserve no
+Open `Abrams.app` and click **Play**, or use `Play.command` in an equipped
+source checkout. The Audio, Session and Graphics menus sit outside the original
+display. On macOS they appear in the system menu bar. They reserve no
 original game keys; menu navigation is withheld from the game until keys are
 released. The original continues running while a menu is open. Use its pause
 control first when you need time to choose.
@@ -21,6 +22,17 @@ the unavailable Modern mode. Holding a shortcut never repeats saves or switches.
 The chord is withheld from the original game until its keys are released; bare
 S, L, G and the original function keys remain unchanged. Quick save overwrites
 slot 1 while retaining its preceding archive. Use Session for slots 2 to 5.
+
+You can keep steering or firing while using a save/load shortcut. Only the
+shortcut chord is withheld; unrelated held controls continue. A checkpoint
+retains the original machine's held-key state, then reconciles it with your
+current keys on the next frame. Releasing the trigger before loading therefore
+does not leave it stuck down. Failed loads and Undo preserve this behavior.
+
+Opening a native menu or leaving the window deliberately neutralizes game input.
+After returning, release all keys once before steering or firing again. This
+prevents an old key press from remaining active after focus loss. An already
+sent fast-forward batch finishes unchanged; input changes apply to the next batch.
 
 ## Save states
 
@@ -49,11 +61,13 @@ native core, emulation options and platform; they are not portable interchange
 files or a substitute for backups. A core update can make old states incompatible.
 The original auto-save and Take R+R system remains available independently.
 
-Current presentation limitation: save/load restarts the observer, which loses
-cockpit-pixel provenance after the restored display frame. Some remastered
-cockpit artwork then falls back to original PC artwork until the original game
-redraws those elements. The saved native game state and campaign disk still
-restore together. Keyboard shortcuts use this same existing checkpoint path.
+New checkpoints preserve validated host-side EGA artwork ownership alongside
+native state. Save/load, cross-process continuation and campaign rollback are
+checked against uninterrupted original rendering. Fresh scanlines regenerate
+display masks; pending audio and partially observed drawing candidates are not
+replayed. Legacy same-core checkpoints without the ownership companion remain
+loadable with conservative original-pixel fallback. Older core fingerprints
+remain incompatible. Keyboard shortcuts use this same checkpoint path.
 
 ## Fast forward
 
@@ -82,9 +96,11 @@ restart, new game input or extra original frame.
 * **Modern**: disabled and explicitly labelled unavailable until new models and
   realistic assets exist.
 
-Upscaled is the default. `./Play.command --graphics ega` (or `genesis` or
-`upscaled`) selects the starting mode. Missing Genesis assets preserve the current
-mode and report the failure. See [graphics coverage](graphics-modes.md).
+Upscaled is the default. Without an imported Genesis ROM, the standalone app
+offers EGA and PC-only Upscaled; the shortcut skips Genesis. In an equipped
+checkout, `./Play.command --graphics ega` (or `genesis` or `upscaled`) selects the
+starting mode. Missing or invalid graphics resources leave the current mode
+unchanged. See [graphics coverage](graphics-modes.md).
 
 ## Audio
 
@@ -94,9 +110,6 @@ F5 and pause still govern gameplay audio. Frontend music has its own Music and
 Master gates, and stays silent on unrecognized screens and during simulation.
 The four new arrangements use individual samples, including extracted Genesis
 percussion. They are authored arrangements, not recovered original scores.
-
-Bearings retain complete generated sentences with digits spoken individually;
-“niner” is accepted. No mixed gameplay recordings are used as live samples.
 
 ## Verification boundary
 

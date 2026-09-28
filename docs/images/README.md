@@ -1,16 +1,7 @@
 # Gallery images
 
-`abrams-cover-remastered.png` restores the original PC box-art composition using
-generative image editing. `abrams-icon.png` adapts it for the application icon.
-Both retain BY DYNAMIX and add FAN REMASTER in ivory stencil lettering.
+The cover and icon rework the original box art, retaining **by Dynamix** and adding **Fan Remaster**.
 
-The three `gunner-*.png` images are unedited 1280 × 960 captures of the same
-original-PC gameplay boundary, taken on 28 September 2026. The production
-convenience test switched preloaded graphics modes without advancing or modifying
-the source frame, game state or sample count. These show the current local
-remaster build, which can be ahead of the repository's published runtime code.
-Modern graphics are not shown and remain deferred.
+The three `colonel-*.png` images show the same captured PC briefing frame rendered in EGA, Genesis and Upscaled modes at 1280 × 960. They use the current local renderer, with no image retouching.
 
-This gallery contains no executable, original game archive or cartridge ROM.
-The original games and their artwork remain the property of their respective
-owners. Adding selected preview images does not change the project's licensing.
+These previews show the local development build. They do not include the original games or change the project's licensing.

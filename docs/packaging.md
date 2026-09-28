@@ -1,5 +1,18 @@
 # Local packaging
 
+## Standalone app for testers
+
+The current player package is `Abrams.app` for Apple Silicon macOS 14 or newer.
+It bundles Godot and Python/Pillow. **Players supply the PC files; Genesis is
+optional. Neither original game is included in the app.** See
+[installation and app building](standalone-macos.md).
+
+The source/private ZIP builders below are developer tools. The legacy `private`
+kit includes the owner's PC content and requires separately installed runtimes;
+it is unsuitable as the tester handoff. Use the standalone app for that purpose.
+
+## Developer review kits
+
 These are local review kits. Neither archive is cleared for publication.
 `source` contains the implementation and build instructions; it omits PC and
 Genesis originals, all presentation assets, voice scripts and recognition data.
@@ -32,7 +45,7 @@ reproducibility, not bit-identical native compilation or identical generated art
 Build after runtime edits have stopped; an archive assembled during concurrent
 source edits is not a coherent release candidate.
 
-## Run the private kit
+## Run the legacy private developer kit
 
 Extract into a writable directory. Open the top-level `Play.command`, or run:
 
@@ -116,3 +129,11 @@ private alongside voice scripts. Tests needing them or original game files requi
 the corresponding local inputs. Pure packaging and launcher tests run from the
 source kit without those inputs. The private kit's managed Play entry intentionally
 differs from the research launcher's command contract tested by `test_launchers`.
+
+## Repository and installation gates
+
+Run `python3 -m tools.package.source_ci` for the dependency-free source gate
+and `python3 -m tools.package.git_boundary --history` for staged/history checks
+in the current development checkout. Fresh installs, upgrades, rollback and
+platform support are covered in [installation and recovery](install-recovery.md).
+Source CI does not certify gameplay, rights clearance or a native port.
