@@ -84,6 +84,8 @@ def main():
                 raise ValueError("Rebuild the local trace core for original audio-event support")
             if manifest.get("text_event_schema") != 2:
                 raise ValueError("Rebuild the local trace core for original visible-text support")
+            if manifest.get("frontend_text_schema") != 1:
+                raise ValueError("Rebuild the local trace core for original menu-text support")
             if manifest.get("message_event_schema") != 1:
                 raise ValueError("Rebuild the local trace core for original message identity support")
             if manifest.get("strut_event_schema") != 1:
@@ -93,12 +95,16 @@ def main():
             pin, source_pin = manifest["trace_sha256"], manifest["baseline_sha256"]
             args.core = ROOT / ".runtime/pc-core/abrams-trace.dylib"
         core = PcReferenceCore(args.core, args.content, args.saves, expected_sha256=pin)
-        core.run(240)
+        if args.backend == 'trace':
+            session = PresentationSession(core,reader,shape_bytes)
+            session.step(240)
+        else: core.run(240)
         if args.state:
+            if session:session.close();session=None
             core.restore(args.state, expected_source_sha256=source_pin)
             core.run(1)  # documented stale-native-framebuffer priming step
         if args.backend == "trace":
-            session = PresentationSession(core,reader,shape_bytes)
+            if session is None:session = PresentationSession(core,reader,shape_bytes)
             session.step(1)
         else:
             core.run(1)

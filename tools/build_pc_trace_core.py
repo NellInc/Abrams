@@ -99,11 +99,15 @@ def main():
         patch_hashes[name] = {'original': hashlib.sha256(before.encode()).hexdigest(), 'patched': sha(path)}
     subprocess.run(['make', '-C', str(SOURCE), '-j4'], check=True)
     output = ROOT / '.runtime/pc-core/abrams-trace.dylib'
-    shutil.copyfile(SOURCE / 'dosbox_pure_libretro.dylib', output)
+    # Existing local viewers may still map the previous inode. Replace atomically
+    # rather than modifying bytes underneath a running process.
+    staged=output.with_suffix('.next')
+    shutil.copyfile(SOURCE / 'dosbox_pure_libretro.dylib', staged)
+    staged.replace(output)
     manifest = {'schema': 2, 'audio_event_schema': 1, 'text_event_schema': 2, 'message_event_schema': 1, 'strut_event_schema': 1, 'driver_overlay_schema': 1, 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
         'source_core_normal_sha256': hashlib.sha256(original.encode()).hexdigest(),
         'patched_core_normal_sha256': sha(target), 'trace_header_sha256': sha(header),
-        'ownership_header_sha256': sha(ownership), 'motor_pool_plate_schema': 1,
+        'ownership_header_sha256': sha(ownership), 'motor_pool_plate_schema': 1, 'frontend_text_schema': 1,
         'plate_ownership_header_sha256': sha(plates),
         'baseline_sha256': sha(baseline), 'trace_sha256': sha(output),
         'build': ['make', '-j4'], 'compiler': subprocess.check_output(['c++', '--version'], text=True).splitlines()[0],

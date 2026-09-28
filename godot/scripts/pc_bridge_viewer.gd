@@ -89,6 +89,18 @@ func _initialize() -> void:
 		output.path_join("host.log"), "trace" if trace_mode else "reference")
 	if boot_mode and capture:
 		auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_boot_steps.json"))
+	if capture and "--capture-menu" in args:
+		var index:=args.find("--capture-menu")+1
+		var phase:String=args[index] if index<args.size() else ""
+		var conflict:=["--capture-intro","--capture-briefing","--capture-motor-pool","--capture-information","--capture-station","--capture-crew"].any(func(flag):return flag in args)
+		if not boot_mode or conflict or phase not in ["joystick","main","scenario","name"]:
+			bridge.failure="Menu capture requires cold boot, a supported phase, and no other route"
+		elif phase=="joystick":auto_steps=[[1,[]]]
+		elif phase=="main":auto_steps=auto_steps.slice(0,10)
+		elif phase=="scenario":auto_steps=auto_steps.slice(0,12)
+		else:
+			auto_steps=auto_steps.slice(0,10)
+			for key in ["right","return","return","n","e","l","l"]:auto_steps.append_array([[10,[key]],[90,[]]])
 	if capture and "--capture-intro" in args:
 		var conflict := ["--capture-briefing","--capture-motor-pool","--capture-information","--capture-station","--capture-crew"].any(func(flag):return flag in args)
 		if not boot_mode or conflict:
@@ -389,6 +401,7 @@ func _capture() -> void:
 		"portrait_art": {"id":tandem_frame.portrait_art.active.id,"name":tandem_frame.portrait_art.active.name} if trace_mode and not tandem_frame.portrait_art.active.is_empty() else null,
 		"frontend_art": tandem_frame.frontend_art.active if trace_mode else {},
 		"frontend_text": tandem_frame.frontend_art.typography.runs.map(func(r):return r.text) if trace_mode else [],
+		"menu_text": tandem_frame.frontend_art.flow_typography.runs.map(func(r):return r.text) if trace_mode else [],
 		"scope": ("scanout-paired original wireframe diagnostic" if wire_mode else "scanout-paired Godot surfaces and effects; optional proven-pixel cockpit materials with original instruments/HUD; exact raster edges and unsupported commands remain open") if trace_mode else "original camera and static face selection; dynamic rendering, solid occlusion and materials unresolved"}, "  "))
 	print("PC_BRIDGE_VIEW_CAPTURED " + output)
 	_close()

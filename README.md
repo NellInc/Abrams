@@ -36,6 +36,10 @@ music and sound-effect references for a faithful presentation upgrade.
   Credits, briefings and 81 verified information-page text runs share those
   original-style outlines, preserving their wording, spacing and colours.
   Optical shaping regularizes letter weights, diagonal joins and stencil gaps.
+  The same faces now cover the original joystick prompt, game menus, changing
+  scenario options, typed names, mission titles and summary/score text. A read-only
+  frontend observer verifies original font draws and current pixels, including
+  selection colours; original controls and wording are unchanged.
   The publisher splash and moving 3D menu backdrop remain original.
   Add `--original-art` for the PC-colour/source-cockpit diagnostic, or
   `--pc-colours` to keep the new cockpit materials with original world colours.

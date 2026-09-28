@@ -22,8 +22,9 @@ CALLERS = {caller: CALLERS.get(caller,'instrument') for caller in TEXT_CALLS}
 
 
 class TextRuns:
-    def __init__(self, source):
+    def __init__(self, source, profile=None):
         self.catalog = {name: (source/name).read_bytes() for name in FONT_NAMES}
+        self.profile = profile
         self.pages = {}
         self.pending = None
         self.sequence = 0
@@ -36,9 +37,12 @@ class TextRuns:
         ds, stack = regs['ds']*16, regs['ss']*16+regs['sp']
         if ds+65536 > len(ram) or stack+10 > len(ram): raise ValueError('invalid native text segments')
         caller, cs, pointer, x, y = struct.unpack_from('<5H',ram,stack)
-        if caller not in CALLERS or regs['ds'] != cs+0x19E0 or regs['cs'] != cs+0x0F8D:
+        p = self.profile or {'ds':0x19E0,'wrapper':0xF8D,'driver':0x1388,
+                            'driver_ip':0x68,'foreground':0x3590,'callers':CALLERS}
+        fg = p['foreground']
+        if caller not in p['callers'] or regs['ds'] != cs+p['ds'] or regs['cs'] != cs+p['wrapper']:
             raise ValueError('unknown original text caller')
-        page = (struct.unpack_from('<H',ram,ds+0x35A8)[0]-0xA000)*16
+        page = (struct.unpack_from('<H',ram,ds+fg+0x18)[0]-0xA000)*16
         key = (page, caller, x, y)
         self.pages.pop(key,None)
         self.pending = (key,None)
@@ -47,8 +51,8 @@ class TextRuns:
         # Unsupported legitimate source text stays original-only. Never invent
         # glyphs, clip a label, or reuse the previous label after a failed draw.
         try:
-            font = loaded_font(ram,ds,self.catalog)
-            if struct.unpack_from('<HH',ram,ds+0x35B4) != (0x68,cs+0x1388):
+            font = loaded_font(ram,ds,self.catalog,tuple(fg+v for v in (0xBE,0xD2,0xE6,0xFA,0x10E)))
+            if struct.unpack_from('<HH',ram,ds+fg+0x24) != (p['driver_ip'],cs+p['driver']):
                 raise ValueError('unsupported character driver')
             end = ram.find(b'\0',ds+pointer,min(ds+65536,ds+pointer+321))
             if end < 0: raise ValueError('unterminated original text')
@@ -56,18 +60,18 @@ class TextRuns:
             width,height,ink = text_pixels(font,text)
             if page not in (0,8192) or x+width>320 or y+height>200:
                 raise ValueError('unsupported text rectangle')
-            foreground,background = [struct.unpack_from('<H',ram,ds+0x48A6+2*ram[ds+at])[0]&255
-                                     for at in (0x3590,0x3591)]
-            mode = ram[ds+0x3592]
+            foreground,background = [struct.unpack_from('<H',ram,ds+fg+0x1316+2*ram[ds+at])[0]&255
+                                     for at in (fg,fg+1)]
+            mode = ram[ds+fg+2]
             if foreground>15 or background>15 or mode not in (0,1):
                 raise ValueError('unsupported text colors')
-            item = {'kind':CALLERS[caller], 'return_ip':caller,'source_pointer':pointer,
+            item = {'kind':p['callers'][caller], 'return_ip':caller,'source_pointer':pointer,
                     'text':text.decode('cp437'), 'draw_sequence':self.sequence, 'rect':[x,y,width,height], 'page_offset':page,
                     'font_sha256':font['sha256'],'font_sources':font['sources'],
                     'cell_size':[font['width'],font['height']],
                     'foreground':foreground,'background':background,'transparent':bool(mode),
-                    'speaker':ram[ds+0x6464] if caller in (0x3F1D,0x3F58) else None}
-            self.messages.bind(item,text)
+                    'speaker':ram[ds+0x6464] if self.profile is None and caller in (0x3F1D,0x3F58) else None}
+            if self.profile is None: self.messages.bind(item,text)
             self.pending = (key,(item,ink))
         except ValueError as error:
             self.counts['unsupported_entries'] += 1

@@ -21,6 +21,8 @@ var intro_art = preload("res://scripts/pc_intro_art.gd").new()
 var information_art = preload("res://scripts/pc_information_art.gd").new()
 var arming_panel = preload("res://scripts/pc_arming_panel_art.gd").new()
 var typography = preload("res://scripts/pc_typography.gd").new()
+var flow_typography = preload("res://scripts/pc_typography.gd").new()
+var original_cursor = preload("res://scripts/pc_original_cursor.gd").new()
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -37,6 +39,10 @@ func _init() -> void:
 	arming_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(typography)
 	typography.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(flow_typography)
+	flow_typography.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(original_cursor)
+	original_cursor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	clear()
 
 func clear() -> void:
@@ -45,6 +51,8 @@ func clear() -> void:
 	information_art.clear()
 	arming_panel.clear()
 	typography.clear_runs()
+	flow_typography.clear_runs()
+	original_cursor.clear()
 	visible = false
 	material.set_shader_parameter("restored_height",0.0)
 	material.set_shader_parameter("motor_enabled",false)
@@ -53,6 +61,8 @@ func load_sources(root_path: String) -> bool:
 	clear()
 	catalog.clear()
 	portraits.clear()
+	flow_typography.load_sources(root_path.path_join("GAME"))
+	original_cursor.load_sources(root_path)
 	_load_motor_pool(root_path)
 	intro_art.load_sources(root_path)
 	information_art.load_sources(root_path)
@@ -157,6 +167,36 @@ func _set_motor_pool(source: Image, presentation: Dictionary) -> bool:
 	return true
 
 func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}) -> bool:
+	var restored := _set_art_frame(source,program,presentation)
+	if not text_enabled or source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8: return restored
+	if active.get("scene")=="intro": return restored # Its fitted credit lettering already owns these cells.
+	var name: String=program.get("name","")
+	if name in ["START","BRIEF","END"]:
+		if presentation.get("frontend_program")!=program: return restored
+	elif name=="SIM":
+		if not restored and presentation.get("draw_pass") is Dictionary: return restored
+	else: return restored
+	var overlay= presentation.get("ui_overlay")
+	if not overlay is Dictionary or overlay.get("width")!=320 or overlay.get("height")!=200 or not overlay.get("mask_png") is String: return restored
+	var mask:=Image.new()
+	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK or mask.get_size()!=Vector2i(320,200) or mask.get_format()!=Image.FORMAT_L8: return restored
+	for bit in mask.get_data():
+		if bit!=0 and bit!=255: return restored
+	original_cursor.set_frame(source,presentation)
+	flow_typography.set_frame(source,mask,presentation,original_cursor.mask)
+	# Keep previously restored information/office/arming colours and layouts.
+	flow_typography.runs.assign(flow_typography.runs.filter(func(run):
+		return not typography.runs.any(func(old):return old.rect.intersects(run.rect))))
+	for label in flow_typography.labels: label.hide()
+	flow_typography._layout()
+	if flow_typography.runs.is_empty(): return restored
+	if not restored:
+		texture=ImageTexture.create_from_image(source)
+		active={"scene":"text","name":"Original "+name+" typography"}
+	visible=true
+	return true
+
+func _set_art_frame(source: Image, program: Dictionary, presentation: Dictionary={}) -> bool:
 	clear()
 	if source==null or source.get_size()!=Vector2i(320,200): return false
 	if source.get_format()!=Image.FORMAT_RGB8: return false

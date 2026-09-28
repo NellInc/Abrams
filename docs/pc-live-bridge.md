@@ -14,9 +14,13 @@ have been exercised without restarting the helper.
 
 The native view places the original framebuffer beside scanout-paired Godot
 solid geometry, EGA materials, live vehicles and bitmap effects under the
-original cockpit/HUD. Menus and briefings retain the entire original framebuffer.
-The cockpit and menus remain source-resolution artwork. Add `--wire` for the
-wireframe diagnostic. See [UI research](pc-ui-research.md),
+original cockpit/HUD. The original framebuffer remains the fallback for menus
+and briefings. Default `Play.command` adds the supported Genesis-derived artwork
+and original-style outline typefaces described in `graphics-coverage.md`.
+The joystick prompt, menu selections, entered names, mission titles and summary
+text now receive the same refined lettering. The moving menu backdrop and
+unverified areas retain original pixels. Add `--wire` for the wireframe
+diagnostic. See [UI research](pc-ui-research.md),
 [scanout research](pc-render-sync-research.md) and
 [surface research](pc-surfaces-research.md) for presentation evidence and limits.
 
@@ -55,10 +59,31 @@ name. The source basis is `dos_inc.h` (`DOS_SDA_SEG=0xb2`, current PSP offset
 alone is insufficient: freed SIM code can remain in conventional RAM.
 
 Only active SIM with the correct executable anchors and load address can attach
-the read-only drawing observer. Each program transition detaches the native
-callback and discards the old collector. Reentry creates a new collector and
-increments `render_epoch`. Detach now passes a null callback; a zero load segment
-alone stopped instruction hooks but left VGA callbacks installed.
+the geometry/audio drawing observer. Leaving SIM detaches that collector; reentry
+creates a new one and increments `render_epoch`. Outside SIM, a separate text-only
+observer is armed before original EXEC/unpacking, so it can see the first joystick
+prompt. Its START/BRIEF/END profiles require an active PSP, original wrapper and
+driver anchors, known original caller, loaded font and matching presented glyphs.
+Program changes reset its derived candidates at the next verified text entry;
+frame-paired program identity prevents stale labels from being used meanwhile.
+Detach passes a null callback, clearing both instruction and VGA observation.
+
+The trace-core manifest requires `frontend_text_schema: 1`. Rebuild an older local
+core with `python3 -m tools.build_pc_trace_core`. Snapshot restoration clears prior
+text history: already-drawn labels stay original until observed again. The normal
+launcher cold-boots with observation enabled. Source cursor pixels are independently
+verified and composited above refined menu letters. See `pc-text-research.md`.
+
+Bounded actual-launcher diagnostics:
+
+```sh
+./Play.command --capture --capture-menu joystick --output artifacts/menu-joystick
+./Play.command --capture --capture-menu scenario --output artifacts/menu-scenario
+./Play.command --capture --capture-menu name --output artifacts/menu-name
+```
+
+`main` is also supported. These routes send ordinary original keys and exit their
+own helper after capture. `--original-text` disables all refined lettering.
 
 Protocol 4 adds `program`, nullable `state`, `render_epoch` and startup identity.
 Program/state are read from the same `last_video_ram` boundary as the submitted

@@ -7,6 +7,103 @@ four original faces after a second, independent Godot source-pixel check. The so
 remain available with `--original-text`. The READY-specific loader voice gate
 is described in `pc-audio-research.md`.
 
+## Menu and remaining frontend text, 2026-09-28
+
+The refined v2 faces now extend to the original joystick prompt, main and nested
+menus, changing scenario/time/skill values, campaign name entry, mission-title
+letters, information-page prose (including HEAT), and END summary/score/kill text.
+No substitute menu, game value or wording is authored. Existing fitted credits,
+office dialogue, Genesis information colours and arming layout retain precedence.
+
+`tools/pc_frontend_text.py` adds pinned START, BRIEF and END profiles alongside the
+existing SIM observer. Their original main-CS far-call counts are 46, 5 and 17.
+Each profile verifies its relocation-free 80-byte string wrapper, 709-byte EGA
+character driver, entry anchor, active PSP/MCB, known caller and loaded original
+font payload. Source-relative profiles are:
+
+| Program | DS | Wrapper segment:entry | Driver segment:entry | Foreground field |
+|---|---|---|---|---|
+| START | 1505 | 0760:0212 | 0b5a:0060 | 2648 |
+| BRIEF | 0c71 | 03c7:0212 | 06e7:005c | 0894 |
+| END | 0d22 | 0477:020e | 0798:005c | 637c |
+
+All values are hexadecimal, relative to the original executable's load segment.
+Wrapper/driver derivation and disassembly are in
+`artifacts/pc-menu-text-source-01/`; the root reran the source derivation and
+cursor proof rather than relying only on the read-only agent's findings.
+
+The native text-only hook is armed before EXEC/unpacking, including the first
+cold-boot joystick prompt. Entry snapshots and completed draw rectangles are
+observations only. It never writes guest RAM, registers, inputs or VGA state.
+SIM geometry, audio/message attribution and rendering epochs remain separate.
+Completed candidates are frozen with the original scanout/triple-buffer slot.
+Page-copy survivors require current source-glyph matches rather than an assumption
+that the active page redrew each label. Classification runs on requested bridge
+presentations, avoiding extra work on fast-forwarded emulator frames.
+
+Original menu selection reverses colours after drawing. The frontend therefore
+checks the original ink mask against the current foreground/background pair,
+retaining the original highlight. Whole current rectangle hashes and font bits
+are independently checked again in Godot. Newer matching draws win overlaps;
+changed or unsupported cells retain original pixels.
+
+The original arrow can cover highlighted letters. Its resource hash, loaded
+16x15 bitmap/mask, frame-paired position and all 79 opaque presented pixels must
+match before those exact pixels can be excluded from glyph recognition. Godot
+independently pins the decoded cursor and composites it above the refined text.
+It never clears the complete cursor rectangle or reuses a stale mask. Forged or
+malformed cursor metadata is rejected without engine errors. The arrow remains
+original pixel art, intentionally outside this typography change.
+
+Working if: changing selections and edited names retain original wording and
+colours, the arrow remains above polished letters, transitions clear old text,
+and nontext pixels and original core execution are unchanged in bounded checks.
+
+Evidence:
+
+* `pc-menu-text-comparison-01.json`: all 18,206 shared-state original frames match
+  the unmodified core in RAM, video and input, across menus (5,190), information
+  (5,749) and mission lifecycle (7,267). Sampled programs, decoded SIM states and
+  every saved source PNG also match. All eight scenario choices, DAY/NIGHT,
+  NOVICE/MODERATE, name editing/cancellation and original exit were exercised.
+* `pc-menu-text-native-02/report.json`: 46,080,266 checks, zero errors over 45
+  rendered frontend samples and 211 accepted text runs.
+* `pc-menu-text-lifecycle-native-01/report.json`: 36,864,197 checks, zero errors
+  over 36 rendered frontend samples, including mission-title and summary text.
+* `pc-menu-text-information-native-01/report.json`: 45,056,264 checks, zero errors
+  over 44 rendered samples. HEAT's 18 text runs are refined independently of its
+  still-original illustration. Its native render was visually inspected.
+* `validation-20260928T000139Z/results.txt`: all 29 stages passed, including 225
+  Python tests, original-file preservation, the new frontend-text gate, audio and
+  runtime smoke checks. `pc-menu-text-negative-02.log` independently reports 222
+  checks with no engine errors after the malformed-cursor correction.
+* Actual Play captures `pc-menu-text-{joystick,scenario,name}-live-01` exited zero
+  with completion sentinels and no engine errors. Joystick, scenario/name menus,
+  mission title and mission summary were visually inspected. These are
+  assistant-authored integration and self-review; stylistic acceptance is Nell's.
+
+The initial capture check wrongly required an active game executable after
+original Exit returned to DOS. It was corrected to test actual image dimensions,
+allow that explicit exit transition and require the final original exit. The
+first full gate also caught engine errors from intentionally malformed cursor
+base64; fixed-length/alphabet and decoded-size guards now reject it before the
+decoder. Neither failed run is counted as a passing gate.
+
+The shared neutral snapshot removes independent cold-boot RAM noise for the
+comparison only. Cold boot is separately exercised by actual Play captures.
+The source routes are reproducible with `python3 -m tools.capture_pc_menu_text
+--mode trace --route menus --output <fresh-directory>`; use `information` or
+`lifecycle` for the other routes and `baseline` for the unmodified core. The new
+Godot suite accepts `--fixture <directory>/report.json`; its local default is
+the recorded `artifacts/pc-menu-text-trace-04/report.json` fixture.
+Restoring arbitrary snapshots clears observation history; already-drawn text
+stays original until observed again. Bitmap-baked diagram captions/logos and
+nonuniform-background glyphs remain distinct work. These routes establish
+bounded observer non-interference, not exhaustive campaign, save or historical
+hardware timing equivalence. Original files and generated derivatives stay local.
+The optional Impeccable linter is unavailable; native Godot pixel checks and
+visual inspection provide the rendered evidence for this game interface.
+
 ## Optical refinement, 2026-09-28
 
 Nell requested more regular thicknesses and angles after reviewing the first

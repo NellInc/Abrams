@@ -34,6 +34,11 @@ run_check() {
       echo "FAIL: $name (bounded run did not report completion)" >&2
       exit 1
     fi
+    if [ "$name" = pc_menu_text ] && ! grep -Eq '^PC_MENU_TEXT: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (bounded run did not report completion)" >&2
+      exit 1
+    fi
     cat "$OUT/$name.log"
     printf 'PASS %s\n' "$name" >> "$OUT/results.txt"
   else
@@ -66,6 +71,7 @@ run_check pc_intro_art ./tools/godot.sh --headless --quit-after 300 --script res
 run_check pc_motor_pool_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_motor_pool_art.gd -- --text
 run_check pc_information_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_information_art.gd -- --tandem
 run_check pc_typography ./tools/godot.sh --headless --script res://tests/test_pc_typography.gd
+run_check pc_menu_text ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_menu_text.gd
 run_check geometry ./tools/godot.sh --headless --script res://tests/test_geometry.gd
 run_check audio ./tools/godot.sh --headless --script res://tests/test_audio.gd
 run_check pc_audio ./tools/godot.sh --headless --script res://tests/test_pc_audio.gd

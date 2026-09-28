@@ -25,9 +25,9 @@ def decode_font(data):
             'glyphs':glyphs,'sha256':hashlib.sha256(data).hexdigest()}
 
 
-def loaded_font(ram, ds, catalog):
-    width,height,first,count = (ram[ds+at] for at in (0x364E,0x3662,0x3676,0x368A))
-    segment, = struct.unpack_from('<H',ram,ds+0x369E)
+def loaded_font(ram, ds, catalog, fields=(0x364E,0x3662,0x3676,0x368A,0x369E)):
+    width,height,first,count = (ram[ds+at] for at in fields[:4])
+    segment, = struct.unpack_from('<H',ram,ds+fields[4])
     size = ((width+7)//8)*height*count
     at = segment*16
     if not segment or at+size > len(ram): raise ValueError('loaded font payload outside RAM')

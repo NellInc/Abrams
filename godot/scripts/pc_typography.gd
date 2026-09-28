@@ -272,7 +272,7 @@ static func integers(value: Variant, count: int, low: int, high: int) -> bool:
 		if not (n is int or n is float) or not is_finite(float(n)) or n!=floorf(n) or n<low or n>high: return false
 	return true
 
-func verified_run(item: Variant, source: Image, ui: Image, palette: Array) -> Dictionary:
+func verified_run(item: Variant, source: Image, ui: Image, palette: Array, cursor_mask: Image=null) -> Dictionary:
 	if not item is Dictionary or not item.get("text") is String: return {}
 	var words: String = item.text
 	if words.is_empty() or words.length()>53 or not fonts.has(item.get("font_sha256")): return {}
@@ -297,10 +297,11 @@ func verified_run(item: Variant, source: Image, ui: Image, palette: Array) -> Di
 			for x in cell.x:
 				var at := 4+((code-int(bytes[2]))*cell.y+y)*stride+x/8
 				var ink := (int(bytes[at]) & (128>>(x%8)))!=0
-				visible_ink = visible_ink or ink
 				var px := box.position.x+i*cell.x+x
 				var py := box.position.y+y
 				if ui.get_pixel(px,py).r!=1.0: return {}
+				if cursor_mask!=null and cursor_mask.get_pixel(px,py).r==1.0: continue
+				visible_ink = visible_ink or ink
 				if source.get_pixel(px,py).to_rgba32()!=(foreground if ink else background).to_rgba32(): return {}
 	if not visible_ink: return {}
 	var crop := source.get_region(box)
@@ -314,7 +315,7 @@ func verified_run(item: Variant, source: Image, ui: Image, palette: Array) -> Di
 		"outline_font":outline_fonts.fonts.get(item.font_sha256),
 		"kind":item.get("kind",""),"draw_sequence":item.get("draw_sequence",0)}
 
-func set_frame(source: Image, ui: Image, presentation: Dictionary) -> void:
+func set_frame(source: Image, ui: Image, presentation: Dictionary, cursor_mask: Image=null) -> void:
 	clear_runs()
 	if fonts.is_empty() or not presentation.get("text_runs") is Array or not presentation.get("palette_rgb") is Array: return
 	if source==null or source.get_size()!=Vector2i(320,200) or ui==null or ui.get_size()!=Vector2i(320,200) or ui.get_format()!=Image.FORMAT_L8: return
@@ -330,7 +331,7 @@ func set_frame(source: Image, ui: Image, presentation: Dictionary) -> void:
 	# Latest completed writes win when identical surviving candidates overlap.
 	candidates.reverse()
 	for item in candidates:
-		var run := verified_run(item,source,ui,presentation.palette_rgb)
+		var run := verified_run(item,source,ui,presentation.palette_rgb,cursor_mask)
 		if run.is_empty(): continue
 		var overlaps := false
 		for old in runs:

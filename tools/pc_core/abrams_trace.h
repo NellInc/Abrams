@@ -37,6 +37,7 @@ static bool abrams_plate_copy_active = false;
 static Bit16u abrams_plate_copy_return_ip, abrams_plate_copy_return_cs;
 static Bit32u abrams_plate_copy_source, abrams_plate_copy_dest;
 static bool abrams_text_active = false;
+static bool abrams_frontend_text_mode = false;
 static Bit16u abrams_text_rect[6];
 
 static bool AbramsKnownTextCaller(Bit16u caller) {
@@ -48,6 +49,7 @@ static bool AbramsKnownTextCaller(Bit16u caller) {
 
 extern "C" __attribute__((visibility("default")))
 void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
+    abrams_frontend_text_mode = false;
     abrams_trace_load = load;
     abrams_trace_callback = callback;
     abrams_world_drawing = false;
@@ -173,7 +175,79 @@ extern "C" void AbramsTraceVideoPresent(Bit32u slot, const Bit8u* pixels, Bit32u
     abrams_trace_callback(12, regs, pixels, slot, width * height * 4);
 }
 
+// Separate original-program text path. Arm before boot, since EXEC/unpacking
+// and the first prompt can occur inside one frame. Python independently pins
+// the full wrapper/driver and every original caller before accepting a glyph.
+extern "C" __attribute__((visibility("default")))
+void abrams_frontend_text_configure(AbramsTraceCallback callback) {
+    abrams_trace_configure(0, callback);
+    abrams_frontend_text_mode = true;
+}
+
+struct AbramsFrontendProfile { Bit16u ds, wrapper, entry, foreground; const char* name; };
+static const AbramsFrontendProfile abrams_frontend_profiles[] = {
+    {0x1505,0x0760,0x0212,0x2648,"START"},
+    {0x0c71,0x03c7,0x0212,0x0894,"BRIEF"},
+    {0x0d22,0x0477,0x020e,0x637c,"END"}
+};
+static Bit16u abrams_frontend_return_cs, abrams_frontend_return_ip;
+
+static INLINE void AbramsTraceFrontendInstruction() {
+    Bit32u ip = reg_eip;
+    if (ip != 0x0212 && ip != 0x0261 && ip != 0x020e && ip != 0x025d) return;
+    const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
+        reg_bp,reg_sp,SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+    if (abrams_text_active && SegValue(cs)==abrams_frontend_return_cs && ip==abrams_frontend_return_ip) {
+        unsigned x=abrams_text_rect[0],y=abrams_text_rect[1],w=abrams_text_rect[2],h=abrams_text_rect[3],page=abrams_text_rect[4];
+        for (unsigned i=0;i<6;++i) {
+            abrams_trace_snapshot[2*i]=Bit8u(abrams_text_rect[i]);
+            abrams_trace_snapshot[2*i+1]=Bit8u(abrams_text_rect[i]>>8);
+        }
+        for (unsigned dy=0;dy<h;++dy) for (unsigned dx=0;dx<w;++dx) {
+            unsigned at=page+(y+dy)*40+(x+dx)/8,colour=0;
+            for (unsigned plane=0;plane<4;++plane)
+                if (vga.mem.linear[at*4+plane] & (128u>>((x+dx)&7))) colour|=1u<<plane;
+            abrams_trace_snapshot[12+dy*w+dx]=Bit8u(colour);
+        }
+        abrams_trace_callback(27,regs,abrams_trace_snapshot,0,12+w*h);
+        abrams_text_active=false;
+        return;
+    }
+    if (ip!=0x0212 && ip!=0x020e) return;
+    for (unsigned i=0;i<3;++i) {
+        const AbramsFrontendProfile& p=abrams_frontend_profiles[i];
+        if (ip!=p.entry || SegValue(cs)<p.wrapper+16) continue;
+        unsigned load=SegValue(cs)-p.wrapper,psp=mem_readw(0xb30),base=SegPhys(ds),stack=SegPhys(ss)+reg_sp;
+        if (psp!=load-16 || !psp || SegValue(ds)!=load+p.ds || base+65536>640*1024 || stack+10>640*1024) continue;
+        unsigned mcb=(psp-1)*16;
+        if ((mem_readb(mcb)!='M' && mem_readb(mcb)!='Z') || mem_readw(mcb+1)!=psp || mem_readw(psp*16)!=0x20cd) continue;
+        bool named=true;
+        for (unsigned c=0;c<8;++c) {
+            unsigned n=c<strlen(p.name)?p.name[c]:0;
+            if (mem_readb(mcb+8+c)!=n) named=false;
+        }
+        if (!named || mem_readw(stack+2)!=load) continue;
+        MEM_BlockRead(0,abrams_trace_snapshot,sizeof(abrams_trace_snapshot));
+        abrams_trace_callback(26,regs,abrams_trace_snapshot,i,sizeof(abrams_trace_snapshot));
+        unsigned pointer=mem_readw(stack+4),n=0;
+        while (n<320 && pointer+n<65536 && mem_readb(base+pointer+n)) ++n;
+        unsigned x=mem_readw(stack+6),y=mem_readw(stack+8);
+        unsigned cell=mem_readb(base+p.foreground+0xbe),h=mem_readb(base+p.foreground+0xd2),w=n*cell;
+        unsigned page=mem_readw(base+p.foreground+0x18);
+        if (abrams_text_active || !n || n==320 || pointer+n>=65536 || !cell || cell>16 || !h || h>32 ||
+            x+w>320 || y+h>200 || (page!=0xa000 && page!=0xa200) || vga.mode!=M_EGA) {
+            abrams_trace_callback(27,regs,NULL,0,0);abrams_text_active=false;return;
+        }
+        abrams_text_rect[0]=x;abrams_text_rect[1]=y;abrams_text_rect[2]=w;abrams_text_rect[3]=h;
+        abrams_text_rect[4]=(page-0xa000)*16;abrams_text_rect[5]=mem_readw(stack);
+        abrams_frontend_return_cs=SegValue(cs);abrams_frontend_return_ip=p.entry+79;
+        abrams_text_active=true;
+        return;
+    }
+}
+
 static INLINE void AbramsTraceInstruction() {
+    if (abrams_trace_callback && abrams_frontend_text_mode) { AbramsTraceFrontendInstruction(); return; }
     if (!abrams_trace_callback || !abrams_trace_load) return;
     Bit32u ip = reg_eip;
     if (abrams_bitmap_active && ip == abrams_bitmap_return_ip && SegValue(cs) == abrams_bitmap_return_cs) {

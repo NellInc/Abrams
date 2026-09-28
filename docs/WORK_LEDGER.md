@@ -30,6 +30,53 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Menu and frontend typography coverage, 2026-09-28
+
+Nell requested the same polishing for the joystick prompt, game menus and other
+text. The existing optically refined four-face pack now serves source-observed
+text across START, BRIEF and END as well as the existing SIM bindings. This
+covers original prompts, menu labels and selections, scenario values, entered
+names, mission titles, information text including HEAT, and summaries/scores.
+All wording, controls and values remain the original executable's output.
+
+The additional files are necessary to observe three distinct original programs,
+compose verified cursor pixels above their highlighted text, and exercise both
+source non-interference and native typography. No authored menu logic or new
+font/art pack was introduced. A read-only source-analysis agent supplied bounded
+profiles/cursor findings; the root inspected the source, reran the derivations,
+owned integration and performed the final checks.
+
+The native observer now attaches before the first boot prompt. Each accepted run
+requires original code/font identity, completed draw evidence and current glyph
+pixels. Original highlight recolouring and page copies are handled explicitly.
+The original cursor remains pixel art and is independently verified rather than
+painted over. Source changes, unsupported cells, stale program states and invalid
+metadata retain original pixels or clear derived text.
+
+Proof: `artifacts/pc-menu-text-comparison-01.json` records 18,206 identical
+original RAM/video/input frames across three shared-state routes; sampled
+programs, decoded states and source PNGs also match. All eight mission choices,
+time/skill changes, name editing, information submenus, original exit and the
+mission/debriefing lifecycle were exercised. Three native suites passed with no
+errors and protected every nontext/cursor pixel against the corresponding base
+render. Three actual Play captures completed. Joystick, scenario, name entry,
+mission title, summary and HEAT typography were visually reviewed.
+
+`validation-20260928T000139Z` passed all 29 repository stages, including 225 Python
+tests. Earlier failures were genuine: the capture check incorrectly required a
+game PSP after original Exit, and malformed base64 in the new cursor negative
+test emitted engine errors. The checks and decoder guard were corrected; neither
+failed artifact is counted as a pass. Exact native counts, source profiles,
+capture commands and comparison limits are in `pc-text-research.md`.
+
+This integration was authored and visually reviewed by the assistant. Optional
+Impeccable is unavailable; native Godot rendering supplies the visual evidence.
+Arbitrary restored snapshots still require fresh text observation. Bitmap-baked
+captions/logos, nonuniform-background glyphs and exhaustive campaign/save/end
+variants remain open, as does the broader remaster goal. Original resources,
+generated derivatives and the five unrelated vehicle-study files are unchanged.
+Local only; no push, deployment, upload or publication.
+
 ## Optical typeface refinement, 2026-09-28
 
 Nell requested a second beautification pass to regularize thicknesses and angles.
