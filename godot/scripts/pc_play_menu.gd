@@ -8,6 +8,7 @@ var shortcut_is_macos := OS.get_name()=="macOS"
 var shortcut_keys: Array = []
 const MODES := ["ega","genesis","upscaled","modern"]
 var graphics_mode := "upscaled"
+var genesis_available := true
 var speed := 1
 var busy := false
 var graphics_popup: PopupMenu
@@ -81,7 +82,7 @@ func handle_shortcut(event: InputEvent) -> bool:
 			var slot := 0 if event.shift_pressed else 1
 			if not busy and not request_state("load_state",slot):
 				control_notice.emit("No recovery state available" if slot==0 else "Slot 1 is empty or unavailable")
-		KEY_G:choose_graphics(MODES[(MODES.find(graphics_mode)+1)%3])
+		KEY_G:cycle_graphics()
 	return true
 
 func game_keys(held: Array) -> Array:
@@ -103,8 +104,15 @@ func _submenu(parent: PopupMenu, title: String) -> PopupMenu:
 	_watch(menu)
 	return menu
 
+func available_graphics_modes() -> Array:
+	return ["ega","genesis","upscaled"] if genesis_available else ["ega","upscaled"]
+
+func cycle_graphics() -> bool:
+	var modes := available_graphics_modes()
+	return choose_graphics(modes[(modes.find(graphics_mode)+1)%modes.size()])
+
 func choose_graphics(mode: String) -> bool:
-	if mode not in ["ega","genesis","upscaled"]: return false
+	if mode not in available_graphics_modes(): return false
 	graphics_mode=mode
 	graphics_selected.emit(mode)
 	refresh_controls()
@@ -141,6 +149,8 @@ func set_state_status(slots: Array, message: String="") -> void:
 
 func refresh_controls() -> void:
 	if graphics_popup==null: return
+	graphics_popup.set_item_disabled(1,not genesis_available)
+	graphics_popup.set_item_text(1,"Genesis (original artwork)" if genesis_available else "Genesis (requires optional import)")
 	for index in MODES.size():graphics_popup.set_item_checked(index,MODES[index]==graphics_mode)
 	for index in speed_popup.item_count:
 		speed_popup.set_item_checked(index,speed_popup.get_item_id(index)==speed)

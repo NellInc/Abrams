@@ -4,6 +4,14 @@ A faithful, high-resolution Godot remaster of Dynamix's **Abrams Battle Tank**, 
 
 **Dedicated to the memory of David “Ming” Kenny.** The dedication appears in the remastered intro credits.
 
+## Standalone private alpha
+
+The macOS ARM64 app bundles its engine and bridge runtime. Supply the original
+PC game; a supported Genesis ROM is optional and enables the full current
+presentation. Raw originals are excluded from the app. See
+[setup, PC-only behavior and rollback](docs/standalone-macos.md).
+This remains local/private pending redistribution clearance and release signing.
+
 ## About
 
 This project revisits a childhood favourite with clearer artwork, original-style scalable lettering, new sound effects and generated crew speech. The aim is to preserve the character and complexity of the PC game while making it comfortable to play on modern displays.

@@ -10,7 +10,7 @@ import zipfile
 from tools import package_build
 
 ROOT = Path(__file__).resolve().parents[2]
-TESTS = ['tests.test_packaging', 'tests.test_package_runtime', 'tests.test_git_boundary', 'tests.test_launchers']
+TESTS = ['tests.test_packaging', 'tests.test_package_runtime', 'tests.test_standalone_runtime', 'tests.test_git_boundary', 'tests.test_launchers']
 
 
 def main():

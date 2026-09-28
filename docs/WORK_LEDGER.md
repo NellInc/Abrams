@@ -3063,3 +3063,37 @@ installation evidence for this candidate is recorded in
 HEAT illustration, 57 directed Gemini 3.8 takes, cockpit repairs and held-control
 fixes. It stays local, separate from Git; originals remain excluded. Human listening,
 mission/campaign acceptance, other native platforms and rights remain separate.
+
+## Standalone macOS alpha and paced soak, 2026-09-28
+
+Local candidate `41e285f25225189b5936` bundles ARM64 Godot, the frozen Python/Pillow
+bridge and a native PC-required/Genesis-optional importer. It excludes raw PC
+files, the reconstructed PC ZIP and Genesis ROM. Player data lives outside the
+app; invalid inputs/tampered installs are rejected, and upgrade paths preserve
+existing profiles. The original-box-art-derived cover/icon retain BY DYNAMIX and
+Nell's slightly reduced ivory stencil FAN REMASTER treatment.
+
+Root-run aggregate: 63 stages and 446 Python tests. Source kit: 61 tests, two
+private-input skips. Native frozen-runtime convenience route: 144 checks. Actual
+focus/fullscreen/menu interactions, fresh final PC-only SIM boot, post-play
+signatures and original/profile byte-preservation receipts are retained under
+`artifacts/alpha-readiness-20260928/`. A late shutdown packet could restart music;
+a native failing probe and the repaired passing probe accompany 159 scheduling
+checks. Startup text's zero-width wrapping was also repaired (42 focused checks).
+
+The 30-minute RAM-audited production run passed 271,348 checks over 1,801.013 normal
+SIM seconds plus 36.788 fast-forward seconds, all four stations and 18 restores.
+Static memory ended at 90.31 MB, from 88.94 MB; peak 90.92 MB. Sampled process-tree
+RSS peaked at 992,224 KiB, potentially double-counting shared pages. No test child
+remains. Instrumented normal throughput was about 36 to 38 source replies/second;
+this does not meet the roughly 59.92 Hz source clock in wall time. Ordinary
+unaudited sustained speed and wider-machine acceptance remain open.
+
+The limiter fixture's independent mixer-buffer reads could race and throw out of
+bounds. With Nell's case-specific permission, only the verified stuck test PID
+was terminated. Paired-prefix reads fixed the fixture, a bounded run now protects
+the gate, and the complete aggregate rerun exited successfully. No production
+limiter was weakened. Native popup callbacks were not exposed to GDScript on this
+engine build; UI selections were independently observed. Physically held hardware
+keys, campaign victories, independent listening, other OSs and release rights are
+not claimed. Modern remains deferred. See the local ACCEPTANCE.md for exact logs.

@@ -179,3 +179,82 @@ mission/listening, other-platform and redistribution acceptance remain open.
 Private-kit receipt and local Git reconciliation are retained beside those runtime
 results. Packaging does not authorize redistribution. No push/public release or
 Modern work is included. Source originals stay outside the Git index and history.
+
+
+## Private alpha authorization, 28 September 2026
+
+Nell approved the proposed first three readiness steps with "Proceed please":
+30-minute production soak, real macOS focus/fullscreen/menu interaction, and a
+self-contained macOS application. She also asked about PC-required/Genesis-optional
+user inputs. Implement a first-run importer for the supported PC edition and
+optional supported Genesis ROM, with playable PC-only presentation. Raw games
+must not enter the application distribution or Git. Existing derived assets
+remain local-review-only; this is no redistribution clearance or public release.
+
+Required proof: no separately installed Python/Godot at launch; clean PC-only and
+Genesis-enabled boots; invalid input rejected without changing originals/profile;
+external saves survive reinstall/upgrade; import/setup usable through native UI;
+real desktop focus and fullscreen changes with no stuck controls; actual thirty
+normal-speed minutes in production playback with bounded data collection and
+explicit terminal results. Original CPU settings and logic remain untouched.
+
+Root owns app construction, importer, GUI, real desktop tests and integration.
+Bounded workers may own the new soak harness and optional-Genesis startup/menu
+path. Never overlap performance runs with our own heavy build/native jobs. Modern,
+Windows port, signing/notarization with a developer identity, uploads and pushes
+remain outside this pass. Existing disk has about 5.5GiB free; bound outputs and
+stop safely before exhaustion, without removing unrelated files/processes.
+
+Working if: the local app starts with user-supplied PC files and no global runtime,
+Genesis absence remains playable, player data survives upgrades, and each native
+acceptance run has a recorded complete result or a demonstrated external blocker.
+
+### Private alpha reconciliation
+
+The PC importer, optional Genesis path and native launcher are implemented.
+The final local candidate is `artifacts/alpha-readiness-20260928/local-alpha/Abrams.app`,
+build `41e285f25225189b5936`. Both original-box-art-derived branding images retain
+BY DYNAMIX and the reduced ivory stencil FAN REMASTER requested by Nell. Raw
+originals and these uncleared artwork derivatives remain excluded from Git.
+
+Root reproduced and repaired a late-reply shutdown race: after Close, queued
+samples could restart music during its drain. The native before/after probe
+changed from exit 1/drain false to exit 0/drain true; scheduling has 159 passing
+checks. The final startup status now wraps within the window, verified by 42
+optional-Genesis/layout checks. The aggregate passed 63 stages and 446 Python
+tests; the subsequent small status-layout change has its own focused receipt.
+Source-only CI passes 61 tests with two documented private-input skips.
+
+The first repeated aggregate exposed a broken limiter fixture: the mixer advanced
+between separate buffer reads, causing an out-of-bounds exception. Nell explicitly
+authorized stopping only its failed headless PID 27461. Root reverified that PID's
+exact command, sent SIGTERM only there, fixed paired-prefix reads, bounded that
+test in the validator, and reran the complete aggregate successfully.
+
+Real macOS interaction receipts include focus changes, native fullscreen entry
+and exit, Genesis/EGA selection, native save and Cmd+L restore. Native popup
+callbacks were not exposed to GDScript; zero menu counters are not claimed as
+quarantine proof. Physically held hardware keys remain a human check. A packaged
+convenience run passes 144 checks. A fresh final-bundle PC-only launch reaches SIM
+with Genesis art/music disabled, twelve high-resolution text runs and no external
+Python/Godot search path. Existing profile hashes survived all version installs.
+
+The first short soak had neutralized test keys because raising an AX window did
+not activate it. The harness now requires actual native focus, flushes its injected
+key events and records input/focus observations. A real native click establishes
+focus; no synthetic focus flags are used. The corrected short run passes 10,290
+checks, all four stations, and 18 restores. The full run completed with exit 0: 271,348 checks, 1,801.013 normal SIM seconds,
+36.788 fast-forward seconds, all stations and 18 restores. No heavy builds/tests
+overlapped it. Root verified the report, runtime fingerprints, post-play app
+signatures, preserved profile files and unchanged original inventory. The native
+process tree exited. Instrumented throughput was about 36 to 38 original replies
+per second, so sustained target-rate acceptance remains open. Exact measurements
+and residual boundaries are in `artifacts/alpha-readiness-20260928/ACCEPTANCE.md`.
+
+
+Nell subsequently authorized adding the new cover/icon and screenshots to
+NellInc/Abrams. That repository remains private. Publish only those selected
+images and their README gallery from the remote main baseline; do not implicitly
+push the unpublished gameplay/application commits or an application binary. Raw
+PC/Genesis inputs stay excluded. Keep local source reconciliation separate from
+this specifically authorized gallery publication.

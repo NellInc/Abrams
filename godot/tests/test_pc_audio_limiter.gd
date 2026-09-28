@@ -62,8 +62,11 @@ func run()->void:
 	for i in 8: audio.play("cannon")
 	audio.speak("on_the_way")
 	await create_timer(0.5).timeout
-	var raw:=before.get_buffer(before.get_frames_available())
-	var limited:=after.get_buffer(after.get_frames_available())
+	# The mixer may advance between these two reads. Consume the same available
+	# prefix from each capture, leaving its remaining frames for the next pair.
+	var paired:=mini(before.get_frames_available(),after.get_frames_available())
+	var raw:=before.get_buffer(paired)
+	var limited:=after.get_buffer(paired)
 	check(raw.size()>1000 and raw.size()==limited.size(),"actual matching pre/post mixer PCM acquired")
 	check(before.get_discarded_frames()==0 and after.get_discarded_frames()==0,"capture has no missing frames")
 	var input_peak:=peak(raw)
@@ -94,12 +97,13 @@ func run()->void:
 	audio.set_transport_muted(true)
 	check(not audio.voice.playing and not audio.effects.any(func(p):return p.playing),"transport stops players")
 	await create_timer(0.35).timeout
-	var tail_raw:=before.get_buffer(before.get_frames_available())
-	var tail:=after.get_buffer(after.get_frames_available())
+	paired=mini(before.get_frames_available(),after.get_frames_available())
+	var tail_raw:=before.get_buffer(paired)
+	var tail:=after.get_buffer(paired)
 	check(tail.size()>1000 and tail.size()==tail_raw.size(),"actual paired stop-transition PCM acquired")
 	var last_raw_loud:=-1
 	var last_out_loud:=-1
-	for i in tail.size():
+	for i in mini(tail.size(),tail_raw.size()):
 		if absf(tail_raw[i].x)>0.02: last_raw_loud=i
 		if absf(tail[i].x)>0.02: last_out_loud=i
 	var tail_delay:=float(last_out_loud-last_raw_loud)/AudioServer.get_mix_rate()

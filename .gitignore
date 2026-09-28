@@ -18,3 +18,7 @@ __pycache__/
 .env.*
 builds/
 /capture/
+# Local box-art derivatives and generation intermediates are not cleared to publish.
+# Working if: git check-ignore branding/abrams-icon.png tmp/custom-icons/abrams-app/final.png succeeds.
+/branding/*.png
+/tmp/custom-icons/

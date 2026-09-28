@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = 'tools/package/allowlist.json'
 RECEIPT = 'PACKAGE.json'
 BANNED = {'.git', '.godot', '__pycache__', 'artifacts', 'capture', 'saves', 'states', '.ssh', '.aws'}
-SOURCE_SUFFIXES = {'.py', '.sh', '.h', '.gd', '.gdshader', '.tscn', '.godot', '.md', '.json', '.command', '.txt'}
+SOURCE_SUFFIXES = {'.py', '.sh', '.h', '.gd', '.gdshader', '.tscn', '.godot', '.md', '.json', '.command', '.txt', '.swift'}
 
 
 def digest(data):

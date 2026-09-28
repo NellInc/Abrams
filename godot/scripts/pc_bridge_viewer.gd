@@ -24,6 +24,8 @@ var boot_mode := false
 var wire_mode := false
 var gunner_art_requested := false
 var cockpit_art_requested := false
+var pc_only := false
+var pc_presentation_requested := false
 var genesis_style = preload("res://scripts/pc_genesis_style.gd").new()
 var genesis_colours_requested := false
 var previous_presentation: Dictionary = {}
@@ -67,6 +69,11 @@ func _initialize() -> void:
 	started = Time.get_ticks_msec()
 	capture = "--capture" in OS.get_cmdline_user_args()
 	var args := OS.get_cmdline_user_args()
+	var graphics_error := graphics_launch_error(args)
+	if not graphics_error.is_empty():
+		printerr(graphics_error)
+		quit(2)
+		return
 	boot_mode = "--boot" in args or ("--trace" not in args and "--reference" not in args)
 	trace_mode = boot_mode or "--trace" in OS.get_cmdline_user_args()
 	play_mode = trace_mode and "--play" in args and "--compare" not in args
@@ -87,33 +94,19 @@ func _initialize() -> void:
 	requested_fullscreen = "--fullscreen" in args
 	_configure_window.call_deferred()
 	wire_mode = "--wire" in OS.get_cmdline_user_args()
-	cockpit_art_requested = (play_mode and not wire_mode) or "--cockpit-art" in args or (trace_mode and "--original-art" not in args and "--gunner-art" not in args and not wire_mode)
-	gunner_art_requested = "--gunner-art" in args or cockpit_art_requested
-	genesis_colours_requested = (cockpit_art_requested or "--genesis-colours" in args) and "--pc-colours" not in args
+	_configure_art_requests(args)
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
-	if genesis_colours_requested: genesis_style.load_palette(directory.path_join("reference/genesis/extracted/gunner/palette.gpl"))
 	output = directory.path_join("artifacts/pc-boot-viewer" if boot_mode else ("artifacts/pc-trace-viewer" if trace_mode else "artifacts/pc-bridge-viewer"))
 	if "--output" in args and args.find("--output")+1 < args.size(): output = args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	_build_ui()
-	if trace_mode: tandem_frame.frontend_art.text_enabled = "--original-text" not in args
-	if trace_mode and cockpit_art_requested and not wire_mode and "--flat-world" not in args:
-		var terrain := preload("res://scripts/pc_terrain_style.gd").new()
-		if terrain.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")):
-			if "--original-hills" not in args: terrain.load_hills(directory)
-			draw_view.terrain_style = terrain
-	if trace_mode and cockpit_art_requested and not wire_mode and "--original-effects" not in args:
-		var effects := preload("res://scripts/pc_effect_art.gd").new()
-		if effects.load_assets(directory): draw_view.effect_art = effects
-	# Retain original flat vehicle faces. The panel studies were rejected;
-	# replacement models and textures are deliberately absent from live Play.
-	if trace_mode and cockpit_art_requested and "--original-text" not in args:
-		tandem_frame.typography.load_sources(directory.path_join("GAME"))
+	_load_world_presentation(directory,args)
 	if audio_requested(trace_mode,args):
 		pc_audio = PcAudio.new()
 		root.add_child(pc_audio)
 	if play_mode:
 		audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+		audio_menu.genesis_available=not pc_only
 		audio_menu.audio=pc_audio
 		if capture: audio_menu.config_path=""
 		audio_menu.load_settings()
@@ -125,21 +118,10 @@ func _initialize() -> void:
 		audio_menu.control_notice.connect(_show_control_notice)
 		audio_menu.resized.connect(_layout_audio_menu)
 		_layout_audio_menu.call_deferred()
-	if trace_mode and cockpit_art_requested:
-		tandem_frame.load_genesis_art(directory)
-	elif trace_mode and gunner_art_requested:
-		var art_path := directory.path_join("local-art/pc-ui-remastered/gunner-plate-v2.png")
-		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
+	_load_cockpit_presentation(directory)
 	if play_mode:
-		tandem_frame.load_graphics_sources(directory)
 		var initial_mode := "ega" if "--original-art" in args else "upscaled"
-		if "--graphics" in args:
-			var index := args.find("--graphics")+1
-			initial_mode=args[index] if index<args.size() else ""
-			if initial_mode not in ["ega","genesis","upscaled"]:
-				printerr("--graphics requires ega, genesis or upscaled; Modern artwork is not available")
-				quit(2)
-				return
+		if "--graphics" in args: initial_mode=args[args.find("--graphics")+1]
 		audio_menu.choose_graphics(initial_mode)
 	var python := OS.get_environment("ABRAMS_PYTHON")
 	if python.is_empty(): python = "/opt/homebrew/bin/python3"
@@ -311,7 +293,10 @@ func _build_play_ui() -> void:
 	for node in [picture,status,caption]: play_display.add_child(node)
 	picture.hide()
 	caption.hide()
-	status.position = Vector2(24,24)
+	status.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	status.offset_left=24;status.offset_right=-24;status.offset_top=48
+	status.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	status.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	control_notice=_label("",18)
 	control_notice.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	control_notice.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -329,6 +314,56 @@ func _show_control_notice(message: String) -> void:
 	control_notice.text=message
 	notice_until=Time.get_ticks_msec()+2500
 	control_notice.show()
+
+static func graphics_launch_error(args: Array) -> String:
+	if "--graphics" not in args: return ""
+	var index := args.find("--graphics")+1
+	var mode: String = args[index] if index<args.size() else ""
+	if mode not in ["ega","genesis","upscaled"]:
+		return "--graphics requires ega, genesis or upscaled; Modern artwork is not available"
+	if "--pc-only" in args and mode=="genesis":
+		return "--graphics genesis requires the optional Genesis import; unavailable with --pc-only"
+	return ""
+
+func _configure_art_requests(args: Array) -> void:
+	pc_only = "--pc-only" in args
+	pc_presentation_requested = (play_mode and not wire_mode) or "--cockpit-art" in args or (trace_mode and "--original-art" not in args and "--gunner-art" not in args and not wire_mode)
+	cockpit_art_requested = pc_presentation_requested and not pc_only
+	gunner_art_requested = not pc_only and ("--gunner-art" in args or cockpit_art_requested)
+	genesis_colours_requested = not pc_only and (cockpit_art_requested or "--genesis-colours" in args) and "--pc-colours" not in args
+
+func _load_world_presentation(directory: String, args: Array) -> void:
+	if genesis_colours_requested: genesis_style.load_palette(directory.path_join("reference/genesis/extracted/gunner/palette.gpl"))
+	if trace_mode: tandem_frame.frontend_art.text_enabled = "--original-text" not in args
+	if trace_mode and pc_presentation_requested and not wire_mode and "--flat-world" not in args:
+		var terrain := preload("res://scripts/pc_terrain_style.gd").new()
+		if terrain.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")):
+			if not pc_only and "--original-hills" not in args: terrain.load_hills(directory)
+			draw_view.terrain_style = terrain
+	if trace_mode and cockpit_art_requested and not wire_mode and "--original-effects" not in args:
+		var effects := preload("res://scripts/pc_effect_art.gd").new()
+		if effects.load_assets(directory): draw_view.effect_art = effects
+	# Retain original flat vehicle faces. The panel studies were rejected;
+	# replacement models and textures are deliberately absent from live Play.
+	if trace_mode and pc_presentation_requested and "--original-text" not in args:
+		tandem_frame.typography.load_sources(directory.path_join("GAME"))
+
+func _load_cockpit_presentation(directory: String) -> void:
+	# A PC-only launch must never inspect or load the optional donor pack,
+	# even when those files happen to exist in a developer's checkout.
+	if pc_only: return
+	if trace_mode and cockpit_art_requested:
+		tandem_frame.load_genesis_art(directory)
+	elif trace_mode and gunner_art_requested:
+		var art_path := directory.path_join("local-art/pc-ui-remastered/gunner-plate-v2.png")
+		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
+	if play_mode: tandem_frame.load_graphics_sources(directory)
+
+func _apply_frontend_music(source: Image, program: Dictionary, presentation: Dictionary) -> void:
+	# The authored frontend arrangements contain Genesis percussion. Generated
+	# voices and synth gameplay samples retain their existing source timing.
+	var context: String = "" if pc_only else pc_audio.music_context_for_frame(source,program,presentation)
+	pc_audio.apply_music_context(context,not pc_only)
 
 func _build_ui() -> void:
 	if play_mode:
@@ -406,6 +441,7 @@ func _build_ui() -> void:
 		footer = "Scanout-paired Godot world with original cockpit, reticle and messages. Source-resolution UI is temporary; high-resolution artwork and exact polygon edges remain open."
 		if gunner_art_requested: footer = "Material pilot: verified gunner-surround pixels use high-resolution art. Instruments and other stations remain original. Camera geometry stays authoritative."
 		if cockpit_art_requested: footer = "High-resolution cockpit materials follow original pixel provenance. Live instruments, messages, visibility and controls remain authoritative."
+		if pc_only: footer = "PC-only presentation: high-resolution world and PC typography, original cockpit and effects. Genesis artwork and frontend music require the optional import."
 		if wire_mode: footer = "Original wireframe diagnostic. Omit --wire for filled surfaces."
 	stack.add_child(_label(footer,17))
 
@@ -496,6 +532,9 @@ func _process(delta: float) -> bool:
 	if is_instance_valid(control_notice) and Time.get_ticks_msec()>=notice_until:control_notice.hide()
 	elapsed += delta
 	for message in bridge.poll():
+		# A pending step/restore can reply after Close. Consume it so the host can
+		# exit, but never restart presentation audio after its shutdown drain.
+		if closing: continue
 		if message.type=="state_result": _state_result(message)
 		else: _apply_sample(message)
 	if not bridge.failure.is_empty():
@@ -586,10 +625,7 @@ func _apply_sample(message: Dictionary) -> void:
 	if play_mode: status.hide()
 	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
 	if pc_audio:
-		var music_context: String=pc_audio.music_context_for_frame(image,previous_program,message.get("presentation",{}))
-		# Frontend music follows the user's mix; original SIM F5/pause gates
-		# continue to govern gameplay audio. Unknown frontend frames stay quiet.
-		pc_audio.apply_music_context(music_context,true)
+		_apply_frontend_music(image,previous_program,message.get("presentation",{}))
 	if not state is Dictionary:
 		previous = {}
 		previous_presentation = message.get("presentation", {})
@@ -685,6 +721,7 @@ func _capture() -> void:
 		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions} if pc_audio else null,
 		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,
 		"driver_assembly": tandem_frame.driver_assembly_enabled if trace_mode else false,
+		"pc_only": pc_only,
 		"genesis_colours": genesis_colours_requested and not genesis_style.palette.is_empty(),
 		"world_bearing_text": tandem_frame.typography.runs.filter(func(r):return r.get("transparent_world",false)).map(func(r):return r.text) if trace_mode else [],
 		"high_resolution_text_runs": tandem_frame.typography.runs.size() if trace_mode else 0,

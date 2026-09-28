@@ -240,6 +240,12 @@ func run() -> void:
 	elapsed=period*2
 	closing=true
 	check(not _advance_live_frame(),"no request while closing")
+	var closing_samples := samples
+	for late in [valid_sample.duplicate(true),{"type":"state_result","restored":valid_sample.duplicate(true),"slots":[],"message":"late restore"}]:
+		bridge.incoming.append(late)
+		events.clear()
+		super._process(period)
+		check(events==["poll"] and samples==closing_samples,"closing drains transport without replaying late presentation or audio")
 	closing=false
 	bridge.failure="synthetic failed transport"
 	check(not _advance_live_frame(),"no request after transport failure")
