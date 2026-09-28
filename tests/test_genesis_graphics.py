@@ -4,12 +4,46 @@ from pathlib import Path
 import struct
 import tempfile
 import unittest
+from unittest.mock import Mock
 from PIL import Image
 
 from tools.extract_genesis_vdp import VDP, color_rgb565, tile_indices, word
+from tools.genesis_capture import ReferenceCore
 
 ROOT = Path(__file__).resolve().parents[1]
 ROM_HASH = "ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea"
+
+
+class CaptureRestoreTests(unittest.TestCase):
+    def test_successful_restore_clears_old_host_observations(self):
+        core = ReferenceCore.__new__(ReferenceCore)
+        core.core = Mock()
+        core.core.retro_unserialize.return_value = True
+        core.frame, core.last_video, core.capture_video = 400, b"old", True
+        core.pressed = {1}
+        with tempfile.TemporaryDirectory() as temp:
+            state = Path(temp) / "reference.state"
+            state.write_bytes(b"state")
+            core.restore(state)
+        self.assertEqual(core.frame, 0)
+        self.assertIsNone(core.last_video)
+        self.assertFalse(core.capture_video)
+        self.assertEqual(core.pressed, set())
+        with self.assertRaisesRegex(RuntimeError, "No rendered frame"):
+            core.screenshot()
+
+    def test_rejected_restore_does_not_claim_a_new_observation_epoch(self):
+        core = ReferenceCore.__new__(ReferenceCore)
+        core.core = Mock()
+        core.core.retro_unserialize.return_value = False
+        core.frame, core.last_video, core.capture_video = 400, b"old", True
+        core.pressed = {1}
+        with tempfile.TemporaryDirectory() as temp:
+            state = Path(temp) / "reference.state"
+            state.write_bytes(b"state")
+            with self.assertRaisesRegex(ValueError, "rejected"):
+                core.restore(state)
+        self.assertEqual((core.frame, core.last_video), (400, b"old"))
 
 
 def synthetic_capture(directory):

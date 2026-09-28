@@ -1912,3 +1912,45 @@ need root original-instruction/runtime verification before implementation.
 
 No completed subtask closes the parent goal. No exact-gameplay or finished-remake
 claim is supported by the current range and artwork milestones.
+
+## Genesis effect resource recovery (2026-09-28)
+
+The preceding goal continuation produced local checkpoint `f36b468`: overlapped
+frame dispatch and 1,020-frame boundary comparison evidence. Its performance
+results were mixed; it did not close stable pacing or the overall remaster goal.
+This continuation returned to the Genesis-first graphics work rather than
+continuing performance-only refinements.
+
+Recovered the complete 64-entry Genesis effect bitmap directory at ROM 0x431be.
+All 28,960 source pixel indices and masks match PC EFFECTS.BMP, independently
+decoded, while ordinary gunner presentation uses Genesis palette bank 3.
+The original Genesis blitter at 0x5988 passes an isolated M68000 oracle across
+2,688 cases and 13,762,560 pixels. Two native impact frames reconstruct exactly
+from VDP state and verify 43 visible effect pixels plus six sight occlusions.
+No emulator source, original game bytes or gameplay code changed.
+
+Corrected broken host capture provenance after repeated restores: old counters,
+cached frame and input no longer survive a successful restore. Fresh repeat
+captures both report frame 24 and have identical complete file hashes. The
+earlier valid frame's image and VDP bytes remain unchanged. Earlier exploratory
+button-probe counters and unhashed supplementary RAM dumps are labelled in
+`genesis-effects-research.md`, not silently promoted into clean evidence.
+
+Generated and self-reviewed initial impact/smoke studies through the built-in
+image tool. Two atlas candidates lost source detail. Switching to isolated,
+enlarged native references yielded cleaner individual frames 15, 16 and 17,
+with exact prompts and hashes retained. They remain unselected pending animation,
+footprint and runtime visibility checks. No new effect art was installed in
+Godot, and this is not a completed graphics-family claim.
+
+Focused tests: 19 pass. Original-instruction oracle: zero mismatches. Aggregate
+gate `artifacts/validation-20260928T043521Z`: terminal exit 0, all 36 stages and
+254 Python tests pass. Failed exploratory checks and their explanations remain
+in `artifacts/genesis-effects-research-01/` and the research document.
+
+Whole-goal outcomes remain open: all required high-resolution animation/art,
+source-selected event/audio coverage, pacing, full mission/campaign/save parity,
+and the reproducible release candidate. Continue with effect selection/timing
+and complete animation sets before enabling their PC-driven bindings. Source
+extracts and generated media remain ignored/local. No push or publication.
+The five pre-existing untracked vehicle-study files remain untouched.

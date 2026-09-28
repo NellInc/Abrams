@@ -174,6 +174,12 @@ class ReferenceCore:
         buffer = C.create_string_buffer(raw)
         if not self.core.retro_unserialize(buffer, len(raw)):
             raise ValueError("Core rejected reference state")
+        # These are host observations, not part of the restored guest state.
+        # A prior frame must never be presented as a frame from this restore.
+        self.frame = 0
+        self.last_video = None
+        self.capture_video = False
+        self.pressed.clear()
 
     def screenshot(self) -> Image.Image:
         if self.last_video is None:
