@@ -13,6 +13,7 @@ var play_display: Control
 var requested_window_size := Vector2i.ZERO
 var requested_fullscreen := false
 var pc_audio: Node
+var audio_menu: MenuBar
 var audio_drained := true
 var world_view: Node3D
 var draw_view: Node3D
@@ -105,6 +106,15 @@ func _initialize() -> void:
 	if audio_requested(trace_mode,args):
 		pc_audio = PcAudio.new()
 		root.add_child(pc_audio)
+		if play_mode:
+			audio_menu=preload("res://scripts/pc_audio_menu.gd").new()
+			audio_menu.audio=pc_audio
+			if capture: audio_menu.config_path=""
+			audio_menu.load_settings()
+			pc_audio.set_mix(audio_menu.settings)
+			root.add_child(audio_menu)
+			audio_menu.resized.connect(_layout_audio_menu)
+			_layout_audio_menu.call_deferred()
 	if trace_mode and cockpit_art_requested:
 		tandem_frame.load_genesis_art(directory)
 	elif trace_mode and gunner_art_requested:
@@ -257,6 +267,12 @@ func _configure_window() -> void:
 	if requested_window_size!=Vector2i.ZERO: root.size = requested_window_size
 	if requested_fullscreen: root.mode = Window.MODE_FULLSCREEN
 
+func _layout_audio_menu() -> void:
+	# macOS uses its menu bar without touching the image. Other backends reserve
+	# a header above the largest complete 4:3 game rectangle, never over the HUD.
+	if audio_menu and play_display:
+		play_display.offset_top=0 if audio_menu.is_native_menu() else audio_menu.get_combined_minimum_size().y
+
 func _build_play_ui() -> void:
 	play_display = PlayDisplay.new()
 	root.add_child(play_display)
@@ -393,7 +409,9 @@ func _advance_live_frame() -> bool:
 		return false
 	elapsed=frame_remainder(elapsed,fps)
 	# Sample current original keys once, never queue a second outstanding frame.
-	return bridge.step(1,Keyboard.held())
+	var held := Keyboard.held()
+	if audio_menu: held=audio_menu.game_keys(held)
+	return bridge.step(1,held)
 
 func _capture_deadline_msec() -> int:
 	return 180000 if boot_mode or "--capture-vehicle" in OS.get_cmdline_user_args() else 60000

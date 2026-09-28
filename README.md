@@ -73,6 +73,9 @@ music and sound-effect references for a faithful presentation upgrade.
   damage reports, gated on complete original displayed messages. Bearings speak
   by digit, with both “nine” and “niner” accepted.
   F5 and original pause mute them; `--no-audio` disables remastered audio.
+  The app's **Audio** menu controls master, effects, crew voices and engine/turret
+  volumes independently, and remembers the mix. These controls cannot override
+  the original sound gate. On macOS the menu occupies no cockpit space.
   Remaining dialogue and music are unfinished;
   see `docs/pc-audio-research.md`.
 * Importing `godot/project.godot` in Godot 4 still runs the authored calibration

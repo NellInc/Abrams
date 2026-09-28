@@ -2391,3 +2391,55 @@ OpenGL audio run also passes 642 checks, and the original 14-take installer dry
 run still passes. Source preservation and `git diff --check` pass. No production
 visual layout changed in this pass; the native outcome images validate the
 existing renderer and the repaired diagnostic capture timing.
+
+## Presentation-only audio mix controls (2026-09-28)
+
+Previous goal turn was progress: committed actual combat-loss parity and 15
+additional damage takes. The goal remains active. This pass addresses the
+explicit adjustable-mix requirement without adding cockpit artwork, textures,
+gameplay hotkeys, pause commands or a substitute sound-state machine.
+
+Implemented native Audio menu with master, effects, voices and motor controls,
+10% increments/Off and default reset. macOS native menu occupies no game pixels;
+other backends reserve a header outside the original 4:3 view. User choices use
+separate Godot preferences, with visible load/save failure notices. Captures
+ignore user settings and never write them. Gains apply immediately, source-gated
+loops can resume, and old one-shots/speech never replay on user unmute. Original
+F5/pause/epoch/failure gates retain priority. The range base class's new gains
+are unity by default, preserving its independent mix.
+
+Validated the actual production input loop with presentation menus open/closed,
+including release-before-forwarding of a menu closing key. Native macOS UI clicks
+set effects 40% and voices 70%, and persisted reload matches. The actual original
+is frozen only for this diagnostic UI-acceptance boundary. It is not used to
+claim real-time stepping while an OS menu is open. Godot MenuBar/PopupMenu APIs
+were checked against official documentation; no new dependency was installed.
+
+Evidence: `pc-audio-mix-native-02` compares all 1,020 original input/RAM/video
+records with `pc-play-final-controls-02` during nine gain changes. All checks
+pass. Four final rendered/source images are decoded-byte-identical. Native menu
+receipt `pc-audio-menu-native-04` passes all 15 checks, terminal 0; root inspected
+the fallback screenshot and real native accessibility menus. Native screenshot
+capture was unavailable. Non-native fallback on macOS is not other-OS proof.
+
+Initial native run exposed a real pre-ready player dereference, fixed by storing
+startup levels until player construction. Its source comparison passed, but the
+script-error run is superseded by native-02. Menu-native-01 inherited a too-short
+diagnostic deadline. Menu-native-02's actual UI checks passed but switching an
+already-native menu to local left a cached zero-size layout; the fallback test
+now constructs its startup mode independently. Native-03 had a test-only missing
+Dictionary annotation; native-04 compiles and completes. Failed receipts remain.
+An extra project-manager instance opened while selecting an exited test app was
+closed via its own native Quit menu; no unrelated Godot process was signalled.
+
+Final aggregate `validation-20260928T101218Z`: 41 stages, 286 Python tests,
+642 existing audio checks, 97 mix checks, 82 production scheduling checks,
+terminal exit 0. Source preservation passes. Optional Impeccable is unavailable
+and was not installed; native layout and actual UI interaction were checked.
+The native mix route measured 47.53 fps versus the older matched 57.93 fps;
+host load was not controlled, and sustained pacing remains an open gate.
+
+Remaining goal outcomes are unchanged except adjustable volume controls are now
+implemented. Music, wider speech/warnings, remaining graphics, victories and
+campaign progression, sustained pacing, listening/art acceptance and portable
+packaging are still incomplete. No push, publication or redistribution occurred.

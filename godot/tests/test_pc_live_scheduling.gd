@@ -128,6 +128,29 @@ func run() -> void:
 	reply()
 	super._process(0)
 	check(elapsed>=0 and elapsed<period,"busy intervals discarded without a catch-up burst")
+	audio_menu=preload("res://scripts/pc_audio_menu.gd").new()
+	audio_menu.config_path=""
+	root.add_child(audio_menu)
+	audio_menu.popup.about_to_popup.emit()
+	set_keys([KEY_UP,KEY_SPACE])
+	reply()
+	super._process(period)
+	check(bridge.requests[-1].frames==1 and bridge.requests[-1].keys.is_empty(),"audio menu continues source clock with neutral input")
+	audio_menu.popup.popup_hide.emit()
+	set_keys([KEY_ENTER])
+	reply()
+	super._process(period)
+	check(bridge.requests[-1].keys.is_empty(),"audio menu closing Enter cannot select original menu")
+	set_keys([])
+	reply()
+	super._process(period)
+	set_keys([KEY_F2])
+	reply()
+	super._process(period)
+	check(bridge.requests[-1].keys==["f2"],"fresh original command after audio-menu release")
+	audio_menu.queue_free()
+	audio_menu=null
+	set_keys([])
 
 	# Capture routes retain explicit batches and dispatch only after presentation.
 	capture=true

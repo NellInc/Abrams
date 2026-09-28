@@ -16,6 +16,7 @@ The authored calibration range is separate. The whole remaster is unfinished.
 | Bearing speech | `artifacts/pc-full-bearings-native-01/report.json`: one original displayed 058 call starts its matching full-sentence take | All 360 bearing resources load and have wording QA; every bearing has not independently occurred in live combat |
 | Shift+3 | `artifacts/pc-modifiers-trace-01/report.json`: all 530 RAM/video/input records equal the unmodified core | Original speed index cycles 0, 1, 2. Original scancode polling also selects AX. This side effect is preserved |
 | Plain vehicles | `artifacts/pc-vehicle-flat-play-01/verification.json`: original 1,679-frame close approach, zero textured vehicle polygons | Replacement models are deferred |
+| Adjustable audio mix | `artifacts/pc-audio-menu-native-04/menu-report.json`: all 15 checks pass using real macOS menu clicks; `pc-audio-mix-native-02/mix-report.json`: 1,020 original input/RAM/video records unchanged during nine mix changes | Native macOS verified; non-native menu layout rendered on macOS, other OS acceptance remains open; music is still unfinished |
 
 ## Presentation repairs
 
@@ -33,6 +34,13 @@ live evidence. Fifteen further source-verified subsystem/mobility takes
 bring this bank to 24 damage reports; all load and start native sample players,
 with individual live occurrence still unproven for those additions. No mixed
 gameplay recordings are used as live samples.
+
+The app's Audio menu independently controls master, sound effects, crew voices,
+and engine/turret volume. 100% preserves the existing authored mix. Off stops
+that channel immediately; raising its level never replays an old one-shot or
+spoken call. Active source-driven motor loops can resume. Original F5 and pause
+remain authoritative. Choices persist in a separate Godot preference file and
+do not touch original campaign saves. See `pc-audio-mix.md`.
 
 ## Controls and saves
 
@@ -60,7 +68,8 @@ Diagnostic captures still exit nonzero on failures.
   Exact-byte font caching and bulk mask validation reduce read-only overhead;
   emulated CPU rate, frame count, input policy and synchronization remain unchanged.
 * Victories, additional defeats, campaign progression and longer-session outcomes.
-* Remaining dialogue, radio/warnings, music, mix controls and listening review.
+* Remaining dialogue, radio/warnings, music and listening/mix review. Volume
+  controls are implemented; a finished musical arrangement and mix are not.
 * Remaining graphics families and transitions, preserving Genesis precedence and
   original PC visibility. Vehicle replacement is intentionally deferred.
 * Portable packaging and community-release rights/provenance review. Work is

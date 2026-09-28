@@ -16,6 +16,33 @@ var failure := ""
 var delivered := 0
 var suppressed := 0
 var receipts: Array[Dictionary] = []
+var mix := {"master":100,"effects":100,"voice":100,"motors":100}
+var motor_volume := 1.0
+var current_loops: Dictionary = {}
+
+func set_mix(settings: Dictionary) -> bool:
+	if settings.keys().size()!=mix.size(): return false
+	for key in mix:
+		if not _integer(settings.get(key)) or settings[key]<0 or settings[key]>100: return false
+	mix=settings.duplicate()
+	volume=0.65*float(mix.master)/100.0
+	effects_volume=float(mix.effects)/100.0
+	voice_volume=float(mix.voice)/100.0
+	motor_volume=float(mix.motors)/100.0
+	if voice==null or turret==null: return true # launch preferences precede _ready
+	# Adjust existing streams immediately, without replaying consumed events or
+	# changing the original mute gate, frame sequence, source channels or clocks.
+	for player in effects:
+		player.volume_db=linear_to_db(maxf(0.00001,volume*effects_volume*0.6))
+		if volume*effects_volume==0:
+			_remember_playback(player)
+			player.stop()
+	voice.volume_db=linear_to_db(maxf(0.00001,volume*voice_volume*0.8))
+	if volume*voice_volume==0:
+		_remember_playback(voice)
+		voice.stop()
+	_sync_loops(current_loops)
+	return true
 
 func _ready() -> void:
 	super._ready()
@@ -30,6 +57,7 @@ func _ready() -> void:
 	# Imported WAV data can be QOA, so byte count is not a PCM frame count.
 	stream.loop_end = roundi(stream.get_length()*stream.mix_rate)
 	turret.stream = stream
+	set_mix(mix)
 
 func stop_all() -> void:
 	super.stop_all()
@@ -54,10 +82,11 @@ func _valid_loops(loops) -> bool:
 	return true
 
 func _sync_loops(loops: Dictionary) -> void:
+	current_loops=loops
 	for name in ["engine", "turret"]:
 		var player: AudioStreamPlayer = engine if name == "engine" else turret
 		var source: Dictionary = loops.get(name,{})
-		var active := not muted and bool(source.get("active",false))
+		var active := not muted and volume*motor_volume>0 and bool(source.get("active",false))
 		if active != bool(loop_states[name]):
 			loop_transitions.append({"name":name,"active":active,"frame":last_frame,"epoch":epoch})
 			if loop_transitions.size() > 64: loop_transitions.pop_front()
@@ -70,7 +99,7 @@ func _sync_loops(loops: Dictionary) -> void:
 		# never speed, input keys, tank pose or substitute acceleration rules.
 		player.pitch_scale = clampf(float(source.idle_period)/float(source.period),0.25,4.0)
 		var level := clampf(float(source.amplitude)/float(source.amplitude_reference),0.0,1.0)
-		player.volume_db = linear_to_db(maxf(0.00001,volume*level*(0.08 if name == "engine" else 0.10)))
+		player.volume_db = linear_to_db(maxf(0.00001,volume*motor_volume*level*(0.08 if name == "engine" else 0.10)))
 		if not player.playing:
 			player.play()
 			_remember_playback(player)

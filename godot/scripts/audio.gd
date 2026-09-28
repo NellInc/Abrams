@@ -3,6 +3,8 @@ extends Node
 var muted := false
 var voice_enabled := true
 var volume := 0.65
+var effects_volume := 1.0
+var voice_volume := 1.0
 var engine: AudioStreamPlayer
 var voice: AudioStreamPlayer
 var effects: Array[AudioStreamPlayer] = []
@@ -37,7 +39,7 @@ func get_stream(cue: String) -> AudioStream:
 	return cache[cue]
 
 func play(cue: String) -> void:
-	if muted:
+	if muted or volume*effects_volume<=0:
 		return
 	var stream := get_stream(cue)
 	if stream == null:
@@ -45,19 +47,19 @@ func play(cue: String) -> void:
 	var p := effects[cursor % effects.size()]
 	cursor += 1
 	p.stream = stream
-	p.volume_db = linear_to_db(volume * 0.6)
+	p.volume_db = linear_to_db(volume * effects_volume * 0.6)
 	p.play()
 	_remember_playback(p)
 
 func speak(cue: String) -> void:
 	last_voice = cue
-	if muted or not voice_enabled:
+	if muted or not voice_enabled or volume*voice_volume<=0:
 		return
 	var stream := get_stream("voice_"+cue)
 	if stream == null:
 		return
 	voice.stream = stream
-	voice.volume_db = linear_to_db(volume * 0.8)
+	voice.volume_db = linear_to_db(volume * voice_volume * 0.8)
 	voice.play()
 	_remember_playback(voice)
 
