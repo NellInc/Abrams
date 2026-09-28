@@ -258,3 +258,12 @@ images and their README gallery from the remote main baseline; do not implicitly
 push the unpublished gameplay/application commits or an application binary. Raw
 PC/Genesis inputs stay excluded. Keep local source reconciliation separate from
 this specifically authorized gallery publication.
+
+Gallery publication completed as `a5dd5cdc2c79f19db67d3c92c79b9d7cab94e5f4`
+on private remote `main`: restored cover, icon, three unedited mode-comparison
+captures and their README presentation. GitHub's Markdown renderer accepted all
+five image embeds; the Contents API confirmed every published file's stored Git
+blob hash and size. The raw PNG readback hit a gh output-conversion error, so no
+raw PNG response-byte claim is made. No originals, app binary or unpublished
+runtime commits were pushed. The gallery is merged into the local alpha tree.
+Publication receipt: `artifacts/alpha-readiness-20260928/github-gallery-publication.json`.
