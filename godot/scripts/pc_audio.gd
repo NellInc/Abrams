@@ -2,10 +2,12 @@ extends "res://scripts/audio.gd"
 ## Original PC sound requests only. No keyboard, ammo-delta or range simulation.
 ## Batched diagnostic steps retain all events, but stale audio is never replayed.
 const MAX_AGE_FRAMES := 6
-const SAMPLES := ["cannon", "machinegun", "smoke", "impact", "switch"]
+const SAMPLES := ["cannon", "machinegun", "smoke", "impact", "switch", "radio"]
 const VOICES := {"cannon": "on_the_way", "smoke": "smoke"}
 var crew_catalogue: Dictionary = {}
 var last_crew_message := 0
+var last_radio_message := 0
+var radio_catalogue: Dictionary = {}
 var turret: AudioStreamPlayer
 var loop_transitions: Array[Dictionary] = []
 var loop_states := {"engine":false,"turret":false}
@@ -46,6 +48,7 @@ func set_mix(settings: Dictionary) -> bool:
 
 func _ready() -> void:
 	super._ready()
+	radio_catalogue=JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_radio_voice_script.json")).cues
 	crew_catalogue = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_crew_voice_script.json")).cues
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_bearing_voice_script.json")).cues)
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_damage_voice_script.json")).cues)
@@ -133,8 +136,18 @@ func _valid_crew(event: Dictionary) -> bool:
 	var expected_ip: int=int(cue.assignment_ip) if warning else (0x3d6a if bearing else 0x3dd2)
 	if int(event.ip) != expected_ip or int(event.return_ip) != 0 or int(event.value) != 0:
 		return false
-	var parts = event.get("parts")
-	if not parts is Array or parts.size() != (cue.source_variants[0].size() if warning else 2): return false
+	return _valid_message_parts(event.get("parts"),cue.source_variants[0].size() if warning else 2,cue.source_variants if warning else null)
+
+func _valid_radio(event: Dictionary) -> bool:
+	if not _integer(event.get("message_id")) or int(event.message_id)<1: return false
+	if event.get("voice") not in radio_catalogue or event.get("speaker")!=null: return false
+	var cue: Dictionary=radio_catalogue[event.voice]
+	if event.get("text")!=cue.caption or not cue.assignment_ips.any(func(ip):return int(ip)==int(event.ip)): return false
+	if int(event.return_ip)!=0 or int(event.value)!=0: return false
+	return _valid_message_parts(event.get("parts"),1,cue.get("source_variants"))
+
+func _valid_message_parts(parts, count: int, variants) -> bool:
+	if not parts is Array or parts.size()!=count: return false
 	var previous: Array = []
 	var pointers: Array = []
 	for part in parts:
@@ -156,7 +169,7 @@ func _valid_crew(event: Dictionary) -> bool:
 		if not digest is String or digest.length() != 64: return false
 		for i in digest.length():
 			if digest[i] not in "0123456789abcdef": return false
-	if warning and not cue.source_variants.any(func(variant): return variant.map(func(p): return int(p))==pointers): return false
+	if variants!=null and not variants.any(func(variant): return variant.map(func(p): return int(p))==pointers): return false
 	return true
 
 func _reject(reason: String) -> bool:
@@ -177,6 +190,7 @@ func apply_audio(packet: Dictionary) -> bool:
 	if not _valid_loops(packet.get("loops", {})): return _reject("Invalid original sound-channel state")
 	var next_id := last_event_id
 	var next_crew_id := last_crew_message if int(packet.epoch) == epoch else 0
+	var next_radio_id := last_radio_message if int(packet.epoch)==epoch else 0
 	var prior_frame := -1
 	var prior_id := -1
 	for event in packet.events:
@@ -187,7 +201,7 @@ func apply_audio(packet: Dictionary) -> bool:
 			return _reject("Unordered original audio events")
 		if int(event.epoch) > int(packet.epoch) or not event.get("enabled") is bool:
 			return _reject("Invalid original audio epoch or gate")
-		if event.get("kind") not in ["sound", "gate", "reload_complete", "engine_parameter", "readiness_visible", "crew_visible"]:
+		if event.get("kind") not in ["sound", "gate", "reload_complete", "engine_parameter", "readiness_visible", "crew_visible", "radio_visible"]:
 			return _reject("Unknown original audio event kind")
 		var sample = event.get("sample")
 		var speech = event.get("voice")
@@ -196,6 +210,11 @@ func apply_audio(packet: Dictionary) -> bool:
 		if event.kind == "readiness_visible":
 			if sample != null or speech != "loaded" or not _valid_readiness(event):
 				return _reject("Invalid visible original readiness")
+		elif event.kind == "radio_visible":
+			if sample != null or not _valid_radio(event): return _reject("Invalid visible original radio message")
+			if int(event.id)>last_event_id and int(event.epoch)==int(packet.epoch):
+				if int(event.message_id)<=next_radio_id: return _reject("Repeated original radio assignment")
+				next_radio_id=int(event.message_id)
 		elif event.kind == "crew_visible":
 			if sample != null or not _valid_crew(event): return _reject("Invalid visible original crew message")
 			if int(event.id) > last_event_id and int(event.epoch) == int(packet.epoch):
@@ -229,7 +248,7 @@ func apply_audio(packet: Dictionary) -> bool:
 		if int(event.epoch) != epoch: reason = "previous-program"
 		elif not packet.active or not packet.enabled or not event.enabled: reason = "original-sound-gate"
 		elif last_frame - int(event.frame) > MAX_AGE_FRAMES: reason = "stale-diagnostic-step"
-		elif event.kind not in ["readiness_visible", "crew_visible"] and (event.kind != "sound" or event.get("sample") == null): reason = "unmapped-original-request"
+		elif event.kind not in ["readiness_visible", "crew_visible", "radio_visible"] and (event.kind != "sound" or event.get("sample") == null): reason = "unmapped-original-request"
 		if reason.is_empty():
 			if event.get("sample") != null: play(event.sample)
 			if event.get("voice") != null: speak(event.voice)
@@ -243,5 +262,6 @@ func apply_audio(packet: Dictionary) -> bool:
 		if receipts.size() > 64: receipts.pop_front()
 	last_event_id = next_id
 	last_crew_message = next_crew_id
+	last_radio_message = next_radio_id
 	_sync_loops(packet.get("loops",{}))
 	return true

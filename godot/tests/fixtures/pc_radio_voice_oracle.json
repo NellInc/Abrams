@@ -1,0 +1,676 @@
+{
+  "source_sha256": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099",
+  "unpack": {
+    "source_sha256": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099",
+    "decoded_sha256": "33f5f41dd5f5579d29cccc7e2f6f6942a9463883afca0c3a838c1b6ccc321eea",
+    "relocated_sha256": "777097ff83a8eafb83dfa075195d2238dbab77caced64d22d3707b29607f6002",
+    "decoded_bytes": 129712,
+    "relocations": 671,
+    "status": "exact CPU comparison"
+  },
+  "engine": "unicorn-2.1.4/x86-16",
+  "resources": {
+    "SNARIO0.SSS": {
+      "sha256": "6117b13406e0fbc9fee39479959c0f8189a04d693971ee086d2b402404ca40bf",
+      "directory_sha256": "45af71450f212c97531df00355dd1035721fbf3816309b01b1724d0b72d19d8b",
+      "strings_sha256": "6fb8487b14b4050c7af49c946bcc89254f71c3813338ea914915759b21d2a698"
+    },
+    "SNARIO1.SSS": {
+      "sha256": "aa5d5c6b4b0c29caa2e29b74a869b3765307a921a4d0a9fb893e6dd449786ff1",
+      "directory_sha256": "99e0785bedb3ff486d178245365eccc9a79546e42b9e1d2bab83e381fd9d92ee",
+      "strings_sha256": "d696f9617b77d97dcd0f6ed9ee0842d8468f72e2f5a7cc633cfd3f62e11b1153"
+    },
+    "SNARIO2.SSS": {
+      "sha256": "7aed65b6ca71a52a96ad476f65e4b1475eb324445aaad34cd322b09fcb5dd80f",
+      "directory_sha256": "3ab76875c4d63c4ea2b0a8dc873544b9264f8ab5044c7ebd5e0bf9677b649bc6",
+      "strings_sha256": "7d905ec42bd3de34f8ae73e723e2b0eaffd8a65481391ed54f37aed64dc84b82"
+    },
+    "SNARIO3.SSS": {
+      "sha256": "1074dcd2f6493ce9ed6d6fb6138b0c4f216aae634b80141a08c6428ce0f628b2",
+      "directory_sha256": "40adcdeece0bde784a955c410bedbbb58ce21feca216dede0cb45df334b34484",
+      "strings_sha256": "7b1b9a71815fa84a43cd39be0c779975b19beca0835cc74075d3c6b963da3dce"
+    },
+    "SNARIO4.SSS": {
+      "sha256": "007e83eb8ae5977c25386cdb7a7b654782c22c889e12aced2fd5a15f3c73d048",
+      "directory_sha256": "4889d0f9efc1cf9c335813b3ef63744d4492621ad9d443e4d7edf36fb0c35eff",
+      "strings_sha256": "4f67dc2b0acc55fbd45bdc1ce6b7d3e98ee2a9b25d3423db2e120cdfcbe23fdc"
+    },
+    "SNARIO5.SSS": {
+      "sha256": "d84f4b279e63af52d03480fcc9cd0a891080843c09a1e2290fd160d905901225",
+      "directory_sha256": "60ce921b388cecf124ca97a82b45128b4f8e92593d81672f8dd62c26dc42ccd3",
+      "strings_sha256": "0397bed68586008f3583c01e526c20faa1a1fe01292443653317fd174629f82b"
+    },
+    "SNARIO6.SSS": {
+      "sha256": "8fa39db01859baca37b4bdd3c6d34344723462d23f1abf44ca48cc37817e6fde",
+      "directory_sha256": "28b2dd19d5ec036ed12834ca1f918ff0cae6438dfc1a17e4e395d3fbc622f392",
+      "strings_sha256": "bd52893a1f1f87216f50672a8eea35397d19fb751884156227275bf4ab27b573"
+    },
+    "SNARIO7.SSS": {
+      "sha256": "5a9aac986f8809240184493859c6228dc8dee81bf671a946938bd69588ffb3b0",
+      "directory_sha256": "d4739f71b461fb6bfe025bd9b6237c0dcf1197432067b7da4102dc5140d96242",
+      "strings_sha256": "e4243ec774f7564923ff9fa681ea056d1b9644026303d3e144542a6296eb183f"
+    }
+  },
+  "rows": [
+    {
+      "resource": "SNARIO0.SSS",
+      "index": 0,
+      "caption": "Radar shows hind entering your sector!",
+      "relative_pointer": 0,
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO0.SSS",
+      "index": 0,
+      "caption": "Radar shows hind entering your sector!",
+      "relative_pointer": 0,
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO0.SSS",
+      "index": 0,
+      "caption": "Radar shows hind entering your sector!",
+      "relative_pointer": 0,
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    },
+    {
+      "resource": "SNARIO1.SSS",
+      "index": 0,
+      "caption": "you killed another one",
+      "relative_pointer": 0,
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO1.SSS",
+      "index": 0,
+      "caption": "you killed another one",
+      "relative_pointer": 0,
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO1.SSS",
+      "index": 0,
+      "caption": "you killed another one",
+      "relative_pointer": 0,
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    },
+    {
+      "resource": "SNARIO2.SSS",
+      "index": 0,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 0,
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO2.SSS",
+      "index": 0,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 0,
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO2.SSS",
+      "index": 0,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 0,
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    },
+    {
+      "resource": "SNARIO3.SSS",
+      "index": 0,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 0,
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO3.SSS",
+      "index": 0,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 0,
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO3.SSS",
+      "index": 0,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 0,
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    },
+    {
+      "resource": "SNARIO4.SSS",
+      "index": 1,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 25,
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45081,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO4.SSS",
+      "index": 1,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 25,
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45081,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO4.SSS",
+      "index": 1,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 25,
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    },
+    {
+      "resource": "SNARIO5.SSS",
+      "index": 1,
+      "caption": "M1, object airborne your sector!",
+      "relative_pointer": 25,
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45081,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO5.SSS",
+      "index": 1,
+      "caption": "M1, object airborne your sector!",
+      "relative_pointer": 25,
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45081,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO5.SSS",
+      "index": 1,
+      "caption": "M1, object airborne your sector!",
+      "relative_pointer": 25,
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    },
+    {
+      "resource": "SNARIO5.SSS",
+      "index": 2,
+      "caption": "Hey guys, glad you made the party.",
+      "relative_pointer": 58,
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45114,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO5.SSS",
+      "index": 2,
+      "caption": "Hey guys, glad you made the party.",
+      "relative_pointer": 58,
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45114,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO5.SSS",
+      "index": 2,
+      "caption": "Hey guys, glad you made the party.",
+      "relative_pointer": 58,
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    },
+    {
+      "resource": "SNARIO7.SSS",
+      "index": 0,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 0,
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO7.SSS",
+      "index": 0,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 0,
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15504,
+      "pointer": 45056,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15504
+        },
+        {
+          "ip": 37127,
+          "caller": 15511,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SNARIO7.SSS",
+      "index": 0,
+      "caption": "M1, hind spotted your sector!",
+      "relative_pointer": 0,
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    },
+    {
+      "resource": "SIM.EXE",
+      "caption": "Abort mission.",
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15572,
+      "pointer": 529,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15572
+        },
+        {
+          "ip": 37127,
+          "caller": 15579,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SIM.EXE",
+      "caption": "Abort mission.",
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15572,
+      "pointer": 529,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15572
+        },
+        {
+          "ip": 37127,
+          "caller": 15579,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SIM.EXE",
+      "caption": "Abort mission.",
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    },
+    {
+      "resource": "SIM.EXE",
+      "caption": "The mission is complete!",
+      "health": 0,
+      "queued": true,
+      "assignment_ip": 15572,
+      "pointer": 573,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15572
+        },
+        {
+          "ip": 37127,
+          "caller": 15579,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SIM.EXE",
+      "caption": "The mission is complete!",
+      "health": 1,
+      "queued": true,
+      "assignment_ip": 15572,
+      "pointer": 573,
+      "queue_countdown": 15,
+      "retrieved": true,
+      "events": [
+        {
+          "ip": 15572
+        },
+        {
+          "ip": 37127,
+          "caller": 15579,
+          "value": 11
+        },
+        {
+          "ip": 16243
+        }
+      ]
+    },
+    {
+      "resource": "SIM.EXE",
+      "caption": "The mission is complete!",
+      "health": 2,
+      "queued": false,
+      "assignment_ip": null,
+      "pointer": 0,
+      "queue_countdown": 0,
+      "retrieved": false,
+      "events": []
+    }
+  ],
+  "no_message_sentinel": "silent",
+  "scope": "Execute original radio selection, equipment gating and retrieval in isolation.\n\nScenario directory/string bytes are taken unchanged from the supplied resources\nand placed in caller-provided isolated memory. Original instructions execute;\nbackend 2 avoids host sound devices. This proves selected message routing, not\nmission trigger eligibility, visibility, timing or live occurrence.\n"
+}

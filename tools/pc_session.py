@@ -9,14 +9,14 @@ try:
     from tools.pc_live_state import active_program
     from tools.pc_render_trace import Collector
     from tools.pc_readiness import ReadinessBark
-    from tools.pc_crew_voice import CrewBarks
+    from tools.pc_crew_voice import CrewBarks,RadioBarks
     from tools.pc_frontend_text import FrontendText, FrontendSources
 except ModuleNotFoundError:
     from pc_audio_events import audio_status
     from pc_live_state import active_program
     from pc_render_trace import Collector
     from pc_readiness import ReadinessBark
-    from pc_crew_voice import CrewBarks
+    from pc_crew_voice import CrewBarks,RadioBarks
     from pc_frontend_text import FrontendText, FrontendSources
 
 
@@ -34,6 +34,7 @@ class PresentationSession:
         self.audio_sequence = 0
         self.readiness = ReadinessBark()
         self.crew = CrewBarks()
+        self.radio = RadioBarks()
         self.audio_state = {"active": False, "enabled": False}
 
     @staticmethod
@@ -75,6 +76,7 @@ class PresentationSession:
             presentation = self.collector.paired_video(self.core.last_video) if verified else {}
             events += self.readiness.advance(self.core.frame, events, presentation, self.audio_state)
             events += self.crew.advance(presentation, self.audio_state)
+            events += self.radio.advance(presentation, self.audio_state)
             for event in events:
                 if len(self.audio_pending) >= 4096: raise ValueError('session audio queue overflow')
                 self.audio_sequence += 1
@@ -114,6 +116,7 @@ class PresentationSession:
     def close(self, *, preserve_frontend=False):
         self.readiness.pending = None
         self.crew.last_message = 0
+        self.radio.last_message = 0
         if self.collector:
             self.collector.detach(self.core)
             self.collector = None

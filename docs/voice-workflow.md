@@ -304,3 +304,97 @@ python3 tools/verify_pc_dialogue.py \
   --output "$PWD/artifacts/pc-warning-native-new" \
   --capture --trace --play --frame-audit
 ```
+
+
+## Original radio reports, 28 September 2026
+
+Seven distinct captions now have dry Gemini 3.8 Flash TTS performances, with
+Charon cast as an American radio operator. Five captions occur in eight scenario
+message entries; two fixed captions reside in SIM. The PC message banks total
+399 performances: 360 bearings, 24 damage, eight warnings and seven radio reports.
+`godot/data/pc_radio_voice_script.json` retains exact original captions and source
+locations. Only the spoken script expands the airborne report's M1 to “M one”.
+
+Six initial takes passed blind transcription. The airborne take instead produced
+“Mark one”, and a second attempt produced “Mike one”. Both are genuine wording
+failures and remain excluded. Explicit “M one” in the third take's spoken script
+passed a fresh blind transcription. None of those transcripts was rewritten or
+normalized into a passing result. Original request, generation and QA files are
+retained in `local-audio/pc-radio-gemini-3.8-v1`, `v2` and `v3` (with the same
+`pc-radio-gemini-3.8-` prefix for each folder).
+
+The offline installer accepts a fingerprinted original script and an independently
+validated repair subset. It checks each selected cue and casting against the
+current script, the unchanged WAV, original manifest, and that take's own blind
+transcript. `pc_radio_provenance.json` records each selected master, original
+script hash and QA inputs. Six original takes and the third airborne take are
+installed without audio processing. Human listening/mix approval remains open.
+
+```sh
+python3 tools/install_pc_crew_voice.py --bank radio \
+  --source local-audio/pc-radio-gemini-3.8-v1 \
+  --source-script local-audio/pc-radio-gemini-3.8-v1/script.json \
+  --repair-source local-audio/pc-radio-gemini-3.8-v3 --dry-run
+.runtime/pc-analysis-venv/bin/python tools/pc_radio_voice_oracle.py \
+  --check-fixture godot/tests/fixtures/pc_radio_voice_oracle.json \
+  --output artifacts/pc-radio-oracle-new.json
+```
+
+The isolated source oracle executes 30 selection/equipment/retrieval cases and
+the no-message sentinel without replacing original instructions. It proves the
+radio condition gate, original queue pointers and timers, dispatcher 11 caller,
+and R retrieval. It does not prove all mission triggers or live visibility.
+
+Speech uses the existing complete current-pixel message proof. Radio identities
+have a separate once-only consumer from crew identities; queued text never enters
+speech. The source's R retrieval or a new report drawn while the radio is already
+open may qualify. Exact caption, assignment IP and one complete source run are
+required; fixed SIM captions additionally require their exact string pointer.
+F5 mute consumes a newly displayed report silently. Restoring sound alone cannot
+replay it, while a new original R retrieval can speak again.
+
+`radio.wav` is an authored 950 Hz attention sample with shaped short/long bursts.
+It contains no message words or encoded tactical information. Only verified
+original dispatcher-11 calls at return IP 3c97 or 3cdb request it. All 409 prior
+WAV files remain byte-identical after adding this effect.
+
+Working if: a pending report plays only the notification sample, and speech first
+occurs with the complete original displayed message; muted retrievals never catch
+up after sound restoration.
+
+
+### Live radio acceptance
+
+`pc_radio_steps.json` records 3,716 ordinary original input frames from an Escort
+mission snapshot. `pc-radio-trace-01/comparison.json` passes 13 checks against the
+untouched baseline, including every input, paired RAM/video and queued state.
+Only the attention sample fires at index 2614. R produces complete displayed
+radio assignments at 2868, 3145 and 3482, with enabled states true/false/true.
+
+`pc-radio-native-01/report.json` passes 26,142 checks through the production Godot
+viewer and original-PC host. All 3,716 full RAM/video boundaries and source audio
+events match the parity-tested trace. Genesis cockpit and high-resolution radio
+type are active. Each original message crop matches its current pixel digest.
+One attention sample and two generated voice streams start; the muted retrieval
+is consumed silently. All 98 frames between F5 restore and the fresh R report
+remain silent. Native process and child exit successfully. The seven-cue player
+contract adds 229 passing checks; the six other radio captions still lack live
+occurrence coverage. This route also observes original overheating and steep-slope
+messages, extending their source occurrence evidence beyond isolated assignments.
+
+```sh
+python3 tools/capture_pc_dialogue.py --mode trace --radio --capture-ui \
+  --state artifacts/pc-radio-scout-01/entry/reference.state \
+  --output artifacts/pc-radio-trace-new
+python3 tools/capture_pc_dialogue.py --mode baseline --radio \
+  --state artifacts/pc-radio-scout-01/entry/reference.state \
+  --output artifacts/pc-radio-baseline-new
+python3 tools/verify_pc_dialogue.py \
+  --trace artifacts/pc-radio-trace-new/report.json \
+  --baseline artifacts/pc-radio-baseline-new/report.json \
+  --output artifacts/pc-radio-trace-new/comparison.json
+./tools/godot.sh --script res://tests/test_pc_radio_bridge.gd -- \
+  --fixture "$PWD/artifacts/pc-radio-trace-new/report.json" \
+  --output "$PWD/artifacts/pc-radio-native-new" \
+  --capture --trace --play --frame-audit
+```

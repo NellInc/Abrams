@@ -12,6 +12,7 @@ from pathlib import Path
 
 def verify(trace,baseline):
     if trace.get('profile')=='smoke-warnings':return verify_warnings(trace,baseline)
+    if trace.get('profile')=='radio-retrieval':return verify_radio(trace,baseline)
     first={}
     for change in trace['changes']:
         for message in change['messages']:
@@ -74,6 +75,41 @@ def verify_warnings(trace,baseline):
     }
     return {'checks':checks,'visible_barks':barks,'text_epochs':trace['text_epochs'],
         'scope':'All 1060 original inputs and paired RAM/video/queued records compared. Smoke exhaustion, F5 mute, F5 restore and fresh warning only. Native player starts, rendered pixels, other warnings and whole-game outcomes require separate evidence.'}
+
+
+def verify_radio(trace,baseline):
+    first={}
+    for change in trace['changes']:
+        for message in change['messages']:
+            first.setdefault(message['id'],(change['frame_index'],message))
+    barks=[e for e in trace['audio_events'] if e['kind']=='radio_visible']
+    alerts=[e for e in trace['audio_events'] if e.get('sample')=='radio']
+    steps=json.loads((Path(__file__).resolve().parents[1]/'godot/tests/fixtures/pc_radio_steps.json').read_text())
+    keys=[held for count,held in steps for _ in range(count)]
+    epochs=trace['message_epochs'];assignments=epochs[0]['assignments'] if epochs else []
+    radio=[m for m in assignments if m['channel']=='radio']
+    expected_text='M1, object airborne your sector!'
+    proof=all(e['message_id'] in first and first[e['message_id']][0]==e['frame_index'] and
+        first[e['message_id']][1]['channel']=='radio' and
+        all(first[e['message_id']][1][a]==e[b] for a,b in
+            [('text','text'),('parts','parts'),('assignment_ip','ip'),('speaker','speaker')]) for e in barks)
+    checks={
+        'same_radio_profile':baseline.get('profile')=='radio-retrieval',
+        'same_snapshot':trace['state_sha256']==baseline['state_sha256'],
+        'same_baseline_core':trace['state_core_sha256']==baseline['core_sha256'],
+        'all_3716_inputs_RAM_video_and_queued_states_equal':len(trace['frames'])==3716 and trace['frames']==baseline['frames'],
+        'committed_driving_station_retrieval_and_mute_inputs':[f['keys'] for f in trace['frames']]==keys,
+        'same_final_state_and_SIM_program':trace['final_state']==baseline['final_state'] and trace['final_program']==baseline['final_program'] and trace['final_program']['name']=='SIM',
+        'one_queue_three_retrievals_one_SIM_epoch':len(epochs)==1 and [(m['id'],m['ip']) for m in radio]==[(3,0x3c90),(4,0x3f73),(5,0x3f73),(6,0x3f73)] and all(m['speaker'] is None and m['parts']==[{'pointer':48334,'text':expected_text}] for m in radio),
+        'unopened_queue_never_disclosed_or_spoken':3 not in first and all(e['message_id']!=3 for e in barks),
+        'one_source_notification_without_speech':len(alerts)==1 and all(alerts[0].get(k)==v for k,v in {'frame_index':2614,'ip':0x9107,'return_ip':0x3c97,'value':11,'voice':None,'enabled':True}.items()),
+        'three_complete_radio_displays':sorted(i for i,(_,m) in first.items() if m['channel']=='radio')==[4,5,6],
+        'exact_first_visible_frame_identity_and_sound_gate':[(e['frame_index'],e['message_id'],e['enabled']) for e in barks]==[(2868,4,True),(3145,5,False),(3482,6,True)],
+        'each_bark_at_first_complete_pixel_verified_display':proof,
+        'exact_original_radio_caption_pointer_and_source':all(e['sample'] is None and e['speaker'] is None and e['voice']=='pc_radio_airborne' and e['text']==expected_text and e['ip']==0x3f73 and [p['source_pointer'] for p in e['parts']]==[48334] for e in barks),
+    }
+    return {'checks':checks,'visible_barks':barks,'alerts':alerts,'text_epochs':trace['text_epochs'],
+        'scope':'All 3716 original input and paired RAM/video/queued records compared. Escort airborne radio notification, three R retrievals, mute/restore only. Six other radio captions, mission outcomes and native player starts require separate evidence.'}
 
 
 def main():

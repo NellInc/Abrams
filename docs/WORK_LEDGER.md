@@ -2654,3 +2654,82 @@ source lane is remaining dialogue/radio selection and visibility, with music
 extraction/arrangement another open presentation lane. Existing source utilities
 and provenance should be extended rather than inventing trigger rules.
 Work remains local only, with no push, publication, release or redistribution.
+
+## Original radio speech and notification (2026-09-28)
+
+Continues Nell's authorized local remaster work after `24bae58`. No push,
+publication or original-file mutation. PC execution remains authoritative;
+Genesis presentation priority, original-style type, dedication and rejected
+vehicle-texture hold are unchanged. The overall remaster remains unfinished.
+
+`pc_radio_voice_oracle.py` executes all ten radio entries across three original
+radio-health states, plus the FFFF no-message sentinel. Eight scenario entries
+supply five distinct captions; two SIM strings supply the other two. Full original
+selection, equipment gate, queue, notification and retrieval routines execute in
+isolated memory without instruction replacements. All 30 cases, exact pointers,
+timers, dispatcher callers and stack balance match the committed fixture in
+`pc-radio-work-01/oracle-check.json`. Trigger eligibility and whole mission
+occurrence are separate from this isolated proof.
+
+Seven dry Gemini 3.8 Flash TTS performances use authored Charon radio casting.
+Six first takes passed blind wording QA. The airborne take said “Mark one” and
+its second attempt “Mike one”; both remain excluded with their failure reports.
+The third attempt spells “M one” explicitly in the spoken script and passes a
+fresh blind transcription. On-screen M1 remains exact. Existing installer now
+selects a fingerprinted original bank plus an independently checked repair subset,
+validates unchanged selected cues/casting, and retains each source/QA/script hash.
+Tests reject altered scripts, missing repair and wrong repaired wording. Seven
+installed masters equal selected source WAVs byte-for-byte. All 409 previously
+committed WAV files also remain identical. The PC message banks now total 399.
+Human listening/mix approval remains open.
+
+An authored 950 Hz attention sample is requested only by original dispatcher 11
+at callers 3c97/3cdb. Queued RAM is never sent to speech. Radio uses the existing
+complete-current-pixel message proof with separate once-only identities, exact
+caption, source IP and fixed-pointer checks where applicable. The native-event
+observer itself was not changed; original gate, staleness, program epoch and
+bounded event ordering remain authoritative.
+
+Driving discovery had three inadequate probes, all retained: first used gunner
+controls, second stalled on a longer route, third stopped within the radius but
+outside the required trigger cell. The corrected probe entered the original
+cell and queued the airborne report. Frozen ordinary key inputs in
+`pc_radio_steps.json` include station reload, three R retrievals and F5 mute/restore.
+No terrain, health, position or trigger was bypassed. Overheating, engine damage
+and a later excessive-slope call occur under the actual original rules.
+
+`pc-radio-trace-01` and `pc-radio-baseline-01` match all 3,716 full paired
+RAM/video/input/queued records and final SIM state. Thirteen comparator checks
+pass. Notification fires at index 2614 without speech; unopened queue identity
+3 never becomes public. Displayed report identities 4/5/6 appear at indices
+2868/3145/3482 with gates true/false/true. Tests mutate source records, timing,
+identity, wording, pointers, gate, notification speech and premature disclosure.
+This restored in-mission route does not establish disk-dependent outcomes.
+
+Native `pc-radio-native-01` passes 26,142 checks, terminal exit 0 with child 0.
+Every original RAM/video boundary and audio event equals the trace. Current
+message pixel hashes, Genesis cockpit and high-resolution radio type are checked.
+One notification sample and two generated voice streams start; one muted report
+is consumed, with 98 silent frames after F5 restore before fresh R retrieval.
+Other six radio captions still lack live occurrences. Original overheating and
+slope calls now have source occurrence evidence; their individual native-player
+start assertions are not part of this radio-specific test.
+
+The implementing assistant reviewed their own native radio image. Radio type,
+cockpit and restrained ammunition bindings are present. The same view reveals
+coarse original green checkerboard terrain across the hillside. Final capture
+reports Genesis colours and terrain detail enabled, four terrain polygons and
+one hill polygon; this alone does not explain or excuse the retained original
+pixels. That visible presentation gap needs discriminating mask/draw evidence.
+No vehicle texture was enabled and no existing guard was weakened.
+
+`validation-20260928T115653Z` passes all 42 stages, terminal exit 0: 297 Python
+tests, 185,967 type checks, 14,003 gauges, 731 existing PC audio checks, 229 radio
+checks, 97 mix checks and 82 scheduling checks. Import, headless and native logs
+contain no script/parse/engine errors. Reference inventory and `git diff --check`
+pass. All owned jobs completed. Unrelated vehicle-study files and generated UIDs
+remain untouched. No optional design lint was needed for this audio-only change.
+
+Remaining whole-goal work includes the visible hillside gap, other graphics
+families, remaining dialogue/SFX/music, victories/campaign outcomes, historical
+and cross-hardware speed calibration, listening/art acceptance and packaging.

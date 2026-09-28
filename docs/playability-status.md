@@ -15,6 +15,7 @@ The authored calibration range is separate. The whole remaster is unfinished.
 | Weapons and motor audio | `artifacts/pc-play-default-audio-native-01/report.json`: 1,712 native frames, 3,426 loop checks, zero errors | Observed original cannon, coax, smoke, impact, loader and motor routes; missing cues remain silent |
 | Bearing speech | `artifacts/pc-full-bearings-native-01/report.json`: one original displayed 058 call starts its matching full-sentence take | All 360 bearing resources load and have wording QA; every bearing has not independently occurred in live combat |
 | Smoke-exhaustion warnings | `artifacts/pc-warning-trace-03/comparison.json`: 1,060 original frames equal the baseline; `pc-warning-native-02/report.json`: 7,549 checks, zero errors | Two native generated warning starts, one muted consumption and no F5 catch-up, with Genesis cockpit and portrait active. The other seven new warning/outcome calls lack live occurrence proof |
+| Radio arrival and retrieval | `artifacts/pc-radio-trace-01/comparison.json`: 3,716 original frames equal the baseline; `pc-radio-native-01/report.json`: 26,142 checks, zero errors | One attention sample, two generated voice starts and one muted retrieval; no F5 catch-up. All seven source captions have dry Gemini takes and wording QA; six lack live occurrence proof |
 | Shift+3 | `artifacts/pc-modifiers-trace-01/report.json`: all 530 RAM/video/input records equal the unmodified core | Original speed index cycles 0, 1, 2. Original scancode polling also selects AX. This side effect is preserved |
 | Plain vehicles | `artifacts/pc-vehicle-flat-play-01/verification.json`: original 1,679-frame close approach, zero textured vehicle polygons | Replacement models are deferred |
 | Adjustable audio mix | `artifacts/pc-audio-menu-native-04/menu-report.json`: all 15 checks pass using real macOS menu clicks; `pc-audio-mix-native-02/mix-report.json`: 1,020 original input/RAM/video records unchanged during nine mix changes | Native macOS verified; non-native menu layout rendered on macOS, other OS acceptance remains open; music is still unfinished |
@@ -36,9 +37,12 @@ bring this bank to 24 damage reports; all load and start native sample players,
 with individual live occurrence still unproven for those additions. Eight new
 Gemini 3.8 warning/outcome calls cover fuel, heat, boundaries, water, slopes,
 smoke availability and convoy destruction. Original portraits 0, 1 and 2 have
-authored Orus, Iapetus and Algenib casting. Only smoke exhaustion has live
-occurrence proof so far; the other seven have isolated source assignment and
-native playback checks. No mixed gameplay recordings are used as live samples.
+authored Orus, Iapetus and Algenib casting. Smoke exhaustion has live playback
+and parity proof; the Escort radio route also captures original overheating and
+steep-slope occurrences. Five other calls retain isolated source assignment and
+native playback checks. Seven radio captions use dry Gemini 3.8 Charon takes,
+with speech gated on the original displayed message and a separate attention
+sample on arrival. No mixed gameplay recordings are used as live samples.
 
 The app's Audio menu independently controls master, sound effects, crew voices,
 and engine/turret volume. 100% preserves the existing authored mix. Off stops
@@ -76,7 +80,8 @@ Diagnostic captures still exit nonzero on failures.
   and bounded expected-glyph reuse reduce presentation work without skipping any
   current source pixel, changing emulated CPU speed or batching live input.
 * Victories, additional defeats, campaign progression and longer-session outcomes.
-* Remaining dialogue, radio/warnings, music and listening/mix review. Volume
+* Remaining dialogue and warning sounds, wider radio/warning occurrence coverage,
+  music and listening/mix review. Volume
   controls are implemented; a finished musical arrangement and mix are not.
 * Remaining graphics families and transitions, preserving Genesis precedence and
   original PC visibility. Vehicle replacement is intentionally deferred.

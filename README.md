@@ -71,7 +71,9 @@ music and sound-effect references for a faithful presentation upgrade.
   The loader says “Up!” once a completed reload has a verified visible READY label.
   Generated full-sentence takes cover all 360 hit bearings, 24 damage reports and
   eight source-verified warnings/outcome calls, gated on complete original
-  displayed messages. Bearings speak
+  displayed messages. Seven original radio reports use dry Gemini speech; the
+  notification sounds on arrival, and R retrieves the original displayed report.
+  Bearings speak
   by digit, with both “nine” and “niner” accepted.
   F5 and original pause mute them; `--no-audio` disables remastered audio.
   The app's **Audio** menu controls master, effects, crew voices and engine/turret

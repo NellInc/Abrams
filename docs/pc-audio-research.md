@@ -21,11 +21,15 @@ Nine damage reports have live occurrence evidence; the 15 additions have origina
 isolated-routine, wording-QA and native-player coverage, not live occurrence proof.
 The warning bank adds authored voices for original portraits 0, 1 and 2.
 Smoke exhaustion has live source-parity, mute/restore and native-player proof;
-the other seven calls have assignment-block, wording and native-player checks.
-Their individual live occurrence remains unproven.
+The later Escort radio route also observes original overheating and steep-slope
+messages. The other five calls have assignment-block, wording and native-player
+checks; their individual live occurrence remains unproven.
 Bearings read each digit, with both nine and niner accepted. See
 `voice-workflow.md` for generation and installed-master custody.
-Radio, warning sounds, wider crew/readiness coverage, briefings and music remain.
+Seven original radio captions now have generated speech and a source-requested
+attention sample. The Escort airborne report has a 3,716-frame original parity
+comparison; six other captions have isolated routing/equipment-gate evidence.
+Warning sounds, wider crew/readiness coverage, briefings and music remain.
 Final mix and human listening approval are also open.
 
 Current native default-audio receipt:
@@ -62,6 +66,7 @@ return IP. A known number from an unfamiliar callsite stays unmapped.
 | 2, accepted coax shot | 32fa | machinegun | None |
 | 3, accepted smoke | 7c07 | smoke | Smoke out. |
 | 6 or 8, original impact dispatches | 6b25, 74e5, 7547 | impact | None |
+| 11, original radio notification | 3c97, 3cdb | radio | None; speech waits for a complete displayed report |
 | 14, original menu-selection dispatches | 15e4, 15ff, 1640, 814d, 81cf, 81f3 | switch | None |
 
 The initial firing probe directly exercises cannon, coax and smoke. The later
@@ -79,7 +84,7 @@ Consequently a key press alone never triggers remastered firing audio.
 
 ## Transport and playback
 
-Protocol 4 carries an `audio` envelope, now schema 3 for visible-readiness and crew-message events.
+Protocol 4 carries an `audio` envelope, now schema 3 for visible-readiness, crew and radio message events.
 The native sound-event layout is unchanged. The tracing build manifest
 advertises `audio_event_schema: 1`; the live host refuses an older local tracing
 build with a rebuild instruction and also requires `text_event_schema: 2` and
@@ -483,3 +488,55 @@ M1/M one recognition-format correction and reproducible source/native checks
 are documented in [the voice workflow](voice-workflow.md#source-warnings-and-outcome-calls-28-september-2026).
 Other warnings' live occurrences, radio, remaining dialogue, music and listening
 acceptance remain open.
+
+
+## Radio selection, equipment gating and visible speech
+
+`tools/pc_radio_voice_oracle.py` executes the complete original 3c46 scenario
+selection, 3cb2 fixed-string queue and 3f62 retrieval routines. Each scenario's
+three-byte directory entries and string bytes are copied unchanged into isolated
+caller-owned memory. This has no effect on a live game. The source's backend 2
+avoids a host sound device, while the original dispatcher calls are still observed.
+
+Eight scenario entries with flag 4 supply five distinct radio captions. SIM
+pointers 0211 and 023d supply “Abort mission.” and “The mission is complete!”.
+All ten entries are tested with radio condition 0, 1 and 2. Condition 2 suppresses
+the queue and notification; 0 and 1 queue the selected string. Original pending
+timer 6468 becomes 15. Queue completion is 3c90 for scenarios or 3cd4 for fixed
+strings; the following dispatcher-11 return is 3c97 or 3cdb. R retrieval at 3f62
+requires a pending pointer, sets 0950, emits identity at 3f73 and sets timer 6466
+to 3. The FFFF scenario no-message sentinel stays silent. All 30 cases match the
+committed oracle fixture, with original stack balance checked.
+
+The live source route enters Escort (SNARIO5), changes to driver, and sends a
+frozen sequence of ordinary steering/throttle inputs. The original activation
+routine requires the trigger's map cell as well as its radius, so merely reaching
+an adjacent cell within the numerical radius is insufficient. No coordinates,
+health, triggers or original instructions are patched. The drive itself produces
+original overheating and engine damage; later it reports an excessive slope.
+These are preserved outcomes of this diagnostic route, not remaster physics.
+
+The route queues the airborne report, returns to gunner, retrieves it with R,
+then repeats retrieval under F5 mute and after F5 restore. Its initial neutral
+frame matches the production host's ready packet. `pc-radio-trace-01` and
+`pc-radio-baseline-01` compare all 3,716 paired input/RAM/video/queued records,
+with matching final SIM state. Thirteen checks pass in `comparison.json`.
+Original notification occurs at index 2614 with no voice. Unopened queue identity
+3 is never public. Complete displayed radio identities 4, 5 and 6 first appear at
+indices 2868, 3145 and 3482, with sound gates true, false and true. Their current
+source pointer is bcce. Mutation tests reject changed frame data, timing, words,
+source, mute gate, notification speech or premature queue disclosure.
+
+The restored mission snapshot proves this bounded in-mission route only. It does
+not establish disk-dependent outcomes, campaign progression or six other radio
+captions' live occurrence. Original full instructions continue to own those flows.
+
+
+Native `pc-radio-native-01/report.json` completes 26,142 checks with zero errors.
+Every source RAM/video boundary and audio request equals the comparator's trace.
+The current radio text pixels, high-resolution type and Genesis cockpit are
+verified. One notification stream and two voice streams start; one muted report
+is consumed and the 98 post-restore/pre-retrieval frames stay silent. The native
+process and its source child exit 0. Full validation
+`validation-20260928T115653Z` passes all 42 stages. Per-cue synthetic playback adds
+229 checks without claiming seven independent live radio occurrences.

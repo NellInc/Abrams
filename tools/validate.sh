@@ -136,6 +136,7 @@ run_check pc_menu_text ./tools/godot.sh --headless --quit-after 1200 --script re
 run_check geometry ./tools/godot.sh --headless --script res://tests/test_geometry.gd
 run_check audio ./tools/godot.sh --headless --script res://tests/test_audio.gd
 run_check pc_audio ./tools/godot.sh --headless --script res://tests/test_pc_audio.gd
+run_check pc_radio ./tools/godot.sh --headless --script res://tests/test_pc_radio.gd
 run_check pc_audio_mix ./tools/godot.sh --headless --script res://tests/test_pc_audio_mix.gd
 run_check audio_shutdown ./tools/godot.sh --headless --verbose --script res://tests/test_audio_shutdown.gd
 run_check runtime ./tools/godot.sh --headless --verbose -- --smoke-test

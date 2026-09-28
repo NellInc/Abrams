@@ -74,6 +74,15 @@ def effect(kind: str, seconds: float, seed: int) -> list[float]:
             x = 0.45*noise*math.exp(-t*3) + 1.2*low*math.exp(-t*7)
         elif kind == "switch":
             x = (noise*0.22 + math.sin(t*14000)*0.17)*math.exp(-t*90)
+        elif kind == "radio":
+            # Authored attention signal, with no encoded tactical information.
+            # The original radio dispatcher alone decides when it is requested.
+            x=0.0
+            for at,duration in [(0.02,0.055),(0.13,0.055),(0.24,0.055),(0.39,0.16)]:
+                age=t-at
+                if 0<=age<duration:
+                    envelope=min(1.0,age/0.005,(duration-age)/0.008)
+                    x+=0.3*envelope*math.sin(TAU*950*age)
         elif kind == "turret":
             # Periodic hydraulic motor/gear harmonics, separate from the turbine.
             # Integer frequencies and modulation keep the 2-second loop seamless.
@@ -105,7 +114,7 @@ def main() -> None:
         raise SystemExit("Existing generative speech is protected from scratch-voice replacement")
     manifest.pop("sample_rate", None)
     manifest["effects_sample_rate"] = RATE
-    for i, (kind, duration) in enumerate({"cannon":2.4,"impact":2.8,"machinegun":0.22,"reload":0.85,"smoke":1.3,"switch":0.12,"engine":2.0,"turret":2.0}.items()):
+    for i, (kind, duration) in enumerate({"cannon":2.4,"impact":2.8,"machinegun":0.22,"reload":0.85,"smoke":1.3,"switch":0.12,"engine":2.0,"turret":2.0,"radio":0.65}.items()):
         path = OUT / f"{kind}.wav"
         pcm(path, effect(kind, duration, 1988+i), loop=kind in ("engine", "turret"))
         manifest["effects"][kind] = {"sha256":hashlib.sha256(path.read_bytes()).hexdigest(), "source":"original mathematical synthesis, tools/build_audio.py"}

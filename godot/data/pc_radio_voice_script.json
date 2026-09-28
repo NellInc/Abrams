@@ -1,0 +1,155 @@
+{
+  "scope": "Seven original radio captions from eight scenario entries and two SIM strings. Selected routing/equipment/retrieval proven by isolated original instructions; live eligibility and occurrence are separate. Speech requires complete pixel-verified radio text, never queued contents.",
+  "roles": {
+    "Radio": {
+      "voice": "Charon",
+      "style": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise."
+    }
+  },
+  "cues": {
+    "pc_radio_radar_hind": {
+      "role": "Radio",
+      "caption": "Radar shows hind entering your sector!",
+      "text": "Radar shows hind entering your sector!",
+      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "assignment_ips": [
+        15504,
+        16243
+      ],
+      "evidence": [
+        {
+          "resource": "SNARIO0.SSS",
+          "caption": "Radar shows hind entering your sector!",
+          "index": 0
+        }
+      ]
+    },
+    "pc_radio_killed_another": {
+      "role": "Radio",
+      "caption": "you killed another one",
+      "text": "you killed another one",
+      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "assignment_ips": [
+        15504,
+        16243
+      ],
+      "evidence": [
+        {
+          "resource": "SNARIO1.SSS",
+          "caption": "you killed another one",
+          "index": 0
+        }
+      ]
+    },
+    "pc_radio_hind": {
+      "role": "Radio",
+      "caption": "M1, hind spotted your sector!",
+      "text": "M1, hind spotted your sector!",
+      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "assignment_ips": [
+        15504,
+        16243
+      ],
+      "evidence": [
+        {
+          "resource": "SNARIO2.SSS",
+          "caption": "M1, hind spotted your sector!",
+          "index": 0
+        },
+        {
+          "resource": "SNARIO3.SSS",
+          "caption": "M1, hind spotted your sector!",
+          "index": 0
+        },
+        {
+          "resource": "SNARIO4.SSS",
+          "caption": "M1, hind spotted your sector!",
+          "index": 1
+        },
+        {
+          "resource": "SNARIO7.SSS",
+          "caption": "M1, hind spotted your sector!",
+          "index": 0
+        }
+      ]
+    },
+    "pc_radio_airborne": {
+      "role": "Radio",
+      "caption": "M1, object airborne your sector!",
+      "text": "M one, object airborne your sector!",
+      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "assignment_ips": [
+        15504,
+        16243
+      ],
+      "evidence": [
+        {
+          "resource": "SNARIO5.SSS",
+          "caption": "M1, object airborne your sector!",
+          "index": 1
+        }
+      ]
+    },
+    "pc_radio_party": {
+      "role": "Radio",
+      "caption": "Hey guys, glad you made the party.",
+      "text": "Hey guys, glad you made the party.",
+      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "assignment_ips": [
+        15504,
+        16243
+      ],
+      "evidence": [
+        {
+          "resource": "SNARIO5.SSS",
+          "caption": "Hey guys, glad you made the party.",
+          "index": 2
+        }
+      ]
+    },
+    "pc_radio_abort": {
+      "role": "Radio",
+      "caption": "Abort mission.",
+      "text": "Abort mission.",
+      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "assignment_ips": [
+        15572,
+        16243
+      ],
+      "evidence": [
+        {
+          "resource": "SIM.EXE",
+          "caption": "Abort mission.",
+          "pointer": 529
+        }
+      ],
+      "source_variants": [
+        [
+          529
+        ]
+      ]
+    },
+    "pc_radio_complete": {
+      "role": "Radio",
+      "caption": "The mission is complete!",
+      "text": "The mission is complete!",
+      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "assignment_ips": [
+        15572,
+        16243
+      ],
+      "evidence": [
+        {
+          "resource": "SIM.EXE",
+          "caption": "The mission is complete!",
+          "pointer": 573
+        }
+      ],
+      "source_variants": [
+        [
+          573
+        ]
+      ]
+    }
+  }
+}

@@ -12,6 +12,7 @@ except ModuleNotFoundError:
 
 # Return IPs immediately after verified near calls to 0000:9107.
 SAMPLES = {
+    (11, 0x3C97): ('radio', None), (11, 0x3CDB): ('radio', None),
     (1, 0x33C4): ('cannon', 'on_the_way'),
     (2, 0x32FA): ('machinegun', None),
     (3, 0x7C07): ('smoke', 'smoke'),
