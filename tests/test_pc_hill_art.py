@@ -35,7 +35,7 @@ class HillSourceTests(unittest.TestCase):
                               (172, 170, 0): sample.width * sample.height // 2})
 
     @unittest.skipUnless((ROOT / "GAME/SHAPE.TBL").exists(), "Local original required")
-    def test_complete_hill_family_matches_original_shapes(self):
+    def test_known_hill_and_plateau_families_match_original_shapes(self):
         raw = (ROOT / "GAME/SHAPE.TBL").read_bytes()
         self.assertEqual(hashlib.sha256(raw).hexdigest(),
                          "81cf10917d8647e8ac187e49887494992828277333f17d6c1926e59581f0a193")
@@ -44,7 +44,7 @@ class HillSourceTests(unittest.TestCase):
         actual = ast.literal_eval(re.search(r"const HILLS := (\{.*?\})\n", script, re.S)[1])
         vertical = ast.literal_eval(re.search(r"const HILL_VERTICAL := (\{.*?\})\n", script, re.S)[1])
         expected_vertical = {}
-        self.assertEqual(set(actual), set(range(2, 34)))
+        self.assertEqual(set(actual), set(range(2, 34)) | set(range(55, 72)))
         faces = 0
         for index, (root, primitives) in actual.items():
             shape = shapes[index]
@@ -67,9 +67,30 @@ class HillSourceTests(unittest.TestCase):
                     self.assertTrue(normal[0] == 0 or normal[1] == 0)
                     expected_vertical[p["offset"]] = 8 if normal[0] else 9
                 faces += 1
-        self.assertEqual(faces, 49)
+        self.assertEqual(faces, 81)
         self.assertEqual(vertical, expected_vertical)
-        self.assertEqual(len(vertical), 17)
+        self.assertEqual(len(vertical), 32)
+
+    def test_raised_terrain_has_exact_genesis_face_and_material_correspondence(self):
+        from tools.extract_genesis_models import directory,program,neutral_geometry,geometry_union,compare_pc
+        rom=(ROOT/'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').read_bytes()
+        entries=directory(rom);models=[]
+        for i in range(55,72):
+            commands=program(rom,entries[i]['offset'],0x4dfe0,0x7755c)
+            pose=neutral_geometry(commands,entries[i]['offset'])
+            self.assertEqual(pose['projected_indices'],list(range(len(pose['projected_indices']))))
+            pose.update(geometry_union(commands,pose))
+            self.assertEqual(pose['unmeshed_commands'],[])
+            models.append({'index':i,'poses':[pose]})
+        proof=compare_pc(models,ROOT/'GAME/SHAPE.TBL');faces=0
+        for row in proof['models']:
+            self.assertEqual(row['pc_vertices_absent'],[])
+            self.assertEqual(row['pc_polygons_absent'],[])
+            self.assertEqual(row['genesis_extra_polygons'],[])
+            self.assertEqual(row['pc_unique_polygons'],row['matching_unique_polygons'])
+            self.assertTrue(all(p['material_plus_16_matches'] for p in row['polygon_links']))
+            faces+=row['pc_unique_polygons']
+        self.assertEqual(faces,32)
 
 
 if __name__ == "__main__":

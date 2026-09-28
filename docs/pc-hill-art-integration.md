@@ -4,7 +4,8 @@
 
 The default tandem view now resolves enlarged hillside checkerboards into their
 continuous source colour, with restrained, authored surface detail. This covers
-49 filled faces across PC shapes 2 through 33. The original facets, silhouette,
+81 filled faces across PC shapes 2 through 33 and 55 through 71. The later
+plateau extension is documented below. The original facets, silhouette,
 triangle order, visibility, source material identities and gameplay remain under
 the original executable's control. No new rocks, vegetation, lighting, collision
 or geometry are introduced.
@@ -172,3 +173,85 @@ python3 -m unittest tests.test_pc_hill_art -v
 All original reference files, local extracts and rejected/earlier evidence are
 preserved. Generated imagery and references remain local and ignored. No push,
 publication, redistribution or finished-release claim is part of this work.
+
+
+## Raised plateau and adjoining slope extension (28 September 2026)
+
+Review of the native radio route exposed coarse green checkerboards on the
+Escort bridge approach. The initial 2..33 hill mapping omitted the raised terrain
+family at 55..71. The world mesh was active; this was its deliberately retained
+original material pattern, rather than the cockpit mask copying the ground.
+Only 24 of 9,840 pixels in a sampled ground rectangle carried UI ownership (the
+reticle). The earlier radio ledger's cause remained unverified until this check.
+
+All 17 source shapes and 32 filled faces now use the same restrained terrain
+treatment. Independent parsing verifies roots, primitive/material pairs and raw
+vertices. Fifteen additional vertical faces get a source-fixed XZ/YZ projection,
+bringing the full mapping to 81 faces and 32 vertical planes. The three close
+plateau tops in the reported view are source shapes 59, 60 and 62. This adds no
+new geometry, filtering of visibility, tactical information, or vehicle texture.
+
+The already-recovered Genesis drawing VM also contains all 17 counterparts.
+Existing command decoding, neutral construction and polygon-union helpers find
+all 32 exact face cycles under Genesis XYZ to PC XZY conversion, without missing
+or additional faces. Every linked Genesis material ID equals PC material+16.
+The source test verifies these correspondences independently of the GDScript
+lookup. This is static source correspondence, not a new Genesis gameplay run.
+`artifacts/pc-embankment-work-01/correspondence.json` retains the primitive links.
+An initial exploratory helper call omitted the neutral vertices when assembling
+the comparison input and raised `KeyError: vertices`; merging both documented
+helper outputs corrected that research script. No production parser was changed.
+
+Existing generated hill imagery is reused unchanged. No image edit, new bitmap,
+shader change, vehicle panel or new artistic object was introduced. Unknown
+source identities, thermal palettes and missing assets retain the previous
+fallback; `--original-hills` still disables the whole hill/plateau treatment.
+
+The native hill test adds two original Escort viewpoints at 4x and 5x. Together
+with its earlier views it checks 6,874,880 pixels, with 956,145 hill pixels changed
+and all 5,918,735 pixels outside visible selected faces exact. Ten cases show
+visible remastered terrain and two are fully occluded. All 5,999,173 checks pass,
+including the prior geometry/order, exact mean-colour, two-axis vertical anchoring,
+unknown-palette and painter-order regressions. Native receipt:
+`artifacts/pc-embankment-native-01/report.json`.
+
+```sh
+python3 -m unittest tests.test_pc_hill_art -v
+./tools/godot.sh --disable-render-loop \
+  --script res://tests/test_pc_hill_art.gd -- --native \
+  --radio-fixture "$PWD/artifacts/pc-radio-trace-01/report.json" \
+  --output "$PWD/artifacts/pc-embankment-native-new"
+```
+
+The production viewer then reran the complete 3,716-frame radio route after the
+mapping change. `pc-radio-native-02/report.json` again passes all 26,142 checks,
+with native and child exit 0. Every paired original RAM/video boundary and every
+audio request still matches the untouched-PC comparison. Final full source
+presentation, state and audio metadata equal the earlier native capture. Only
+the terrain counters differ, with 11 rather than one selected hill/plateau faces.
+Vehicles still have zero textured polygons.
+
+The before/after composite comparison changes 234,616 pixels in the first radio
+view, all inside the gunner viewport. The other two radio views and final frame
+also change only within that viewport. An initial check incorrectly required
+all source-mask UI pixels to stay opaque: 40 pixels at existing antialiased
+reticle edges (four in the final frame) blend with the changed ground. Their
+coordinates and analytic fractional coverage were checked against the unchanged
+eight-stroke source geometry and existing shader. All opaque source HUD pixels
+remain identical in those two mask-verified captures. No reticle code or
+production ownership guard was changed to pass this check. The original failed
+receipt is retained. Final comparison uses any-channel RGB differences rather
+than lossy grayscale difference: all 12 checks pass at
+`artifacts/pc-embankment-work-01/live-comparison-v3.json`.
+
+The implementing assistant reviewed the full new cockpit capture and the
+isolated source-owned terrain view. This is self-review, with human visual and
+motion acceptance still open. `npx --offline --no-install impeccable detect
+godot/scripts` exited 0 with no diagnostic output; no GDScript-specific lint
+coverage is inferred from that empty result. No package was installed.
+
+`validation-20260928T120651Z` passes all 42 stages, terminal exit 0, including
+298 Python tests, source preservation and all original audio, type, instrument,
+terrain, reticle and scheduling gates. Native/aggregate logs contain no script,
+parse or engine errors. This closes the observed plateau-dither gap, while other
+unmapped world families and whole-game presentation acceptance remain open.

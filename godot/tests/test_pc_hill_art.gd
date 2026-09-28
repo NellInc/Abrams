@@ -123,6 +123,17 @@ func run() -> void:
 		await fallbacks(native_cases[0])
 		await mean_and_anchor(native_cases[0])
 		await vertical_anchor(native_cases[0])
+		if "--radio-fixture" in args:
+			var path: String=args[args.find("--radio-fixture")+1]
+			var radio: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
+			check(radio.get("profile")=="radio-retrieval","raised-terrain fixture has original radio provenance")
+			var selected: Array=radio.ui_presentations.filter(func(item):return int(item.frame_index) in [2868,3601])
+			check(selected.size()==2,"two original raised-terrain viewpoints")
+			for item: Dictionary in selected:
+				var data: Dictionary=item.presentation.draw_pass.duplicate(true)
+				data.palette_rgb=item.presentation.palette_rgb
+				check(data.objects.any(func(o):return int(o.shape_index) in [59,60,62]),"original plateau face is present")
+				for scale in [4,5]:await native_case(data,scale)
 	draw.apply_pass({"objects":[]})
 	check(draw.hill_polygon_count==0 and draw.mesh_node.mesh==null,"stale hills on missing frame")
 	finish()

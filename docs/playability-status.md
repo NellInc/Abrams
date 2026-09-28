@@ -28,6 +28,12 @@ around the heading display. Comparison of all 32 station images changed only
 the eight commander surrounds, leaving other pixels identical. See
 `artifacts/pc-commander-frame-join-01.json`.
 
+The Escort bridge approach no longer enlarges the original terrain checkerboard.
+Seventeen raised-plateau/slope shapes now share the source-bound hill treatment,
+with 32 exact Genesis face counterparts. All 3,716 original radio-route frames
+still match after the change; the opaque HUD and untextured vehicles are preserved.
+See `pc-hill-art-integration.md` for native image and source comparisons.
+
 Audio is enabled by default. `--no-audio` disables presentation audio. Original
 F5 and pause still govern the original sound gate. All 360 bearing calls use
 full-sentence generative TTS with digits spoken separately, including leading

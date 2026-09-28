@@ -2733,3 +2733,61 @@ remain untouched. No optional design lint was needed for this audio-only change.
 Remaining whole-goal work includes the visible hillside gap, other graphics
 families, remaining dialogue/SFX/music, victories/campaign outcomes, historical
 and cross-hardware speed calibration, listening/art acceptance and packaging.
+
+## Raised plateau dither repair (2026-09-28)
+
+Continued after local commit `2e40fc2` without requiring another “proceed”.
+The radio screenshot's checkerboard was diagnosed as an omitted shape family,
+not missing world rendering or a broken cockpit mask. Only 24 of 9,840 ground
+probe pixels had original UI ownership, corresponding to the sight. Godot was
+replaying original dither for raised terrain shapes 55..71, outside HILLS 2..33.
+
+Extended only the exact terrain identity table: 17 shapes, 32 faces and 15
+source-fixed vertical projection axes. The whole hill/plateau mapping is now
+49 shapes, 81 faces and 32 vertical planes. Reused the existing authored terrain
+image unchanged. No shader, original geometry, source code, visibility,
+physics, source file, vehicle texture or bitmap was changed.
+
+Existing Genesis extraction helpers recover counterparts for all 17 shapes.
+Independent tests find all 32 exact face cycles and source material+16 matches,
+without absent/extra polygons. PC roots, primitives, materials, vertex bounds
+and vertical normals are independently checked. A one-off comparison helper
+initially omitted its neutral vertices and failed with KeyError; combining the
+two existing documented outputs fixed the diagnostic. No parser workaround.
+
+`pc-embankment-native-01/report.json` passes 5,999,173 checks over 6,874,880
+pixels: 956,145 selected hill pixels change, all 5,918,735 outside pixels remain
+exact, ten visible and two fully occluded cases. Includes two actual Escort
+viewpoints at 4x/5x alongside the prior geometry/order, mean-colour, anchor,
+vertical-plane, clipping, palette-fallback and occlusion regression cases.
+
+`pc-radio-native-02` reruns the entire production viewer route with the new
+terrain mapping: 26,142 checks, 3,716 original frames, zero errors, native/child
+exit 0. All full original RAM/video boundaries and audio events remain exact.
+The final complete presentation, original state and audio metadata match native-01
+except terrain/hill counters; selected hill faces rise from 1 to 11. No vehicle
+receives a texture. The implementer visually reviewed their own full new cockpit
+and isolated terrain images, confirming the checkerboard is gone in this view.
+
+Initial source-UI A/B check failed at 40 first-view and four final-view pixels.
+Exact coordinates coincide with the unchanged reticle's analytic 0.8-coverage
+edges at fractional vertical scaling. These blend the underlying changed terrain.
+The revised diagnostic derives allowed fractional coverage from source strokes,
+requires all opaque source HUD pixels exact, and uses any-channel RGB difference.
+It does not exempt whole reticle rectangles or alter a production guard. Original
+failed and intermediate receipts remain. Final `live-comparison-v3.json` passes
+12 checks; all changes in three radio photographs and the final frame remain
+inside the viewport. First view has 234,616 changed pixels.
+
+`validation-20260928T120651Z` completes all 42 stages with exit 0 and 298 Python
+tests. Native/aggregate logs have no script/parse/engine errors; reference
+inventory and diff whitespace checks pass. Optional offline/no-install Impeccable
+detect exited 0 with empty output; GDScript coverage is not inferred. No packages
+were installed. All owned jobs are complete. Other untracked vehicle studies and
+UIDs remain preserved. Work is local only, with no release/publication claim.
+
+The observed plateau issue is repaired. The whole remaster remains unfinished:
+remaining graphics/effect and dialogue/music families, mission victories and
+campaign outcomes, historical/cross-hardware pacing, human art/listening review,
+and portable packaging are still required. The earlier image-tool rejection for
+the HEAT contour revision is a retained external art-production limitation.
