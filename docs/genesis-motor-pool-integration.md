@@ -63,6 +63,13 @@ numeric fields. Incorrect/partial glyphs retain their original pixels.
 
 `--original-text` disables these replacements and retains the original clipboard.
 
+The remastered panel displays `GOVERNOR OFF` with a word space. Its ON/OFF
+values share a right edge, using the panel's spare character cell without
+condensing the original-style glyphs. The exact original label and rectangle
+remain attached to the presentation run. This spacing is applied only after
+the entire original clipboard has passed its existing verification; original
+text mode and original game controls remain unchanged.
+
 ## Genesis arming-panel frame
 
 Completed, independently verified clipboard frames now use a scalable dark

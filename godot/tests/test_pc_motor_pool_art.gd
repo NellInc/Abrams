@@ -8,6 +8,7 @@ var backdrop: TextureRect
 var art: TextureRect
 var output: String
 var native := false
+var governor_states := {}
 var outlines = preload("res://tests/pc_outline_oracle.gd").new()
 
 func check(ok: bool, why: String) -> void:
@@ -119,6 +120,17 @@ func run() -> void:
 		if art.text_enabled and entry.label!="boot-21" and not entry.label.ends_with("-press"):
 			check(art.typography.runs.size()==7,"seven original clipboard text runs: "+str(art.typography.runs.map(func(r):return r.text)))
 			check(art.arming_panel.active,"complete original panel enables Genesis frame: "+entry.label)
+		if art.arming_panel.active:
+			for run in art.typography.runs:
+				if not run.text.begins_with("GOVERNOR"): continue
+				check(run.text in ["GOVERNOR OFF","GOVERNOR  ON"],"governor has an actual word space")
+				check(run.source_text in ["GOVERNOROFF","GOVERNOR ON"] and run.source_rect==Rect2(245,170,66,6),"exact source label and cell evidence retained")
+				check(run.text==("GOVERNOR OFF" if run.source_text=="GOVERNOROFF" else "GOVERNOR  ON"),"spacing cannot change governor state")
+				check(run.rect==Rect2(245,170,72,6) and run.cell_size==Vector2i(6,6) and run.rect.size.x==run.text.length()*6,"full-size glyphs, aligned values, no condensed type")
+				check(art.arming_panel.PANEL_RECT.grow(-1).encloses(run.rect),"spaced label stays clear of panel border")
+				var label: Control=art.typography.labels[art.typography.runs.find(run)]
+				check(label.size==run.rect.size*Vector2(4,4),"expanded label is not clipped at the old width")
+				governor_states[run.source_text+str(run.foreground==Color.BLACK)]=true
 		var mask := Image.new()
 		mask.load_png_from_buffer(Marshalls.base64_to_raw(entry.presentation.plate_overlay.mask_png))
 		if native: await render(source,mask,entry.label)
@@ -130,6 +142,7 @@ func run() -> void:
 			var rim_changed := source.duplicate();rim_changed.set_pixel(241,150,Color.MAGENTA)
 			check(art.set_frame(rim_changed,program,entry.presentation),"changed rim retains eligible Genesis background")
 			check(not art.arming_panel.active,"one changed rim pixel rejects menu replacement")
+			check(not art.typography.runs.any(func(r):return r.has("source_text")),"spacing never escapes the complete-panel proof")
 			var bottom_changed := source.duplicate();bottom_changed.set_pixel(312,199,Color.MAGENTA)
 			var bottom_packet: Dictionary=entry.presentation.duplicate(true)
 			var bottom_tags := mask.duplicate()
@@ -161,6 +174,7 @@ func run() -> void:
 		check(not art.visible and art.active.is_empty(),"failure clears stale background")
 	var expected_count := 27 if data.samples.size()==74 else 11 if data.samples.size()==58 else 5
 	check(coverage==expected_count,"first load, controls, partial clipboard, complete clipboard and mission reentry covered")
+	if art.text_enabled and data.samples.size()==58:check(governor_states.size()==4,"OFF/ON, selected/unselected all checked")
 	check(not art.load_sources(root_path.path_join("artifacts/missing-frontends")),"missing sources rejected")
 	check(art.motor_catalog.is_empty() and not art.visible,"missing source clears stale motor pool")
 	if native:

@@ -266,13 +266,20 @@ func set_motor_pool_menu(source: Image, ui: Image, tags: Image) -> void:
 
 func use_genesis_menu_style() -> void:
 	# Only called after the complete clipboard and all seven source runs pass.
-	# Source glyph/state evidence is unchanged; these are presentation colours.
+	# Source glyph/state evidence is unchanged; layout edits stay in that panel.
 	for run in runs:
 		var focused: bool=run.background.is_equal_approx(Color(170.0/255,0,0))
 		var heading: bool=run.text in ["SELECT","ARMING MIX"]
+		if run.text in ["GOVERNOROFF","GOVERNOR ON"] and run.rect==Rect2(245,170,66,6):
+			# The PC packs OFF against the label. Use the panel's spare cell for
+			# a real word space, retaining full-size glyphs and a right-aligned state.
+			run.source_text=run.text
+			run.source_rect=run.rect
+			run.text="GOVERNOR OFF" if run.text=="GOVERNOROFF" else "GOVERNOR  ON"
+			run.rect=Rect2(245,170,72,6)
 		run.background=Color(238.0/255,238.0/255,238.0/255) if focused else Color(98.0/255,101.0/255,98.0/255) if heading else Color.BLACK
 		run.foreground=Color.BLACK if focused else Color(238.0/255,238.0/255,238.0/255)
-	for label in labels: label.queue_redraw()
+	_layout()
 
 static func integers(value: Variant, count: int, low: int, high: int) -> bool:
 	if not value is Array or value.size()!=count: return false
