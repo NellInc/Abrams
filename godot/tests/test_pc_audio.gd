@@ -41,7 +41,7 @@ func _initialize() -> void: run.call_deferred()
 func run() -> void:
 	var audio := PcAudio.new()
 	root.add_child(audio)
-	check(audio.crew_catalogue.size()==392,"24 damage reports, 360 bearings and eight warnings/outcome calls")
+	check(audio.crew_catalogue.size()==442,"24 damage, 360 bearings, eight warnings and 50 remaining source calls")
 	for cue: String in audio.crew_catalogue:
 		check(audio.get_stream("voice_"+cue)!=null,"generated full-sentence resource: "+cue)
 	var warnings: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_warning_voice_script.json"))

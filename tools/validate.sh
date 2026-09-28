@@ -108,6 +108,8 @@ run_check pc_camera ./tools/godot.sh --headless --script res://tests/test_pc_cam
 run_check pc_play_display ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_play_display.gd
 run_check pc_frame_pacing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_frame_pacing.gd
 run_check pc_live_scheduling ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_live_scheduling.gd
+run_check pc_play_menu ./tools/godot.sh --headless --script res://tests/test_pc_play_menu.gd
+run_check pc_graphics_modes ./tools/godot.sh --headless --script res://tests/test_pc_graphics_modes.gd
 run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_draw_pass.gd
 run_check pc_surfaces ./tools/godot.sh --headless --script res://tests/test_pc_surfaces.gd
 run_check pc_colour ./tools/godot.sh --headless --script res://tests/test_pc_colour.gd
@@ -138,6 +140,8 @@ run_check audio ./tools/godot.sh --headless --script res://tests/test_audio.gd
 run_check pc_audio ./tools/godot.sh --headless --script res://tests/test_pc_audio.gd
 run_check pc_radio ./tools/godot.sh --headless --script res://tests/test_pc_radio.gd
 run_check pc_audio_mix ./tools/godot.sh --headless --script res://tests/test_pc_audio_mix.gd
+run_check pc_frontend_music ./tools/godot.sh --headless --script res://tests/test_pc_frontend_music.gd
+run_check pc_remaining_audio ./tools/godot.sh --headless --script res://tests/test_pc_remaining_audio.gd
 run_check audio_shutdown ./tools/godot.sh --headless --verbose --script res://tests/test_audio_shutdown.gd
 run_check runtime ./tools/godot.sh --headless --verbose -- --smoke-test
 printf 'VALIDATION_COMPLETE %s\n' "$OUT"

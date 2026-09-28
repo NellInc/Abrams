@@ -39,7 +39,7 @@ func run() -> void:
 	menu.config_path=""
 	check(menu.load_settings() and menu.settings==Menu.DEFAULTS,"diagnostics ignore user preferences")
 	root.add_child(menu)
-	check(menu.get_menu_count()==1 and menu.menus.size()==4,"one external Audio menu, four gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==5,"one external Audio menu, five gain groups")
 	check(menu.get_menu_title(0)=="Audio","menu title")
 	for child in [menu.popup]+menu.menus.values():
 		for i in child.item_count:
@@ -58,9 +58,9 @@ func run() -> void:
 	gain(audio.voice,0.65*0.8,"unchanged default voice gain")
 	gain(audio.engine,0.65*0.08,"unchanged default engine gain")
 	var sequence := [audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed]
-	for choice in [["master",50],["effects",20],["voice",70],["motors",30]]:
+	for choice in [["master",50],["effects",20],["voice",70],["motors",30],["music",60]]:
 		menu.menus[choice[0]].id_pressed.emit(choice[1])
-	check(menu.settings=={"master":50,"effects":20,"voice":70,"motors":30},"every callback controls its own channel")
+	check(menu.settings=={"master":50,"effects":20,"voice":70,"motors":30,"music":60},"every callback controls its own channel")
 	gain(audio.effects[0],0.65*0.5*0.2*0.6,"existing effect gain updates")
 	gain(audio.voice,0.65*0.5*0.7*0.8,"existing voice gain updates")
 	gain(audio.engine,0.65*0.5*0.3*0.08,"existing engine gain updates")

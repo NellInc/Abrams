@@ -14,6 +14,13 @@ const GENESIS_ART = {
 	3:["cupola","6daec85d79914aedbb28233c021beeaa2f478ea0db643b71625dc6bc3314ab0b"],
 	4:["driver","7429042e9b42eb89e340cf87e80632894d6d9f7a83a37c1bde99041190ecf1b2"],
 	5:["systems-status","b14de0de38209c593f2fcb59463428729ccd51f4af8ba9ccfd5c288307f93d83"]}
+var graphics_mode := "upscaled"
+var native_graphics = preload("res://scripts/pc_native_graphics.gd").new()
+var _cached_source: Image
+var _cached_presentation: Dictionary = {}
+var _cached_world: Texture2D
+var _cached_program: Dictionary = {}
+var _upscaled_material: Material
 var world_enabled := false
 var fallback_reason := "awaiting original framebuffer"
 const ART_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
@@ -49,6 +56,7 @@ func _init() -> void:
 	var shader_material := ShaderMaterial.new()
 	shader_material.shader = COMPOSITOR
 	material = shader_material
+	_upscaled_material = shader_material
 	add_child(instrument_art)
 	instrument_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(reticle_art)
@@ -59,6 +67,8 @@ func _init() -> void:
 	typography.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(frontend_art)
 	frontend_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(native_graphics)
+	native_graphics.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 func _fallback(reason: String) -> bool:
 	reticle_art.clear()
@@ -239,7 +249,42 @@ func _set_driver_assembly(presentation: Dictionary, ui: Image) -> void:
 	material.set_shader_parameter("driver_assembly_enabled", true)
 	driver_assembly_enabled = true
 
-func set_frame(source: Image, presentation: Dictionary, world: Texture2D) -> bool:
+func load_graphics_sources(root: String) -> bool:
+	return native_graphics.load_sources(root)
+
+func set_graphics_mode(mode: String) -> bool:
+	if mode not in ["ega","genesis","upscaled"]: return false
+	if mode=="genesis" and not native_graphics.loaded: return false
+	graphics_mode=mode
+	if _cached_source!=null:
+		set_frame(_cached_source,_cached_presentation,_cached_world,_cached_program)
+		present_frontend(_cached_program)
+	return true
+
+func present_frontend(program: Dictionary) -> bool:
+	var changed:=program!=_cached_program
+	_cached_program=program
+	if graphics_mode!="upscaled":
+		frontend_art.clear()
+		if graphics_mode=="genesis" and changed and _cached_source!=null:
+			native_graphics.set_frame(_cached_source,_cached_presentation,program)
+		return false
+	return frontend_art.set_frame(_cached_source,program,_cached_presentation)
+
+func set_frame(source: Image, presentation: Dictionary, world: Texture2D, program: Dictionary={}) -> bool:
+	_cached_source=source
+	_cached_presentation=presentation
+	_cached_world=world
+	_cached_program=program
+	material=_upscaled_material
+	for child in [instrument_art,reticle_art,portrait_art,typography]:child.visible=graphics_mode=="upscaled"
+	native_graphics.visible=graphics_mode=="genesis"
+	if graphics_mode!="upscaled":
+		_fallback("Untouched original EGA" if graphics_mode=="ega" else "Native Genesis donors with original PC fallback")
+		material=null
+		texture=ImageTexture.create_from_image(source) if source!=null and not source.is_empty() else null
+		if graphics_mode=="genesis":native_graphics.set_frame(source,presentation,program)
+		return texture!=null
 	frontend_art.clear()
 	texture = ImageTexture.create_from_image(source) if source != null and not source.is_empty() else null
 	if texture == null or source.get_size() != Vector2i(320, 200):

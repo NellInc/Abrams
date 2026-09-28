@@ -26,8 +26,30 @@ def normalized(text):
 def wording_matches(transcript, expected):
     # The tank designation M1 is spoken "M one". This is an explicit lexical
     # equivalence, not general number normalization (bearings stay digit words).
-    if re.search(r'\bM1\b',expected,re.I):
+    if re.search(r'(?<![a-z0-9])M1(?![-a-z0-9])',expected,re.I):
         transcript=re.sub(r'\bM\s+one\b','M1',transcript,flags=re.I)
+    # "comm station" and "com station" spell the same spoken source abbreviation.
+    # Keep the plural "comms station" distinct; the first rejected take used it.
+    if re.search(r'\bcom ?station\b', expected, re.I):
+        transcript=re.sub(r'\bcomm station\b','com station',transcript,flags=re.I)
+    # Exact model-designation spellings only, never general numeric folding.
+    # This permits a literal word transcript of a correct model designation while
+    # rejecting wrong numbers, suffixes and bearing whole-number substitutions.
+    designations = {
+        'T-62': (r'T sixty[ -]two',), 'T-64': (r'T sixty[ -]four',),
+        'T-72': (r'T seventy[ -]two',), 'T-80': (r'T eighty',),
+        'M1-A1': (r'M one[ -]A one',), 'M60a3': (r'M sixty[ -]A three',),
+        'M113': (r'M one[ -]one[ -]three', r'M one hundred (?:and )?thirteen'),
+        'M2': (r'M two',), 'BMP-1': (r'B[ .-]*M[ .-]*P[ -]*one',),
+        'BMP-2': (r'B[ .-]*M[ .-]*P[ -]*two',), 'BTR-70': (r'B[ .-]*T[ .-]*R[ -]*seventy',),
+        'ACRV-2': (r'A[ .-]*C[ .-]*R[ .-]*V[ -]*two',),
+        'BRDM-2': (r'B[ .-]*R[ .-]*D[ .-]*M[ -]*two',),
+        'BRDM-3': (r'B[ .-]*R[ .-]*D[ .-]*M[ -]*three',), 'A10': (r'A ten',),
+    }
+    for designation, variants in designations.items():
+        if re.search(r'(?<![a-z0-9])'+re.escape(designation)+r'(?![a-z0-9])', expected, re.I):
+            for variant in variants:
+                transcript = re.sub(r'(?<![a-z0-9])'+variant+r'(?![a-z0-9])', designation, transcript, flags=re.I)
     # Nell explicitly accepts aviation "niner" for a bearing/heading digit.
     # Keep the exception scoped to numeric calls; whole-number phrases still fail.
     if re.search(r'\b(?:bearing|heading)\b',expected,re.I):

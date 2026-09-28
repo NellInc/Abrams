@@ -1,0 +1,36 @@
+{
+  "scope": "Create five authored isolated SFX for qualified original dispatcher requests.\n\nNo semantic event name or exact historic timbre is claimed. Samples are entirely\nnew synthesis, no game recordings, ROM samples, speech or remote service.\n",
+  "builder_sha256": "b6449662d4df58906ad3b19e11e0efa8f4cfdf62696b03d3623b22b6a24091c7",
+  "samples": {
+    "pc_request_07": {
+      "request": 7,
+      "description": "descending rough pulse",
+      "sha256": "d8bf91945777ae7cbecdd536a318e025d551a5cd07ab40728a3c6f303bc10f11",
+      "source": "Original mathematical synthesis"
+    },
+    "pc_request_09": {
+      "request": 9,
+      "description": "short percussive report",
+      "sha256": "fa9ef03e733c212615af27c1766f0045b679b5aa0ea036babf032ce9edfe5922",
+      "source": "Original mathematical synthesis"
+    },
+    "pc_request_10": {
+      "request": 10,
+      "description": "low percussive report",
+      "sha256": "584f5e057e400c1c6ee66a2d344072222370112c93066e82c6584846e2fa02c3",
+      "source": "Original mathematical synthesis"
+    },
+    "pc_request_15": {
+      "request": 15,
+      "description": "alternating attention pulse",
+      "sha256": "15daec1457ce618826cc63b554e1320ad0caa6afa205fab9f4b9095937d34538",
+      "source": "Original mathematical synthesis"
+    },
+    "pc_request_16": {
+      "request": 16,
+      "description": "double control click",
+      "sha256": "9f65b9ea711a3185e4bc46c5c278e7a06716fb4cc3e156912b271649175953e0",
+      "source": "Original mathematical synthesis"
+    }
+  }
+}

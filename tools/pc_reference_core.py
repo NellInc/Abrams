@@ -280,6 +280,53 @@ class PcReferenceCore:
         self.last_video = self.last_video_ram = None
         self.pause_at_frame_end()
 
+    def local_overlay(self, operation):
+        """Pinned checkpoint ABI; caller owns the exclusive overlay lock."""
+        self.pause_at_frame_end()
+        abi = self.core.abrams_state_overlay_abi
+        abi.restype = C.c_uint
+        if abi() != 1: raise ValueError("unsupported checkpoint overlay ABI")
+        function = getattr(self.core, 'abrams_state_' + operation + '_overlay')
+        function.argtypes = []
+        function.restype = C.c_bool
+        if not function(): raise ValueError("Native checkpoint overlay " + operation + " failed")
+        self.pause_at_frame_end()
+
+    def serialize_local(self):
+        """Native bytes at the paused logical boundary, without keyboard edits."""
+        self.pause_at_frame_end()
+        size = self.core.retro_serialize_size()
+        if not 0 < size <= 128 * 1024 * 1024:
+            raise ValueError("invalid serialized-state size")
+        state = C.create_string_buffer(size)
+        if not self.core.retro_serialize(state, size):
+            raise ValueError("The original game is not ready for a checkpoint yet")
+        self.pause_at_frame_end()
+        return state.raw
+
+    def restore_local(self, raw, keys, frame, ram_sha256):
+        """Validated local checkpoint, separate from the neutral research guard.
+
+        A fresh process is mandatory: the upstream library cannot safely be
+        unloaded and reinitialized in one process. Establish physical inputs
+        before restore so its keyboard reconciliation preserves held keys.
+        """
+        if not 0 < len(raw) <= 128 * 1024 * 1024:
+            raise ValueError("invalid saved-state size")
+        if (not isinstance(keys, list) or len(keys) > 16 or len(set(keys)) != len(keys)
+                or any(key not in KEYS for key in keys)):
+            raise ValueError("invalid checkpoint keyboard set")
+        self.set_keys(keys)
+        self.pause_at_frame_end()
+        buffer = C.create_string_buffer(raw)
+        if not self.core.retro_unserialize(buffer, len(raw)):
+            raise ValueError("DOS core rejected checkpoint")
+        self.pause_at_frame_end()
+        if hashlib.sha256(self.conventional_memory()).hexdigest() != ram_sha256:
+            raise ValueError("Restored RAM does not match the checkpoint")
+        self.frame = frame
+        self.last_video = self.last_video_ram = None
+
     def close(self):
         self.core.retro_unload_game()
         self.core.retro_deinit()

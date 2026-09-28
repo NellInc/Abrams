@@ -10,7 +10,7 @@ func _capture() -> void:
 	var presentation := previous_presentation.duplicate(true)
 	audio_menu.config_path=output.path_join("audio-preferences.cfg")
 	audio_menu.refresh()
-	var wanted := {"master":100,"effects":40,"voice":70,"motors":100}
+	var wanted := {"master":100,"effects":40,"voice":70,"motors":100,"music":70}
 	print("PC_AUDIO_MENU_READY: select Sound effects 40% and Crew voices 70%")
 	var deadline := Time.get_ticks_msec()+240000
 	while Time.get_ticks_msec()<deadline and (audio_menu.settings!=wanted or not audio_menu.open_menus.is_empty()):

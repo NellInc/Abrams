@@ -1,0 +1,56 @@
+{
+  "source_sha256": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099",
+  "unpack": {
+    "source_sha256": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099",
+    "decoded_sha256": "33f5f41dd5f5579d29cccc7e2f6f6942a9463883afca0c3a838c1b6ccc321eea",
+    "relocated_sha256": "777097ff83a8eafb83dfa075195d2238dbab77caced64d22d3707b29607f6002",
+    "decoded_bytes": 129712,
+    "relocations": 671,
+    "status": "exact CPU comparison"
+  },
+  "scope": "Execute exact original argument-producing blocks until the sound dispatcher.\n\nNo original instructions replaced. Proves source request/return-IP identity,\nnot branch eligibility, historic timing, semantic meaning or live occurrence.\n",
+  "rows": [
+    {
+      "entry_ip": 6602,
+      "return_ip": 6609,
+      "request": 7,
+      "sample": "pc_request_07"
+    },
+    {
+      "entry_ip": 1312,
+      "return_ip": 1319,
+      "request": 9,
+      "sample": "pc_request_09"
+    },
+    {
+      "entry_ip": 2413,
+      "return_ip": 2420,
+      "request": 10,
+      "sample": "pc_request_10"
+    },
+    {
+      "entry_ip": 30601,
+      "return_ip": 30608,
+      "request": 10,
+      "sample": "pc_request_10"
+    },
+    {
+      "entry_ip": 840,
+      "return_ip": 847,
+      "request": 15,
+      "sample": "pc_request_15"
+    },
+    {
+      "entry_ip": 33298,
+      "return_ip": 33305,
+      "request": 16,
+      "sample": "pc_request_16"
+    },
+    {
+      "entry_ip": 33359,
+      "return_ip": 33366,
+      "request": 16,
+      "sample": "pc_request_16"
+    }
+  ]
+}

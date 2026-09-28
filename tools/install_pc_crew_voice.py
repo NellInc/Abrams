@@ -13,11 +13,11 @@ import re
 try:
     from tools.check_crew_transcripts import normalized,wording_matches
     from tools.generate_crew_voice import validate_wav,pronounce_headings,PREFERRED
-    from tools.pc_crew_voice import SCRIPT,DAMAGE,WARNINGS,RADIO
+    from tools.pc_crew_voice import SCRIPT,DAMAGE,WARNINGS,RADIO,REMAINING
 except ModuleNotFoundError:
     from check_crew_transcripts import normalized,wording_matches
     from generate_crew_voice import validate_wav,pronounce_headings,PREFERRED
-    from pc_crew_voice import SCRIPT,DAMAGE,WARNINGS,RADIO
+    from pc_crew_voice import SCRIPT,DAMAGE,WARNINGS,RADIO,REMAINING
 
 DIGITS='zero one two three four five six seven eight nine'.split()
 ROOT=Path(__file__).resolve().parents[1]
@@ -51,11 +51,16 @@ def _generation(source,script_path):
             'qa':report,'delivery':delivery,'inputs':[f for f in (manifest_path,script_path,qa,numbers) if f.exists()]}
 
 
-def prepare(source,script_path=SCRIPT,*,source_script=None,repair=None):
+def prepare(source,script_path=SCRIPT,*,source_script=None,repair=None,additional=()):
     script=json.loads(script_path.read_text())
     base=_generation(source,source_script or script_path)
-    if base['manifest']['voices'].keys()!=script['cues'].keys():raise ValueError('catalogue coverage differs')
     batches=[base];selected={name:base for name in base['manifest']['voices']}
+    for source in additional:
+        batch=_generation(source,source_script or script_path)
+        names=batch['manifest']['voices'].keys()
+        if not names or set(names)&set(selected):raise ValueError('duplicate or empty additional generation source')
+        selected.update({name:batch for name in names});batches.append(batch)
+    if selected.keys()!=script['cues'].keys():raise ValueError('catalogue coverage differs')
     if repair is not None:
         replacement=_generation(repair,script_path)
         names=replacement['manifest']['voices'].keys()
@@ -93,9 +98,10 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--source',type=Path,required=True);p.add_argument('--dry-run',action='store_true')
     p.add_argument('--source-script',type=Path,help='Fingerprint-pinned original script when retaining unchanged takes')
+    p.add_argument('--additional-source',type=Path,action='append',default=[],help='Disjoint fingerprinted partial batch completing this catalogue')
     p.add_argument('--repair-source',type=Path,help='Independently generated and blind-checked replacement subset from the current script')
-    p.add_argument('--bank',choices=('crew','damage','warning','radio'),default='crew');a=p.parse_args()
-    payloads,receipt=prepare(a.source,{'crew':SCRIPT,'damage':DAMAGE,'warning':WARNINGS,'radio':RADIO}[a.bank],source_script=a.source_script,repair=a.repair_source)
+    p.add_argument('--bank',choices=('crew','damage','warning','radio','remaining'),default='crew');a=p.parse_args()
+    payloads,receipt=prepare(a.source,{'crew':SCRIPT,'damage':DAMAGE,'warning':WARNINGS,'radio':RADIO,'remaining':REMAINING}[a.bank],source_script=a.source_script,repair=a.repair_source,additional=a.additional_source)
     if not a.dry_run:
         for path,raw in payloads.items():path.write_bytes(raw)
         (ROOT/'godot/assets/audio'/f'pc_{a.bank}_provenance.json').write_text(json.dumps(receipt,indent=2)+'\n')

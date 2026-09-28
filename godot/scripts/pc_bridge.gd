@@ -37,6 +37,16 @@ func step(frames: int, keys: Array) -> bool:
 	request_started = Time.get_ticks_msec()
 	return failure.is_empty()
 
+func state_command(operation: String, slot: int) -> bool:
+	if pending or closing or not failure.is_empty() or process.is_empty(): return false
+	if operation not in ["save_state","load_state"] or slot<0 or slot>5 or (operation=="save_state" and slot==0): return false
+	waiting_id=next_id
+	next_id+=1
+	_write({"op":operation,"id":waiting_id,"slot":slot})
+	pending=true
+	request_started=Time.get_ticks_msec()
+	return failure.is_empty()
+
 func _write(message: Dictionary) -> void:
 	var pipe: FileAccess = process.stdio
 	pipe.store_buffer((JSON.stringify(message) + "\n").to_utf8_buffer())
@@ -66,7 +76,7 @@ func poll() -> Array[Dictionary]:
 		if value.get("type") == "error":
 			failure = str(value.get("message", "PC core error"))
 			break
-		if value.get("type") not in ["ready", "sample"] or int(value.get("id", -2)) != waiting_id:
+		if value.get("type") not in ["ready", "sample", "state_result"] or int(value.get("id", -2)) != waiting_id:
 			failure = "Unexpected PC bridge response sequence."
 			break
 		if value.get("type") == "ready" and int(value.get("protocol", 0)) != expected_protocol:

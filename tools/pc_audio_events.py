@@ -22,6 +22,11 @@ SAMPLES = {
 }
 for _return in (0x15E4, 0x15FF, 0x1640, 0x814D, 0x81CF, 0x81F3):
     SAMPLES[(14, _return)] = ('switch', None)
+# Isolated original argument blocks verified by pc_request_sound_oracle.py.
+# Keep source IDs as names until semantic identity has stronger evidence.
+for _value, _returns in {7:(0x19D1,),9:(0x0527,),10:(0x0974,0x7790),15:(0x034F,),16:(0x8219,0x8256)}.items():
+    for _return in _returns: SAMPLES[(_value,_return)]=(f'pc_request_{_value:02}',None)
+
 
 
 class AudioEvents:

@@ -2791,3 +2791,90 @@ remaining graphics/effect and dialogue/music families, mission victories and
 campaign outcomes, historical/cross-hardware pacing, human art/listening review,
 and portable packaging are still required. The earlier image-tool rejection for
 the HEAT contour revision is a retained external art-production limitation.
+
+
+## Requested play conveniences and local finish pass (2026-09-28)
+
+Nell requested the presentation, audio and local-packaging work (items 2/3/4),
+explicitly excluding an attempt to win a mission, and added save states, fast
+forward and live EGA/Genesis/Upscaled switching. Modern is an unavailable future
+mode. Authority covers local implementation, generated speech, checks and private
+packaging; no push, release or public distribution. Prior unrelated vehicle
+studies and generated UID files remain outside this work.
+
+The production viewer now has Audio, Session and Graphics menus. Five numbered
+checkpoints include native emulated state and the campaign overlay. Loading
+first captures the current session in recovery slot 0. Atomic archives retain
+the previous overwritten slot. Strict size, content/core/platform pins and
+member hashes reject invalid states before replacing the current session.
+
+Two real native failures shaped the implementation: reinitializing the upstream
+dylib in one process crashed, so each restore uses a fresh worker; fresh DOS
+startup deletes SIM.OUT, so RAM-only restoration failed full disk equality. A
+paused-only native overlay reload/flush ABI now preserves the full checkpoint
+disk and recreates saved handles via native unserialize. Ordinary execution
+never calls this helper. The original source-baseline binary is unchanged.
+
+First restored video is explicitly held, without an extra guest priming frame.
+New draw ownership/audio counters are observed from original execution rather
+than fabricated. Fast forward requests 2/4/8 original frames per presentation
+request, preserving CPU settings and source order. It consumes events silently;
+returning to normal resumes current loops/music without queued old voices.
+
+EGA bypasses all presentation replacements. Genesis uses hash-pinned extracted
+original-resolution donors, with PC fallback in unmatched and live regions.
+Upscaled uses the existing high-resolution pack and original-style outlines. All
+mode assets load at startup; switching recomposes the cached paired frame.
+Modern is disabled. Vehicles remain flat original geometry. The memorial stays
+in the Genesis/Upscaled final credit card; exact EGA remains original.
+
+Root self-review of the new Genesis view found captured widget fragments in the
+lower gunner margins. The first pixel gate only proved self-consistent sampling,
+so it missed the content defect. Both complete side consoles now fall back to
+original PC pixels, with independent forbidden-donor and rendered-pixel checks.
+Root reviewed the repaired native image. This remains implementer visual review,
+not independent aesthetic acceptance.
+
+Audio adds 50 distinct source-verified scenario/destruction/speed captions
+(49 Gemini 3.8, one authorized 3.1 fallback), five individually synthesized
+source-request samples and four authored sample-based frontend arrangements.
+The latter use extracted Genesis percussion, never mixed gameplay recordings.
+They are new arrangements, not recovered original score sequences. Blinded
+wording QA retained original responses and replaced two mispronounced takes.
+Original installed audio bytes are unchanged. Music joins the persisted mix
+without overriding gameplay F5/pause. Frontend paragraphs remain unvoiced.
+
+Root verification receipts, all terminal exit 0:
+
+* `pc-state-root-native-01/report.json`: 19/19 full native/disk checks, including
+  held keys, cold reload, corruption/incompatibility rejection, playable native
+  rejection rollback, actual PLAYQA campaign data and unrelated-save protection.
+* `pc-conveniences-native-02/conveniences-report.json`: 113 checks, zero errors.
+  Production viewer/menu callbacks; no original frame on graphics switches;
+  exact same RAM/video and game state after 15 normal frames versus 1+2+4+8;
+  persisted state save/load, transport mute and recovery visibility.
+* `pc-graphics-root-native-02/report.json`: 10,253,369 checks across 158 native
+  transition fixtures, zero errors, including repaired gunner margins.
+* `pc-conveniences-parity-01/comparison.json`: 13 checks, all 3,716 original
+  RAM/video/input/queued-message records equal the unmodified baseline after the
+  new core helper build. Final original SIM state also matches.
+* Root native audio gates: 165 remaining-audio and 47 music/transport checks.
+  Unit menu/mix/scheduling gates: 59, 110 and 92 checks respectively.
+* `validation-20260928T131813Z`: 46 stages, 328 Python tests, complete. Final
+  affected graphics and source-parity receipts above supersede its first native
+  pack. `validation-20260928T132451Z` is the final completed aggregate after the repaired pack and packaging fixture: 46 stages, 329 Python tests, exit 0.
+* Optional Impeccable offline/no-install detect exits 0 with no output. No
+  GDScript lint coverage is inferred; native image/functional gates provide proof.
+
+Packaging uses an explicit allowlist, deterministic local ZIP assembly, an
+external persistent profile, prerequisite checks and hash-pinned owned inputs.
+The private kit replaces its own Play launcher without changing the checkout
+launcher. The source kit excludes originals, derivative art/audio and extracted
+dialogue; it is a review kit, not a complete runnable distribution. A documented
+rights inventory leaves publication blocked pending permissions, code licensing
+and dependency/corresponding-source obligations. No public operation occurred.
+
+Mission victory/campaign completion, wider individual cue occurrence, independent
+listening/art acceptance, modern models and supported-platform standalone
+installers remain outside this delivered local slice. The whole remaster goal
+is not declared complete.

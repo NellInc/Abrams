@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a separately pinned read-only tracing core from a reviewed source tree.
+"""Build a separately pinned tracing and checkpoint core from reviewed source.
 
 This patches only the local dependency, retaining the unmodified baseline dylib.
 No download, game-file write, publication or change to the default core pin.
@@ -26,7 +26,8 @@ def main():
     allowed = {' M src/cpu/core_normal.cpp', '?? src/cpu/abrams_trace.h',
                ' M dosbox_pure_libretro.cpp', ' M src/hardware/vga_draw.cpp',
                ' M src/hardware/vga_memory.cpp', '?? src/cpu/abrams_vga_ownership.h',
-               '?? src/cpu/abrams_plate_ownership.h'}
+               '?? src/cpu/abrams_plate_ownership.h', ' M src/dos/drives.h',
+               ' M src/dos/drive_union.cpp', '?? src/dos/abrams_state_overlay.h'}
     if any(line not in allowed for line in status.splitlines()):
         raise ValueError('preserve unrecognized dependency changes; source build is not the reviewed input')
     target = SOURCE / 'src/cpu/core_normal.cpp'
@@ -45,7 +46,15 @@ def main():
     plates = ROOT / 'tools/pc_core/abrams_plate_ownership.h'
     shutil.copyfile(plates, target.with_name(plates.name))
     target.write_text(changed)
+    state_overlay = ROOT / 'tools/pc_core/abrams_state_overlay.h'
+    shutil.copyfile(state_overlay, SOURCE / 'src/dos/abrams_state_overlay.h')
     patches = {
+        'src/dos/drives.h': [
+            ('class unionDrive : public DOS_Drive {\npublic:',
+             'class unionDrive : public DOS_Drive {\npublic:\n\tbool AbramsReloadSave();\n\tbool AbramsFlushSave();')],
+        'src/dos/drive_union.cpp': [
+            ('DBP_SERIALIZE_SET_POINTER_LIST(PIC_EventHandler, unionDrive, unionDriveImpl::WriteSaveFile);',
+             'DBP_SERIALIZE_SET_POINTER_LIST(PIC_EventHandler, unionDrive, unionDriveImpl::WriteSaveFile);\n\n#include "abrams_state_overlay.h"')],
         'src/hardware/vga_draw.cpp': [
             ('static void VGA_VerticalTimer(Bitu /*val*/) {',
              'extern "C" void AbramsTraceScanout(Bit32u page);\n\nstatic void VGA_VerticalTimer(Bitu /*val*/) {'),
@@ -104,7 +113,7 @@ def main():
     staged=output.with_suffix('.next')
     shutil.copyfile(SOURCE / 'dosbox_pure_libretro.dylib', staged)
     staged.replace(output)
-    manifest = {'schema': 2, 'audio_event_schema': 1, 'text_event_schema': 2, 'message_event_schema': 1, 'strut_event_schema': 1, 'driver_overlay_schema': 1, 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
+    manifest = {'schema': 2, 'audio_event_schema': 1, 'text_event_schema': 2, 'message_event_schema': 1, 'strut_event_schema': 1, 'driver_overlay_schema': 1, 'state_overlay_schema': 1, 'state_overlay_header_sha256': sha(state_overlay), 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
         'source_core_normal_sha256': hashlib.sha256(original.encode()).hexdigest(),
         'patched_core_normal_sha256': sha(target), 'trace_header_sha256': sha(header),
         'ownership_header_sha256': sha(ownership), 'motor_pool_plate_schema': 1, 'frontend_text_schema': 1, 'orientation_schema': 1,
@@ -112,7 +121,7 @@ def main():
         'baseline_sha256': sha(baseline), 'trace_sha256': sha(output),
         'build': ['make', '-j4'], 'compiler': subprocess.check_output(['c++', '--version'], text=True).splitlines()[0],
         'license': 'GPL-2.0-or-later; upstream LICENSE and notices retained in source checkout',
-        'scope': 'local research, normal CPU core only; no guest state writes; parity requires separate tests'}
+        'scope': 'local research, normal CPU trace; explicit checkpoint overlay flush/reload ABI 1; ordinary-run parity requires separate tests'}
     output.with_suffix('.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(json.dumps(manifest, indent=2))
 

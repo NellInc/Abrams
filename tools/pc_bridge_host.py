@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Local stdin/stdout research bridge. PC code owns all gameplay decisions.
 
-Only bounded keyboard steps and graceful shutdown are accepted. No sockets,
+Bounded keyboard steps, local checkpoints and graceful shutdown are accepted. No sockets,
 original memory writes, replacement combat simulation or mixed audio capture.
 """
 from __future__ import annotations
@@ -80,11 +80,20 @@ def frame_audit(core):
 
 
 def validate_command(command):
-    if not isinstance(command, dict) or command.get("op") not in ("step", "quit"):
-        raise ValueError("expected step or quit")
+    if not isinstance(command, dict) or command.get("op") not in ("step", "quit", "save_state", "load_state"):
+        raise ValueError("expected step, save_state, load_state or quit")
     if command["op"] == "quit":
         if set(command) != {"op"}:
             raise ValueError("unexpected quit fields")
+        return
+    if command["op"] in ("save_state", "load_state"):
+        if set(command) != {"op", "id", "slot"}:
+            raise ValueError("unexpected checkpoint fields")
+        if type(command["id"]) is not int or command["id"] < 0:
+            raise ValueError("nonnegative request id required")
+        minimum = 0 if command["op"] == "load_state" else 1
+        if type(command["slot"]) is not int or not minimum <= command["slot"] <= 5:
+            raise ValueError("invalid checkpoint slot")
         return
     if set(command) != {"op", "id", "frames", "keys"}:
         raise ValueError("unexpected step fields")
@@ -107,8 +116,16 @@ def main():
     p.add_argument("--backend", choices=["reference", "trace"], default="reference")
     p.add_argument("--content", type=Path, default=ROOT / ".runtime/pc-core/abrams-ref.zip")
     p.add_argument("--frame-audit", action="store_true", help="diagnostic hashes of paired original RAM and framebuffer; no memory dumps")
+    p.add_argument("--state-worker", action="store_true", help=argparse.SUPPRESS)
+    p.add_argument("--local-resume", type=Path, help=argparse.SUPPRESS)
     args = p.parse_args()
     if args.state is None and args.backend != 'trace': p.error('cold boot requires the trace backend')
+    if not args.state_worker:
+        try:
+            from tools.pc_state_host import supervise
+        except ModuleNotFoundError:
+            from pc_state_host import supervise
+        return supervise(args, sys.argv[1:], lock_saves, validate_command)
     # Core printf/log output must never corrupt the JSON channel.
     output = os.fdopen(os.dup(sys.stdout.fileno()), "w", buffering=1)
     os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
@@ -123,7 +140,8 @@ def main():
         output.write(json.dumps(message, separators=(",", ":")) + "\n")
 
     try:
-        save_lock = lock_saves(args.saves)
+        # The supervisor retains the inherited exclusive save lock.
+
         pin, source_pin = CORE_SHA256, CORE_SHA256
         if args.backend == "trace":
             manifest = json.loads((ROOT / ".runtime/pc-core/abrams-trace.json").read_text())
@@ -141,6 +159,8 @@ def main():
                 raise ValueError("Rebuild the local trace core for original strut attribution")
             if manifest.get("driver_overlay_schema") != 1:
                 raise ValueError("Rebuild the local trace core for original moving-driver overlay")
+            if manifest.get("state_overlay_schema") != 1:
+                raise ValueError("Rebuild the local trace core for complete disk checkpoints")
             pin, source_pin = manifest["trace_sha256"], manifest["baseline_sha256"]
             args.core = ROOT / ".runtime/pc-core/abrams-trace.dylib"
         core = PcReferenceCore(args.core, args.content, args.saves, expected_sha256=pin)
@@ -148,16 +168,33 @@ def main():
             session = PresentationSession(core,reader,shape_bytes)
             session.step(240)
         else: core.run(240)
-        if args.state:
+        if args.state and not args.local_resume:
             if session:session.close();session=None
             core.restore(args.state, expected_source_sha256=source_pin)
             core.run(1)  # documented stale-native-framebuffer priming step
-        if args.backend == "trace":
+        if args.local_resume:
+            if session: session.close(); session = None
+            resume = json.loads((args.local_resume / 'resume.json').read_text())
+            try:
+                from tools.pc_state_store import atomic_write
+            except ModuleNotFoundError:
+                from pc_state_store import atomic_write
+            disk_path = args.saves / (args.content.stem + '.pure.zip')
+            disk = (args.local_resume / 'campaign.zip').read_bytes()
+            if disk: atomic_write(disk_path, disk)
+            elif disk_path.exists(): disk_path.unlink()
+            # Cold initialization can delete SIM.OUT. Reload the full selected
+            # overlay into native memory before unserialize recreates handles.
+            core.local_overlay('reload')
+            core.restore_local((args.local_resume / 'state.bin').read_bytes(), resume['keys'], resume['frame'], resume['ram_sha256'])
+            if args.backend == 'trace': session = PresentationSession(core, reader, shape_bytes)
+        elif args.backend == "trace":
             if session is None:session = PresentationSession(core,reader,shape_bytes)
             session.step(1)
         else:
             core.run(1)
-        sequence = 0
+        sequence = resume['sequence'] if args.local_resume else 0
+        restored_frames = 0 if args.local_resume else 2
         frame_png = FramePng()
 
         def packet(kind, request_id):
@@ -175,16 +212,23 @@ def main():
                 result["frame_audit"] = frame_audit(core)
             return result
 
-        ready = packet("ready", -1)
+        ready = (resume['packet'] | {'type': 'ready', 'id': -1, 'timeline_reset': True,
+                 'held_frame': True}) if args.local_resume else packet("ready", -1)
+        # No pending audio is replayed from a checkpoint. Observer counters
+        # restart and attribution is reacquired only from newly executed draws.
+        if args.local_resume and 'audio' in ready:
+            ready['audio'] = {'schema': 3, 'frame': core.frame, 'epoch': 0,
+                              'last_id': 0, 'events': [], 'active': False, 'enabled': False}
+        last_packet = ready
         ready.update({"protocol": 4 if session else 2, "backend": args.backend, "core_sha256": pin,
-                      "startup_frames_after_restore": 2 if args.state else 0,
-                      "startup": "snapshot" if args.state else "original-cold-boot",
+                      "startup_frames_after_restore": 0 if args.local_resume else (2 if args.state else 0),
+                      "startup": "local-checkpoint" if args.local_resume else ("snapshot" if args.state else "original-cold-boot"),
                       "sampling": "paired completed VGA boundary; original drawing may lag simulation"})
         if ready["state"] is None and not session:
             raise ValueError("SIM not initialized for original shape extraction")
         # Geometry remains local. The per-frame mask selects original roots and
         # static faces; unresolved dynamic/opaque drawing is not substituted.
-        if session is None:
+        if session is None and not args.local_resume:
             ds = ready["state"]["load_segment"]*16+0x19E00
             offset,segment = struct.unpack_from('<HH',core.last_video_ram,ds+0x6D50)
             if core.last_video_ram[segment*16+offset:segment*16+offset+len(shape_bytes)] != shape_bytes:
@@ -200,13 +244,38 @@ def main():
             if len(line) > 8192:
                 raise ValueError("oversized bridge command")
             command = json.loads(line)
+            if command.get('op') == '_capture':
+                try:
+                    destination = Path(command['directory'])
+                    core.local_overlay('flush')
+                    raw = core.serialize_local()
+                    (destination / 'state.bin').write_bytes(raw)
+                    inverse_keys = {value: key for key, value in KEYS.items()}
+                    snapshot = {'frame': core.frame, 'sequence': sequence,
+                                'keys': [inverse_keys[key] for key in sorted(core.pressed)],
+                                'ram_sha256': hashlib.sha256(core.conventional_memory()).hexdigest(),
+                                'packet': last_packet}
+                    (destination / 'resume.json').write_text(json.dumps(snapshot))
+                except Exception as error:
+                    send({'type': 'capture_error', 'message': str(error)})
+                    continue
+                if session: session.close(); session = None
+                core.close(); core = None
+                send({'type': 'captured'})
+                break
             validate_command(command)
             if command["op"] == "quit":
                 break
             if session: session.step(command["frames"],command["keys"])
             else: core.run(command["frames"], command["keys"])
             sequence += command["frames"]
-            send(packet("sample", command["id"]))
+            restored_frames += command['frames']
+            if restored_frames < 2:
+                last_packet = last_packet | {'type': 'sample', 'id': command['id'],
+                                             'sequence': sequence, 'held_frame': True, 'timeline_reset': False}
+            else:
+                last_packet = packet("sample", command["id"])
+            send(last_packet)
     except BrokenPipeError:
         pass  # parent closed its pipe; shut down only our own core
     except Exception as error:

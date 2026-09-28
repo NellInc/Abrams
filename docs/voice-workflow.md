@@ -398,3 +398,47 @@ python3 tools/verify_pc_dialogue.py \
   --output "$PWD/artifacts/pc-radio-native-new" \
   --capture --trace --play --frame-audit
 ```
+
+## Remaining original crew assignments, 28 September 2026
+
+The source catalogue now contains 449 original-PC message performances. The new
+`pc_remaining_voice_script.json` adds 50: 20 scenario crew reports, 27 distinct
+class-name destruction reports and three original game-speed announcements.
+`pc_remaining_voice_oracle.py` executes 54 original assignment paths, including
+all 31 class records and their duplicate visible names. It proves the actual
+portrait, wording, source pointers and setter. It establishes neither mission
+eligibility nor live occurrence of every line.
+
+All 50 selected dry masters passed blind wording QA: 49 Gemini 3.8 Flash TTS
+performances and one 3.1 fallback after a 3.8 HTTP 503. The interrupted first
+batch and its failed request remain intact. Unattempted cues were generated in
+fresh, disjoint batches. Two unclear performances were replaced with explicitly
+pronounced 3.8 takes. Model-designation word transcripts use narrow, tested
+lexical equivalences, for example “M one one three” for M113. Wrong numbers,
+model suffixes and whole-number bearings are rejected. “Com station” and “comm
+station” are equivalent spellings of the same spoken abbreviation; “comms
+station” remains rejected. Reevaluation is offline against unchanged blinded
+responses, with the original failed comparisons retained.
+
+`pc_remaining_provenance.json` records each selected master, source batch, model,
+script fingerprint and independent transcript. The installer now accepts
+disjoint partial batches via `--additional-source`, refuses duplicate selections
+or incomplete coverage, and still requires exact cue/casting custody for every
+selected take. Masters are unchanged by installation.
+
+Runtime uses the same complete current-pixel message and original assignment
+identity as the existing crew bank. Scenario text additionally needs its exact
+portrait and setter; class/speed text requires exact source pointers. Muted,
+partial, stale and repeated messages never catch up later. No new queued-text
+speech path exists. Numeric source captions remain unchanged.
+
+Native tests start all 50 selected streams once, check repeat suppression and
+cleanly drain playback: `artifacts/audio-finish-work/remaining-native.log`.
+These are source-qualified synthetic packets, separate from individual live
+mission occurrence and human listening approval. Briefing/debriefing paragraphs
+are still unvoiced: they need a complete utterance identity and interruption
+contract before narration can safely follow their visible text.
+
+Working if: each of the 54 source assignments resolves to its own checked take,
+only complete displayed source messages can speak, and transport/mute release
+never plays previously consumed lines.

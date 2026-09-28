@@ -2,7 +2,7 @@ extends "res://scripts/audio.gd"
 ## Original PC sound requests only. No keyboard, ammo-delta or range simulation.
 ## Batched diagnostic steps retain all events, but stale audio is never replayed.
 const MAX_AGE_FRAMES := 6
-const SAMPLES := ["cannon", "machinegun", "smoke", "impact", "switch", "radio"]
+const SAMPLES := ["cannon", "machinegun", "smoke", "impact", "switch", "radio", "pc_request_07", "pc_request_09", "pc_request_10", "pc_request_15", "pc_request_16"]
 const VOICES := {"cannon": "on_the_way", "smoke": "smoke"}
 var crew_catalogue: Dictionary = {}
 var last_crew_message := 0
@@ -18,14 +18,27 @@ var failure := ""
 var delivered := 0
 var suppressed := 0
 var receipts: Array[Dictionary] = []
+const FrontendMusic = preload("res://scripts/pc_frontend_music.gd")
+var music_bank := FrontendMusic.new()
+var music: AudioStreamPlayer
+var music_mix := 70
+var music_context := ""
+var music_allowed := false
+var music_starts := 0
+var music_resume_position := 0.0
+var transport_muted := false
 var mix := {"master":100,"effects":100,"voice":100,"motors":100}
 var motor_volume := 1.0
 var current_loops: Dictionary = {}
 
 func set_mix(settings: Dictionary) -> bool:
-	if settings.keys().size()!=mix.size(): return false
-	for key in mix:
+	if settings.keys().size() not in [4,5]: return false
+	for key in settings:
+		if key not in ["master","effects","voice","motors","music"]: return false
+	for key in ["master","effects","voice","motors"]:
 		if not _integer(settings.get(key)) or settings[key]<0 or settings[key]>100: return false
+	if settings.has("music") and (not _integer(settings.music) or settings.music<0 or settings.music>100): return false
+	if settings.has("music"): music_mix=int(settings.music)
 	mix=settings.duplicate()
 	volume=0.65*float(mix.master)/100.0
 	effects_volume=float(mix.effects)/100.0
@@ -44,6 +57,7 @@ func set_mix(settings: Dictionary) -> bool:
 		_remember_playback(voice)
 		voice.stop()
 	_sync_loops(current_loops)
+	_sync_music()
 	return true
 
 func _ready() -> void:
@@ -53,6 +67,7 @@ func _ready() -> void:
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_bearing_voice_script.json")).cues)
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_damage_voice_script.json")).cues)
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_warning_voice_script.json")).cues)
+	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_remaining_voice_script.json")).cues)
 	turret = AudioStreamPlayer.new()
 	add_child(turret)
 	var stream := load("res://assets/audio/turret.wav").duplicate() as AudioStreamWAV
@@ -61,17 +76,105 @@ func _ready() -> void:
 	# Imported WAV data can be QOA, so byte count is not a PCM frame count.
 	stream.loop_end = roundi(stream.get_length()*stream.mix_rate)
 	turret.stream = stream
+	music=AudioStreamPlayer.new()
+	add_child(music)
 	set_mix(mix)
 
-func stop_all() -> void:
+func _stop_source_audio() -> void:
 	super.stop_all()
 	if is_instance_valid(turret):
 		_remember_playback(turret)
 		turret.stop()
 
+func stop_all() -> void:
+	_stop_source_audio()
+	if is_instance_valid(music):
+		_remember_playback(music)
+		music.stop()
+
+func set_music_mix(value: int) -> bool:
+	if value<0 or value>100: return false
+	music_mix=value
+	if mix.has("music"): mix.music=value
+	_sync_music()
+	return true
+
+func music_context_for_frame(source: Image, program: Dictionary, presentation: Dictionary) -> String:
+	return music_bank.context_for_frame(source,program,presentation)
+
+func apply_music_context(context: String, enabled: bool, paused: bool=false) -> void:
+	# Caller supplies only a currently source-qualified frontend, never guessed
+	# from input, queued text, combat outcome or remaster wall-clock pacing.
+	var selected := context if context in FrontendMusic.CONTEXTS else ""
+	if selected!=music_context:
+		if is_instance_valid(music):
+			_remember_playback(music)
+			music.stop()
+		music_context=selected
+		music_resume_position=0.0
+	music_allowed=enabled and not paused and not selected.is_empty()
+	_sync_music()
+
+func _sync_music() -> void:
+	if not is_instance_valid(music): return
+	var active := music_allowed and not transport_muted and failure.is_empty() and volume*music_mix>0
+	if not active:
+		if music.playing:
+			music_resume_position=music.get_playback_position()
+			_remember_playback(music)
+			music.stop()
+		return
+	music.volume_db=linear_to_db(maxf(0.00001,volume*float(music_mix)/100.0*0.30))
+	if music.playing: return
+	var stream := music_bank.get_stream(music_context)
+	if stream==null: return
+	music.stream=stream
+	music.play(fmod(music_resume_position,stream.get_length()))
+	_remember_playback(music)
+	music_starts+=1
+
+func set_transport_muted(value: bool) -> void:
+	if transport_muted==value: return
+	transport_muted=value
+	if value:
+		_stop_source_audio()
+	_sync_loops(current_loops)
+	_sync_music()
+
+func reset_timeline() -> void:
+	# Use only after a successful host restore, before applying its first packet.
+	stop_all()
+	last_event_id=0
+	last_frame=-1
+	epoch=0
+	last_crew_message=0
+	last_radio_message=0
+	last_voice=""
+	delivered=0
+	suppressed=0
+	receipts.clear()
+	loop_transitions.clear()
+	loop_states={"engine":false,"turret":false}
+	current_loops={}
+	muted=true
+	music_context=""
+	music_allowed=false
+	music_resume_position=0.0
+	# A protocol failure remains latched. Restore is not a validation bypass.
+
+func play(cue: String) -> void:
+	if not transport_muted: super.play(cue)
+
+func speak(cue: String) -> void:
+	if not transport_muted: super.speak(cue)
+
 func release_streams() -> void:
 	super.release_streams()
 	if is_instance_valid(turret): turret.stream = null
+	if is_instance_valid(music): music.stream=null
+	music_allowed=false
+	music_context=""
+	music_bank.streams.clear()
 
 func _valid_loops(loops) -> bool:
 	if not loops is Dictionary: return false
@@ -90,7 +193,7 @@ func _sync_loops(loops: Dictionary) -> void:
 	for name in ["engine", "turret"]:
 		var player: AudioStreamPlayer = engine if name == "engine" else turret
 		var source: Dictionary = loops.get(name,{})
-		var active := not muted and volume*motor_volume>0 and bool(source.get("active",false))
+		var active := not muted and not transport_muted and volume*motor_volume>0 and bool(source.get("active",false))
 		if active != bool(loop_states[name]):
 			loop_transitions.append({"name":name,"active":active,"frame":last_frame,"epoch":epoch})
 			if loop_transitions.size() > 64: loop_transitions.pop_front()
@@ -129,14 +232,16 @@ func _valid_crew(event: Dictionary) -> bool:
 	if not _integer(event.get("message_id")) or int(event.message_id) < 1: return false
 	if event.get("voice") not in crew_catalogue: return false
 	var cue: Dictionary=crew_catalogue[event.voice]
-	var warning := cue.has("source_variants")
+	var warning := cue.has("assignment_ip")
 	if not _integer(event.get("speaker")) or int(event.speaker)!=(int(cue.speaker) if warning else 3): return false
 	if event.get("text") != cue.caption: return false
 	var bearing: bool = event.voice.begins_with("pc_hit_")
 	var expected_ip: int=int(cue.assignment_ip) if warning else (0x3d6a if bearing else 0x3dd2)
 	if int(event.ip) != expected_ip or int(event.return_ip) != 0 or int(event.value) != 0:
 		return false
-	return _valid_message_parts(event.get("parts"),cue.source_variants[0].size() if warning else 2,cue.source_variants if warning else null)
+	var count: int=int(cue.get("parts_count",2))
+	if warning and cue.has("source_variants"): count=cue.source_variants[0].size()
+	return _valid_message_parts(event.get("parts"),count,cue.get("source_variants"))
 
 func _valid_radio(event: Dictionary) -> bool:
 	if not _integer(event.get("message_id")) or int(event.message_id)<1: return false
@@ -237,16 +342,18 @@ func apply_audio(packet: Dictionary) -> bool:
 		return true
 	if int(packet.epoch) < epoch or int(packet.last_id) < last_event_id:
 		return _reject("Original audio timeline moved backwards")
-	if int(packet.epoch) != epoch or not packet.active or not packet.enabled: stop_all()
+	if int(packet.epoch) != epoch or not packet.active or not packet.enabled: _stop_source_audio()
+	if packet.active: apply_music_context("",false) # gameplay remains musically quiet
 	epoch = int(packet.epoch)
 	last_frame = int(packet.frame)
 	muted = not packet.active or not packet.enabled
 	for event in packet.events:
 		if int(event.id) <= last_event_id: continue
-		if event.kind == "gate" and not event.enabled: stop_all()
+		if event.kind == "gate" and not event.enabled: _stop_source_audio()
 		var reason := ""
 		if int(event.epoch) != epoch: reason = "previous-program"
 		elif not packet.active or not packet.enabled or not event.enabled: reason = "original-sound-gate"
+		elif transport_muted: reason = "presentation-transport-muted"
 		elif last_frame - int(event.frame) > MAX_AGE_FRAMES: reason = "stale-diagnostic-step"
 		elif event.kind not in ["readiness_visible", "crew_visible", "radio_visible"] and (event.kind != "sound" or event.get("sample") == null): reason = "unmapped-original-request"
 		if reason.is_empty():

@@ -2,7 +2,7 @@
 
 The catalogue covers 24 portrait-3 damage reports, all 360 hit bearings and
 eight source-qualified warnings/outcome calls from portraits 0, 1 and 2,
-and seven original radio captions.
+seven original radio captions, and 50 mission/class-destruction/game-speed calls.
 Unknown text remains original-only. Muted first appearances are consumed, and
 older page contents cannot replay when stations change. No guest state is read
 or changed here; message identity/visibility comes from the original draw trace.
@@ -15,6 +15,7 @@ BEARINGS = SCRIPT.with_name('pc_bearing_voice_script.json')
 DAMAGE = SCRIPT.with_name('pc_damage_voice_script.json')
 WARNINGS = SCRIPT.with_name('pc_warning_voice_script.json')
 RADIO = SCRIPT.with_name('pc_radio_voice_script.json')
+REMAINING = SCRIPT.with_name('pc_remaining_voice_script.json')
 
 
 def catalogue():
@@ -23,6 +24,8 @@ def catalogue():
             for name,cue in json.loads(script.read_text())['cues'].items()}
     for name,cue in json.loads(WARNINGS.read_text())['cues'].items():
         result[cue['caption']] = (name,(cue['assignment_ip'],),cue['speaker'],cue['source_variants'])
+    for name,cue in json.loads(REMAINING.read_text())['cues'].items():
+        result[cue['caption']] = (name,(cue['assignment_ip'],),cue['speaker'],cue.get('source_variants'),cue['parts_count'])
     return result
 
 
@@ -44,7 +47,7 @@ class CrewBarks:
             if not selected or message['speaker']!=selected[2] or message['assignment_ip'] not in selected[1]:continue
             variants=selected[3]
             if variants is None:
-                if len(message['parts'])!=self.default_parts:continue
+                if len(message['parts'])!=(selected[4] if len(selected)>4 else self.default_parts):continue
             elif [part['source_pointer'] for part in message['parts']] not in variants:continue
             events.append({'kind':self.kind,'sample':None,'voice':selected[0],
                 'ip':message['assignment_ip'],'return_ip':0,'value':0,'backend':status['backend'],

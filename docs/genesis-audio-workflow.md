@@ -99,3 +99,47 @@ they do not satisfy the sample-extraction request on their own.
 
 All Genesis-derived assets remain local and Git-ignored. No redistribution rights
 were established. No ROM, sample bank or original game audio has been uploaded.
+
+## Local sample-based frontend score, 28 September 2026
+
+`tools/build_frontend_music.py` renders four **new authored arrangements**, using
+the two directly extracted Genesis music samples and newly synthesized tonal
+instrument samples. These are separate reusable samples sequenced into a score;
+no emulator recording or mixed gameplay capture is used. The original native
+music containers and FM patches remain preserved for future interpretation.
+No exact reconstruction of the original Genesis compositions is claimed.
+
+The 16-bar intro, menu, briefing and debrief arrangements run for 36.92, 40,
+48 and 43.64 seconds respectively. All are stereo 24 kHz 16-bit PCM, with
+fingerprinted output, inspectable note/rhythm events, unclipped peaks, measured
+RMS levels and zero endpoint discontinuity. Percussion bytes are verified
+against both the extraction receipt and the fingerprinted supplied ROM before
+resampling. Each native source, transformation and generated track is recorded
+in `local-audio/frontend-music-v1/manifest.json`.
+
+```sh
+python3 tools/build_frontend_music.py --output local-audio/frontend-music-new
+python3 -m unittest tests.test_frontend_music -v
+./tools/godot.sh --script res://tests/test_pc_frontend_music.gd
+```
+
+The installed local bank is `local-audio/frontend-music-v1`, intentionally
+outside `res://`. Missing optional music assets remain silent; changed bytes
+fail the music loader's hash check. Source-derived music has no established
+redistribution rights and has not been uploaded or published.
+
+Playback classification is independent of the selected visual style. Original
+intro image hashes select intro music. START, BRIEF and END require a matched
+original program and a currently pixel-verified visible text run. Gameplay SIM
+stays musically quiet. Original SIM F5/pause gates remain absolute for gameplay
+audio; frontend music uses the user's Master/Music controls and presentation
+transport pause, because the SIM gate is inapplicable outside SIM. Changing gain
+or pausing/resuming retains the current music position. Scene changes select a
+new arrangement. Fast-forward consumes speech/effects silently and never queues
+them for later.
+
+The native audio gate verifies stream starts, context/gain/mute/transport
+behaviour and shutdown. It does not establish human listening or final mix
+acceptance. Working if: known original frontend states select the intended
+local sample score in every visual mode, while gameplay, unknown/hidden states,
+mute and transport pause stay quiet.

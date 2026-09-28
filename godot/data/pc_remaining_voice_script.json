@@ -1,0 +1,719 @@
+{
+  "scope": "Remaining source-assigned mission, class-destruction and original game-speed crew captions. Source-path proof separate from live occurrence and listening approval.",
+  "roles": {
+    "pc_crew_0": {
+      "voice": "Orus",
+      "style": "An experienced, firm and controlled American tank crew member on a close dry intercom microphone. No recording artefacts or background noise."
+    },
+    "pc_crew_1": {
+      "voice": "Iapetus",
+      "style": "A clear, alert and clipped American tank crew member on a close dry intercom microphone. No recording artefacts or background noise."
+    },
+    "pc_crew_2": {
+      "voice": "Algenib",
+      "style": "A low, slightly gravelly and matter-of-fact American tank crew member on a close dry intercom microphone. No recording artefacts or background noise."
+    },
+    "pc_crew_3": {
+      "voice": "Orus",
+      "style": "An experienced, firm and controlled American tank crew member on a close dry intercom microphone. No recording artefacts or background noise."
+    }
+  },
+  "cues": {
+    "pc_mission_a": {
+      "role": "pc_crew_0",
+      "caption": "Sir, the road is clear!",
+      "text": "Sir, the road is clear!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_b": {
+      "role": "pc_crew_0",
+      "caption": "Sir! The road is not clear!",
+      "text": "Sir! The road is not clear!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_c": {
+      "role": "pc_crew_0",
+      "caption": "we've killed him sir",
+      "text": "we've killed him sir",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_d": {
+      "role": "pc_crew_0",
+      "caption": "That's all three of them Sir!",
+      "text": "That's all three of them Sir!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_e": {
+      "role": "pc_crew_0",
+      "caption": "We must destroy all the bases Sir!",
+      "text": "We must destroy all the bases Sir!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_f": {
+      "role": "pc_crew_0",
+      "caption": "Sir, the bridge is destroyed!",
+      "text": "Sir, the bridge is destroyed!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_g": {
+      "role": "pc_crew_0",
+      "caption": "Sir! The bridge is still intact!",
+      "text": "Sir! The bridge is still intact!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_h": {
+      "role": "pc_crew_0",
+      "caption": "FST to our rear!",
+      "text": "FST to our rear!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_i": {
+      "role": "pc_crew_0",
+      "caption": "Sir, base and comstation destroyed!",
+      "text": "Sir, base and com station destroyed!",
+      "direction": "Clear American military intercom report. Com station is pronounced kom station, without a plural s after com. Read only the supplied text. No extra words or noises.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_j": {
+      "role": "pc_crew_0",
+      "caption": "Both goals are not achieved!",
+      "text": "Both goals are not achieved!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_k": {
+      "role": "pc_crew_0",
+      "caption": "Convoy member destroyed!",
+      "text": "Convoy member destroyed!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_l": {
+      "role": "pc_crew_0",
+      "caption": "Escort concluded.",
+      "text": "Escort concluded.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_m": {
+      "role": "pc_crew_0",
+      "caption": "Sir, escort not concluded!",
+      "text": "Sir, escort not concluded!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_n": {
+      "role": "pc_crew_0",
+      "caption": "Convoy member destroyed.",
+      "text": "Convoy member destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_o": {
+      "role": "pc_crew_0",
+      "caption": "Escort completed!",
+      "text": "Escort completed!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_p": {
+      "role": "pc_crew_0",
+      "caption": "Sir! Escort not completed!",
+      "text": "Sir! Escort not completed!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_q": {
+      "role": "pc_crew_0",
+      "caption": "Sir! That's all of them! We've done it!",
+      "text": "Sir! That's all of them! We've done it!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_r": {
+      "role": "pc_crew_0",
+      "caption": "Sir! We haven't destroyed all of them!",
+      "text": "Sir! We haven't destroyed all of them!",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_s": {
+      "role": "pc_crew_0",
+      "caption": "Sir! Both bases are destroyed.",
+      "text": "Sir! Both bases are destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_mission_t": {
+      "role": "pc_crew_0",
+      "caption": "Sir, are you sure we should quit now?",
+      "text": "Sir, are you sure we should quit now?",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15758,
+      "parts_count": 1,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message"
+    },
+    "pc_destroyed_a": {
+      "role": "pc_crew_0",
+      "caption": "T-62 destroyed.",
+      "text": "T-62 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          750,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_b": {
+      "role": "pc_crew_0",
+      "caption": "T-64 destroyed.",
+      "text": "T-64 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          755,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_c": {
+      "role": "pc_crew_0",
+      "caption": "T-72 destroyed.",
+      "text": "T-72 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          760,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_d": {
+      "role": "pc_crew_0",
+      "caption": "T-80 destroyed.",
+      "text": "T-80 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          765,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_e": {
+      "role": "pc_crew_0",
+      "caption": "F-ST destroyed.",
+      "text": "F S T destroyed.",
+      "direction": "Spell the three separate letters F, S, T clearly, then say destroyed. Read only the supplied text. No extra words or noises.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          770,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_f": {
+      "role": "pc_crew_0",
+      "caption": "M1-A1 destroyed.",
+      "text": "M1-A1 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          775,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_g": {
+      "role": "pc_crew_0",
+      "caption": "M60a3 destroyed.",
+      "text": "M60a3 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          781,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_h": {
+      "role": "pc_crew_0",
+      "caption": "M113 destroyed.",
+      "text": "M113 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          787,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_i": {
+      "role": "pc_crew_0",
+      "caption": "M2 destroyed.",
+      "text": "M2 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          792,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_j": {
+      "role": "pc_crew_0",
+      "caption": "BMP-1 destroyed.",
+      "text": "BMP-1 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          795,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_k": {
+      "role": "pc_crew_0",
+      "caption": "BMP-2 destroyed.",
+      "text": "BMP-2 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          801,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_l": {
+      "role": "pc_crew_0",
+      "caption": "BTR-70 destroyed.",
+      "text": "BTR-70 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          807,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_m": {
+      "role": "pc_crew_0",
+      "caption": "ACRV-2 destroyed.",
+      "text": "ACRV-2 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          814,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_n": {
+      "role": "pc_crew_0",
+      "caption": "BRDM-2 destroyed.",
+      "text": "BRDM-2 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          821,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_o": {
+      "role": "pc_crew_0",
+      "caption": "BRDM-3 destroyed.",
+      "text": "BRDM-3 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          828,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_p": {
+      "role": "pc_crew_0",
+      "caption": "SAGGER destroyed.",
+      "text": "SAGGER destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          835,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_q": {
+      "role": "pc_crew_0",
+      "caption": "SPIGOT destroyed.",
+      "text": "SPIGOT destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          842,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_r": {
+      "role": "pc_crew_0",
+      "caption": "HIND destroyed.",
+      "text": "HIND destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          849,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_s": {
+      "role": "pc_crew_0",
+      "caption": "A10 destroyed.",
+      "text": "A10 destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          854,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_t": {
+      "role": "pc_crew_0",
+      "caption": "MIGS destroyed.",
+      "text": "MIGS destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          858,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_u": {
+      "role": "pc_crew_0",
+      "caption": "COM STAT destroyed.",
+      "text": "COM STAT destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          863,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_v": {
+      "role": "pc_crew_0",
+      "caption": "Building destroyed.",
+      "text": "Building destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          872,
+          2385
+        ],
+        [
+          881,
+          2385
+        ],
+        [
+          890,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_w": {
+      "role": "pc_crew_0",
+      "caption": "ENEMY HQ destroyed.",
+      "text": "ENEMY HQ destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          899,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_x": {
+      "role": "pc_crew_0",
+      "caption": "Base destroyed.",
+      "text": "Base destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          908,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_y": {
+      "role": "pc_crew_0",
+      "caption": "Farm destroyed.",
+      "text": "Farm destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          913,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_z": {
+      "role": "pc_crew_0",
+      "caption": "Truck destroyed.",
+      "text": "Truck destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          918,
+          2385
+        ]
+      ]
+    },
+    "pc_destroyed_aa": {
+      "role": "pc_crew_0",
+      "caption": "Bridge destroyed.",
+      "text": "Bridge destroyed.",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 0,
+      "assignment_ip": 15628,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          924,
+          2385
+        ],
+        [
+          931,
+          2385
+        ],
+        [
+          938,
+          2385
+        ]
+      ]
+    },
+    "pc_speed_a": {
+      "role": "pc_crew_3",
+      "caption": "GAME SPEED SET TO FAST",
+      "text": "GAME SPEED SET TO FAST",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          2537,
+          2520
+        ]
+      ]
+    },
+    "pc_speed_b": {
+      "role": "pc_crew_3",
+      "caption": "GAME SPEED SET TO MEDIUM",
+      "text": "GAME SPEED SET TO MEDIUM",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          2537,
+          2525
+        ]
+      ]
+    },
+    "pc_speed_c": {
+      "role": "pc_crew_3",
+      "caption": "GAME SPEED SET TO SLOW",
+      "text": "GAME SPEED SET TO SLOW",
+      "direction": "Clear American military intercom delivery. Read exactly the supplied words. Spell letter designations intelligibly, and read model numbers naturally. No extra words, vocal noises, radio effects, music or ambience.",
+      "speaker": 3,
+      "assignment_ip": 15826,
+      "parts_count": 2,
+      "evidence": "godot/tests/fixtures/pc_remaining_voice_oracle.json; original routing or setter only; runtime requires complete source-visible message",
+      "source_variants": [
+        [
+          2537,
+          2532
+        ]
+      ]
+    }
+  }
+}

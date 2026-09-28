@@ -34,7 +34,7 @@ class TestDraw extends Node3D:
 
 class TestFrame extends TextureRect:
 	var events: Array
-	func set_frame(_source: Image, _presentation: Dictionary, _world: Texture2D) -> bool:
+	func set_frame(_source: Image, _presentation: Dictionary, _world: Texture2D, _program: Dictionary={}) -> bool:
 		events.append("frame")
 		return false
 
@@ -151,6 +151,28 @@ func run() -> void:
 	audio_menu.queue_free()
 	audio_menu=null
 	set_keys([])
+	# Explicit fast-forward is the only live path allowed to batch originals.
+	# One request remains outstanding, and source CPU/fps settings stay intact.
+	var source_fps := fps
+	for multiplier in [2,4,8]:
+		_choose_speed(multiplier)
+		reply()
+		super._process(period)
+		check(bridge.requests[-1].frames==multiplier and bridge.requests[-1].keys.is_empty(),"explicit fast-forward original-frame count")
+		check(fps==source_fps and inflight_fast,"fast-forward retains source clock and marks pending audio")
+	_choose_speed(1)
+	check(inflight_fast,"normal-speed selection cannot unmark an in-flight fast batch")
+	reply()
+	super._process(period)
+	check(bridge.requests[-1].frames==1 and not inflight_fast,"normal speed resumes without a catch-up batch")
+	pending_state_command={"op":"save_state","slot":1}
+	bridge.pending=false
+	elapsed=period
+	check(not _advance_live_frame(),"queued state operation blocks early frame prefetch")
+	pending_state_command.clear()
+	state_control_pending=true
+	check(not _advance_live_frame(),"running state operation blocks original stepping")
+	state_control_pending=false
 
 	# Capture routes retain explicit batches and dispatch only after presentation.
 	capture=true

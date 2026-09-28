@@ -1,0 +1,277 @@
+{
+  "schema": 1,
+  "files": [
+    {
+      "name": "6X6.FNT",
+      "sha256": "a1ab3119ad84f1debb4fda3a57271e08ed9f0bdf1e535a5885a92758e07d5840"
+    },
+    {
+      "name": "8X6.FNT",
+      "sha256": "aa295b11f913a8829baf0590fc9405a602deae2a50a00ee592ffaac2f1099567"
+    },
+    {
+      "name": "8X8.FNT",
+      "sha256": "857af65a215ccfcf92508ad43848c63e08bcef7ed2da2f3bcd75b670cd515812"
+    },
+    {
+      "name": "AA.BIN",
+      "sha256": "d047d71587940c6cf0b7e7072edda8e0b383b179cdf2d238e41a38f4a15d316a"
+    },
+    {
+      "name": "ABRAMS.COM",
+      "sha256": "620fa2cb0cf7e8b8473b26318a5ed3de75ee106832690f9f4c739b0e9b3086ab"
+    },
+    {
+      "name": "ANIM.GI",
+      "sha256": "7360d80414876765365c851ce0b8555f976cdf29af58b2ca0644c44b029d7f31"
+    },
+    {
+      "name": "ANIM.TBL",
+      "sha256": "a87cb6ebe75d8958397cf35c08f2842fa13e5d1870aba6335c0608468f897e23"
+    },
+    {
+      "name": "ANIM.WLD",
+      "sha256": "6742f60102da7826ebc5144360b2d2df42d74386a514ef61cbce4e1d316aafb0"
+    },
+    {
+      "name": "ATBASE.BIN",
+      "sha256": "7a2b2e763b37623f423c7f332c2a34d4bb810f5a457a3d8f55aec27e9262ac03"
+    },
+    {
+      "name": "BRIEF.EXE",
+      "sha256": "11565943351af89d069595864d26728c866ffa30cb09e66a1765c571978a7c92"
+    },
+    {
+      "name": "CGA1.PAL",
+      "sha256": "7e0889e14b2d1e053ac864a555c93766b4edde41087126e19c8678e82b064232"
+    },
+    {
+      "name": "CGA2.PAL",
+      "sha256": "f4ce9310448fe878af09ecf826e9d34be76bc8d6ba1ad8b44df252e5c0e3337a"
+    },
+    {
+      "name": "CLIP.BMP",
+      "sha256": "496e4349840d934c42da24fc929b25869a0db050dd6a66ac68a9349af6b7e6ce"
+    },
+    {
+      "name": "CO.BMP",
+      "sha256": "e15faa367625c87dd1d93e934d19d3b2c13c7f887b2806bf441d86102a146fa0"
+    },
+    {
+      "name": "CREDITS",
+      "sha256": "97b431e019a277f63239da90ddebd27c02a2417a2d7dfa750e94fc6faf7a07ae"
+    },
+    {
+      "name": "CREW.BMP",
+      "sha256": "6351763f4ccbe4daca199a0ac9738039ddbd6a30720476dc5488fd84d95805bf"
+    },
+    {
+      "name": "CURSOR.BMP",
+      "sha256": "a7b6148ea54b389b1385c0932d8d9c6ae071cec5edbec75c8e13f1ae17bb6495"
+    },
+    {
+      "name": "DAMAGE.BMP",
+      "sha256": "765a4b564fad3865e564427b957cbee2cb0b5695a878b63e3c07c141bbb68cdc"
+    },
+    {
+      "name": "DRIVER.BIN",
+      "sha256": "4644f41a098323bf2ea85d2a989725594a0591c6e221a1a91b863cfc216b4b9b"
+    },
+    {
+      "name": "EFFECTS.BMP",
+      "sha256": "6f8db51638447d2c8a798c7885fcf469acd9aff21e9606343de6d199462dc3fd"
+    },
+    {
+      "name": "END.EXE",
+      "sha256": "82ab4efab14dfdfd6d9d0c6c8276e2c2187dbe4e6f8f09cc9fc0fa6267ad0c40"
+    },
+    {
+      "name": "EXPLO.BMP",
+      "sha256": "db1cdf18b4b0ac0d6e4fc5f0a5a99a14eb6ee4cf63f7296e6c94176940cdce33"
+    },
+    {
+      "name": "FACES.BMP",
+      "sha256": "e769b71bee8a40023e6ffdb3ac0fd5db0a7485148c1d2eb3fd4fe3b1da6ffa42"
+    },
+    {
+      "name": "FRAME",
+      "sha256": "bafdc568df27f74147d00cdd6a9efa6ead8dcb5167dfaf71f5be3543fa228d20"
+    },
+    {
+      "name": "GPS.BIN",
+      "sha256": "359b4c55240fbfda8e1bbb36d71e6b8ebf4c1aa48ea7394c26764cbf69e5795b"
+    },
+    {
+      "name": "IDENTIFY",
+      "sha256": "2ba3676e27842f2c83da85a14cbffcb1326115f03b1dd61455bcda902a5e205b"
+    },
+    {
+      "name": "INFO.BMP",
+      "sha256": "3cdf0c2dcadc387215a1bf4251ceb046820db6439ffcce419a9de2b61bcceff2"
+    },
+    {
+      "name": "INSTALL.BAT",
+      "sha256": "2d8f8b3073268b643ddc94bdb290b7bd8f8cd307bc44ded3c88420ac8d86b770"
+    },
+    {
+      "name": "MOSCOW",
+      "sha256": "f6f06a570b7b1279acd427ec2558d0dd0a4c66dda8530439527f51f60083d86f"
+    },
+    {
+      "name": "OFFICE",
+      "sha256": "7781ed38148b800526c336c841ebfc548b06721849a36ee8b0300eb7ab496929"
+    },
+    {
+      "name": "PARIS",
+      "sha256": "00eeade1f2ff775b0fccb01e06ff9754224c8fe5fef4146bc7220a7b80748e34"
+    },
+    {
+      "name": "PS.PAL",
+      "sha256": "5c7497c51f176536a59042bbb91e7fa446c71c82117c7dea6ced7cb677d7f657"
+    },
+    {
+      "name": "RUNME.BAT",
+      "sha256": "32de1aff5b6d9e8455a46a7d310cdcaf5e2921cefe72c470214ac7065b7559d1"
+    },
+    {
+      "name": "SCENE1.BIN",
+      "sha256": "de7f0af557d790ed12261335c01473ea391b218590735248a1ef44a027996428"
+    },
+    {
+      "name": "SCENE2.BIN",
+      "sha256": "89fe72351122ab650e54d016633cb00025af7d39c2f33b18b3b3b68e7a5ad076"
+    },
+    {
+      "name": "SHAPE.GI",
+      "sha256": "107fc411632ad9754ccc6d82678d7f9de501dad397c3e47a16cdece3dae73faf"
+    },
+    {
+      "name": "SHAPE.TBL",
+      "sha256": "81cf10917d8647e8ac187e49887494992828277333f17d6c1926e59581f0a193"
+    },
+    {
+      "name": "SHELL",
+      "sha256": "4534c386bfca6dabc70bd7d58ccbc85d81ffa2967972ad6c0b7a98a9a64a0f8a"
+    },
+    {
+      "name": "SIM.ARM",
+      "sha256": "79f3900db38b66d23251b3777098c72edbf335e93ec9002bfed9c3a16c7f2c33"
+    },
+    {
+      "name": "SIM.EXE",
+      "sha256": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099"
+    },
+    {
+      "name": "SIM.OUT",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "SNARIO0.SSS",
+      "sha256": "6117b13406e0fbc9fee39479959c0f8189a04d693971ee086d2b402404ca40bf"
+    },
+    {
+      "name": "SNARIO0.WLD",
+      "sha256": "055bdad11836f3a2059c215c5d94f9911a84261e1ece841efc26f279e39476e3"
+    },
+    {
+      "name": "SNARIO1.SSS",
+      "sha256": "aa5d5c6b4b0c29caa2e29b74a869b3765307a921a4d0a9fb893e6dd449786ff1"
+    },
+    {
+      "name": "SNARIO1.WLD",
+      "sha256": "33e08bba4ab7772e5798441fda58230504af0ba55b95834ecc4b63761aa2c6ac"
+    },
+    {
+      "name": "SNARIO2.SSS",
+      "sha256": "7aed65b6ca71a52a96ad476f65e4b1475eb324445aaad34cd322b09fcb5dd80f"
+    },
+    {
+      "name": "SNARIO2.WLD",
+      "sha256": "889b329ccaab475e52fcd115ff84b597ba69dae6523d3f473835ae2cb1df6be1"
+    },
+    {
+      "name": "SNARIO3.SSS",
+      "sha256": "1074dcd2f6493ce9ed6d6fb6138b0c4f216aae634b80141a08c6428ce0f628b2"
+    },
+    {
+      "name": "SNARIO3.WLD",
+      "sha256": "e35492831bf7e05e3eb0d4ab7bbb64c9baf58e3388688ab2af031e0b2091bfbc"
+    },
+    {
+      "name": "SNARIO4.SSS",
+      "sha256": "007e83eb8ae5977c25386cdb7a7b654782c22c889e12aced2fd5a15f3c73d048"
+    },
+    {
+      "name": "SNARIO4.WLD",
+      "sha256": "b503f8dd34f74fd5cff9f82a1c10771cd7fec6f8fe4d408893b2b0916f50fe12"
+    },
+    {
+      "name": "SNARIO5.SSS",
+      "sha256": "d84f4b279e63af52d03480fcc9cd0a891080843c09a1e2290fd160d905901225"
+    },
+    {
+      "name": "SNARIO5.WLD",
+      "sha256": "db883b69bdd348599dfe0fba1acd9f953b872be466c30f3c29d29d16e57f451b"
+    },
+    {
+      "name": "SNARIO6.SSS",
+      "sha256": "8fa39db01859baca37b4bdd3c6d34344723462d23f1abf44ca48cc37817e6fde"
+    },
+    {
+      "name": "SNARIO6.WLD",
+      "sha256": "6f91df781b00a0d483f179c621b610c529671a61c4c5e61bb92642304a9cc1ef"
+    },
+    {
+      "name": "SNARIO7.SSS",
+      "sha256": "5a9aac986f8809240184493859c6228dc8dee81bf671a946938bd69588ffb3b0"
+    },
+    {
+      "name": "SNARIO7.WLD",
+      "sha256": "e076100bdbaf8ce24df76f8cd46bb836923bce403537e82afcf6f364cbe8ea89"
+    },
+    {
+      "name": "STALE",
+      "sha256": "762b4206056e540e3f549cc2d5768525c34d137f7f724ef8366f87ef0986ec02"
+    },
+    {
+      "name": "START.EXE",
+      "sha256": "a6fd07ae3df4f61806852d92c0c50354b7f7afccee10da88710ef0bc3361ca6a"
+    },
+    {
+      "name": "STATUS.BIN",
+      "sha256": "7d2abcfd40a79002087bd1534c9ac74ba846dd1cbf03b93f3f66314068b62166"
+    },
+    {
+      "name": "STENCIL.FNT",
+      "sha256": "3f92e8c7488278d86aeaa978d87d980d6a688fc9c8dbf87befaf4e6bbc9f4181"
+    },
+    {
+      "name": "STRUTS.BMP",
+      "sha256": "f77127e5ff8695eb048f04a3ca0d22a8c91e8e569ff0566a8839ae8a5702fb28"
+    },
+    {
+      "name": "TANKS.BMP",
+      "sha256": "508a46b8899700986720facadb3f6fd26e0be7fa093a4dfd6e29637d94cd9ada"
+    },
+    {
+      "name": "TC.BIN",
+      "sha256": "493e8867dca57f6c6588e0288a5e7e3b5d83b2e96a041a85dfedfecd8db94884"
+    },
+    {
+      "name": "TITLE.PTL",
+      "sha256": "443854e4ee77e73607394d6c7c6c586ee43e8ccbde5e198bc894b7ca22d6f319"
+    },
+    {
+      "name": "US",
+      "sha256": "48415edd9d1f9210999abb48fadf3ee7165ccbc22a2532a4c3d58fe56f7a4c20"
+    },
+    {
+      "name": "VM.FNT",
+      "sha256": "a1ab3119ad84f1debb4fda3a57271e08ed9f0bdf1e535a5885a92758e07d5840"
+    },
+    {
+      "name": "VM.PAL",
+      "sha256": "158746fc3887b5f3eb8b8507e17a43752d96992bb2679181c2b1a30a963142b6"
+    }
+  ]
+}

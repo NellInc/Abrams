@@ -1,7 +1,7 @@
 extends MenuBar
 ## Presentation-only gains. No bridge, source state, key binding or pause command.
-const DEFAULTS := {"master":100,"effects":100,"voice":100,"motors":100}
-const TITLES := {"master":"Master volume","effects":"Sound effects","voice":"Crew voices","motors":"Engine and turret"}
+const DEFAULTS := {"master":100,"effects":100,"voice":100,"motors":100,"music":70}
+const TITLES := {"master":"Master volume","effects":"Sound effects","voice":"Crew voices","motors":"Engine and turret","music":"Music"}
 var settings: Dictionary = DEFAULTS.duplicate()
 var config_path := "user://pc_audio.cfg"
 var audio: Node

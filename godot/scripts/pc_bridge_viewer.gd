@@ -51,6 +51,10 @@ var campaign_capture_phase := ""
 var campaign_review_pending := false
 var campaign_choice := ""
 var started: int
+var fast_forward := 1
+var pending_state_command: Dictionary = {}
+var state_control_pending := false
+var inflight_fast := false
 
 func _initialize() -> void:
 	root.title = "Abrams: original PC / Godot bridge research"
@@ -81,7 +85,7 @@ func _initialize() -> void:
 	requested_fullscreen = "--fullscreen" in args
 	_configure_window.call_deferred()
 	wire_mode = "--wire" in OS.get_cmdline_user_args()
-	cockpit_art_requested = "--cockpit-art" in args or (trace_mode and "--original-art" not in args and "--gunner-art" not in args and not wire_mode)
+	cockpit_art_requested = (play_mode and not wire_mode) or "--cockpit-art" in args or (trace_mode and "--original-art" not in args and "--gunner-art" not in args and not wire_mode)
 	gunner_art_requested = "--gunner-art" in args or cockpit_art_requested
 	genesis_colours_requested = (cockpit_art_requested or "--genesis-colours" in args) and "--pc-colours" not in args
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
@@ -106,20 +110,34 @@ func _initialize() -> void:
 	if audio_requested(trace_mode,args):
 		pc_audio = PcAudio.new()
 		root.add_child(pc_audio)
-		if play_mode:
-			audio_menu=preload("res://scripts/pc_audio_menu.gd").new()
-			audio_menu.audio=pc_audio
-			if capture: audio_menu.config_path=""
-			audio_menu.load_settings()
-			pc_audio.set_mix(audio_menu.settings)
-			root.add_child(audio_menu)
-			audio_menu.resized.connect(_layout_audio_menu)
-			_layout_audio_menu.call_deferred()
+	if play_mode:
+		audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+		audio_menu.audio=pc_audio
+		if capture: audio_menu.config_path=""
+		audio_menu.load_settings()
+		if pc_audio: pc_audio.set_mix(audio_menu.settings)
+		root.add_child(audio_menu)
+		audio_menu.graphics_selected.connect(_choose_graphics)
+		audio_menu.speed_selected.connect(_choose_speed)
+		audio_menu.state_requested.connect(_request_state)
+		audio_menu.resized.connect(_layout_audio_menu)
+		_layout_audio_menu.call_deferred()
 	if trace_mode and cockpit_art_requested:
 		tandem_frame.load_genesis_art(directory)
 	elif trace_mode and gunner_art_requested:
 		var art_path := directory.path_join("local-art/pc-ui-remastered/gunner-plate-v2.png")
 		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
+	if play_mode:
+		tandem_frame.load_graphics_sources(directory)
+		var initial_mode := "ega" if "--original-art" in args else "upscaled"
+		if "--graphics" in args:
+			var index := args.find("--graphics")+1
+			initial_mode=args[index] if index<args.size() else ""
+			if initial_mode not in ["ega","genesis","upscaled"]:
+				printerr("--graphics requires ega, genesis or upscaled; Modern artwork is not available")
+				quit(2)
+				return
+		audio_menu.choose_graphics(initial_mode)
 	var python := OS.get_environment("ABRAMS_PYTHON")
 	if python.is_empty(): python = "/opt/homebrew/bin/python3"
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
@@ -405,13 +423,52 @@ static func frame_remainder(elapsed_seconds: float, source_fps: float) -> float:
 	return fmod(elapsed_seconds,1.0/source_fps)
 
 func _advance_live_frame() -> bool:
-	if capture or closing or bridge.pending or not bridge.failure.is_empty() or elapsed<1.0/fps:
+	if capture or closing or state_control_pending or not pending_state_command.is_empty() or bridge.pending or not bridge.failure.is_empty() or elapsed<1.0/fps:
 		return false
 	elapsed=frame_remainder(elapsed,fps)
 	# Sample current original keys once, never queue a second outstanding frame.
 	var held := Keyboard.held()
 	if audio_menu: held=audio_menu.game_keys(held)
-	return bridge.step(1,held)
+	# Fast-forward changes wall-clock delivery only: the host still executes
+	# every original frame in order at its unchanged emulated CPU settings.
+	var sent: bool=bridge.step(fast_forward,held)
+	if sent: inflight_fast=fast_forward>1
+	return sent
+
+func _choose_graphics(mode: String) -> void:
+	if not tandem_frame.set_graphics_mode(mode):
+		audio_menu.graphics_mode=tandem_frame.graphics_mode
+		audio_menu.state_message="Requested graphics assets are unavailable."
+		audio_menu.refresh_controls()
+
+func _choose_speed(multiplier: int) -> void:
+	fast_forward=multiplier
+	elapsed=0.0
+	if pc_audio: pc_audio.set_transport_muted(multiplier>1 or inflight_fast or state_control_pending or not pending_state_command.is_empty())
+	if play_mode: root.title="Abrams Battle Tank" if multiplier==1 else "Abrams Battle Tank (%dx fast forward)"%multiplier
+
+func _request_state(operation: String, slot: int) -> void:
+	if closing or state_control_pending or not pending_state_command.is_empty(): return
+	pending_state_command={"op":operation,"slot":slot}
+	if pc_audio: pc_audio.set_transport_muted(true)
+
+func _send_state_command() -> void:
+	if pending_state_command.is_empty() or bridge.pending or state_control_pending: return
+	if bridge.state_command(pending_state_command.op,int(pending_state_command.slot)):
+		state_control_pending=true
+		pending_state_command.clear()
+
+func _state_result(message: Dictionary) -> void:
+	# Restored samples carry their own original snapshot and a new audio
+	# timeline. This control response never advances or injects a game key.
+	var restored = message.get("restored")
+	if restored is Dictionary:
+		_apply_sample(restored)
+	state_control_pending=false
+	if audio_menu and audio_menu.has_method("set_state_status"):
+		audio_menu.set_state_status(message.get("slots",[]),str(message.get("message","State operation finished")))
+	if pc_audio: pc_audio.set_transport_muted(fast_forward>1)
+	elapsed=0.0
 
 func _capture_deadline_msec() -> int:
 	return 180000 if boot_mode or "--capture-vehicle" in OS.get_cmdline_user_args() else 60000
@@ -419,7 +476,8 @@ func _capture_deadline_msec() -> int:
 func _process(delta: float) -> bool:
 	elapsed += delta
 	for message in bridge.poll():
-		_apply_sample(message)
+		if message.type=="state_result": _state_result(message)
+		else: _apply_sample(message)
 	if not bridge.failure.is_empty():
 		status.text = "Game stopped: " + bridge.failure + "\nClose this window to exit."
 		status.show()
@@ -433,6 +491,9 @@ func _process(delta: float) -> bool:
 		if bridge.has_exited() and audio_drained: quit(0 if bridge.failure.is_empty() and bridge.exit_code() == 0 else 1)
 		return false
 	if not bridge.pending:
+		if not pending_state_command.is_empty():
+			_send_state_command()
+			return false
 		if capture:
 			if auto_index < auto_steps.size():
 				var step: Array = auto_steps[auto_index]
@@ -465,9 +526,17 @@ func _process(delta: float) -> bool:
 	return false
 
 func _apply_sample(message: Dictionary) -> void:
+	if message.get("timeline_reset",false) and pc_audio: pc_audio.reset_timeline()
+	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):
+		audio_menu.set_state_status(message.slots)
+	if pc_audio and pc_audio.has_method("set_transport_muted"):
+		pc_audio.set_transport_muted(fast_forward>1 or inflight_fast or state_control_pending or not pending_state_command.is_empty())
+	inflight_fast=false
 	if pc_audio and not pc_audio.apply_audio(message.get("audio", {})):
 		bridge.failure = pc_audio.failure
 		return
+	if pc_audio and pc_audio.has_method("set_transport_muted"):
+		pc_audio.set_transport_muted(fast_forward>1 or state_control_pending or not pending_state_command.is_empty())
 	var state = message.get("state")
 	if not state is Dictionary and not trace_mode:
 		bridge.failure = "SIM state is unavailable. No substitute simulation was started."
@@ -496,14 +565,19 @@ func _apply_sample(message: Dictionary) -> void:
 	picture.texture = ImageTexture.create_from_image(image)
 	if play_mode: status.hide()
 	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
+	if pc_audio:
+		var music_context: String=pc_audio.music_context_for_frame(image,previous_program,message.get("presentation",{}))
+		# Frontend music follows the user's mix; original SIM F5/pause gates
+		# continue to govern gameplay audio. Unknown frontend frames stay quiet.
+		pc_audio.apply_music_context(music_context,true)
 	if not state is Dictionary:
 		previous = {}
 		previous_presentation = message.get("presentation", {})
 		draw_view.apply_pass({"objects": []})
-		tandem_frame.set_frame(image, {}, null)
+		tandem_frame.set_frame(image, previous_presentation, null, previous_program)
 		status.text = "ORIGINAL PC: " + str(previous_program.get("name","STARTING"))
 		caption.text = "Original menu/briefing or SIM initialization. Showing the original framebuffer; no substitute simulation."
-		if trace_mode and cockpit_art_requested and tandem_frame.frontend_art.set_frame(image,previous_program,previous_presentation):
+		if trace_mode and cockpit_art_requested and tandem_frame.present_frontend(previous_program):
 			caption.text = "GENESIS ART: " + tandem_frame.frontend_art.active.name + " | original PC content, timing and controls"
 		return
 	if message.has("static_wire_geometry"):
@@ -539,7 +613,7 @@ func _apply_sample(message: Dictionary) -> void:
 		# Source 320x200 pixels stretch to 4:3 outside the 3D projection.
 		if not trace_mode: world_aspect.ratio = float(dimensions.x) / (float(dimensions.y) * 1.2)
 	if trace_mode:
-		tandem_frame.set_frame(image, previous_presentation, world_viewport.get_texture())
+		tandem_frame.set_frame(image, previous_presentation, world_viewport.get_texture(), previous_program)
 	status.text = "%s   HEADING %03d   SIGHT %03d   SPEED %d   FUEL %d" % [str(state.station).to_upper(), state.heading_degrees, state.bearing_degrees, state.speed_display, state.fuel_display]
 	caption.text = "HEAT %d   SABOT %d   AX %d   COAX %d     World: %s   Window: %s   Objects: %d" % [state.ammunition.HEAT, state.ammunition.SABOT, state.ammunition.AX, state.ammunition.COAX, str(position), str(state.world.window_origin), state.world.static.size()]
 	if trace_mode:
@@ -562,7 +636,7 @@ func _apply_sample(message: Dictionary) -> void:
 			caption.text += " | verified high-res text: %d" % tandem_frame.typography.runs.size()
 		elif gunner_art_requested:
 			caption.text += "\n" + ("HIGH-RES GUNNER SURROUND: original instruments retained" if tandem_frame.gunner_art_enabled else "ORIGINAL MATERIALS: " + tandem_frame.gunner_art_reason)
-	if trace_mode and cockpit_art_requested and tandem_frame.frontend_art.set_frame(image,previous_program,previous_presentation):
+	if trace_mode and cockpit_art_requested and tandem_frame.present_frontend(previous_program):
 		caption.text = "GENESIS MOTOR POOL: original PC arming menu, values and controls"
 	previous = state
 
@@ -585,6 +659,7 @@ func _capture() -> void:
 	picture.texture.get_image().save_png(output.path_join("original-frame.png"))
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
 	file.store_string(JSON.stringify({"state": previous, "program": previous_program, "samples": samples, "presentation": previous_presentation,
+		"graphics_mode":tandem_frame.graphics_mode if trace_mode else "reference","fast_forward":fast_forward,
 		"display": play_display.description() if play_mode else {"mode":"comparison"},
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
 		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions} if pc_audio else null,

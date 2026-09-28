@@ -29,7 +29,8 @@ Bearings read each digit, with both nine and niner accepted. See
 Seven original radio captions now have generated speech and a source-requested
 attention sample. The Escort airborne report has a 3,716-frame original parity
 comparison; six other captions have isolated routing/equipment-gate evidence.
-Warning sounds, wider crew/readiness coverage, briefings and music remain.
+Remaining source SFX and crew families plus local frontend music are now integrated;
+see the final section. Frontend narration remains unvoiced.
 Final mix and human listening approval are also open.
 
 Current native default-audio receipt:
@@ -540,3 +541,49 @@ is consumed and the 98 post-restore/pre-retrieval frames stay silent. The native
 process and its source child exit 0. Full validation
 `validation-20260928T115653Z` passes all 42 stages. Per-cue synthetic playback adds
 229 checks without claiming seven independent live radio occurrences.
+
+## Remaining source requests and presentation transport
+
+Seven additional original argument-producing blocks now map five source sound
+IDs to distinct authored single-effect WAVs. Names preserve source IDs because
+the audit does not establish a stronger semantic label:
+
+| Request | Exact return IPs | Sample |
+|---|---|---|
+| 7 | 19d1 | pc_request_07 |
+| 9 | 0527 | pc_request_09 |
+| 10 | 0974, 7790 | pc_request_10 |
+| 15 | 034f | pc_request_15 |
+| 16 | 8219, 8256 | pc_request_16 |
+
+`pc_request_sound_oracle.py` executes those unchanged original blocks until the
+original dispatcher and verifies its actual stack argument and return IP.
+This proves source request identity, not branch eligibility or live occurrence.
+`build_pc_request_sounds.py` makes bounded new mathematical samples, without
+mixed recordings, ROM waveforms or invented speech. Each installed file has a
+SHA-256 in `pc_request_provenance.json`. Unknown callsites still stay silent.
+Requests 0, 4, 5, 12 and 13 remain source motor/stop control, represented by the
+live original channel interpreter rather than invented one-shot events.
+
+The further 50 source-message voices and local sample-based frontend score are
+covered in `voice-workflow.md` and `genesis-audio-workflow.md`. The original-PC
+message bank is now 449 performances. Brief/debrief narration, individual live
+occurrence of the new source paths, and human listening/mix acceptance remain
+separate outstanding boundaries.
+
+`set_transport_muted(true)` suppresses playback while the same strict packet
+validation and event consumption continue. Returning to ordinary speed resumes
+only currently active motor loops and the existing music cursor. Consumed
+one-shots and voices never catch up. `reset_timeline()` stops all streams and
+clears source frame/event/message counters for a confirmed restored host
+session. Protocol failures stay latched; restore cannot bypass validation.
+Music uses a fifth mix channel; legacy four-channel callers retain their current
+music setting. Neither API modifies original simulation state.
+
+Native evidence: `audio-finish-work/remaining-native.log` passes 165 checks,
+`music-native-final.log` passes 47, and the full existing audio contract passes
+781 checks after the expanded catalogue. Focused Python source/custody tests
+and existing voice tests also pass. No listening verdict or publication is
+implied. Working if: exact original calls play their individual samples once,
+complete visible messages select their checked voices, and transport/reset
+never introduces delayed historical playback.

@@ -18,7 +18,12 @@ The authored calibration range is separate. The whole remaster is unfinished.
 | Radio arrival and retrieval | `artifacts/pc-radio-trace-01/comparison.json`: 3,716 original frames equal the baseline; `pc-radio-native-01/report.json`: 26,142 checks, zero errors | One attention sample, two generated voice starts and one muted retrieval; no F5 catch-up. All seven source captions have dry Gemini takes and wording QA; six lack live occurrence proof |
 | Shift+3 | `artifacts/pc-modifiers-trace-01/report.json`: all 530 RAM/video/input records equal the unmodified core | Original speed index cycles 0, 1, 2. Original scancode polling also selects AX. This side effect is preserved |
 | Plain vehicles | `artifacts/pc-vehicle-flat-play-01/verification.json`: original 1,679-frame close approach, zero textured vehicle polygons | Replacement models are deferred |
-| Adjustable audio mix | `artifacts/pc-audio-menu-native-04/menu-report.json`: all 15 checks pass using real macOS menu clicks; `pc-audio-mix-native-02/mix-report.json`: 1,020 original input/RAM/video records unchanged during nine mix changes | Native macOS verified; non-native menu layout rendered on macOS, other OS acceptance remains open; music is still unfinished |
+| Adjustable audio mix | `artifacts/pc-audio-menu-native-04/menu-report.json`: all 15 checks pass using real macOS menu clicks; `pc-audio-mix-native-02/mix-report.json`: 1,020 original input/RAM/video records unchanged during nine mix changes; current five-channel mix unit gate: 110 checks | Native macOS verified; non-native menu layout rendered on macOS, other OS acceptance remains open |
+| Full checkpoints | `artifacts/pc-state-root-native-01/report.json`: 19/19 checks pass, including cross-process native continuation, exact campaign ZIP restoration and failed-load rollback | First restored video transition is held; draw ownership is reacquired from actual original rendering. States are pinned to core/game/platform |
+| Live graphics and fast forward | `artifacts/pc-conveniences-native-02/conveniences-report.json`: 113 checks, zero errors; production menu callbacks, save/load and identical source RAM/video after 15 normal frames versus 1+2+4+8-frame requests | Bounded input route; no mission victory claim. Modern is deliberately unavailable |
+| Graphics transition regression | `artifacts/pc-graphics-root-native-02/report.json`: 10,253,369 checks across 158 frames, zero errors; authentic donor exclusions independently tested | Root self-review found and repaired lower-gunner donor widget leakage. Both affected consoles conservatively retain PC pixels in Genesis mode |
+| New checkpoint core ordinary-run parity | `artifacts/pc-conveniences-parity-01/comparison.json`: 13 checks, all 3,716 paired original RAM/video/input records match the unmodified core | Ordinary radio route; checkpoint-specific continuation is covered separately |
+| Additional speech, effects and frontend music | Native root gates: 165 remaining-audio checks and 47 music/transport checks, zero errors; original CPU oracles: 54 crew assignments and seven sound-request blocks | Source assignment and native player proof; every new cue has not occurred in a live mission, and independent listening acceptance remains open |
 
 ## Presentation repairs
 
@@ -56,11 +61,23 @@ native playback checks. Seven radio captions use dry Gemini 3.8 Charon takes,
 with speech gated on the original displayed message and a separate attention
 sample on arrival. No mixed gameplay recordings are used as live samples.
 
+Fifty further distinct captions now have generated performances: 20 scenario
+reports, 27 vehicle-class destruction reports and three original speed-setting
+announcements. Forty-nine use preferred Gemini 3.8, and one uses the authorized
+3.1 fallback after a provider failure. Selected takes passed blind wording QA,
+including separately regenerated repairs. Five previously unmapped source sound
+requests now have individually synthesized samples. Four authored sample-based
+frontend arrangements use extracted Genesis percussion and new tonal instrument
+samples; these are new scores, not recovered original arrangements.
+
 The app's Audio menu independently controls master, sound effects, crew voices,
-and engine/turret volume. 100% preserves the existing authored mix. Off stops
+engine/turret and music volume. 100% preserves the existing gameplay mix; the
+new Music channel defaults to 70%. Off stops
 that channel immediately; raising its level never replays an old one-shot or
 spoken call. Active source-driven motor loops can resume. Original F5 and pause
-remain authoritative. Choices persist in a separate Godot preference file and
+remain authoritative for gameplay. Frontend music follows Music/Master settings
+on source-verified intro, menu, briefing and debrief screens; simulation and
+unknown screens stay musically quiet. Choices persist in a separate Godot preference file and
 do not touch original campaign saves. See `pc-audio-mix.md`.
 
 ## Controls and saves
@@ -79,6 +96,24 @@ and `GENESIS/` directories cannot be selected as save destinations.
 Launch/bridge errors now remain visible in the game window until it is closed.
 Diagnostic captures still exit nonzero on failures.
 
+The new Session menu provides five numbered checkpoints and Undo last load.
+Checkpoints restore the native machine and campaign overlay together. Atomic
+archives retain overwritten versions; invalid/incompatible states are rejected
+before replacing the live session. Fast forward requests 2, 4 or 8 original
+frames at a time, with presentation sound muted and no stale speech catch-up.
+The original CPU/game-speed settings remain untouched.
+
+Graphics switches the cached current frame among exact PC EGA, verified native
+Genesis donors and Upscaled artwork. Assets are preloaded. Genesis is explicitly
+partial, with original PC pixels in unmatched fields; Modern is disabled.
+See [play controls](play-controls.md) and [mode coverage](graphics-modes.md).
+
+Local packaging now has deterministic source-review and private playable-kit
+builders, dependency checks and an external persistent-profile launcher. Neither
+kit is approved for publication. The private kit requires installed Godot,
+Python/Pillow and its included owner-supplied inputs. See
+[packaging](packaging.md) and [rights review](release-rights.md).
+
 ## Open acceptance work
 
 * Sustained live frame pacing is now close to target in the latest local probe.
@@ -92,13 +127,15 @@ Diagnostic captures still exit nonzero on failures.
   and bounded expected-glyph reuse reduce presentation work without skipping any
   current source pixel, changing emulated CPU speed or batching live input.
 * Victories, additional defeats, campaign progression and longer-session outcomes.
-* Remaining dialogue and warning sounds, wider radio/warning occurrence coverage,
-  music and listening/mix review. Volume
-  controls are implemented; a finished musical arrangement and mix are not.
-* Remaining graphics families and transitions, preserving Genesis precedence and
-  original PC visibility. Vehicle replacement is intentionally deferred.
-* Portable packaging and community-release rights/provenance review. Work is
-  local only; no publication or redistribution has been performed.
+* Wider individual dialogue/SFX occurrence coverage and independent listening/mix
+  review. Frontend paragraphs have no new narration; they lack a complete source
+  utterance/interruption identity. Sample-based arrangements and five-channel
+  mixing are now implemented.
+* Remaining unmatched graphics families, preserving Genesis precedence and
+  original PC visibility. Vehicle replacement and Modern graphics are deferred.
+* Supported-platform standalone installers and community-release clearance.
+  A rights/provenance inventory now records the unresolved permissions and
+  licence decisions. Work is local only; nothing has been published.
 
 These are remaining outcomes of the active goal, not optional extras. Each
 additional parity claim requires its own source comparison and runtime evidence.

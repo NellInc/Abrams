@@ -18,6 +18,12 @@ music and sound-effect references for a faithful presentation upgrade.
   clearing diagnostic output. `--saves /absolute/path` chooses a separate profile.
   Concurrent windows cannot write the same save directory. No source game files
   are modified. See `docs/playability-status.md` for tested flows and limits.
+  **Session** now offers five save-state slots, Undo last load, and 2x/4x/8x
+  fast forward. States include the campaign disk, so loading rewinds both.
+  **Graphics** switches the current frame immediately between untouched EGA,
+  authentic original-resolution Genesis donor art, and the Upscaled remaster.
+  Modern is visible but unavailable. See `docs/play-controls.md` for controls,
+  compatibility and exact coverage. No new vehicle models or textures are enabled.
 * Open **Calibration Range.command** for the separate authored test range.
 * Open **Art Review.command** for original/remaster artwork comparisons.
 * Open **PC Bridge.command** for the original-PC/Godot tandem research view.
@@ -76,14 +82,24 @@ music and sound-effect references for a faithful presentation upgrade.
   Bearings speak
   by digit, with both “nine” and “niner” accepted.
   F5 and original pause mute them; `--no-audio` disables remastered audio.
-  The app's **Audio** menu controls master, effects, crew voices and engine/turret
-  volumes independently, and remembers the mix. These controls cannot override
-  the original sound gate. On macOS the menu occupies no cockpit space.
-  Remaining dialogue and music are unfinished;
+  A further 50 source-verified scenario, vehicle-destruction and speed-setting
+  captions now have generated performances. Five additional sound-request families
+  use individual synthesized samples. Four sample-based frontend arrangements
+  accompany recognized intro, menu, briefing and debrief screens.
+  The app's **Audio** menu controls master, effects, crew voices, engine/turret
+  and music volumes independently, and remembers the mix. Original F5/pause
+  still gate gameplay sound; frontend music follows its separate Music/Master
+  controls. On macOS the menu occupies no cockpit space. Wider live occurrence
+  coverage and independent listening review remain open;
   see `docs/pc-audio-research.md`.
 * Importing `godot/project.godot` in Godot 4 still runs the authored calibration
   range as its main scene. Use **Play.command** for the PC-authoritative game.
 * Set `GODOT_BIN` to the engine executable if the launcher cannot find it.
+* Local source-review and private playable kits can be assembled using
+  `tools/package_build.py`. The private launcher keeps profiles outside the kit.
+  These are local-only review builds with prerequisites, not standalone signed
+  installers or cleared community releases. See `docs/packaging.md` and
+  `docs/release-rights.md`.
 
 The range supports four stations, driving/turret modes, target selection/lock,
 three main ammunition types, machine gun, smoke effects, zoom, a thermal preview,
