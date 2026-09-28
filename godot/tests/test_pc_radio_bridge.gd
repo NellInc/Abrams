@@ -11,6 +11,7 @@ var photographing := false
 var muted_radio_seen := false
 var fresh_radio_seen := false
 var restored_silent_frames := 0
+var portrait_frames: Array[Dictionary] = []
 
 class RadioBridge extends "res://scripts/pc_bridge.gd":
 	var radio_state: String
@@ -60,11 +61,11 @@ func _process(delta: float) -> bool:
 	if photographing:return false
 	return super._process(delta)
 
-func photograph(identity: int) -> void:
+func photograph(label: String) -> void:
 	await process_frame
 	RenderingServer.force_draw(false)
 	RenderingServer.force_sync()
-	check(root.get_texture().get_image().save_png(output.path_join("radio-%d.png"%identity))==OK,"native radio photograph")
+	check(root.get_texture().get_image().save_png(output.path_join(label+".png"))==OK,"native photograph: "+label)
 	photographing=false
 	if not errors.is_empty():bridge.failure=errors[0]
 
@@ -83,6 +84,18 @@ func _apply_sample(message: Dictionary) -> void:
 	check(draw_view.vehicle_art==null and draw_view.vehicle_polygon_count==0,"rejected vehicle textures absent")
 	var packet: Dictionary=message.audio
 	check(packet.events==events_by_frame.get(index,[]),"every audio request equals the parity-tested trace: %d"%index)
+	# Consecutive original scanouts independently establish a complete driver
+	# portrait at 3583, its caption at 3601, and original erasure at 3690.
+	if index>=3570 and index<=3715:
+		var expected := 2 if index>=3583 and index<3690 else -1
+		var actual := int(tandem_frame.portrait_art.active.get("id",-1))
+		check(actual==expected,"same-frame driver portrait lifecycle: %d"%index)
+		var captions: Array=message.presentation.text_runs.filter(func(r):return r.kind=="crew_primary")
+		check(captions.size()==(1 if index>=3601 and index<3690 else 0),"source caption timing remains separate: %d"%index)
+		portrait_frames.append({"frame":index,"portrait":actual,"caption_visible":not captions.is_empty()})
+		if index in [3582,3583,3601,3689,3690]:
+			photographing=true
+			self.photograph.call_deferred("portrait-%d"%index)
 	for event: Dictionary in packet.events:
 		if event.kind!="radio_visible":continue
 		radios.append(event.duplicate(true))
@@ -101,7 +114,7 @@ func _apply_sample(message: Dictionary) -> void:
 		if not event.enabled:muted_radio_seen=true
 		elif muted_radio_seen:fresh_radio_seen=true
 		photographing=true
-		self.photograph.call_deferred(int(event.message_id))
+		self.photograph.call_deferred("radio-%d"%int(event.message_id))
 	for receipt: Dictionary in pc_audio.receipts:
 		if int(receipt.id)>last and receipt.sample=="radio":
 			alert_receipts.append(receipt.duplicate(true))
@@ -128,10 +141,12 @@ func _capture() -> void:
 	check(radio_receipts.map(func(r):return r.reason)==["","original-sound-gate",""],"two audible radios and one muted radio")
 	check(alert_receipts.size()==1,"one original radio notification")
 	check(restored_silent_frames>0,"F5 restore observed before fresh radio")
+	check(portrait_frames.size()==146,"every driver onset/display/erasure scanout checked")
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({
 		"checks":checks,"errors":errors,"frames":samples,"radios":radios,"receipts":radio_receipts,
 		"restored_silent_frames":restored_silent_frames,"alerts":alert_receipts,
-		"scope":"Production native viewer and real source host. All 3716 paired original RAM/video records and audio events equal the parity-tested trace. One notification sample, three current radio pixel hashes, two generated voice starts, one muted consumption, no F5 replay. No physical-device/listening approval or other radio live-occurrence claim."},"  "))
+		"portrait_frames":portrait_frames,
+		"scope":"Production native viewer and real source host. All 3716 paired original RAM/video records and audio events equal the parity-tested trace. One notification sample, three current radio pixel hashes, two generated voice starts, one muted consumption, no F5 replay. Driver portrait appears on its first complete source frame, 18 frames before its caption, and clears on source erasure; all 146 transition frames checked. No physical-device/listening approval or other radio live-occurrence claim."},"  "))
 	print("PC_RADIO_NATIVE: %d checks, %d frames, %d errors"%[checks,samples,errors.size()])
 	if not errors.is_empty():bridge.failure=errors[0]
 	await super._capture()

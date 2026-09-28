@@ -92,6 +92,8 @@ func run() -> void:
 		source.fill(Color8(85,85,85))
 		var item: Dictionary = portraits.templates[id]
 		paint(source,item,at)
+		portraits.set_frame(source,ui,{})
+		check(portraits.active.get("id")==id,"first complete face precedes caption: "+str(id))
 		portraits.set_frame(source,ui,packet(id,at))
 		check(portraits.active.get("id")==id,"complete source portrait accepted: "+str(id))
 		if native: await verify_native(source,"synthetic-"+item.name,output)
@@ -106,21 +108,41 @@ func run() -> void:
 		check(portraits.active.is_empty(),"non-UI portrait pixel rejected")
 		ui.fill(Color.WHITE)
 		portraits.set_frame(source,ui,packet((id+1)%4,at))
-		check(portraits.active.is_empty(),"incorrect speaker cannot select a different face")
+		check(portraits.active.get("id")==id,"speaker hint cannot override current source identity")
 		portraits.set_frame(source,ui,packet(id,Vector2i(-100,-100)))
-		check(portraits.active.is_empty(),"out-of-bounds anchor rejected")
+		check(portraits.active.get("id")==id,"text cannot move the source-defined portrait anchor")
+		portraits.set_frame(source,ui,{})
+		check(portraits.active.get("id")==id,"caption disappearance cannot remove a still-visible face")
+		source.fill(Color8(85,85,85))
+		portraits.set_frame(source,ui,packet(id,at))
+		check(portraits.active.is_empty(),"source erasure clears portrait even while text remains")
 	portraits.set_frame(source,ui,{})
-	check(portraits.active.is_empty(),"missing hints clear stale portrait")
+	check(portraits.active.is_empty(),"empty current source clears stale portrait")
 	var hint := packet(3,at)
 	paint(source,portraits.templates[3],Vector2i(190,59))
 	hint.text_runs.append(packet(3,Vector2i(190,59)).text_runs[0])
 	portraits.set_frame(source,ui,hint)
-	check(portraits.active.is_empty(),"ambiguous source positions retain original")
+	check(portraits.active.is_empty(),"text cannot authorize a face outside its original position")
+	paint(source,portraits.templates[3],at)
+	portraits.set_frame(source,ui,hint)
+	check(portraits.active.get("at")==at,"only source-defined position is eligible")
 	for invalid in [{"text_runs":null},{"text_runs":[null]},
 		{"text_runs":[{"kind":"crew_primary","speaker":1.5,"rect":[46,112,60,6]}]},
 		{"text_runs":[{"kind":"crew_primary","speaker":3,"rect":[46.5,112,60,6]}]}]:
 		portraits.set_frame(source,ui,invalid)
-		check(portraits.active.is_empty(),"malformed portrait hint rejected")
+		check(portraits.active.get("id")==3,"malformed unrelated text cannot delay the proven face")
+	# Ambiguity still fails closed; pinned production templates are distinct.
+	var original_template: Dictionary = portraits.templates[0]
+	portraits.templates[0] = portraits.templates[3].duplicate(true)
+	portraits.templates[0].id = 0
+	portraits.set_frame(source,ui,{})
+	check(portraits.active.is_empty(),"ambiguous source identities retain original")
+	portraits.templates[0] = original_template
+	for pair in [[null,ui],[source,null],
+		[Image.create_empty(640,400,false,Image.FORMAT_RGB8),ui],
+		[source,Image.create_empty(320,200,false,Image.FORMAT_RGB8)]]:
+		portraits.set_frame(pair[0],pair[1],{})
+		check(portraits.active.is_empty(),"invalid current image or provenance clears the face")
 	# Exercise the real compositor lifecycle too; a menu, missing world or
 	# invalid provenance must remove yesterday's face along with its frame.
 	var tandem = preload("res://scripts/pc_tandem_frame.gd").new()
@@ -166,6 +188,8 @@ func recorded(path: String, output: String) -> void:
 			if not frames is Array or index<0 or index>=frames.size(): continue
 			presentation = frames[index]
 		portraits.set_frame(source,ui,presentation)
+		if entry.has("expected_portrait"):
+			check(portraits.active.get("id",-1)==int(entry.expected_portrait),"exact recorded portrait lifecycle: "+entry.stage)
 		if not portraits.active.is_empty(): visible+=1
 		await verify_native(source,"recorded-"+entry.stage,output)
 	check(visible>0,"real original portraits visibly restored")

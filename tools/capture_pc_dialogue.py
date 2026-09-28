@@ -44,11 +44,15 @@ def main():
     p.add_argument('--mode',choices=['trace','baseline'],required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--state',type=Path,required=True)
     p.add_argument('--capture-ui',action='store_true',help='save paired original masks/presentations with newly visible dialogue')
+    p.add_argument('--capture-window',type=int,nargs=2,metavar=('FIRST','LAST'),
+                   help='also save every paired frame in this inclusive route-index window')
     route=p.add_mutually_exclusive_group()
     route.add_argument('--radio',action='store_true',help='original Escort driving, radio retrieval, mute and reopen route')
     route.add_argument('--warnings',action='store_true',help='original smoke exhaustion, mute and re-warning route')
     p.add_argument('--frames',type=int,default=12000);a=p.parse_args()
     if not 1<=a.frames<=18000:p.error('frames must be 1..18000')
+    if a.capture_window and not (a.capture_ui and 0<=a.capture_window[0]<=a.capture_window[1]<a.frames):
+        p.error('capture-window requires capture-ui and 0 <= FIRST <= LAST < frames')
     if any(a.output.resolve().is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
         p.error('output must be outside original sources')
     a.output.mkdir(parents=True,exist_ok=False)
@@ -100,6 +104,14 @@ def main():
                     seen.update(unseen)
                 changes.append(item);prior=current
                 if new:print(json.dumps({'frame':i,'visible':new}),flush=True)
+            if a.capture_window and a.capture_window[0]<=i<=a.capture_window[1]:
+                filename=f'text-{i:05d}.png';core.screenshot().save(a.output/filename)
+                mask=(view.get('ui_overlay') or {}).get('mask_png')
+                if mask and not any(e['frame_index']==i for e in ui_presentations):
+                    maskname=f'text-{i:05d}-mask.png'
+                    (a.output/maskname).write_bytes(base64.b64decode(mask,validate=True))
+                    ui_presentations.append({'stage':f'dialogue-{i:05d}','frame_index':i,
+                                             'image':filename,'mask':maskname,'presentation':view})
             if not program or program['name']!='SIM':break
             if i%1200==1199:print(json.dumps({'frame':i,'queued':queue}),flush=True)
         final=session.sample()
@@ -109,6 +121,7 @@ def main():
                 'audio_events':audio,'final_state':final['state'],'final_program':final['program'],
                 'state_sha256':hashlib.sha256(a.state.read_bytes()).hexdigest(),
                 'state_core_sha256':manifest['baseline_sha256'],
+                'capture_window':a.capture_window,
                 'text_epochs':[c.text.report() for c in collectors],
                 'message_epochs':[{'counts':dict(c.text.messages.counts),'assignments':list(c.text.messages.history)} for c in collectors],
                 'ui_presentations':ui_presentations,'scope':__doc__}

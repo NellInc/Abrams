@@ -1,7 +1,9 @@
 extends Control
 ## Genesis faces inside fully matched original PC portrait pixels.
-## Observed text supplies candidate anchors only. Every opaque source pixel and
-## UI bit must independently match before the portrait is eligible for redraw.
+## SIM draws the face at (37,59) before drawing its caption. Match the current
+## portrait itself so a later text observation cannot delay the replacement.
+## Every opaque source pixel and UI bit must still independently match.
+const SOURCE_AT = Vector2i(37,59) # SIM.EXE:3ee1..3f03, gunner-view crew popup.
 const CATALOG_SHA = "ed932398c3897f2727159457290e76e70c28d424ecb58f57998982b2dd626e5b"
 const SOURCE_SHA = "e769b71bee8a40023e6ffdb3ac0fd5db0a7485148c1d2eb3fd4fe3b1da6ffa42"
 const ART = [
@@ -65,33 +67,18 @@ func matches(source: Image, ui: Image, item: Dictionary, at: Vector2i) -> bool:
 		if ui.get_pixelv(p).r!=1.0 or source.get_pixelv(p).to_rgba32()!=point.rgb: return false
 	return true
 
-func set_frame(source: Image, ui: Image, presentation: Dictionary) -> void:
+func set_frame(source: Image, ui: Image, _presentation: Dictionary) -> void:
 	clear()
 	if templates.size()!=4 or source==null or ui==null: return
 	if source.get_size()!=Vector2i(320,200) or ui.get_size()!=Vector2i(320,200) or ui.get_format()!=Image.FORMAT_L8: return
-	var runs = presentation.get("text_runs")
-	if not runs is Array or runs.size()>256: return
-	for run in runs:
-		if not run is Dictionary or run.get("kind")!="crew_primary": continue
-		var speaker = run.get("speaker")
-		var rect = run.get("rect")
-		if not (speaker is int or speaker is float) or not is_finite(float(speaker)) or float(speaker)!=floorf(float(speaker)) or speaker<0 or speaker>=4: continue
-		if not rect is Array or rect.size()!=4: continue
-		var valid := true
-		for n in rect:
-			if not (n is int or n is float) or not is_finite(float(n)) or float(n)!=floorf(float(n)): valid=false
-		if not valid: continue
-		# Original observed primary-line / portrait anchor relationship. This is
-		# a search hint, never independent permission to display a character.
-		var at := Vector2i(int(rect[0])-9,int(rect[1])-53)
-		var item: Dictionary = templates[int(speaker)]
-		if not matches(source,ui,item,at): continue
+	for item in templates:
+		# All four identities are tested at the sole source-defined anchor. No
+		# queued speaker, text hint, previous frame or timeout can grant visibility.
+		if not matches(source,ui,item,SOURCE_AT): continue
 		if not active.is_empty():
-			if active.id!=int(speaker) or active.at!=at:
-				clear() # Ambiguous simultaneous candidates retain original art.
-				return
-			continue
-		active = {"id":int(speaker),"name":item.name,"at":at,"size":item.size,
+			clear() # Ambiguous source identities retain original art.
+			return
+		active = {"id":item.id,"name":item.name,"at":SOURCE_AT,"size":item.size,
 			"opaque_pixels":item.points.size(),"texture":item.texture}
 		material.set_shader_parameter("original_coverage",item.mask)
 	queue_redraw()

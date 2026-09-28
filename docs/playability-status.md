@@ -34,6 +34,12 @@ with 32 exact Genesis face counterparts. All 3,716 original radio-route frames
 still match after the change; the opaque HUD and untextured vehicles are preserved.
 See `pc-hill-art-integration.md` for native image and source comparisons.
 
+The driver portrait no longer waits for its caption before becoming remastered.
+It now appears on the first complete original face frame and clears on original
+erasure. `artifacts/pc-portrait-live-01/report.json` verifies all 146 transition
+frames within the unchanged 3,716-frame source route; the former 18-frame delay
+is removed. See `genesis-portrait-integration.md` for the before/after evidence.
+
 Audio is enabled by default. `--no-audio` disables presentation audio. Original
 F5 and pause still govern the original sound gate. All 360 bearing calls use
 full-sentence generative TTS with digits spoken separately, including leading
