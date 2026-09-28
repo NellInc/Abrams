@@ -30,6 +30,65 @@ inside an instrumented emulator, with a read-only Godot presentation bridge.
 The following goal continuation authorized continued local execution. Neither
 the current authored range nor a diagnostic pose view counts as the remaster.
 
+## Native-resolution play window, 2026-09-28
+
+Previous goal turn: progress, committed source-verified graticule `b8c1dbb`.
+This continuation makes Play a clean, resizable 4:3 game window, with native
+fullscreen available through `--fullscreen` and the window controls. The original
+comparison layout remains available through `--compare` or PC Bridge. No game
+keys are intercepted. No emulator, original input, camera projection or source
+asset changed. `docs/pc-display-research.md` records the architecture and controls.
+
+The interface now renders at the actual physical game-rectangle size instead of
+stretching a fixed 1280x800 composite. The world target scales isotropically from
+the original clip, preserving source camera aspect and projection while covering
+both output axes. Child-first viewport rendering preserves scanout pairing during
+resizes. All original content remains visible, with black letterboxes rather
+than an expanded field of view or additional tactical information.
+
+Evidence:
+
+* Final headless display contracts: 694 checks pass, including 360 projections
+  across six window shapes, four original clips and three focal lengths.
+  Maximum error is below 0.000017 original pixels. Negative sampling-oracle
+  cases reject non-boundary neighbours and unrelated colours.
+* `artifacts/pc-native-display-tests-04/report.json`: native terminal exit 0,
+  792 assertions and 24,999,518 full-frame pixel comparisons pass across 18
+  cases. Five first-resize colour/clip changes and five source fallbacks are
+  followed by four recorded stations at two window sizes. Exact texel-boundary
+  neighbours are explicitly accounted for; all other RGB checks remain exact.
+* `artifacts/pc-native-window-resize-02/resize-report.json`: six actual-window
+  transitions pass, including fullscreen and return to a requested 1440x900
+  window. Render targets exactly match the displayed game rectangle, all
+  letterboxes are black, and state/presentation/original image and guest sample
+  count remain unchanged throughout the frozen-frame test.
+* `artifacts/pc-native-display-validation-01/capture-parity.json`: native Play
+  and the public comparison launcher retain identical original state, program,
+  presentation, sample count and framebuffer to the pre-change capture. The
+  optional comparison composite is byte-identical as well. The public Play
+  cold-boot joystick menu renders at the requested 1440x1080 with all three
+  original text runs recognized. These are bounded checks, not campaign parity.
+
+* `artifacts/validation-20260928T030919Z`: final aggregate terminal exit 0;
+  all 34 stages and 241 Python tests pass, including the final 694 display
+  contracts, launcher argument routing, keyboard checks and source preservation.
+
+The initial window test exposed the engine's startup size override, fixed by
+applying requested dimensions after initialization. The first strict-floor RGB
+oracle failed on exact texture boundaries; independent pixel and rational-ratio
+checks demonstrated valid adjacent samples, now covered without broad tolerance.
+The first actual-window fixture also failed to require the requested size after
+leaving fullscreen: the OS ignored its premature resize. That fixture was broken,
+not accepted proof. It now waits for the mode transition before requesting size
+and asserts the exact result; the second run above passes.
+
+Actual Play, the returned window and the joystick menu were visually inspected by
+the implementing assistant. This remains self-review, not Nell's art acceptance.
+Optional Impeccable is unavailable; no dependency was installed. Native runtime
+coverage is local macOS only. Other platforms, sustained interactive timing,
+remaining graphics/audio families and complete-game parity remain open. Local
+only; five unrelated untracked vehicle-study files remain untouched.
+
 ## Source-verified gunner graticule, 2026-09-28
 
 Continued the local remaster after the frame/ammunition repair in `1bc6bd3`.

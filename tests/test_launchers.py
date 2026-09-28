@@ -27,6 +27,10 @@ class LauncherTests(unittest.TestCase):
             environment = dict(os.environ, GODOT_BIN=str(stub))
             for launcher, args, expected in [
                 ('Play.command', ['--capture', '--boot'],
+                 ['--script', 'res://scripts/pc_bridge_viewer.gd', '--', '--play', '--capture', '--boot']),
+                ('Play.command', ['--compare', '--fullscreen', '--window-size', '1920x1080'],
+                 ['--script', 'res://scripts/pc_bridge_viewer.gd', '--', '--play', '--compare', '--fullscreen', '--window-size', '1920x1080']),
+                ('PC Bridge.command', ['--capture', '--boot'],
                  ['--script', 'res://scripts/pc_bridge_viewer.gd', '--', '--capture', '--boot']),
                 ('Art Review.command', ['--capture-art', '/tmp/art review'],
                  ['res://scenes/art_review.tscn', '--', '--capture-art', '/tmp/art review']),

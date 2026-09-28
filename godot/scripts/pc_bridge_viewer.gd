@@ -7,6 +7,11 @@ const WorldView = preload("res://scripts/pc_world_view.gd")
 const DrawPass = preload("res://scripts/pc_draw_pass.gd")
 const PcCamera = preload("res://scripts/pc_camera.gd")
 const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
+const PlayDisplay = preload("res://scripts/pc_play_display.gd")
+var play_mode := false
+var play_display: Control
+var requested_window_size := Vector2i.ZERO
+var requested_fullscreen := false
 var pc_audio: Node
 var audio_drained := true
 var world_view: Node3D
@@ -52,6 +57,23 @@ func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	boot_mode = "--boot" in args or ("--trace" not in args and "--reference" not in args)
 	trace_mode = boot_mode or "--trace" in OS.get_cmdline_user_args()
+	play_mode = trace_mode and "--play" in args and "--compare" not in args
+	if play_mode:
+		root.title = "Abrams Battle Tank"
+		root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+		root.content_scale_factor = 1.0
+		root.min_size = Vector2i(640,480)
+		requested_window_size = Vector2i(1280,960)
+	if "--window-size" in args:
+		var index := args.find("--window-size")+1
+		var requested := PlayDisplay.parse_extent(args[index] if index<args.size() else "")
+		if requested==Vector2i.ZERO:
+			printerr("--window-size requires WIDTHxHEIGHT, from 640x480 to 16384x16384")
+			quit(2)
+			return
+		requested_window_size = requested
+	requested_fullscreen = "--fullscreen" in args
+	_configure_window.call_deferred()
 	wire_mode = "--wire" in OS.get_cmdline_user_args()
 	cockpit_art_requested = "--cockpit-art" in args or (trace_mode and "--original-art" not in args and "--gunner-art" not in args and not wire_mode)
 	gunner_art_requested = "--gunner-art" in args or cockpit_art_requested
@@ -164,7 +186,35 @@ func _label(text: String, size: int) -> Label:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return label
 
+func _configure_window() -> void:
+	# Startup project overrides are applied after SceneTree._initialize(). Apply
+	# the requested native size once the real window exists, then trust its actual
+	# size signals (including OS limits, HiDPI and fullscreen transitions).
+	if requested_window_size!=Vector2i.ZERO: root.size = requested_window_size
+	if requested_fullscreen: root.mode = Window.MODE_FULLSCREEN
+
+func _build_play_ui() -> void:
+	play_display = PlayDisplay.new()
+	root.add_child(play_display)
+	play_display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	world_viewport = play_display.world_viewport
+	tandem_viewport = play_display.tandem_viewport
+	tandem_frame = play_display.tandem_frame
+	# These retain diagnostic state/capture access without exposing extra tactical
+	# information or research furniture over the original game screen.
+	picture = TextureRect.new()
+	status = _label("Starting the original PC game...",22)
+	caption = _label("",18)
+	for node in [picture,status,caption]: play_display.add_child(node)
+	picture.hide()
+	caption.hide()
+	status.position = Vector2(24,24)
+	_build_stage(world_viewport)
+
 func _build_ui() -> void:
+	if play_mode:
+		_build_play_ui()
+		return
 	var canvas := Control.new()
 	root.add_child(canvas)
 	canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -311,6 +361,7 @@ func _apply_sample(message: Dictionary) -> void:
 		bridge.failure = "invalid original framebuffer"
 		return
 	picture.texture = ImageTexture.create_from_image(image)
+	if play_mode: status.hide()
 	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
 	if not state is Dictionary:
 		previous = {}
@@ -345,7 +396,8 @@ func _apply_sample(message: Dictionary) -> void:
 		world_view.apply_state(state)
 	if frame is Dictionary:
 		var dimensions: Vector2i = PcCamera.apply(camera, frame, Vector3.ZERO if trace_mode else world_view.anchor)
-		world_viewport.size = dimensions * 4
+		if play_mode: play_display.set_camera_dimensions(dimensions)
+		else: world_viewport.size = dimensions * 4
 		# Source 320x200 pixels stretch to 4:3 outside the 3D projection.
 		if not trace_mode: world_aspect.ratio = float(dimensions.x) / (float(dimensions.y) * 1.2)
 	if trace_mode:
@@ -389,6 +441,7 @@ func _capture() -> void:
 	picture.texture.get_image().save_png(output.path_join("original-frame.png"))
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
 	file.store_string(JSON.stringify({"state": previous, "program": previous_program, "samples": samples, "presentation": previous_presentation,
+		"display": play_display.description() if play_mode else {"mode":"comparison"},
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
 		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions} if pc_audio else null,
 		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,

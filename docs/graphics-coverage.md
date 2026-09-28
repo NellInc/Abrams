@@ -23,7 +23,7 @@ is still being recovered; no overall completion percentage is justified.
 |---|---|---|---|
 | Four cockpit surrounds | All four extracted | Five-image cockpit/status pack; four stations live with original visibility and moving roof | Remaining trims and aliasing at original silhouettes; all state variants and motion acceptance |
 | Gunner static instruments | Present in gunner extract | Nine illustrated cells live, pixel/provenance gated; ammunition and adjacent symbols now use tight, aspect-preserving crops after Nell rejected the stretched bindings | Other symbols and colour/state variants; human art acceptance |
-| Dynamic gauges and reticles | Corresponding Genesis gauges and gunner sight visible | PC values use verified scalable type; speed/fuel/temperature gauges and rotating hull/turret diagrams live; bearing text outlined; eight-stroke gunner sight now source-draw/visible-frame verified with resolution-independent edges, original endpoint quirks and live thermal/zoom evidence | Target box and other symbols, further warning/state variants, native-resolution viewer configuration and human acceptance; no hidden information |
+| Dynamic gauges and reticles | Corresponding Genesis gauges and gunner sight visible | PC values use verified scalable type; speed/fuel/temperature gauges and rotating hull/turret diagrams live; bearing text outlined; eight-stroke gunner sight now source-draw/visible-frame verified with resolution-independent edges, original endpoint quirks and live thermal/zoom evidence | Target box and other symbols, further warning/state variants, remaining display acceptance and human acceptance; no hidden information |
 | Systems status | Native CHECK DAMAGE captured exactly | Genesis background and pristine schematic live; twelve labels and six values scalable | Actual damaged schematics and lamp art; original fallback remains until verified |
 | Title and credits | Title and all four expanding flash poses extracted with exact VDP reconstruction | Title, four hi-res flash poses and eight original-font credit cards live, selected by complete original PC frames | Publisher splash, other transition variants and human art acceptance; moving 3D menu backdrop remains original |
 | Briefing office and Wilson | Office and two observed Wilson poses extracted | Office, neutral/speaking Wilson and a Genesis-derived facepalm live; exact visible 8x8 dialogue gets scalable lettering | Other CO poses, mouth variants, all dialogue layouts and partial-draw transitions |
@@ -87,5 +87,7 @@ the reported faults. This correction does not close the cockpit family.
 
 The source-verified gunner graticule is documented in `pc-reticle-research.md`.
 Its integer-scale footprint deliberately remains identical. Fractional-resolution
-edge coverage is verified separately; the research viewer's fixed render target
-and the original target-selection box remain open work.
+edge coverage is verified separately. Play now uses a native-resolution 4:3 game
+window; the optional comparison viewer retains its fixed diagnostic target.
+Display evidence is in `pc-display-research.md`. The original target-selection
+box and remaining display/platform acceptance remain open work.

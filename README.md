@@ -6,7 +6,13 @@ music and sound-effect references for a faithful presentation upgrade.
 
 ## Play the current local build
 
-* Open **Play.command** for the original-PC/Godot tandem remaster.
+* Open **Play.command** for the original-PC/Godot tandem remaster in a clean,
+  resizable game window. The original 4:3 display is letterboxed rather than
+  cropped or widened. Graphics and lettering render at the actual window size.
+  Use `./Play.command --fullscreen` for fullscreen, or the native window controls.
+  `--window-size 1920x1080` selects a starting window size. Original game keys
+  remain untouched. `--compare` restores the side-by-side research view.
+  See `docs/pc-display-research.md` for rendering and resize evidence.
 * Open **Calibration Range.command** for the separate authored test range.
 * Open **Art Review.command** for original/remaster artwork comparisons.
 * Open **PC Bridge.command** for the original-PC/Godot tandem research view.
