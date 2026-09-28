@@ -66,7 +66,12 @@ class FrontendCatalogTests(unittest.TestCase):
         local=ROOT/'local-art/pc-information-v3/information.json'
         self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),local.read_bytes())
         self.assertEqual(data['recognition_height'],175)
-        self.assertEqual([e['name'] for e in data['entries']],['ax','sabot','coax','cannon','smoke','crew'])
+        self.assertEqual([e['name'] for e in data['entries']],['ax','heat','sabot','coax','cannon','smoke','crew'])
+        heat=next(e for e in data['entries'] if e['name']=='heat')
+        self.assertEqual(heat['rect'],[104,22,208,67])
+        self.assertEqual(heat['loaded_source_proof'][0]['index'],1)
+        self.assertEqual(heat['loaded_source_proof'][0]['pixels_checked'],208*67)
+        self.assertEqual(heat['art'],'info-v1/ammo-heat-v2.png')
         crew=data['entries'][-1]
         self.assertEqual(crew['full_rgb_sha256'],'ab6177af9b4cf2442a41a1a7bf3f88dbafb5116186cbf4b7760efa196e798977')
         self.assertEqual(crew['genesis_caption_pixels_checked'],386)
@@ -92,7 +97,7 @@ class FrontendCatalogTests(unittest.TestCase):
     def test_information_text_matches_every_original_font_bit(self):
         from tools.pc_fonts import decode_font,text_pixels
         data=json.loads((ROOT/'local-art/pc-information-v3/information.json').read_text())
-        counts={'ax':19,'sabot':19,'coax':12,'cannon':16,'smoke':10,'crew':5}
+        counts={'ax':19,'heat':18,'sabot':19,'coax':12,'cannon':16,'smoke':10,'crew':5}
         for entry in data['entries']:
             image=Image.open(ROOT/'artifacts/pc-information-baseline-02'/(entry['name']+'.png')).convert('RGB')
             occupied=set()

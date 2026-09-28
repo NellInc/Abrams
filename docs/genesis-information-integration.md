@@ -2,18 +2,18 @@
 
 ## Current result
 
-Five illustrations now bind to original PC M1-Info pages: AX, SABOT, coax,
+Six illustrations now bind to original PC M1-Info pages: AX, HEAT, SABOT, coax,
 cannon and smoke dischargers. Genesis supplies every selected illustration.
 The original START executable still draws the information, handles keys and
 chooses pages. Specifications are retained from the PC, including differences
-from the Genesis text. There are now 81 high-resolution original-style outline
-text runs across the six supported pages, including crew roles, headings,
+from the Genesis text. There are now 99 high-resolution original-style outline
+text runs across the seven supported pages, including crew roles, headings,
 specifications and descriptions. The three top-down tank selection diagrams and five outer page surrounds now have
 source-pinned remasters, described below. The two embedded crew captions and
 three overhead M1A1 labels use source-matched vector contours. Four observed
 crew full-frame variants have separate exact pins. The observed composition is live,
-as described below. HEAT remains original pending its recorded
-image-tool blocker. No attempt was made to route around that rejection.
+as described below. HEAT now uses its selected 2172x724 Genesis-derived exterior
+illustration, with all original PC specifications and caption words retained.
 
 The three armament v2 images are in the 19-page art gallery and now have live
 bindings. Coax is 2168x725; cannon and smoke are 2172x724. Original Genesis
@@ -113,8 +113,8 @@ illustration artwork comes from Genesis. Original label/callout geometry remains
 PC-owned.
 
 The current catalog hash is
-`c42a5917374dea8eeb918c32bb5f163f8d8456a7471a5fcb2632b2e44d422d84`
-(schema 3, unchanged 63,840 original sprite pixels and mask bits checked,
+`835ef4cc94a560f35a3ba74a928e39a533833300866c6b8692ffd12de8d0b203`
+(schema 3, 77,776 original sprite pixels and mask bits checked,
 plus the complete text-cell comparisons).
 Generate it into a fresh local directory:
 
@@ -127,7 +127,7 @@ python3 tools/build_pc_frontend_catalog.py \
 The font extension matches complete strings from the original loaded string
 table (SHA-256 `183409cc8b714bee9206d31593607b36c314142b79651206f17e51b6d4ded9d1`)
 to exact FNT foreground/background pixels. It changes no specifications or
-wording, and refuses partial matches. There are 19 AX runs, 19 SABOT, 12 coax,
+wording, and refuses partial matches. There are 19 AX runs, 18 HEAT, 19 SABOT, 12 coax,
 16 cannon, 10 smoke and five crew labels. The Godot source-font gate checks
 them again before the outline renderer draws, retaining the existing Genesis
 crew-label colours. `--original-text` disables these text replacements.
@@ -256,9 +256,9 @@ original 9AFE decoder in private RAM. `tools/extract_genesis_information_invento
 reproduces this inventory. Preview bank pairing and grayscale are diagnostic,
 not established native visual evidence. No absence claim rests on these previews.
 
-HEAT retains its recorded image-tool rejection. This work neither regenerated,
-rephrased nor routed around that refused illustration. Human art acceptance
-remains separate from machine verification.
+That pass retained the recorded HEAT image-tool rejection. The later HEAT
+completion below supersedes its unfinished status. Human art acceptance remains
+separate from machine verification.
 
 ### Embedded crew captions
 
@@ -284,7 +284,8 @@ at its original position instead. Independent tests check every matte pixel and
 original-mode source cell, alongside the contour oracle for upscaled text.
 Visual inventory of AX and SABOT found no further embedded illustration words;
 their headings, descriptions, specification fields and colour codes already use
-the 81 original source-owned outline runs. HEAT artwork remains refused.
+the 81 original source-owned outline runs. The later HEAT completion adds its
+18 original source-owned runs.
 
 `tools/capture_pc_crew_footers.py` observed four original crew entries with menu
 waits of 0, 31, 137 and 601 frames. All upper 175 rows matched exactly. The three
@@ -297,3 +298,35 @@ was introduced. Captures and original input receipts live under
 Working if: all three overhead labels have source-like smooth contours by
 default, Original text restores exact source cell shapes, the four observed
 crew footers render fully, and an unknown full-frame mutation remains rejected.
+
+
+## HEAT completion, 28 September 2026
+
+The exterior-only HEAT game illustration is now completed and installed as
+`local-art/genesis/remastered/info-v1/ammo-heat-v2.png`. The built-in image tool
+produced the selected artwork from the original Genesis reference and its
+previous remaster. A first successful output copied the SABOT silhouette and
+was rejected. Both outputs, exact prompts, hashes and the historical failed
+request remain recorded in the local art manifest.
+
+The PC's INFO.BMP sprite 1 fixes the placement at (104,22), 208x67. Its complete
+pixel and ownership checks qualify the illustration and all 18 original text
+runs. The seven information pages now verify 77,776 original sprite pixels and
+99 text runs. Both the initial and settled HEAT presentations use the same
+bounds. Genesis mode retains the native donor; Upscaled uses the new artwork.
+
+Root verification: 422 Python tests; 83 headless information checks;
+25,865,418 native information checks and 10,253,373 native graphics-mode checks,
+all passing. Two actual `Play.command` cold boots, with and without the new art,
+produced identical source framebuffer bytes, program, state, presentation and
+71 samples. Only the presentation art/text and graphics mode differ. The
+new illustration was visually reviewed by the implementing assistant.
+
+Evidence: `artifacts/heat-finish-20260928/completion.json`, the two `live-*`
+captures, and the native reports in the same directory. Original PC/Genesis
+files are unchanged. Assets remain private and ignored; no new package or
+publication was made.
+
+Working if: HEAT opens with its own correctly shaped high-resolution artwork,
+all source wording remains readable, immediate graphics switching restores
+exactly, and a changed source pixel rejects an unsafe replacement.

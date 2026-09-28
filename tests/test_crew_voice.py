@@ -130,3 +130,42 @@ class CrewVoiceTests(unittest.TestCase):
             self.assertIn(entry["generator"], (PREFERRED, FALLBACK))
             self.assertEqual(entry["text"], SCRIPT["cues"][cue]["caption"])
             self.assertEqual(hashlib.sha256((folder / f"voice_{cue}.wav").read_bytes()).hexdigest(), entry["sha256"])
+
+
+class DirectedPcPerformanceTests(unittest.TestCase):
+    def test_direction_stays_in_metadata_and_casting_is_retained(self):
+        for bank, count in (("remaining", 50), ("radio", 7)):
+            script = json.loads((ROOT / f"godot/data/pc_{bank}_voice_script.json").read_text())
+            self.assertEqual(len(script["cues"]), count)
+            for name, cue in script["cues"].items():
+                with self.subTest(cue=name):
+                    role = script["roles"][cue["role"]]
+                    _, request = request_for(PREFERRED, role, cue)
+                    part = request["input"][0]["content"][0]
+                    self.assertEqual(part["text"], pronounce_headings(cue["text"]))
+                    self.assertEqual(part["annotations"], [{
+                        "type": "speech_metadata", "style": role["style"] + " " + cue["direction"]}])
+                    self.assertEqual(request["generation_config"]["speech_config"], [{"voice": role["voice"]}])
+                    self.assertNotIn(cue["direction"], part["text"])
+
+    def test_success_and_loss_have_distinct_performance_direction(self):
+        script = json.loads((ROOT / "godot/data/pc_remaining_voice_script.json").read_text())["cues"]
+        for name in ("pc_destroyed_a", "pc_destroyed_b", "pc_destroyed_c", "pc_destroyed_d"):
+            self.assertIn("proud", script[name]["direction"])
+            self.assertIn("strongly stressed DESTROYED", script[name]["direction"])
+        for name in ("pc_mission_k", "pc_mission_n"):
+            self.assertIn("No celebration", script[name]["direction"])
+        for name in ("pc_destroyed_f", "pc_destroyed_s", "pc_destroyed_y"):
+            self.assertIn("without celebration", script[name]["direction"])
+        self.assertIn("proud", script["pc_mission_q"]["direction"])
+
+    def test_installed_takes_record_the_actual_directed_request(self):
+        for bank in ("remaining", "radio"):
+            script = json.loads((ROOT / f"godot/data/pc_{bank}_voice_script.json").read_text())
+            receipt = json.loads((ROOT / f"godot/assets/audio/pc_{bank}_provenance.json").read_text())
+            for name, cue in script["cues"].items():
+                with self.subTest(cue=name):
+                    voice = receipt["voices"][name]
+                    self.assertEqual(voice["generator"], PREFERRED)
+                    self.assertEqual(voice["direction"], script["roles"][cue["role"]]["style"] + " " + cue["direction"])
+                    self.assertRegex(voice["generation_script_sha256"], r"^[0-9a-f]{64}$")

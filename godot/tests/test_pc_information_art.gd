@@ -184,7 +184,7 @@ func run() -> void:
 	if not FileAccess.file_exists(fixture) or art.information_art.catalog.is_empty(): finish(); return
 	if native: check(DirAccess.make_dir_recursive_absolute(output)==OK,"output directory")
 	var report: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(fixture))
-	var pages := ["crew","ax","sabot","coax","cannon","smoke"]
+	var pages := ["crew","ax","heat","sabot","coax","cannon","smoke"]
 	var coverage := {}
 	for entry in report.samples:
 		var source := Image.load_from_file(fixture.get_base_dir().path_join(entry.image))
@@ -195,11 +195,11 @@ func run() -> void:
 			check(art.information_art.active.get("name")==entry.label.trim_suffix("-wait"),"correct illustration identity")
 			if art.information_art.active.is_empty(): continue
 			coverage[entry.label.trim_suffix("-wait")]=true
-			var expected_runs: int={"ax":19,"sabot":19,"coax":12,"cannon":16,"smoke":10,"crew":5}[entry.label.trim_suffix("-wait")]
+			var expected_runs: int={"ax":19,"heat":18,"sabot":19,"coax":12,"cannon":16,"smoke":10,"crew":5}[entry.label.trim_suffix("-wait")]
 			check(art.typography.runs.size()==expected_runs,"every original information string becomes an outline run")
-		elif entry.label in ["heat","information-close"]:
+		elif entry.label=="information-close":
 			check(art.information_art.active.is_empty() and art.typography.runs.is_empty(),"unsupported information has no artwork or labels: "+entry.label)
-		if native and entry.label in pages+["heat","information-close"]: await render(source,entry.label)
+		if native and entry.label in pages+["information-close"]: await render(source,entry.label)
 		if native and entry.label in ["coax","cannon","smoke"]:
 			art.text_enabled=false
 			check(apply_frame(source,program,{}),"overhead original-text information mode")
@@ -221,17 +221,17 @@ func run() -> void:
 				check(art.information_art.active.is_empty(),"changed crew page pixel rejects full composition: "+str(at))
 				if native: await render(changed,"crew-rejected-%d-%d"%[at.x,at.y])
 			check(not apply_frame(source,{"name":"SIM"},{}),"crew image in wrong program rejected")
-		if entry.label=="coax":
+		if entry.label in ["coax","heat"]:
 			for at in [Vector2i(0,0),Vector2i(18,143),Vector2i(151,95)]:
 				var changed := source.duplicate(); changed.set_pixelv(at,Color.MAGENTA)
 				apply_frame(changed,program,{})
 				check(art.information_art.active.is_empty(),"one changed prefix pixel rejects whole illustration")
 				check(art.information_art.active.is_empty() and art.typography.runs.is_empty(),"failure clears stale illustration and labels")
-				if native: await render(changed,"rejected-%d-%d"%[at.x,at.y])
+				if native: await render(changed,entry.label+"-rejected-%d-%d"%[at.x,at.y])
 			var border := source.duplicate(); border.set_pixel(200,175,Color.MAGENTA)
 			check(apply_frame(border,program,{}),"variable untouched lower border permits correct illustration")
 			check(art.information_art.active.frame_rects.size()==4,"unknown footer retains complete original pixels")
-			if native: await render(border,"preserved-border")
+			if native: await render(border,entry.label+"-preserved-border")
 			check(not apply_frame(source,{"name":"SIM"},{}),"wrong executable rejects information")
 	var crew_receipt:=root_path.path_join(completion.crew_frames.capture)
 	var crew_report: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(crew_receipt))
@@ -240,7 +240,7 @@ func run() -> void:
 		check(apply_frame(source,sample.program,{}),"observed crew footer accepted")
 		check(art.information_art.active.get("name")=="crew","observed footer uses complete crew scene")
 		if native: await render(source,"footer-"+sample.image.trim_suffix(".png"))
-	check(coverage.size()==6,"all six supported pages and settled waits covered")
+	check(coverage.size()==7,"all seven supported pages and settled waits covered")
 	check(not art.load_sources(root_path.path_join("artifacts/missing-information")),"missing sources rejected")
 	check(art.information_art.catalog.is_empty() and not art.visible,"missing source clears stale information")
 	if native:

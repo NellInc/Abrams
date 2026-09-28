@@ -38,3 +38,25 @@ have no invented historical or hardware-independent performance thresholds.
 Checkpoint replay compares the trace core to itself; independent unmodified-core
 RAM/video parity remains a separate gate. Acoustic drift, long campaign outcomes,
 other hardware and other operating systems remain outside this gate.
+
+## Held-control checkpoint gate
+
+```sh
+python3 tools/verify_pc_held_inputs.py --output artifacts/held-inputs-NEW
+./tools/godot.sh --headless --script res://tests/test_pc_play_shortcuts.gd
+./tools/godot.sh --headless --script res://tests/test_pc_live_scheduling.gd
+```
+
+Six native probes serialize the same timeline used for uninterrupted continuation,
+then repeat it in a fresh process: fire release, simultaneous movement/fire,
+opposite steering, Shift+3, one-frame make/break, and release after an eight-frame
+batch. Current RAM and held-key sets match at every observed frame. Fresh video
+is compared after the existing first-returned-frame priming boundary. Eighteen
+supervisor checks cover held keys in the save and recovery slot, load/undo,
+container rejection, native-load rollback and a fresh supervisor.
+
+The Godot checks cover both platform shortcut chords and release orders, unrelated
+held movement/fire, failed loads, changed controls during pending restoration,
+Window focus signals and an in-flight fast-forward batch. They do not establish
+physical keyboard/gamepad delivery on other platforms, every internal keyboard
+controller phase, or acoustic output quality.

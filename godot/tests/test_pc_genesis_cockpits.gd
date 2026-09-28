@@ -1,9 +1,14 @@
 extends SceneTree
 var outlines = preload("res://tests/pc_outline_oracle.gd").new()
 const Frame = preload("res://scripts/pc_tandem_frame.gd")
+const Rail = preload("res://scripts/pc_cupola_rail.gd")
+var rail = Rail.new()
+var rail_points: Dictionary = {}
+const Trim = preload("res://scripts/pc_gunner_trim.gd")
 const Instruments = preload("res://scripts/pc_instrument_art.gd")
 var errors: Array[String] = []
 var checks := 0
+var corner_ink: Dictionary = {}
 var viewport: SubViewport
 var frame: TextureRect
 
@@ -11,11 +16,15 @@ func check(ok: bool, reason: String) -> void:
 	checks += 1
 	if not ok and errors.size()<20: errors.append(reason)
 
-func _initialize() -> void: run.call_deferred()
+func _initialize() -> void:
+	for p in Trim.corner_pixels(): corner_ink[p]=true
+	for p in Rail.pixels(): rail_points[p]=true
+	run.call_deferred()
 
 func run() -> void:
 	var root_path := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	outlines.load_sources(root_path)
+	check(rail.load_source(root_path),"verified AA source for static cupola rail")
 	viewport = SubViewport.new()
 	viewport.size = Vector2i(1280,800)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -59,10 +68,10 @@ func run() -> void:
 
 func material_allowed(id: int, p: Vector2i, camera: Rect2i) -> bool:
 	if id==1:
-		if camera.has_point(p): return false
+		if camera.has_point(p): return frame.gunner_trim.corners_verified and corner_ink.has(p)
 		if p.y<123: return true
 		for box in [Rect2i(11,139,83,35),Rect2i(11,176,83,18),Rect2i(126,136,67,47),Rect2i(124,184,70,13),Rect2i(224,139,41,54),Rect2i(269,139,41,54)]:
-			if box.has_point(p): return false
+			if (box.grow(-2) if frame.gunner_trim.active else box).has_point(p): return false
 		return true
 	if id==2:
 		for box in [Rect2i(15,62,146,98),Rect2i(14,176,80,18),Rect2i(102,176,61,18),Rect2i(214,81,66,49),Rect2i(212,131,70,12),Rect2i(207,148,82,39)]:
@@ -128,6 +137,8 @@ func fixtures(path: String, output: String) -> void:
 				var p := Vector2i(x/4,y/4)
 				var id := roundi(tags.get_pixelv(p).r*255)
 				var allowed: bool = ui.get_pixelv(p).r==1.0 and id in frame.cockpit_art_ids and material_allowed(id,p,camera)
+				if frame.gunner_trim.corners_verified and corner_ink.has(p): allowed = true
+				if bool(frame.material.get_shader_parameter("cupola_rail_verified")) and rail_points.has(p): allowed = true
 				if not assembly.is_empty() and assembly.get_pixelv(p).b==1.0: allowed = true
 				for cell in frame.instrument_art.active+frame.instrument_art.gauges:
 					if cell.source.has_point(p): allowed = true
@@ -145,6 +156,19 @@ func fixtures(path: String, output: String) -> void:
 		changed_total += changed
 		result.save_png(output.path_join(entry.stage+".png"))
 		samples.append({"stage":entry.stage,"plates":frame.cockpit_art_ids.duplicate(),"instrument_cells":frame.instrument_art.active.map(func(cell): return cell.name),"gauges":frame.instrument_art.gauges.map(func(cell): return cell.name),"labels":frame.typography.runs.map(func(label):return label.text),"changed_pixels":changed})
+		if entry.stage=="commander-settled":
+			commander_hardware(result)
+			viewport.size=Vector2i(1280,960)
+			frame.size=Vector2(1280,960)
+			await process_frame
+			RenderingServer.force_draw(false)
+			RenderingServer.force_sync()
+			var corrected := viewport.get_texture().get_image()
+			commander_hardware(corrected)
+			corrected.save_png(output.path_join("commander-settled-4x3.png"))
+			viewport.size=Vector2i(1280,800)
+			frame.size=Vector2(1280,800)
+		if entry.stage=="cupola-settled": await cupola_safety(source,ui,tags,packet,world,output)
 		if entry.stage=="gunner-settled":
 			gunner_join(result)
 			icon_sampling(result,4)
@@ -180,16 +204,26 @@ func icon_geometry() -> void:
 
 func gunner_join(result: Image) -> void:
 	var art: Image = frame.gunner_art_texture.get_image()
-	# Upper/lower samples straddle the former y=123 tear. Last probes require
-	# real right-side frame/screws rather than an enlarged blank silver strip.
-	var probes := [Vector4i(68,491,84,584),Vector4i(68,492,84,585),
-		Vector4i(76,491,94,584),Vector4i(76,492,94,585),Vector4i(92,492,114,585),
-		Vector4i(1208,491,1497,584),Vector4i(1208,492,1497,585),Vector4i(1248,492,1546,585),
-		Vector4i(880,520,1084,608),Vector4i(880,780,1084,963),Vector4i(1252,600,1566,701),
-		Vector4i(466,722,563,854),Vector4i(466,730,541,864),Vector4i(466,735,534,887),
-		Vector4i(810,730,1046,864),Vector4i(810,735,1052,887)]
-	for p in probes:
-		check(result.get_pixel(p.x,p.y).to_rgba32()==art.get_pixel(p.z,p.w).to_rgba32(),"continuous gunner shell/right surround: "+str(p))
+	# Independently calculated continuous UVs across the row-123 join. These
+	# remain outside the registered console panels and fastener patches.
+	for p: Vector2i in [Vector2i(68,491),Vector2i(68,492),Vector2i(76,491),Vector2i(76,492),Vector2i(92,492),Vector2i(1208,491),Vector2i(1208,492),Vector2i(1248,492)]:
+		var q := Vector2(p)+Vector2(0.5,0.5)
+		q/=4.0
+		var y := 111.0+(q.y-110.0)*7.0/13.0
+		var x := q.x
+		if q.y>=123.0:
+			y=118.0+(q.y-123.0)*(18.4 if q.x<103.0 else 10.5)/16.0
+			var lower_x := 5.5+(q.x-11.0)*95.5/83.0 if q.x<103.0 else (270.0+(q.x-269.0)*44.3/41.0 if q.x<310.0 else 314.3+(q.x-310.0)*5.7/10.0)
+			var t := (q.y-123.0)/13.0
+			x=lerpf(q.x,lower_x,t*t*(3.0-2.0*t))
+		var donor := Vector2(x*1586.0/320.0,y*992.0/200.0)-Vector2(0.5,0.5)
+		var a := Vector2i(donor.floor())
+		var f := donor-Vector2(a)
+		var expected := art.get_pixelv(a).lerp(art.get_pixelv(a+Vector2i(1,0)),f.x).lerp(art.get_pixelv(a+Vector2i(0,1)).lerp(art.get_pixelv(a+Vector2i(1,1)),f.x),f.y)
+		var actual := result.get_pixelv(p)
+		check(absf(expected.r-actual.r)<=3.0/255 and absf(expected.g-actual.g)<=3.0/255 and absf(expected.b-actual.b)<=3.0/255,"continuous linearly sampled gunner shell join: "+str(p))
+	check(frame.gunner_trim.active,"registered straight console trim visible")
+	check(frame.gunner_trim.corners_verified,"whole source aperture corner proof")
 
 func icon_sampling(result: Image, scale: int) -> void:
 	var art: Image = frame.gunner_art_texture.get_image()
@@ -229,3 +263,49 @@ func damaged_schematic(source: Image, ui: Image, tags: Image, packet: Dictionary
 		for x in range(123*4,305*4):
 			check(rendered.get_pixel(x,y).to_rgba32()==changed.get_pixel(x/4,y/4).to_rgba32(),"damaged source schematic hidden at %d,%d"%[x,y])
 	rendered.save_png(output.path_join("damage-synthetic-overwrite.png"))
+
+func commander_hardware(result: Image) -> void:
+	var scale := Vector2(result.get_size())/Vector2(320,200)
+	for p in [Vector2(11,175),Vector2(166,175),Vector2(11,193.5),Vector2(166,193.5)]:
+		var c := Vector2i(p*scale)
+		var extent := []
+		for axis in [Vector2i(1,0),Vector2i(0,1)]:
+			var lo := 100
+			var hi := -100
+			for delta in range(-11,11):
+				var color := result.get_pixelv(c+axis*delta)
+				if color.r<0.3 and color.g<0.3 and color.b<0.3:
+					lo=mini(lo,delta)
+					hi=maxi(hi,delta)
+			extent.append(hi-lo+1)
+		check(extent[0]>=18 and abs(extent[0]-extent[1])<=2,"round output-space commander screw %s at %s: %s"%[p,result.get_size(),extent])
+
+func cupola_safety(source: Image, ui: Image, tags: Image, packet: Dictionary, world: Texture2D, output: String) -> void:
+	check(rail.verify(source,ui,tags,Rail.CAMERA,true),"whole static cupola rail source proof")
+	check(bool(frame.material.get_shader_parameter("cupola_rail_verified")),"runtime enables exactly verified cupola rail")
+	check(not rail.verify(source,ui,tags,Rect2i(0,0,320,118),true),"wrong cupola camera rejects rail")
+	check(not rail.verify(source,ui,tags,Rail.CAMERA,false),"wrong station rejects rail")
+	for kind in ["pixel","ownership","plate","context"]:
+		var changed := source.duplicate()
+		var mask := ui.duplicate()
+		var ids := tags.duplicate()
+		if kind=="pixel": changed.set_pixel(180,113,Color.MAGENTA)
+		if kind=="ownership": mask.set_pixel(180,113,Color.BLACK)
+		if kind=="plate": ids.set_pixel(180,113,Color(3.0/255,0,0))
+		if kind=="context": ids.set_pixel(180,117,Color.BLACK)
+		check(not rail.verify(changed,mask,ids,Rail.CAMERA,true),"one mismatched bit rejects whole rail: "+kind)
+		var damaged := packet.duplicate(true)
+		damaged.ui_overlay.mask_png=Marshalls.raw_to_base64(mask.save_png_to_buffer())
+		damaged.plate_overlay.mask_png=Marshalls.raw_to_base64(ids.save_png_to_buffer())
+		check(frame.set_frame(changed,damaged,world),"cupola negative frame composes: "+kind)
+		check(not bool(frame.material.get_shader_parameter("cupola_rail_verified")),"runtime clears cupola rail: "+kind)
+		await process_frame
+		RenderingServer.force_draw(false)
+		RenderingServer.force_sync()
+		var rendered := viewport.get_texture().get_image()
+		for p in Rail.pixels():
+			if p==Vector2i(180,113) and kind in ["ownership","plate"]: continue
+			for y in 4:
+				for x in 4:
+					check(rendered.get_pixel(p.x*4+x,p.y*4+y).to_rgba32()==changed.get_pixelv(p).to_rgba32(),"cupola rejected whole rail retains source: "+kind)
+		if kind=="pixel": rendered.save_png(output.path_join("cupola-synthetic-overwrite.png"))

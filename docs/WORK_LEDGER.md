@@ -2954,3 +2954,112 @@ Root verified every packaged input against the checkout and installed tree.
 Final closing-doc rebuild retains byte-identical runtime content. Staged/index
 and reachable-history guards pass; originals, ROMs and private kits are excluded
 from Git. No push, hosted CI execution or public release is claimed.
+
+## Expressive crew performance pass, 28 September 2026
+
+Directed and regenerated the 50 remaining mission/destruction/status calls and
+seven radio calls with Gemini 3.8 Flash TTS. Existing casting, captions, source
+identity and event eligibility are unchanged. T-series destruction calls request
+pride and energetic emphasis on “destroyed”; success, threat and loss reports
+have distinct acting direction. A documented inline short pause resolves the
+“com station” abbreviation. The remaining 415 installed WAVs are byte-identical.
+
+All 57 selected dry masters pass blinded wording QA and exact request/hash
+custody checks. Four initial wording failures were replaced; one needed a second
+repair with the pause. Transcript punctuation/model-name equivalences were
+corrected without relaxing digit-wise bearing or extra-word checks. Original
+responses and rejected takes remain retained. Blinded audio comparisons selected
+the new T-62, T-72, mission-success and radio-approval takes as more energetic.
+These comparisons evaluate work directed in this pass and remain automated,
+without independent human listening acceptance.
+
+Root checks: 53 Python tests, 1,107 headless Godot checks, 165 native Godot stream
+checks, and the full 476-WAV audit (zero errors or timing advisories). No PCM
+full-scale samples; the existing limiter gate also passes. Evidence and rollback
+copies: `artifacts/bark-direction-20260928/` and
+`local-audio/bark-direction-20260928/`. Local project updated; the earlier private
+ZIP is unchanged. No push or release.
+
+
+## HEAT illustration completed, 28 September 2026
+
+Finished the exterior-only Genesis HEAT illustration and integrated it at the
+verified PC sprite bounds (104,22), 208x67. Rejected an initial style-drift output
+that resembled SABOT. Source text, timing and original files remain unchanged.
+Seven information pages now cover 99 original text runs and 77,776 source sprite
+pixels. The earlier unfinished HEAT status is superseded.
+
+Root checks passed: 422 Python tests, 83 headless information checks,
+25,865,418 native information checks, and 10,253,373 native graphics-mode checks.
+Two live launcher cold boots have identical original framebuffer bytes, state,
+program, presentation and samples; their final artwork differs as intended.
+Selected asset, prompts, failures and receipts are retained in the ignored local
+art manifest and `artifacts/heat-finish-20260928/`. Local only, no new ZIP or push.
+
+
+## Gunner screws, aperture and console trim, 28 September 2026
+
+Corrected six stretched upper fasteners using independently registered donor
+sampling, replaced warped console margins with Genesis-style code-native bevels
+and eight round fasteners, and cleaned up the static display rims. The aperture
+now has a smooth red lip instead of exposed low-resolution grey steps. Its 84
+original corner pixels are verified as a complete shape. Antialiasing reuses
+already-visible scenery colours; hidden world pixels cannot leak through.
+Original instrument values, source-visible world pixels and gameplay remain
+outside the trim's ownership.
+
+Root checks passed: 2,160,931 focused native trim checks at three resolutions;
+12,051,382 all-station native checks; 4,096,050 legacy material checks; and full
+62-stage `tools/validate.sh` with 422 Python tests. Full terminal receipt:
+`artifacts/validation-20260928T174932Z/`. Live 1280x960 launcher captures with and
+without Upscaled art have identical original framebuffer, world image, decoded
+state, program and sample count. Their draw-entry RAM hashes differ between
+independent cold boots; no full-RAM parity claim is made. Same-packet EGA,
+Genesis and Upscaled switching passes exact renderer restoration separately.
+
+Visual self-review and failed development renders are retained in
+`artifacts/cockpit-trim-20260928/`, alongside the final completion receipt.
+The source archive allowlist includes the new renderer/test; assets remain
+private. No push, new private ZIP or public release.
+
+
+## Held controls, station audit and private-kit refresh, 28 September 2026
+
+Save/load/undo shortcuts now quarantine only their own chord, preserving held
+movement and fire. Native menu/focus safety remains separate, requiring neutral
+input before resumption. Six same-timeline fresh-process native probes and 18
+supervisor checks cover saved controls, release/change, Shift+3, an eight-frame
+batch, undo, invalid-container rejection and native rollback. Root reran them in
+`artifacts/next-pass-20260928/held-native-root/`. Godot shortcut and scheduling
+checks pass 112 and 157 cases. Focus signals are exercised through the connected
+Window API; physical hardware delivery remains separate. No core change needed.
+
+The commander has four round lower-console fasteners. The cupola rail uses the
+Genesis donor only after exact source and ownership proof of all 457 fixed pixels.
+Its original outer silhouette and every world pixel remain protected. Existing
+heading join and gunner appearance are retained. Root native all-station checks:
+12,058,687; focused gunner: 2,160,931; orientation: 321,377. All 25 integrated station
+captures match the visually reviewed candidate byte for byte.
+
+Current-pixel orientation proof now uses exact packed-byte operations, with the
+old loop retained for other formats. The same validated plate-mask image is reused
+within one compositor call. Root original-CPU/mutation oracle: 2,430 checks. No
+source timing, native core or original game data changed. Ordinary pacing was
+37.60 fps before and 45.86 after under varying desktop load. Final unattended
+3,600-frame endurance measured 58.98 to 59.78 fps with zero consumer lag; sustained
+load performance remains open. The first endurance screenshot helper stalled on
+an inactive-window draw signal. Its repaired explicit flush path completed the
+full rerun without intervention. Detailed limitations and retained first-run
+results are in `artifacts/next-pass-20260928/performance-report.md`.
+
+Root aggregate `artifacts/validation-20260928T183423Z/`: all 62 stages and 422
+Python tests passed. Host endurance: 70,553 frames, 2,822 checks, eight scenarios,
+19 checkpoint cycles and cold campaign Continue. Native conveniences: 144 checks;
+six resize/fullscreen transitions passed. Native graphics-mode regression also
+passed 10,253,373 checks across 158 frames. Source-only packaging contract: 37 tests,
+two documented private-input skips, 406 allowlisted files. Private-kit assembly and
+installation evidence for this candidate is recorded in
+`artifacts/next-pass-20260928/private-kit/receipt.json`. The kit includes the current
+HEAT illustration, 57 directed Gemini 3.8 takes, cockpit repairs and held-control
+fixes. It stays local, separate from Git; originals remain excluded. Human listening,
+mission/campaign acceptance, other native platforms and rights remain separate.

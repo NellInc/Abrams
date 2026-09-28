@@ -65,7 +65,7 @@ def build(root=ROOT):
  catalogs={}
  for name,rel in [('intro','pc-intro-v2/intro.json'),('information','pc-information-v3/information.json'),('office','pc-frontend-v1/office.json'),('portraits','pc-portraits-v1/faces.json')]:
   path=root/'local-art'/rel;catalogs[name]={'path':str(path.relative_to(root)),'sha256':sha(path)}
- data={'native_information':[{'name':'heat','rgb_sha256':'ecbf07d088290867a0f78d6760ffa7b90f4d293014d4a42646c169f90186a890','donor':'ammo-heat-illustration','rect':[105,22,201,65],'proof':'Complete PC baseline frame artifacts/pc-information-baseline-02/heat.png; retains all original text outside illustration'}],'schema':1,'donors':donors,'plates':plates,'catalogs':catalogs,'scope':'Native extracted Genesis donors, nearest source-pixel sampling; PC pixels retained for unmatched and dynamic regions. No vehicle replacement.'}
+ data={'native_information':[{'name':'heat','rgb_sha256':'ecbf07d088290867a0f78d6760ffa7b90f4d293014d4a42646c169f90186a890','donor':'ammo-heat-illustration','rect':[104,22,208,67],'proof':'Complete PC baseline frame artifacts/pc-information-baseline-02/heat.png; retains all original text outside illustration'}],'schema':1,'donors':donors,'plates':plates,'catalogs':catalogs,'scope':'Native extracted Genesis donors, nearest source-pixel sampling; PC pixels retained for unmatched and dynamic regions. No vehicle replacement.'}
  path=out/'graphics.json';path.write_text(json.dumps(data,indent=2)+'\n');print(path,sha(path))
  return data
 if __name__=='__main__':build()

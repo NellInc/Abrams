@@ -24,6 +24,9 @@ def normalized(text):
 
 
 def wording_matches(transcript, expected):
+    # Performance tags are unspoken. Remove them before lexical-equivalence
+    # matching as well as final normalization, including their extra whitespace.
+    expected = ' '.join(re.sub(r'<[^>]+>', '', expected).split())
     # The tank designation M1 is spoken "M one". This is an explicit lexical
     # equivalence, not general number normalization (bearings stay digit words).
     if re.search(r'(?<![a-z0-9])M1(?![-a-z0-9])',expected,re.I):
@@ -36,15 +39,16 @@ def wording_matches(transcript, expected):
     # This permits a literal word transcript of a correct model designation while
     # rejecting wrong numbers, suffixes and bearing whole-number substitutions.
     designations = {
-        'T-62': (r'T sixty[ -]two',), 'T-64': (r'T sixty[ -]four',),
-        'T-72': (r'T seventy[ -]two',), 'T-80': (r'T eighty',),
-        'M1-A1': (r'M one[ -]A one',), 'M60a3': (r'M sixty[ -]A three',),
-        'M113': (r'M one[ -]one[ -]three', r'M one hundred (?:and )?thirteen'),
-        'M2': (r'M two',), 'BMP-1': (r'B[ .-]*M[ .-]*P[ -]*one',),
+        'T-62': (r'T[ -]sixty[ -]two',), 'T-64': (r'T[ -]sixty[ -]four',),
+        'T-72': (r'T[ -]seventy[ -]two',), 'T-80': (r'T[ -]eighty',),
+        'M1-A1': (r'M[ -]one[ -]A[ -]one',), 'M60a3': (r'M[ -]sixty[ -]A[ -]three',),
+        'M113': (r'M[ -]one[ -]one[ -]three', r'M[ -]one hundred (?:and )?thirteen',
+                 r'M[ -]one[ -]thirteen'),
+        'M2': (r'M[ -]two',), 'BMP-1': (r'B[ .-]*M[ .-]*P[ -]*one',),
         'BMP-2': (r'B[ .-]*M[ .-]*P[ -]*two',), 'BTR-70': (r'B[ .-]*T[ .-]*R[ -]*seventy',),
         'ACRV-2': (r'A[ .-]*C[ .-]*R[ .-]*V[ -]*two',),
         'BRDM-2': (r'B[ .-]*R[ .-]*D[ .-]*M[ -]*two',),
-        'BRDM-3': (r'B[ .-]*R[ .-]*D[ .-]*M[ -]*three',), 'A10': (r'A ten',),
+        'BRDM-3': (r'B[ .-]*R[ .-]*D[ .-]*M[ -]*three',), 'A10': (r'A[ -]ten',),
     }
     for designation, variants in designations.items():
         if re.search(r'(?<![a-z0-9])'+re.escape(designation)+r'(?![a-z0-9])', expected, re.I):

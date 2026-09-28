@@ -9,10 +9,13 @@ var menus: Dictionary = {}
 var popup: PopupMenu
 var open_menus: Dictionary = {}
 var release_keys := false
+var window_focused := true
 var save_error := ""
 
 func _ready() -> void:
 	set_disable_shortcuts(true)
+	get_window().focus_exited.connect(_focus_exited)
+	get_window().focus_entered.connect(_focus_entered)
 	popup=PopupMenu.new()
 	popup.name="Audio"
 	add_child(popup)
@@ -47,10 +50,17 @@ func _watch(menu: PopupMenu) -> void:
 		release_keys=true)
 	menu.popup_hide.connect(func():open_menus.erase(menu))
 
+func _focus_exited() -> void:
+	window_focused=false
+	release_keys=true
+
+func _focus_entered() -> void:
+	window_focused=true
+
 func game_keys(held: Array) -> Array:
 	# Menu navigation must not also steer/fire in the original game. Closing
 	# with Enter/Escape waits for release; there is no reserved gameplay hotkey.
-	if not open_menus.is_empty(): return []
+	if not window_focused or not open_menus.is_empty(): return []
 	if release_keys:
 		if held.is_empty(): release_keys=false
 		return []

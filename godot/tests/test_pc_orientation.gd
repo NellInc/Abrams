@@ -95,6 +95,68 @@ func corruption() -> void:
 	instruments.clear()
 	check(instruments.orientation.packet.is_empty() and not instruments.orientation.visible,"fallback clears diagram")
 
+# Frozen pre-optimization predicate, independent of the packed-byte path.
+func original_guard(source: Image, ui: Image, tags: Image, original: Image, guard: Rect2i, box: Rect2i, plate: int) -> bool:
+	for y in range(guard.position.y,guard.end.y):
+		for x in range(guard.position.x,guard.end.x):
+			if ui.get_pixel(x,y).r!=1.0: return false
+			if box.has_point(Vector2i(x,y)):
+				if tags.get_pixel(x,y).r!=0.0: return false
+			elif roundi(tags.get_pixel(x,y).r*255)!=plate or source.get_pixel(x,y).to_rgba32()!=original.get_pixel(x,y).to_rgba32(): return false
+	return true
+
+func guard_parity() -> void:
+	for station in [0,1]:
+		var images := synthetic(station)
+		var box := Rect2i(images[3].rect[0],images[3].rect[1],62,44)
+		var guard := Rect2i(126,136,67,47) if station==0 else Rect2i(214,81,66,49)
+		for format in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8,Image.FORMAT_RGBAF]:
+			for mask_format in [Image.FORMAT_L8,Image.FORMAT_RGB8,Image.FORMAT_RGBAF]:
+				var source: Image = images[0].duplicate()
+				var ui: Image = images[1].duplicate()
+				var tags: Image = images[2].duplicate()
+				var original: Image = instruments.plates[station+1].duplicate()
+				source.convert(format)
+				ui.convert(mask_format)
+				tags.convert(mask_format)
+				# Deliberately retain the donor's different byte format.
+				for fault in ["valid","ui_first","ui_last","ui_inner","tag_inner","tag_top","tag_bottom","tag_left","tag_right","source_top","source_bottom","source_left","source_right","alpha","ignored_inner","ignored_outside","mask_green","tiny_inner_tag"]:
+					var a := source.duplicate()
+					var u := ui.duplicate()
+					var t := tags.duplicate()
+					var top := guard.position
+					var bottom := guard.end-Vector2i.ONE
+					var left := Vector2i(guard.position.x,box.position.y+10)
+					var right := Vector2i(guard.end.x-1,box.position.y+10)
+					match fault:
+						"ui_first": u.set_pixelv(top,Color.BLACK)
+						"ui_last": u.set_pixelv(bottom,Color.BLACK)
+						"ui_inner": u.set_pixelv(box.position,Color.BLACK)
+						"tag_inner": t.set_pixelv(box.position,Color.WHITE)
+						"tag_top": t.set_pixelv(top,Color.BLACK)
+						"tag_bottom": t.set_pixelv(bottom,Color.BLACK)
+						"tag_left": t.set_pixelv(left,Color.BLACK)
+						"tag_right": t.set_pixelv(right,Color.BLACK)
+						"source_top": a.set_pixelv(top,Color.MAGENTA)
+						"source_bottom": a.set_pixelv(bottom,Color.MAGENTA)
+						"source_left": a.set_pixelv(left,Color.MAGENTA)
+						"source_right": a.set_pixelv(right,Color.MAGENTA)
+						"alpha":
+							var color: Color = a.get_pixelv(top)
+							color.a=0.4
+							a.set_pixelv(top,color)
+						"ignored_inner": a.set_pixelv(box.position,Color.MAGENTA)
+						"ignored_outside": a.set_pixel(0,0,Color.MAGENTA)
+						"mask_green":
+							if mask_format!=Image.FORMAT_L8: u.set_pixelv(top,Color(1,0,0))
+						"tiny_inner_tag": t.set_pixelv(box.position,Color(0.0001,0,0))
+					var expected := original_guard(a,u,t,original,guard,box,station+1)
+					check(Orientation._guard_matches(a,u,t,original,guard,box,station+1)==expected,"guard predicate parity %s/%s/%s/%s"%[station,format,mask_format,fault])
+		# A repeated identical packet must not conceal subsequent provenance loss.
+		check(bind(images),"valid repeated before mutation")
+		images[1].set_pixelv(guard.end-Vector2i.ONE,Color.BLACK)
+		check(not bind(images),"current image mutation never uses stale validity")
+
 func oracle(path: String) -> void:
 	var report: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
 	check(report.case_count==1024,"full original CPU sweep")
@@ -184,6 +246,7 @@ func run() -> void:
 	root.add_child(instruments)
 	check(instruments.load_sources(repo,Image.load_from_file(repo.path_join("local-art/genesis/cockpit-v2/gunner-genesis-v1.png"))),"original and Genesis sources loaded")
 	corruption()
+	guard_parity()
 	var args := OS.get_cmdline_user_args()
 	var oracle_path := args[args.find("--oracle")+1] if "--oracle" in args else ""
 	if not oracle_path.is_empty(): oracle(oracle_path)

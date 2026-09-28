@@ -1,6 +1,6 @@
 extends TextureRect
 ## Extracted native donors only. No high-resolution art or world rerendering.
-const CATALOG_SHA := "ead9537897d343e115aef73b02c9fdecf797172812c108228217c33c276c08db"
+const CATALOG_SHA := "c35a2628fa44e91ea716a0522290efe3a3307a010ca96eb189ae7078bd006cc1"
 var splash_aftermath_art=preload("res://scripts/pc_splash_aftermath_art.gd").new()
 var newspaper_art=preload("res://scripts/pc_newspaper_art.gd").new()
 var catalog: Dictionary = {}
@@ -136,7 +136,7 @@ func _frontend(source: Image, program: String) -> Image:
 			if e.rgb_sha256!=sha or (e.has("full_rgb_sha256") and e.full_rgb_sha256!=fingerprint(bytes)):continue
 			for item in e.get("layers",[e]):
 				var key:String=item.name
-				if key in ["ax","sabot"]:key="ammo-"+key+"-illustration"
+				if key in ["ax","heat","sabot"]:key="ammo-"+key+"-illustration"
 				elif key in ["coax","cannon","smoke"]:key="weapon-"+key+"-illustration"
 				if images.has(key):_paste(result,key,box(item.rect));active.donors.append(key)
 	elif program in ["BRIEF","END"]:

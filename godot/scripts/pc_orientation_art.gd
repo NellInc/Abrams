@@ -34,12 +34,7 @@ func set_frame(source: Image, ui: Image, tags: Image, plates: Dictionary, item: 
 	if item.rect.map(func(n):return int(n))!=[box.position.x,box.position.y,62,44]: return false
 	for image in [source,ui,tags]:
 		if image==null or image.get_size()!=Vector2i(320,200): return false
-	for y in range(guard.position.y,guard.end.y):
-		for x in range(guard.position.x,guard.end.x):
-			if ui.get_pixel(x,y).r!=1.0: return false
-			if box.has_point(Vector2i(x,y)):
-				if tags.get_pixel(x,y).r!=0.0: return false
-			elif roundi(tags.get_pixel(x,y).r*255)!=plate or source.get_pixel(x,y).to_rgba32()!=plates[plate].get_pixel(x,y).to_rgba32(): return false
+	if not _guard_matches(source,ui,tags,plates[plate],guard,box,plate): return false
 	var crop := source.get_region(box)
 	crop.convert(Image.FORMAT_RGB8)
 	var hash := HashingContext.new()
@@ -80,6 +75,37 @@ func set_frame(source: Image, ui: Image, tags: Image, plates: Dictionary, item: 
 	source_rect = box
 	show()
 	queue_redraw()
+	return true
+
+# Every current pixel still participates in the proof. Packed-byte operations
+# avoid thousands of GDScript calls for the production PNG formats. Keep the
+# original predicate for other formats: luminance conversion would alter the
+# red-channel mask semantics, and float-to-byte conversion can round differently.
+static func _guard_matches(source: Image, ui: Image, tags: Image, original: Image, guard: Rect2i, box: Rect2i, plate: int) -> bool:
+	if ui.get_format()==Image.FORMAT_L8 and tags.get_format()==Image.FORMAT_L8 and source.get_format() in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8] and original.get_format() in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8]:
+		if ui.get_region(guard).get_data().count(255)!=guard.size.x*guard.size.y: return false
+		if tags.get_region(box).get_data().count(0)!=box.size.x*box.size.y: return false
+		var borders: Array[Rect2i] = [
+			Rect2i(guard.position,Vector2i(guard.size.x,box.position.y-guard.position.y)),
+			Rect2i(guard.position.x,box.end.y,guard.size.x,guard.end.y-box.end.y),
+			Rect2i(guard.position.x,box.position.y,box.position.x-guard.position.x,box.size.y),
+			Rect2i(box.end.x,box.position.y,guard.end.x-box.end.x,box.size.y)]
+		for border in borders:
+			if not border.has_area(): continue
+			if tags.get_region(border).get_data().count(plate)!=border.size.x*border.size.y: return false
+			var a := source.get_region(border)
+			var b := original.get_region(border)
+			if a.get_format()!=b.get_format():
+				a.convert(Image.FORMAT_RGBA8)
+				b.convert(Image.FORMAT_RGBA8)
+			if a.get_data()!=b.get_data(): return false
+		return true
+	for y in range(guard.position.y,guard.end.y):
+		for x in range(guard.position.x,guard.end.x):
+			if ui.get_pixel(x,y).r!=1.0: return false
+			if box.has_point(Vector2i(x,y)):
+				if tags.get_pixel(x,y).r!=0.0: return false
+			elif roundi(tags.get_pixel(x,y).r*255)!=plate or source.get_pixel(x,y).to_rgba32()!=original.get_pixel(x,y).to_rgba32(): return false
 	return true
 
 func _integers(value: Variant, count: int) -> bool:

@@ -6,7 +6,7 @@ uniform sampler2D world_texture : filter_nearest, repeat_disable;
 uniform sampler2D ui_mask : filter_nearest, repeat_disable;
 uniform vec4 camera_rect; // source-pixel x, y, width, height
 uniform bool gunner_art_enabled = false;
-uniform sampler2D gunner_art : filter_nearest, repeat_disable;
+uniform sampler2D gunner_art : filter_linear, repeat_disable;
 uniform vec3 station_art_enabled = vec3(0.0);
 uniform sampler2D commander_art : filter_nearest, repeat_disable;
 uniform sampler2D cupola_art : filter_nearest, repeat_disable;
@@ -15,6 +15,8 @@ uniform bool driver_assembly_enabled = false;
 uniform sampler2D driver_assembly_mask : filter_nearest, repeat_disable;
 uniform sampler2D plate_mask : filter_nearest, repeat_disable;
 uniform bool genesis_art = false;
+uniform float gunner_pixel_aspect = 1.0;
+uniform bool cupola_rail_verified = false;
 uniform bool status_art_enabled = false;
 uniform bool status_diagram_verified = false;
 
@@ -99,6 +101,33 @@ vec2 commander_donor(vec2 p) {
 		else q.x = mix(162.0,170.0,(p.x-163.0)/7.0);
 	}
 	return q/vec2(320.0,200.0);
+}
+
+// Registered metalwork only, after original commander live-cell exclusion.
+vec4 commander_metal(vec2 p, vec4 art) {
+	// Local screw islands replace vertically stretched donor heads. Radius is
+	// measured in output space, including the original 4:3 pixel correction.
+	for (int side=0; side<2; side++) {
+		float cx = side==0 ? 11.0 : 166.0;
+		for (int row=0; row<2; row++) {
+			float cy = row==0 ? 175.0 : 193.5;
+			if (abs(p.x-cx)<3.3 && p.y>=(row==0 ? 169.5 : 191.0) && p.y<(row==0 ? 180.0 : 196.5)) {
+				art = texture(commander_art,vec2(side==0 ? 8.0/320.0 : 167.0/320.0,179.0/400.0));
+				vec2 d = vec2(p.x-cx,(p.y-cy)*gunner_pixel_aspect);
+				float r = length(d);
+				if (r<2.5) art.rgb=vec3(0.16);
+				if (r<2.15) art.rgb=vec3(0.84);
+				if (r<1.75) art.rgb=vec3(0.53);
+				if ((abs(d.x)<0.32 && abs(d.y)<1.3) || (abs(d.y)<0.32 && abs(d.x)<1.3)) art.rgb=vec3(0.11);
+			}
+		}
+	}
+	return art;
+}
+
+bool cupola_rail_pixel(vec2 p) {
+	float end_x = p.y<112.0 ? 183.0 : (p.y<113.0 ? 206.0 : (p.y<114.0 ? 230.0 : (p.y<115.0 ? 242.0 : (p.y<116.0 ? 264.0 : 286.0))));
+	return p.y>=111.0 && p.y<117.0 && p.x>=159.0 && p.x<end_x;
 }
 
 bool status_live_cell(vec2 p) {
@@ -187,6 +216,24 @@ vec2 gunner_donor(vec2 p) {
 	return q;
 }
 
+// Keep the six upper-shell fasteners rigid while the surrounding plate is
+// registered to the PC aperture. Donor centres are measured in the source PNG.
+vec2 gunner_fastener(vec2 p, vec2 donor) {
+	vec2 centres[6] = vec2[](vec2(85.0,27.0),vec2(1500.0,27.0),
+		vec2(18.0,392.0),vec2(1567.0,392.0),vec2(98.0,560.0),vec2(1487.0,560.0));
+	for (int i=0; i<6; i++) {
+		vec2 c = centres[i]/vec2(1586.0,992.0)*vec2(320.0,200.0);
+		float y = c.y<15.0 ? c.y*13.0/15.0 : (c.y<111.0 ? 13.0+(c.y-15.0)*97.0/96.0 : 110.0+(c.y-111.0)*13.0/7.0);
+		vec2 d = p-vec2(c.x,y);
+		if (abs(d.x)<4.4 && abs(d.y)<(i<4 ? 4.4 : 7.0)) {
+			float distance_from_screw = length(d/vec2(1.0,i<4 ? 1.0 : 1.7));
+			float weight = 1.0-smoothstep(3.3,4.4,distance_from_screw);
+			donor = mix(donor,c+d*vec2(1.0,gunner_pixel_aspect),weight);
+		}
+	}
+	return donor;
+}
+
 void fragment() {
 	vec2 pixel = UV * vec2(320.0, 200.0);
 	bool inside = all(greaterThanEqual(pixel, camera_rect.xy))
@@ -201,10 +248,16 @@ void fragment() {
 		int(round(texture(plate_mask, UV).r * 255.0)) == 1 && texture(ui_mask, UV).r > 0.5) {
 		// Explicit texel centres avoid GPU float rounding choosing the previous
 		// row when the piecewise anchor lands exactly on a donor-texel boundary.
-		float donor_height = float(textureSize(gunner_art,0).y);
 		vec2 donor = gunner_donor(pixel);
-		float donor_row = floor(donor.y*donor_height/200.0+0.0001);
-		vec4 art = texture(gunner_art, vec2(donor.x/320.0,(donor_row+0.5)/donor_height));
+		vec2 sample_uv;
+		if (genesis_art) {
+			sample_uv = gunner_fastener(pixel,donor)/vec2(320.0,200.0);
+		} else {
+			// Legacy pilot retains exact nearest texels despite the linear sampler.
+			vec2 dimensions = vec2(textureSize(gunner_art,0));
+			sample_uv = (floor(donor/vec2(320.0,200.0)*dimensions+0.0001)+0.5)/dimensions;
+		}
+		vec4 art = texture(gunner_art,sample_uv);
 		result.rgb = mix(result.rgb, art.rgb, art.a);
 	}
 	// Other stations may have cockpit occluders inside their view rectangle.
@@ -218,8 +271,13 @@ void fragment() {
 			vec2 donor = commander_donor(pixel);
 			if (genesis_art) donor.y *= 0.5;
 			art = texture(commander_art,donor);
+			if (genesis_art) art = commander_metal(pixel,art);
 		} else if (station_art_enabled.y > 0.5 && plate == 3) {
 			art = texture(cupola_art,vec2(UV.x,cupola_y(pixel.y)/200.0));
+		} else if (genesis_art && cupola_rail_verified && station_art_enabled.y > 0.5 && plate == 0 && cupola_rail_pixel(pixel)) {
+			// Complete the existing raised rail, then use its adjacent clean
+			// deck material for the PC-owned tapered edge. No world pixels qualify.
+			art = texture(cupola_art,pixel.x<183.0 ? UV : vec2(190.0/320.0,119.0/200.0));
 		} else if (station_art_enabled.z > 0.5 && plate == 4 &&
 			!in_box(pixel,vec4(53.0,187.0,267.0,200.0))) {
 			art = texture(driver_art,driver_donor(pixel));

@@ -44,8 +44,11 @@ class InformationCompletionTests(unittest.TestCase):
             image.putpixel((200,175),(255,0,255))
             self.assertNotIn(hashlib.sha256(image.crop((0,175,320,200)).tobytes()).hexdigest(),frame['footer_sha256'])
 
-    def test_blocked_heat_not_added(self):
-        self.assertNotIn('heat',[e['name'] for e in self.data['entries']+self.data['frames']])
+    def test_heat_has_source_verified_surround_without_overhead_diagram(self):
+        self.assertNotIn('heat',[e['name'] for e in self.data['entries']])
+        self.assertEqual([f['name'] for f in self.data['frames']],['ax','heat','sabot','coax','cannon','smoke'])
+        frame=next(f for f in self.data['frames'] if f['name']=='heat')
+        self.assertTrue(frame['donor'].endswith('ammo-heat-screen.png'))
 
     def test_embedded_caption_contours_preserve_source_cells(self):
         from tools.build_pc_outline_fonts import point_in_polygon

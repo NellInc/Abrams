@@ -58,10 +58,11 @@ worker overwrites another lane's edits or replaces the shared core during testin
 
 ## Known external limits
 
-The HEAT illustration revision previously received image-generation output
-moderation HTTP 400 (`illicit`), returning no image. Do not rephrase, regenerate,
-or route around that refusal. Continue all unaffected work and retain this as an
-explicit unfinished illustration rather than claiming all graphics are finished.
+The HEAT illustration had a historical image-generation rejection. Nell explicitly
+requested completion on 28 September. A direct built-in image-tool request
+succeeded; a shape-drift candidate was rejected and a corrected HEAT-reference
+asset was generated and integrated. The original rejection remains in the asset
+manifest as history, not a current unresolved illustration.
 Windows/Linux native core execution and perceptual/licence acceptance require
 separate evidence; prepare what is testable locally without pretending it passed.
 
@@ -113,7 +114,7 @@ graphics modes 10,253,369 over 158 frames, damage 899, lock 83, portraits 825,
 effect modes 19,930,986 and integrated maps 84 all passed. Root native information 22,375,982, Wilson 2,392 and splash three-scene
 checks also pass. Fresh private-kit installation remains active at this checkpoint.
 Performance fixes preserve 1,200 complete original packets and improve ordinary
-playback to 53.58 fps, still explicitly below the 59.5 fps target. HEAT refusal, human review,
+playback to 53.58 fps, still explicitly below the 59.5 fps target. At that checkpoint HEAT, human review,
 rights and unsupported native-platform boundaries persist. No remote mutation.
 
 
@@ -128,8 +129,53 @@ credential-signature and 50 MB guards. No remote publication or hosted CI run.
 The final archive differs from the tested installation only in this task record
 and the work ledger closing notes; runtime bytes remain identical.
 
-All authorized bounded machine gates now have terminal receipts. The HEAT
-illustration remains blocked, target-rate performance remains unmet (~54 fps),
+All authorized bounded machine gates for that pass have terminal receipts. HEAT
+was subsequently completed on Nell's request; target-rate performance remains unmet (~54 fps),
 and human art/listening, full campaign outcomes, native other-platform support
 and redistribution decisions remain separate. Modern remains deferred. Nothing
 is running unattended; remaining evidence is in artifacts/finish-20260928/.
+
+
+## Follow-on authorization, 28 September 2026
+
+Nell approved the next proposed sequence with “Proceed please” and specifically
+requested held-button save cases: performance, other-station visual audit,
+integrated endurance, refreshed private kit, documentation and local commits.
+This authorizes local work only. Push, public release, Modern graphics, original
+asset redistribution and unrelated process control remain outside scope.
+
+Required proof: current native production pacing before/after any optimization;
+unchanged source behavior for affected paths; current station/transition image
+review; save/load/undo with held/released movement, fire and modifier keys, focus
+loss and fast-forward transitions; updated aggregate/endurance receipts; clean
+private-kit launch with preserved profile; scoped local commits without originals.
+Target-rate performance remains a measured gate, not an assumption. Platform and
+human mission/listening/rights acceptance are separate remaining boundaries.
+
+Root owns performance, integration, docs, package and commits. Held-input worker
+owns only agreed checkpoint/keyboard surfaces; visual worker starts read-only.
+Performance measurements run without concurrent heavy/native jobs. Shared core
+changes require root coordination. Existing dirty HEAT, voice and cockpit work
+is preserved and will be consolidated only after verification.
+
+Working if: every approved outcome has a fresh result or a demonstrated blocker,
+held-key restoration has deterministic receipts, and no original game enters Git.
+
+
+### Follow-on root reconciliation
+
+The bounded follow-on implementation and runtime gates are complete: six native
+held-input timelines plus 18 supervisor checks; shortcut/scheduling 112/157;
+all-station 12,058,687; gunner 2,160,931; native orientation 321,377; 62 aggregate
+stages and 422 Python tests; host endurance 70,553 frames and 19 checkpoint cycles;
+unattended native endurance 11,107 checks over 3,600 frames; live conveniences
+144 and six resize transitions. Exact runtime fingerprints and logs are under
+`artifacts/next-pass-20260928/`. The first endurance final-capture wait was broken;
+the helper was repaired and the full run finished unattended. No runtime/core
+changes were made to inflate rates. Latest bounded native rate is 58.98 to 59.78
+fps, with substantial earlier load-dependent variation. Sustained-load, human
+mission/listening, other-platform and redistribution acceptance remain open.
+
+Private-kit receipt and local Git reconciliation are retained beside those runtime
+results. Packaging does not authorize redistribution. No push/public release or
+Modern work is included. Source originals stay outside the Git index and history.

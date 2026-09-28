@@ -174,6 +174,50 @@ func run() -> void:
 	check(not _advance_live_frame(),"running state operation blocks original stepping")
 	state_control_pending=false
 
+	# Save/load control replies never resample a historical key set. Releases
+	# received while the worker restarts take effect at the next source frame.
+	audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+	audio_menu.config_path=""
+	root.add_child(audio_menu)
+	for operation in ["save_state","load_state","undo_load","failed_load"]:
+		for held_after in [[],[KEY_UP,KEY_SPACE],[KEY_KP_4]]:
+			set_keys([KEY_UP,KEY_SPACE])
+			bridge.pending=false
+			elapsed=period
+			check(_advance_live_frame(),"held controls dispatch before "+operation)
+			var before: int=bridge.requests.size()
+			state_control_pending=true
+			set_keys(held_after)
+			bridge.pending=false
+			_state_result({"type":"state_result","success":operation!="failed_load",
+				"restored":valid_sample.duplicate(true),"slots":[],"message":operation})
+			check(bridge.requests.size()==before,"state result renders saved boundary without advancing "+operation)
+			check(not state_control_pending and not audio_menu.busy,"control reply unlocks host "+operation)
+			elapsed=period
+			check(_advance_live_frame(),"current controls resume after "+operation)
+			var wanted:=Keyboard.encode(held_after);wanted.sort()
+			var actual: Array=bridge.requests[-1].keys.duplicate();actual.sort()
+			check(actual==wanted,"release or changed controls during state operation are current "+operation)
+	# Losing focus while a batch is outstanding cannot mutate that batch, and
+	# neutralizes the very next frame even when host polling still says held.
+	set_keys([KEY_SPACE,KEY_UP])
+	_choose_speed(8)
+	bridge.pending=false;elapsed=period
+	check(_advance_live_frame(),"held fast-forward batch sent")
+	var sent_before_focus: Dictionary=bridge.requests[-1].duplicate(true)
+	root.focus_exited.emit()
+	check(bridge.requests[-1]==sent_before_focus,"focus event cannot change already executing original batch")
+	reply();super._process(period)
+	check(bridge.requests[-1].frames==8 and bridge.requests[-1].keys.is_empty(),"next fast-forward batch neutral after focus loss")
+	root.focus_entered.emit()
+	reply();super._process(period)
+	check(bridge.requests[-1].keys.is_empty(),"focus regain quarantines stale held keys")
+	set_keys([]);reply();super._process(period)
+	set_keys([KEY_SPACE]);reply();super._process(period)
+	check(bridge.requests[-1].keys==["space"],"new trigger press survives focus recovery")
+	audio_menu.queue_free();audio_menu=null
+	_choose_speed(1);set_keys([])
+
 	# Capture routes retain explicit batches and dispatch only after presentation.
 	capture=true
 	auto_steps=[[3,["f4"]],[20,[]]]

@@ -17,6 +17,7 @@ const ART := [
 	{"name":"CREW: DRIVER", "source":"crew-driver-original.png", "remaster":"driver-v2.png","collection":"remastered/crew-v1","square":true},
 	{"name":"CREW: LOADER", "source":"crew-loader-original.png", "remaster":"loader-v1.png","collection":"remastered/crew-v1","square":true},
 	{"name":"AX ILLUSTRATION", "source":"info-v1/ammo-ax-illustration.png", "remaster":"ammo-ax-v2.png","collection":"remastered/info-v1","wide":true},
+	{"name":"HEAT ILLUSTRATION", "source":"info-v1/ammo-heat-illustration.png", "remaster":"ammo-heat-v2.png","collection":"remastered/info-v1","wide":true},
 	{"name":"SABOT ILLUSTRATION", "source":"info-v1/ammo-sabot-illustration.png", "remaster":"ammo-sabot-v2.png","collection":"remastered/info-v1","wide":true},
 	{"name":"COAX ILLUSTRATION", "source":"info-v1/weapon-coax-illustration.png", "remaster":"weapon-coax-v2.png","collection":"remastered/armament-v1","wide":true,"source_aspect":4.25},
 	{"name":"CANNON ILLUSTRATION", "source":"info-v1/weapon-cannon-illustration.png", "remaster":"weapon-cannon-v2.png","collection":"remastered/armament-v1","wide":true,"source_aspect":5.25},

@@ -140,9 +140,9 @@ def build(root=ROOT):
                         'genesis_donor':donor})
     frames=[]
     capture=root/'artifacts/pc-information-baseline-02'
-    for name in ['ax','sabot','coax','cannon','smoke']:
+    for name in ['ax','heat','sabot','coax','cannon','smoke']:
         donor=root/'local-art/genesis/source/info-v1'/(
-            ('ammo-' if name in ['ax','sabot'] else 'weapon-')+name+'-screen.png')
+            ('ammo-' if name in ['ax','heat','sabot'] else 'weapon-')+name+'-screen.png')
         image=Image.open(donor).convert('RGB')
         if any(image.getpixel((x,y))!=(0,0,0) for y in range(200) for x in range(8)):
             raise ValueError('Genesis outer background differs: '+name)
@@ -159,7 +159,7 @@ def build(root=ROOT):
                        'footer_rect':[0,175,320,25],'footer_sha256':footers,
                        'donor':str(donor.relative_to(root)),'donor_sha256':sha(donor),
                        'background_rgb':[0,0,0]})
-    return {'schema':1,'crew_frames':observed_crew_frames(root),'entries':entries,'frames':frames,'crew_captions':crew_captions(root),'overhead_captions':overhead_captions(root),'scope':'Three overhead selection diagrams, five Genesis-derived embedded caption contours and five Genesis-black outer page surrounds. Every visible PC value remains source-owned. Footer replacement additionally requires an exact observed footer hash; unknown footer bytes remain original.'}
+    return {'schema':1,'crew_frames':observed_crew_frames(root),'entries':entries,'frames':frames,'crew_captions':crew_captions(root),'overhead_captions':overhead_captions(root),'scope':'Three overhead selection diagrams, five Genesis-derived embedded caption contours and six Genesis-black outer page surrounds. Every visible PC value remains source-owned. Footer replacement additionally requires an exact observed footer hash; unknown footer bytes remain original.'}
 
 def main():
     output=ROOT/'local-art/pc-information-completion-v1/information.json'

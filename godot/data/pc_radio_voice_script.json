@@ -11,7 +11,7 @@
       "role": "Radio",
       "caption": "Radar shows hind entering your sector!",
       "text": "Radar shows hind entering your sector!",
-      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "Alert, urgent threat report. Crisp onset, stress Hind and entering your sector; measured urgency without panic. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "assignment_ips": [
         15504,
         16243
@@ -28,7 +28,7 @@
       "role": "Radio",
       "caption": "you killed another one",
       "text": "you killed another one",
-      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "Pleased, approving recognition of a successful shot, with warmth and professional pride. Lift another one, briefly smiling through the words, with brisk energy. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "assignment_ips": [
         15504,
         16243
@@ -45,7 +45,7 @@
       "role": "Radio",
       "caption": "M1, hind spotted your sector!",
       "text": "M1, hind spotted your sector!",
-      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "Sharp, alert threat call. Address M one clearly, then deliver Hind spotted your sector with urgency and clear consonants. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "assignment_ips": [
         15504,
         16243
@@ -77,7 +77,7 @@
       "role": "Radio",
       "caption": "M1, object airborne your sector!",
       "text": "M one, object airborne your sector!",
-      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "Immediate, energized radar warning. Strong stress on airborne and your sector, steady enough to be understood on first hearing. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "assignment_ips": [
         15504,
         16243
@@ -94,7 +94,7 @@
       "role": "Radio",
       "caption": "Hey guys, glad you made the party.",
       "text": "Hey guys, glad you made the party.",
-      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "Wry, warmly welcoming camaraderie in the middle of action. A small smile in the voice and a playful lift on party, concise and conversational. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "assignment_ips": [
         15504,
         16243
@@ -111,7 +111,7 @@
       "role": "Radio",
       "caption": "Abort mission.",
       "text": "Abort mission.",
-      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "Urgent and grave command. Stress Abort with firm authority and finish mission decisively. No celebration. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "assignment_ips": [
         15572,
         16243
@@ -133,7 +133,7 @@
       "role": "Radio",
       "caption": "The mission is complete!",
       "text": "The mission is complete!",
-      "direction": "A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "Proud, relieved announcement of success. Build a little energy into mission, then give complete an emphatic, satisfied finish. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "assignment_ips": [
         15572,
         16243

@@ -95,7 +95,7 @@ run_check() {
       exit 1
     fi
     case "$name" in
-      pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
+      pc_gunner_trim|pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
         if ! grep -Eq '^(PC_[A-Z_]+|CURSOR_STRUTS): [1-9][0-9]* checks, 0 errors([,;].*)?$' "$OUT/$name.log"; then
           cat "$OUT/$name.log"
           echo "FAIL: $name (missing successful completion receipt)" >&2
@@ -155,6 +155,7 @@ run_check pc_vehicle_art ./tools/godot.sh --headless --quit-after 1200 --script 
 run_check genesis_vehicle_studies ./tools/godot.sh --headless --script res://tests/test_genesis_vehicle_studies.gd
 run_check pc_cockpit_art ./tools/godot.sh --headless --script res://tests/test_pc_cockpit_art.gd
 run_check pc_genesis_cockpits ./tools/godot.sh --headless --script res://tests/test_pc_genesis_cockpits.gd
+run_check pc_gunner_trim ./tools/godot.sh --headless --script res://tests/test_pc_gunner_trim.gd
 run_check pc_world_bearing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_world_bearing.gd
 run_check pc_orientation ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_orientation.gd
 run_check pc_reticle ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_reticle.gd

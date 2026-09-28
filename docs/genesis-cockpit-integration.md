@@ -157,3 +157,79 @@ Reproduce the current native material/damage check:
 
 All generated/reference graphics remain ignored local files and are excluded
 from normal source-only exports. No publication or redistribution is authorized.
+
+## Gunner hardware and trim repair, 28 September 2026
+
+Nell's later screenshot exposed oval fasteners, coarse grey aperture corners,
+and doubled or broken lower display edges. The earlier seam check did not
+cover those defects. This pass keeps the pinned Genesis-derived artwork and
+changes its registration plus the code-native metalwork surrounding PC cells.
+
+The six upper-shell fasteners now sample their measured donor centres with
+output-aspect correction and a feathered return to the surrounding plate. The
+Gunner donor uses linear filtering; the legacy material pilot explicitly
+samples texel centres. Eight lower fasteners are drawn as concentric circles
+in output pixels. The console margins use straight registered bevels and the
+same grey, blue and green palette. The original instrument positions, live
+counts, lamps, labels and ammunition illustrations remain source-owned.
+Only the two-pixel static display rims receive the new trim, subject to their
+original plate and UI ownership masks.
+
+The four original aperture corners contain exactly 84 grey UI pixels. All 84
+must match the current source colour and ownership before their high-resolution
+lip is eligible. Its antialiasing can reuse the nearest already-visible world
+colour; it never samples scenery concealed behind the original corners. Every
+originally visible world pixel stays unchanged. Changing one corner pixel or
+ownership bit disables the whole corner treatment. Missing source provenance,
+other camera bounds, and EGA/Genesis modes clear the overlay immediately.
+
+`test_pc_gunner_trim.gd` renders 1280x800, 1280x960 and 1920x1200. It measures
+visible screw bounds, checks live-pixel preservation, plants a bright sentinel
+in concealed scenery, renders whole-corner fallback after three corruption
+kinds, and verifies byte-identical same-frame Upscaled restoration. The focused
+native run passed 2,160,931 checks. The headless guard tests are included in
+`tools/validate.sh`; private-package allowlisting includes both new code files.
+Evidence is retained under `artifacts/cockpit-trim-20260928/`.
+
+The implementing assistant performed the visual review. Failed development
+renders remain in the evidence directory, including the shader type error
+caught by world-pixel protection checks. Impeccable is not installed in this
+native Godot project; native rendering and pixel/geometry checks are used.
+
+Working if: the gunner sight has a smooth red rim, screws remain round in 4:3,
+console edges are aligned, original live pixels and hidden-world boundaries
+remain protected, and graphics switching never retains stale trim.
+
+
+Final root checks passed: 12,051,382 native all-station checks; 4,096,050 legacy
+material checks; and the full 62-stage validation, including 422 Python tests,
+source preservation and the new trim guard test. Aggregate terminal receipt:
+`artifacts/validation-20260928T174932Z/`. Two live launcher cold boots completed
+at 1280x960. Their original framebuffer, world image, decoded state, program and
+sample count are identical; the remastered composite differs. The independent
+boots differ in `draw_pass.start_ram_sha256`, so full-RAM cross-boot identity is
+not claimed. All other presentation metadata matches. The focused same-packet
+mode-switch test provides exact renderer restoration evidence separately.
+
+Final receipt: `artifacts/cockpit-trim-20260928/completion.json`. Local changes
+only. No original game files were modified or included in Git; no push or new
+private package was made.
+
+## Commander hardware and cupola rail follow-up
+
+The four lower commander-console fasteners now use circular output-space geometry,
+including the 4:3 correction. The existing continuous heading surround is retained.
+The cupola forward rail no longer mixes fragmented low-resolution stipple with its
+Genesis donor. Its 457 source-owned, untagged rail pixels require an exact AA source
+fingerprint, camera, UI mask, pixel comparison and adjacent plate context. A single
+mismatch rejects the entire extension. Original world pixels and the PC's stepped
+outer silhouette remain unchanged. EGA and Genesis modes retain their own paths.
+
+Current native evidence is in `artifacts/next-pass-20260928/`. Root reviewed the
+commander 1280x960 and cupola images; this is self-review of work integrated in this
+session. The native route covers all five plates and negative source/ownership
+cases. Performance-only changes replace the orientation guard loop with an exact
+packed-byte predicate for supported formats and reuse this call's already validated
+plate-mask image. Other formats retain the old loop; no previous-frame validity is
+reused. The 1,024-case original CPU orientation oracle and format/mutation comparisons
+remain required. No raster artwork or original game files changed in this follow-up.

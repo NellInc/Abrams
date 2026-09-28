@@ -2,14 +2,17 @@
 
 The original PC executables own gameplay, mission logic, menus and disk saves.
 Godot renders the supported high-resolution layers and plays event-driven audio.
-The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate. The blocked
-HEAT illustration, target-rate performance and release acceptance remain open.
+The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate.
+HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
 ## Verified flows (28 September 2026)
 
 | Surface | Evidence | Limit |
 |---|---|---|
-| Final non-Modern endurance | `artifacts/finish-20260928/root-endurance-final/report.json`: 71,873 original frames, 2,839 checks, all eight scenarios, 32 stations, 19 checkpoint cycles and cold campaign Continue | Correctness under bounded routes; no mission victory or indefinite leak claim. Current-core root rerun |
+| Held-input restoration | `artifacts/next-pass-20260928/held-native-root/report.json`: six same-timeline fresh-process cases and 18 supervisor checks; Godot shortcut 112 and live-scheduling 157 checks | Includes release/change, fire, steering, Shift+3, fast forward, undo and failed-load rollback. Focus signal delivery is tested synthetically; physical hardware is separate |
+| Current host endurance | `artifacts/next-pass-20260928/host-endurance/report.json`: 70,553 frames, 2,822 checks, eight scenarios, 19 checkpoint cycles and cold campaign Continue | Adaptive original debrief loops cause run-to-run frame-count differences. No mission victory claim |
+| Current native endurance | `artifacts/next-pass-20260928/native-endurance-final/endurance-report.json`: 11,107 checks, 3,600 paced frames, zero audio-consumer lag; 58.98 to 59.78 fps | Completed unattended after repairing a final screenshot test-harness stall. Bounded timing and consumer-state proof, not acoustic listening or indefinite memory acceptance |
+| Earlier non-Modern endurance | `artifacts/finish-20260928/root-endurance-final/report.json`: 71,873 original frames, 2,839 checks, all eight scenarios, 32 stations, 19 checkpoint cycles and cold campaign Continue | Correctness under bounded routes; no mission victory or indefinite leak claim. Current-core root rerun |
 | All eight scenarios | `artifacts/pc-all-scenarios-trace-01/report.json`: 54,657 original frames, 118 passing checks, byte-identical RAM/video/input records against `pc-all-scenarios-baseline-02` | Entry, four stations, pause/resume, sound toggle, cannon, coax, smoke, quit, debrief and return to menus; mission victories/defeats are not covered |
 | All 32 scenario/station views | `artifacts/pc-all-scenario-frames-native-02/report.json`: 161 checks, zero errors, production Godot rendering of the recorded original packets | Rendering replay, not a second live execution |
 | Actual combat loss, debrief, menu and reentry | `artifacts/pc-combat-loss-trace-01/report.json`: all 15,122 RAM/video/input records match the unmodified baseline; `pc-combat-loss-native-03/report.json`: 1,841 checks, 187 stages, zero errors | Original enemy damage ends Mossel Defense without a quit key or live RAM edits. Native production host reruns from the same neutral START boundary and fresh disk; other outcomes remain open |
@@ -65,8 +68,8 @@ sample on arrival. No mixed gameplay recordings are used as live samples.
 
 Fifty further distinct captions now have generated performances: 20 scenario
 reports, 27 vehicle-class destruction reports and three original speed-setting
-announcements. Forty-nine use preferred Gemini 3.8, and one uses the authorized
-3.1 fallback after a provider failure. Selected takes passed blind wording QA,
+announcements. All fifty current takes use Gemini 3.8 with line-specific
+performance direction. Selected takes passed blind wording QA,
 including separately regenerated repairs. Five previously unmapped source sound
 requests now have individually synthesized samples. Four authored sample-based
 frontend arrangements use extracted Genesis percussion and new tonal instrument
@@ -123,22 +126,23 @@ Python/Pillow and its included owner-supplied inputs. See
 
 ## Open acceptance work
 
-* Current endurance and pacing measurements are recorded in `pc-endurance.md`
-  and `artifacts/finish-20260928/endurance-report.md`. The new instrumented
-  3,600-frame run measured 26.41 to 31.28 fps; the subsequent ordinary-loop
-  diagnostic measured 42.61 fps. Exact immutable-snapshot and empty-mask fast
-  paths then improved ordinary/audited playback to 53.58/53.75 fps. All 1,200
-  compared inputs, RAM/video hashes and complete packets remained identical.
-  These rates remain below the roughly 59.5-fps target.
-  The older 59.20-fps receipt describes a different candidate and route and
-  must not substitute for current runtime measurements. Final-candidate bounded
-  proof does not establish historical speed calibration or all-machine pacing.
+* Target-rate performance remains open. Current ordinary playback measured
+  45.86 fps across 1,200 original frames, versus 37.60 fps before this pass.
+  Component timing fell from 4.87 to 4.16 ms for the full compositor. Exact
+  packed-byte orientation proof and same-call decoded-mask reuse preserve the
+  source predicates. Desktop contention varied, so the observed rate difference
+  is not a controlled hardware-independent speedup. The final unattended native
+  endurance rerun measured 58.98 to 59.78 fps, averaging 59.4976 fps; sustained
+  rate under load remains unproven. See `artifacts/next-pass-20260928/` for current
+  profiles and endurance receipts. Earlier 53.58 and 59.20-fps captures describe
+  different candidates/load conditions and do not establish current target-rate
+  acceptance. Original game CPU settings and step counts remain unchanged.
 * Victories, additional defeats, campaign progression and longer-session outcomes.
 * Wider individual dialogue/SFX occurrence coverage and independent listening/mix
   review. Frontend paragraphs have no new narration; they lack a complete source
   utterance/interruption identity. Sample-based arrangements and five-channel
   mixing are now implemented.
-* The blocked HEAT illustration and unrecognized transition fallbacks, preserving
+* Unrecognized transition fallbacks, preserving
   Genesis precedence and original PC visibility. The finite non-Modern register
   is in `graphics-coverage.md`. Vehicle replacement and Modern are deferred.
 * Supported-platform standalone installers and community-release clearance.

@@ -5,6 +5,8 @@ const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
 var typography = preload("res://scripts/pc_typography.gd").new()
 var damage_art = preload("res://scripts/pc_instrument_damage_art.gd").new()
 var dynamic_map_art = preload("res://scripts/pc_dynamic_map_art.gd").new()
+var gunner_trim = preload("res://scripts/pc_gunner_trim.gd").new()
+var cupola_rail = preload("res://scripts/pc_cupola_rail.gd").new()
 var instrument_art = preload("res://scripts/pc_instrument_art.gd").new()
 var target_box_art = preload("res://scripts/pc_reticle_target_art.gd").new()
 var reticle_art = preload("res://scripts/pc_reticle_art.gd").new()
@@ -49,6 +51,8 @@ var gunner_art_reason := "material pilot disabled"
 var _plate_tags := PackedByteArray()
 var _plate_ui := PackedByteArray()
 var _plate_ids: Dictionary = {}
+# This frame's already decoded and validated mask, never carried across frames.
+var _current_plate_mask: Image
 var _driver_bits := PackedByteArray()
 var _driver_ui := PackedByteArray()
 var _driver_nonempty := false
@@ -64,6 +68,9 @@ func _init() -> void:
 	damage_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dynamic_map_art)
 	dynamic_map_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(gunner_trim)
+	gunner_trim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	resized.connect(_layout_gunner)
 	add_child(instrument_art)
 	instrument_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(reticle_art)
@@ -78,6 +85,9 @@ func _init() -> void:
 	frontend_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(native_graphics)
 	native_graphics.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+func _layout_gunner() -> void:
+	_upscaled_material.set_shader_parameter("gunner_pixel_aspect",size.y*320.0/maxf(size.x*200.0,1.0))
 
 func _fallback(reason: String) -> bool:
 	damage_art.clear()
@@ -104,6 +114,7 @@ func load_genesis_art(root: String) -> bool:
 		var image := Image.load_from_file(path)
 		if image==null or image.get_size()!=Vector2i(1586,992): return false
 		images[id] = image
+	if not cupola_rail.load_source(root): return false
 	set_gunner_art(images[1])
 	for id in [2,3,4]: set_cockpit_art(id,images[id])
 	status_art_texture = ImageTexture.create_from_image(images[5])
@@ -144,11 +155,14 @@ func set_cockpit_art(plate_id: int, image: Image) -> bool:
 	return true
 
 func _disable_art(reason: String) -> void:
+	_current_plate_mask = null
+	gunner_trim.clear()
 	instrument_art.clear()
 	portrait_art.clear()
 	status_diagram_verified = false
 	material.set_shader_parameter("status_art_enabled",false)
 	material.set_shader_parameter("status_diagram_verified",false)
+	material.set_shader_parameter("cupola_rail_verified",false)
 	gunner_art_enabled = false
 	driver_assembly_enabled = false
 	material.set_shader_parameter("driver_assembly_enabled", false)
@@ -219,6 +233,7 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 	material.set_shader_parameter("station_art_enabled", Vector3(1 if 2 in cockpit_art_ids else 0, 1 if 3 in cockpit_art_ids else 0, 1 if 4 in cockpit_art_ids else 0))
 	material.set_shader_parameter("gunner_art", gunner_art_texture)
 	material.set_shader_parameter("plate_mask", ImageTexture.create_from_image(mask))
+	_current_plate_mask = mask
 	gunner_art_enabled = 1 in cockpit_art_ids
 	material.set_shader_parameter("gunner_art_enabled", gunner_art_enabled)
 	material.set_shader_parameter("status_art_enabled",5 in cockpit_art_ids)
@@ -290,7 +305,7 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	_cached_world=world
 	_cached_program=program
 	material=_upscaled_material
-	for child in [damage_art,dynamic_map_art,instrument_art,reticle_art,target_box_art,portrait_art,typography]:child.visible=graphics_mode=="upscaled"
+	for child in [damage_art,dynamic_map_art,gunner_trim,instrument_art,reticle_art,target_box_art,portrait_art,typography]:child.visible=graphics_mode=="upscaled"
 	native_graphics.visible=graphics_mode=="genesis"
 	if graphics_mode!="upscaled":
 		_fallback("Untouched original EGA" if graphics_mode=="ega" else "Native Genesis donors with original PC fallback")
@@ -341,8 +356,11 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	_set_driver_assembly(presentation,mask)
 	typography.status_numbers_enabled = genesis_art_enabled and 5 in cockpit_art_ids
 	if genesis_art_enabled and not cockpit_art_ids.is_empty():
-		var tags := Image.new()
-		if tags.load_png_from_buffer(Marshalls.base64_to_raw(presentation.plate_overlay.mask_png))==OK:
+		var tags := _current_plate_mask
+		if tags!=null:
+			material.set_shader_parameter("cupola_rail_verified",cupola_rail.verify(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),3 in cockpit_art_ids))
+			if 1 in cockpit_art_ids:
+				gunner_trim.set_frame(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),world)
 			instrument_art.set_frame(source,mask,tags,presentation.get("orientation",{}))
 			damage_art.set_frame(source,mask,tags)
 	if genesis_art_enabled: portrait_art.set_frame(source,mask,presentation)

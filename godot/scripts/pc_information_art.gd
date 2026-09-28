@@ -2,8 +2,8 @@ extends Control
 ## Genesis illustrations over complete verified original START information pages.
 ## Original contents, page order and navigation stay PC-owned. Full-page crew art
 ## additionally requires the complete frame, including its otherwise variable footer.
-const CATALOG_SHA := "c42a5917374dea8eeb918c32bb5f163f8d8456a7471a5fcb2632b2e44d422d84"
-const COMPLETION_SHA := "c42932294fa7bd300894309f69d9f7eb1996c4c9e4be248e78a15a1895f83ab9"
+const CATALOG_SHA := "835ef4cc94a560f35a3ba74a928e39a533833300866c6b8692ffd12de8d0b203"
+const COMPLETION_SHA := "65da8be43af5d62ff6fd77e374393c6621effacea556ad02e120a4f80e35c769"
 var caption_text_enabled := true
 var caption_fonts: Dictionary = {}
 var catalog: Dictionary = {}

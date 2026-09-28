@@ -22,6 +22,17 @@ The chord is withheld from the original game until its keys are released; bare
 S, L, G and the original function keys remain unchanged. Quick save overwrites
 slot 1 while retaining its preceding archive. Use Session for slots 2 to 5.
 
+You can keep steering or firing while using a save/load shortcut. Only the
+shortcut chord is withheld; unrelated held controls continue. A checkpoint
+retains the original machine's held-key state, then reconciles it with your
+current keys on the next frame. Releasing the trigger before loading therefore
+does not leave it stuck down. Failed loads and Undo preserve this behavior.
+
+Opening a native menu or leaving the window deliberately neutralizes game input.
+After returning, release all keys once before steering or firing again. This
+prevents an old key press from remaining active after focus loss. An already
+sent fast-forward batch finishes unchanged; input changes apply to the next batch.
+
 ## Save states
 
 Choose **Session > Save state > Slot 1 to 5**. Choose the corresponding entry under

@@ -65,6 +65,9 @@ func run()->void:
 			world=ImageTexture.create_from_image(source.get_region(Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1)))
 		frame.set_graphics_mode("upscaled")
 		frame.set_frame(source,e.presentation,world,e.program);frame.present_frontend(e.program)
+		var heat_page: bool=e.label in ["pc-information-baseline-02-heat","pc-information-baseline-02-heat-wait"]
+		if heat_page:
+			check(frame.frontend_art.information_art.active.get("name")=="heat","HEAT selects the finished Upscaled illustration on first and settled frames")
 		var upscaled:Image=await snapshot() if native else null
 		check(frame.set_graphics_mode("ega"),"EGA switch")
 		check(frame.material==null and not frame.frontend_art.visible and not frame.native_graphics.visible,"EGA has no presentation overlays")
@@ -75,6 +78,8 @@ func run()->void:
 			check(ega.get_data()==expected.get_data(),"native EGA exact: "+e.label)
 		check(frame.set_graphics_mode("genesis"),"Genesis switch")
 		check(not frame.frontend_art.visible and frame.native_graphics.visible and frame.material==null,"Genesis excludes all remaster layers")
+		if heat_page:
+			check("ammo-heat-illustration" in frame.native_graphics.active.get("donors",[]),"HEAT Genesis switch selects the original extracted donor")
 		if native:
 			var genesis:=await snapshot()
 			var donor:Image=frame.native_graphics.texture.get_image()

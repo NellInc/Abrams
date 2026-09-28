@@ -1,201 +1,197 @@
 {
   "scope": "Seven original radio captions from eight scenario entries and two SIM strings. Selected routing/equipment/retrieval proven by isolated original instructions; live eligibility and occurrence are separate. Speech requires complete pixel-verified radio text, never queued contents.",
-  "status": "Automated wording checked; digit delivery checked where required; human listening review pending",
-  "script_sha256": "6411fd5a252d0371e4a28f4406f7da2c8c98d7d049ddfe4611ce5a30b86562b2",
+  "status": "Automated wording checked; independent human listening review pending",
+  "script_sha256": "103d0dc12a71ee3dba074907bd8066865e9b2851dc107186f654d441a4d0b1ba",
   "voices": {
     "pc_radio_radar_hind": {
       "role": "Radio",
       "voice": "Charon",
       "text": "Radar shows hind entering your sector!",
       "performed_text": "Radar shows hind entering your sector!",
-      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. Alert, urgent threat report. Crisp onset, stress Hind and entering your sector; measured urgency without panic. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "generator": "gemini-3.8-flash-tts",
       "sample_rate": 24000,
       "channels": 1,
       "bits_per_sample": 16,
-      "sample_frames": 72000,
-      "duration_seconds": 3.0,
-      "sha256": "450c73d2b130e984a1f54c9ae46efcaab8e750f9363ada27ffb4042bbebcebc2",
-      "source_master": "local-audio/pc-radio-gemini-3.8-v1/voice_pc_radio_radar_hind.wav",
-      "generation_script_sha256": "55572bab1ea96552a113f540d6607c09ae28ea17df2295fe5950feaa0bb6bfd8",
+      "sample_frames": 56640,
+      "duration_seconds": 2.36,
+      "sha256": "9faaea3e52dfd97d5512a70c40e016caf8e179e7c9de816155b62e0a94993d06",
+      "source_master": "local-audio/bark-direction-20260928/radio/voice_pc_radio_radar_hind.wav",
+      "generation_script_sha256": "103d0dc12a71ee3dba074907bd8066865e9b2851dc107186f654d441a4d0b1ba",
       "processing": "Unmodified generated dry master",
       "transcript_qa": {
         "transcript": "Radar shows Hind entering your sector.",
         "expected": "Radar shows hind entering your sector!",
         "normalized_match": true,
-        "audio_sha256": "450c73d2b130e984a1f54c9ae46efcaab8e750f9363ada27ffb4042bbebcebc2"
+        "audio_sha256": "9faaea3e52dfd97d5512a70c40e016caf8e179e7c9de816155b62e0a94993d06"
       },
-      "number_delivery_qa": null
+      "number_delivery_qa": null,
+      "previous_take_sha256": "450c73d2b130e984a1f54c9ae46efcaab8e750f9363ada27ffb4042bbebcebc2"
     },
     "pc_radio_killed_another": {
       "role": "Radio",
       "voice": "Charon",
       "text": "you killed another one",
       "performed_text": "you killed another one",
-      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. Pleased, approving recognition of a successful shot, with warmth and professional pride. Lift another one, briefly smiling through the words, with brisk energy. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "generator": "gemini-3.8-flash-tts",
       "sample_rate": 24000,
       "channels": 1,
       "bits_per_sample": 16,
-      "sample_frames": 34560,
-      "duration_seconds": 1.44,
-      "sha256": "3b9a8762ac118450fa71ec2d3ca51a0454968d5e74de66724afdf96964194069",
-      "source_master": "local-audio/pc-radio-gemini-3.8-v1/voice_pc_radio_killed_another.wav",
-      "generation_script_sha256": "55572bab1ea96552a113f540d6607c09ae28ea17df2295fe5950feaa0bb6bfd8",
+      "sample_frames": 36480,
+      "duration_seconds": 1.52,
+      "sha256": "b7a3d6dd89a9a66571dc33cc23fc72ef43f76825700964e17704a5ccf2cc374d",
+      "source_master": "local-audio/bark-direction-20260928/radio/voice_pc_radio_killed_another.wav",
+      "generation_script_sha256": "103d0dc12a71ee3dba074907bd8066865e9b2851dc107186f654d441a4d0b1ba",
       "processing": "Unmodified generated dry master",
       "transcript_qa": {
         "transcript": "You killed another one.",
         "expected": "you killed another one",
         "normalized_match": true,
-        "audio_sha256": "3b9a8762ac118450fa71ec2d3ca51a0454968d5e74de66724afdf96964194069"
+        "audio_sha256": "b7a3d6dd89a9a66571dc33cc23fc72ef43f76825700964e17704a5ccf2cc374d"
       },
-      "number_delivery_qa": null
+      "number_delivery_qa": null,
+      "previous_take_sha256": "3b9a8762ac118450fa71ec2d3ca51a0454968d5e74de66724afdf96964194069"
     },
     "pc_radio_hind": {
       "role": "Radio",
       "voice": "Charon",
       "text": "M1, hind spotted your sector!",
       "performed_text": "M1, hind spotted your sector!",
-      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. Sharp, alert threat call. Address M one clearly, then deliver Hind spotted your sector with urgency and clear consonants. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "generator": "gemini-3.8-flash-tts",
       "sample_rate": 24000,
       "channels": 1,
       "bits_per_sample": 16,
-      "sample_frames": 66240,
-      "duration_seconds": 2.76,
-      "sha256": "730266c7a1b8791f7fcc5f81ecbd42f1d68ab35af2693c1408a3ca347b5f45e1",
-      "source_master": "local-audio/pc-radio-gemini-3.8-v1/voice_pc_radio_hind.wav",
-      "generation_script_sha256": "55572bab1ea96552a113f540d6607c09ae28ea17df2295fe5950feaa0bb6bfd8",
+      "sample_frames": 67200,
+      "duration_seconds": 2.8,
+      "sha256": "cb316883209a3bbdec80a1f40358fbf4b03060cbab335e0063c93c1b9f98189e",
+      "source_master": "local-audio/bark-direction-20260928/radio/voice_pc_radio_hind.wav",
+      "generation_script_sha256": "103d0dc12a71ee3dba074907bd8066865e9b2851dc107186f654d441a4d0b1ba",
       "processing": "Unmodified generated dry master",
       "transcript_qa": {
         "transcript": "M one, Hind spotted your sector.",
         "expected": "M1, hind spotted your sector!",
         "normalized_match": true,
-        "audio_sha256": "730266c7a1b8791f7fcc5f81ecbd42f1d68ab35af2693c1408a3ca347b5f45e1"
+        "audio_sha256": "cb316883209a3bbdec80a1f40358fbf4b03060cbab335e0063c93c1b9f98189e"
       },
-      "number_delivery_qa": null
+      "number_delivery_qa": null,
+      "previous_take_sha256": "730266c7a1b8791f7fcc5f81ecbd42f1d68ab35af2693c1408a3ca347b5f45e1"
     },
     "pc_radio_airborne": {
       "role": "Radio",
       "voice": "Charon",
       "text": "M1, object airborne your sector!",
       "performed_text": "M one, object airborne your sector!",
-      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. Immediate, energized radar warning. Strong stress on airborne and your sector, steady enough to be understood on first hearing. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "generator": "gemini-3.8-flash-tts",
       "sample_rate": 24000,
       "channels": 1,
       "bits_per_sample": 16,
-      "sample_frames": 77760,
-      "duration_seconds": 3.24,
-      "sha256": "b187e0976db63b67af0e0995749600754fe6830174fd38e23a207a4c290e59a7",
-      "source_master": "local-audio/pc-radio-gemini-3.8-v3/voice_pc_radio_airborne.wav",
-      "generation_script_sha256": "6411fd5a252d0371e4a28f4406f7da2c8c98d7d049ddfe4611ce5a30b86562b2",
+      "sample_frames": 72960,
+      "duration_seconds": 3.04,
+      "sha256": "ed1b84d4a111dade026b680bad8917f0a783f1facffedef4ff670b5f932327b0",
+      "source_master": "local-audio/bark-direction-20260928/radio/voice_pc_radio_airborne.wav",
+      "generation_script_sha256": "103d0dc12a71ee3dba074907bd8066865e9b2851dc107186f654d441a4d0b1ba",
       "processing": "Unmodified generated dry master",
       "transcript_qa": {
-        "transcript": "M one, object airborne your sector.",
+        "transcript": "M one, object airborne, your sector.",
         "expected": "M one, object airborne your sector!",
         "normalized_match": true,
-        "audio_sha256": "b187e0976db63b67af0e0995749600754fe6830174fd38e23a207a4c290e59a7"
+        "audio_sha256": "ed1b84d4a111dade026b680bad8917f0a783f1facffedef4ff670b5f932327b0"
       },
-      "number_delivery_qa": null
+      "number_delivery_qa": null,
+      "previous_take_sha256": "b187e0976db63b67af0e0995749600754fe6830174fd38e23a207a4c290e59a7"
     },
     "pc_radio_party": {
       "role": "Radio",
       "voice": "Charon",
       "text": "Hey guys, glad you made the party.",
       "performed_text": "Hey guys, glad you made the party.",
-      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. Wry, warmly welcoming camaraderie in the middle of action. A small smile in the voice and a playful lift on party, concise and conversational. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "generator": "gemini-3.8-flash-tts",
       "sample_rate": 24000,
       "channels": 1,
       "bits_per_sample": 16,
-      "sample_frames": 54720,
-      "duration_seconds": 2.28,
-      "sha256": "47163680914774a5875f10c7fd0cb373e72d8f661c70453990dc5e00174c7b57",
-      "source_master": "local-audio/pc-radio-gemini-3.8-v1/voice_pc_radio_party.wav",
-      "generation_script_sha256": "55572bab1ea96552a113f540d6607c09ae28ea17df2295fe5950feaa0bb6bfd8",
+      "sample_frames": 62400,
+      "duration_seconds": 2.6,
+      "sha256": "cee229f98522ae4b70cc299a331cb107928f2db21e2f59caaf1a017f3f0433c3",
+      "source_master": "local-audio/bark-direction-20260928/radio/voice_pc_radio_party.wav",
+      "generation_script_sha256": "103d0dc12a71ee3dba074907bd8066865e9b2851dc107186f654d441a4d0b1ba",
       "processing": "Unmodified generated dry master",
       "transcript_qa": {
         "transcript": "Hey guys, glad you made the party.",
         "expected": "Hey guys, glad you made the party.",
         "normalized_match": true,
-        "audio_sha256": "47163680914774a5875f10c7fd0cb373e72d8f661c70453990dc5e00174c7b57"
+        "audio_sha256": "cee229f98522ae4b70cc299a331cb107928f2db21e2f59caaf1a017f3f0433c3"
       },
-      "number_delivery_qa": null
+      "number_delivery_qa": null,
+      "previous_take_sha256": "47163680914774a5875f10c7fd0cb373e72d8f661c70453990dc5e00174c7b57"
     },
     "pc_radio_abort": {
       "role": "Radio",
       "voice": "Charon",
       "text": "Abort mission.",
       "performed_text": "Abort mission.",
-      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. Urgent and grave command. Stress Abort with firm authority and finish mission decisively. No celebration. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "generator": "gemini-3.8-flash-tts",
       "sample_rate": 24000,
       "channels": 1,
       "bits_per_sample": 16,
-      "sample_frames": 33600,
-      "duration_seconds": 1.4,
-      "sha256": "77a4037d5bc9038cea7c305312e17bfb05aafa8ae8a25ffaae87f56eb0f19671",
-      "source_master": "local-audio/pc-radio-gemini-3.8-v1/voice_pc_radio_abort.wav",
-      "generation_script_sha256": "55572bab1ea96552a113f540d6607c09ae28ea17df2295fe5950feaa0bb6bfd8",
+      "sample_frames": 29760,
+      "duration_seconds": 1.24,
+      "sha256": "8dcb80ed050fcd0b7fb6ff5e1990428be6046b7a054dff10843302c700b33de7",
+      "source_master": "local-audio/bark-direction-20260928/radio/voice_pc_radio_abort.wav",
+      "generation_script_sha256": "103d0dc12a71ee3dba074907bd8066865e9b2851dc107186f654d441a4d0b1ba",
       "processing": "Unmodified generated dry master",
       "transcript_qa": {
         "transcript": "Abort mission.",
         "expected": "Abort mission.",
         "normalized_match": true,
-        "audio_sha256": "77a4037d5bc9038cea7c305312e17bfb05aafa8ae8a25ffaae87f56eb0f19671"
+        "audio_sha256": "8dcb80ed050fcd0b7fb6ff5e1990428be6046b7a054dff10843302c700b33de7"
       },
-      "number_delivery_qa": null
+      "number_delivery_qa": null,
+      "previous_take_sha256": "77a4037d5bc9038cea7c305312e17bfb05aafa8ae8a25ffaae87f56eb0f19671"
     },
     "pc_radio_complete": {
       "role": "Radio",
       "voice": "Charon",
       "text": "The mission is complete!",
       "performed_text": "The mission is complete!",
-      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. A concise American military radio report. Calm, clear and matter-of-fact. M1 is spoken M one; Hind names the helicopter. Read only the supplied words, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
+      "direction": "An experienced American radio operator, steady, succinct and authoritative. Dry close microphone, without radio processing or background noise. Proud, relieved announcement of success. Build a little energy into mission, then give complete an emphatic, satisfied finish. American military radio delivery. M1 is spoken M one; Hind names the helicopter. Read only the supplied words. Dry close microphone, without extra words, vocal noises, filtering, radio effects, music or background ambience.",
       "generator": "gemini-3.8-flash-tts",
       "sample_rate": 24000,
       "channels": 1,
       "bits_per_sample": 16,
-      "sample_frames": 40320,
-      "duration_seconds": 1.68,
-      "sha256": "309d04c0e327fce0509a9141f384b29773aab8fa465f91bea248f034632aa628",
-      "source_master": "local-audio/pc-radio-gemini-3.8-v1/voice_pc_radio_complete.wav",
-      "generation_script_sha256": "55572bab1ea96552a113f540d6607c09ae28ea17df2295fe5950feaa0bb6bfd8",
+      "sample_frames": 48000,
+      "duration_seconds": 2.0,
+      "sha256": "e5b46d5f0b08fc0001089e00b16f8324f5058ecb297f2c82a249e81540cdc1e6",
+      "source_master": "local-audio/bark-direction-20260928/radio/voice_pc_radio_complete.wav",
+      "generation_script_sha256": "103d0dc12a71ee3dba074907bd8066865e9b2851dc107186f654d441a4d0b1ba",
       "processing": "Unmodified generated dry master",
       "transcript_qa": {
         "transcript": "The mission is complete.",
         "expected": "The mission is complete!",
         "normalized_match": true,
-        "audio_sha256": "309d04c0e327fce0509a9141f384b29773aab8fa465f91bea248f034632aa628"
+        "audio_sha256": "e5b46d5f0b08fc0001089e00b16f8324f5058ecb297f2c82a249e81540cdc1e6"
       },
-      "number_delivery_qa": null
+      "number_delivery_qa": null,
+      "previous_take_sha256": "309d04c0e327fce0509a9141f384b29773aab8fa465f91bea248f034632aa628"
     }
   },
   "qa_inputs": [
     {
-      "path": "local-audio/pc-radio-gemini-3.8-v1/manifest.json",
-      "sha256": "356e4f3c076054d51e48061bf598c9798124ec921d12d71aeca415595b7ac44d"
+      "path": "local-audio/bark-direction-20260928/radio/manifest.json",
+      "sha256": "88f5df9039bead53e900153a4cbb0c7981cc55e28a97cd0b2eb9ca3010912338"
     },
     {
-      "path": "local-audio/pc-radio-gemini-3.8-v1/script.json",
-      "sha256": "55572bab1ea96552a113f540d6607c09ae28ea17df2295fe5950feaa0bb6bfd8"
+      "path": "local-audio/bark-direction-20260928/radio-directed.json",
+      "sha256": "103d0dc12a71ee3dba074907bd8066865e9b2851dc107186f654d441a4d0b1ba"
     },
     {
-      "path": "local-audio/pc-radio-gemini-3.8-v1/qa-first/transcription-check.json",
-      "sha256": "2007e49a9a1292abf77ef432da85e20cc2fa77edd798e4e1d52b5c5c74c67f5b"
-    },
-    {
-      "path": "local-audio/pc-radio-gemini-3.8-v3/manifest.json",
-      "sha256": "06e06e8aefd5d5e3d8f737608d66e682c5dd8be00151227e660c2bd2916ad209"
-    },
-    {
-      "path": "/Users/nellwatson/Documents/GitHub/Abrams/godot/data/pc_radio_voice_script.json",
-      "sha256": "6411fd5a252d0371e4a28f4406f7da2c8c98d7d049ddfe4611ce5a30b86562b2"
-    },
-    {
-      "path": "local-audio/pc-radio-gemini-3.8-v3/qa-first/transcription-check.json",
-      "sha256": "09f1a3e7bd451ea39a37a64fcd0a954858c4acc2ad642ecc7f91a79448397607"
+      "path": "local-audio/bark-direction-20260928/radio/qa-first/transcription-check.json",
+      "sha256": "0e5ba3a387f54454df9388d61ebe2ae01a0065cf24e253afe3c8052f8336a05e"
     }
-  ]
+  ],
+  "performance_pass": "2026-09-28 line-specific Gemini 3.8 Flash TTS direction; automated wording checked, independent human listening pending"
 }

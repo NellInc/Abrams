@@ -5,6 +5,7 @@ signal speed_selected(multiplier: int)
 signal state_requested(operation: String, slot: int)
 signal control_notice(message: String)
 var shortcut_is_macos := OS.get_name()=="macOS"
+var shortcut_keys: Array = []
 const MODES := ["ega","genesis","upscaled","modern"]
 var graphics_mode := "upscaled"
 var speed := 1
@@ -67,7 +68,12 @@ func handle_shortcut(event: InputEvent) -> bool:
 	if code not in [KEY_S,KEY_L,KEY_G] or (event.shift_pressed and code!=KEY_L):return false
 	# Claim the entire chord, including repeats and its release. The bridge polls
 	# Input directly, so marking the event handled alone cannot protect the guest.
-	release_keys=true
+	for name in preload("res://scripts/pc_keyboard.gd").encode([code]):
+		if name not in shortcut_keys: shortcut_keys.append(name)
+	if not shortcut_is_macos:
+		for name in ["ctrl","alt"]:
+			if name not in shortcut_keys: shortcut_keys.append(name)
+	if event.shift_pressed and "shift" not in shortcut_keys: shortcut_keys.append("shift")
 	if not event.pressed or event.echo or not open_menus.is_empty():return true
 	match code:
 		KEY_S:request_state("save_state",1)
@@ -80,8 +86,14 @@ func handle_shortcut(event: InputEvent) -> bool:
 
 func game_keys(held: Array) -> Array:
 	var modifier := Input.is_key_pressed(KEY_META) if shortcut_is_macos else Input.is_key_pressed(KEY_CTRL) and Input.is_key_pressed(KEY_ALT)
-	if modifier:release_keys=true;return []
-	return super.game_keys(held)
+	# Quarantine only the shortcut chord. A held trigger or steering key must
+	# survive save/load, including failures; menu/focus quarantine is separate.
+	if modifier:
+		for name in held:
+			if name in ["s","l","g","ctrl","alt"] or (name=="shift" and "l" in held):
+				if name not in shortcut_keys: shortcut_keys.append(name)
+	shortcut_keys=shortcut_keys.filter(func(name):return name in held)
+	return super.game_keys(held).filter(func(name):return name not in shortcut_keys)
 
 func _submenu(parent: PopupMenu, title: String) -> PopupMenu:
 	var menu := PopupMenu.new()

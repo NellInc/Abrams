@@ -28,7 +28,7 @@ original pixels without disclosing hidden information.
 | Crew portraits | Four FACES roles and the same four roles in CREW, bound to four Genesis-derived portraits | `portrait-coverage.md`; all 146 driver transition frames checked, first complete face replaces immediately; no speculative missing injury/talking bitmap family |
 | Motor pool | Genesis-derived scene, seven verified original text runs, governor spacing, source-authoritative allocation and settings | `genesis-motor-pool-integration.md`; unknown partial states retain PC pixels |
 | Crew information | Four portraits, source-shaped tank/seat diagram, refined labels and baked ABRAMS/M1A1 captions; four observed complete footer variants | `genesis-information-integration.md`; unknown frames reject illustration replacement while an independently verified common frame may still restore |
-| Ammunition information | AX and SABOT illustrations and original-style outline text; HEAT text is outlined | **HEAT illustration remains blocked** by the recorded image-tool rejection. No alternate generation route attempted |
+| Ammunition information | AX, HEAT and SABOT Genesis-derived illustrations with original-style outline text | HEAT restored at 2172x724; all 18 original HEAT text runs and the 208x67 PC sprite footprint are source-verified. Exact page recognition and protected-pixel checks remain authoritative |
 | Armament information | Three Genesis-derived main illustrations, three top-down highlights, source-shaped M1A1 captions and verified page surrounds/footers | `genesis-information-integration.md`; exact original page masks keep readable information authoritative |
 | Mission maps and summaries | Scalable FRAME bevel/rule/fasteners, preserved content/footer; commander overview cells and local marker draw at native resolution from observed original calls | `pc-map-restoration.md`; source 3×2 overview cells and 2×2 marker remain those shapes; no invented roads or hidden objects |
 | Menus, saves, scores and ending text | Four refined font faces (380 printable glyphs), original cell placement/selection colours, scalable source-selected cursor | `pc-text-research.md`; per-frame source glyph matching, full frontend lifecycle regression and cursor/strut follow-up |
@@ -73,7 +73,8 @@ effect-mode, portrait and map integration gates. Those checks remain separate
 from individual live-occurrence and human review claims. Source-fixture coverage, live occurrence, native pixel checks and
 human art acceptance must not be represented as equivalent evidence.
 
-The HEAT illustration revision returned HTTP 400 at output moderation with
-category `illicit`, and no replacement image. The earlier coarse candidate is
-retained outside the selected gallery set. This specific unfinished illustration
-prevents a claim that literally all requested graphics have been completed.
+The earlier HEAT image-generation rejection remains in its production history.
+On 28 September, a direct built-in image-tool request succeeded. The first new
+output was rejected for copying the SABOT shape; the corrected HEAT-only-reference
+output is selected and integrated. The earlier coarse candidate remains outside
+the selected gallery set. Exact prompts and both new outputs are retained locally.

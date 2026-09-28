@@ -41,8 +41,20 @@ class RemainingAudioTests(unittest.TestCase):
    self.assertLess(max(abs(x) for x in values),32767);self.assertGreater(max(abs(x) for x in values),1000)
 
 class DesignationQATests(unittest.TestCase):
+ def test_hyphenated_spoken_designations_do_not_weaken_wording_checks(self):
+  from tools.check_crew_transcripts import wording_matches
+  equivalents=[('T-62','T-sixty-two'),('T-64','T-sixty-four'),('T-72','T-seventy-two'),('T-80','T-eighty'),('M1-A1','M-one-A-one'),('M60a3','M-sixty-A-three'),('M113','M-one-thirteen'),('M2','M-two'),('A10','A-ten')]
+  for designation,spoken in equivalents:
+   self.assertTrue(wording_matches(spoken+' destroyed',designation+' destroyed.'))
+   self.assertFalse(wording_matches('Copy that '+spoken+' destroyed',designation+' destroyed.'))
+  for expected,spoken in [('M113 destroyed.','M-one-twelve destroyed'),('T-64 destroyed.','T-sixty-two destroyed'),('M1-A1 destroyed.','M-one-A-two destroyed'),('COM STAT destroyed.','comms stat destroyed'),("we've killed him sir","we've killed them sir"),("We've been hit! Bearing zero six four","We've been hit! Bearing sixty-four")]:
+   self.assertFalse(wording_matches(spoken,expected))
+
  def test_only_exact_model_designations_are_accepted(self):
   from tools.check_crew_transcripts import wording_matches
+  self.assertTrue(wording_matches('Sir, base and comm station destroyed.','Sir, base and com <short pause> station destroyed!'))
+  self.assertFalse(wording_matches('Sir, base and comms station destroyed.','Sir, base and com <short pause> station destroyed!'))
+  self.assertFalse(wording_matches('Sir, base and com short pause station destroyed.','Sir, base and com <short pause> station destroyed!'))
   self.assertTrue(wording_matches('Sir, base and comm station destroyed.','Sir, base and com station destroyed!'))
   self.assertFalse(wording_matches('Sir, base and comms station destroyed.','Sir, base and com station destroyed!'))
   for expected,spoken in [('M1-A1 destroyed.','M one A one destroyed.'),('M60a3 destroyed.','M sixty A three destroyed.'),('M113 destroyed.','M one one three destroyed.'),('BMP-1 destroyed.','BMP-one destroyed.'),('BRDM-3 destroyed.','BRDM three destroyed.'),('A10 destroyed.','A ten destroyed.')]:

@@ -243,6 +243,7 @@ def information(game, capture):
     if report['mode']!='baseline' or not all(report['checks'].values()): raise ValueError('passing original information capture required')
     sprites=decode_bitmaps(decode_resource((game/'INFO.BMP').read_bytes()))
     definitions=[('ax',[112,22,200,65],[(0,112,22)],'info-v1/ammo-ax-v2.png'),
+                 ('heat',[104,22,208,67],[(1,104,22)],'info-v1/ammo-heat-v2.png'),
                  ('sabot',[122,22,192,64],[(2,122,22)],'info-v1/ammo-sabot-v2.png'),
                  ('coax',[146,89,144,35],[(4,146,89)],'armament-v1/weapon-coax-v2.png'),
                  ('cannon',[135,89,176,27],[(6,135,89)],'armament-v1/weapon-cannon-v2.png'),
@@ -273,7 +274,7 @@ def information(game, capture):
     entries.append(crew)
     for entry in entries: entry['text_runs']=information_text(game,capture,entry['name'])
     return {'schema':3,'sources':pins,'recognition_height':INFORMATION_HEIGHT,'entries':entries,
-            'scope':'Exact original prefix and loaded bitmap proof. Five illustration boxes and complete source-matched text cells may be remastered. The crew page requires its complete frame hash before Genesis composition; original words and callout/seat relationships remain PC-owned.'}
+            'scope':'Exact original prefix and loaded bitmap proof. Six illustration boxes and complete source-matched text cells may be remastered. The crew page requires its complete frame hash before Genesis composition; original words and callout/seat relationships remain PC-owned.'}
 
 
 def main():

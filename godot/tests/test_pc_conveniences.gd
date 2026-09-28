@@ -10,7 +10,10 @@ var mode_images := {}
 func rendered_frame() -> Image:
 	# Bridge replies arrive during _process; let queued CanvasItem redraws finish.
 	await process_frame
-	await RenderingServer.frame_post_draw
+	# An occluded macOS window can stop emitting frame_post_draw indefinitely.
+	# Flush this owned test viewport explicitly; no guest frame is advanced.
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
 	return tandem_viewport.get_texture().get_image()
 
 func shortcut(code: int, shift: bool=false) -> void:

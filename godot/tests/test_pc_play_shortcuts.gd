@@ -10,6 +10,10 @@ func key(code: int, mac: bool, pressed: bool=true, shift: bool=false, echo: bool
 	event.keycode=code;event.pressed=pressed;event.echo=echo;event.shift_pressed=shift
 	event.meta_pressed=mac;event.ctrl_pressed=not mac;event.alt_pressed=not mac
 	return event
+func physical(code: int, pressed: bool) -> void:
+	var event:=InputEventKey.new();event.keycode=code;event.pressed=pressed
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
 func _initialize() -> void:run.call_deferred()
 func run() -> void:
 	var menu:=Menu.new()
@@ -88,6 +92,46 @@ func run() -> void:
 		menu.game_keys([])
 		check(not Input.is_key_pressed(KEY_S) and menu.game_keys(["s"])==["s"],"fully released chord restores original S")
 		menu.set_state_status([])
+		# Host polling must preserve unrelated controls through real shortcut
+		# events, both modifier-release orders, failures, and recovery loads.
+		for operation in [[KEY_S,false],[KEY_L,false],[KEY_L,true]]:
+			for modifier_first in [true,false]:
+				menu.set_state_status([{"slot":1},{"slot":0}])
+				for code in [KEY_UP,KEY_SPACE]:physical(code,true)
+				for code in modifiers:physical(code,true)
+				var undo:bool=operation[1]
+				var letter:int=operation[0]
+				if undo:physical(KEY_SHIFT,true)
+				Input.parse_input_event(key(letter,mac,true,undo))
+				Input.flush_buffered_events()
+				var actual:=menu.game_keys(preload("res://scripts/pc_keyboard.gd").held())
+				check(actual.has("up") and actual.has("space") and actual.size()==2,"shortcut preserves held movement and fire")
+				menu.set_state_status([{"slot":1},{"slot":0}],"Synthetic load failure")
+				check(menu.game_keys(preload("res://scripts/pc_keyboard.gd").held())==actual,"failed operation retains current controls")
+				if modifier_first:
+					for code in modifiers:physical(code,false)
+				else:physical(letter,false)
+				check(menu.game_keys(preload("res://scripts/pc_keyboard.gd").held())==actual,"partial chord release never leaks and keeps controls")
+				if modifier_first:physical(letter,false)
+				else:
+					for code in modifiers:physical(code,false)
+				if undo:physical(KEY_SHIFT,false)
+				check(menu.game_keys(preload("res://scripts/pc_keyboard.gd").held())==actual,"fully released shortcut never requires gameplay keys to release")
+				for code in [KEY_UP,KEY_SPACE]:physical(code,false)
+				menu.game_keys([])
+		# Focus signals use the production Window connection. A stale held
+		# trigger stays quarantined on return until a neutral host sample.
+		physical(KEY_SPACE,true)
+		root.focus_exited.emit()
+		check(menu.game_keys(["space"]).is_empty(),"focus loss neutralizes held fire")
+		root.focus_entered.emit()
+		check(menu.game_keys(["space"]).is_empty(),"focus return cannot resurrect stale trigger")
+		physical(KEY_SPACE,false)
+		menu.game_keys([])
+		physical(KEY_SPACE,true)
+		check(menu.game_keys(["space"])==["space"],"fresh press after focus recovery reaches guest")
+		physical(KEY_SPACE,false)
+		menu.game_keys([])
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_PLAY_SHORTCUTS: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

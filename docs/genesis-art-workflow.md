@@ -155,15 +155,16 @@ Godot menu. Left/right or buttons select a scene; Tab compares original and
 remaster; Escape returns to the garage. Artwork is loaded from the ignored local
 folder at runtime, so it is never silently bundled into a source-only export.
 
-The expanded gallery has 19 pages: the original three scenes, four stations,
-STATUS, a second Wilson pose, four crew portraits, AX/SABOT illustrations and three armament illustrations.
+The expanded gallery has 20 pages: the original three scenes, four stations,
+STATUS, a second Wilson pose, four crew portraits, AX/HEAT/SABOT illustrations, three armament illustrations and the crew-stations diagram.
 New plates are under `cockpit-v2/`; portraits and ammunition are under
 `remastered/crew-v1/` and `remastered/info-v1/`. The crew images measure
 1254x1254, ammunition images 2172x724, and the lower-hand Wilson pose 1294x1216.
 Gunner/driver coarse-outline first passes are retained but excluded from selection.
 The complete crew-information study added portrait boxes and drifted in placement;
-it is also excluded. HEAT's cleanup revision hit an image-tool safety rejection,
-recorded in its manifest. It remains unfinished, without a PC-art substitution.
+it is also excluded. The HEAT cleanup is now selected as `ammo-heat-v2.png`.
+Its earlier image-tool rejection and the later rejected SABOT-shaped candidate
+remain recorded in the manifest; the successful final pass uses HEAT references.
 
 The three armament derivatives are selected in `remastered/armament-v1/`.
 Coax measures 2168x725; cannon and smoke each measure 2172x724. Untouched

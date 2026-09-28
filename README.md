@@ -10,7 +10,7 @@ This project revisits a childhood favourite with clearer artwork, original-style
 
 The **PC version is the gameplay authority**. The **Genesis version supplies the preferred visual references wherever suitable equivalents exist**. Its artwork, palette and native sound resources guide the restoration; its simpler game logic does not replace the PC simulation.
 
-Development is active. The current local build runs the original menus, briefings, motor pool, missions and debriefing flow through a Godot presentation layer. Three ending newspapers, the remaining source effect families, damage displays and frontend artwork now have source-bound restoration paths. The HEAT illustration, full mission-outcome acceptance and community-ready cross-platform installers remain outstanding. This is an independent fan project.
+Development is active. The current local build runs the original menus, briefings, motor pool, missions and debriefing flow through a Godot presentation layer. Three ending newspapers, the remaining source effect families, damage displays and frontend artwork now have source-bound restoration paths. HEAT ammunition art is also restored. Full mission-outcome acceptance and community-ready cross-platform installers remain outstanding. This is an independent fan project.
 
 ## How it works
 
@@ -90,6 +90,8 @@ These shortcuts apply to **Play**, including fullscreen and original game menus/
 | Cycle graphics | **Cmd+G** | **Ctrl+Alt+G** |
 
 On PC, the modifier is **Ctrl+Alt together**. Alt alone is not a shortcut. Holding a shortcut does not repeatedly save, load or switch modes. Shortcut keys are withheld from the original game until released; unmodified S, L, G and the original function keys keep their original roles. A brief message confirms the action.
+
+Save/load shortcuts preserve unrelated held steering and fire controls. Restoring a checkpoint reconciles saved keys with the keys held now, so a released trigger does not remain stuck. Native menu use or focus loss deliberately neutralizes input until all keys are released once.
 
 ### Menus
 
@@ -204,7 +206,7 @@ Validation combines original-versus-observed replay comparisons, RAM/video/input
 Remaining work includes:
 
 * Complete victory, defeat and campaign-outcome coverage.
-* The blocked HEAT illustration and conservative fallbacks for unrecognized frontend transitions.
+* Conservative fallbacks for unrecognized frontend transitions.
 * Independent art acceptance of the completed non-Modern families, including original-derived ending fixtures.
 * Wider live occurrence checks and independent listening review for speech, effects and music.
 * Sustained playback performance and historical speed calibration across machines; current long-run measurements and any regressions are recorded separately from correctness.

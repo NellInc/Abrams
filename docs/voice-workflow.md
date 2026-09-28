@@ -454,3 +454,36 @@ changed. The prior master remains at its original path, and the receipt records
 its hash. This is an automated wording, custody and sample-headroom result,
 without an independent human listening verdict. See `pc-audio-completeness.md`
 for the complete source denominator and asset gate.
+
+## Line-specific performance direction, 28 September 2026
+
+The 50 destruction, mission and speed-setting calls and seven radio calls now
+have individual acting direction. Confirmed enemy destruction calls carry pride,
+adrenaline and an emphatic finish on “destroyed”. Success reports carry relief
+and satisfaction; threat reports have urgency; loss reports have concern. A
+class-only caption for an allied or ambiguous vehicle or structure stays serious
+rather than assuming a victory. Existing prebuilt voices, words and source
+triggers are retained. Incoming bearing and subsystem-damage banks are unchanged.
+
+Google's current [speech guide](https://ai.google.dev/gemini-api/docs/speech-generation)
+separates whole-line emotion, pace and emphasis in `speech_metadata.style` from
+momentary inline tags such as `<breath>` or `<short pause>`. The generator already
+uses that schema. This pass supplies richer line-specific metadata and keeps
+these short calls free of added breaths, laughter or interjections. One
+`<short pause>` separates “com” from “station” after two takes were transcribed
+as “comms station”; the original caption stays unchanged.
+“Proud” is a delivery instruction, never a word embedded in the transcript.
+
+For example, the T-62 call requests a quick confident target-name attack, audible
+adrenaline and professional pride, strong emphasis on “destroyed”, and a decisive
+downward finish. A blinded automated comparison of the first replacement against
+the preceding take identified the new performance as more energetic, particularly
+on “destroyed”, with no concern flagged. This is automated performance evidence,
+not independent human listening acceptance.
+
+Dry masters, exact requests, blinded wording QA, previous scripts and rollback
+copies are retained in `local-audio/bark-direction-20260928/`. Installed receipts
+record each direction, generated master, QA and preceding take hash. Working if:
+all 57 installed takes match the directed requests and verified generated hashes,
+while captions, casting, event mappings and every other installed WAV stay
+unchanged.
