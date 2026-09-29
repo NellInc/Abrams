@@ -13,8 +13,13 @@ else:
 
 
 def bundle_path():
-    for parent in pathlib.Path(sys.executable).resolve().parents:
-        if parent.suffix=='.app' or (parent/'RUNTIME.json').is_file():return parent
+    parents=list(pathlib.Path(sys.executable).resolve().parents)
+    # macOS keeps its manifest inside Resources, below the actual app root.
+    # Prefer the enclosing app before considering portable-folder manifests.
+    for parent in parents:
+        if parent.suffix=='.app':return parent
+    for parent in parents:
+        if (parent/'RUNTIME.json').is_file():return parent
     raise RuntimeError('Run this helper from its Abrams application bundle')
 
 

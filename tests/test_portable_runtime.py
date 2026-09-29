@@ -12,6 +12,29 @@ from tools.pc_bridge_host import lock_saves
 
 
 class PortableContracts(unittest.TestCase):
+    def test_frozen_macos_discovery_skips_inner_resources_manifest(self):
+        from tools.standalone.entry import bundle_path
+        with tempfile.TemporaryDirectory() as temporary:
+            app=Path(temporary).resolve()/'Abrams.app'
+            resources=app/'Contents/Resources'
+            executable=resources/'runtime/AbramsRuntime/AbramsRuntime'
+            executable.parent.mkdir(parents=True)
+            executable.write_text('synthetic runtime')
+            (resources/'RUNTIME.json').write_text('{}')
+            with patch('tools.standalone.entry.sys.executable',str(executable)):
+                self.assertEqual(bundle_path(),app)
+
+    def test_frozen_portable_discovery_finds_folder_manifest(self):
+        from tools.standalone.entry import bundle_path
+        with tempfile.TemporaryDirectory() as temporary:
+            bundle=Path(temporary).resolve()/'Abrams portable'
+            executable=bundle/'runtime/AbramsRuntime/AbramsRuntime'
+            executable.parent.mkdir(parents=True)
+            executable.write_text('synthetic runtime')
+            (bundle/'RUNTIME.json').write_text('{}')
+            with patch('tools.standalone.entry.sys.executable',str(executable)):
+                self.assertEqual(bundle_path(),bundle)
+
     def test_platform_default_homes_are_outside_install(self):
         with tempfile.TemporaryDirectory() as temporary:
             bundle=Path(temporary)/'installation/Abrams'
