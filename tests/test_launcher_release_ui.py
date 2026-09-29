@@ -13,6 +13,7 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn('@objc func openGitHub() { NSWorkspace.shared.open(githubURL) }', SOURCE)
         self.assertIn('Dedicated to David “Ming” Kenny', SOURCE)
         self.assertIn('Original game by Dynamix.', SOURCE)
+        self.assertIn('label("Remastered by Nell Watson",', SOURCE)
         self.assertIn('Independent, unofficial fan remaster', SOURCE)
 
     def test_rights_and_original_game_requirements(self):

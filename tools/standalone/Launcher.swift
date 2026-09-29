@@ -259,8 +259,9 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         label("M1 Abrams Battle Tank", frame: NSRect(x: 140, y: 495, width: 452, height: 34), size: 26, weight: .bold, in: view)
         label("Independent, unofficial fan remaster", frame: NSRect(x: 142, y: 467, width: 447, height: 25), size: 14, color: muted, in: view)
         label(version, frame: NSRect(x: 142, y: 443, width: 445, height: 20), size: 12, color: muted, in: view)
-        label("Dedicated to David “Ming” Kenny", frame: NSRect(x: 32, y: 390, width: 555, height: 29), size: 19, weight: .semibold, in: view)
-        label("Original game by Dynamix.", frame: NSRect(x: 32, y: 355, width: 555, height: 26), size: 14, color: muted, in: view)
+        label("Dedicated to David “Ming” Kenny", frame: NSRect(x: 32, y: 400, width: 555, height: 29), size: 19, weight: .semibold, in: view)
+        label("Original game by Dynamix.", frame: NSRect(x: 32, y: 369, width: 555, height: 22), size: 14, color: muted, in: view)
+        label("Remastered by Nell Watson", frame: NSRect(x: 32, y: 343, width: 555, height: 22), size: 14, weight: .semibold, in: view)
         label("GAME CONTENT & LICENSING", frame: NSRect(x: 32, y: 315, width: 555, height: 20), size: 11, weight: .semibold, color: muted, in: view)
         let rights = "This project asserts no ownership, moral rights or other rights over the original game content. Original copyrights and trademarks remain with their respective rights holders. This independent remaster is not affiliated with or endorsed by them.\n\nRemaster code and asset contributions are free under the licences included with this release. This does not change the rights in the original game content.\n\nA separate, supported copy of the original PC game is required. An original Genesis ROM is optional. Neither is bundled with this application."
         let rightsLabel = label(rights, frame: NSRect(x: 32, y: 83, width: 555, height: 221), size: 13, color: muted, in: view)
