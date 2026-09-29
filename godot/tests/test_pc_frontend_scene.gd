@@ -12,6 +12,7 @@ var frame: TextureRect
 var draw: Node3D
 var camera: Camera3D
 var output: String
+var menu_views:=0
 var started:=Time.get_ticks_msec()
 func _process(_delta: float)->bool:
 	if Time.get_ticks_msec()-started>120000: printerr("FAIL: scene test deadline");quit(2)
@@ -63,6 +64,7 @@ func run()->void:
 			check(not bool(frame.frontend_art.material.get_shader_parameter("scene_enabled")),"no stale cutout: "+entry.label)
 			continue
 		count+=1
+		if drawing.get("frontend_view")=="menu":menu_views+=1
 		if entry.label.begins_with("mission-") and entry.label!="mission-select":missions+=1
 		check(program.get("name")=="START" and drawing.get("frontend_scene")=="START/ANIM","original START provenance")
 		check(entry.state==null,"no counterfeit SIM state")
@@ -91,7 +93,8 @@ func run()->void:
 			if mode=="modern" and upscaled!=null:
 				# The selector panel, cursor and controls are identical between
 				# both high-resolution modes; only the observed scenery changes.
-				check(upscaled.get_region(Rect2i(0,0,1280,374)).get_data()==result.get_region(Rect2i(0,0,1280,374)).get_data(),"panel unchanged by Modern")
+				var panel_height:=106 if drawing.get("frontend_view")=="menu" else 374
+				check(upscaled.get_region(Rect2i(0,0,1280,panel_height)).get_data()==result.get_region(Rect2i(0,0,1280,panel_height)).get_data(),"panel unchanged by Modern")
 				check(upscaled.get_data()!=result.get_data(),"Modern changes the preview")
 		if count==1:
 			frame.frontend_art.text_enabled=false
@@ -103,6 +106,7 @@ func run()->void:
 		if native:records.append({"label":entry.label,"triangles":draw.modern_triangle_count,"trees":draw.modern_tree_count,"hills":draw.hill_polygon_count,"anchor_error_pixels":draw.modern_assets.max_anchor_error})
 	check(count>=16,"selector states covered")
 	check(missions==8,"all eight original mission choices")
+	if data.get("route")=="menus":check(menu_views>=3,"opening menu and returns replayed at high resolution")
 	if native:
 		var file:=FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
 		file.store_string(JSON.stringify({"checks":checks,"errors":errors,"samples":records},"\t")+"\n")

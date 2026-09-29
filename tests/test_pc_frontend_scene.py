@@ -3,7 +3,7 @@ import copy
 from pathlib import Path
 import struct
 import unittest
-from tools.pc_frontend_scene import FrontendScene, START_PALETTE, PREVIEW
+from tools.pc_frontend_scene import FrontendScene, START_PALETTE, PREVIEW, MENU_PREVIEW
 from tools.inspect_shapes import primitive_vertices
 from tools.inspect_scenarios import decode_resource
 from tools.inspect_shapes import inspect_shapes
@@ -57,6 +57,21 @@ class FrontendSceneTests(unittest.TestCase):
         self.assertEqual(paired['objects'][0]['source_anim_shape'],20)
         self.assertEqual(self.scene.completed[-1][0]['objects'][0]['shape_index'],20)
         self.assertEqual(paired['frontend_scene'],'START/ANIM')
+        self.assertEqual(paired['preview_rect'],list(PREVIEW))
+
+    def test_main_menu_pairs_every_exposed_pixel_and_exact_labels(self):
+        raw,palette,_=self.ready()
+        runs=[{'text':s,'rect':r} for s,r in [('SCENARIO',[20,12,64,8]),
+              ('CAMPAIGN',[104,12,64,8]),('M1-INFO',[188,12,56,8]),('EXIT',[264,12,32,8])]]
+        paired=self.scene.paired(raw,palette,runs,None)
+        self.assertEqual(paired['frontend_view'],'menu')
+        self.assertEqual(paired['preview_rect'],list(MENU_PREVIEW))
+        for x,y in [(10,22),(309,22),(160,40),(10,175),(309,175)]:
+            changed=bytearray(raw);changed[(y*320+x)*4]^=1
+            self.assertIsNone(self.scene.paired(changed,palette,runs,None))
+        self.assertIsNone(self.scene.paired(raw,palette,runs[:-1],None))
+        wrong=copy.deepcopy(runs);wrong[0]['rect'][0]+=1
+        self.assertIsNone(self.scene.paired(raw,palette,wrong,None))
 
     def test_one_changed_pixel_at_each_boundary_rejects_stale_preview(self):
         raw,palette,runs=self.ready()

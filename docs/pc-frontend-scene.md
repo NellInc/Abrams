@@ -20,7 +20,11 @@ exactly matching geometry and face colours in SHAPE.TBL; these reuse the
 existing Modern scenery. ANIM-only tank components retain their own geometry,
 rendered at high resolution, without being mistaken for gameplay shape IDs.
 
-The overlay activates only on the pixel-verified scenario panel. Every exposed
+The overlay activates on the pixel-verified main menu and scenario panel.
+The main menu requires all four original labels in their exact source rectangles
+and pairs the complete 300 by 154 scenery region. The scenario panel retains
+its smaller 300 by 98 preview. Unknown/partial menus and overwritten scenery
+stay original. Every exposed
 preview pixel must match a completed original draw. The separately verified
 cursor is excluded from that comparison and retained above the replacement.
 Missing observations, changed pixels and other screens retain original video.

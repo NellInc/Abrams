@@ -39,15 +39,17 @@ func run()->void:
 			view.size=Vector2i(320,200)*scale;image.size=view.size;art.size=view.size
 			check(art.set_frame(source,{"name":"END"}),"native FRAME accepted")
 			await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
-			var rendered:=view.get_texture().get_image();var changed_pixels:=0;var protected_pixels:=0
+			var rendered:=view.get_texture().get_image();var changed_pixels:=0;var protected_pixels:=0;var footer_pixels:=0
 			for y in view.size.y:
 				for x in view.size.x:
 					var p:=Vector2i(x/scale,y/scale)
 					var same:=rendered.get_pixel(x,y).to_rgba32()==source.get_pixelv(p).to_rgba32()
-					if Rect2i(10,10,300,166).has_point(p) or p.y>=187:
+					if p.y>=187 and not same:footer_pixels+=1
+					if Rect2i(10,10,300,166).has_point(p):
 						if not same:protected_pixels+=1
 					elif not same:changed_pixels+=1
-			check(protected_pixels==0,"all content and footer pixels remain exact at "+str(scale)+"x")
+			check(protected_pixels==0,"all content pixels remain exact at "+str(scale)+"x")
+			check(footer_pixels>1000,"pixel-verified footer rebuilt without enlarged dithering")
 			check(changed_pixels>1000,"analytic surround visibly rendered at "+str(scale)+"x")
 			check(rendered.save_png(out.path_join("mission-summary-"+str(scale)+"x.png"))==OK,"native image saved")
 	art.clear();check(not art.visible and art.active.is_empty(),"clear removes previous frame")

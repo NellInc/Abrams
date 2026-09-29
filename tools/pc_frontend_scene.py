@@ -25,6 +25,7 @@ SOURCES = {'ANIM.TBL':'a87cb6ebe75d8958397cf35c08f2842fa13e5d1870aba6335c0608468
            'SHAPE.TBL':'81cf10917d8647e8ac187e49887494992828277333f17d6c1926e59581f0a193'}
 # START's selector leaves the original animated scene visible under its panel.
 PREVIEW = (10, 78, 300, 98)
+MENU_PREVIEW = (10, 22, 300, 154)
 START_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
                  [255,85,85],[170,85,0],[0,170,0],[85,255,85],[255,255,85],[0,0,0],
                  [255,85,85],[255,85,255],[255,255,85],[255,255,255]]
@@ -139,19 +140,29 @@ class FrontendScene:
         # Recognition uses complete, pixel-verified source labels. It cannot
         # activate on an intro, briefing, map, partially painted panel or dialog.
         labels={r['text']:r for r in runs}
-        if palette!=START_PALETTE or any(text not in labels for text in ('MISSION:','TIME:','SKILL:')):return None
-        if any(labels[t]['rect']!=r for t,r in [('MISSION:',[18,16,64,8]),('TIME:',[42,27,40,8]),('SKILL:',[34,40,48,8])]):return None
+        if palette!=START_PALETTE:return None
+        contexts = [
+            ('scenario', PREVIEW, [('MISSION:',[18,16,64,8]),('TIME:',[42,27,40,8]),('SKILL:',[34,40,48,8])]),
+            ('menu', MENU_PREVIEW, [('SCENARIO',[20,12,64,8]),('CAMPAIGN',[104,12,64,8]),
+                                   ('M1-INFO',[188,12,56,8]),('EXIT',[264,12,32,8])]),
+        ]
+        matched = [(name,rect) for name,rect,required in contexts
+                   if all(text in labels and labels[text]['rect']==box for text,box in required)]
+        if len(matched)!=1:return None
+        view,preview = matched[0]
         covered=set()
         if cursor:
             import base64
             x,y,w,h=cursor['rect']
             covered={((y+i//w)*320+x+i%w) for i,c in enumerate(base64.b64decode(cursor['indices'])) if c}
         rgb=[bytes((p[2],p[1],p[0])) for p in palette]
-        x,y,w,h=PREVIEW
+        x,y,w,h=preview
         for drawing,pixels in reversed(self.completed):
             if not drawing['objects'] or drawing['background'] is None:continue
             if any(raw[i*4:i*4+3]!=rgb[pixels[i]] for yy in range(y,y+h) for i in range(yy*320+x,yy*320+x+w) if i not in covered):continue
             result=copy.deepcopy(drawing)
+            result['frontend_view']=view
+            result['preview_rect']=list(preview)
             for obj in result['objects']:
                 alias=self.aliases.get(obj['shape_index'])
                 if alias:

@@ -2,10 +2,11 @@
 
 `pc_map_art.gd` supplies a resolution-independent FRAME surround for the original
 START and END screens. It replaces the bevel, green inset rule and all twelve
-fasteners. The original content rectangle `(10,10,300,166)` and lower patterned
-strip `(0,187,320,13)` remain untouched. Original frontend typography can render
-above it independently. This surface is implemented; dynamic tactical maps and
-the patterned footer are not counted as restored artwork.
+fasteners. The original content rectangle `(10,10,300,166)` remains untouched. The
+lower patterned strip `(0,187,320,13)` is rebuilt as a continuous matte-metal
+surface only after its complete original bytes pass the border fingerprint. Original frontend typography can render
+above it independently. The surround and footer are implemented; dynamic tactical map contents retain
+their separately documented rendering paths.
 
 ## Source custody and Genesis correspondence
 
@@ -27,7 +28,7 @@ Genesis gray/white palette. No new bitmap texture or world model is introduced.
 `build_pc_map_frame_catalog.py` reproduces the catalog under
 `local-art/pc-map-frame-v1`. Runtime loading validates catalog, source executable,
 FRAME and donor hashes. Each displayed frame must exactly match the complete
-source border, including the preserved footer, before any replacement appears.
+source border, including the footer, before any replacement appears.
 Wrong programs, stale supplied frontend program identity, partial borders,
 changed pixels and unsupported image formats clear the replacement. The module
 reads no gameplay, campaign or tactical object state.
@@ -56,8 +57,9 @@ remain original pixels, explicitly unfinished in this pass.
 - Original isolated argument-block oracle: 2 cases pass.
 - Python catalog/custody/full-border tests: 2 pass.
 - Godot headless acceptance/mutation checks: 18 pass.
-- Native Compatibility rendering: 26 checks pass at 1280x800 and 1920x1200;
-  every content/footer output pixel matches nearest-neighbour original bytes.
+- Native Compatibility rendering: 28 checks pass at 1280x800 and 1920x1200;
+  every content pixel matches nearest-neighbour original bytes, and the guarded
+  footer renders at native resolution.
 - The native screenshot was visually inspected for fastener placement, rule width,
   clean frame borders and retained text. This is author review, not independent
   human design acceptance or integrated live gameplay proof.

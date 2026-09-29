@@ -16,14 +16,14 @@ try:
     from tools.unpack_pc_executables import unpack
     from tools.pc_bitmaps import decode_bitmaps,read_ega_bitmap
     from tools.inspect_scenarios import decode_resource
-    from tools.pc_frontend_scene import FrontendScene, PREVIEW
+    from tools.pc_frontend_scene import FrontendScene
 except ModuleNotFoundError:
     from pc_live_state import active_program
     from pc_text_trace import TextRuns
     from unpack_pc_executables import unpack
     from pc_bitmaps import decode_bitmaps,read_ega_bitmap
     from inspect_scenarios import decode_resource
-    from pc_frontend_scene import FrontendScene, PREVIEW
+    from pc_frontend_scene import FrontendScene
 
 ROOT = Path(__file__).resolve().parents[1]
 CALLBACK = C.CFUNCTYPE(None,C.c_uint32,C.POINTER(C.c_uint16),C.c_void_p,C.c_uint32,C.c_uint32)
@@ -199,7 +199,7 @@ class FrontendText:
         drawing=self.scene.paired(raw,self.last_frame.get('palette_rgb'),runs,cursor) if is_start and w==320 and h==200 else None
         if drawing:
             mask.paste(255,(0,0,320,200))
-            x,y,ww,hh=PREVIEW
+            x,y,ww,hh=drawing['preview_rect']
             mask.paste(0,(x,y,x+ww,y+hh))
             for x,y in cursor_cells(cursor):mask.putpixel((x,y),255)
         for run in runs:
