@@ -23,7 +23,7 @@ class Worker:
         command = [sys.executable, str(Path(__file__).with_name('pc_bridge_host.py')), *argv, '--state-worker']
         if resume: command += ['--local-resume', str(resume)]
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            text=True, bufsize=1, pass_fds=(lock.fileno(),))
+            text=True, bufsize=1, **({"pass_fds": (lock.fileno(),)} if os.name != "nt" else {}))
         try:
             self.ready = self.read()
         except Exception:
@@ -71,8 +71,12 @@ def capture_workspace(root):
 
 
 def supervise(args, argv, lock_saves, validate_command):
+    try:
+        from tools.pc_reference_core import core_suffix
+    except ModuleNotFoundError:
+        from pc_reference_core import core_suffix
     core_path = args.core
-    if args.backend == 'trace': core_path = Path(__file__).resolve().parents[1] / '.runtime/pc-core/abrams-trace.dylib'
+    if args.backend == 'trace': core_path = Path(__file__).resolve().parents[1] / ('.runtime/pc-core/abrams-trace' + core_suffix())
     lock = lock_saves(args.saves)
     worker = None
     def send(message):

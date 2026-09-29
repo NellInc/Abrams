@@ -24,6 +24,8 @@ func compare(art, object: Dictionary, polygon: Dictionary, camera: Dictionary, p
 	check(var_to_bytes(expected)==var_to_bytes(observed),"mapping bytes differ: shape=%s primitive=%s gate=%s phase=%s"%[object.shape_index,polygon.primitive,gate,phase])
 	check(reason==art.last_reason,"fallback reason changed")
 	check(input_bytes==var_to_bytes([object,polygon,camera,palette]),"mapping mutated input packet")
+	var repeated: Array = art.mapping(object,polygon,camera,palette,gate,phase)
+	check(var_to_bytes(expected)==var_to_bytes(repeated),"warm transformed-position cache changed mapping bytes")
 	compared_facets += expected.size()
 
 func run() -> void:
@@ -96,6 +98,20 @@ func run() -> void:
 	check(probe.configure(synthetic),"reload compiled positions")
 	object.root=1;polygon.camera_vertices[3][0]=-40
 	compare(probe,object,polygon,frame,Modern.PC_PALETTE,false,0.0)
+	var retained: Array = probe.mapping(object,polygon,frame,Modern.PC_PALETTE,false,0.0)
+	var retained_bytes := var_to_bytes(retained)
+	check(probe.position_cache_hits>0,"exact anchors must reuse transformed positions")
+	retained[0].points[0][0]+=17
+	check(var_to_bytes(probe.mapping(object,polygon,frame,Modern.PC_PALETTE,false,0.0))==retained_bytes,"caller point mutation poisoned transformed-position cache")
+	var misses: int = probe.position_cache_misses
+	var changed_frame: Dictionary = frame.duplicate(true)
+	changed_frame.focal_pixels+=1
+	compare(probe,object,polygon,changed_frame,Modern.PC_PALETTE,false,0.0)
+	check(probe.position_cache_misses>misses,"camera change reused transformed-position proof")
+	misses=probe.position_cache_misses
+	polygon.camera_vertices[0][0]+=0.25
+	compare(probe,object,polygon,changed_frame,Modern.PC_PALETTE,false,37.25)
+	check(probe.position_cache_misses>misses,"in-place source-anchor mutation reused position proof")
 	for bad_points in [[],[[0,160,0],[0,160,0],[0,160,0],[0,160,0]],[[-40,160,-20],[40,160,-20],[40,160,20],[NAN,160,20]]]:
 		polygon.camera_vertices=bad_points
 		compare(probe,object,polygon,frame,Modern.PC_PALETTE,false,0.0)
@@ -131,7 +147,7 @@ func run() -> void:
 					else: oracle_mapping(art,sample[0],sample[1],sample[2],Modern.PC_PALETTE,false,sample[3])
 			pair["optimized_ms" if optimized else "before_ms"]=(Time.get_ticks_usec()-begin)/20000.0
 		if round_index>0: diagnostic_timings.append(pair)
-	var result := {"checks":checks,"failures":failures,"compared_facets":compared_facets,"source_corners":source_corners,"unique_positions":unique_positions,"timing_case_count":cases.size(),"timings":timings,"diagnostic_case_count":diagnostic_cases.size(),"diagnostic_timings":diagnostic_timings,"replay_case_count":replay_cases.size(),"replay_timings":replay_timings,"elapsed_ms":Time.get_ticks_msec()-started}
+	var result := {"checks":checks,"failures":failures,"position_cache_hits":art.position_cache_hits,"position_cache_misses":art.position_cache_misses,"compared_facets":compared_facets,"source_corners":source_corners,"unique_positions":unique_positions,"timing_case_count":cases.size(),"timings":timings,"diagnostic_case_count":diagnostic_cases.size(),"diagnostic_timings":diagnostic_timings,"replay_case_count":replay_cases.size(),"replay_timings":replay_timings,"elapsed_ms":Time.get_ticks_msec()-started}
 	var output := directory.path_join("artifacts/performance-60fps-20260929/mapping")
 	DirAccess.make_dir_recursive_absolute(output)
 	FileAccess.open(output.path_join("equivalence.json"),FileAccess.WRITE).store_string(JSON.stringify(result,"  "))

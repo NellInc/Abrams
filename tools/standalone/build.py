@@ -12,13 +12,14 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import platform
 import shutil
 import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = '0.1.0-alpha.2'
-BUNDLE_VERSION = '22'
+VERSION = '0.1.0-alpha.3'
+BUNDLE_VERSION = '23'
 REPOSITORY = 'https://github.com/NellInc/Abrams'
 sys.path.insert(0, str(ROOT))
 from tools import package_build
@@ -28,8 +29,10 @@ from tools.standalone.runtime import CONTENT_SHA, ROM_SHA, sha
 def clone_file(source, destination):
     # APFS copy-on-write keeps local rollback builds inexpensive. On another
     # filesystem, ordinary copying remains the fallback; source is never edited.
-    result=subprocess.run(['/bin/cp','-c',str(source),str(destination)],capture_output=True)
-    if result.returncode:shutil.copyfile(source,destination)
+    if sys.platform == 'darwin':
+        result=subprocess.run(['/bin/cp','-c',str(source),str(destination)],capture_output=True)
+        if not result.returncode:return destination
+    shutil.copyfile(source,destination)
     return destination
 
 
@@ -49,7 +52,8 @@ def payload(root):
     return chosen
 
 
-def freeze(cache, python):
+def freeze(cache, python, target="macos"):
+    native = target != "macos"
     destination = cache/'dist/AbramsRuntime'
     marker = cache/'frozen.json'
     # The frozen binary contains only the entry point, standard library and Pillow.
@@ -59,7 +63,7 @@ def freeze(cache, python):
         for node in ast.walk(ast.parse(path.read_text())):
             candidates = [alias.name for alias in node.names] if isinstance(node, ast.Import) else ([node.module] if isinstance(node, ast.ImportFrom) and not node.level and node.module else [])
             modules.update(name for name in candidates if name.split('.')[0] in sys.stdlib_module_names)
-    config = {'entry_sha256':sha(ROOT/'tools/standalone/entry.py'), 'stdlib':sorted(modules), 'pyinstaller':'6.22.3', 'pillow':'12.0.0'}
+    config = {'entry_sha256':sha(ROOT/'tools/standalone/entry.py'), 'stdlib':sorted(modules), 'pyinstaller':'6.22.3', 'pillow':'12.0.0', 'target':target, 'machine':platform.machine()}
     if destination.exists():
         if not marker.is_file() or json.loads(marker.read_text()) != config:
             raise ValueError('Frozen runtime inputs changed; use a fresh build-cache path')
@@ -67,8 +71,9 @@ def freeze(cache, python):
     cache.mkdir(parents=True, exist_ok=True)
     version = subprocess.check_output([str(python), '-c', 'import PyInstaller,PIL;print(PyInstaller.__version__+" "+PIL.__version__)'], text=True).strip()
     if version != '6.22.3 12.0.0': raise ValueError('Expected PyInstaller 6.22.3 and Pillow 12.0.0 in isolated build interpreter')
-    command = [str(python), '-m', 'PyInstaller','--onedir','--name','AbramsRuntime','--noupx','--target-arch','arm64',
+    command = [str(python), '-m', 'PyInstaller','--onedir','--name','AbramsRuntime','--noupx',
                '--distpath',str(cache/'dist'),'--workpath',str(cache/'work'),'--specpath',str(cache), '--collect-submodules','PIL']
+    if not native: command += ['--target-arch','arm64']
     for name in sorted(modules): command += ['--hidden-import',name]
     command.append(str(ROOT/'tools/standalone/entry.py'))
     subprocess.run(command, check=True, env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'))
@@ -102,7 +107,7 @@ def verify(bundle):
     subprocess.run(['codesign','--verify','--deep','--strict',str(bundle)],check=True,capture_output=True)
     return {'schema':1,'bundle':str(bundle),'build_id':manifest['build_id'],'files':count,'bytes':total,
             'mach_o_files':machos,'originals_included':False,'external_non_system_dylibs':0,'release_ready':False,
-            'rights':'Unofficial fan remaster. Original and third-party rights remain with their holders. See NOTICE.md. Ad-hoc signature only.'}
+            'rights':'Unofficial fan remaster. Original and third-party rights remain with their holders. See NOTICE.md. Signing status must be checked separately.'}
 
 
 def build(output, godot, python, cache):
@@ -141,7 +146,7 @@ def build(output, godot, python, cache):
     for name in ['LICENSE','NOTICE.md']:
         shutil.copyfile(ROOT/name,notices/name)
     shutil.copytree(ROOT/'LICENSES',notices/'LICENSES')
-    subprocess.run([str(godot),'--headless','--path',str(ROOT/'godot'),'--script',str(ROOT/'tools/standalone/licenses.gd'),'--',str(notices/'Godot.json')],check=True)
+    subprocess.run([str(godot),'--headless','--audio-driver','Dummy','--path',str(ROOT/'godot'),'--script',str(ROOT/'tools/standalone/licenses.gd'),'--',str(notices/'Godot.json')],check=True)
     shutil.copyfile(ROOT/'.runtime/dosbox-pure-source/LICENSE',notices/'DOSBox-Pure-LICENSE.txt')
     # Read licence texts from the selected build interpreter's distributions.
     notice_code = '''import importlib.metadata as m,json,pathlib,sysconfig

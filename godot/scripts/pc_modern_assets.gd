@@ -43,6 +43,8 @@ var ready := false
 var disk_io_count := 0
 var max_anchor_error := 0.0
 var last_reason := ""
+var position_cache_hits := 0
+var position_cache_misses := 0
 
 func load_assets(root: String) -> bool:
 	revision += 1
@@ -91,6 +93,8 @@ static func vec(value: Array) -> Vector3:
 # Also used by synthetic tests. Production entrypoint verifies source files first.
 func configure(data: Dictionary) -> bool:
 	revision += 1
+	position_cache_hits = 0
+	position_cache_misses = 0
 	models.clear()
 	colour_texture=null
 	colour_indices.clear()
@@ -212,6 +216,7 @@ func configure(data: Dictionary) -> bool:
 				triangle.corner_indices = corner_indices
 			face.positions = positions
 			face.corners = corners
+			face.position_coefficients = compile_position_coefficients(face.source,positions)
 		accepted[shape] = {"roots":roots,"faces":faces}
 	if accepted.is_empty(): return false
 	models = accepted
@@ -244,6 +249,36 @@ static func supported_palette(palette: Array) -> bool:
 		for channel in 3:
 			if palette[i][channel]!=PC_PALETTE[i][channel]: return false
 	return true
+
+static func compile_position_coefficients(source: Array, positions: PackedVector3Array) -> PackedFloat64Array:
+	# The source-face basis and point coordinates are catalogue invariants.
+	# Preserve transform_point's expression order and double scalar precision.
+	# Camera-dependent vectors and independently rounded anchors stay live.
+	var output := PackedFloat64Array()
+	if source.size()<3: return output
+	var origin := vec(source[0])
+	var best := 0.0
+	var a := -1
+	var b := -1
+	for i in range(1,source.size()):
+		for j in range(i+1,source.size()):
+			var area := (vec(source[i])-origin).cross(vec(source[j])-origin).length_squared()
+			if area>best: best=area; a=i; b=j
+	if best<0.000001: return output
+	var u := vec(source[a])-origin
+	var v := vec(source[b])-origin
+	var n := u.cross(v).normalized()
+	var uu := u.length_squared()
+	var vv := v.length_squared()
+	var uv := u.dot(v)
+	var determinant := u.length_squared()*v.length_squared()-pow(u.dot(v),2)
+	if determinant==0.0: return output
+	for point: Vector3 in positions:
+		var d := point-origin
+		output.append((d.dot(u)*vv-d.dot(v)*uv)/determinant)
+		output.append((d.dot(v)*uu-d.dot(u)*uv)/determinant)
+		output.append(d.dot(n))
+	return output
 
 # Derive a source-face-local affine frame from the paired original vertices.
 # Every source anchor is checked, including vertices not used to fit the basis.
@@ -371,13 +406,37 @@ func mapping(object: Dictionary, polygon: Dictionary, frame: Dictionary, palette
 	var face: Dictionary = model.faces[primitive]
 	var points = polygon.get("camera_vertices",[])
 	if not points is Array: return []
-	var fit := anchor_frame(face.source,points,frame)
-	if fit.is_empty(): last_reason="source anchor fit unavailable"; return []
-	max_anchor_error = maxf(max_anchor_error,float(fit.error))
 	var positions := PackedVector3Array()
-	positions.resize(face.positions.size())
-	for i in face.positions.size():
-		positions[i] = transform_point(face.positions[i],fit)
+	# One catalogue-bounded slot per face. Exact serialized anchor/camera bytes
+	# permit reuse only of immutable transformed positions, never clipping, UVs,
+	# motion, palette acceptance, identity, ownership or a previous frame result.
+	# Packed arrays have value/copy-on-write semantics; callers cannot poison it.
+	var position_key := var_to_bytes([points,frame])
+	if face.get("position_key",PackedByteArray()) == position_key:
+		positions = face.cached_positions
+		max_anchor_error = maxf(max_anchor_error,float(face.cached_anchor_error))
+		position_cache_hits += 1
+	else:
+		position_cache_misses += 1
+		var fit := anchor_frame(face.source,points,frame)
+		if fit.is_empty(): last_reason="source anchor fit unavailable"; return []
+		max_anchor_error = maxf(max_anchor_error,float(fit.error))
+		positions.resize(face.positions.size())
+		if not fit.get("piecewise",false) and face.position_coefficients.size()==face.positions.size()*3:
+			var coefficients: PackedFloat64Array = face.position_coefficients
+			var camera_origin: Vector3 = fit.camera
+			var cu: Vector3 = fit.cu
+			var cv: Vector3 = fit.cv
+			var cn: Vector3 = fit.cn
+			for i in face.positions.size():
+				positions[i] = camera_origin+cu*coefficients[i*3]+cv*coefficients[i*3+1]+cn*coefficients[i*3+2]
+		else:
+			# Source-rounding interpolation keeps the complete original path.
+			for i in face.positions.size():
+				positions[i] = transform_point(face.positions[i],fit)
+		face.position_key = position_key
+		face.cached_positions = positions
+		face.cached_anchor_error = float(fit.error)
 	# Complete attributed corners are face-local too. Clipping only reads them;
 	# all returned arrays are newly allocated for this mapping invocation.
 	var mapped_corners: Array = []

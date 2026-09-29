@@ -9,6 +9,7 @@ from __future__ import annotations
 import ctypes as C
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 from PIL import Image
@@ -17,6 +18,10 @@ try:
     from tools.genesis_capture import AVInfo, GameInfo, Variable
 except ModuleNotFoundError:
     from genesis_capture import AVInfo, GameInfo, Variable
+
+def core_suffix():
+    return ".dll" if sys.platform == "win32" else ".dylib" if sys.platform == "darwin" else ".so"
+
 
 CORE_SHA256 = "f21c70074c8432a634d82e9daa187a9424c629d9d503270a7a663d0751ebc3d8"
 KEYS = {"backspace": 8, "tab": 9, "return": 13, "escape": 27, "space": 32, "up": 273,

@@ -14,6 +14,7 @@ import json
 from pathlib import Path, PurePosixPath
 import stat
 import subprocess
+import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -73,16 +74,17 @@ def regular_bytes(base, name):
     return path.read_bytes()
 
 
-def collect(root):
+def collect(root, source=None):
     # Normalize the caller-selected root (macOS /var aliases /private/var);
     # links within the source and runtime inputs remain forbidden.
     root = root.resolve()
-    source = root / '.runtime/dosbox-pure-source'
+    source = Path(source) if source is not None else root / '.runtime/dosbox-pure-source'
     if source.is_symlink():
         raise ValueError('Symlink source checkout')
     # Runtime input paths are deliberately outside the archive-name policy.
     receipt_path = root / '.runtime/pc-core/abrams-trace.json'
-    core_path = root / '.runtime/pc-core/abrams-trace.dylib'
+    suffix = {'win32': '.dll', 'linux': '.so'}.get(sys.platform, '.dylib')
+    core_path = root / ('.runtime/pc-core/abrams-trace' + suffix)
     for path in (receipt_path, core_path):
         if any(p.is_symlink() for p in (path, *path.parents)) or not path.is_file():
             raise ValueError('Core receipt/core must be regular non-symlink files')
@@ -196,10 +198,10 @@ no original Abrams game files or game ROM and confers no rights to those works.
     return files, inventory
 
 
-def build(root, output):
+def build(root, output, source=None):
     if output.exists() or output.is_symlink():
         raise ValueError('Output must be a new exclusive path')
-    files, inventory = collect(root)
+    files, inventory = collect(root, source)
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open('xb') as stream:
         with gzip.GzipFile(filename='', mode='wb', fileobj=stream, mtime=0) as compressed:
@@ -222,8 +224,10 @@ def build(root, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--root', type=Path, default=ROOT, help='Payload root containing the matching core/receipt')
+    parser.add_argument('--source', type=Path, help='Pinned upstream source checkout')
     args = parser.parse_args()
-    print(json.dumps(build(ROOT, args.output), sort_keys=True, indent=2))
+    print(json.dumps(build(args.root, args.output, args.source), sort_keys=True, indent=2))
 
 
 if __name__ == '__main__':

@@ -51,7 +51,7 @@ def managed(home, path):
 
 def app_resources(bundle):
     bundle = Path(bundle).resolve()
-    root = bundle / 'Contents/Resources'
+    root = bundle / 'Contents/Resources' if bundle.suffix == '.app' else bundle
     manifest = json.loads((root/'RUNTIME.json').read_text())
     if manifest.get('schema') != 1 or manifest.get('originals_included') is not False:
         raise ValueError('Unsupported application manifest')
@@ -61,7 +61,10 @@ def app_resources(bundle):
 
 
 def profile_home(bundle, requested=None):
-    home = Path(requested or os.environ.get('ABRAMS_DATA_HOME') or Path.home()/'Library/Application Support/Abrams').expanduser()
+    default = (Path(os.environ.get('LOCALAPPDATA', Path.home()/'AppData/Local'))/'Abrams' if sys.platform == 'win32' else
+               Path.home()/'Library/Application Support/Abrams' if sys.platform == 'darwin' else
+               Path(os.environ.get('XDG_DATA_HOME', Path.home()/'.local/share'))/'abrams')
+    home = Path(requested or os.environ.get('ABRAMS_DATA_HOME') or default).expanduser()
     if not home.is_absolute() or home.resolve().is_relative_to(Path(bundle).resolve()):
         raise ValueError('Player data must use an absolute directory outside the application')
     return home.resolve()
@@ -157,7 +160,7 @@ def valid_payload(resources, manifest):
     names = set()
     for row in manifest['files']:
         name = row['path']; relative = Path(name)
-        if not name or str(relative) != name or '\\' in name or relative.is_absolute() or '..' in relative.parts or name in names:
+        if not name or relative.as_posix() != name or '\\' in name or ':' in name or relative.is_absolute() or '..' in relative.parts or name in names:
             raise ValueError('Unsafe application payload manifest')
         names.add(name)
         path = resources/'kit'/name
@@ -202,8 +205,9 @@ def launch(bundle, home, extra):
         raise ValueError('The application owns content, presentation and save paths; use its importer/settings.')
     resources, _ = app_resources(bundle)
     install = prepare_install(bundle, home)
-    godot = Path(bundle)/'Contents/Helpers/AbramsRenderer.app/Contents/MacOS/AbramsRenderer'
-    runtime = resources/'runtime/AbramsRuntime/AbramsRuntime'
+    portable = Path(bundle).suffix != '.app'
+    godot = Path(bundle)/('renderer/AbramsRenderer.exe' if sys.platform == 'win32' else 'renderer/AbramsRenderer') if portable else Path(bundle)/'Contents/Helpers/AbramsRenderer.app/Contents/MacOS/AbramsRenderer'
+    runtime = resources/'runtime/AbramsRuntime'/('AbramsRuntime.exe' if sys.platform == 'win32' else 'AbramsRuntime')
     for path in [godot,runtime]:
         if not regular(path) or not os.access(path,os.X_OK): raise ValueError('Bundled runtime is unavailable')
     managed(home, home/'saves').mkdir(exist_ok=True); managed(home, home/'logs').mkdir(exist_ok=True)
@@ -219,6 +223,8 @@ def launch(bundle, home, extra):
     args=[str(godot),'--path',str(install/'godot'),'--script','res://scripts/pc_bridge_viewer.gd','--','--boot','--play','--saves',str(home/'saves'),'--output',str(home/'logs')]
     if not genesis_enabled(home): args.append('--pc-only')
     args.extend(extra)
+    if portable:
+        return subprocess.call(args, env=env)
     os.execve(godot,args,env)
 
 
@@ -236,7 +242,7 @@ def main():
         home=profile_home(args.bundle,args.data_home)
         if args.game or args.genesis: import_games(args.bundle,home,args.game,args.genesis)
         if args.prepare: print(json.dumps({'installation':str(prepare_install(args.bundle,home))}))
-        elif args.play: launch(args.bundle,home,extra)
+        elif args.play: return launch(args.bundle,home,extra)
         else:
             if extra: raise ValueError('Unknown setup arguments')
             print(json.dumps(status(args.bundle,home)))

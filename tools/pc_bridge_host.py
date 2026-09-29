@@ -9,7 +9,11 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
-import fcntl
+import os
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 import io
 import json
 import os
@@ -18,14 +22,14 @@ import sys
 import struct
 
 try:
-    from tools.pc_reference_core import PcReferenceCore, CORE_SHA256, KEYS
+    from tools.pc_reference_core import PcReferenceCore, CORE_SHA256, KEYS, core_suffix
     from tools.pc_live_state import SimStateReader
     from tools.inspect_scenarios import decode_resource
     from tools.inspect_shapes import inspect_shapes, primitive_vertices
     from tools.pc_render_state import static_faces_for_state
     from tools.pc_session import PresentationSession
 except ModuleNotFoundError:
-    from pc_reference_core import PcReferenceCore, CORE_SHA256, KEYS
+    from pc_reference_core import PcReferenceCore, CORE_SHA256, KEYS, core_suffix
     from pc_live_state import SimStateReader
     from inspect_scenarios import decode_resource
     from inspect_shapes import inspect_shapes, primitive_vertices
@@ -59,8 +63,15 @@ def lock_saves(directory):
     directory.mkdir(parents=True,exist_ok=True)
     handle=(directory/'.abrams-session.lock').open('a+b')
     try:
-        fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)
-    except BlockingIOError:
+        if os.name == "nt":
+            handle.seek(0, os.SEEK_END)
+            if handle.tell() == 0:
+                handle.write(b"\0"); handle.flush()
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except OSError:
         handle.close()
         raise ValueError('This save directory is already open in another Abrams window. Close that window before reopening it.') from None
     return handle
@@ -112,7 +123,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--state", type=Path, help="omit for original cold boot with trace backend")
     p.add_argument("--saves", type=Path, required=True)
-    p.add_argument("--core", type=Path, default=ROOT / ".runtime/pc-core/dosbox_pure_libretro.dylib")
+    p.add_argument("--core", type=Path, default=ROOT / (".runtime/pc-core/dosbox_pure_libretro" + core_suffix()))
     p.add_argument("--backend", choices=["reference", "trace"], default="reference")
     p.add_argument("--content", type=Path, default=ROOT / ".runtime/pc-core/abrams-ref.zip")
     p.add_argument("--frame-audit", action="store_true", help="diagnostic hashes of paired original RAM and framebuffer; no memory dumps")
@@ -166,7 +177,7 @@ def main():
             if manifest.get("round_form_event_schema") != 1:
                 raise ValueError("Rebuild the local trace core for original round-form raster support")
             pin, source_pin = manifest["trace_sha256"], manifest["baseline_sha256"]
-            args.core = ROOT / ".runtime/pc-core/abrams-trace.dylib"
+            args.core = ROOT / (".runtime/pc-core/abrams-trace" + core_suffix())
         core = PcReferenceCore(args.core, args.content, args.saves, expected_sha256=pin)
         if args.backend == 'trace':
             session = PresentationSession(core,reader,shape_bytes)

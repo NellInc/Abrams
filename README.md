@@ -38,18 +38,18 @@ Upscaled is the default. Genesis mode uses original-resolution Genesis artwork w
 
 ## Install
 
-The standalone app currently targets **Apple Silicon Macs running macOS 14 or newer**. Godot and Python are bundled; players do not need to install them.
+Standalone packages target **Apple Silicon macOS 14+**, **Windows x86_64** and **Linux x86_64**. Godot and Python are bundled; players do not need to install them.
 
 **You must supply the original PC game. The Genesis ROM is optional. Neither is bundled.**
 
-1. Download the macOS app ZIP from [GitHub Releases](https://github.com/NellInc/Abrams/releases), extract it, and move `Abrams.app` to Applications.
-2. Open Abrams and click **Choose PC folder…** and select the extracted folder containing `ABRAMS.COM`, `SIM.EXE` and the remaining game files.
-3. Optionally click **Add Genesis ROM…** to enable the Genesis-based artwork and music.
+1. Download your platform's ZIP from [GitHub Releases](https://github.com/NellInc/Abrams/releases), extract it, and open `Abrams.app`, `Abrams.exe` or `Abrams.sh`. On macOS, move the app to Applications.
+2. Open Abrams and choose **Choose PC folder…** or **Import PC folder** and select the extracted folder containing `ABRAMS.COM`, `SIM.EXE` and the remaining game files.
+3. Optionally choose **Add Genesis ROM…** or **Import Genesis ROM** to enable the Genesis-based artwork and music.
 4. Click **Play**.
 
 The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA, PC-only Upscaled and Modern remain playable, with high-resolution lettering and crew speech; Genesis-based graphics and music stay disabled.
 
-This is an **alpha for macOS 14+ on Apple Silicon**, distributed without Developer ID signing or notarization. Windows, Linux and Intel Mac packages are not available. See [installation and troubleshooting](docs/standalone-macos.md).
+These are alpha packages. macOS notarization is pending; Windows signing is not supplied. Intel Macs are not supported. See [macOS installation](docs/standalone-macos.md), [Windows/Linux installation](docs/standalone-portable.md) and the release notes for platform testing status.
 
 ## Controls
 
@@ -62,7 +62,7 @@ This is an **alpha for macOS 14+ on Apple Silicon**, distributed without Develop
 
 The **Session** menu provides all five save slots and fast-forward speeds. **Graphics** selects a mode directly; **Audio** controls the mix. On macOS these are in the system menu bar. The game continues while a remaster menu is open, so pause first when needed. Original game controls remain unchanged.
 
-Save states restore both the running game and campaign disk. New checkpoints also preserve the remastered display. Saves live outside the app at `~/Library/Application Support/Abrams/saves/`. Back up the whole profile before upgrading; checkpoints require a compatible core and game edition. See [controls and save behaviour](docs/play-controls.md).
+Save states restore both the running game and campaign disk. New checkpoints also preserve the remastered display. Saves live outside the app in the platform's player profile. Back up the whole profile before upgrading; checkpoints require a compatible core and game edition. See [controls and save behaviour](docs/play-controls.md).
 
 ## Development
 
@@ -88,7 +88,7 @@ From an equipped checkout:
 
 ## Project status and contributions
 
-Development is active. Remaining work includes sustained playback performance, complete mission and campaign testing, listening and art review, and wider platform support. Unsupported artwork and transitions retain the original PC graphics.
+Development is active. Remaining work includes sustained playback performance, complete mission and campaign testing, listening and art review, and wider hardware testing. Unsupported artwork and transitions retain the original PC graphics.
 
 Contributions should preserve original gameplay and include relevant tests or screenshots. Keep original games, ROMs, extracted resources, saves, private builds and credentials out of Git.
 

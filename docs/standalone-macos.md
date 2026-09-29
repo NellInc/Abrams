@@ -2,7 +2,7 @@
 
 The ARM64 `.app` bundles Godot and its Python/Pillow bridge runtime. Players
 need no separately installed interpreter or engine. It targets macOS 14 or newer;
-other OS versions and Intel Macs have not been validated. Windows packaging remains deferred. Modern is included as an experimental mode; retain the preceding alpha for rollback.
+other OS versions and Intel Macs have not been validated. Windows and Linux use the separate [portable setup](standalone-portable.md). Modern is included as an experimental mode; retain the preceding alpha for rollback.
 
 ## Install and play
 
@@ -39,9 +39,7 @@ five slots and fast-forward speeds; **Audio** controls the mix.
   Its SHA-256 is `ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea`.
   You can continue with PC-only play. The importer stores a revision receipt,
   without copying the ROM into the profile.
-* **macOS blocks the app:** this alpha is ad-hoc signed, without Developer
-  ID signing or notarization. Report the warning; do not disable system security
-  to run it.
+* **macOS blocks the app:** Developer ID signing and Apple notarization are separate. Notarization remains pending for this alpha. Check the release status and report the warning; do not disable system security. See [the notarization workflow](macos-notarization.md).
 * **Startup error:** keep the displayed message and the profile's `logs/` folder.
   Do not delete the profile or alter integrity receipts to work around an error.
 
@@ -92,7 +90,7 @@ python3 tools/standalone/build.py --verify /absolute/new/Abrams.app
 Outputs must be new paths. The builder copies and thins Godot to ARM64, freezes
 the bridge runtime, compiles the AppKit importer, records every payload hash,
 checks original-file fingerprints and non-system Mach-O dependencies, and seals
-the app with an ad-hoc signature. Third-party notices accompany the bundle.
+the app with an ad-hoc signature for local validation. Release builds are then signed with Developer ID using the [signing helper](macos-notarization.md). Third-party notices accompany the bundle.
 This Modern build updates the trace core. Earlier snapshot saves remain on disk but require their matching older app; original campaign saves are separate. Keep the preceding alpha for those snapshots.
 
 Changes to frozen-runtime inputs require a fresh `--cache` directory. Compiler

@@ -6,6 +6,8 @@ No download, game-file write, publication or change to the default core pin.
 """
 from __future__ import annotations
 import hashlib
+import argparse
+import sys
 import json
 from pathlib import Path
 import shutil
@@ -20,6 +22,14 @@ def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def main():
+    global SOURCE
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source", type=Path, default=SOURCE)
+    parser.add_argument("--output-dir", type=Path, default=ROOT/".runtime/pc-core")
+    args=parser.parse_args()
+    SOURCE=args.source.resolve()
+    suffix=".dll" if sys.platform == "win32" else ".dylib" if sys.platform == "darwin" else ".so"
+    args.output_dir.mkdir(parents=True,exist_ok=True)
     if subprocess.check_output(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD'], text=True).strip() != UPSTREAM:
         raise ValueError('unreviewed DOSBox Pure source revision')
     status = subprocess.check_output(['git', '-C', str(SOURCE), 'status', '--porcelain', '--untracked-files=all'], text=True)
@@ -37,7 +47,7 @@ def main():
     if changed.count('AbramsTraceInstruction();') != 1 or changed.count('#include "abrams_trace.h"') != 1:
         raise ValueError('unexpected normal-core structure')
     if target.read_text() not in (original, changed): raise ValueError('preserve unrecognized dependency edits')
-    baseline = ROOT / '.runtime/pc-core/source-baseline.dylib'
+    baseline = args.output_dir / ('source-baseline'+suffix)
     if not baseline.exists(): raise ValueError('build and retain unmodified source-baseline.dylib first')
     header = ROOT / 'tools/pc_core/abrams_trace.h'
     shutil.copyfile(header, target.with_name('abrams_trace.h'))
@@ -108,12 +118,17 @@ def main():
         if path.read_text() not in (before, previous, after): raise ValueError('preserve unrecognized edits: ' + name)
         path.write_text(after)
         patch_hashes[name] = {'original': hashlib.sha256(before.encode()).hexdigest(), 'patched': sha(path)}
-    subprocess.run(['make', '-C', str(SOURCE), '-j4'], check=True)
-    output = ROOT / '.runtime/pc-core/abrams-trace.dylib'
+    build_command=['make', '-C', str(SOURCE), '-j4']
+    if sys.platform == 'win32':
+        # libretro's explicit exports suppress MinGW auto-export. The reviewed
+        # observer ABI must remain visible, and GCC/pthread stay self-contained.
+        build_command += ['LDFLAGS=-shared -static -Wl,--gc-sections -fno-ident -Wl,--export-all-symbols']
+    subprocess.run(build_command, check=True)
+    output = args.output_dir / ('abrams-trace'+suffix)
     # Existing local viewers may still map the previous inode. Replace atomically
     # rather than modifying bytes underneath a running process.
     staged=output.with_suffix('.next')
-    shutil.copyfile(SOURCE / 'dosbox_pure_libretro.dylib', staged)
+    shutil.copyfile(SOURCE / ('dosbox_pure_libretro'+suffix), staged)
     staged.replace(output)
     manifest = {'schema': 2, 'round_form_event_schema': 1, 'audio_event_schema': 1, 'text_event_schema': 2, 'message_event_schema': 1, 'strut_event_schema': 1, 'driver_overlay_schema': 1, 'state_overlay_schema': 1, 'observer_checkpoint_schema': 1, 'observer_checkpoint_header_sha256': sha(observer), 'state_overlay_header_sha256': sha(state_overlay), 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
         'source_core_normal_sha256': hashlib.sha256(original.encode()).hexdigest(),
@@ -121,7 +136,7 @@ def main():
         'ownership_header_sha256': sha(ownership), 'motor_pool_plate_schema': 1, 'frontend_text_schema': 1, 'frontend_scene_schema': 1, 'orientation_schema': 1,
         'plate_ownership_header_sha256': sha(plates),
         'baseline_sha256': sha(baseline), 'trace_sha256': sha(output),
-        'build': ['make', '-j4'], 'compiler': subprocess.check_output(['c++', '--version'], text=True).splitlines()[0],
+        'build': build_command, 'compiler': subprocess.check_output(['c++', '--version'], text=True).splitlines()[0],
         'license': 'GPL-2.0-or-later; upstream LICENSE and notices retained in source checkout',
         'scope': 'local research, normal CPU trace; explicit checkpoint overlay flush/reload ABI 1; ordinary-run parity requires separate tests'}
     output.with_suffix('.json').write_text(json.dumps(manifest, indent=2) + '\n')

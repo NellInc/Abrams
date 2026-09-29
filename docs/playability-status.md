@@ -1,11 +1,11 @@
-# Local Play status
+# Playability status
 
 The original PC executables own gameplay, mission logic, menus and disk saves.
 Godot renders the supported high-resolution layers and plays event-driven audio.
 The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
-## Current standalone alpha (28 September 2026)
+## Earlier standalone alpha (28 September 2026)
 
 The Apple Silicon macOS app bundles Godot and Python/Pillow. It requires the
 player's PC files, accepts Genesis optionally, and contains neither original
@@ -162,7 +162,7 @@ See [packaging](packaging.md) and [rights review](release-rights.md).
 * Unrecognized transition fallbacks, preserving
   Genesis precedence and original PC visibility. The finite non-Modern register
   is in `graphics-coverage.md`. Modern geometry and its separate validation are documented in `modern-renderer.md` and `modern-asset-register.md`.
-* Intel Mac, Windows and Linux packages; Developer ID signing/notarization and
+* Intel Mac support, target-platform gameplay checks, Apple notarization and
   public community-release clearance. The Apple Silicon alpha and gallery are
   distributed through the private [GitHub repository](https://github.com/NellInc/Abrams/releases).
 
