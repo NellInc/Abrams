@@ -16,12 +16,14 @@ try:
     from tools.unpack_pc_executables import unpack
     from tools.pc_bitmaps import decode_bitmaps,read_ega_bitmap
     from tools.inspect_scenarios import decode_resource
+    from tools.pc_frontend_scene import FrontendScene, PREVIEW
 except ModuleNotFoundError:
     from pc_live_state import active_program
     from pc_text_trace import TextRuns
     from unpack_pc_executables import unpack
     from pc_bitmaps import decode_bitmaps,read_ega_bitmap
     from inspect_scenarios import decode_resource
+    from pc_frontend_scene import FrontendScene, PREVIEW
 
 ROOT = Path(__file__).resolve().parents[1]
 CALLBACK = C.CFUNCTYPE(None,C.c_uint32,C.POINTER(C.c_uint16),C.c_void_p,C.c_uint32,C.c_uint32)
@@ -138,10 +140,15 @@ class FrontendText:
         self.last_frame={}
         self.callback=CALLBACK(self.observe)
         self.counts=[]
+        self.scene=FrontendScene(ROOT/'GAME')
 
     def observe(self,event,registers,data,offset,length):
         try:
             raw=C.string_at(data,length)
+            if 49<=event<=55:
+                regs=dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'),registers[:12]))
+                self.scene.observe(event,regs,raw,offset)
+                return
             if event==26:
                 regs=dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'),registers[:12]))
                 match=self.sources.match(raw,regs)
@@ -152,6 +159,7 @@ class FrontendText:
                     if self.text:self.counts.append(self.text.report())
                     self.program=program;self.text=TextRuns(ROOT/'GAME',p)
                     self.scanout=None;self.buffers.clear();self.presented=None
+                    self.scene.clear()
                 self.text.begin(raw,regs)
             elif event==27:
                 if self.pending:self.text.finish(raw)
@@ -187,10 +195,18 @@ class FrontendText:
         cursor=self.sources.visible_cursor(ram,raw,self.last_frame.get('palette_rgb')) if ram is not None else None
         runs=visible_runs(self.last_frame.get('candidates',()),raw,w,h,self.last_frame.get('palette_rgb'),cursor)
         mask=Image.new('L',(320,200))
+        is_start=(self.presented.get('frontend_program') or {}).get('name')=='START'
+        drawing=self.scene.paired(raw,self.last_frame.get('palette_rgb'),runs,cursor) if is_start and w==320 and h==200 else None
+        if drawing:
+            mask.paste(255,(0,0,320,200))
+            x,y,ww,hh=PREVIEW
+            mask.paste(0,(x,y,x+ww,y+hh))
+            for x,y in cursor_cells(cursor):mask.putpixel((x,y),255)
         for run in runs:
             x,y,ww,hh=run['rect'];mask.paste(255,(x,y,x+ww,y+hh))
         stream=io.BytesIO();mask.save(stream,format='PNG')
-        return self.presented|{'text_runs':runs,'original_cursor':cursor,
+        return self.presented|{'draw_pass':drawing,'reason':'pixel-paired START scenery' if drawing else self.presented['reason'],
+            'text_runs':runs,'original_cursor':cursor,
             'ui_overlay':{'width':320,'height':200,'mask_png':base64.b64encode(stream.getvalue()).decode()}}
 
     def attach(self,core):

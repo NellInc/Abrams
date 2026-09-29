@@ -68,6 +68,7 @@ func clear() -> void:
 	visible = false
 	material.set_shader_parameter("restored_height",0.0)
 	material.set_shader_parameter("motor_enabled",false)
+	material.set_shader_parameter("scene_enabled",false)
 
 func load_sources(root_path: String) -> bool:
 	clear()
@@ -201,9 +202,9 @@ func _set_motor_pool(source: Image, presentation: Dictionary) -> bool:
 	visible=true
 	return true
 
-func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}) -> bool:
+func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}, paired_world: bool=false) -> bool:
 	var restored := _set_art_frame(source,program,presentation)
-	if not text_enabled or source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8: return restored
+	if source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8: return restored
 	if active.get("scene")=="intro": return restored # Its fitted credit lettering already owns these cells.
 	var name: String=program.get("name","")
 	if name in ["START","BRIEF","END"]:
@@ -217,6 +218,11 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}) 
 	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK or mask.get_size()!=Vector2i(320,200) or mask.get_format()!=Image.FORMAT_L8: return restored
 	for bit in mask.get_data():
 		if bit!=0 and bit!=255: return restored
+	if paired_world and program.get("name")=="START" and presentation.get("draw_pass") is Dictionary and presentation.draw_pass.get("frontend_scene")=="START/ANIM":
+		material.set_shader_parameter("scene_mask",ImageTexture.create_from_image(mask))
+		material.set_shader_parameter("scene_enabled",true)
+		active.preview="Original START/ANIM draw, high-resolution replay"
+	if not text_enabled: return restored
 	original_cursor.set_frame(source,presentation)
 	flow_typography.set_frame(source,mask,presentation,original_cursor.mask)
 	# Keep previously restored information/office/arming colours and layouts.

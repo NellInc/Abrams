@@ -118,7 +118,7 @@ def main():
     manifest = {'schema': 2, 'round_form_event_schema': 1, 'audio_event_schema': 1, 'text_event_schema': 2, 'message_event_schema': 1, 'strut_event_schema': 1, 'driver_overlay_schema': 1, 'state_overlay_schema': 1, 'observer_checkpoint_schema': 1, 'observer_checkpoint_header_sha256': sha(observer), 'state_overlay_header_sha256': sha(state_overlay), 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
         'source_core_normal_sha256': hashlib.sha256(original.encode()).hexdigest(),
         'patched_core_normal_sha256': sha(target), 'trace_header_sha256': sha(header),
-        'ownership_header_sha256': sha(ownership), 'motor_pool_plate_schema': 1, 'frontend_text_schema': 1, 'orientation_schema': 1,
+        'ownership_header_sha256': sha(ownership), 'motor_pool_plate_schema': 1, 'frontend_text_schema': 1, 'frontend_scene_schema': 1, 'orientation_schema': 1,
         'plate_ownership_header_sha256': sha(plates),
         'baseline_sha256': sha(baseline), 'trace_sha256': sha(output),
         'build': ['make', '-j4'], 'compiler': subprocess.check_output(['c++', '--version'], text=True).splitlines()[0],

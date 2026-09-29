@@ -237,6 +237,7 @@ func configure(data: Dictionary) -> bool:
 	return true
 
 static func supported_palette(palette: Array) -> bool:
+	if Colour.is_frontend_palette(palette): return true
 	if palette.size()!=16: return false
 	for i in 16:
 		if not palette[i] is Array or palette[i].size()!=3: return false

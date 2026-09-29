@@ -716,8 +716,25 @@ func _apply_sample(message: Dictionary) -> void:
 	if not state is Dictionary:
 		previous = {}
 		previous_presentation = message.get("presentation", {})
-		draw_view.apply_pass({"objects": []})
-		var frontend := _present_tandem(image, previous_presentation, null, previous_program)
+		var preview = previous_presentation.get("draw_pass")
+		var preview_world: Texture2D = null
+		if previous_program.get("name")=="START" and preview is Dictionary and preview.get("frontend_scene")=="START/ANIM":
+			var displayed: Dictionary=preview.duplicate(false)
+			displayed.palette_rgb=previous_presentation.palette_rgb
+			draw_view.presentation_palette=genesis_style.for_original(displayed.palette_rgb) if genesis_colours_requested else []
+			var preview_camera: Dictionary=preview.camera.duplicate(true)
+			preview_camera.matrix_q14_columns=[16384,0,0,0,16384,0,0,0,16384]
+			preview_camera.world_position_raw=[0,0,0]
+			var dimensions:=PcCamera.apply(camera,preview_camera,Vector3.ZERO)
+			if play_mode: play_display.set_camera_dimensions(dimensions)
+			else: world_viewport.size=dimensions*4
+			# Ownership and colour viewports must use the same extent on the
+			# first menu frame, before either mesh is built.
+			draw_view.apply_pass(displayed)
+			preview_world=world_viewport.get_texture()
+		else:
+			draw_view.apply_pass({"objects": []})
+		var frontend := _present_tandem(image, previous_presentation, preview_world, previous_program)
 		if not play_mode:
 			status.text = "ORIGINAL PC: " + str(previous_program.get("name","STARTING"))
 			caption.text = "Original menu/briefing or SIM initialization. Showing the original framebuffer; no substitute simulation."

@@ -145,6 +145,8 @@ def main():
         pin, source_pin = CORE_SHA256, CORE_SHA256
         if args.backend == "trace":
             manifest = json.loads((ROOT / ".runtime/pc-core/abrams-trace.json").read_text())
+            if manifest.get("frontend_scene_schema") != 1:
+                raise ValueError("Rebuild the local trace core for the opening scenario preview")
             if manifest.get("schema") != 2:
                 raise ValueError("trace backend requires the scanout-aware source build")
             if manifest.get("audio_event_schema") != 1:

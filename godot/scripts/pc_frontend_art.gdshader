@@ -7,9 +7,12 @@ uniform float restored_height = 0.0;
 uniform sampler2D motor_pool : filter_linear, repeat_disable;
 uniform sampler2D motor_mask : filter_nearest, repeat_disable;
 uniform bool motor_enabled = false;
+uniform bool scene_enabled = false;
+uniform sampler2D scene_mask : filter_nearest, repeat_disable;
 void fragment() {
 	vec2 p = UV*vec2(320.0,200.0);
 	vec4 result = texture(TEXTURE,UV);
+	if (scene_enabled && texture(scene_mask,UV).r < 0.5) result.a = 0.0;
 	if (motor_enabled) {
 		result=int(round(texture(motor_mask,UV).r*255.0))==8 ? texture(motor_pool,UV) : vec4(0.0);
 	}

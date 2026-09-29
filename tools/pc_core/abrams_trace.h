@@ -201,7 +201,55 @@ static const AbramsFrontendProfile abrams_frontend_profiles[] = {
 };
 static Bit16u abrams_frontend_return_cs, abrams_frontend_return_ip;
 
+// START's separate ANIM renderer. Stateless readbacks only: these hooks do not
+// add checkpoint fields, alter VGA latches, or consume emulated instructions.
+static INLINE void AbramsTraceFrontendSceneInstruction() {
+    const unsigned ip=reg_eip;
+    if (ip!=0x42e4 && ip!=0x42fb && ip!=0x4327 && ip!=0x27c9 &&
+        ip!=0x03b2 && ip!=0x31f4 && ip!=0x3523 && ip!=0x34e4) return;
+    const unsigned psp=mem_readw(0xb30),load=psp+16,base=SegPhys(ds),segment=SegValue(cs);
+    if (!psp || SegValue(ds)!=load+0x1505 || base+65536>640*1024 ||
+        mem_readw(psp*16)!=0x20cd || mem_readw((psp-1)*16+1)!=psp) return;
+    const unsigned mcb=(psp-1)*16;
+    if (mem_readb(mcb)!='M' && mem_readb(mcb)!='Z') return;
+    const char name[8]={'S','T','A','R','T',0,0,0};
+    for (unsigned i=0;i<8;++i) if (mem_readb(mcb+8+i)!=unsigned(name[i])) return;
+    unsigned event=0;
+    if (segment==load) {
+        if (ip==0x42e4) event=49;
+        else if (ip==0x42fb || ip==0x4327) event=53;
+    } else if (segment==load+0x1085) {
+        if (ip==0x27c9) event=50;
+        else if (ip==0x03b2) event=51;
+        else if (ip==0x3523) event=54;
+        else if (ip==0x34e4) event=55;
+    } else if (segment==load+0x0760 && ip==0x31f4) event=52;
+    if (!event) return;
+    const Bit16u regs[12]={reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
+        reg_bp,reg_sp,SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+    const unsigned page=mem_readw(base+0x2660);
+    if ((page!=0xa000 && page!=0xa200) || vga.mode!=M_EGA) return;
+    if (event==53) {
+        for (unsigned i=0;i<64000;++i) {
+            unsigned address=(page-0xa000)*16+i/8,colour=0;
+            for (unsigned p=0;p<4;++p)
+                if (vga.mem.linear[address*4+p] & (128u>>(i&7))) colour|=1u<<p;
+            abrams_trace_snapshot[i]=Bit8u(colour);
+        }
+        abrams_trace_callback(event,regs,abrams_trace_snapshot,(page-0xa000)*16,64000);
+    } else if (event==54) {
+        const unsigned stack=SegPhys(ss)+reg_bp+12;
+        if (stack+4>640*1024) return;
+        MEM_BlockRead(stack,abrams_trace_snapshot,4);
+        abrams_trace_callback(event,regs,abrams_trace_snapshot,0,4);
+    } else {
+        MEM_BlockRead(event==49?0:base,abrams_trace_snapshot,event==49?640*1024:65536);
+        abrams_trace_callback(event,regs,abrams_trace_snapshot,0,event==49?640*1024:65536);
+    }
+}
+
 static INLINE void AbramsTraceFrontendInstruction() {
+    AbramsTraceFrontendSceneInstruction();
     Bit32u ip = reg_eip;
     if (ip != 0x0212 && ip != 0x0261 && ip != 0x020e && ip != 0x025d) return;
     const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,

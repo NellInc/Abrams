@@ -74,10 +74,11 @@ func load_assets(directory: String) -> bool:
 
 func mapping(frame: Dictionary, palette: Array) -> Dictionary:
 	if textures.size() != 2 or palette.size() != 16: return {}
+	var frontend: bool = preload("res://scripts/pc_colour.gd").is_frontend_palette(palette)
 	for i in 16:
 		if not palette[i] is Array or palette[i].size() != 3: return {}
 		for c in 3:
-			if palette[i][c] != PC_PALETTE[i][c]: return {}
+			if palette[i][c] != PC_PALETTE[i][c] and not frontend: return {}
 	var matrix = frame.get("matrix_q14_columns")
 	var position = frame.get("world_position_raw")
 	if not matrix is Array or matrix.size() != 9 or not position is Array or position.size() != 3: return {}

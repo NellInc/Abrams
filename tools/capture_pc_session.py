@@ -285,7 +285,8 @@ def main():
                 'program_lifecycle': programs == ['START','BRIEF','SIM','END','START','BRIEF','SIM'],
                 'debrief_is_original_END': by_name['debrief']['program']['name']=='END',
                 'menus_have_no_SIM_state_or_geometry': all(
-                    s['state'] is None and s['presentation'].get('draw_pass') is None
+                    s['state'] is None and (s['presentation'].get('draw_pass') is None or
+                        (s['program'] or {}).get('name')=='START' and s['presentation']['draw_pass'].get('frontend_scene')=='START/ANIM')
                     for s in samples if not s['program'] or s['program']['name']!='SIM'),
                 'second_mission_initialized': bool(by_name['second-mission']['state']) and
                     by_name['second-mission']['state']['scenario_resource_index']==6,

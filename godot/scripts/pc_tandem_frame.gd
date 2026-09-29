@@ -348,7 +348,7 @@ func present_frontend(program: Dictionary) -> bool:
 		if graphics_mode=="genesis" and changed and _cached_source!=null:
 			native_graphics.set_frame(_cached_source,_cached_presentation,program)
 		return false
-	return frontend_art.set_frame(_cached_source,program,_cached_presentation)
+	return frontend_art.set_frame(_cached_source,program,_cached_presentation,world_enabled)
 
 func remember_frame(source: Image, presentation: Dictionary, world: Texture2D, program: Dictionary) -> void:
 	_cached_source=source

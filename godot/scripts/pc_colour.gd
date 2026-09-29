@@ -2,6 +2,17 @@ extends RefCounted
 ## Compensate Godot Compatibility's approximate unshaded colour round trip.
 ## Source bytes remain untouched. Native RGB tests are required after upgrades.
 static var compatibility_inputs := PackedFloat32Array()
+const FRONTEND_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
+	[255,85,85],[170,85,0],[0,170,0],[85,255,85],[255,255,85],[0,0,0],
+	[255,85,85],[255,85,255],[255,255,85],[255,255,255]]
+
+static func is_frontend_palette(palette: Array) -> bool:
+	if palette.size()!=16: return false
+	for i in 16:
+		if not palette[i] is Array or palette[i].size()!=3: return false
+		for c in 3:
+			if palette[i][c]!=FRONTEND_PALETTE[i][c]: return false
+	return true
 
 static func input_color(rgb: Array, compatibility: bool) -> Color:
 	if not compatibility: return Color8(int(rgb[0]),int(rgb[1]),int(rgb[2]))
