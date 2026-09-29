@@ -18,6 +18,19 @@ def digest(data):
 
 
 class StandaloneRuntimeTests(unittest.TestCase):
+    def test_explicit_profile_does_not_require_a_system_home(self):
+        with patch('tools.standalone.runtime.Path.home',side_effect=RuntimeError('missing home')):
+            with patch.dict('os.environ', {'ABRAMS_DATA_HOME':str(self.home)}):
+                self.assertEqual(runtime.profile_home(self.bundle),self.home)
+            self.assertEqual(runtime.profile_home(self.bundle,str(self.home)),self.home)
+
+    def test_platform_profile_environment_does_not_evaluate_home_fallback(self):
+        with patch('tools.standalone.runtime.Path.home',side_effect=RuntimeError('missing home')):
+            with patch.dict('os.environ', {'LOCALAPPDATA':str(self.root),'XDG_DATA_HOME':str(self.root)},clear=True):
+                for platform,name in [('win32','Abrams'),('linux','abrams')]:
+                    with patch.object(runtime.sys,'platform',platform):
+                        self.assertEqual(runtime.profile_home(self.bundle),self.root/name)
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix='abrams standalone contract ')
         self.addCleanup(temporary.cleanup)

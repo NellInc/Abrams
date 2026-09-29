@@ -12,6 +12,17 @@ from tools.pc_bridge_host import lock_saves
 
 
 class PortableContracts(unittest.TestCase):
+    @unittest.skipIf(os.name == 'nt', 'POSIX executable mode contract')
+    def test_fallback_runtime_copy_preserves_executable_mode(self):
+        from tools.standalone.build import clone_file
+        with tempfile.TemporaryDirectory() as temporary:
+            source=Path(temporary)/'runtime';source.write_bytes(b'synthetic executable');source.chmod(0o755)
+            target=Path(temporary)/'copied'
+            with patch('tools.standalone.build.sys.platform','linux'):
+                clone_file(source,target)
+            self.assertEqual(target.read_bytes(),source.read_bytes())
+            self.assertEqual(target.stat().st_mode & 0o777,0o755)
+
     def test_frozen_macos_discovery_skips_inner_resources_manifest(self):
         from tools.standalone.entry import bundle_path
         with tempfile.TemporaryDirectory() as temporary:

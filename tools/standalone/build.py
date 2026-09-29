@@ -32,7 +32,7 @@ def clone_file(source, destination):
     if sys.platform == 'darwin':
         result=subprocess.run(['/bin/cp','-c',str(source),str(destination)],capture_output=True)
         if not result.returncode:return destination
-    shutil.copyfile(source,destination)
+    shutil.copy2(source,destination)
     return destination
 
 

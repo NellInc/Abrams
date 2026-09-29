@@ -61,10 +61,17 @@ def app_resources(bundle):
 
 
 def profile_home(bundle, requested=None):
-    default = (Path(os.environ.get('LOCALAPPDATA', Path.home()/'AppData/Local'))/'Abrams' if sys.platform == 'win32' else
-               Path.home()/'Library/Application Support/Abrams' if sys.platform == 'darwin' else
-               Path(os.environ.get('XDG_DATA_HOME', Path.home()/'.local/share'))/'abrams')
-    home = Path(requested or os.environ.get('ABRAMS_DATA_HOME') or default).expanduser()
+    selected = requested or os.environ.get('ABRAMS_DATA_HOME')
+    if selected:
+        home = Path(selected).expanduser()
+    elif sys.platform == 'win32':
+        base = os.environ.get('LOCALAPPDATA')
+        home = (Path(base) if base else Path.home()/'AppData/Local')/'Abrams'
+    elif sys.platform == 'darwin':
+        home = Path.home()/'Library/Application Support/Abrams'
+    else:
+        base = os.environ.get('XDG_DATA_HOME')
+        home = (Path(base) if base else Path.home()/'.local/share')/'abrams'
     if not home.is_absolute() or home.resolve().is_relative_to(Path(bundle).resolve()):
         raise ValueError('Player data must use an absolute directory outside the application')
     return home.resolve()
