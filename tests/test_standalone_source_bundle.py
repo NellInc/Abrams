@@ -70,6 +70,16 @@ class SourceBundleTests(unittest.TestCase):
     def build(self, name='source.tar.gz'):
         return bundle.build(self.root, self.root / name)
 
+    def test_explicit_native_targets_do_not_depend_on_archive_host(self):
+        original=self.core/'abrams-trace.dylib'
+        for suffix in ('.dll','.so'):
+            target=self.core/('abrams-trace'+suffix)
+            target.write_bytes(original.read_bytes())
+            result=bundle.build(self.root,self.root/('native'+suffix+'.tar.gz'),suffix=suffix)
+            self.assertEqual(result['core_sha256'],self.receipt['trace_sha256'])
+        with self.assertRaisesRegex(ValueError,'suffix'):
+            bundle.collect(self.root,suffix='../outside')
+
     def test_complete_deterministic_source_and_normalized_metadata(self):
         first = self.build()
         os.utime(self.source / 'LICENSE', (777, 777))

@@ -14,7 +14,6 @@ import json
 from pathlib import Path, PurePosixPath
 import stat
 import subprocess
-import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -74,7 +73,7 @@ def regular_bytes(base, name):
     return path.read_bytes()
 
 
-def collect(root, source=None):
+def collect(root, source=None, suffix='.dylib'):
     # Normalize the caller-selected root (macOS /var aliases /private/var);
     # links within the source and runtime inputs remain forbidden.
     root = root.resolve()
@@ -83,7 +82,8 @@ def collect(root, source=None):
         raise ValueError('Symlink source checkout')
     # Runtime input paths are deliberately outside the archive-name policy.
     receipt_path = root / '.runtime/pc-core/abrams-trace.json'
-    suffix = {'win32': '.dll', 'linux': '.so'}.get(sys.platform, '.dylib')
+    if suffix not in ('.dylib', '.dll', '.so'):
+        raise ValueError('Unrecognized native core suffix')
     core_path = root / ('.runtime/pc-core/abrams-trace' + suffix)
     for path in (receipt_path, core_path):
         if any(p.is_symlink() for p in (path, *path.parents)) or not path.is_file():
@@ -198,10 +198,10 @@ no original Abrams game files or game ROM and confers no rights to those works.
     return files, inventory
 
 
-def build(root, output, source=None):
+def build(root, output, source=None, suffix='.dylib'):
     if output.exists() or output.is_symlink():
         raise ValueError('Output must be a new exclusive path')
-    files, inventory = collect(root, source)
+    files, inventory = collect(root, source, suffix)
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open('xb') as stream:
         with gzip.GzipFile(filename='', mode='wb', fileobj=stream, mtime=0) as compressed:
@@ -226,8 +226,9 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--root', type=Path, default=ROOT, help='Payload root containing the matching core/receipt')
     parser.add_argument('--source', type=Path, help='Pinned upstream source checkout')
+    parser.add_argument('--core-suffix', choices=['.dylib', '.dll', '.so'], default='.dylib')
     args = parser.parse_args()
-    print(json.dumps(build(args.root, args.output, args.source), sort_keys=True, indent=2))
+    print(json.dumps(build(args.root, args.output, args.source, args.core_suffix), sort_keys=True, indent=2))
 
 
 if __name__ == '__main__':
