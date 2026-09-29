@@ -27,6 +27,8 @@ def verify(bundle):
 
 
 def main():
+    if sys.platform == 'win32' and not sys.flags.utf8_mode:
+        raise RuntimeError('The bundled Windows runtime must use UTF-8 mode')
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--bundle',type=Path,required=True)
     p.add_argument('--invoke',action='store_true')

@@ -71,3 +71,9 @@ Run 36638314145: Linux passed native contracts, compilation and app assembly, th
 Aggregate validation after the checkpoint change completed at artifacts/validation-20260929T221216Z: 541 Python tests and 68 Godot checks, terminal exit 0. Current signed native-repair/ macOS app passed 3,663-frame original boot and all 26 packaged frozen-runtime checkpoint checks. Another candidate must include the latest profile/copy fix. The 08f3d18 source-only workflows passed on main and codex/modern-lowpoly.
 
 Nell reports that notarytool credentials were validated and saved in Keychain as Abrams. A new question asks explicit permission to upload the original-free app to Apple and staple an accepted ticket. Until she answers yes, submission remains on hold. A malformed dispatch (36638241691) was caused by root using the draft tag's unavailable REST lookup and continuing after its 404; it rejects before input retrieval. Future dispatch commands fail fast and resolve draft assets through the release list.
+
+## Windows text encoding
+
+Native run 36639603006 produced a fully smoke-checked Linux package. Windows passed all original-free bridge/checkpoint/native-core checks, then source-closure reading failed with cp1252 UnicodeDecodeError. Root makes the CI interpreter use PYTHONUTF8=1 and pins X utf8 in the PyInstaller native bootloader/config cache, following the installed tool's supported interpreter-option interface. Windows setup explicitly rejects a non-UTF-8 frozen runtime, so its native setup smoke cannot hide a missing option. No system-wide locale or user environment is changed. Two targeted regressions added; 51 focused tests pass (native opt-in smoke skipped locally).
+
+Notarization Keychain profile Abrams is ready. Submission approval question remains unanswered; no Apple upload has been made.

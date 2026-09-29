@@ -29,6 +29,7 @@ jobs:
         shell: bash
     env:
       PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUTF8: '1'
       INPUT_ASSET: ${{ inputs.input_asset_id }}
       INPUT_SHA256: ${{ inputs.input_sha256 }}
     steps:

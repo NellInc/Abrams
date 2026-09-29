@@ -12,6 +12,24 @@ from tools.pc_bridge_host import lock_saves
 
 
 class PortableContracts(unittest.TestCase):
+    def test_native_freezer_pins_utf8_in_bootloader_and_cache(self):
+        from tools.standalone.build import freeze
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)/'source';entry=root/'tools/standalone/entry.py'
+            entry.parent.mkdir(parents=True);entry.write_text('import sys\n',encoding='utf-8')
+            cache=Path(temporary)/'cache'
+            with patch('tools.standalone.build.ROOT',root), patch('tools.standalone.build.subprocess.check_output',return_value='6.22.3 12.0.0'), patch('tools.standalone.build.subprocess.run') as run:
+                freeze(cache,Path('synthetic-python'),target='win32')
+            command=run.call_args.args[0]
+            self.assertEqual(command[command.index('--python-option')+1],'X utf8')
+            self.assertEqual(json.loads((cache/'frozen.json').read_text())['python_options'],['X utf8'])
+
+    def test_windows_launcher_rejects_a_non_utf8_frozen_runtime(self):
+        from types import SimpleNamespace
+        from tools.standalone.portable_launcher import main
+        with patch('tools.standalone.portable_launcher.sys.platform','win32'), patch('tools.standalone.portable_launcher.sys.flags',SimpleNamespace(utf8_mode=0)):
+            with self.assertRaisesRegex(RuntimeError,'UTF-8 mode'):main()
+
     @unittest.skipIf(os.name == 'nt', 'POSIX executable mode contract')
     def test_fallback_runtime_copy_preserves_executable_mode(self):
         from tools.standalone.build import clone_file

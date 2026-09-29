@@ -64,6 +64,7 @@ def freeze(cache, python, target="macos"):
             candidates = [alias.name for alias in node.names] if isinstance(node, ast.Import) else ([node.module] if isinstance(node, ast.ImportFrom) and not node.level and node.module else [])
             modules.update(name for name in candidates if name.split('.')[0] in sys.stdlib_module_names)
     config = {'entry_sha256':sha(ROOT/'tools/standalone/entry.py'), 'stdlib':sorted(modules), 'pyinstaller':'6.22.3', 'pillow':'12.0.0', 'target':target, 'machine':platform.machine()}
+    if native: config['python_options'] = ['X utf8']
     if destination.exists():
         if not marker.is_file() or json.loads(marker.read_text()) != config:
             raise ValueError('Frozen runtime inputs changed; use a fresh build-cache path')
@@ -74,6 +75,7 @@ def freeze(cache, python, target="macos"):
     command = [str(python), '-m', 'PyInstaller','--onedir','--name','AbramsRuntime','--noupx',
                '--distpath',str(cache/'dist'),'--workpath',str(cache/'work'),'--specpath',str(cache), '--collect-submodules','PIL']
     if not native: command += ['--target-arch','arm64']
+    else: command += ['--python-option','X utf8']
     for name in sorted(modules): command += ['--hidden-import',name]
     command.append(str(ROOT/'tools/standalone/entry.py'))
     subprocess.run(command, check=True, env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'))
