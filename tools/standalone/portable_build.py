@@ -18,7 +18,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
 from tools import package_build
-from tools.standalone.build import VERSION, REPOSITORY, clone_file, freeze
+from tools.standalone.build import APP_NAME, VERSION, REPOSITORY, clone_file, freeze
 from tools.standalone.runtime import CONTENT_SHA, ROM_SHA, sha
 from tools.standalone.portable_launcher import verify
 from tools.pc_reference_core import core_suffix
@@ -107,10 +107,10 @@ def build(output,godot,python,cache,core_source):
         resource=cache/'launcher.rc';resource.write_text('1 ICON "'+icon.as_posix()+'"\n')
         obj=cache/'launcher-icon.o'
         subprocess.run(['windres',str(resource),'-o',str(obj)],check=True)
-        subprocess.run(['gcc','-Os','-municode','-mwindows','-static',str(ROOT/'tools/standalone/portable_launcher.c'),str(obj),'-o',str(output/'Abrams.exe')],check=True)
-        (output/'Abrams.cmd').write_text('@echo off\r\n"%~dp0runtime\\AbramsRuntime\\AbramsRuntime.exe" --launcher %*\r\n',newline='')
+        subprocess.run(['gcc','-Os','-municode','-mwindows','-static',str(ROOT/'tools/standalone/portable_launcher.c'),str(obj),'-o',str(output/(APP_NAME+'.exe'))],check=True)
+        (output/(APP_NAME+'.cmd')).write_text('@echo off\r\n"%~dp0runtime\\AbramsRuntime\\AbramsRuntime.exe" --launcher %*\r\n',newline='')
     else:
-        launcher=output/'Abrams.sh'
+        launcher=output/(APP_NAME+'.sh')
         launcher.write_text('#!/bin/sh\nset -eu\nHERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$HERE/runtime/AbramsRuntime/AbramsRuntime" --launcher "$@"\n')
         launcher.chmod(0o755)
     runtime_files=[{'path':p.relative_to(output).as_posix(),'sha256':sha(p),'size':p.stat().st_size}

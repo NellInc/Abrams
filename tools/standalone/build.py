@@ -19,7 +19,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = '0.1.0-alpha.3'
-BUNDLE_VERSION = '23'
+BUNDLE_VERSION = '24'
+APP_NAME = 'M1 Abrams Battle Tank Remastered'
 REPOSITORY = 'https://github.com/NellInc/Abrams'
 sys.path.insert(0, str(ROOT))
 from tools import package_build
@@ -166,13 +167,13 @@ print(json.dumps(out,indent=2))'''
     manifest={'schema':1,'version':VERSION,'repository':REPOSITORY,'build_id':identity,'originals_included':False,'files':rows,'platform':'macOS arm64',
               'release_ready':False,'minimum_os':'14.0','godot_sha256':sha(godot),'runtime_entry_sha256':sha(ROOT/'tools/standalone/entry.py')}
     (resources/'RUNTIME.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    info={'CFBundleExecutable':'Abrams','CFBundleIdentifier':'org.nellinc.abrams.private-alpha','CFBundleName':'Abrams',
-          'CFBundleDisplayName':'Abrams','CFBundlePackageType':'APPL','CFBundleVersion':BUNDLE_VERSION,'CFBundleShortVersionString':'0.1.0',
+    info={'CFBundleExecutable':'Abrams','CFBundleIdentifier':'org.nellinc.abrams.private-alpha','CFBundleName':APP_NAME,
+          'CFBundleDisplayName':APP_NAME,'CFBundlePackageType':'APPL','CFBundleVersion':BUNDLE_VERSION,'CFBundleShortVersionString':'0.1.0',
           'AbramsReleaseVersion':VERSION,'AbramsRepositoryURL':REPOSITORY,
           'LSMinimumSystemVersion':'14.0','LSArchitecturePriority':['arm64'],'NSHighResolutionCapable':True,'CFBundleIconFile':'Abrams.icns',
           'NSHumanReadableCopyright':'Unofficial fan remaster. Original game copyrights and trademarks remain with their respective owners.'}
     (contents/'Info.plist').write_bytes(plistlib.dumps(info))
-    renderer_info=dict(info,CFBundleExecutable='AbramsRenderer',CFBundleIdentifier='org.nellinc.abrams.renderer',CFBundleName='Abrams Game',CFBundleDisplayName='Abrams Game')
+    renderer_info=dict(info,CFBundleExecutable='AbramsRenderer',CFBundleIdentifier='org.nellinc.abrams.renderer')
     (renderer_app/'Contents/Info.plist').write_bytes(plistlib.dumps(renderer_info))
     # The copied Python framework needs its resource envelope re-sealed; the
     # PyInstaller onedir binary alone carries no framework resource directory seal.

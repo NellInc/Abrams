@@ -83,7 +83,7 @@ jobs:
       - name: Build pinned upstream baseline and reviewed trace core
         run: |
           python -m pip install --disable-pip-version-check PyInstaller==6.22.3 Pillow==12.0.0
-          git -c core.autocrlf=false clone https://github.com/schellingb/dosbox-pure.git "$RUNNER_TEMP/dosbox-pure"
+          git clone --config core.autocrlf=false --config core.eol=lf https://github.com/schellingb/dosbox-pure.git "$RUNNER_TEMP/dosbox-pure"
           git -C "$RUNNER_TEMP/dosbox-pure" checkout --detach 73e03aa145e0549ed4d5a20f8e65532714da33f5
           mkdir -p .runtime/pc-core
           if [[ "$RUNNER_OS" == Windows ]]; then
@@ -138,6 +138,13 @@ jobs:
           fi
           export ABRAMS_DATA_HOME="$RUNNER_TEMP/abrams-smoke-data" ABRAMS_PYTHON="$RUNTIME" ABRAMS_BUNDLE="$APP"
           "$RUNTIME" --status
+          python - <<'PY'
+          import os, pathlib, subprocess
+          from tools.standalone.build import APP_NAME
+          bundle = pathlib.Path('builds') / ('Abrams-' + os.environ['RUNNER_OS'] + '-x86_64')
+          launcher = bundle / (APP_NAME + ('.exe' if os.name == 'nt' else '.sh'))
+          subprocess.run([str(launcher.resolve()), '--invoke', '--status'], check=True, timeout=60)
+          PY
           "$RENDERER" --headless --audio-driver Dummy --path "$APP/kit/godot" --script res://scripts/portable_setup.gd --check-only
           "$RENDERER" --headless --audio-driver Dummy --path "$APP/kit/godot" --script res://scripts/portable_setup.gd -- --setup-smoke --no-audio
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

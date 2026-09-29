@@ -14,6 +14,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var running: Process?
     var busy = false
     var pcReady = false
+    let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "M1 Abrams Battle Tank Remastered"
     let githubURL = URL(string: "https://github.com/NellInc/Abrams")!
     let cream = NSColor(calibratedRed: 0.95, green: 0.91, blue: 0.81, alpha: 1)
     let muted = NSColor(calibratedRed: 0.69, green: 0.73, blue: 0.76, alpha: 1)
@@ -68,12 +69,12 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let menu = NSMenu()
         let appItem = NSMenuItem(); menu.addItem(appItem)
         let appMenu = NSMenu(); appItem.submenu = appMenu
-        let about = appMenu.addItem(withTitle: "About Abrams", action: #selector(showAbout), keyEquivalent: "")
+        let about = appMenu.addItem(withTitle: "About \(appName)", action: #selector(showAbout), keyEquivalent: "")
         about.target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Hide Abrams", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: "Hide \(appName)", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Quit Abrams", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit \(appName)", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let editItem = NSMenuItem(); menu.addItem(editItem)
         let editMenu = NSMenu(title: "Edit"); editItem.submenu = editMenu
         editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
@@ -86,7 +87,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.helpMenu = helpMenu
 
         configure(window)
-        window.title = "Abrams"
+        window.title = appName
         window.delegate = self
         let view = window.contentView!
         let icon = NSImageView(frame: NSRect(x: 30, y: 470, width: 102, height: 102))
@@ -95,7 +96,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         icon.setAccessibilityLabel("Abrams remaster cover artwork")
         view.addSubview(icon)
         label("DYNAMIX ORIGINAL · INDEPENDENT FAN REMASTER", frame: NSRect(x: 152, y: 548, width: 580, height: 18), size: 10, weight: .semibold, color: muted, in: view)
-        label("M1 Abrams Battle Tank", frame: NSRect(x: 150, y: 503, width: 580, height: 40), size: 30, weight: .bold, in: view)
+        label(appName, frame: NSRect(x: 150, y: 503, width: 580, height: 40), size: 25, weight: .bold, in: view)
         label("The original PC simulation, with remastered presentation.", frame: NSRect(x: 152, y: 477, width: 575, height: 24), size: 14, color: muted, in: view)
         label("YOUR GAME FILES", frame: NSRect(x: 32, y: 433, width: 400, height: 18), size: 11, weight: .semibold, color: muted, in: view)
         let pc = card(NSRect(x: 30, y: 319, width: 700, height: 105), in: view)
@@ -252,11 +253,11 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc func showAbout() {
         if let aboutWindow { aboutWindow.makeKeyAndOrderFront(nil); return }
         let panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 620, height: 570), styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        configure(panel); panel.title = "About Abrams"
+        configure(panel); panel.title = "About \(appName)"
         let view = panel.contentView!
         let icon = NSImageView(frame: NSRect(x: 28, y: 435, width: 90, height: 100))
         icon.image = NSApp.applicationIconImage; icon.imageScaling = .scaleProportionallyUpOrDown; view.addSubview(icon)
-        label("M1 Abrams Battle Tank", frame: NSRect(x: 140, y: 495, width: 452, height: 34), size: 26, weight: .bold, in: view)
+        label(appName, frame: NSRect(x: 140, y: 495, width: 452, height: 34), size: 20, weight: .bold, in: view)
         label("Independent, unofficial fan remaster", frame: NSRect(x: 142, y: 467, width: 447, height: 25), size: 14, color: muted, in: view)
         label(version, frame: NSRect(x: 142, y: 443, width: 445, height: 20), size: 12, color: muted, in: view)
         label("Dedicated to David “Ming” Kenny", frame: NSRect(x: 32, y: 400, width: 555, height: 29), size: 19, weight: .semibold, in: view)

@@ -411,3 +411,21 @@ request to match the intended replay before declaring a complete route.
 Working if: numerical oracles remain byte-identical, mask mutations invalidate
 the appropriate proof, native output remains unchanged and contaminated input
 routes cannot pass the benchmark's acceptance flag.
+
+## Further mapper refinement, 29 September 2026
+
+The mapper now precomputes immutable face-basis coefficients in float64 and
+retains one exact transformed-position result per validated catalogue face.
+Anchors, primitive identity, palette acceptance and transformation inputs are
+checked before reuse. Motion, UVs, clipping and the original source execution
+remain live. Catalogue reloads reset the bounded cache.
+
+The retained numerical oracle passes 68,150 checks across 482,759 facets;
+32 production-viewer scenario/station replays preserve all 39,321,600 pixels.
+Receipts: `artifacts/finish-all-20260929/mapping-coefficients.log` and
+`scenario-frames/pixel-equivalence.json`. The corpus timings are mapper
+microbenchmarks, not a new gameplay FPS measurement.
+
+Fresh native rate attempts could not acquire the benchmark's required focus
+and ended at their deadline. They supply no accepted new FPS result. The last
+accepted moving-route result remains 40.12 fps; consistent 60 fps remains open.

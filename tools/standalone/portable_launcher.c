@@ -30,13 +30,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR arguments, int
                                   NULL, executable, &startup, &child);
     free(runtime); free(command);
     if (!started) {
-        MessageBoxW(NULL, L"The bundled runtime could not start. Keep the complete Abrams folder together.", L"Abrams", MB_OK | MB_ICONERROR);
+        MessageBoxW(NULL, L"The bundled runtime could not start. Keep the complete Abrams folder together.", L"M1 Abrams Battle Tank Remastered", MB_OK | MB_ICONERROR);
         return 1;
     }
     WaitForSingleObject(child.hProcess, INFINITE);
     DWORD code = 1;
     GetExitCodeProcess(child.hProcess, &code);
     CloseHandle(child.hThread); CloseHandle(child.hProcess);
-    if (code) MessageBoxW(NULL, L"Abrams could not start or the game reported an error. Check the player data logs and restore an intact release folder.", L"Abrams", MB_OK | MB_ICONERROR);
+    if (code) MessageBoxW(NULL, L"Abrams could not start or the game reported an error. Check the player data logs and restore an intact release folder.", L"M1 Abrams Battle Tank Remastered", MB_OK | MB_ICONERROR);
     return (int)code;
 }

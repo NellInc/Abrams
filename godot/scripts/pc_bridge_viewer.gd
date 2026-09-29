@@ -113,7 +113,7 @@ func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, p
 	return frontend
 
 func _initialize() -> void:
-	root.title = "Abrams: original PC / Godot bridge research"
+	root.title = str(ProjectSettings.get_setting("application/config/name")) + ": bridge research"
 	root.size = Vector2i(1440, 900)
 	root.min_size = Vector2i(1100, 750)
 	root.close_requested.connect(_close)
@@ -130,7 +130,7 @@ func _initialize() -> void:
 	trace_mode = boot_mode or "--trace" in OS.get_cmdline_user_args()
 	play_mode = trace_mode and "--play" in args and "--compare" not in args
 	if play_mode:
-		root.title = "Abrams Battle Tank"
+		root.title = ProjectSettings.get_setting("application/config/name")
 		root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 		root.content_scale_factor = 1.0
 		root.min_size = Vector2i(640,480)
@@ -320,7 +320,7 @@ func _label(text: String, size: int) -> Label:
 	return label
 
 func _configure_window() -> void:
-	if play_mode: root.title = "Abrams Battle Tank · Fan Remaster"
+	if play_mode: root.title = ProjectSettings.get_setting("application/config/name")
 	# Startup project overrides are applied after SceneTree._initialize(). Apply
 	# the requested native size once the real window exists, then trust its actual
 	# size signals (including OS limits, HiDPI and fullscreen transitions).

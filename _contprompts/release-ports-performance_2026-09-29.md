@@ -77,3 +77,11 @@ Nell reports that notarytool credentials were validated and saved in Keychain as
 Native run 36639603006 produced a fully smoke-checked Linux package. Windows passed all original-free bridge/checkpoint/native-core checks, then source-closure reading failed with cp1252 UnicodeDecodeError. Root makes the CI interpreter use PYTHONUTF8=1 and pins X utf8 in the PyInstaller native bootloader/config cache, following the installed tool's supported interpreter-option interface. Windows setup explicitly rejects a non-UTF-8 frozen runtime, so its native setup smoke cannot hide a missing option. No system-wide locale or user environment is changed. Two targeted regressions added; 51 focused tests pass (native opt-in smoke skipped locally).
 
 Notarization Keychain profile Abrams is ready. Submission approval question remains unanswered; no Apple upload has been made.
+
+## Formal application name and startup
+
+Nell requests removing the Godot splash and a more formal app name. Root selects M1 Abrams Battle Tank Remastered, consistently in native metadata, launcher/window/About titles and player launcher filenames. Preserve bundle identifiers and the existing Abrams profile paths; preserve Godot user:// through its original directory. Use a black engine startup, no logo and no artificial minimum display delay. Rebuild all three platform candidates before shipping.
+
+Nell answered the Apple submission question: “When finished, soon, some tasks remaining,”. Submission remains on hold while these tasks are unfinished. Credentials in Keychain profile Abrams are ready; no Apple upload has occurred.
+
+Native run 36640764180 assembled Windows successfully, then corresponding-source integrity rejected a CRLF-converted upstream workflow file. The clone's temporary -c core.autocrlf=false did not persist for the later pinned checkout. Set repository-local clone config core.autocrlf=false and core.eol=lf. Keep the source byte oracle strict. Linux passed.

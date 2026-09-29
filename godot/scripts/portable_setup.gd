@@ -12,7 +12,7 @@ var import_kind := ""
 var runtime := OS.get_environment("ABRAMS_PYTHON")
 
 func _initialize() -> void:
-    root.title = "Abrams: original-game setup"
+    root.title = ProjectSettings.get_setting("application/config/name")
     root.size = Vector2i(820, 640)
     root.min_size = Vector2i(640, 550)
     root.close_requested.connect(_close)
@@ -29,7 +29,7 @@ func _initialize() -> void:
     var column := VBoxContainer.new()
     column.add_theme_constant_override("separation", 18)
     margin.add_child(column)
-    _label(column, "M1 Abrams Battle Tank", 30)
+    _label(column, root.title, 26)
     _label(column, "Remastered by Nell Watson\nOriginal game by Dynamix\nDedicated to David “Ming” Kenny", 18)
     _label(column, "A separate, supported original PC game is required. Choose its extracted folder. An original Genesis ROM is optional. Neither is included.", 16)
     message = _label(column, "Checking local installation…", 16)
@@ -116,7 +116,7 @@ func _completed(code: int, output: String, was_play: bool) -> void:
 
 func _about() -> void:
     var about := AcceptDialog.new()
-    about.title = "About Abrams"
+    about.title = "About " + str(ProjectSettings.get_setting("application/config/name"))
     about.dialog_text = "Remastered by Nell Watson\nOriginal game by Dynamix\nDedicated to David “Ming” Kenny\n\nIndependent, unofficial fan remaster. Original copyrights and trademarks remain with their respective rights holders. This project asserts no ownership or moral rights over the original game content and is not affiliated with or endorsed by its rights holders.\n\nRemaster contributions are free under the licences supplied in the notices folder. Original game content is required separately.\n\nhttps://github.com/NellInc/Abrams"
     root.add_child(about)
     about.popup_centered(Vector2i(600, 420))
