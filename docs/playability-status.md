@@ -171,7 +171,7 @@ Each additional parity claim requires its own source comparison and runtime evid
 
 ## GitHub alpha candidate, 29 September 2026
 
-Version 0.1.0-alpha.1 integrates Modern, all current first-person refinements,
+Version 0.1.0-alpha.2 integrates Modern, all current first-person refinements,
 exact geometry/cockpit-proof performance reuse, and a native setup/About interface.
 The release requires separately imported PC files, with optional Genesis.
 Neither original game is bundled. The repository stays private.

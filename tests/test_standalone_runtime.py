@@ -86,6 +86,16 @@ class StandaloneRuntimeTests(unittest.TestCase):
         path.write_bytes(b'important campaign and profile state')
         return path
 
+    def test_sha_streams_empty_and_multiblock_files_without_python311_api(self):
+        path = self.root / 'hash-input'
+        # Python 3.10 has no file_digest; newer interpreters must not hide that.
+        with patch.object(hashlib, 'file_digest', None, create=True):
+            for length in [0, 1, 1024 * 1024, 1024 * 1024 + 257]:
+                with self.subTest(length=length):
+                    data = (bytes(range(256)) * ((length + 255) // 256))[:length]
+                    path.write_bytes(data)
+                    self.assertEqual(runtime.sha(path), digest(data))
+
     def test_first_run_has_no_pc_and_requires_pc_before_genesis(self):
         self.assertFalse(runtime.status(self.bundle, self.home)['pc_installed'])
         with self.assertRaisesRegex(ValueError, 'PC game folder'):

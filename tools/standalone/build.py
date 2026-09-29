@@ -17,8 +17,8 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = '0.1.0-alpha.1'
-BUNDLE_VERSION = '21'
+VERSION = '0.1.0-alpha.2'
+BUNDLE_VERSION = '22'
 REPOSITORY = 'https://github.com/NellInc/Abrams'
 sys.path.insert(0, str(ROOT))
 from tools import package_build
