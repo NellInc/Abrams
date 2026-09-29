@@ -14,6 +14,10 @@ permissions:
   contents: read
 jobs:
   portable:
+    # Owner-approved: GitHub requires write-level release access for a draft
+    # asset. Only the input-download step receives this token in its environment.
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -25,7 +29,6 @@ jobs:
         shell: bash
     env:
       PYTHONDONTWRITEBYTECODE: '1'
-      GH_TOKEN: ${{ github.token }}
       INPUT_ASSET: ${{ inputs.input_asset_id }}
       INPUT_SHA256: ${{ inputs.input_sha256 }}
     steps:
@@ -34,7 +37,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: '3.12.11'
+          python-version: '3.12.10'
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
         if: runner.os == 'Windows'
         with:
@@ -47,6 +50,8 @@ jobs:
           echo 'C:\msys64\mingw64\bin' >> "$GITHUB_PATH"
           echo 'C:\msys64\usr\bin' >> "$GITHUB_PATH"
       - name: Retrieve reviewed original-free input asset
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           [[ "$INPUT_ASSET" =~ ^[0-9]+$ ]]
           [[ "$INPUT_SHA256" =~ ^[a-f0-9]{64}$ ]]
