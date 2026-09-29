@@ -40,7 +40,8 @@ class PcBridgeTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.reader = SimStateReader(ROOT / "GAME/SIM.EXE")
+        source = ROOT / "GAME/SIM.EXE"
+        cls.reader = SimStateReader(source) if source.is_file() else None
 
     def fixture(self):
         ram = bytearray(640 * 1024)
@@ -67,6 +68,7 @@ class PcBridgeTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,'outside original'):
                     lock_saves(ROOT/source/'forbidden-saves')
 
+    @unittest.skipUnless((ROOT / 'GAME/SIM.EXE').is_file(), 'Requires separately supplied original PC executable')
     def test_anchor_rejects_absent_incomplete_and_ambiguous_images(self):
         self.assertIsNone(self.reader.read(bytes(640 * 1024)))
         with self.assertRaises(ValueError):
@@ -80,6 +82,7 @@ class PcBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ambiguous"):
             self.reader.locate(ram)
 
+    @unittest.skipUnless((ROOT / 'GAME/SIM.EXE').is_file(), 'Requires separately supplied original PC executable')
     def test_read_only_state_uses_original_numeric_conventions(self):
         ram, ds, body, turret = self.fixture()
         ram[ds + body + 26], ram[ds + turret + 11] = 185, 71
@@ -93,6 +96,7 @@ class PcBridgeTests(unittest.TestCase):
         self.assertEqual(state["position_units"], "unverified-original-units")
         self.assertEqual(bytes(ram), before)
 
+    @unittest.skipUnless((ROOT / 'GAME/SIM.EXE').is_file(), 'Requires separately supplied original PC executable')
     def test_uninitialized_or_unknown_fields_fail_closed(self):
         for offset, value in ((0x7999, 0), (0x799B, 65535)):
             ram, ds, *_ = self.fixture()

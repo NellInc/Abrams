@@ -122,7 +122,7 @@ jobs:
       - name: Assemble self-contained app
         run: |
           PYTHON=$(python -c 'import sys;print(sys.executable)')
-          python tools/standalone/portable_build.py --output "builds/Abrams-$RUNNER_OS-x86_64" --godot "$GODOT_PORTABLE" --python "$PYTHON" --cache "$RUNNER_TEMP/portable-freeze"
+          python tools/standalone/portable_build.py --output "builds/Abrams-$RUNNER_OS-x86_64" --godot "$GODOT_PORTABLE" --python "$PYTHON" --cache "$RUNNER_TEMP/portable-freeze" --core-source "$RUNNER_TEMP/dosbox-pure"
           if [[ "$RUNNER_OS" == Windows ]]; then SUFFIX=.dll; else SUFFIX=.so; fi
           python -m tools.standalone.source_bundle --core-suffix "$SUFFIX" --source "$RUNNER_TEMP/dosbox-pure" --output "builds/dosbox-pure-abrams-source-$RUNNER_OS-x86_64.tar.gz"
       - name: Frozen setup and About smoke, audio disabled

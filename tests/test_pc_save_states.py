@@ -3,9 +3,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 from tools.pc_bridge_host import validate_command
-from tools.pc_state_store import StateStore, atomic_write
+from tools.pc_state_store import StateStore, atomic_write, sync_parent
 
 
 class SaveStateTests(unittest.TestCase):
@@ -31,6 +32,20 @@ class SaveStateTests(unittest.TestCase):
                 with self.assertRaises(ValueError): validate_command({'op':op,'id':1,'slot':1}|changes)
         validate_command({'op':'load_state','id':1,'slot':0})
         with self.assertRaises(ValueError): validate_command({'op':'save_state','id':1,'slot':0})
+
+    def test_windows_parent_sync_does_not_open_a_directory(self):
+        with patch('tools.pc_state_store.os.name', 'nt'), patch('tools.pc_state_store.os.open') as opened:
+            sync_parent(self.root)
+        opened.assert_not_called()
+
+    def test_atomic_replace_failure_preserves_previous_and_cleans_temporary(self):
+        target = self.root / 'checkpoint'
+        target.write_bytes(b'previous')
+        with patch('tools.pc_state_store.os.replace', side_effect=PermissionError('busy destination')):
+            with self.assertRaisesRegex(PermissionError, 'busy destination'):
+                atomic_write(target, b'new')
+        self.assertEqual(target.read_bytes(), b'previous')
+        self.assertEqual(list(self.root.glob('.checkpoint-*')), [])
 
     def test_complete_roundtrip_previous_and_fixed_slots(self):
         self.store.write(1,self.capture)

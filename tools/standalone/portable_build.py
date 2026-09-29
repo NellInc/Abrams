@@ -61,11 +61,11 @@ def inspect_core():
     return manifest
 
 
-def notices(output, godot, python):
+def notices(output, godot, python, core_source):
     directory=output/'notices';directory.mkdir()
     for name in ('LICENSE','NOTICE.md'):shutil.copyfile(ROOT/name,directory/name)
     shutil.copytree(ROOT/'LICENSES',directory/'LICENSES')
-    shutil.copyfile(ROOT/'.runtime/dosbox-pure-source/LICENSE',directory/'DOSBox-Pure-LICENSE.txt')
+    shutil.copyfile(core_source/'LICENSE',directory/'DOSBox-Pure-LICENSE.txt')
     subprocess.run([str(godot),'--headless','--audio-driver','Dummy','--path',str(ROOT/'godot'),
                     '--script',str(ROOT/'tools/standalone/licenses.gd'),'--',str(directory/'Godot.json')],check=True)
     code='''import importlib.metadata as m,json,pathlib,sys,sysconfig
@@ -81,12 +81,14 @@ print(json.dumps(out,indent=2))'''
     (directory/'Python-runtime.json').write_bytes(subprocess.check_output([str(python),'-c',code]))
 
 
-def build(output,godot,python,cache):
+def build(output,godot,python,cache,core_source):
     if sys.platform not in ('win32','linux') or platform.machine().lower() not in ('x86_64','amd64'):
         raise ValueError('Run on native Windows or Linux x86_64')
     if output.exists():raise ValueError('Output must be a new directory')
     if shutil.disk_usage(ROOT).free<2*1024**3:raise ValueError('At least 2 GiB free build space required')
     inspect_core()
+    commit=subprocess.check_output(['git','-C',str(core_source),'rev-parse','HEAD'],text=True).strip()
+    if commit != '73e03aa145e0549ed4d5a20f8e65532714da33f5':raise ValueError('Unpinned core source for notices')
     rows=payload(ROOT)
     frozen=freeze(cache,python,target=sys.platform)
     output.mkdir(parents=True)
@@ -98,7 +100,7 @@ def build(output,godot,python,cache):
     renderer=output/'renderer'/('AbramsRenderer.exe' if os.name=='nt' else 'AbramsRenderer')
     renderer.parent.mkdir();shutil.copyfile(godot,renderer);renderer.chmod(0o755)
     # Bundle the full Godot Windows executable, not its tiny console wrapper.
-    notices(output,godot,python)
+    notices(output,godot,python,core_source)
     if os.name=='nt':
         icon=cache/'Abrams.ico'
         subprocess.run([str(python),'-c','from PIL import Image;import sys;Image.open(sys.argv[1]).save(sys.argv[2],format="ICO",sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])',str(ROOT/'branding/abrams-icon.png'),str(icon)],check=True)
@@ -135,11 +137,12 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output',type=Path);p.add_argument('--godot',type=Path);p.add_argument('--python',type=Path)
     p.add_argument('--cache',type=Path,default=ROOT/'.runtime/portable-build-cache');p.add_argument('--verify',type=Path)
+    p.add_argument('--core-source',type=Path,default=ROOT/'.runtime/dosbox-pure-source')
     a=p.parse_args()
     if a.verify:result=verify(a.verify.resolve())
     else:
         if not all((a.output,a.godot,a.python)):p.error('--output, --godot and --python required')
-        result=build(a.output.resolve(),a.godot.resolve(),a.python.absolute(),a.cache.resolve())
+        result=build(a.output.resolve(),a.godot.resolve(),a.python.absolute(),a.cache.resolve(),a.core_source.resolve())
     print(json.dumps(result,indent=2))
 
 if __name__=='__main__':main()

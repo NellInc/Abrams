@@ -21,6 +21,14 @@ LIMITS = {'state.bin': MAX_STATE, 'resume.json': MAX_RESUME, 'campaign.zip': MAX
 def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 
+def sync_parent(path):
+    # Windows' CRT cannot open directories for fsync. The temporary file is
+    # still flushed before same-directory replacement on every platform.
+    if os.name == 'nt': return
+    directory = os.open(path, os.O_RDONLY)
+    try: os.fsync(directory)
+    finally: os.close(directory)
+
 def atomic_write(path, raw):
     path = Path(path)
     fd, name = tempfile.mkstemp(prefix='.' + path.name + '-', dir=path.parent)
@@ -30,9 +38,7 @@ def atomic_write(path, raw):
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(name, path)
-        directory = os.open(path.parent, os.O_RDONLY)
-        try: os.fsync(directory)
-        finally: os.close(directory)
+        sync_parent(path.parent)
     finally:
         if os.path.exists(name): os.unlink(name)
 
