@@ -107,3 +107,47 @@ python3 -m unittest tests.test_pc_effect_inventory tests.test_genesis_effects -v
 ```
 
 Status: local only. No publication or redistribution authorization is inferred.
+
+## Modern ownership refinement (2026-09-29)
+
+All 20 existing authored donors were inspected against the complete original
+contact sheet. Their contours already contain high-resolution artwork, so no
+replacement PNG or new phase was introduced. The Modern ownership pass had
+reapplied the original coarse pixel silhouette to every authored effect. The
+previous native effect test exercised the ordinary presentation and therefore
+missed this Modern-only restriction.
+
+The ownership pass now retains original sprite coverage and unions the verified
+donor's alpha-at-least-0.5 silhouette at the same object painter slot. Its quad
+uses the mapping's original bounds, clipping, atlas registration and identity
+gates. Later objects still overwrite ownership. Original coverage is retained
+so an authored transparent hole cannot reveal a previously hidden Modern actor.
+Round-command ownership keeps its separate flag. No simulation state or timing
+is added, and the original bitmap fallback remains available.
+
+The native effect test accepts `--modern` to exercise all 64 bindings with the
+real Modern catalogue. It compares actual pixels with independent bilinear
+samples, checks retained original coverage, and counts new contour pixels outside
+the coarse source mask. Both painter orders, clipping, source packet preservation,
+recorded phase selection and unknown-palette fallback remain covered.
+
+The exact resource identities are established, while the gameplay names of every
+bitmap are not. Shapes 186 and 187 own the two five-LOD starburst families;
+SAGGER's catalogue shape 161 is the crew. A Sagger/AX missile label is not inferred
+from visual resemblance. The correction applies to every verified bitmap.
+
+```sh
+./tools/godot.sh --audio-driver Dummy --disable-render-loop \
+  --script res://tests/test_pc_effect_art.gd -- --native --native-scale 5 \
+  --modern --output "$PWD/artifacts/modern-environment-polish-20260929/effects/native-modern-5x"
+```
+
+Local artifacts: `artifacts/modern-environment-polish-20260929/effects/`.
+Working if: Modern exposes authored high-resolution contours within the same
+source rectangle, preserves original ownership under alpha holes and later
+occluders, and passes the existing source identity and phase checks.
+
+Native validation completed for Modern at 1x and 5x and ordinary presentation at 5x.
+All 64 variants remain visible. The Modern 5x run records 24,537 authored contour
+pixels outside the coarse source mask, 206,550 retained original ownership pixels,
+and maximum RGB error 1 across 628,987 independent samples, with zero errors.

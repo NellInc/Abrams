@@ -17,6 +17,9 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+VERSION = '0.1.0-alpha.1'
+BUNDLE_VERSION = '21'
+REPOSITORY = 'https://github.com/NellInc/Abrams'
 sys.path.insert(0, str(ROOT))
 from tools import package_build
 from tools.standalone.runtime import CONTENT_SHA, ROM_SHA, sha
@@ -99,7 +102,7 @@ def verify(bundle):
     subprocess.run(['codesign','--verify','--deep','--strict',str(bundle)],check=True,capture_output=True)
     return {'schema':1,'bundle':str(bundle),'build_id':manifest['build_id'],'files':count,'bytes':total,
             'mach_o_files':machos,'originals_included':False,'external_non_system_dylibs':0,'release_ready':False,
-            'rights':'Local private alpha. Derived asset redistribution not cleared. Ad-hoc signature only.'}
+            'rights':'Unofficial fan remaster. Original and third-party rights remain with their holders. See NOTICE.md. Ad-hoc signature only.'}
 
 
 def build(output, godot, python, cache):
@@ -135,6 +138,9 @@ def build(output, godot, python, cache):
     (renderer_app/'Contents/Resources').mkdir()
     shutil.copyfile(icon_cache/'Abrams.icns',renderer_app/'Contents/Resources/Abrams.icns')
     notices=resources/'notices';notices.mkdir()
+    for name in ['LICENSE','NOTICE.md']:
+        shutil.copyfile(ROOT/name,notices/name)
+    shutil.copytree(ROOT/'LICENSES',notices/'LICENSES')
     subprocess.run([str(godot),'--headless','--path',str(ROOT/'godot'),'--script',str(ROOT/'tools/standalone/licenses.gd'),'--',str(notices/'Godot.json')],check=True)
     shutil.copyfile(ROOT/'.runtime/dosbox-pure-source/LICENSE',notices/'DOSBox-Pure-LICENSE.txt')
     # Read licence texts from the selected build interpreter's distributions.
@@ -150,13 +156,14 @@ else:raise RuntimeError('Python licence text not found')
 print(json.dumps(out,indent=2))'''
     (notices/'Python-runtime.json').write_bytes(subprocess.check_output([str(python),'-c',notice_code]))
     identity=hashlib.sha256(json.dumps({'files':rows,'godot':sha(godot),'frozen':json.loads((cache/'frozen.json').read_text())},sort_keys=True).encode()).hexdigest()[:20]
-    manifest={'schema':1,'build_id':identity,'originals_included':False,'files':rows,'platform':'macOS arm64',
+    manifest={'schema':1,'version':VERSION,'repository':REPOSITORY,'build_id':identity,'originals_included':False,'files':rows,'platform':'macOS arm64',
               'release_ready':False,'minimum_os':'14.0','godot_sha256':sha(godot),'runtime_entry_sha256':sha(ROOT/'tools/standalone/entry.py')}
     (resources/'RUNTIME.json').write_text(json.dumps(manifest,indent=2)+'\n')
     info={'CFBundleExecutable':'Abrams','CFBundleIdentifier':'org.nellinc.abrams.private-alpha','CFBundleName':'Abrams',
-          'CFBundleDisplayName':'Abrams','CFBundlePackageType':'APPL','CFBundleVersion':'1','CFBundleShortVersionString':'0.1',
+          'CFBundleDisplayName':'Abrams','CFBundlePackageType':'APPL','CFBundleVersion':BUNDLE_VERSION,'CFBundleShortVersionString':'0.1.0',
+          'AbramsReleaseVersion':VERSION,'AbramsRepositoryURL':REPOSITORY,
           'LSMinimumSystemVersion':'14.0','LSArchitecturePriority':['arm64'],'NSHighResolutionCapable':True,'CFBundleIconFile':'Abrams.icns',
-          'NSHumanReadableCopyright':'Local private alpha. Original game copyrights remain with their respective owners.'}
+          'NSHumanReadableCopyright':'Unofficial fan remaster. Original game copyrights and trademarks remain with their respective owners.'}
     (contents/'Info.plist').write_bytes(plistlib.dumps(info))
     renderer_info=dict(info,CFBundleExecutable='AbramsRenderer',CFBundleIdentifier='org.nellinc.abrams.renderer',CFBundleName='Abrams Game',CFBundleDisplayName='Abrams Game')
     (renderer_app/'Contents/Info.plist').write_bytes(plistlib.dumps(renderer_info))

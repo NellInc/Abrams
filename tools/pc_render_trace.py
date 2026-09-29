@@ -17,7 +17,7 @@ try:
     from tools.pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
     from tools.inspect_shapes import inspect_shapes
     from tools.inspect_scenarios import decode_resource
-    from tools.pc_materials import read_materials
+    from tools.pc_materials import read_materials, material_pixel
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from tools.pc_audio_events import AudioEvents
     from tools.pc_orientation import OrientationRuns
@@ -33,7 +33,7 @@ except ModuleNotFoundError:
     from pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
     from inspect_shapes import inspect_shapes
     from inspect_scenarios import decode_resource
-    from pc_materials import read_materials
+    from pc_materials import read_materials, material_pixel
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from pc_audio_events import AudioEvents
     from pc_orientation import OrientationRuns
@@ -244,9 +244,8 @@ class Collector:
             elif event == 18:
                 if self.current and self.current.get('kind') == 'sprite' and self.current['sprite_status'] == 'pending':
                     self.current['sprite_status'] = 'rejected-before-blit'
-            elif event == 8:
-                self.active['unsupported'].append({'kind': 'opaque_command', 'command_offset': regs['di'],
-                    'pointer': self.current['pointer'] if self.current else None, 'command': list(raw)})
+            elif event in (8,46,47,48):
+                self.observe_round_form(event, regs, raw, offset)
             elif event == 5:
                 self.composition_cx = regs['cx']
             elif event == 2:
@@ -258,7 +257,7 @@ class Collector:
                     'static_path': byte(0x1CDF), 'matrix_mode': byte(0x1CDE), 'matrix': matrix,
                     'view_origin': words(0x1426, 3), 'world_delta': words(0x142C, 3),
                     'packed_shift': byte(0x1425), 'composition_cx': self.composition_cx,
-                    'primitive_ids': [], 'polygons': []}
+                    'primitive_ids': [], 'polygons': [], 'round_forms': [], 'draw_order': []}
                 if not self.current['static_path']:
                     basis = object_matrix(obj['orientation_u8'], self.sine, self.cosine)
                     expected, mode = compose(basis, orientation_mode(obj['orientation_u8']),
@@ -281,6 +280,7 @@ class Collector:
                     actual = [words(at + index, 1)[0] for at in (0x1519, 0x1619, 0x1719)]
                     if actual != expected: raise ValueError(f'original vertex differs for shape {shape["index"]}, ref {encoded}: {actual} != {expected}')
                     self.vertices_checked += 1
+                self.current.setdefault('draw_order', []).append({'kind':'polygon','index':len(self.current['polygons'])})
                 self.current['polygons'].append({'primitive': self.current['primitive_ids'][-1] if self.current['primitive_ids'] else None,
                     'colors': [byte(0x359E), byte(0x359D)],
                     'fill_mode': byte(0x359C),
@@ -290,6 +290,8 @@ class Collector:
                 self.active['unsupported'].append({'kind': 'unattributed_polygon'})
             elif event == 4:
                 for obj in self.active.get('objects', []):
+                    if any(form['status'] in ('pending','observing') for form in obj.get('round_forms', [])):
+                        self.active['unsupported'].append({'kind':'incomplete_round_form','pointer':obj['pointer']})
                     if obj.get('sprite_status') == 'pending':
                         self.active['unsupported'].append({'kind': 'incomplete_sprite', 'pointer': obj['pointer']})
                 self.passes.append(self.active)
@@ -300,7 +302,75 @@ class Collector:
         except Exception as error:
             self.error = error
             self.active = None
+            self.current = None
 
+
+    def observe_round_form(self, event, regs, raw, offset):
+        """Consume only observed original round-form calls, never rebuild poses."""
+        obj = self.current
+        if not obj or obj.get('kind') == 'sprite':
+            if event == 8:
+                self.active['unsupported'].append({'kind':'opaque_command','command_offset':regs['di'],
+                    'pointer':obj['pointer'] if obj else None,'command':list(raw)})
+            else:
+                self.active['unsupported'].append({'kind':'unattributed_round_form','event':event})
+            return
+        forms = obj.setdefault('round_forms', [])
+        if event == 8:
+            if len(raw) != 4: raise ValueError('invalid round-form command length')
+            shape = self.shapes[obj['shape_index']]
+            command = next((c for c in shape['opaque_commands'] if c['offset']==regs['di']), None)
+            if command is None or bytes.fromhex(command['hex']) != raw:
+                raise ValueError('round-form command differs from source')
+            if forms and forms[-1]['status'] in ('pending','observing'):
+                raise ValueError('nested round-form observation')
+            if len(forms) >= 32: raise ValueError('too many source round forms')
+            forms.append({'command_offset':regs['di'],'command':list(raw),'status':'pending','spans':[]})
+            return
+        if not forms or forms[-1]['command_offset'] != offset:
+            raise ValueError('round-form event lacks matching command')
+        form=forms[-1]
+        if event == 47:
+            if form['status'] == 'pending': form['status']='rejected-before-raster'
+            elif form['status'] == 'observing': form['status']='observed'
+            else: raise ValueError('duplicate round-form return')
+            return
+        expected_length=30 if event==46 else 18
+        if len(raw)!=expected_length: raise ValueError('invalid round-form event length')
+        values=list(struct.unpack('<'+'H'*(len(raw)//2),raw))
+        if values[:3] != [1,offset,obj['pointer']]:raise ValueError('round-form owner/schema mismatch')
+        signed=lambda x:(x+32768)%65536-32768
+        if event==46:
+            if form['status']!='pending':raise ValueError('duplicate round-form raster entry')
+            if values[10]!=self.active['page_offset']:raise ValueError('round-form page mismatch')
+            if list(raw[26:30])!=form['command']:raise ValueError('round-form raster command mismatch')
+            if values[12]&255 != 1:raise ValueError('unsupported unclipped world round form')
+            if values[11]&255 > 15 or values[11]>>8 > 15:raise ValueError('invalid round-form color')
+            clip=list(map(signed,values[6:10]))
+            if not (0<=clip[0]<=clip[2]<320 and 0<=clip[1]<=clip[3]<200):raise ValueError('invalid round-form clip')
+            radius=min(max(0,signed(values[3])),102)
+            form.update({'status':'observing','center':list(map(signed,values[4:6])),
+                         'radius_raw':values[3],'radius':radius,'horizontal_radius':radius+radius//4,
+                         'colors':[values[11]&255,values[11]>>8],'fill_mode':values[12]>>8,
+                         'clip':clip,'page_offset':values[10]})
+            obj.setdefault('draw_order',[]).append({'kind':'round_form','index':len(forms)-1})
+        else:
+            if form['status']!='observing':raise ValueError('round-form span outside raster lifetime')
+            if values[6]!=form['page_offset']:raise ValueError('round-form span page mismatch')
+            y,left=map(signed,values[3:5]);width=values[5]
+            if width>320:raise ValueError('round-form span too wide')
+            clip=form['clip'];right=min(left+width,clip[2]+1);left=max(left,clip[0])
+            if clip[1]<=y<=clip[3] and left<right:
+                if len(form['spans'])>=64000:raise ValueError('too many round-form spans')
+                # The original span receives AX/DX pattern words. Convert to
+                # exact palette-index runs so a renderer need not infer dither.
+                words=values[7:9];start=left;color=material_pixel(words,left,y)
+                for x in range(left+1,right+1):
+                    following=material_pixel(words,x,y) if x<right else -1
+                    if following!=color:
+                        form['spans'].append({'y':y,'left':start,'right':x,'color':color})
+                        start=x;color=following
+                if len(form['spans'])>64000:raise ValueError('too many round-form color runs')
 
     @staticmethod
     def binary_mask(raw):
@@ -461,3 +531,5 @@ class Collector:
         # A zero load segment only disables instruction hooks. VGA callbacks
         # must also be removed before this Python callback can be released.
         core.core.abrams_trace_configure(0, CALLBACK())
+        self.active = None
+        self.current = None

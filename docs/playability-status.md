@@ -41,10 +41,10 @@ checkpoints without that data retain a conservative PC-art fallback. See
 | Smoke-exhaustion warnings | `artifacts/pc-warning-trace-03/comparison.json`: 1,060 original frames equal the baseline; `pc-warning-native-02/report.json`: 7,549 checks, zero errors | Two native generated warning starts, one muted consumption and no F5 catch-up, with Genesis cockpit and portrait active. The other seven new warning/outcome calls lack live occurrence proof |
 | Radio arrival and retrieval | `artifacts/pc-radio-trace-01/comparison.json`: 3,716 original frames equal the baseline; `pc-radio-native-01/report.json`: 26,142 checks, zero errors | One attention sample, two generated voice starts and one muted retrieval; no F5 catch-up. All seven source captions have dry Gemini takes and wording QA; six lack live occurrence proof |
 | Shift+3 | `artifacts/pc-modifiers-trace-01/report.json`: all 530 RAM/video/input records equal the unmodified core | Original speed index cycles 0, 1, 2. Original scancode polling also selects AX. This side effect is preserved |
-| Plain vehicles | `artifacts/pc-vehicle-flat-play-01/verification.json`: original 1,679-frame close approach, zero textured vehicle polygons | Replacement models are deferred |
+| Plain vehicles | `artifacts/pc-vehicle-flat-play-01/verification.json`: original 1,679-frame close approach, zero textured vehicle polygons | Historical non-Modern capture; optional low-poly Modern geometry is now implemented locally |
 | Adjustable audio mix | `artifacts/pc-audio-menu-native-04/menu-report.json`: all 15 checks pass using real macOS menu clicks; `pc-audio-mix-native-02/mix-report.json`: 1,020 original input/RAM/video records unchanged during nine mix changes; current five-channel mix unit gate: 110 checks | Native macOS verified; non-native menu layout rendered on macOS, other OS acceptance remains open |
 | Full checkpoints | `artifacts/finish-20260928/root-checkpoint-final/report.json`: 26/26 root checks pass, including uninterrupted-video/ownership comparison, observer-on/off native parity, cross-process continuation, campaign restoration and failed-load rollback | Validated host ownership persists; fresh scanlines rebuild masks. The first restored video transition is held. States remain pinned to core/game/platform |
-| Live graphics and fast forward | `artifacts/pc-conveniences-native-02/conveniences-report.json`: 113 checks, zero errors; production menu callbacks, save/load and identical source RAM/video after 15 normal frames versus 1+2+4+8-frame requests | Bounded input route; no mission victory claim. Modern is deliberately unavailable |
+| Live graphics and fast forward | `artifacts/pc-conveniences-native-02/conveniences-report.json`: 113 checks, zero errors; production menu callbacks, save/load and identical source RAM/video after 15 normal frames versus 1+2+4+8-frame requests | Bounded input route; no mission victory claim. Modern was unavailable in that earlier capture |
 | Graphics transition regression | `artifacts/finish-20260928/root-graphics-modes-report.json`: 10,253,369 root checks across 158 native frames, zero errors; authentic donor exclusions independently tested | All three live modes preserve their source boundaries. Both lower gunner consoles conservatively retain PC pixels in Genesis mode |
 | New checkpoint core ordinary-run parity | `artifacts/pc-conveniences-parity-01/comparison.json`: 13 checks, all 3,716 paired original RAM/video/input records match the unmodified core | Ordinary radio route; checkpoint-specific continuation is covered separately |
 | Additional speech, effects and frontend music | Native root gates: 165 remaining-audio checks and 47 music/transport checks, zero errors; original CPU oracles: 54 crew assignments and seven sound-request blocks | Source assignment and native player proof; every new cue has not occurred in a live mission, and independent listening acceptance remains open |
@@ -52,7 +52,7 @@ checkpoints without that data retain a conservative PC-art fallback. See
 ## Presentation repairs
 
 Rejected vehicle texture panels are disabled in Play. Original flat-colour
-geometry remains. The commander station's silver rails now join continuously
+geometry remains in the legacy modes. Modern adds source-bound low-poly detail. The commander station's silver rails now join continuously
 around the heading display. Comparison of all 32 station images changed only
 the eight commander surrounds, leaving other pixels identical. See
 `artifacts/pc-commander-frame-join-01.json`.
@@ -133,7 +133,7 @@ trailing key releases, and show brief feedback without reserving a function key.
 
 Graphics switches the cached current frame among exact PC EGA, verified native
 Genesis donors and Upscaled artwork. Assets are preloaded. Genesis is explicitly
-partial, with original PC pixels in unmatched fields; Modern is disabled.
+partial, with original PC pixels in unmatched fields. Modern is an optional source-bound low-poly mode under local acceptance testing.
 See [play controls](play-controls.md) and [mode coverage](graphics-modes.md).
 
 The current tester package is the standalone app described above. Legacy
@@ -161,9 +161,22 @@ See [packaging](packaging.md) and [rights review](release-rights.md).
   mixing are now implemented.
 * Unrecognized transition fallbacks, preserving
   Genesis precedence and original PC visibility. The finite non-Modern register
-  is in `graphics-coverage.md`. Vehicle replacement and Modern are deferred.
+  is in `graphics-coverage.md`. Modern geometry and its separate validation are documented in `modern-renderer.md` and `modern-asset-register.md`.
 * Intel Mac, Windows and Linux packages; Developer ID signing/notarization and
-  community-release clearance. The private GitHub gallery is published; the
-  application and its derived asset package have not been uploaded.
+  public community-release clearance. The Apple Silicon alpha and gallery are
+  distributed through the private [GitHub repository](https://github.com/NellInc/Abrams/releases).
 
 Each additional parity claim requires its own source comparison and runtime evidence.
+
+
+## GitHub alpha candidate, 29 September 2026
+
+Version 0.1.0-alpha.1 integrates Modern, all current first-person refinements,
+exact geometry/cockpit-proof performance reuse, and a native setup/About interface.
+The release requires separately imported PC files, with optional Genesis.
+Neither original game is bundled. The repository stays private.
+
+The corrected moving native route measured 38.77 fps before and 40.12 after,
+with identical requested inputs and final rendered output. All 32 station/scenario
+screens match the preceding alpha exactly. This does not meet consistent 60 fps;
+Modern stays experimental. See [pacing evidence](pc-pacing-research.md).

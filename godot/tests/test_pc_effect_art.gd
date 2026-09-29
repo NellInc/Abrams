@@ -14,6 +14,10 @@ var view: Node3D
 var viewport: SubViewport
 var camera: Camera3D
 var output: String
+var modern := false
+var backdrop: Image
+var modern_contour_pixels := 0
+var retained_source_pixels := 0
 var frame := {"clip":[32,13,287,109],"center":[159,61],"near_raw":16,"focal_pixels":128,
 	"matrix_q14_columns":[16384,0,0,0,16384,0,0,0,16384],"world_position_raw":[0,0,0]}
 
@@ -86,7 +90,7 @@ func check_authored_colors(image: Image, mapping: Dictionary, background: Image 
 				colors.append(source.get_pixelv(p))
 			var expected := colors[0].lerp(colors[1],fraction.x).lerp(colors[2].lerp(colors[3],fraction.x),fraction.y)
 			if expected.a>0.49 and expected.a<0.51: continue # Floating cutout boundary tolerance only.
-			if expected.a<0.5: expected = background.get_pixel(x,y) if background else Color(0,170.0/255.0,0,1)
+			if expected.a<0.5: expected = background.get_pixel(x,y) if background else backdrop.get_pixel(x,y)
 			var actual := image.get_pixel(x,y)
 			for c in 3:
 				var error := absi(roundi(actual[c]*255)-roundi(expected[c]*255))
@@ -174,6 +178,11 @@ func run() -> void:
 	view = DrawPass.new()
 	view.solid_enabled = true
 	camera.add_child(view)
+	modern = "--modern" in args
+	if modern:
+		check(view.modern_assets.load_assets(directory),"Modern assets unavailable for ownership regression")
+		if not view.modern_assets.ready: finish(); return
+		view.modern_enabled = true
 	# Ordered source replay checks selection and disappearance without inventing a
 	# playback timer. Native screenshots are separate from this metadata check.
 	var replay_path := directory.path_join("artifacts/pc-sprite-controls-02/report.json")
@@ -190,6 +199,9 @@ func run() -> void:
 		check(sequence==[[165,[51]],[166,[51]],[167,[51]],[168,[52]],[169,[52]],[170,[53]],[171,[53]]],"source animation sequence changed")
 		FileAccess.open(output.path_join("source-sequence.json"),FileAccess.WRITE).store_string(JSON.stringify(sequence))
 	if "--native" in args:
+		var empty := sample(object_for(0))
+		empty.objects = []
+		backdrop = await snapshot(empty,true)
 		for index: int in Art.DONORS:
 			var data := sample(object_for(index))
 			var original := await snapshot(data,false)
@@ -201,7 +213,20 @@ func run() -> void:
 			var visible_pixels := 0
 			for y in remaster.get_height():
 				for x in remaster.get_width():
-					if remaster.get_pixel(x,y).to_rgba32()!=Color(0,170.0/255.0,0,1).to_rgba32(): visible_pixels+=1
+					if remaster.get_pixel(x,y).to_rgba32()!=backdrop.get_pixel(x,y).to_rgba32(): visible_pixels+=1
+			if modern:
+				var owners: Image = view.ownership.get_texture().get_image()
+				var sprite: Dictionary = data.objects[0].sprite
+				for y in remaster.get_height():
+					for x in remaster.get_width():
+						var p := Vector2i(floori(float(x)/native_scale)+32-128,floori(float(y)/native_scale)+13-50)
+						if p.x<0 or p.y<0 or p.x>=int(sprite.width) or p.y>=int(sprite.height): continue
+						var original_opaque: bool = sprite.opaque[p.y*int(sprite.width)+p.x]
+						if original_opaque:
+							check(roundi(owners.get_pixel(x,y).r*255)==1,"authored alpha hole lost original sprite ownership")
+							retained_source_pixels += 1
+						elif remaster.get_pixel(x,y).to_rgba32()!=backdrop.get_pixel(x,y).to_rgba32():
+							modern_contour_pixels += 1
 			check(visible_pixels>0,"authored effect became wholly invisible: %d" % index)
 			original.save_png(output.path_join("effect-%02d-original.png" % index))
 			remaster.save_png(output.path_join("effect-%02d-remastered.png" % index))
@@ -233,6 +258,8 @@ func run() -> void:
 				else:
 					compare_outside(a,b,mapping.rect,"clipped donor leaked outside source rectangle")
 
+	if modern and "--native" in args and native_scale>1:
+		check(modern_contour_pixels>0,"Modern still clips authored contours to coarse sprite pixels")
 	view.apply_pass({"objects":[]})
 	check(view.effect_art_ids.is_empty() and view.mesh_node.mesh==null,"stale effect survived missing original frame")
 	finish()
@@ -240,7 +267,7 @@ func run() -> void:
 func finish() -> void:
 	for error in errors: printerr("FAIL: "+error)
 	var report := {"checks":checks,"errors":errors,"native_pixels":native_pixels,"changed_pixels":changed_pixels,
-		"color_samples":color_samples,"max_color_error":max_color_error}
+		"color_samples":color_samples,"max_color_error":max_color_error,"modern":modern,"modern_contour_pixels":modern_contour_pixels,"retained_source_pixels":retained_source_pixels}
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print("PC_EFFECT_ART: %d checks, %d errors; %d native pixels" % [checks,errors.size(),native_pixels])
 	quit(0 if errors.is_empty() else 1)

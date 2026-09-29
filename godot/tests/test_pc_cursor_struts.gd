@@ -22,6 +22,8 @@ func run()->void:
 	var root_path:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	native="--native" in OS.get_cmdline_user_args()
 	output=root_path.path_join("artifacts/finish-20260928/cursor-struts/native")
+	var args:=OS.get_cmdline_user_args()
+	if "--output" in args: output=args[args.find("--output")+1]
 	if native:DirAccess.make_dir_recursive_absolute(output)
 	view=SubViewport.new();view.size=Vector2i(1280,800);view.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(view)
 	var background:=TextureRect.new();background.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;background.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST;background.size=view.size;view.add_child(background)
@@ -82,6 +84,10 @@ func run()->void:
 		if row.donor==4:check(frame.driver_assembly_enabled,row.name+" original moving assembly active")
 		else:check(3 in frame.cockpit_art_ids,row.name+" clipped cupola material active")
 		if not native:continue
+		# This oracle checks exact donor sampling beneath the contour layer.
+		# The refinement gate separately renders centered/turned/reversed roofs
+		# and checks contour registration plus hidden-world isolation.
+		frame.cockpit_edges.hide()
 		var rendered:=await snap();var donor:Image=frame.cockpit_art_textures[int(row.donor)].get_image()
 		var points:Dictionary={}
 		for p in row.points:points[Vector2i(p[0],p[1])]=true
@@ -93,6 +99,8 @@ func run()->void:
 					var donor_x:=floori((x+0.5)/4.0*1586.0/320.0)
 					var donor_y:=floori(((y+0.5)/4.0-(15.0 if row.donor==4 else 0.0))*992.0/200.0)
 					var expected:=donor.get_pixel(donor_x,donor_y)
+					# Armour alpha is material metadata; the verified donors are opaque.
+					if int(row.donor) in [3,4]: expected.a=1.0
 					check(rendered.get_pixel(x,y).to_rgba32()==expected.to_rgba32(),row.name+" actual highres donor sampling")
 					if rendered.get_pixel(x,y).to_rgba32()!=image.get_pixel(p[0],p[1]).to_rgba32():changed+=1
 		if row.donor==3:

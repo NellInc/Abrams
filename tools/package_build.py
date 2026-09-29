@@ -40,7 +40,7 @@ def validate_name(name, kind):
             raise ValueError(f'Non-source member in source kit: {name}')
         if name.startswith('godot/tests/fixtures/') and not (p.name.endswith('_steps.json') or p.name in {'pc_bearings.json', 'pc_request_sound_oracle.json'}):
             raise ValueError(f'Extracted dialogue fixture: {name}')
-        if p.suffix not in SOURCE_SUFFIXES:
+        if p.suffix not in SOURCE_SUFFIXES and name != 'LICENSE':
             raise ValueError(f'Unreviewed source format: {name}')
 
 

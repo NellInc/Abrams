@@ -38,10 +38,13 @@ class RunLabel extends Control:
 		if run.is_empty(): return
 		if not run.get("transparent_world",false): draw_rect(Rect2(Vector2.ZERO,size),run.background)
 		if run.get("outline_font") is Font:
-			preload("res://scripts/pc_outline_fonts.gd").draw_text(self,run.outline_font,run.text,Rect2(Vector2.ZERO,size),run.cell_size,run.foreground)
+			var scale: Vector2=size/run.rect.size
+			for segment in segments(run):
+				var box := Rect2(Vector2(segment.x,0)*scale,Vector2(segment.text.length()*run.cell_size.x,run.cell_size.y)*scale)
+				preload("res://scripts/pc_outline_fonts.gd").draw_text(self,run.outline_font,segment.text,box,run.cell_size,run.foreground)
 			return
 		# Cache only this label's current text. No unbounded cache of live values.
-		var key: String = run.font_sha256+run.text
+		var key: String = run.font_sha256+run.text+str(run.get("word_space",-1))
 		if key!=mesh_key:
 			mesh = make_mesh(run)
 			mesh_key = key
@@ -50,11 +53,17 @@ class RunLabel extends Control:
 		draw_mesh(mesh,null,Transform2D.IDENTITY,run.foreground)
 		draw_set_transform(Vector2.ZERO)
 
+	static func segments(value: Dictionary) -> Array:
+		if value.has("word_space"):
+			return [{"text":value.text.left(8),"x":0.0},{"text":value.text.substr(9),"x":8*value.cell_size.x+value.word_space}]
+		return [{"text":value.text,"x":0.0}]
+
 	static func make_mesh(value: Dictionary) -> ArrayMesh:
 		var vertices := PackedVector3Array()
 		var indices := PackedInt32Array()
 		for i in value.text.length():
 			var offset := Vector2(i*value.cell_size.x,0)
+			if value.has("word_space") and i>8: offset.x+=value.word_space-value.cell_size.x
 			for rect: Rect2 in value.glyphs[value.text.unicode_at(i)]:
 				var a := rect.position+offset
 				var b := rect.end+offset
@@ -264,21 +273,18 @@ func set_motor_pool_menu(source: Image, ui: Image, tags: Image) -> void:
 	# including spaces, highlighting and all unchanged functional labels.
 	set_frame(source,ui,{"text_runs":candidates,"palette_rgb":palette})
 
-func use_genesis_menu_style() -> void:
+func use_clipboard_style() -> void:
 	# Only called after the complete clipboard and all seven source runs pass.
 	# Source glyph/state evidence is unchanged; layout edits stay in that panel.
 	for run in runs:
-		var focused: bool=run.background.is_equal_approx(Color(170.0/255,0,0))
-		var heading: bool=run.text in ["SELECT","ARMING MIX"]
 		if run.text in ["GOVERNOROFF","GOVERNOR ON"] and run.rect==Rect2(245,170,66,6):
-			# The PC packs OFF against the label. Use the panel's spare cell for
-			# a real word space, retaining full-size glyphs and a right-aligned state.
+			# A two-pixel word space fits the original paper with two-pixel
+			# margins. Letter widths/heights and the source focus colours stay intact.
 			run.source_text=run.text
 			run.source_rect=run.rect
 			run.text="GOVERNOR OFF" if run.text=="GOVERNOROFF" else "GOVERNOR  ON"
-			run.rect=Rect2(245,170,72,6)
-		run.background=Color(238.0/255,238.0/255,238.0/255) if focused else Color(98.0/255,101.0/255,98.0/255) if heading else Color.BLACK
-		run.foreground=Color.BLACK if focused else Color(238.0/255,238.0/255,238.0/255)
+			run.word_space=2.0
+			run.rect=Rect2(245,170,68,6)
 	_layout()
 
 static func integers(value: Variant, count: int, low: int, high: int) -> bool:

@@ -49,6 +49,7 @@ func _ready() -> void:
 
 func set_camera_dimensions(dimensions: Vector2i) -> void:
 	assert(dimensions.x>0 and dimensions.y>0)
+	if dimensions==source_dimensions: return
 	source_dimensions = dimensions
 	_resize_targets()
 
@@ -60,6 +61,11 @@ func _resize_targets() -> void:
 	tandem_viewport.size = rect.size
 	tandem_frame.size = rect.size
 	world_viewport.size = source_dimensions*world_scale(rect.size)
+	# A retained source-paired scene must still refresh after a native resize.
+	if world_viewport.render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
+		world_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+	if tandem_viewport.render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
+		tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 
 func description() -> Dictionary:
 	var rect := fitted_rect(Vector2i(size))

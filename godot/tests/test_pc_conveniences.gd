@@ -78,12 +78,20 @@ func advance(multiplier: int) -> void:
 func _capture() -> void:
 	exercising=true
 	check(previous_program.get("name")=="SIM" and not previous.is_empty(),"ordinary cold boot reaches SIM")
-	check(audio_menu.get_menu_count()==3 and tandem_frame.native_graphics.loaded,"production controls and authentic donor bank loaded")
+	check(audio_menu.get_menu_count()==3,"production controls loaded")
+	check(tandem_frame.native_graphics.loaded==not pc_only,"donor loading follows install mode")
+	check(tandem_frame.modern_available and draw_view.modern_assets.ready,"Modern assets preloaded")
+	check(draw_view.modern_prewarmed,"Modern shaders warmed before switching")
 	var source:=picture.texture.get_image().get_data()
 	var state_json:=JSON.stringify(previous)
 	var original_samples:=samples
 	var loads:int=tandem_frame.native_graphics.load_count
-	for mode in ["ega","genesis","upscaled","ega","genesis","upscaled"]:
+	var modern_reads:int=draw_view.modern_assets.disk_io_count
+	var starting_mode: String=tandem_frame.graphics_mode
+	var available: Array=audio_menu.available_graphics_modes()
+	var start_index: int=available.find(starting_mode)
+	for step in available.size()*2:
+		var mode: String=available[(start_index+step+1)%available.size()]
 		await shortcut(KEY_G)
 		check(tandem_frame.graphics_mode==mode,"same-frame graphics mode: "+mode)
 		check(source==picture.texture.get_image().get_data() and state_json==JSON.stringify(previous) and samples==original_samples,"mode switch does not execute or modify the original")
@@ -93,11 +101,14 @@ func _capture() -> void:
 		if mode_images.has(mode):check(mode_images[mode]==rendered.get_data(),"returning to same mode is byte-identical: "+mode)
 		mode_images[mode]=rendered.get_data()
 		check(rendered.save_png(output.path_join("graphics-"+mode+".png"))==OK,"graphics screenshot")
-	check(mode_images.ega!=mode_images.genesis and mode_images.genesis!=mode_images.upscaled,"three genuine distinct presentations")
+	check(mode_images.ega!=mode_images.upscaled,"original and Upscaled presentations differ")
+	check(mode_images.modern!=mode_images.upscaled,"Modern battlefield genuinely differs from Upscaled")
+	if not pc_only:check(mode_images.genesis!=mode_images.upscaled,"Genesis and Upscaled presentations differ")
 	check(tandem_frame.native_graphics.load_count==loads,"no image loading on graphics switches")
-	check(not audio_menu.choose_graphics("modern") and tandem_frame.graphics_mode=="upscaled","Modern explicitly unavailable")
+	check(draw_view.modern_assets.disk_io_count==modern_reads,"no Modern asset I/O on graphics switches")
+	check(tandem_frame.graphics_mode==starting_mode,"two cycles return to initial mode")
 	await state_action("save_state",1)
-	check((await rendered_frame()).get_data()==mode_images.upscaled,"saving leaves complete rendered frame unchanged")
+	check((await rendered_frame()).get_data()==mode_images[starting_mode],"saving leaves complete rendered frame unchanged")
 	var normal:Dictionary={}
 	for i in 15:await advance(1)
 	var normal_image:=await rendered_frame()
@@ -105,7 +116,7 @@ func _capture() -> void:
 	var normal_state:=JSON.stringify(previous)
 	check(not normal.is_empty(),"normal replay has source RAM/video audit")
 	await state_action("load_state",1)
-	check((await rendered_frame()).get_data()==mode_images.upscaled,"loading restores complete rendered cockpit")
+	check((await rendered_frame()).get_data()==mode_images[starting_mode],"loading restores complete rendered cockpit")
 	for multiplier in [1,2,4,8]:await advance(multiplier)
 	check((await rendered_frame()).get_data()==normal_image.get_data(),"fast forward preserves complete rendered cockpit")
 	check(last_packet.get("frame_audit",{})==normal,"1x and fast-forward execute the same fifteen original frames")

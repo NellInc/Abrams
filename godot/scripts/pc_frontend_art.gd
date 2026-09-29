@@ -196,8 +196,8 @@ func _set_motor_pool(source: Image, presentation: Dictionary) -> bool:
 	active={"scene":"motor_pool","name":"Genesis motor pool","pixels":count}
 	if text_enabled: typography.set_motor_pool_menu(source,original_ui,mask)
 	if arming_panel.set_frame(source,original_ui,mask,typography.runs,palette,material.get_shader_parameter("motor_pool")):
-		typography.use_genesis_menu_style()
-		active.arming_panel="Genesis menu"
+		typography.use_clipboard_style()
+		active.arming_panel="PC clipboard"
 	visible=true
 	return true
 

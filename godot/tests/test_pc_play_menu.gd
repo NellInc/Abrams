@@ -20,6 +20,17 @@ func run() -> void:
 		check(menu.choose_graphics(mode) and choices[-1]==["graphics",mode],"live graphics signal: "+mode)
 	check(not menu.choose_graphics("modern") and menu.graphics_mode=="upscaled","unavailable Modern never pretends to render")
 	check(menu.graphics_popup.is_item_disabled(3),"Modern menu explicitly disabled")
+	menu.modern_available=true
+	menu.refresh_controls()
+	check(not menu.graphics_popup.is_item_disabled(3),"preloaded Modern enables its menu item")
+	check(menu.available_graphics_modes()==["ega","genesis","upscaled","modern"],"four-mode order")
+	check(menu.choose_graphics("modern") and choices[-1]==["graphics","modern"],"Modern dispatches through existing controls")
+	menu.genesis_available=false
+	check(menu.available_graphics_modes()==["ega","upscaled","modern"],"PC-only cycle includes independent Modern")
+	menu.modern_available=false
+	menu.genesis_available=true
+	menu.choose_graphics("upscaled")
+	menu.refresh_controls()
 	for speed in [2,4,8,1]:check(menu.choose_speed(speed) and choices[-1]==["speed",speed],"speed selection")
 	check(not menu.choose_speed(3) and menu.speed==1,"unsupported speed rejected")
 	check(not menu.request_state("load_state",1),"empty slot cannot load")

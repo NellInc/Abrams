@@ -233,3 +233,26 @@ packed-byte predicate for supported formats and reuse this call's already valida
 plate-mask image. Other formats retain the old loop; no previous-frame validity is
 reused. The 1,024-case original CPU orientation oracle and format/mutation comparisons
 remain required. No raster artwork or original game files changed in this follow-up.
+
+## First-person refinement, 29 September 2026
+
+The commander monitor now has straight registered bevels and six round fasteners.
+Its speed scale and four miniature illustration wells use the high-resolution
+Genesis-derived donors. Each well requires unchanged original RGB, UI ownership
+and the correct plate tag. The two driver instrument-pod fasteners use small
+scalable cross-heads under the same checks. Live numbers, bars, lamps, maps and
+orientation remain independently source-selected.
+
+Driver and cupola silhouettes receive a narrow antialiased contour pass in
+Upscaled and Modern. The fitted outline stays within 0.98 source pixels of the
+observed column profile; drawing is limited to a 1.65-pixel strip. The moving
+roof retains the original signed horizontal donor offsets. Edge reconstruction
+samples scenery only from already-visible original pixels. It never exposes
+world texels behind the original cockpit. Mixed stations, partial plates and
+unsupported cameras retain their previous presentation.
+
+The gunner surround and STATUS layout retain their established artwork and
+source-driven instruments. The refinement tests cover hidden-world sentinel
+colours, per-cell rejection, both original graphics modes, transition clearing,
+output-space round screws and geometry-cache reuse. Native transition checks
+retain the protected-pixel oracle outside the explicitly tested contour strip.

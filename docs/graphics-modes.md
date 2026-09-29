@@ -15,12 +15,16 @@ source framebuffer, presentation metadata and paired world texture synchronously
   or invalid complete native pack rejects the switch and preserves the prior mode.
 * **Upscaled** restores the existing high-resolution artwork, typography and
   scanout-paired world. Its existing provenance and visibility gates still apply.
-* **Modern** is unavailable and mode requests are rejected without changing the
-  current presentation.
+* **Modern** uses refined source-bound low-poly geometry, illustrated foliage
+  and a restrained daylight palette, composed with the restored Upscaled UI.
+  Buildings have fine plaster grain and muted clay roofs; hills and grass have
+  broad colour variation, and water has subdued, distance-filtered ripples.
+  It requires the local Modern asset catalogue and supported PC files.
+  Unsupported sensor palettes retain source rendering. See [renderer boundaries](modern-renderer.md).
 
 The dedication to David "Ming" Kenny remains on the final credit card in Genesis
-and Upscaled. EGA is deliberately untouched, so its framebuffer contains the
-original credits. No vehicle textures or replacement models are added.
+and Upscaled, and is inherited by Modern. EGA is deliberately untouched, so its framebuffer contains the
+original credits. EGA, Genesis and Upscaled keep their existing vehicle rendering. Modern is the only mode with replacement geometry.
 
 ## Native donor boundaries
 
@@ -64,7 +68,7 @@ availability does not imply that every variant has a verified live binding.
 * `load_graphics_sources(root)` once at startup.
 * `set_frame(source, presentation, world, program)` for a newly paired frame.
 * `present_frontend(program)` for program-aware frontend routing.
-* `set_graphics_mode("ega" | "genesis" | "upscaled")` for immediate switching.
+* `set_graphics_mode("ega" | "genesis" | "upscaled" | "modern")` for immediate switching.
 
 `graphics_mode` reports the selection. `native_graphics.loaded`, `load_count`
 and `active` expose source-pack readiness and actual donor/fallback coverage.
@@ -83,7 +87,7 @@ python3 -m tools.build_pc_graphics_catalog
 The native gate replays 158 existing transition fixtures across the lifecycle,
 information pages, title and credits, all four stations and STATUS. It checks
 exact EGA output, native donor samples and fallback pixels, same-frame Upscaled
-restoration, unavailable Modern, immutable inputs and one-time asset loading.
+restoration, missing-asset rejection, Modern UI reuse, immutable inputs and one-time asset loading.
 Results and selected rendered frames are retained under
 `artifacts/graphics-modes-work/final-native`. This is machine preservation evidence and
 implementer visual review, not independent aesthetic or full-mission acceptance.

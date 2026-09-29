@@ -1,9 +1,10 @@
 extends Control
-## Genesis menu styling, gated by the complete original PC clipboard and text.
+## Scalable original PC clipboard, gated by its complete source art and text.
 const CATALOG_SHA := "0189ac8eab74a8bfd9f1d267cebba18cba502df005faf4ae9c28408a5788fb03"
 const GENESIS_SHA := "0382ce25fd1568643e762deac023c43944bcd5bbbd6af6f0efae34777146b8e7"
 const CLIP_RECT := Rect2i(239,87,81,113)
-const PANEL_RECT := Rect2(239,108,81,92)
+const PANEL_RECT := Rect2(239,95,81,105)
+const PAPER_RECT := Rect2(243,101,72,94)
 const WHITE := Color(238.0/255,238.0/255,238.0/255)
 const GREY := Color(98.0/255,101.0/255,98.0/255)
 const FIELDS = [Rect2i(257,113,36,6),Rect2i(245,123,60,6),Rect2i(245,137,66,6),
@@ -79,12 +80,40 @@ func set_frame(source: Image, ui: Image, tags: Image, runs: Array, palette: Arra
 func _draw() -> void:
 	if not active or backdrop==null: return
 	draw_set_transform(Vector2.ZERO,0,size/Vector2(320,200))
-	# Remove only the completely verified PC clipboard. Its Genesis
-	# replacement is fitted around the same original text and control cells.
+	# Clear only the completely verified sprite, including its old pixel edges.
 	var ratio := Vector2(backdrop.get_size())/Vector2(320,200)
 	draw_texture_rect_region(backdrop,Rect2(CLIP_RECT),Rect2(Vector2(CLIP_RECT.position)*ratio,Vector2(CLIP_RECT.size)*ratio))
-	draw_rect(PANEL_RECT,WHITE)
-	draw_rect(PANEL_RECT.grow(-1),Color.BLACK)
-	draw_rect(Rect2(240,110,79,21),GREY)
-	draw_line(Vector2(240,132),Vector2(319,132),WHITE,0.5,true)
+	# CLIP.BMP's brown board, white sheet and silver spring clip. Keep the
+	# source proportions and EGA colours; only the contours gain resolution.
+	var board := StyleBoxFlat.new()
+	board.bg_color=Color(170.0/255,85.0/255,0)
+	board.border_color=Color.BLACK
+	board.set_border_width_all(1)
+	board.corner_radius_top_left=4;board.corner_radius_top_right=4
+	board.corner_detail=12
+	draw_style_box(board,PANEL_RECT)
+	draw_rect(Rect2(PAPER_RECT.position+Vector2.ONE,PAPER_RECT.size),Color(170.0/255,170.0/255,170.0/255))
+	draw_rect(PAPER_RECT,Color.WHITE)
+	draw_set_transform(Vector2(239,87)*size/Vector2(320,200),0,size/Vector2(320,200))
+	var silver := Color(170.0/255,170.0/255,170.0/255)
+	var shadow := Color(85.0/255,85.0/255,85.0/255)
+	# Lower jaw, bevel and the narrow upright handle, as in the source sprite.
+	draw_colored_polygon(PackedVector2Array([Vector2(15,20),Vector2(61,20),Vector2(65,24),Vector2(15,24)]),silver)
+	var jaw := PackedVector2Array([Vector2(16,19),Vector2(60,19),Vector2(64,22),Vector2(13,22),Vector2(16,19)])
+	draw_colored_polygon(jaw,silver)
+	draw_polyline(jaw,Color.BLACK,0.8,true)
+	draw_polyline(PackedVector2Array([Vector2(14,21),Vector2(17,19.5),Vector2(60,19.5)]),Color.WHITE,0.8,true)
+	draw_rect(Rect2(20,13,37,1),silver)
+	draw_rect(Rect2(29,9,20,10),shadow)
+	var handle := PackedVector2Array([Vector2(30,19),Vector2(30,7.5),Vector2(34,5.5),Vector2(35,2),Vector2(36.5,0.5),Vector2(40,0.5),Vector2(42,2),Vector2(43,5.5),Vector2(47,7.5),Vector2(47,19),Vector2(30,19)])
+	# The handle's open eye reveals the donor scene through the same source hole.
+	draw_colored_polygon(handle,silver)
+	draw_polyline(handle,Color.BLACK,0.8,true)
+	draw_polyline(PackedVector2Array([Vector2(31,18.5),Vector2(31,8),Vector2(35,6),Vector2(36,2),Vector2(40,1.5)]),Color.WHITE,1.0,true)
+	draw_line(Vector2(38,8),Vector2(38,15),Color.WHITE,0.6,true)
+	draw_line(Vector2(46,8),Vector2(46,18.5),Color.WHITE,0.6,true)
+	var eye := Rect2(37,3,3,3)
+	draw_texture_rect_region(backdrop,eye,Rect2((Vector2(239,87)+eye.position)*ratio,eye.size*ratio))
+	draw_arc(Vector2(38.5,4.5),2.0,0,TAU,24,Color.BLACK,0.8,true)
+	draw_set_transform(Vector2.ZERO,0,size/Vector2(320,200))
 	draw_rect(Rect2(312,199,1,1),preserved)

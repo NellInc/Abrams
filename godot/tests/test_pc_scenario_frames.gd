@@ -50,12 +50,18 @@ func run() -> void:
 		check(not tandem_frame.cockpit_art_ids.is_empty(),label+": Genesis cockpit active")
 		check(draw_view.vehicle_art==null and draw_view.vehicle_polygon_count==0,label+": no rejected vehicle panels")
 		check(draw_view.render_warnings.is_empty(),label+": no unsupported renderer commands")
+		if tandem_frame.graphics_mode=="modern":
+			check(draw_view.modern_assets.max_anchor_error<=0.25,label+": source anchor tolerance")
 		root.get_texture().get_image().save_png(output.path_join(label+".png"))
 		cases.append({"label":label,"scenario":sample.state.scenario_resource_index,
 			"station":sample.state.station,"source_frame":sample.frame,
 			"cockpits":tandem_frame.cockpit_art_ids,"world_enabled":tandem_frame.world_enabled,
+			"graphics_mode":tandem_frame.graphics_mode,"refined_faces":draw_view.modern_polygon_count,"tree_planes":draw_view.modern_tree_count,"source_fallback_faces":draw_view.modern_fallback_polygon_count,"round_forms":draw_view.source_round_count,"anchor_error":draw_view.modern_assets.max_anchor_error,
 			"warnings":draw_view.render_warnings})
 	check(cases.size()==32,"all four stations across all eight original scenarios rendered")
+	if tandem_frame.graphics_mode=="modern":
+		check(cases.any(func(row):return row.refined_faces>0),"Modern catalogue used by actual source frames")
+		check(cases.any(func(row):return row.tree_planes>0),"illustrated source trees used by actual source frames")
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({
 		"checks":checks,"errors":errors,"cases":cases,
 		"scope":"Native production-viewer rendering of 32 source-frame cases. Does not rerun simulation; original all-frame parity is recorded in the input fixture."},"  "))

@@ -5,7 +5,7 @@
 The original PC executables retain all gameplay, information, visibility and
 outcome authority. Genesis supplies the corresponding visual donors wherever
 verified. Upscaled artwork preserves that style and the PC layout. EGA remains
-untouched; Genesis mode uses native extractions; Modern remains unavailable.
+untouched; Genesis mode uses native extractions. Modern adds the separate source-bound geometry described in [its asset register](modern-asset-register.md).
 
 The finite external resource inventory contains 16 plates, 120 bitmaps in 11
 containers, and five font files representing four distinct faces. Procedural
@@ -20,8 +20,8 @@ original pixels without disclosing hidden information.
 
 | Family | Current presentation and finite coverage | Evidence and remaining boundary |
 |---|---|---|
-| Four cockpits and STATUS surround | Genesis-derived high-resolution surrounds, source-owned composition, moving driver roof and seven source STRUTS entries | `genesis-cockpit-integration.md`; clipped strut/cursor continuation recorded separately; fractional rendering and hardware acceptance remain distinct |
-| Instruments and sights | Nine gunner illustrated cells, scalable gauges and hull/turret diagrams, bearing digits, eight sight strokes, four target-box sides, 24 status lamps and target-lock indicator | `pc-gauges-research.md`, `pc-orientation-research.md`, `pc-reticle-research.md`, `pc-reticle-target-research.md`, `pc-instrument-status-research.md`; source pixels/ownership govern every value |
+| Four cockpits and STATUS surround | Genesis-derived high-resolution surrounds, source-owned composition, moving driver roof, narrow antialiased driver/cupola silhouettes, straight commander housing and seven source STRUTS entries | `genesis-cockpit-integration.md`; clipped strut/cursor continuation recorded separately; fractional rendering and hardware acceptance remain distinct |
+| Instruments and sights | Nine gunner illustrated cells, five static commander wells, two driver instrument-pod fasteners, scalable gauges and hull/turret diagrams, bearing digits, eight sight strokes, four target-box sides, 24 status lamps and target-lock indicator | `pc-gauges-research.md`, `pc-orientation-research.md`, `pc-reticle-research.md`, `pc-reticle-target-research.md`, `pc-instrument-status-research.md`; source pixels/ownership govern every value |
 | Damage schematic | Five Genesis damage counterparts, selected as 32 combinations by exact visible original schematic and ownership | Damage catalog and original bitmap-driver oracle; no condition inferred from hidden RAM |
 | Intro and credits | Title, four expanding flash poses, eight original-font credit cards, PC-specific Dynamix publisher splash | `genesis-intro-integration.md`, `pc-splash-aftermath.md`; dedication to David "Ming" Kenny retained |
 | Wilson and office | Six source pose entries including arm-lowered, pistol-raised and thumbs-up, seven source dialogue heights, BRIEF and END bindings | `wilson-completion.md`; three added performances use approved Genesis Wilson identity, without claiming exact extracted Genesis pose counterparts |
@@ -36,7 +36,7 @@ original pixels without disclosing hidden information.
 | Two aftermath scenes | Source-grounded Genesis extractions and remastered scenes, exact original whole-frame selection | `pc-splash-aftermath.md`; original-instruction fixtures do not claim spontaneous gameplay arrival |
 | Effects | All 64 masked source sprites use 20 authored donors across original detail levels, clipping and draw order | `pc-effect-art-completion.md`, `pc-effect-display-modes.md`; normal and thermal use the same verified RGB palette; STATUS occludes all effects. Human tactical-readability review remains |
 | Terrain | Seven flat surfaces and 81 faces on 49 hill/plateau shapes, Genesis-derived continuous treatment | `pc-hill-art-integration.md`; original topology, projection, materials and visibility preserved |
-| Vehicles, buildings and vegetation | Original flat-colour polygons rasterize natively through Godot; 188 shape records, 992 primitives, 6,163 static world instances | Keep this source-flat style for the non-Modern pass. The 45 used static shape IDs without terrain textures are geometry, not missing bitmap assets. Rejected vehicle textures stay disconnected; replacement models belong to deferred Modern work |
+| Vehicles, buildings and vegetation | Original flat-colour polygons rasterize natively through Godot; 188 shape records, 992 primitives, 6,163 static world instances | Keep this source-flat style for the non-Modern pass. The 45 used static shape IDs without terrain textures are geometry, not missing bitmap assets. Rejected vehicle textures stay disconnected; replacement models are confined to the optional Modern mode |
 
 ## Legacy resources outside active presentation
 

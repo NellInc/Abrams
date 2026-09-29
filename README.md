@@ -28,28 +28,28 @@ The two run in tandem: the original PC executables run inside DOSBox Pure, while
 
 * High-resolution cockpits, portraits, briefings, information screens and ending newspapers, retaining the original visual style.
 * Reconstructed typefaces, animated intro credits and a memorial dedication.
-* Instant switching between **EGA**, **Genesis** and **Upscaled** graphics.
+* Instant switching between **EGA**, **Genesis**, **Upscaled** and the experimental **Modern** graphics.
 * Sample-based sound effects, new music arrangements and generative crew speech, with separate volume controls.
 * Five save-state slots, quick save/load and **Undo last load**, alongside the original campaign saves.
 * **2x, 4x and 8x fast forward**, with sound muted during accelerated play.
 * Resizable windows and fullscreen, preserving the complete 4:3 display.
 
-Upscaled is the default. Genesis mode uses original-resolution Genesis artwork where available; unmatched areas keep PC graphics. Vehicles retain their original flat-colour appearance. **Modern** graphics and replacement models are deferred.
+Upscaled is the default. Genesis mode uses original-resolution Genesis artwork where available; unmatched areas keep PC graphics. Modern adds source-bound low-poly vehicle and building detail, illustrated trees and a restrained battlefield palette. The original PC simulation, terrain and camera remain authoritative. Modern remains experimental while performance tuning and playtesting continue.
 
-## Play the private alpha
+## Install
 
 The standalone app currently targets **Apple Silicon Macs running macOS 14 or newer**. Godot and Python are bundled; players do not need to install them.
 
 **You must supply the original PC game. The Genesis ROM is optional. Neither is bundled.**
 
-1. Copy `Abrams.app` to a local folder and open it.
-2. Click **Choose PC folder…** and select the extracted folder containing `ABRAMS.COM`, `SIM.EXE` and the remaining game files.
+1. Download the macOS app ZIP from [GitHub Releases](https://github.com/NellInc/Abrams/releases), extract it, and move `Abrams.app` to Applications.
+2. Open Abrams and click **Choose PC folder…** and select the extracted folder containing `ABRAMS.COM`, `SIM.EXE` and the remaining game files.
 3. Optionally click **Add Genesis ROM…** to enable the Genesis-based artwork and music.
 4. Click **Play**.
 
-The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA and PC-only Upscaled remain playable, with high-resolution lettering and crew speech; Genesis-based graphics and music stay disabled.
+The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA, PC-only Upscaled and Modern remain playable, with high-resolution lettering and crew speech; Genesis-based graphics and music stay disabled.
 
-The app is a local private alpha, without notarization or a public download. Windows, Linux and Intel Mac packages are not available. See [installation and troubleshooting](docs/standalone-macos.md).
+This is an **alpha for macOS 14+ on Apple Silicon**, distributed without Developer ID signing or notarization. Windows, Linux and Intel Mac packages are not available. See [installation and troubleshooting](docs/standalone-macos.md).
 
 ## Controls
 
@@ -92,4 +92,12 @@ Development is active. Remaining work includes sustained playback performance, c
 
 Contributions should preserve original gameplay and include relevant tests or screenshots. Keep original games, ROMs, extracted resources, saves, private builds and credentials out of Git.
 
-This is an independent fan project. The repository is private, no project-wide licence has been selected, and public distribution requires asset and dependency clearance. See [rights and dependencies](docs/release-rights.md).
+## Rights and original game requirement
+
+This is an unofficial, independent fan remaster, unaffiliated with Dynamix or the original game's rights holders. The project claims no ownership, moral rights or other rights in the original game, its content, names or trademarks. Those rights remain with their respective holders.
+
+The remaster is provided free of charge. Its own code is MIT-licensed (emulator modifications are GPL-2.0-or-later), and its original artwork/audio contributions are dedicated under CC0; those terms do not grant rights to the original game or third-party material. See [the project notice](NOTICE.md) and [rights and dependencies](docs/release-rights.md).
+
+**The remaster cannot run without a separately obtained, supported copy of the original PC game.** No original PC game or Genesis ROM is included. A Genesis ROM is optional and cannot replace the PC game.
+
+The software is provided as is, without warranty. Back up your profile before upgrading.

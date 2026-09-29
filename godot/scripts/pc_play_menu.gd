@@ -9,6 +9,7 @@ var shortcut_keys: Array = []
 const MODES := ["ega","genesis","upscaled","modern"]
 var graphics_mode := "upscaled"
 var genesis_available := true
+var modern_available := false
 var speed := 1
 var busy := false
 var graphics_popup: PopupMenu
@@ -105,7 +106,9 @@ func _submenu(parent: PopupMenu, title: String) -> PopupMenu:
 	return menu
 
 func available_graphics_modes() -> Array:
-	return ["ega","genesis","upscaled"] if genesis_available else ["ega","upscaled"]
+	var modes: Array = ["ega","genesis","upscaled"] if genesis_available else ["ega","upscaled"]
+	if modern_available: modes.append("modern")
+	return modes
 
 func cycle_graphics() -> bool:
 	var modes := available_graphics_modes()
@@ -116,7 +119,7 @@ func choose_graphics(mode: String) -> bool:
 	graphics_mode=mode
 	graphics_selected.emit(mode)
 	refresh_controls()
-	control_notice.emit("Graphics: "+{"ega":"EGA","genesis":"Genesis","upscaled":"Upscaled"}[graphics_mode])
+	control_notice.emit("Graphics: "+{"ega":"EGA","genesis":"Genesis","upscaled":"Upscaled","modern":"Modern"}[graphics_mode])
 	return true
 
 func choose_speed(multiplier: int) -> bool:
@@ -151,6 +154,8 @@ func refresh_controls() -> void:
 	if graphics_popup==null: return
 	graphics_popup.set_item_disabled(1,not genesis_available)
 	graphics_popup.set_item_text(1,"Genesis (original artwork)" if genesis_available else "Genesis (requires optional import)")
+	graphics_popup.set_item_disabled(3,not modern_available)
+	graphics_popup.set_item_text(3,"Modern (refined low-poly)" if modern_available else "Modern (assets unavailable)")
 	for index in MODES.size():graphics_popup.set_item_checked(index,MODES[index]==graphics_mode)
 	for index in speed_popup.item_count:
 		speed_popup.set_item_checked(index,speed_popup.get_item_id(index)==speed)

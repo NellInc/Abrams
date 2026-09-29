@@ -1,103 +1,245 @@
 import AppKit
 
-final class Launcher: NSObject, NSApplicationDelegate {
-    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 620, height: 355), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
-    let status = NSTextField(wrappingLabelWithString: "Checking imported game files…")
-    let detail = NSTextField(wrappingLabelWithString: "")
+final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 610), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+    let status = NSTextField(wrappingLabelWithString: "Checking your installation…")
+    let detail = NSTextField(wrappingLabelWithString: "Your original game files and save states are stored separately from the application.")
+    let pcState = NSTextField(labelWithString: "CHECKING")
+    let genesisState = NSTextField(labelWithString: "OPTIONAL")
+    let progress = NSProgressIndicator()
     var pcButton: NSButton!
     var genesisButton: NSButton!
     var playButton: NSButton!
+    var aboutWindow: NSWindow?
     var running: Process?
     var busy = false
     var pcReady = false
+    let githubURL = URL(string: "https://github.com/NellInc/Abrams")!
+    let cream = NSColor(calibratedRed: 0.95, green: 0.91, blue: 0.81, alpha: 1)
+    let muted = NSColor(calibratedRed: 0.69, green: 0.73, blue: 0.76, alpha: 1)
+    let accent = NSColor(calibratedRed: 0.84, green: 0.27, blue: 0.24, alpha: 1)
     let runtime = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/runtime/AbramsRuntime/AbramsRuntime")
+    var version: String {
+        let info = Bundle.main.infoDictionary ?? [:]
+        return "Version \(info["AbramsReleaseVersion"] as? String ?? info["CFBundleShortVersionString"] as? String ?? "development") · Build \(info["CFBundleVersion"] as? String ?? "local")"
+    }
     var setupArgs: [String] {
         let args = CommandLine.arguments
         if let index = args.firstIndex(of: "--data-home"), index+1 < args.count { return ["--data-home", args[index+1]] }
         return []
+    }
+
+    @discardableResult
+    func label(_ text: String, frame: NSRect, size: CGFloat = 13, weight: NSFont.Weight = .regular, color: NSColor? = nil, in view: NSView) -> NSTextField {
+        let field = NSTextField(wrappingLabelWithString: text)
+        field.font = .systemFont(ofSize: size, weight: weight)
+        field.textColor = color ?? cream
+        field.frame = frame
+        view.addSubview(field)
+        return field
+    }
+    func card(_ frame: NSRect, in view: NSView) -> NSView {
+        let panel = NSView(frame: frame)
+        panel.wantsLayer = true
+        panel.layer?.backgroundColor = NSColor(calibratedRed: 0.12, green: 0.16, blue: 0.20, alpha: 1).cgColor
+        panel.layer?.cornerRadius = 12
+        panel.layer?.borderWidth = 1
+        panel.layer?.borderColor = NSColor.white.withAlphaComponent(0.08).cgColor
+        view.addSubview(panel)
+        return panel
+    }
+    func button(_ title: String, action: Selector, frame: NSRect, in view: NSView) -> NSButton {
+        let button = NSButton(title: title, target: self, action: action)
+        button.bezelStyle = .rounded
+        button.controlSize = .large
+        button.frame = frame
+        button.setAccessibilityLabel(title.replacingOccurrences(of: "…", with: ""))
+        view.addSubview(button)
+        return button
+    }
+    func configure(_ target: NSWindow) {
+        target.appearance = NSAppearance(named: .darkAqua)
+        target.backgroundColor = NSColor(calibratedRed: 0.07, green: 0.10, blue: 0.14, alpha: 1)
+        target.titlebarAppearsTransparent = true
+        target.isReleasedWhenClosed = false
     }
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         let menu = NSMenu()
         let appItem = NSMenuItem(); menu.addItem(appItem)
         let appMenu = NSMenu(); appItem.submenu = appMenu
+        let about = appMenu.addItem(withTitle: "About Abrams", action: #selector(showAbout), keyEquivalent: "")
+        about.target = self
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "Hide Abrams", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Quit Abrams", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let editItem = NSMenuItem(); menu.addItem(editItem)
+        let editMenu = NSMenu(title: "Edit"); editItem.submenu = editMenu
+        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let helpItem = NSMenuItem(); menu.addItem(helpItem)
+        let helpMenu = NSMenu(title: "Help"); helpItem.submenu = helpMenu
+        let github = helpMenu.addItem(withTitle: "Abrams on GitHub", action: #selector(openGitHub), keyEquivalent: "")
+        github.target = self
         NSApp.mainMenu = menu
+        NSApp.helpMenu = helpMenu
+
+        configure(window)
         window.title = "Abrams"
-        window.isReleasedWhenClosed = false
+        window.delegate = self
         let view = window.contentView!
-        let title = NSTextField(labelWithString: "M1 Abrams Battle Tank")
-        title.font = .boldSystemFont(ofSize: 25); title.frame = NSRect(x: 28, y: 289, width: 564, height: 34); view.addSubview(title)
-        let intro = NSTextField(wrappingLabelWithString: "Original PC simulation, remastered presentation.\nImport your PC game folder to play. A supported Genesis ROM is optional.")
-        intro.frame = NSRect(x: 28, y: 230, width: 564, height: 48); view.addSubview(intro)
-        status.font = .boldSystemFont(ofSize: 14); status.frame = NSRect(x: 28, y: 180, width: 564, height: 42); view.addSubview(status)
-        detail.font = .systemFont(ofSize: 12); detail.textColor = .secondaryLabelColor
-        detail.frame = NSRect(x: 28, y: 86, width: 564, height: 85); view.addSubview(detail)
-        pcButton = NSButton(title: "Choose PC folder…", target: self, action: #selector(choosePC)); pcButton.frame = NSRect(x: 24, y: 30, width: 172, height: 34); view.addSubview(pcButton)
-        genesisButton = NSButton(title: "Add Genesis ROM…", target: self, action: #selector(chooseGenesis)); genesisButton.frame = NSRect(x: 201, y: 30, width: 181, height: 34); view.addSubview(genesisButton)
-        playButton = NSButton(title: "Play", target: self, action: #selector(play)); playButton.frame = NSRect(x: 478, y: 30, width: 116, height: 34); playButton.keyEquivalent = "\r"; view.addSubview(playButton)
+        let icon = NSImageView(frame: NSRect(x: 30, y: 470, width: 102, height: 102))
+        icon.image = NSApp.applicationIconImage
+        icon.imageScaling = .scaleProportionallyUpOrDown
+        icon.setAccessibilityLabel("Abrams remaster cover artwork")
+        view.addSubview(icon)
+        label("DYNAMIX ORIGINAL · INDEPENDENT FAN REMASTER", frame: NSRect(x: 152, y: 548, width: 580, height: 18), size: 10, weight: .semibold, color: muted, in: view)
+        label("M1 Abrams Battle Tank", frame: NSRect(x: 150, y: 503, width: 580, height: 40), size: 30, weight: .bold, in: view)
+        label("The original PC simulation, with remastered presentation.", frame: NSRect(x: 152, y: 477, width: 575, height: 24), size: 14, color: muted, in: view)
+        label("YOUR GAME FILES", frame: NSRect(x: 32, y: 433, width: 400, height: 18), size: 11, weight: .semibold, color: muted, in: view)
+        let pc = card(NSRect(x: 30, y: 319, width: 700, height: 105), in: view)
+        label("Original PC game", frame: NSRect(x: 18, y: 65, width: 265, height: 24), size: 17, weight: .semibold, in: pc)
+        pcState.frame = NSRect(x: 293, y: 69, width: 170, height: 17)
+        pcState.font = .systemFont(ofSize: 10, weight: .semibold); pcState.textColor = muted; pc.addSubview(pcState)
+        label("Choose the extracted folder containing ABRAMS.COM and SIM.EXE.\nSupported files are verified and copied. Your source stays unchanged.", frame: NSRect(x: 18, y: 15, width: 473, height: 43), size: 12, color: muted, in: pc)
+        pcButton = button("Choose PC folder…", action: #selector(choosePC), frame: NSRect(x: 504, y: 34, width: 179, height: 34), in: pc)
+        pcButton.keyEquivalent = "i"; pcButton.keyEquivalentModifierMask = [.command]
+        pcButton.toolTip = "Import a supported original PC game folder. Source files are never modified."
+        let genesis = card(NSRect(x: 30, y: 201, width: 700, height: 105), in: view)
+        label("Genesis presentation", frame: NSRect(x: 18, y: 65, width: 265, height: 24), size: 17, weight: .semibold, in: genesis)
+        genesisState.frame = NSRect(x: 293, y: 69, width: 170, height: 17)
+        genesisState.font = .systemFont(ofSize: 10, weight: .semibold); genesisState.textColor = muted; genesis.addSubview(genesisState)
+        label("Optional: add a supported original Genesis ROM for its presentation.\nThe PC game is still required. Import it first to enable this option.", frame: NSRect(x: 18, y: 15, width: 473, height: 43), size: 12, color: muted, in: genesis)
+        genesisButton = button("Add Genesis ROM…", action: #selector(chooseGenesis), frame: NSRect(x: 504, y: 34, width: 179, height: 34), in: genesis)
+        genesisButton.toolTip = "Optional. Import the original PC game first."
+
+        progress.style = .spinning; progress.controlSize = .small
+        progress.frame = NSRect(x: 33, y: 160, width: 16, height: 16)
+        progress.isDisplayedWhenStopped = false; progress.setAccessibilityLabel("Working")
+        view.addSubview(progress)
+        status.font = .systemFont(ofSize: 14, weight: .semibold); status.textColor = cream
+        status.frame = NSRect(x: 58, y: 155, width: 665, height: 26); view.addSubview(status)
+        status.setAccessibilityLabel("Installation status")
+        detail.font = .systemFont(ofSize: 12); detail.textColor = muted
+        detail.frame = NSRect(x: 32, y: 86, width: 690, height: 64); detail.isSelectable = true
+        view.addSubview(detail)
+        detail.setAccessibilityLabel("Installation details")
+        let aboutButton = button("About", action: #selector(showAbout), frame: NSRect(x: 28, y: 28, width: 82, height: 32), in: view)
+        aboutButton.controlSize = .regular
+        let githubButton = button("GitHub ↗", action: #selector(openGitHub), frame: NSRect(x: 112, y: 28, width: 103, height: 32), in: view)
+        githubButton.controlSize = .regular
+        githubButton.toolTip = "Open the Abrams project in your default browser"
+        githubButton.setAccessibilityLabel("Open Abrams on GitHub in your browser")
+        label(version, frame: NSRect(x: 230, y: 34, width: 310, height: 20), size: 11, color: muted, in: view)
+        playButton = button("Play Abrams", action: #selector(play), frame: NSRect(x: 551, y: 25, width: 182, height: 39), in: view)
+        playButton.bezelColor = accent; playButton.keyEquivalent = "\r"
+        playButton.toolTip = "Launch the simulation after the original PC game has been verified"
+        updateControls()
         window.center(); window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
         refresh()
     }
-    func controls(_ enabled: Bool) { pcButton.isEnabled = enabled; genesisButton.isEnabled = enabled; playButton.isEnabled = enabled }
+    func updateControls() {
+        let enabled = !busy && running == nil
+        pcButton.isEnabled = enabled
+        genesisButton.isEnabled = enabled && pcReady
+        playButton.isEnabled = enabled && pcReady
+        playButton.title = running == nil ? "Play Abrams" : "Game running"
+        if busy { progress.startAnimation(nil) } else { progress.stopAnimation(nil) }
+    }
     func refresh(_ result: [String: Any]? = nil) {
         guard let result else { call(["--status"], completion: { self.refresh($0) }); return }
         let pc = result["pc_installed"] as? Bool ?? false
         let genesis = result["genesis_enabled"] as? Bool ?? false
         pcReady = pc
-        controls(true); genesisButton.isEnabled = pc; playButton.isEnabled = pc
-        status.stringValue = pc ? "Ready to play · \(genesis ? "Genesis presentation enabled" : "PC-only presentation")" : "Original PC game required"
-        detail.stringValue = (result["problem"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? (pc ? "Your originals and save states stay outside the application.\n\(result["data_home"] as? String ?? "")\nLocal private alpha. Modern graphics are deferred." : "Select the extracted folder containing ABRAMS.COM and SIM.EXE. All supported files are checked before import. Your source files are never changed.\nGenesis alone cannot run the PC simulation.")
+        pcState.stringValue = pc ? "VERIFIED" : "REQUIRED TO PLAY"
+        pcState.textColor = pc ? .systemGreen : cream
+        pcState.setAccessibilityValue(pc ? "Verified and ready" : "Required, not installed")
+        genesisState.stringValue = genesis ? "ENABLED · OPTIONAL" : "OPTIONAL"
+        genesisState.textColor = genesis ? .systemGreen : muted
+        genesisState.setAccessibilityValue(genesis ? "Optional Genesis presentation enabled" : "Optional, not installed")
+        pcButton.title = pc ? "Change PC folder…" : "Choose PC folder…"
+        pcButton.setAccessibilityLabel(pcButton.title)
+        genesisButton.title = genesis ? "Change Genesis ROM…" : "Add Genesis ROM…"
+        genesisButton.setAccessibilityLabel(genesisButton.title)
+        updateControls()
+        status.stringValue = pc ? "Ready to play · \(genesis ? "Genesis presentation" : "PC presentation")" : "Import your original PC game to begin"
+        detail.stringValue = (result["problem"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? (pc ? "Game files and save states are kept outside the app.\n\(result["data_home"] as? String ?? "")" : "A separate, supported copy of the original PC game is required. Neither the PC game nor the optional Genesis ROM is included. Choose your PC folder above to get started.")
+        detail.toolTip = detail.stringValue
+    }
+    // Always drain the pipe, retaining only a bounded tail, including for setup failures.
+    static func readOutput(_ pipe: Pipe, limit: Int) -> Data {
+        var tail = Data()
+        while true {
+            let data = pipe.fileHandleForReading.availableData
+            if data.isEmpty { break }
+            tail.append(data)
+            if tail.count > limit { tail = Data(tail.suffix(limit)) }
+        }
+        return tail
     }
     func call(_ arguments: [String], completion: @escaping ([String: Any]) -> Void) {
-        if busy { return }; busy = true; controls(false)
+        if busy || running != nil { return }
+        busy = true; updateControls()
         let process = Process(); process.executableURL = runtime; process.arguments = setupArgs + arguments
         let pipe = Pipe(); process.standardOutput = pipe; process.standardError = pipe
         DispatchQueue.global().async {
             do {
                 try process.run()
-                let data = pipe.fileHandleForReading.readDataToEndOfFile(); process.waitUntilExit()
-                let result = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? ["error": String(data: data, encoding: .utf8) ?? "Runtime failed"]
+                let data = Self.readOutput(pipe, limit: 65536); process.waitUntilExit()
+                let result = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? ["error": String(data: data, encoding: .utf8) ?? "The runtime returned an unreadable response."]
                 DispatchQueue.main.async {
                     self.busy = false
-                    if process.terminationStatus != 0 || result["error"] != nil { self.showError(result["error"] as? String ?? "Runtime failed") }
+                    if process.terminationStatus != 0 || result["error"] != nil { self.showError(result["error"] as? String ?? "The runtime could not complete this operation.") }
                     else { completion(result) }
                 }
             } catch { DispatchQueue.main.async { self.busy = false; self.showError(error.localizedDescription) } }
         }
     }
     func showError(_ message: String) {
-        controls(true); playButton.isEnabled = pcReady; genesisButton.isEnabled = pcReady
-        status.stringValue = "Setup could not complete"
-        detail.stringValue = message
+        updateControls()
+        status.stringValue = "This operation could not complete"
+        let explanation = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        detail.stringValue = explanation.isEmpty ? "The runtime exited without an explanation. Please try again or check the GitHub project for support." : explanation
+        detail.toolTip = detail.stringValue
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Abrams could not complete the operation"
+        alert.informativeText = String(detail.stringValue.prefix(1800))
+        alert.addButton(withTitle: "OK")
+        alert.beginSheetModal(for: window)
     }
     @objc func choosePC() { choose(folder: true) }
     @objc func chooseGenesis() { choose(folder: false) }
     func choose(folder: Bool) {
+        guard !busy, running == nil, folder || pcReady else { return }
         let panel = NSOpenPanel(); panel.canChooseDirectories = folder; panel.canChooseFiles = !folder; panel.allowsMultipleSelection = false
-        panel.message = folder ? "Choose your extracted original PC game folder." : "Choose the supported original raw Genesis ROM."
-        panel.prompt = "Import"
+        panel.title = folder ? "Import original PC game" : "Import optional Genesis ROM"
+        panel.message = folder ? "Choose the extracted folder containing ABRAMS.COM and SIM.EXE. Supported files will be verified and copied. Your source folder will stay unchanged." : "Choose a supported original raw Genesis ROM. This adds presentation assets; the imported PC game remains required. Your ROM will stay unchanged."
+        panel.prompt = "Verify & Import"
         panel.beginSheetModal(for: window) { response in
             if response == .OK, let url = panel.url {
-                self.status.stringValue = "Checking and importing…"
+                self.status.stringValue = "Verifying and importing \(folder ? "PC game files" : "Genesis presentation")…"
+                self.detail.stringValue = "Please keep Abrams open until verification finishes. Your source files will not be changed."
                 self.call([folder ? "--game" : "--genesis", url.path], completion: { self.refresh($0) })
             }
         }
     }
     @objc func play() {
-        if busy || running != nil { return }; busy = true; controls(false)
-        status.stringValue = "Game session active"; detail.stringValue = "The game opens in a separate window after its resources are ready. Close that window to return here. Your save states are preserved."
+        guard pcReady, !busy, running == nil else { return }
+        busy = true
+        status.stringValue = "Starting the simulation…"
+        detail.stringValue = "The game opens in a separate window. Close the game window to return here and finish saving safely."
         let process = Process(); process.executableURL = runtime; process.arguments = setupArgs + ["--play"]
         let pipe = Pipe(); process.standardOutput = pipe; process.standardError = pipe
-        running = process
+        running = process; updateControls()
         DispatchQueue.global().async {
             do {
                 try process.run()
-                // Consume output without accumulating an unbounded transcript.
-                var tail = Data()
-                while true { let data = pipe.fileHandleForReading.availableData; if data.isEmpty { break }; tail.append(data); if tail.count > 16384 { tail = Data(tail.suffix(16384)) } }
+                DispatchQueue.main.async { self.status.stringValue = "Game session active" }
+                let tail = Self.readOutput(pipe, limit: 16384)
                 process.waitUntilExit()
-                let message = String(data: tail, encoding: .utf8) ?? "Game exited"
+                let message = String(data: tail, encoding: .utf8) ?? "The game exited unexpectedly."
                 DispatchQueue.main.async {
                     self.running = nil; self.busy = false
                     self.window.makeKeyAndOrderFront(nil)
@@ -106,13 +248,46 @@ final class Launcher: NSObject, NSApplicationDelegate {
             } catch { DispatchQueue.main.async { self.running = nil; self.busy = false; self.showError(error.localizedDescription) } }
         }
     }
-    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if running != nil || busy {
-            let alert = NSAlert(); alert.messageText = "Close the game window before quitting Abrams."; alert.informativeText = "This lets the original simulation finish saving its profile safely."; alert.runModal(); return .terminateCancel
-        }
-        return .terminateNow
+    @objc func openGitHub() { NSWorkspace.shared.open(githubURL) }
+    @objc func showAbout() {
+        if let aboutWindow { aboutWindow.makeKeyAndOrderFront(nil); return }
+        let panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 620, height: 570), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        configure(panel); panel.title = "About Abrams"
+        let view = panel.contentView!
+        let icon = NSImageView(frame: NSRect(x: 28, y: 435, width: 90, height: 100))
+        icon.image = NSApp.applicationIconImage; icon.imageScaling = .scaleProportionallyUpOrDown; view.addSubview(icon)
+        label("M1 Abrams Battle Tank", frame: NSRect(x: 140, y: 495, width: 452, height: 34), size: 26, weight: .bold, in: view)
+        label("Independent, unofficial fan remaster", frame: NSRect(x: 142, y: 467, width: 447, height: 25), size: 14, color: muted, in: view)
+        label(version, frame: NSRect(x: 142, y: 443, width: 445, height: 20), size: 12, color: muted, in: view)
+        label("Dedicated to David “Ming” Kenny", frame: NSRect(x: 32, y: 390, width: 555, height: 29), size: 19, weight: .semibold, in: view)
+        label("Original game by Dynamix.", frame: NSRect(x: 32, y: 355, width: 555, height: 26), size: 14, color: muted, in: view)
+        label("GAME CONTENT & LICENSING", frame: NSRect(x: 32, y: 315, width: 555, height: 20), size: 11, weight: .semibold, color: muted, in: view)
+        let rights = "This project asserts no ownership, moral rights or other rights over the original game content. Original copyrights and trademarks remain with their respective rights holders. This independent remaster is not affiliated with or endorsed by them.\n\nRemaster code and asset contributions are free under the licences included with this release. This does not change the rights in the original game content.\n\nA separate, supported copy of the original PC game is required. An original Genesis ROM is optional. Neither is bundled with this application."
+        let rightsLabel = label(rights, frame: NSRect(x: 32, y: 83, width: 555, height: 221), size: 13, color: muted, in: view)
+        rightsLabel.isSelectable = true
+        _ = button("View project on GitHub ↗", action: #selector(openGitHub), frame: NSRect(x: 27, y: 26, width: 233, height: 35), in: view)
+        let close = button("Close", action: #selector(closeAbout), frame: NSRect(x: 490, y: 26, width: 102, height: 35), in: view)
+        close.keyEquivalent = "\u{1b}"
+        aboutWindow = panel; panel.center(); panel.makeKeyAndOrderFront(nil)
     }
+    @objc func closeAbout() { aboutWindow?.close() }
+    func canCloseLauncher() -> Bool {
+        if running != nil || busy {
+            let alert = NSAlert()
+            alert.messageText = running != nil ? "Close the game window before quitting Abrams." : "Please wait for setup to finish."
+            alert.informativeText = running != nil ? "This lets the original simulation finish saving its profile safely." : "Verification or import is in progress. Keep Abrams open until it completes."
+            alert.runModal()
+            return false
+        }
+        return true
+    }
+    func windowShouldClose(_ sender: NSWindow) -> Bool { canCloseLauncher() }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply { canCloseLauncher() ? .terminateNow : .terminateCancel }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { running == nil && !busy }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { window.makeKeyAndOrderFront(nil) }
+        return true
+    }
 }
 let delegate = Launcher()
 NSApplication.shared.delegate = delegate

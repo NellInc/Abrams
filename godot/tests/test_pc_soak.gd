@@ -28,9 +28,15 @@ var next_memory := 0
 var sim_replies := 0
 var unexpected_program := ""
 var input_observations: Array[Dictionary] = []
+var soak_modes: Array[String] = []
+var modern_soak := false
+var measured_modern := 0.0
+var last_source_sequence := -1
+var segment_multiplier := 1
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
+	modern_soak="--modern-soak" in args
 	var index := args.find("--output")+1
 	if not ["--boot","--play","--capture","--frame-audit","--output"].all(func(flag):return flag in args) or "--no-audio" in args or "--saves" in args or index==0 or index>=args.size() or DirAccess.dir_exists_absolute(args[index]):
 		printerr("Soak requires --boot --play --capture --frame-audit --output FRESH and isolated saves/audio")
@@ -42,14 +48,17 @@ func _initialize() -> void:
 			quit(2)
 			return
 		seconds=float(args[i])
-	if seconds<6 or seconds>1800:
+	if seconds<6 or seconds>7200:
 		quit(2)
 		return
-	for path in ["res://tests/test_pc_soak.gd","res://scripts/pc_bridge_viewer.gd","res://scripts/pc_audio.gd","res://scripts/pc_play_menu.gd"]:
+	for path in ["res://tests/test_pc_soak.gd","res://scripts/pc_bridge_viewer.gd","res://scripts/pc_audio.gd","res://scripts/pc_play_menu.gd","res://scripts/pc_draw_pass.gd","res://scripts/pc_modern_assets.gd","res://scripts/pc_modern_ownership.gd","res://scripts/pc_surface.gdshader","res://scripts/pc_modern_ownership.gdshader"]:
 		fingerprints[path]=FileAccess.get_sha256(path)
+	for name in DirAccess.get_files_at("res://scripts"):
+		if name.ends_with(".gd") or name.ends_with(".gdshader"):
+			fingerprints["res://scripts/"+name]=FileAccess.get_sha256("res://scripts/"+name)
 	fingerprints["executed_test_script"]=FileAccess.get_sha256(get_script().resource_path)
 	var repository := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
-	for path in ["GAME/SIM.EXE","tools/pc_bridge_host.py","tools/pc_state_host.py"]:
+	for path in ["GAME/SIM.EXE","tools/pc_bridge_host.py","tools/pc_state_host.py","tools/pc_render_trace.py","local-art/pc-modern/catalog.json","local-art/pc-modern/tree.png","local-art/pc-modern/tree.json",".runtime/pc-core/abrams-trace.dylib",".runtime/pc-core/abrams-trace.json"]:
 		fingerprints[path]=FileAccess.get_sha256(repository.path_join(path))
 	super._initialize()
 
@@ -103,10 +112,15 @@ func _apply_sample(message: Dictionary) -> void:
 	if current_bucket.is_empty():return
 	var row: Dictionary=metrics[current_bucket]
 	row.replies+=1
+	var sequence := int(message.get("sequence",-1))
+	if last_source_sequence>=0:check(sequence-last_source_sequence==segment_multiplier,"paced transport preserves every requested source frame")
+	last_source_sequence=sequence
 	if last_interval>0:
 		var ms := (now-last_interval)/1000.0
 		segment_sim_seconds+=ms/1000.0
-		if current_bucket.ends_with("/normal"):measured_normal+=ms/1000.0
+		if current_bucket.ends_with("/normal"):
+			measured_normal+=ms/1000.0
+			if current_bucket=="modern/normal":measured_modern+=ms/1000.0
 		else:measured_fast+=ms/1000.0
 		row.interval_count+=1
 		row.interval_sum_ms+=ms
@@ -139,7 +153,7 @@ func disk_ok() -> bool:
 	return free>1024*1024*1024
 
 func memory_sample() -> void:
-	if memory_timeline.size()<128:
+	if memory_timeline.size()<300:
 		memory_timeline.append({"wall_seconds":(Time.get_ticks_usec()-begun)/1000000.0,"normal_sim_seconds":measured_normal,"static_memory_bytes":OS.get_static_memory_usage(),"bucket":current_bucket,"resets":reset_count})
 
 func report(final: bool) -> void:
@@ -147,7 +161,7 @@ func report(final: bool) -> void:
 	if file==null:
 		check(false,"report writable")
 		return
-	file.store_string(JSON.stringify({"final":final,"passed":final and errors.is_empty(),"requested_normal_seconds":seconds,"measured_normal_seconds":measured_normal,"measured_fast_seconds":measured_fast,"wall_seconds":(Time.get_ticks_usec()-begun)/1000000.0,"checks":checks,"errors":errors,"metrics":metrics,"stations":station_counts,"resets":reset_count,"source_sha256":fingerprints,"memory_max_bytes":max_memory,"memory_baseline_bytes":memory_baseline,"memory_current_bytes":OS.get_static_memory_usage(),"memory_timeline":memory_timeline,"sim_replies":sim_replies,"unexpected_program":unexpected_program,"minimum_free_bytes":minimum_free,"audio_delivered":pc_audio.delivered,"audio_suppressed":pc_audio.suppressed,"audio_epoch":pc_audio.epoch,"scope":"Actual paced production transport; normal elapsed time excludes fast-forward, resets, and setup. Audio health measures consumer state, not acoustic latency or human listening. No mission victory claim. Native focus testing is a separate gate."},"  "))
+	file.store_string(JSON.stringify({"final":final,"passed":final and errors.is_empty(),"requested_normal_seconds":seconds,"modern_soak":modern_soak,"measured_modern_seconds":measured_modern,"measured_normal_seconds":measured_normal,"measured_fast_seconds":measured_fast,"wall_seconds":(Time.get_ticks_usec()-begun)/1000000.0,"checks":checks,"errors":errors,"metrics":metrics,"stations":station_counts,"resets":reset_count,"source_sha256":fingerprints,"memory_max_bytes":max_memory,"memory_baseline_bytes":memory_baseline,"memory_current_bytes":OS.get_static_memory_usage(),"memory_timeline":memory_timeline,"sim_replies":sim_replies,"unexpected_program":unexpected_program,"minimum_free_bytes":minimum_free,"audio_delivered":pc_audio.delivered,"audio_suppressed":pc_audio.suppressed,"audio_epoch":pc_audio.epoch,"scope":"Actual paced production transport; normal elapsed time excludes fast-forward, resets, and setup. Audio health measures consumer state, not acoustic latency or human listening. No mission victory claim. Native focus testing is a separate gate."},"  "))
 	var input_file := FileAccess.open(output.path_join("soak-inputs.json"),FileAccess.WRITE)
 	if input_file: input_file.store_string(JSON.stringify(input_observations,"  "))
 
@@ -160,6 +174,8 @@ func segment(mode: String, multiplier: int, duration: float, station_index: int)
 	current_bucket=mode+("/normal" if multiplier==1 else "/fast")
 	if not metrics.has(current_bucket):metrics[current_bucket]={"replies":0,"interval_count":0,"interval_sum_ms":0.0,"interval_max_ms":0.0,"over_100ms":0,"memory_max_bytes":0,"wall_seconds":0.0}
 	last_interval=0
+	last_source_sequence=-1
+	segment_multiplier=multiplier
 	segment_sim_seconds=0.0
 	var begin := Time.get_ticks_usec()
 	latest_reply=begin
@@ -202,20 +218,32 @@ func _capture() -> void:
 	memory_baseline=OS.get_static_memory_usage()
 	memory_sample()
 	check(play_mode and pc_audio!=null and previous_program.get("name")=="SIM","production SIM and audio active")
+	for mode in audio_menu.available_graphics_modes():soak_modes.append(mode)
+	check(not modern_soak or "modern" in soak_modes,"requested Modern soak has loaded resources")
 	await checkpoint("save_state")
-	# Eighteen restores maximum, 36 paced segments. Full run: 1800 normal seconds
-	# plus 36 real fast-forward seconds; short smoke follows the same code path.
-	for cycle in 6:
-		for mode_index in 3:
+	# Every available mode exercises the same production path. Normal elapsed
+	# time excludes setup, accelerated segments and checkpoint round trips.
+	# Frequent restores keep the soak in a live mission, rather than crediting
+	# menu time after an unattended combat loss. Long runs use two-minute spans.
+	var cycles := 60 if modern_soak and seconds>600 else 6
+	for cycle in cycles:
+		for mode_index in soak_modes.size():
 			if not errors.is_empty() or not bridge.failure.is_empty():break
-			var mode: String=["ega","genesis","upscaled"][mode_index]
-			await segment(mode,1,maxf(2.0,seconds/18.0),cycle*3+mode_index)
-			if errors.is_empty():await segment(mode,2,2.0,cycle*3+mode_index)
+			var mode: String=soak_modes[mode_index]
+			var duration := maxf(2.0,seconds/(cycles*soak_modes.size()))
+			if modern_soak:duration=maxf(2.0,seconds/cycles) if mode=="modern" else 2.0
+			await segment(mode,1,duration,cycle+mode_index)
+			if errors.is_empty():await segment(mode,2,2.0,cycle+mode_index)
 			if not errors.is_empty() or not bridge.failure.is_empty():break
 			await checkpoint("load_state")
 	check(measured_normal>=seconds,"requested real normal-speed duration completed")
+	check(not modern_soak or measured_modern>=seconds,"requested real Modern duration completed")
 	check(STATIONS.all(func(station):return station_counts.get(station,0)>0),"gunner, commander, cupola and driver each observed")
 	check(bridge.failure.is_empty() and pc_audio.failure.is_empty(),"final transport/audio healthy")
+	var repository := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	for path in fingerprints:
+		var current: String=get_script().resource_path if path=="executed_test_script" else path if path.begins_with("res://") else repository.path_join(path)
+		check(FileAccess.get_sha256(current)==fingerprints[path],"candidate unchanged throughout soak: "+path)
 	memory_sample()
 	report(true)
 	for error in errors:printerr("FAIL: "+error)

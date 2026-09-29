@@ -59,6 +59,58 @@ var fast_forward := 1
 var pending_state_command: Dictionary = {}
 var state_control_pending := false
 var inflight_fast := false
+# Presentation-only reuse. Host replies, input sampling, audio and world drawing
+# still run for every original frame. Assets are loaded before the first reply.
+var presentation_cache_enabled := true
+var presentation_builds := 0
+var presentation_reuses := 0
+var _presentation_key: Dictionary = {}
+var _presentation_pixels := PackedByteArray()
+var _presentation_frontend := false
+var _decoded_png := ""
+var _decoded_image: Image
+
+func invalidate_presentation_cache() -> void:
+	_presentation_key.clear()
+	_presentation_pixels.clear()
+
+func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, program: Dictionary) -> bool:
+	var key: Dictionary = {}
+	var pixels := PackedByteArray()
+	# Comparison mode deliberately retains its uncached diagnostic path.
+	if presentation_cache_enabled and play_mode and image!=null and world!=null:
+		var paired := presentation.duplicate(false)
+		# Observer delivery counters are not consumed by any presentation layer.
+		# All actual provenance, including draw sequence and unknown future fields,
+		# remains in the key. Never infer equivalence from a hash or sequence alone.
+		paired.erase("scanout_sequence")
+		paired.erase("buffer_slot")
+		key={"paired":paired,"program":program,"format":image.get_format(),"extent":image.get_size(),
+			"size":tandem_frame.size,"world":world,"mode":tandem_frame.graphics_mode,
+			"cockpits":cockpit_art_requested,"gunner":gunner_art_requested,
+			"text":tandem_frame.frontend_art.text_enabled}
+		pixels=image.get_data()
+		if not _presentation_key.is_empty() and pixels==_presentation_pixels and key.recursive_equal(_presentation_key,64):
+			presentation_reuses+=1
+			tandem_frame.remember_frame(image,presentation,world,program)
+			return _presentation_frontend
+	invalidate_presentation_cache()
+	presentation_builds+=1
+	tandem_frame.set_frame(image,presentation,world,program)
+	var frontend := false
+	if trace_mode and cockpit_art_requested: frontend=tandem_frame.present_frontend(program)
+	# Cache only successful paired compositions. Invalid input always takes the
+	# ordinary fail-closed path, and frontend transitions never reuse cockpit UI.
+	if not key.is_empty() and tandem_frame.world_enabled and not frontend:
+		_presentation_key=key.duplicate(true)
+		_presentation_pixels=pixels
+		_presentation_frontend=frontend
+	if play_display:
+		# Live cockpit art is entirely source-driven. Frontend animations keep
+		# their continuous render loop; only a verified static composition rests.
+		var source_owned_world: bool = draw_view.retain_render_target and world==world_viewport.get_texture()
+		play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE if source_owned_world and not _presentation_key.is_empty() else SubViewport.UPDATE_ALWAYS
+	return frontend
 
 func _initialize() -> void:
 	root.title = "Abrams: original PC / Godot bridge research"
@@ -107,6 +159,7 @@ func _initialize() -> void:
 	if play_mode:
 		audio_menu=preload("res://scripts/pc_play_menu.gd").new()
 		audio_menu.genesis_available=not pc_only
+		audio_menu.modern_available=tandem_frame.modern_available
 		audio_menu.audio=pc_audio
 		if capture: audio_menu.config_path=""
 		audio_menu.load_settings()
@@ -122,7 +175,10 @@ func _initialize() -> void:
 	if play_mode:
 		var initial_mode := "ega" if "--original-art" in args else "upscaled"
 		if "--graphics" in args: initial_mode=args[args.find("--graphics")+1]
-		audio_menu.choose_graphics(initial_mode)
+		if not audio_menu.choose_graphics(initial_mode):
+			printerr("Requested graphics assets are unavailable: "+initial_mode)
+			quit(2)
+			return
 	var python := OS.get_environment("ABRAMS_PYTHON")
 	if python.is_empty(): python = "/opt/homebrew/bin/python3"
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
@@ -264,6 +320,7 @@ func _label(text: String, size: int) -> Label:
 	return label
 
 func _configure_window() -> void:
+	if play_mode: root.title = "Abrams Battle Tank · Fan Remaster"
 	# Startup project overrides are applied after SceneTree._initialize(). Apply
 	# the requested native size once the real window exists, then trust its actual
 	# size signals (including OS limits, HiDPI and fullscreen transitions).
@@ -319,8 +376,8 @@ static func graphics_launch_error(args: Array) -> String:
 	if "--graphics" not in args: return ""
 	var index := args.find("--graphics")+1
 	var mode: String = args[index] if index<args.size() else ""
-	if mode not in ["ega","genesis","upscaled"]:
-		return "--graphics requires ega, genesis or upscaled; Modern artwork is not available"
+	if mode not in ["ega","genesis","upscaled","modern"]:
+		return "--graphics requires ega, genesis, upscaled or modern"
 	if "--pc-only" in args and mode=="genesis":
 		return "--graphics genesis requires the optional Genesis import; unavailable with --pc-only"
 	return ""
@@ -333,6 +390,7 @@ func _configure_art_requests(args: Array) -> void:
 	genesis_colours_requested = not pc_only and (cockpit_art_requested or "--genesis-colours" in args) and "--pc-colours" not in args
 
 func _load_world_presentation(directory: String, args: Array) -> void:
+	invalidate_presentation_cache()
 	if genesis_colours_requested: genesis_style.load_palette(directory.path_join("reference/genesis/extracted/gunner/palette.gpl"))
 	if trace_mode: tandem_frame.frontend_art.text_enabled = "--original-text" not in args
 	if trace_mode and pc_presentation_requested and not wire_mode and "--flat-world" not in args:
@@ -343,12 +401,14 @@ func _load_world_presentation(directory: String, args: Array) -> void:
 	if trace_mode and cockpit_art_requested and not wire_mode and "--original-effects" not in args:
 		var effects := preload("res://scripts/pc_effect_art.gd").new()
 		if effects.load_assets(directory): draw_view.effect_art = effects
-	# Retain original flat vehicle faces. The panel studies were rejected;
-	# replacement models and textures are deliberately absent from live Play.
+	# Modern is optional and preloaded. Toggling performs no file I/O.
+	if trace_mode and pc_presentation_requested and not wire_mode:
+		tandem_frame.modern_available=draw_view.load_modern_assets(directory)
 	if trace_mode and pc_presentation_requested and "--original-text" not in args:
 		tandem_frame.typography.load_sources(directory.path_join("GAME"))
 
 func _load_cockpit_presentation(directory: String) -> void:
+	invalidate_presentation_cache()
 	# A PC-only launch must never inspect or load the optional donor pack,
 	# even when those files happen to exist in a developer's checkout.
 	if pc_only: return
@@ -468,6 +528,7 @@ func _build_stage(viewport: SubViewport) -> void:
 	camera.make_current()
 	draw_view = DrawPass.new()
 	draw_view.solid_enabled = trace_mode and not wire_mode
+	draw_view.retain_render_target = play_mode and trace_mode and not wire_mode
 	camera.add_child(draw_view)
 	world_view.visible = not trace_mode
 
@@ -491,10 +552,29 @@ func _advance_live_frame() -> bool:
 	return sent
 
 func _choose_graphics(mode: String) -> void:
+	invalidate_presentation_cache()
+	if play_display: play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	if mode=="modern" and not tandem_frame.modern_available:
+		audio_menu.graphics_mode=tandem_frame.graphics_mode
+		audio_menu.refresh_controls()
+		return
+	var was_modern: bool=draw_view.modern_enabled
+	draw_view.modern_enabled=mode=="modern"
 	if not tandem_frame.set_graphics_mode(mode):
+		draw_view.modern_enabled=was_modern
 		audio_menu.graphics_mode=tandem_frame.graphics_mode
 		audio_menu.state_message="Requested graphics assets are unavailable."
-		audio_menu.refresh_controls()
+		return
+	# Replay the already paired drawing only. No guest frame or audio advances.
+	var drawing=previous_presentation.get("draw_pass")
+	if drawing is Dictionary:
+		var displayed: Dictionary=drawing.duplicate(false)
+		if previous_presentation.get("palette_rgb") is Array:
+			displayed.palette_rgb=previous_presentation.palette_rgb
+		draw_view.apply_pass(displayed)
+	else:
+		draw_view.apply_pass({"objects":[]})
+	audio_menu.refresh_controls()
 
 func _choose_speed(multiplier: int) -> void:
 	fast_forward=multiplier
@@ -585,7 +665,9 @@ func _process(delta: float) -> bool:
 	return false
 
 func _apply_sample(message: Dictionary) -> void:
-	if message.get("timeline_reset",false) and pc_audio: pc_audio.reset_timeline()
+	if message.get("timeline_reset",false):
+		invalidate_presentation_cache()
+		if pc_audio: pc_audio.reset_timeline()
 	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.slots)
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
@@ -603,10 +685,15 @@ func _apply_sample(message: Dictionary) -> void:
 	samples += 1
 	if capture: print("PC_VIEW_SAMPLE %d sequence=%d" % [samples, int(message.sequence)])
 	fps = float(message.fps)
-	var image := Image.new()
-	if image.load_png_from_buffer(Marshalls.base64_to_raw(message.png)) != OK:
-		bridge.failure = "invalid original framebuffer"
-		return
+	var image := _decoded_image
+	var changed: bool = image==null or message.png!=_decoded_png
+	if changed:
+		image=Image.new()
+		if image.load_png_from_buffer(Marshalls.base64_to_raw(message.png)) != OK:
+			bridge.failure = "invalid original framebuffer"
+			return
+		_decoded_png=message.png
+		_decoded_image=image
 	if campaign_review_pending:
 		var probe := image.duplicate()
 		probe.convert(Image.FORMAT_RGB8)
@@ -621,7 +708,7 @@ func _apply_sample(message: Dictionary) -> void:
 	# original host may compute the next frame while we build this presentation.
 	# All Godot scene work remains on the main thread; capture never prefetches.
 	_advance_live_frame()
-	picture.texture = ImageTexture.create_from_image(image)
+	if changed or picture.texture==null: picture.texture = ImageTexture.create_from_image(image)
 	if play_mode: status.hide()
 	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
 	if pc_audio:
@@ -630,11 +717,11 @@ func _apply_sample(message: Dictionary) -> void:
 		previous = {}
 		previous_presentation = message.get("presentation", {})
 		draw_view.apply_pass({"objects": []})
-		tandem_frame.set_frame(image, previous_presentation, null, previous_program)
-		status.text = "ORIGINAL PC: " + str(previous_program.get("name","STARTING"))
-		caption.text = "Original menu/briefing or SIM initialization. Showing the original framebuffer; no substitute simulation."
-		if trace_mode and cockpit_art_requested and tandem_frame.present_frontend(previous_program):
-			caption.text = "GENESIS ART: " + tandem_frame.frontend_art.active.name + " | original PC content, timing and controls"
+		var frontend := _present_tandem(image, previous_presentation, null, previous_program)
+		if not play_mode:
+			status.text = "ORIGINAL PC: " + str(previous_program.get("name","STARTING"))
+			caption.text = "Original menu/briefing or SIM initialization. Showing the original framebuffer; no substitute simulation."
+			if frontend: caption.text = "GENESIS ART: " + tandem_frame.frontend_art.active.name + " | original PC content, timing and controls"
 		return
 	if message.has("static_wire_geometry"):
 		world_view.set_geometry(message.static_wire_geometry)
@@ -668,8 +755,12 @@ func _apply_sample(message: Dictionary) -> void:
 		else: world_viewport.size = dimensions * 4
 		# Source 320x200 pixels stretch to 4:3 outside the 3D projection.
 		if not trace_mode: world_aspect.ratio = float(dimensions.x) / (float(dimensions.y) * 1.2)
+	var frontend := false
 	if trace_mode:
-		tandem_frame.set_frame(image, previous_presentation, world_viewport.get_texture(), previous_program)
+		frontend = _present_tandem(image, previous_presentation, world_viewport.get_texture(), previous_program)
+	previous = state
+	# Hidden research labels cause text shaping/layout even when not displayed.
+	if play_mode: return
 	status.text = "%s   HEADING %03d   SIGHT %03d   SPEED %d   FUEL %d" % [str(state.station).to_upper(), state.heading_degrees, state.bearing_degrees, state.speed_display, state.fuel_display]
 	caption.text = "HEAT %d   SABOT %d   AX %d   COAX %d     World: %s   Window: %s   Objects: %d" % [state.ammunition.HEAT, state.ammunition.SABOT, state.ammunition.AX, state.ammunition.COAX, str(position), str(state.world.window_origin), state.world.static.size()]
 	if trace_mode:
@@ -692,7 +783,7 @@ func _apply_sample(message: Dictionary) -> void:
 			caption.text += " | verified high-res text: %d" % tandem_frame.typography.runs.size()
 		elif gunner_art_requested:
 			caption.text += "\n" + ("HIGH-RES GUNNER SURROUND: original instruments retained" if tandem_frame.gunner_art_enabled else "ORIGINAL MATERIALS: " + tandem_frame.gunner_art_reason)
-	if trace_mode and cockpit_art_requested and tandem_frame.present_frontend(previous_program):
+	if frontend:
 		caption.text = "GENESIS MOTOR POOL: original PC arming menu, values and controls"
 	previous = state
 
@@ -729,6 +820,7 @@ func _capture() -> void:
 		"terrain_polygons": draw_view.terrain_polygon_count if trace_mode else 0,
 		"hill_polygons": draw_view.hill_polygon_count if trace_mode else 0,
 		"vehicle_polygons": draw_view.vehicle_polygon_count if trace_mode else 0,
+		"modern": {"available":tandem_frame.modern_available,"enabled":draw_view.modern_enabled,"status":draw_view.modern_status,"polygons":draw_view.modern_polygon_count,"triangles":draw_view.modern_triangle_count,"tree_patches":draw_view.modern_tree_count,"source_fallback_faces":draw_view.modern_fallback_polygon_count,"round_forms":draw_view.source_round_count,"prewarmed":draw_view.modern_prewarmed,"frame_status":draw_view.modern_frame_status,"asset_io_count":draw_view.modern_assets.disk_io_count,"max_anchor_error":draw_view.modern_assets.max_anchor_error} if trace_mode else {},
 		"effect_art": draw_view.effect_art_ids if trace_mode else [],
 		"cockpit_materials": tandem_frame.cockpit_art_ids if trace_mode else [],
 		"genesis_art": tandem_frame.genesis_art_enabled if trace_mode else false,

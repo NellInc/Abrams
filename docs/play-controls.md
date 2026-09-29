@@ -14,11 +14,11 @@ control first when you need time to choose.
 | Quick save to slot 1 | **Cmd+S** | **Ctrl+Alt+S** |
 | Quick load from slot 1 | **Cmd+L** | **Ctrl+Alt+L** |
 | Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
-| Cycle EGA → Genesis → Upscaled | **Cmd+G** | **Ctrl+Alt+G** |
+| Cycle EGA → Genesis → Upscaled → Modern | **Cmd+G** | **Ctrl+Alt+G** |
 
 Shortcuts work in Play, including fullscreen, menus and briefings. A brief
 on-screen message confirms the action. Graphics changes immediately and skips
-the unavailable Modern mode. Holding a shortcut never repeats saves or switches.
+unavailable modes. Holding a shortcut never repeats saves or switches.
 The chord is withheld from the original game until its keys are released; bare
 S, L, G and the original function keys remain unchanged. Quick save overwrites
 slot 1 while retaining its preceding archive. Use Session for slots 2 to 5.
@@ -84,7 +84,7 @@ restored on a fresh launch; fast forward is not a sticky preference.
 
 ## Graphics
 
-Choose **Graphics > EGA, Genesis or Upscaled** during play, menus or briefings.
+Choose **Graphics > EGA, Genesis, Upscaled or Modern** during play, menus or briefings.
 The current frame is recomposed immediately from preloaded artwork, with no
 restart, new game input or extra original frame.
 
@@ -93,12 +93,13 @@ restart, new game input or extra original frame.
   wherever a verified counterpart exists. PC geometry, controls, values and
   unsupported imagery stay original. This does not run the Genesis game.
 * **Upscaled**: the high-resolution remaster, including original-style outlines.
-* **Modern**: disabled and explicitly labelled unavailable until new models and
-  realistic assets exist.
+* **Modern**: refined low-poly scenery, illustrated trees and a muted battlefield
+  palette, with the restored Upscaled interfaces. Available when its source-pinned
+  resources are installed. Source sensor palettes retain conservative original rendering.
 
 Upscaled is the default. Without an imported Genesis ROM, the standalone app
-offers EGA and PC-only Upscaled; the shortcut skips Genesis. In an equipped
-checkout, `./Play.command --graphics ega` (or `genesis` or `upscaled`) selects the
+offers EGA, PC-only Upscaled and Modern when its assets are installed; the shortcut skips Genesis. In an equipped
+checkout, `./Play.command --graphics ega` (or `genesis`, `upscaled` or `modern`) selects the
 starting mode. Missing or invalid graphics resources leave the current mode
 unchanged. See [graphics coverage](graphics-modes.md).
 

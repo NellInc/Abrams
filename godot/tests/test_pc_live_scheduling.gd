@@ -251,6 +251,26 @@ func run() -> void:
 	check(not _advance_live_frame(),"no request after transport failure")
 	bridge.failure=""
 
+	# Exact compressed-byte reuse may bypass decoding, never delivery or state.
+	capture=true
+	capture_done=true
+	bridge.failure=""
+	_apply_sample(valid_sample)
+	var retained_texture := picture.texture
+	var delivered_before := samples
+	_apply_sample(valid_sample.duplicate(true))
+	check(picture.texture==retained_texture and samples==delivered_before+1,"identical PNG retains texture and still consumes reply")
+	var changed_sample := valid_sample.duplicate(true)
+	var changed_image := Image.create_empty(320,200,false,Image.FORMAT_RGB8)
+	changed_image.fill(Color.MAGENTA)
+	changed_sample.png=Marshalls.raw_to_base64(changed_image.save_png_to_buffer())
+	_apply_sample(changed_sample)
+	check(picture.texture!=retained_texture and picture.texture.get_image().get_data()==changed_image.get_data(),"changed PNG replaces source pixels")
+	_apply_sample(valid_sample)
+	check(picture.texture.get_image().get_data()==_decoded_image.get_data() and _decoded_png==valid_sample.png,"previous source restored after different frame")
+	capture=false
+	events.clear()
+
 	# Failures known before rendering must not advance the original.
 	trace_mode=false
 	events.clear()

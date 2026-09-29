@@ -104,6 +104,11 @@ func run()->void:
 			samples.append({"label":e.label,"changed_source_pixels":changes,"active":frame.native_graphics.active.duplicate(true)})
 			if changes>0:genesis.save_png(output.path_join(e.label+"-genesis.png"))
 		check(not frame.set_graphics_mode("modern") and frame.graphics_mode=="genesis","Modern remains unavailable")
+		frame.modern_available=true
+		check(frame.set_graphics_mode("modern"),"loaded Modern reuses restored compositor")
+		if native:
+			check((await snapshot()).get_data()==upscaled.get_data(),"Modern uses identical restored UI with the same supplied world: "+e.label)
+		frame.modern_available=false
 		check(frame.set_graphics_mode("upscaled"),"Upscaled restores")
 		if native:
 			var restored:=await snapshot()

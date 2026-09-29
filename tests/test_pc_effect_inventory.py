@@ -56,9 +56,23 @@ class EffectInventoryTests(unittest.TestCase):
         draw = (ROOT / 'godot/scripts/pc_draw_pass.gd').read_text()
         shader = (ROOT / 'godot/scripts/pc_surface.gdshader').read_text()
         self.assertIn('"impact_burst",effect_art.atlas', draw)
-        self.assertIn('materials.append(Vector2(0,4))', draw)
+        self.assertIn('materials.append(Vector2(0,4+_owner*32))', draw)
+        # The ownership channel must not change the existing effect kind.
+        self.assertIn('UV.y = mod(UV.y,32.0)', shader)
         self.assertIn('uniform sampler2D impact_burst : filter_linear, repeat_disable;', shader)
         self.assertIn('if (effect.a < 0.5) discard;', shader)
+
+    def test_modern_effect_ownership_unions_original_and_authored_coverage(self):
+        ownership = (ROOT / 'godot/scripts/pc_modern_ownership.gd').read_text()
+        shader = (ROOT / 'godot/scripts/pc_modern_ownership.gdshader').read_text()
+        self.assertIn('effect_art: RefCounted = null', ownership)
+        self.assertLess(ownership.index('Geometry.sprite_runs'), ownership.index('effect_art.mapping'))
+        self.assertLess(ownership.index('effect_art.mapping'), ownership.index('SourceCommands.ordered'))
+        self.assertIn('effect.rect', ownership)
+        self.assertIn('effect.source_uv', ownership)
+        self.assertIn('texture(effect_atlas,UV2).a < 0.5', shader)
+        self.assertIn('ALBEDO = vec3(UV,UV2.x)', shader)
+
 
 @unittest.skipUnless((ROOT / 'artifacts/finish-20260928/target-live-trace-02/report.json').exists(), 'Requires retained source mode captures')
 class EffectModeInventoryTests(unittest.TestCase):

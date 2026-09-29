@@ -15,6 +15,7 @@ uniform bool driver_assembly_enabled = false;
 uniform sampler2D driver_assembly_mask : filter_nearest, repeat_disable;
 uniform sampler2D plate_mask : filter_nearest, repeat_disable;
 uniform bool genesis_art = false;
+uniform bool modern_armour_palette = false;
 uniform float gunner_pixel_aspect = 1.0;
 uniform bool cupola_rail_verified = false;
 uniform bool status_art_enabled = false;
@@ -122,6 +123,22 @@ vec4 commander_metal(vec2 p, vec4 art) {
 			}
 		}
 	}
+	return art;
+}
+
+// The verified opaque Genesis donor carries contour-derived metal coverage in
+// alpha. Restore opacity in every mode; only Modern applies the olive paint.
+// This keeps the original RGB and avoids a per-fragment loop over loose shapes.
+vec4 armour_paint(vec4 art) {
+	if (!genesis_art) return art;
+	float metal = art.a;
+	art.a = 1.0;
+	if (!modern_armour_palette) return art;
+	float luminance = dot(art.rgb,vec3(0.2126,0.7152,0.0722));
+	float paint = smoothstep(0.10,0.30,luminance)*(1.0-metal);
+	// Monotonic shading retains every illustrated bevel and weathered highlight.
+	vec3 olive = luminance*vec3(0.65,0.70,0.46);
+	art.rgb = mix(art.rgb,olive,paint);
 	return art;
 }
 
@@ -273,14 +290,16 @@ void fragment() {
 			art = texture(commander_art,donor);
 			if (genesis_art) art = commander_metal(pixel,art);
 		} else if (station_art_enabled.y > 0.5 && plate == 3) {
-			art = texture(cupola_art,vec2(UV.x,cupola_y(pixel.y)/200.0));
+			vec2 donor = vec2(UV.x,cupola_y(pixel.y)/200.0);
+			art = armour_paint(texture(cupola_art,donor));
 		} else if (genesis_art && cupola_rail_verified && station_art_enabled.y > 0.5 && plate == 0 && cupola_rail_pixel(pixel)) {
 			// Complete the existing raised rail, then use its adjacent clean
 			// deck material for the PC-owned tapered edge. No world pixels qualify.
-			art = texture(cupola_art,pixel.x<183.0 ? UV : vec2(190.0/320.0,119.0/200.0));
+			vec2 donor = pixel.x<183.0 ? UV : vec2(190.0/320.0,119.0/200.0);
+			art = armour_paint(texture(cupola_art,donor));
 		} else if (station_art_enabled.z > 0.5 && plate == 4 &&
 			!in_box(pixel,vec4(53.0,187.0,267.0,200.0))) {
-			art = texture(driver_art,driver_donor(pixel));
+			art = armour_paint(texture(driver_art,driver_donor(pixel)));
 		} else if (status_art_enabled && plate==5 && !status_live_cell(pixel)) {
 			vec2 donor = status_donor(pixel);
 			donor.y = 0.5+donor.y*0.5;
@@ -292,7 +311,7 @@ void fragment() {
 		vec3 claim = round(texture(driver_assembly_mask,UV).rgb*255.0);
 		if (claim.b == 255.0) {
 			float offset = claim.r+claim.g*256.0-16384.0;
-			vec4 art = texture(driver_art,driver_donor(vec2(pixel.x-offset,pixel.y)));
+			vec4 art = armour_paint(texture(driver_art,driver_donor(vec2(pixel.x-offset,pixel.y))));
 			result.rgb = mix(result.rgb,art.rgb,art.a);
 		}
 	}

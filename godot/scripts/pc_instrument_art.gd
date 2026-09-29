@@ -19,6 +19,18 @@ const CELLS = [
 	{"name":"target_icon","source":Rect2i(285,180,23,11),"donor":Rect2(1438,892,98,52)},
 	{"name":"speed_scale","source":Rect2i(13,178,78,7),"donor":Rect2(76,868,357,29)},
 ]
+# The miniature console is baked into TC.BIN, including its tiny pseudo-labels.
+# Refresh only byte-identical static wells; source-drawn state pixels stay native.
+const COMMANDER_CELLS = [
+	{"name":"commander_speed_scale","source":Rect2i(16,179,77,5),"donor":Rect2(76,868,357,29),"gunner_donor":true},
+	{"name":"miniature_stores","source":Rect2i(210,151,20,17),"donor":Rect2(1038,748,100,82)},
+	{"name":"miniature_tank","source":Rect2i(239,151,45,17),"donor":Rect2(1183,748,225,79)},
+	{"name":"miniature_labels_left","source":Rect2i(213,172,33,12),"donor":Rect2(1056,852,157,55)},
+	{"name":"miniature_labels_right","source":Rect2i(251,172,31,12),"donor":Rect2(1238,852,151,54)}]
+const DRIVER_FASTENERS = [
+	{"name":"driver_console_left_screw","source":Rect2i(56,190,6,5),"screw":true},
+	{"name":"driver_console_right_screw","source":Rect2i(258,190,6,5),"screw":true}]
+var commander_donor: Texture2D
 var source_plate: Image
 var donor: Texture2D
 var active: Array[Dictionary] = []
@@ -69,16 +81,19 @@ func _init() -> void:
 	add_child(orientation)
 	orientation.clear()
 
-func load_sources(root: String, art: Image) -> bool:
+func load_sources(root: String, art: Image, commander: Image = null) -> bool:
 	clear()
 	source_plate = null
 	donor = null
+	commander_donor = null
 	plates.clear()
 	var path := root.path_join("local-art/pc-ui-v2/gps-bin.png")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=SOURCE_HASH: return false
 	if art==null or art.get_size()!=Vector2i(1586,992): return false
 	source_plate = Image.load_from_file(path)
 	donor = ImageTexture.create_from_image(art)
+	if commander!=null and commander.get_size()==Vector2i(1586,992):
+		commander_donor=ImageTexture.create_from_image(commander)
 	# A missing station source disables just its dynamic instruments.
 	for id in PLATES:
 		var entry: Array = PLATES[id]
@@ -103,6 +118,12 @@ func set_frame(source: Image, ui: Image, tags: Image, diagram: Dictionary = {}) 
 	for item in CELLS:
 		var box: Rect2i = item.source
 		if _owned_region(ui,tags,box,1) and _same_region(source,source_plate,box): active.append(item)
+	if commander_donor!=null and plates.has(2):
+		for item in COMMANDER_CELLS:
+			if _owned_region(ui,tags,item.source,2) and _same_region(source,plates[2],item.source): active.append(item)
+	if plates.has(4):
+		for item in DRIVER_FASTENERS:
+			if _owned_region(ui,tags,item.source,4) and _same_region(source,plates[4],item.source): active.append(item)
 	for spec in BARS:
 		if not _guard_matches(spec,source,ui,tags): continue
 		var colors: Array[Color] = []
@@ -208,6 +229,12 @@ func _draw() -> void:
 	if donor==null: return
 	draw_set_transform(Vector2.ZERO,0,size/Vector2(320,200))
 	for item in active:
+		if item.get("screw",false):
+			_driver_fastener(Rect2(item.source))
+			continue
+		if item in COMMANDER_CELLS:
+			draw_texture_rect_region(donor if item.get("gunner_donor",false) else commander_donor,Rect2(item.source),item.donor)
+			continue
 		if item.name=="speed_scale":
 			draw_texture_rect_region(donor,Rect2(item.source),item.donor)
 			continue
@@ -242,3 +269,21 @@ func _layout_orientation() -> void:
 	var factor := size/Vector2(320,200)
 	orientation.position = Vector2(orientation.source_rect.position)*factor
 	orientation.size = Vector2(orientation.source_rect.size)*factor
+
+func _driver_fastener(box:Rect2)->void:
+	# Tiny original instrument-pod heads: output-space circles, no live ink.
+	draw_rect(box,Color8(85,85,85))
+	var scale_xy:=size/Vector2(320,200)
+	var radius:=2.2*minf(scale_xy.x,scale_xy.y)
+	for ring in [[1.0,Color("191d1c")],[0.81,Color("b9bdb9")],[0.63,Color("686e68")]]:
+		var points:=PackedVector2Array()
+		for i in 40:
+			var angle:=TAU*i/40.0
+			points.append(box.get_center()+Vector2(cos(angle),sin(angle))*radius*ring[0]/scale_xy)
+		draw_colored_polygon(points,ring[1])
+		points.append(points[0]);draw_polyline(points,ring[1],0.1,true)
+	var center:=box.get_center()
+	var dx:=Vector2(radius*0.52/scale_xy.x,0)
+	var dy:=Vector2(0,radius*0.52/scale_xy.y)
+	draw_line(center-dx,center+dx,Color("191d1c"),0.36,true)
+	draw_line(center-dy,center+dy,Color("191d1c"),0.36,true)

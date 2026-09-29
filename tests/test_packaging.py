@@ -15,6 +15,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PackagingTests(unittest.TestCase):
+    def test_first_launch_imports_are_serialized(self):
+        import configparser
+        config = configparser.ConfigParser(strict=False)
+        config.read_string((ROOT / "godot/project.godot").read_text().replace("config_version=5", ""))
+        self.assertFalse(config.getboolean("editor", "import/use_multiple_threads"))
+
     def fixture(self, directory):
         root = Path(directory)
         (root / 'tools/package').mkdir(parents=True)
@@ -145,7 +151,10 @@ class PackagingTests(unittest.TestCase):
         private = package.selected_files(ROOT, 'private')
         self.assertIn('.runtime/pc-core/abrams-ref.zip', private)
         self.assertNotIn('tools/build_pc_vehicle_studies.py', private)
-        self.assertNotIn('tools/pc_vehicle_catalog.py', private)
+        self.assertIn('tools/pc_vehicle_catalog.py', private)
+        self.assertIn('tools/build_pc_modern_assets.py', private)
+        self.assertIn('local-art/pc-modern/catalog.json', private)
+        self.assertIn('local-art/pc-modern/tree.png', private)
         self.assertNotIn('tests/test_pc_vehicle_catalog.py', private)
         self.assertIn('godot/assets/fonts/Plex-OFL.txt', private)
         self.assertIn('.runtime/dosbox-pure-source/LICENSE', private)

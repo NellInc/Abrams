@@ -47,7 +47,7 @@ func render(source: Image, mask: Image, label: String) -> void:
 	var donor: Image=art.material.get_shader_parameter("motor_pool").get_image()
 	for y in range(1,800,17):
 		for x in range(1,1280,19):
-			if art.arming_panel.active and art.arming_panel.PANEL_RECT.has_point(Vector2(x,y)/4): continue
+			if art.arming_panel.active and art.arming_panel.CLIP_RECT.has_point(Vector2(x,y)/4): continue
 			if int(round(mask.get_pixel(x/4,y/4).r*255))!=8: continue
 			var actual := frame.get_pixel(x,y)
 			var expected := bilinear(donor,(Vector2(x,y)+Vector2(0.5,0.5))/Vector2(1280,800))
@@ -58,22 +58,35 @@ func render(source: Image, mask: Image, label: String) -> void:
 			for y in range(int(run.rect.position.y),int(run.rect.end.y)):
 				for x in range(int(run.rect.position.x),int(run.rect.end.x)):
 					if source.get_pixel(x,y).to_rgba32()==0xaa0000ff: selected=true
-			var light := Color(238.0/255,238.0/255,238.0/255)
-			var grey := Color(98.0/255,101.0/255,98.0/255)
-			var expected_background := light if selected else grey if run.text in ["SELECT","ARMING MIX"] else Color.BLACK
-			check(run.background==expected_background and run.foreground==(Color.BLACK if selected else light),"original focus maps to Genesis colours: "+run.text)
+			var expected_background := Color(170.0/255,0,0) if selected else Color.WHITE
+			check(run.background==expected_background and run.foreground==Color.BLACK,"original black ink, white paper and red focus: "+run.text)
 			# Check complete outline contours, including original cell-origin ink.
 			for y in 24:
 				for x in int(run.rect.size.x)*4:
 					var p: Vector2=run.rect.position+Vector2(x+0.5,y+0.5)/4
-					check(outlines.matches(frame.get_pixelv(Vector2i(run.rect.position)*4+Vector2i(x,y)),run,p,Vector2(4,4)),"outline arming glyph/focus: "+run.text)
-		for probe in [[Vector2i(239*4+2,150*4+2),Color(238.0/255,238.0/255,238.0/255)],
-			[Vector2i(242*4+2,150*4+2),Color.BLACK],
-			[Vector2i(242*4+2,120*4+2),Color(98.0/255,101.0/255,98.0/255)]]:
-			check(frame.get_pixelv(probe[0]).is_equal_approx(probe[1]),"Genesis border/body/header palette: "+label)
-		var restored := bilinear(donor,(Vector2(276*4+2,94*4+2)+Vector2(0.5,0.5))/Vector2(1280,800))
-		var actual := frame.get_pixel(276*4+2,94*4+2)
-		check(absf(actual.r-restored.r)<=3.0/255 and absf(actual.g-restored.g)<=3.0/255 and absf(actual.b-restored.b)<=3.0/255,"old PC clip replaced with original Genesis scene")
+					var actual := frame.get_pixelv(Vector2i(run.rect.position)*4+Vector2i(x,y))
+					var expected_run: Dictionary=run.duplicate()
+					# Independent spacing oracle: unchanged eight-letter label,
+					# two source pixels of blank paper, then three state cells.
+					if run.has("source_text"):
+						if x<48*4: expected_run.text="GOVERNOR"
+						elif x<50*4:
+							check(actual.is_equal_approx(run.background),"clear word space: "+run.text)
+							continue
+						else:
+							expected_run.text="OFF" if run.source_text=="GOVERNOROFF" else " ON"
+							expected_run.rect.position.x+=50
+					check(outlines.matches(actual,expected_run,p,Vector2(4,4)),"outline arming glyph/focus: "+run.text)
+		for probe in [[Vector2i(239*4+1,150*4+2),Color.BLACK],
+			[Vector2i(241*4+2,150*4+2),Color(170.0/255,85.0/255,0)],
+			[Vector2i(244*4+2,120*4+2),Color.WHITE],
+			[Vector2i(315*4+2,150*4+2),Color(170.0/255,170.0/255,170.0/255)],
+			[Vector2i(273*4+2,99*4+2),Color(170.0/255,170.0/255,170.0/255)]]:
+			check(frame.get_pixelv(probe[0]).is_equal_approx(probe[1]),"original clipboard board, paper, shadow and metal at %s: %s"%[probe[0],label])
+		for at in [Vector2i(250,90),Vector2i(277,91)]:
+			var restored := bilinear(donor,(Vector2(at*4+Vector2i(2,2))+Vector2(0.5,0.5))/Vector2(1280,800))
+			var actual := frame.get_pixelv(at*4+Vector2i(2,2))
+			check(absf(actual.r-restored.r)<=3.0/255 and absf(actual.g-restored.g)<=3.0/255 and absf(actual.b-restored.b)<=3.0/255,"source clip transparency reveals Genesis background")
 	check(frame.save_png(output.path_join(label+".png"))==OK,"native image saved")
 	samples.append({"label":label,"active":art.active.duplicate(),"changed_pixels":changed,
 		"text":art.typography.runs.map(func(r):return r.text)})
@@ -119,18 +132,18 @@ func run() -> void:
 		check(art.active.pixels>50000,"complete background survives clipboard")
 		if art.text_enabled and entry.label!="boot-21" and not entry.label.ends_with("-press"):
 			check(art.typography.runs.size()==7,"seven original clipboard text runs: "+str(art.typography.runs.map(func(r):return r.text)))
-			check(art.arming_panel.active,"complete original panel enables Genesis frame: "+entry.label)
+			check(art.arming_panel.active,"complete original panel enables remastered clipboard: "+entry.label)
 		if art.arming_panel.active:
 			for run in art.typography.runs:
 				if not run.text.begins_with("GOVERNOR"): continue
 				check(run.text in ["GOVERNOR OFF","GOVERNOR  ON"],"governor has an actual word space")
 				check(run.source_text in ["GOVERNOROFF","GOVERNOR ON"] and run.source_rect==Rect2(245,170,66,6),"exact source label and cell evidence retained")
 				check(run.text==("GOVERNOR OFF" if run.source_text=="GOVERNOROFF" else "GOVERNOR  ON"),"spacing cannot change governor state")
-				check(run.rect==Rect2(245,170,72,6) and run.cell_size==Vector2i(6,6) and run.rect.size.x==run.text.length()*6,"full-size glyphs, aligned values, no condensed type")
-				check(art.arming_panel.PANEL_RECT.grow(-1).encloses(run.rect),"spaced label stays clear of panel border")
+				check(run.rect==Rect2(245,170,68,6) and run.cell_size==Vector2i(6,6) and run.word_space==2.0,"full-size glyphs and a two-pixel word space, no condensed type")
+				check(art.arming_panel.PAPER_RECT.grow(-2).encloses(run.rect),"spaced label stays on paper with equal side margins")
 				var label: Control=art.typography.labels[art.typography.runs.find(run)]
 				check(label.size==run.rect.size*Vector2(4,4),"expanded label is not clipped at the old width")
-				governor_states[run.source_text+str(run.foreground==Color.BLACK)]=true
+				governor_states[run.source_text+str(run.background==Color(170.0/255,0,0))]=true
 		var mask := Image.new()
 		mask.load_png_from_buffer(Marshalls.base64_to_raw(entry.presentation.plate_overlay.mask_png))
 		if native: await render(source,mask,entry.label)

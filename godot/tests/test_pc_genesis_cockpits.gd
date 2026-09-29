@@ -131,6 +131,22 @@ func fixtures(path: String, output: String) -> void:
 				check(result.get_pixel(p.x*4+2,p.y*4+2).to_rgba32()==expected.to_rgba32(),"status artwork sampler/registration: "+str(p))
 		var assembly := Image.new()
 		if frame.driver_assembly_enabled: assembly.load_png_from_buffer(Marshalls.base64_to_raw(packet.driver_overlay.mask_png))
+		# The dedicated refinement gate checks every changed output pixel and
+		# poisons hidden world texels. Here permit only its narrow visible-side
+		# silhouette neighbourhood, retaining every unowned UI assertion.
+		var edge_world:Dictionary={}
+		if frame.cockpit_edges.active:
+			for profile:Dictionary in frame.cockpit_edges.profiles:
+				var points:PackedVector2Array=profile.points
+				for i in range(points.size()-1):
+					for ex in range(maxi(0,floori(points[i].x)),mini(320,ceili(points[i+1].x))):
+						var ta:=clampf((ex-points[i].x)/(points[i+1].x-points[i].x),0,1)
+						var tb:=clampf((ex+1.0-points[i].x)/(points[i+1].x-points[i].x),0,1)
+						var ya:=lerpf(points[i].y,points[i+1].y,ta)
+						var yb:=lerpf(points[i].y,points[i+1].y,tb)
+						for row in range(floori(minf(ya,yb)-1.65),ceili(maxf(ya,yb)+1.65)):
+							var q:=Vector2i(ex,row)
+							if camera.has_point(q) and ui.get_pixelv(q).r==0.0:edge_world[q]=true
 		var changed := 0
 		for y in 800:
 			for x in 1280:
@@ -138,6 +154,7 @@ func fixtures(path: String, output: String) -> void:
 				var id := roundi(tags.get_pixelv(p).r*255)
 				var allowed: bool = ui.get_pixelv(p).r==1.0 and id in frame.cockpit_art_ids and material_allowed(id,p,camera)
 				if frame.gunner_trim.corners_verified and corner_ink.has(p): allowed = true
+				if edge_world.has(p): allowed=true
 				if bool(frame.material.get_shader_parameter("cupola_rail_verified")) and rail_points.has(p): allowed = true
 				if not assembly.is_empty() and assembly.get_pixelv(p).b==1.0: allowed = true
 				for cell in frame.instrument_art.active+frame.instrument_art.gauges:

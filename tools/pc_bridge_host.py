@@ -161,6 +161,8 @@ def main():
                 raise ValueError("Rebuild the local trace core for original moving-driver overlay")
             if manifest.get("state_overlay_schema") != 1:
                 raise ValueError("Rebuild the local trace core for complete disk checkpoints")
+            if manifest.get("round_form_event_schema") != 1:
+                raise ValueError("Rebuild the local trace core for original round-form raster support")
             pin, source_pin = manifest["trace_sha256"], manifest["baseline_sha256"]
             args.core = ROOT / ".runtime/pc-core/abrams-trace.dylib"
         core = PcReferenceCore(args.core, args.content, args.saves, expected_sha256=pin)

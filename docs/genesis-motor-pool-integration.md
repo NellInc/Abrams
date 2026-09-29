@@ -63,20 +63,23 @@ numeric fields. Incorrect/partial glyphs retain their original pixels.
 
 `--original-text` disables these replacements and retains the original clipboard.
 
-The remastered panel displays `GOVERNOR OFF` with a word space. Its ON/OFF
-values share a right edge, using the panel's spare character cell without
-condensing the original-style glyphs. The exact original label and rectangle
+The remastered clipboard displays `GOVERNOR OFF` with a two-source-pixel word
+space. Its ON/OFF values share a right edge, with two-pixel paper margins on
+both sides. The original-style glyphs retain their full width and height.
+The exact original label and rectangle
 remain attached to the presentation run. This spacing is applied only after
 the entire original clipboard has passed its existing verification; original
 text mode and original game controls remain unchanged.
 
-## Genesis arming-panel frame
+## Original clipboard, remastered
 
-Completed, independently verified clipboard frames now use a scalable dark
-panel with the Genesis menu's white rim, grey header and inverted selection.
-The exact Genesis source supplies the sampled palette. The PC still owns the
-seven text rectangles, values and focus. No new controls or allocation rules
-are introduced. The old clip area reveals the registered Genesis background.
+Completed, independently verified frames use a scalable reconstruction of the
+PC clipboard: brown backing, white paper, black ink and a silver spring clip.
+The original red selection highlight is retained. Contours are redrawn at
+display resolution while preserving the source proportions and colours.
+This replaces the earlier black Genesis menu box, which did not match the
+clipboard. The surrounding motor-pool illustration remains Genesis-derived.
+The PC still owns all seven text fields, values, focus and controls.
 
 `pc_arming_panel_art.gd` first matches every static visible pixel of CLIP.BMP,
 every transparent background attribution and all seven complete source-font
@@ -93,9 +96,15 @@ Generate the recognition-only catalog using `build_pc_frontend_catalog.py
 `0189ac8eab74a8bfd9f1d267cebba18cba502df005faf4ae9c28408a5788fb03`.
 
 Working if: original arrow-key allocations and focus remain unchanged, complete
-panels use Genesis styling, and unverified drawing retains the real PC pixels.
+panels retain the original clipboard design at high resolution, and unverified
+drawing retains the real PC pixels.
 
-## Arming-panel evidence
+## Original integration evidence
+
+The following records cover the earlier Genesis panel implementation and its
+source-logic parity. Current clipboard appearance and spacing are checked by
+`test_pc_motor_pool_art.gd`, including all four OFF/ON and focus combinations,
+complete outline contours, paper margins and unchanged protected pixels.
 
 * `pc-genesis-arming-allocations-parity-01.json`: all 7,630 full RAM/video/input
   records, 74 stage states and program boundaries equal the original baseline.

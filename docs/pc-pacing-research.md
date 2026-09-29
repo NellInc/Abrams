@@ -377,3 +377,37 @@ so whole-packet hashes across those differently chunked runs are not compared.
 The separate 601-packet cache gate above compares complete packet bytes.
 An initial comparison used different warmup routes and correctly failed; it is
 retained at `pc-play-final-controls-01/verification.json` with the setup diagnosis.
+
+## Exact geometry and cockpit-proof reuse, 29 September 2026
+
+The Modern mapper now compiles unique source positions and attributed corners
+per validated catalogue face. Each call still validates the original anchors,
+recomputes its transform and retains separate material, UV and motion seams.
+Fully near-visible triangles share their projected corners while using the
+same native triangulator. Near crossings keep the previous clipping path.
+No model, texture, shader, resolution, visibility or source timing was reduced.
+
+Cockpit plate and driver assembly masks now reuse successful exact row proofs.
+Changed rows remain fully checked. Native byte counts cover uniform ranges;
+commander housing checks and the cockpit outline's tag-range test use the same
+exact predicates. Failed provenance cannot authorize a new frame.
+
+A clean 1,020-frame, four-station native route measured 38.77 original replies
+per second before and 40.12 after on this loaded M1 Max. Display p99 fell from
+63.73 to 50.17 ms. Fresh mesh construction averaged 19.18 then 15.02 ms; mapping
+averaged 12.63 then 8.64 ms. These different-time runs establish a local measured
+improvement, not a guaranteed speedup on other hardware. **Consistent 60 fps is
+not achieved.** Modern remains experimental.
+
+All 1,020 requested input steps, station/position/draw-sequence observations and
+four final decoded output images match. Cold boots produce different start-RAM
+hashes, so this is not complete packet-byte parity. All 32 scenario/station
+renders also match the preceding alpha's 39,321,600 pixels exactly. Receipts:
+`artifacts/performance-60fps-20260929/baseline-clean`, `optimized-clean` and
+`scenario-final/pixel-equivalence.json`. The earlier 55.70-fps run contained
+unrequested native keypresses and is excluded. The profiler now requires every
+request to match the intended replay before declaring a complete route.
+
+Working if: numerical oracles remain byte-identical, mask mutations invalidate
+the appropriate proof, native output remains unchanged and contaminated input
+routes cannot pass the benchmark's acceptance flag.

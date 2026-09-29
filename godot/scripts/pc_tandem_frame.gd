@@ -6,6 +6,8 @@ var typography = preload("res://scripts/pc_typography.gd").new()
 var damage_art = preload("res://scripts/pc_instrument_damage_art.gd").new()
 var dynamic_map_art = preload("res://scripts/pc_dynamic_map_art.gd").new()
 var gunner_trim = preload("res://scripts/pc_gunner_trim.gd").new()
+var commander_trim = preload("res://scripts/pc_commander_trim.gd").new()
+var cockpit_edges = preload("res://scripts/pc_cockpit_edges.gd").new()
 var cupola_rail = preload("res://scripts/pc_cupola_rail.gd").new()
 var instrument_art = preload("res://scripts/pc_instrument_art.gd").new()
 var target_box_art = preload("res://scripts/pc_reticle_target_art.gd").new()
@@ -20,6 +22,7 @@ const GENESIS_ART = {
 	4:["driver","7429042e9b42eb89e340cf87e80632894d6d9f7a83a37c1bde99041190ecf1b2"],
 	5:["systems-status","b14de0de38209c593f2fcb59463428729ccd51f4af8ba9ccfd5c288307f93d83"]}
 var graphics_mode := "upscaled"
+var modern_available := false
 var native_graphics = preload("res://scripts/pc_native_graphics.gd").new()
 var _cached_source: Image
 var _cached_presentation: Dictionary = {}
@@ -51,11 +54,14 @@ var gunner_art_reason := "material pilot disabled"
 var _plate_tags := PackedByteArray()
 var _plate_ui := PackedByteArray()
 var _plate_ids: Dictionary = {}
+var _plate_row_ids := PackedInt32Array()
 # This frame's already decoded and validated mask, never carried across frames.
 var _current_plate_mask: Image
+var _current_driver_mask: Image
 var _driver_bits := PackedByteArray()
 var _driver_ui := PackedByteArray()
 var _driver_nonempty := false
+var _driver_row_nonempty := PackedByteArray()
 
 func _init() -> void:
 	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -70,6 +76,10 @@ func _init() -> void:
 	dynamic_map_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(gunner_trim)
 	gunner_trim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(commander_trim)
+	commander_trim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(cockpit_edges)
+	cockpit_edges.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	resized.connect(_layout_gunner)
 	add_child(instrument_art)
 	instrument_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -115,6 +125,9 @@ func load_genesis_art(root: String) -> bool:
 		if image==null or image.get_size()!=Vector2i(1586,992): return false
 		images[id] = image
 	if not cupola_rail.load_source(root): return false
+	images[3]=preload("res://scripts/pc_cupola_material.gd").prepare(images[3])
+	images[4]=preload("res://scripts/pc_cupola_material.gd").prepare_driver(images[4])
+	if images[3]==null or images[4]==null: return false
 	set_gunner_art(images[1])
 	for id in [2,3,4]: set_cockpit_art(id,images[id])
 	status_art_texture = ImageTexture.create_from_image(images[5])
@@ -129,7 +142,7 @@ func load_genesis_art(root: String) -> bool:
 	genesis_art_enabled = true
 	material.set_shader_parameter("genesis_art",true)
 	typography.fixed_labels_enabled = true
-	instrument_art.load_sources(root,images[1])
+	instrument_art.load_sources(root,images[1],images[2])
 	damage_art.load_sources(root)
 	portrait_art.load_sources(root)
 	frontend_art.load_sources(root)
@@ -156,6 +169,9 @@ func set_cockpit_art(plate_id: int, image: Image) -> bool:
 
 func _disable_art(reason: String) -> void:
 	_current_plate_mask = null
+	_current_driver_mask = null
+	cockpit_edges.clear()
+	commander_trim.clear()
 	gunner_trim.clear()
 	instrument_art.clear()
 	portrait_art.clear()
@@ -207,13 +223,38 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 	if tags==_plate_tags and ui_bits==_plate_ui:
 		present=_plate_ids
 	else:
+		# Exact row-local proofs survive unrelated changes elsewhere in the UI.
+		# Native byte counts handle uniform rows without a 64,000-pixel script loop.
+		var row_ids := PackedInt32Array()
+		row_ids.resize(200)
+		var all_ids := 0
+		for y in 200:
+			var lo := y*320
+			var hi := lo+320
+			var row := tags.slice(lo,hi)
+			var owned := ui_bits.slice(lo,hi)
+			var ids := 0
+			if _plate_row_ids.size()==200 and row==_plate_tags.slice(lo,hi) and owned==_plate_ui.slice(lo,hi):
+				ids=_plate_row_ids[y]
+			else:
+				var valid := row.count(0)
+				for id in range(1,9):
+					var count := row.count(id)
+					valid+=count
+					if count>0: ids|=1<<id
+				if valid!=320: return
+				if ids!=0 and owned.count(255)!=320:
+					for x in 320:
+						if row[x]!=0 and owned[x]!=255: return
+			row_ids[y]=ids
+			all_ids|=ids
 		present={}
-		for at in tags.size():
-			if tags[at]>8 or (tags[at]!=0 and ui_bits[at]!=255): return
-			if tags[at]!=0: present[int(tags[at])]=true
+		for id in range(1,9):
+			if all_ids&(1<<id): present[id]=true
 		_plate_tags=tags
 		_plate_ui=ui_bits
 		_plate_ids=present
+		_plate_row_ids=row_ids
 	var available := cockpit_art_textures.duplicate()
 	if gunner_art_texture != null: available[1] = gunner_art_texture
 	if status_art_texture != null: available[5] = status_art_texture
@@ -238,13 +279,7 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 	material.set_shader_parameter("gunner_art_enabled", gunner_art_enabled)
 	material.set_shader_parameter("status_art_enabled",5 in cockpit_art_ids)
 	if 5 in cockpit_art_ids:
-		status_diagram_verified = true
-		for y in range(37,100):
-			for x in range(123,305):
-				if tags[y*320+x]!=5:
-					status_diagram_verified = false
-					break
-			if not status_diagram_verified: break
+		status_diagram_verified = mask.get_region(Rect2i(123,37,182,63)).get_data().count(5)==182*63
 	material.set_shader_parameter("status_diagram_verified",status_diagram_verified)
 	gunner_art_reason = "" if gunner_art_enabled else "no surviving gunner plate pixels"
 
@@ -261,28 +296,44 @@ func _set_driver_assembly(presentation: Dictionary, ui: Image) -> void:
 	var any := _driver_nonempty
 	if values!=_driver_bits or ui_bits!=_driver_ui:
 		any=false
-		for at in 64000:
-			var i := at*3
-			if values[i+2] not in [0,255] or values[i+1] > 127: return
-			if values[i+2] == 0:
-				if values[i] != 0 or values[i+1] != 0: return
-			elif ui_bits[at] != 255: return
-			else: any = true
+		var row_nonempty := PackedByteArray()
+		row_nonempty.resize(200)
+		for y in 200:
+			var lo := y*320
+			var hi := lo+320
+			var row := values.slice(lo*3,hi*3)
+			var owned := ui_bits.slice(lo,hi)
+			var occupied := false
+			if _driver_row_nonempty.size()==200 and row==_driver_bits.slice(lo*3,hi*3) and (not _driver_row_nonempty[y] or owned==_driver_ui.slice(lo,hi)):
+				occupied=bool(_driver_row_nonempty[y])
+			elif row.count(0)!=960:
+				for x in 320:
+					var i := x*3
+					if row[i+2] not in [0,255] or row[i+1]>127: return
+					if row[i+2]==0:
+						if row[i]!=0 or row[i+1]!=0: return
+					elif owned[x]!=255: return
+					else: occupied=true
+			row_nonempty[y]=int(occupied)
+			any=any or occupied
 		_driver_bits=values
 		_driver_ui=ui_bits
 		_driver_nonempty=any
+		_driver_row_nonempty=row_nonempty
 	if not any: return
 	material.set_shader_parameter("driver_art", cockpit_art_textures[4])
 	material.set_shader_parameter("driver_assembly_mask", ImageTexture.create_from_image(mask))
 	material.set_shader_parameter("driver_assembly_enabled", true)
+	_current_driver_mask=mask
 	driver_assembly_enabled = true
 
 func load_graphics_sources(root: String) -> bool:
 	return native_graphics.load_sources(root)
 
 func set_graphics_mode(mode: String) -> bool:
-	if mode not in ["ega","genesis","upscaled"]: return false
+	if mode not in ["ega","genesis","upscaled","modern"]: return false
 	if mode=="genesis" and not native_graphics.loaded: return false
+	if mode=="modern" and not modern_available: return false
 	graphics_mode=mode
 	if _cached_source!=null:
 		set_frame(_cached_source,_cached_presentation,_cached_world,_cached_program)
@@ -292,22 +343,26 @@ func set_graphics_mode(mode: String) -> bool:
 func present_frontend(program: Dictionary) -> bool:
 	var changed:=program!=_cached_program
 	_cached_program=program
-	if graphics_mode!="upscaled":
+	if graphics_mode not in ["upscaled","modern"]:
 		frontend_art.clear()
 		if graphics_mode=="genesis" and changed and _cached_source!=null:
 			native_graphics.set_frame(_cached_source,_cached_presentation,program)
 		return false
 	return frontend_art.set_frame(_cached_source,program,_cached_presentation)
 
-func set_frame(source: Image, presentation: Dictionary, world: Texture2D, program: Dictionary={}) -> bool:
+func remember_frame(source: Image, presentation: Dictionary, world: Texture2D, program: Dictionary) -> void:
 	_cached_source=source
 	_cached_presentation=presentation
 	_cached_world=world
 	_cached_program=program
+
+func set_frame(source: Image, presentation: Dictionary, world: Texture2D, program: Dictionary={}) -> bool:
+	remember_frame(source,presentation,world,program)
 	material=_upscaled_material
-	for child in [damage_art,dynamic_map_art,gunner_trim,instrument_art,reticle_art,target_box_art,portrait_art,typography]:child.visible=graphics_mode=="upscaled"
+	material.set_shader_parameter("modern_armour_palette",graphics_mode=="modern")
+	for child in [damage_art,dynamic_map_art,gunner_trim,commander_trim,cockpit_edges,instrument_art,reticle_art,target_box_art,portrait_art,typography]:child.visible=graphics_mode in ["upscaled","modern"]
 	native_graphics.visible=graphics_mode=="genesis"
-	if graphics_mode!="upscaled":
+	if graphics_mode not in ["upscaled","modern"]:
 		_fallback("Untouched original EGA" if graphics_mode=="ega" else "Native Genesis donors with original PC fallback")
 		material=null
 		texture=ImageTexture.create_from_image(source) if source!=null and not source.is_empty() else null
@@ -359,8 +414,13 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 		var tags := _current_plate_mask
 		if tags!=null:
 			material.set_shader_parameter("cupola_rail_verified",cupola_rail.verify(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),3 in cockpit_art_ids))
+			for station in [3,4]:
+				if station in cockpit_art_ids:
+					cockpit_edges.set_frame(mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),cockpit_art_textures[station],_current_driver_mask,station,graphics_mode=="modern",bool(material.get_shader_parameter("cupola_rail_verified")),world)
 			if 1 in cockpit_art_ids:
 				gunner_trim.set_frame(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),world)
+			if 2 in cockpit_art_ids:
+				commander_trim.set_frame(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),world)
 			instrument_art.set_frame(source,mask,tags,presentation.get("orientation",{}))
 			damage_art.set_frame(source,mask,tags)
 	if genesis_art_enabled: portrait_art.set_frame(source,mask,presentation)

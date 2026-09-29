@@ -6,6 +6,10 @@ config/name="Abrams | Reconstruction"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 
+[editor]
+; Serialize first-run imports to avoid the bundled engine's font-import race.
+import/use_multiple_threads=false
+
 [display]
 window/size/viewport_width=1600
 window/size/viewport_height=900

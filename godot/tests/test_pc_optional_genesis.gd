@@ -28,8 +28,8 @@ func run() -> void:
 	check(graphics_launch_error(["--graphics","genesis"]).is_empty(),"default still accepts Genesis")
 	check(not graphics_launch_error(["--pc-only","--graphics","genesis"]).is_empty(),"explicit PC-only Genesis rejected")
 	check(not graphics_launch_error(["--graphics"]).is_empty(),"missing graphics argument rejected")
-	check(not graphics_launch_error(["--pc-only","--graphics","modern"]).is_empty(),"Modern unavailable")
-	for mode in ["ega","upscaled"]:
+	check(not graphics_launch_error(["--graphics","unknown"]).is_empty(),"unknown graphics mode rejected")
+	for mode in ["ega","upscaled","modern"]:
 		check(graphics_launch_error(["--pc-only","--graphics",mode]).is_empty(),"PC-only accepts "+mode)
 	_configure_art_requests(["--pc-only","--cockpit-art","--gunner-art","--genesis-colours"])
 	check(pc_only and pc_presentation_requested,"PC-only retains independent PC presentation")
@@ -41,6 +41,7 @@ func run() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	_load_world_presentation(directory,["--pc-only"])
 	_load_cockpit_presentation(directory)
+	check(tandem_frame.modern_available and draw_view.modern_assets.ready,"Modern resources load independently of Genesis")
 	check(genesis_style.palette.is_empty(),"Genesis palette never loaded")
 	check(not tandem_frame.genesis_art_enabled and tandem_frame.gunner_art_texture==null and tandem_frame.cockpit_art_textures.is_empty() and tandem_frame.status_art_texture==null,"Genesis cockpits never loaded")
 	check(not tandem_frame.native_graphics.loaded and tandem_frame.native_graphics.load_count==0,"native donor loader never called")
@@ -62,6 +63,15 @@ func run() -> void:
 	check(tandem_frame.set_frame(source,presentation,world),"PC-only high-resolution world composition stays available")
 	check(tandem_frame.set_graphics_mode("ega") and tandem_frame.texture.get_image().get_data()==source_bytes,"EGA retains exact source framebuffer")
 	check(tandem_frame.set_graphics_mode("upscaled") and tandem_frame.world_enabled,"Upscaled restores PC world")
+	audio_menu=Menu.new()
+	audio_menu.config_path=""
+	root.add_child(audio_menu)
+	_choose_graphics("modern")
+	check(tandem_frame.graphics_mode=="modern" and draw_view.modern_enabled,"PC-only Modern enables the refined world")
+	_choose_graphics("upscaled")
+	check(tandem_frame.graphics_mode=="upscaled" and not draw_view.modern_enabled,"PC-only can return to Upscaled immediately")
+	audio_menu.free()
+	audio_menu=null
 	check(source.get_data()==source_bytes and presentation==original_presentation,"graphics choices leave source pixels and packet unchanged")
 	check(bridge.process.is_empty() and bridge.next_id==0 and fps==59.9227 and fast_forward==1,"presentation setup never advances source or changes timing")
 	pc_audio=MusicProbe.new()

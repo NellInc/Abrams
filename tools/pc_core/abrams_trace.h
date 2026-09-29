@@ -282,6 +282,8 @@ static INLINE void AbramsTraceInstruction() {
         abrams_plate_copy_active = false;
     // Cheap filter before consulting segments on the normal instruction path.
     if (ip != 0x8ac4 && ip != 0x02c1 && ip != 0x29ad && ip != 0x0596 && ip != 0x2979 && ip != 0x0357
+        && ip != 0x123e && ip != 0x324a
+        && ip != 0x1446 && ip != 0x1495 && ip != 0x14c4 && ip != 0x1573 && ip != 0x15c2 && ip != 0x15f1 && ip != 0x125f
         && ip != 0x28d0 && ip != 0x31a6 && ip != 0x59e4 && ip != 0x340b
         && ip != 0x3707 && ip != 0x36c8 && ip != 0x8b49 && ip != 0x28e4 && ip != 0x0347
         && ip != 0x1170 && ip != 0x123a && ip != 0x1226 && ip != 0x1238 && ip != 0x1a7c
@@ -301,6 +303,55 @@ static INLINE void AbramsTraceInstruction() {
     Bit32u segment = SegValue(cs), event = 0, start = 0, length = 0;
     const Bit32u base = SegPhys(ds);
     if (base + 65536 > 640 * 1024) return;
+    // Stateless round-form observations. Every span validates the original
+    // far caller via its exact stack depth; no host lifetime field or guest
+    // state is changed, so observer checkpoint ABI 1 is unchanged.
+    if (segment == abrams_trace_load + 0x0f8d) {
+        unsigned depth = ip == 0x123e ? 0 :
+            (ip == 0x1446 || ip == 0x1495 ? 20 :
+            (ip == 0x14c4 ? 16 : (ip == 0x1573 || ip == 0x15c2 ? 18 :
+            (ip == 0x15f1 || ip == 0x125f ? 14 : 0xffff))));
+        if (depth != 0xffff) {
+            Bit32u stack = SegPhys(ss) + reg_sp;
+            if (reg_sp + depth + 10u > 65536 || stack + depth + 10 > 640*1024 ||
+                mem_readw(stack+depth) != 0x3247 ||
+                mem_readw(stack+depth+2) != abrams_trace_load+0x0b4d) return;
+            unsigned command = ip == 0x123e ? reg_di : mem_readw(stack+depth-6);
+            unsigned shape_segment = ip == 0x123e ? SegValue(es) : mem_readw(stack+depth-8);
+            Bit32u shape_address = shape_segment*16u + command;
+            if (command+4u > 65536 || shape_address+4 > 640*1024) return;
+            unsigned page = mem_readw(base+0x35a8);
+            if (page != 0xa000 && page != 0xa200) return;
+            const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
+                reg_bp,reg_sp,SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+            if (ip == 0x123e) {
+                const Bit16u fields[15] = {1,Bit16u(command),mem_readw(base+0x12cc),
+                    mem_readw(stack+4),mem_readw(stack+6),mem_readw(stack+8),
+                    mem_readw(base+0x3593),mem_readw(base+0x3597),
+                    mem_readw(base+0x3595),mem_readw(base+0x3599),Bit16u((page-0xa000)*16),
+                    Bit16u(mem_readb(base+0x359d)|(mem_readb(base+0x359e)<<8)),
+                    Bit16u(mem_readb(base+0x359b)|(mem_readb(base+0x359c)<<8)),
+                    mem_readw(shape_address),mem_readw(shape_address+2)};
+                for (unsigned i=0;i<15;++i) {
+                    abrams_trace_snapshot[i*2]=Bit8u(fields[i]);abrams_trace_snapshot[i*2+1]=Bit8u(fields[i]>>8);
+                }
+                abrams_trace_callback(46,regs,abrams_trace_snapshot,command,30);
+            } else {
+                const Bit16u fields[9] = {1,Bit16u(command),mem_readw(base+0x12cc),
+                    Bit16u(ip == 0x125f ? reg_di : reg_bp/2),
+                    Bit16u(ip == 0x125f ? reg_si : reg_bx),
+                    Bit16u(ip == 0x125f ? 1 : reg_cx),Bit16u((page-0xa000)*16),
+                    Bit16u(ip == 0x125f ? mem_readb(base+0x359d) : reg_ax),
+                    Bit16u(ip == 0x125f ? mem_readb(base+0x359d) : ((ip == 0x1495 || ip == 0x15c2) ? reg_dx : reg_ax))};
+                if (ip != 0x125f && (reg_bp&1)) return;
+                for (unsigned i=0;i<9;++i) {
+                    abrams_trace_snapshot[i*2]=Bit8u(fields[i]);abrams_trace_snapshot[i*2+1]=Bit8u(fields[i]>>8);
+                }
+                abrams_trace_callback(48,regs,abrams_trace_snapshot,command,18);
+            }
+            return;
+        }
+    }
     // Map calls only: observed visible primitive arguments and completed page
     // pixels. No object coordinates or scenario-memory reconstruction is exposed.
     // Stateless return hooks introduce no checkpoint lifetime or guest writes.
@@ -730,6 +781,7 @@ static INLINE void AbramsTraceInstruction() {
         else if (ip == 0x0596) { event = 3; start = 0x1200; length = 0x2400; }
         else if (ip == 0x2979) { event = 5; start = 0x117d; length = 18; }
         else if (ip == 0x28d0) { event = 7; start = reg_di; length = 2; }
+        else if (ip == 0x324a) { event = 47; start = reg_di; }
         else if (ip == 0x31a6) { event = 8; start = reg_di; length = 4; }
         else if (ip == 0x340b) { event = 13; start = 0x35a0; length = 10; }
         else if (ip == 0x3707) { event = 15; start = reg_bp + 12; length = 4; }

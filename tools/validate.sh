@@ -19,6 +19,11 @@ run_check() {
       echo "FAIL: $name (bounded run did not report completion)" >&2
       exit 1
     fi
+    if { [ "$name" = pc_modern ] || [ "$name" = pc_modern_mapping_reuse ]; } && ! grep -Eq '^PC_MODERN(_MAPPING_REUSE)?: PASS' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing complete Modern receipt)" >&2
+      exit 1
+    fi
     if [ "$name" = pc_information_art ] && ! grep -Eq '^PC_INFORMATION_ART: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
       cat "$OUT/$name.log"
       echo "FAIL: $name (bounded run did not report completion)" >&2
@@ -59,6 +64,11 @@ run_check() {
       echo "FAIL: $name (bounded run did not report completion)" >&2
       exit 1
     fi
+    if [ "$name" = pc_presentation_reuse ] && ! grep -Eq '^PC_PRESENTATION_REUSE: [1-9][0-9]* checks, 0 errors;' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing complete presentation reuse receipt)" >&2
+      exit 1
+    fi
     if [ "$name" = pc_live_scheduling ] && ! grep -Eq '^PC_LIVE_SCHEDULING: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
       cat "$OUT/$name.log"
       echo "FAIL: $name (bounded run did not report completion)" >&2
@@ -95,7 +105,7 @@ run_check() {
       exit 1
     fi
     case "$name" in
-      pc_gunner_trim|pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
+      pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
         if ! grep -Eq '^(PC_[A-Z_]+|CURSOR_STRUTS): [1-9][0-9]* checks, 0 errors([,;].*)?$' "$OUT/$name.log"; then
           cat "$OUT/$name.log"
           echo "FAIL: $name (missing successful completion receipt)" >&2
@@ -113,7 +123,7 @@ run_check() {
       exit 1
     fi
     case "$name" in
-      pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
+      pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
         if ! grep -Eq '^(PC_[A-Z_]+|CURSOR_STRUTS): [1-9][0-9]* checks, 0 errors([,;].*)?$' "$OUT/$name.log"; then
           cat "$OUT/$name.log"
           echo "FAIL: $name (missing successful completion receipt)" >&2
@@ -137,11 +147,15 @@ run_check pc_camera ./tools/godot.sh --headless --script res://tests/test_pc_cam
 run_check pc_play_display ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_play_display.gd
 run_check pc_frame_pacing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_frame_pacing.gd
 run_check pc_live_scheduling ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_live_scheduling.gd
+run_check pc_presentation_reuse ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_presentation_reuse.gd
 run_check pc_optional_genesis ./tools/godot.sh --headless --script res://tests/test_pc_optional_genesis.gd
 run_check pc_play_menu ./tools/godot.sh --headless --script res://tests/test_pc_play_menu.gd
 run_check pc_play_shortcuts ./tools/godot.sh --headless --script res://tests/test_pc_play_shortcuts.gd
 run_check pc_graphics_modes ./tools/godot.sh --headless --script res://tests/test_pc_graphics_modes.gd
 run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_draw_pass.gd
+run_check pc_modern ./tools/godot.sh --headless --quit-after 3000 --script res://tests/test_pc_modern.gd
+run_check pc_modern_mapping_reuse ./tools/godot.sh --headless --quit-after 12000 --script res://tests/test_pc_modern_mapping_reuse.gd
+run_check pc_cockpit_mask_reuse ./tools/godot.sh --headless --quit-after 20000 --script res://tests/test_pc_cockpit_mask_reuse.gd
 run_check pc_surfaces ./tools/godot.sh --headless --script res://tests/test_pc_surfaces.gd
 run_check pc_colour ./tools/godot.sh --headless --script res://tests/test_pc_colour.gd
 run_check pc_sprites ./tools/godot.sh --headless --script res://tests/test_pc_sprites.gd
@@ -156,6 +170,8 @@ run_check pc_vehicle_art ./tools/godot.sh --headless --quit-after 1200 --script 
 run_check genesis_vehicle_studies ./tools/godot.sh --headless --script res://tests/test_genesis_vehicle_studies.gd
 run_check pc_cockpit_art ./tools/godot.sh --headless --script res://tests/test_pc_cockpit_art.gd
 run_check pc_genesis_cockpits ./tools/godot.sh --headless --script res://tests/test_pc_genesis_cockpits.gd
+run_check pc_cockpit_refinement ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_cockpit_refinement.gd
+run_check pc_commander_trim ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_commander_trim.gd
 run_check pc_gunner_trim ./tools/godot.sh --headless --script res://tests/test_pc_gunner_trim.gd
 run_check pc_world_bearing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_world_bearing.gd
 run_check pc_orientation ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_orientation.gd
