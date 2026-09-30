@@ -14,7 +14,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var running: Process?
     var busy = false
     var pcReady = false
-    let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "M1 Abrams Battle Tank Remastered"
+    let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "M1 Abrams Battle Tank Fan Remaster"
     let githubURL = URL(string: "https://github.com/NellInc/Abrams")!
     let cream = NSColor(calibratedRed: 0.95, green: 0.91, blue: 0.81, alpha: 1)
     let muted = NSColor(calibratedRed: 0.69, green: 0.73, blue: 0.76, alpha: 1)

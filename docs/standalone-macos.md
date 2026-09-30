@@ -9,9 +9,9 @@ other OS versions and Intel Macs have not been validated. Windows and Linux use 
 **PC files are required. The Genesis ROM is optional. Neither is bundled.**
 
 1. Download the macOS ZIP from [GitHub Releases](https://github.com/NellInc/Abrams/releases),
-   extract it and move `M1 Abrams Battle Tank Remastered.app` to Applications. Keep your previous app until
+   extract it and move `M1 Abrams Battle Tank Fan Remaster.app` to Applications. Keep your previous app until
    you have tested the new one.
-2. Open `M1 Abrams Battle Tank Remastered.app`. Click **Choose PC folder…** and select your extracted PC
+2. Open `M1 Abrams Battle Tank Fan Remaster.app`. Click **Choose PC folder…** and select your extracted PC
    game folder containing `ABRAMS.COM`, `SIM.EXE` and the remaining data files.
 3. Optionally click **Add Genesis ROM…** and select the supported raw ROM.
    You can add it later through the same launcher.
@@ -67,7 +67,7 @@ runs. Changed payload/content is refused and preserved for diagnosis. The app
 bundle itself is never used for saves, caches or Godot imports.
 
 For an independent profile, set `ABRAMS_DATA_HOME` to an absolute directory, or
-run `"M1 Abrams Battle Tank Remastered.app/Contents/MacOS/Abrams" --data-home /absolute/profile/path`.
+run `"M1 Abrams Battle Tank Fan Remaster.app/Contents/MacOS/Abrams" --data-home /absolute/profile/path`.
 Do not run two game instances against one profile. Close the game window before
 quitting the launcher, so the original simulation can close its campaign disk.
 Godot audio preferences retain the existing separate `user://` location.
@@ -83,8 +83,8 @@ No dependency installer runs in the app or builder.
 python3 tools/standalone/build.py \
   --python /absolute/build-venv/bin/python \
   --godot /absolute/Godot.app/Contents/MacOS/Godot \
-  --output "/absolute/new/M1 Abrams Battle Tank Remastered.app"
-python3 tools/standalone/build.py --verify "/absolute/new/M1 Abrams Battle Tank Remastered.app"
+  --output "/absolute/new/M1 Abrams Battle Tank Fan Remaster.app"
+python3 tools/standalone/build.py --verify "/absolute/new/M1 Abrams Battle Tank Fan Remaster.app"
 ```
 
 Outputs must be new paths. The builder copies and thins Godot to ARM64, freezes

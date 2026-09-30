@@ -13,6 +13,10 @@ class LauncherReleaseUI(unittest.TestCase):
         config = configparser.ConfigParser()
         config.read_string('[godot]\n' + (root / 'godot/project.godot').read_text(encoding='utf-8'))
         application = config['application']
+        self.assertEqual(APP_NAME, 'M1 Abrams Battle Tank Fan Remaster')
+        self.assertIn(f'?? "{APP_NAME}"', SOURCE)
+        windows = (root / 'tools/standalone/portable_launcher.c').read_text(encoding='utf-8')
+        self.assertEqual(windows.count(f'L"{APP_NAME}"'), 2)
         self.assertEqual(application['config/name'].strip('"'), APP_NAME)
         self.assertFalse(application.getboolean('boot_splash/show_image'))
         self.assertEqual(application.getint('boot_splash/minimum_display_time'), 0)

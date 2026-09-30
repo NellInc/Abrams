@@ -19,8 +19,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = '0.1.0-alpha.3'
-BUNDLE_VERSION = '27'
-APP_NAME = 'M1 Abrams Battle Tank Remastered'
+BUNDLE_VERSION = '28'
+APP_NAME = 'M1 Abrams Battle Tank Fan Remaster'
 REPOSITORY = 'https://github.com/NellInc/Abrams'
 sys.path.insert(0, str(ROOT))
 from tools import package_build

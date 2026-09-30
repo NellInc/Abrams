@@ -23,7 +23,7 @@ Build into a new path, retaining the previous alpha for rollback. The signing he
 
 ```sh
 python3 -m tools.standalone.sign_macos \
-  --app "/absolute/release/M1 Abrams Battle Tank Remastered.app" \
+  --app "/absolute/release/M1 Abrams Battle Tank Fan Remaster.app" \
   --identity 'Developer ID Application: Nell Watson Ltd (BBYYCBH7EW)' \
   --team BBYYCBH7EW \
   --report /absolute/release/signing.json
@@ -37,7 +37,7 @@ These steps upload the original-free app to Apple and require release-owner appr
 
 ```sh
 ditto -c -k --sequesterRsrc --keepParent \
-  "/absolute/release/M1 Abrams Battle Tank Remastered.app" /absolute/release/Abrams-notary.zip
+  "/absolute/release/M1 Abrams Battle Tank Fan Remaster.app" /absolute/release/Abrams-notary.zip
 xcrun notarytool submit /absolute/release/Abrams-notary.zip \
   --keychain-profile Abrams --wait --output-format json
 ```
@@ -52,10 +52,10 @@ xcrun notarytool log SUBMISSION_ID --keychain-profile Abrams \
 Only after acceptance:
 
 ```sh
-xcrun stapler staple "/absolute/release/M1 Abrams Battle Tank Remastered.app"
-xcrun stapler validate "/absolute/release/M1 Abrams Battle Tank Remastered.app"
-codesign --verify --deep --strict "/absolute/release/M1 Abrams Battle Tank Remastered.app"
-spctl --assess --type execute --verbose=4 "/absolute/release/M1 Abrams Battle Tank Remastered.app"
+xcrun stapler staple "/absolute/release/M1 Abrams Battle Tank Fan Remaster.app"
+xcrun stapler validate "/absolute/release/M1 Abrams Battle Tank Fan Remaster.app"
+codesign --verify --deep --strict "/absolute/release/M1 Abrams Battle Tank Fan Remaster.app"
+spctl --assess --type execute --verbose=4 "/absolute/release/M1 Abrams Battle Tank Fan Remaster.app"
 ```
 
 Create the final release ZIP **after stapling**, calculate its SHA-256, then check the downloaded release copy. A ZIP itself cannot carry a stapled ticket. Do not alter the app after signing, or reuse a pre-stapling archive for distribution.

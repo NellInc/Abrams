@@ -8,7 +8,7 @@ The portable alpha bundles Godot, Python/Pillow and a native tracing core. No se
 
 1. Download the package for your platform from [GitHub Releases](https://github.com/NellInc/Abrams/releases). Releases are available to repository members.
 2. Extract the whole archive into a writable folder. Keep the folder structure intact.
-3. On Windows, open **M1 Abrams Battle Tank Remastered.exe**. **M1 Abrams Battle Tank Remastered.cmd** is a diagnostic fallback. On Linux, run **M1 Abrams Battle Tank Remastered.sh** from the extracted folder. If your extractor removed executable permissions, run `chmod +x "M1 Abrams Battle Tank Remastered.sh" runtime/AbramsRuntime/AbramsRuntime renderer/AbramsRenderer` there.
+3. On Windows, open **M1 Abrams Battle Tank Fan Remaster.exe**. **M1 Abrams Battle Tank Fan Remaster.cmd** is a diagnostic fallback. On Linux, run **M1 Abrams Battle Tank Fan Remaster.sh** from the extracted folder. If your extractor removed executable permissions, run `chmod +x "M1 Abrams Battle Tank Fan Remaster.sh" runtime/AbramsRuntime/AbramsRuntime renderer/AbramsRenderer` there.
 4. Choose **Import PC folder** and select the complete extracted PC game folder containing `ABRAMS.COM`, `SIM.EXE` and its data files.
 5. Optionally choose **Import Genesis ROM**. Then select **Play**.
 
@@ -34,7 +34,7 @@ Do not open two games against one profile. Close the game before closing setup. 
 * **Import rejected:** choose the complete supported folder, not a ZIP or executables alone. See the supported file inventory in `tools/package/game-inputs.json`.
 * **Genesis rejected:** use the supported raw ROM. Continue with PC-only play if unavailable.
 * **Security warning:** Windows signing is not supplied in this alpha. Check the download source and release checksum; do not disable system security.
-* **Linux will not start:** run `./"M1 Abrams Battle Tank Remastered.sh"` in a terminal and retain the error. Check executable permissions and your graphics driver.
+* **Linux will not start:** run `./"M1 Abrams Battle Tank Fan Remaster.sh"` in a terminal and retain the error. Check executable permissions and your graphics driver.
 * **Verification/startup error:** preserve the displayed message and profile `logs/`. Do not alter manifests or delete saves to bypass integrity checks.
 
 The setup includes About, licences, the GitHub link, Nell Watson's remaster credit and the dedication to David “Ming” Kenny. See [rights and original game requirements](../NOTICE.md).

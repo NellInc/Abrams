@@ -2,7 +2,7 @@
 config_version=5
 
 [application]
-config/name="M1 Abrams Battle Tank Remastered"
+config/name="M1 Abrams Battle Tank Fan Remaster"
 ; Keep the pre-rename user:// location, including calibration saves.
 config/use_custom_user_dir=true
 config/custom_user_dir_name="Godot/app_userdata/Abrams - Reconstruction"

@@ -43,7 +43,7 @@ Standalone packages target **Apple Silicon macOS 14+**, **Windows x86_64** and *
 
 **You must supply the original PC game. The Genesis ROM is optional. Neither is bundled.**
 
-1. Download your platform's ZIP from [GitHub Releases](https://github.com/NellInc/Abrams/releases), extract it, and open `M1 Abrams Battle Tank Remastered.app`, `M1 Abrams Battle Tank Remastered.exe` or `M1 Abrams Battle Tank Remastered.sh`. On macOS, move the app to Applications.
+1. Download your platform's ZIP from [GitHub Releases](https://github.com/NellInc/Abrams/releases), extract it, and open `M1 Abrams Battle Tank Fan Remaster.app`, `M1 Abrams Battle Tank Fan Remaster.exe` or `M1 Abrams Battle Tank Fan Remaster.sh`. On macOS, move the app to Applications.
 2. Open Abrams and choose **Choose PC folder…** or **Import PC folder** and select the extracted folder containing `ABRAMS.COM`, `SIM.EXE` and the remaining game files.
 3. Optionally choose **Add Genesis ROM…** or **Import Genesis ROM** to enable the Genesis-based artwork and music.
 4. Click **Play**.
