@@ -20,6 +20,13 @@ Both final assets retain BY DYNAMIX and explicitly add FAN REMASTER.
 FAN REMASTER uses the ivory stencil-title treatment, reduced slightly for
 balanced spacing while remaining prominent. BY DYNAMIX stays visible.
 
+Ordinary Play uses the full restored cover during startup, with its complete
+lettering and painting preserved. A dark red surround and a warm ivory caption
+frame the artwork at every window size. The cover is drawn before the asset
+preload and leaves when the first valid original-game frame is composed.
+There is no timed hold or extra game input. Startup failures retain the cover
+and an actionable message; a missing image falls back to a readable title.
+
 Latest built-in image-edit direction: reduce only FAN REMASTER slightly,
 preserving its ivory stencil treatment, the BATTLE TANK title, BY DYNAMIX,
 the restored tank painting and the established composition. The actual result

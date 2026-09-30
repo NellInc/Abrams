@@ -43,6 +43,29 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn('git clone --config core.autocrlf=false --config core.eol=lf', workflow)
         self.assertNotIn('git -c core.autocrlf=false clone', workflow)
 
+    def test_box_cover_loading_screen_is_packaged_without_a_logo_or_hold(self):
+        import json
+        root = Path(__file__).resolve().parents[1]
+        manifest = json.loads((root / 'tools/package/allowlist.json').read_text())
+        component = 'godot/scripts/pc_startup_splash.gd'
+        viewer = (root / 'godot/scripts/pc_bridge_viewer.gd').read_text()
+        splash = (root / component).read_text()
+        self.assertIn(component, manifest['source'])
+        self.assertIn('branding/abrams-cover-remastered.png', manifest['private'])
+        self.assertNotIn('branding/abrams-cover-remastered.png', manifest['source'])
+        self.assertIn('COVER_PATH := "branding/abrams-cover-remastered.png"', splash)
+        self.assertIn('TextureRect.STRETCH_KEEP_ASPECT_CENTERED', splash)
+        self.assertIn('Control.MOUSE_FILTER_IGNORE', splash)
+        self.assertNotIn('create_timer(', splash)
+        self.assertNotIn('create_tween(', splash)
+        self.assertIn('if paint_first:\n\t\tawait RenderingServer.frame_post_draw', viewer)
+        self.assertIn('await RenderingServer.frame_post_draw\n\t\tif closing: return', viewer)
+        self.assertIn('if closing: return\n\t_load_world_presentation', viewer)
+        self.assertIn('startup_splash.show_error(status.text)', viewer)
+        apply = viewer.split('func _apply_sample(', 1)[1].split('func _capture(', 1)[0]
+        self.assertLess(apply.index('invalid original framebuffer'), apply.index('_finish_startup_display()'))
+        self.assertLess(apply.index('_present_tandem('), apply.index('_finish_startup_display()'))
+
     def test_about_and_user_initiated_project_link(self):
         self.assertIn('withTitle: "About \\(appName)", action: #selector(showAbout)', SOURCE)
         self.assertIn('https://github.com/NellInc/Abrams', SOURCE)

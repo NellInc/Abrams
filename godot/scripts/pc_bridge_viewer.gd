@@ -8,6 +8,9 @@ const DrawPass = preload("res://scripts/pc_draw_pass.gd")
 const PcCamera = preload("res://scripts/pc_camera.gd")
 const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
 const PlayDisplay = preload("res://scripts/pc_play_display.gd")
+const StartupSplash = preload("res://scripts/pc_startup_splash.gd")
+var startup_splash: Control
+var startup_ready := false
 var play_mode := false
 var play_display: Control
 var requested_window_size := Vector2i.ZERO
@@ -152,55 +155,12 @@ func _initialize() -> void:
 	if "--output" in args and args.find("--output")+1 < args.size(): output = args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	_build_ui()
-	_load_world_presentation(directory,args)
-	if audio_requested(trace_mode,args):
-		pc_audio = PcAudio.new()
-		root.add_child(pc_audio)
-	if play_mode:
-		audio_menu=preload("res://scripts/pc_play_menu.gd").new()
-		audio_menu.genesis_available=not pc_only
-		audio_menu.modern_available=tandem_frame.modern_available
-		audio_menu.audio=pc_audio
-		if capture:
-			audio_menu.config_path=""
-			audio_menu.quality_config_path=""
-		audio_menu.load_settings()
-		audio_menu.load_quality_settings()
-		if pc_audio: pc_audio.set_mix(audio_menu.settings)
-		root.add_child(audio_menu)
-		audio_menu.graphics_selected.connect(_choose_graphics)
-		audio_menu.quality_selected.connect(_choose_graphics_quality)
-		audio_menu.speed_selected.connect(_choose_speed)
-		audio_menu.state_requested.connect(_request_state)
-		audio_menu.control_notice.connect(_show_control_notice)
-		audio_menu.resized.connect(_layout_audio_menu)
-		_layout_audio_menu.call_deferred()
-	_load_cockpit_presentation(directory)
-	if play_mode:
-		var initial_mode := "ega" if "--original-art" in args else "upscaled"
-		if "--graphics" in args: initial_mode=args[args.find("--graphics")+1]
-		if not audio_menu.choose_graphics(initial_mode):
-			printerr("Requested graphics assets are unavailable: "+initial_mode)
-			quit(2)
-			return
-	var python := OS.get_environment("ABRAMS_PYTHON")
-	if python.is_empty(): python = "/opt/homebrew/bin/python3"
-	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
-	var startup_state := "" if boot_mode else directory.path_join(state_path)
-	# Frame-sensitive intro comparison requires a shared neutral START boundary.
-	# This diagnostic alone uses it; ordinary Play continues to cold boot.
-	if boot_mode and capture and "--capture-intro" in args:
-		startup_state=directory.path_join("artifacts/pc-neutral-boot-01/neutral-boot/reference.state")
-	var save_path := output.path_join("saves")
-	if "--saves" in args:
-		var index := args.find("--saves")+1
-		if index>=args.size() or args[index].begins_with("--"):
-			printerr("--saves requires a local save directory")
-			quit(2)
-			return
-		save_path=ProjectSettings.globalize_path(args[index])
-	bridge.start(python, startup_state, save_path,
-		output.path_join("host.log"), "trace" if trace_mode else "reference", "--frame-audit" in args)
+	# Ordinary Play paints its cover before the synchronous presentation preload.
+	# Capture/headless diagnostics keep their established synchronous setup.
+	if play_mode and not capture and DisplayServer.get_name()!="headless":
+		_complete_startup.call_deferred(directory,args,true)
+	else:
+		_complete_startup(directory,args,false)
 	if boot_mode and capture:
 		auto_steps = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_boot_steps.json"))
 	if capture and "--capture-menu" in args:
@@ -303,6 +263,73 @@ func _initialize() -> void:
 	# Split only capture requests, preserving every frame and held-key value.
 	if capture: auto_steps = capture_chunks(auto_steps)
 
+func _complete_startup(directory: String, args: Array, paint_first: bool) -> void:
+	if paint_first:
+		await RenderingServer.frame_post_draw
+		if closing: return
+		# Asset prewarming can draw its own viewports. Leave the render signal
+		# before doing that work, rather than nesting a draw inside its callback.
+		_complete_startup.call_deferred(directory,args,false)
+		return
+	# Close may arrive while the first cover frame is being drawn. Never start a
+	# guest or load presentation assets after the user has closed the window.
+	if closing: return
+	_load_world_presentation(directory,args)
+	if audio_requested(trace_mode,args):
+		pc_audio = PcAudio.new()
+		root.add_child(pc_audio)
+	if play_mode:
+		audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+		audio_menu.genesis_available=not pc_only
+		audio_menu.modern_available=tandem_frame.modern_available
+		audio_menu.audio=pc_audio
+		if capture:
+			audio_menu.config_path=""
+			audio_menu.quality_config_path=""
+		audio_menu.load_settings()
+		audio_menu.load_quality_settings()
+		if pc_audio: pc_audio.set_mix(audio_menu.settings)
+		root.add_child(audio_menu)
+		audio_menu.graphics_selected.connect(_choose_graphics)
+		audio_menu.quality_selected.connect(_choose_graphics_quality)
+		audio_menu.speed_selected.connect(_choose_speed)
+		audio_menu.state_requested.connect(_request_state)
+		audio_menu.control_notice.connect(_show_control_notice)
+		audio_menu.resized.connect(_layout_audio_menu)
+		_layout_audio_menu.call_deferred()
+	_load_cockpit_presentation(directory)
+	if play_mode:
+		var initial_mode := "ega" if "--original-art" in args else "upscaled"
+		if "--graphics" in args: initial_mode=args[args.find("--graphics")+1]
+		if not audio_menu.choose_graphics(initial_mode):
+			printerr("Requested graphics assets are unavailable: "+initial_mode)
+			quit(2)
+			return
+	var python := OS.get_environment("ABRAMS_PYTHON")
+	if python.is_empty(): python = "/opt/homebrew/bin/python3"
+	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
+	var startup_state := "" if boot_mode else directory.path_join(state_path)
+	# Frame-sensitive intro comparison requires a shared neutral START boundary.
+	# This diagnostic alone uses it; ordinary Play continues to cold boot.
+	if boot_mode and capture and "--capture-intro" in args:
+		startup_state=directory.path_join("artifacts/pc-neutral-boot-01/neutral-boot/reference.state")
+	var save_path := output.path_join("saves")
+	if "--saves" in args:
+		var index := args.find("--saves")+1
+		if index>=args.size() or args[index].begins_with("--"):
+			printerr("--saves requires a local save directory")
+			quit(2)
+			return
+		save_path=ProjectSettings.globalize_path(args[index])
+	bridge.start(python, startup_state, save_path,
+		output.path_join("host.log"), "trace" if trace_mode else "reference", "--frame-audit" in args)
+	startup_ready=true
+
+func _finish_startup_display() -> void:
+	if not play_mode: return
+	status.hide()
+	startup_splash.finish()
+
 static func audio_requested(tracing: bool, args: Array) -> bool:
 	return tracing and "--no-audio" not in args
 
@@ -347,17 +374,15 @@ func _build_play_ui() -> void:
 	# These retain diagnostic state/capture access without exposing extra tactical
 	# information or research furniture over the original game screen.
 	picture = TextureRect.new()
-	status = _label("Starting the original PC game...",22)
-	status.add_theme_constant_override("outline_size",4)
-	status.add_theme_color_override("font_outline_color",Color.BLACK)
 	caption = _label("",18)
-	for node in [picture,status,caption]: play_display.add_child(node)
+	for node in [picture,caption]: play_display.add_child(node)
 	picture.hide()
 	caption.hide()
-	status.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	status.offset_left=24;status.offset_right=-24;status.offset_top=48
-	status.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-	status.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	startup_splash=StartupSplash.new()
+	play_display.add_child(startup_splash)
+	startup_splash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	startup_splash.load_cover(ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir())
+	status=startup_splash.message
 	control_notice=_label("",18)
 	control_notice.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	control_notice.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -619,6 +644,8 @@ func _capture_deadline_msec() -> int:
 	return 180000 if boot_mode or "--capture-vehicle" in OS.get_cmdline_user_args() else 60000
 
 func _process(delta: float) -> bool:
+	# The first rendered cover is the only startup yield, with no guest running.
+	if not startup_ready and bridge.failure.is_empty(): return false
 	if is_instance_valid(control_notice) and Time.get_ticks_msec()>=notice_until:control_notice.hide()
 	elapsed += delta
 	for message in bridge.poll():
@@ -630,6 +657,7 @@ func _process(delta: float) -> bool:
 	if not bridge.failure.is_empty():
 		status.text = "Game stopped: " + bridge.failure + "\nClose this window to exit."
 		status.show()
+		if play_mode: startup_splash.show_error(status.text)
 		if capture: _close()
 		elif not closing:
 			# Keep actionable failures visible instead of making Play disappear.
@@ -719,7 +747,6 @@ func _apply_sample(message: Dictionary) -> void:
 	# All Godot scene work remains on the main thread; capture never prefetches.
 	_advance_live_frame()
 	if changed or picture.texture==null: picture.texture = ImageTexture.create_from_image(image)
-	if play_mode: status.hide()
 	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
 	if pc_audio:
 		_apply_frontend_music(image,previous_program,message.get("presentation",{}))
@@ -745,6 +772,7 @@ func _apply_sample(message: Dictionary) -> void:
 		else:
 			draw_view.apply_pass({"objects": []})
 		var frontend := _present_tandem(image, previous_presentation, preview_world, previous_program)
+		_finish_startup_display()
 		if not play_mode:
 			status.text = "ORIGINAL PC: " + str(previous_program.get("name","STARTING"))
 			caption.text = "Original menu/briefing or SIM initialization. Showing the original framebuffer; no substitute simulation."
@@ -786,6 +814,7 @@ func _apply_sample(message: Dictionary) -> void:
 	if trace_mode:
 		frontend = _present_tandem(image, previous_presentation, world_viewport.get_texture(), previous_program)
 	previous = state
+	_finish_startup_display()
 	# Hidden research labels cause text shaping/layout even when not displayed.
 	if play_mode: return
 	status.text = "%s   HEADING %03d   SIGHT %03d   SPEED %d   FUEL %d" % [str(state.station).to_upper(), state.heading_degrees, state.bearing_degrees, state.speed_display, state.fuel_display]
@@ -869,6 +898,10 @@ func _drain_audio() -> void:
 
 func _close() -> void:
 	if closing: return
+	if not startup_ready:
+		closing=true
+		quit(0 if bridge.failure.is_empty() else 1)
+		return
 	if pc_audio:
 		audio_drained = false
 		_drain_audio.call_deferred()
