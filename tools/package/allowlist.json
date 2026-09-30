@@ -227,6 +227,7 @@
     "godot/tests/test_pc_radio.gd",
     "godot/tests/test_pc_radio_bridge.gd",
     "godot/tests/test_pc_remaining_audio.gd",
+    "godot/tests/test_pc_render_quality.gd",
     "godot/tests/test_pc_reticle.gd",
     "godot/tests/test_pc_reticle_target.gd",
     "godot/tests/test_pc_rules.gd",

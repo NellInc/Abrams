@@ -30,7 +30,7 @@ uniform bool modern_environment_polish = true;
 uniform sampler2D source_ownership : filter_nearest, repeat_disable;
 uniform sampler2D modern_colours : source_color, filter_nearest, repeat_disable;
 uniform float modern_colour_count;
-uniform sampler2D modern_tree : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D modern_tree : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 varying float source_owner;
 varying vec3 original_view;
 

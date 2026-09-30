@@ -103,6 +103,19 @@ checkout, `./Play.command --graphics ega` (or `genesis`, `upscaled` or `modern`)
 starting mode. Missing or invalid graphics resources leave the current mode
 unchanged. See [graphics coverage](graphics-modes.md).
 
+## Scenery quality
+
+**Graphics > Antialiasing** selects Off, 2×, 4× or 8× MSAA. **Graphics > Anisotropic
+filtering** selects Off, 2×, 4×, 8× or 16×. Defaults are 4× MSAA and 16× filtering.
+Changes apply immediately and are saved for the next launch, separately from
+campaigns and checkpoints. Lower MSAA if your GPU struggles with it.
+
+Antialiasing affects the Upscaled and Modern 3D scenery, including the opening
+menu preview. EGA and Genesis remain pixel-sharp. The cockpit text, source colour
+tables and original visibility masks retain exact sampling. Filtering improves
+the sampled road, water, building surfaces and illustrated trees; procedural
+grass stays texture-free.
+
 ## Audio
 
 The Audio menu provides Master, Sound effects, Crew voices, Engine and turret,

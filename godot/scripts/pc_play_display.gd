@@ -6,6 +6,11 @@ var tandem_viewport := SubViewport.new()
 var tandem_frame := TandemFrame.new()
 var display := TextureRect.new()
 var source_dimensions := Vector2i(256,97)
+var graphics_mode := "upscaled"
+var msaa_samples := 4
+var anisotropic_samples := 16
+const MSAA_LEVELS := {0:Viewport.MSAA_DISABLED,2:Viewport.MSAA_2X,4:Viewport.MSAA_4X,8:Viewport.MSAA_8X}
+const ANISOTROPY_LEVELS := {0:Viewport.ANISOTROPY_DISABLED,2:Viewport.ANISOTROPY_2X,4:Viewport.ANISOTROPY_4X,8:Viewport.ANISOTROPY_8X,16:Viewport.ANISOTROPY_16X}
 
 static func fitted_rect(available: Vector2i) -> Rect2i:
 	var unit := maxi(0,mini(available.x/4,available.y/3))
@@ -39,6 +44,10 @@ func _init() -> void:
 	# Explicit child-first rendering keeps resized scenery and UI in one frame.
 	world_viewport.own_world_3d = true
 	world_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# Project MSAA affects the root window, not this separate scenery viewport.
+	# UI and the original source-ownership ID viewport must never be multisampled.
+	world_viewport.msaa_3d = Viewport.MSAA_4X
+	world_viewport.anisotropic_filtering_level = Viewport.ANISOTROPY_16X
 	tandem_viewport.add_child(world_viewport)
 	tandem_viewport.add_child(tandem_frame)
 	display.texture = tandem_viewport.get_texture()
@@ -52,6 +61,23 @@ func set_camera_dimensions(dimensions: Vector2i) -> void:
 	if dimensions==source_dimensions: return
 	source_dimensions = dimensions
 	_resize_targets()
+
+func set_graphics_quality(mode: String, samples: int, anisotropy: int) -> bool:
+	if mode not in ["ega","genesis","upscaled","modern"] or not MSAA_LEVELS.has(samples) or not ANISOTROPY_LEVELS.has(anisotropy): return false
+	graphics_mode=mode
+	msaa_samples=samples
+	anisotropic_samples=anisotropy
+	var active_msaa: int=MSAA_LEVELS[samples] if mode in ["upscaled","modern"] else Viewport.MSAA_DISABLED
+	if world_viewport.msaa_3d==active_msaa and world_viewport.anisotropic_filtering_level==ANISOTROPY_LEVELS[anisotropy]: return true
+	world_viewport.msaa_3d=active_msaa
+	world_viewport.anisotropic_filtering_level=ANISOTROPY_LEVELS[anisotropy]
+	# Redraw retained GPU targets immediately, including a stationary paired pass.
+	# No guest frame, mesh rebuild, camera change or source input is needed.
+	if world_viewport.render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
+		world_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+	if tandem_viewport.render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
+		tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+	return true
 
 func _resize_targets() -> void:
 	var rect := fitted_rect(Vector2i(size))
@@ -74,4 +100,6 @@ func description() -> Dictionary:
 		"tandem_pixels":[tandem_viewport.size.x,tandem_viewport.size.y],
 		"world_pixels":[world_viewport.size.x,world_viewport.size.y],
 		"source_clip_pixels":[source_dimensions.x,source_dimensions.y],
+		"msaa_samples":msaa_samples if graphics_mode in ["upscaled","modern"] else 0,
+		"anisotropic_samples":anisotropic_samples,
 		"world_scale":world_scale(rect.size), "display_aspect":"4:3"}

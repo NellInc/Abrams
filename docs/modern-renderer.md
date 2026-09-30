@@ -8,6 +8,28 @@ The runtime uses the generated catalogue's bounded triangle geometry directly, r
 
 This is a conservative source-silhouette renderer. New rounded corners and tree alpha gaps can remove old filled pixels. New model geometry cannot extend beyond its original object's reconstructed visible silhouette. The original hidden actors stay hidden inside those gaps; sky and source terrain form the underpaint. Validated bitmap effects use the bounded authored-contour refinement described below, retaining all original hidden-actor coverage.
 
+## Scenery sampling
+
+The Play scenery SubViewport explicitly enables 4× MSAA and 16× anisotropic
+filtering. The Graphics menu provides Off/2×/4×/8× MSAA and
+Off/2×/4×/8×/16× filtering, saved in `user://pc_graphics.cfg`. EGA and Genesis
+disable scenery MSAA. The original framebuffer, compositor, palette tables and
+ownership-ID texture keep nearest sampling; the ownership viewport remains
+non-antialiased. Quality changes redraw retained targets without advancing the
+guest, rebuilding geometry or loading assets. Tree sampling uses anisotropic
+mipmaps alongside the existing road, water and building-detail samplers.
+
+Working if: the native render-quality test observes changed internal facet-edge
+pixels, byte-identical ownership, exact restoration with AA off, and immediate
+refresh of a stationary retained frame. This is a sampling check, not a 60 FPS
+performance acceptance.
+
+The initial 240-reply stationary Modern diagnostic at 1280×960 measured 38.72
+replies/second with 4× MSAA/16× filtering and 43.41 with AA off/4× filtering.
+Both ended with the same original RAM hash and reused all 240 scenery meshes.
+These short, sequential unpaced runs do not isolate GPU cost or establish
+moving-gameplay FPS. Receipts: `artifacts/render-quality-20260930/`.
+
 ## Public integration API
 
 `pc_draw_pass.gd` exposes:

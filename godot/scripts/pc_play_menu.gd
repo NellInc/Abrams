@@ -1,6 +1,7 @@
 extends "res://scripts/pc_audio_menu.gd"
 ## Remaster controls live outside the source framebuffer and claim no game keys.
 signal graphics_selected(mode: String)
+signal quality_selected(msaa_samples: int, anisotropic_samples: int)
 signal speed_selected(multiplier: int)
 signal state_requested(operation: String, slot: int)
 signal control_notice(message: String)
@@ -8,6 +9,12 @@ var shortcut_is_macos := OS.get_name()=="macOS"
 var shortcut_keys: Array = []
 const MODES := ["ega","genesis","upscaled","modern"]
 var graphics_mode := "upscaled"
+const QUALITY_DEFAULTS := {"msaa":4,"anisotropy":16}
+const QUALITY_LEVELS := {"msaa":[0,2,4,8],"anisotropy":[0,2,4,8,16]}
+var quality: Dictionary = QUALITY_DEFAULTS.duplicate()
+var quality_config_path := "user://pc_graphics.cfg"
+var quality_menus: Dictionary = {}
+var quality_error := ""
 var genesis_available := true
 var modern_available := false
 var speed := 1
@@ -54,7 +61,48 @@ func _ready() -> void:
 	graphics_popup.add_separator()
 	graphics_popup.add_item("Cycle graphics: "+shortcut_prefix()+"G",100)
 	graphics_popup.set_item_disabled(graphics_popup.get_item_index(100),true)
+	graphics_popup.add_separator()
+	for key in QUALITY_LEVELS:
+		var menu := _submenu(graphics_popup,"Antialiasing" if key=="msaa" else "Anisotropic filtering")
+		for samples in QUALITY_LEVELS[key]:
+			menu.add_radio_check_item("Off" if samples==0 else "%d× MSAA"%samples if key=="msaa" else "%d×"%samples,samples)
+		menu.id_pressed.connect(func(samples):choose_quality(key,samples))
+		quality_menus[key]=menu
+	graphics_popup.add_item("",101)
+	graphics_popup.set_item_disabled(graphics_popup.get_item_index(101),true)
 	refresh_controls()
+
+func load_quality_settings() -> bool:
+	quality=QUALITY_DEFAULTS.duplicate()
+	quality_error=""
+	if quality_config_path.is_empty(): return true
+	var file := ConfigFile.new()
+	var error := file.load(quality_config_path)
+	if error==ERR_FILE_NOT_FOUND: return true
+	if error!=OK:
+		quality_error="Could not read saved graphics settings; using defaults"
+		return false
+	var loaded := {}
+	for key in QUALITY_LEVELS:
+		var value=file.get_value("graphics",key,QUALITY_DEFAULTS[key])
+		if not value is int or value not in QUALITY_LEVELS[key]:
+			quality_error="Invalid saved graphics settings; using defaults"
+			return false
+		loaded[key]=value
+	quality=loaded
+	return true
+
+func choose_quality(key: String, samples: int) -> bool:
+	if not QUALITY_LEVELS.has(key) or samples not in QUALITY_LEVELS[key]: return false
+	quality[key]=samples
+	quality_error=""
+	if not quality_config_path.is_empty():
+		var file := ConfigFile.new()
+		for setting in quality: file.set_value("graphics",setting,quality[setting])
+		if file.save(quality_config_path)!=OK: quality_error="Graphics changed, but could not save settings"
+	quality_selected.emit(quality.msaa,quality.anisotropy)
+	refresh_controls()
+	return true
 
 func shortcut_prefix() -> String:
 	return "Cmd+" if shortcut_is_macos else "Ctrl+Alt+"
@@ -157,6 +205,10 @@ func refresh_controls() -> void:
 	graphics_popup.set_item_disabled(3,not modern_available)
 	graphics_popup.set_item_text(3,"Modern (refined low-poly)" if modern_available else "Modern (assets unavailable)")
 	for index in MODES.size():graphics_popup.set_item_checked(index,MODES[index]==graphics_mode)
+	for key in quality_menus:
+		var menu: PopupMenu=quality_menus[key]
+		for index in menu.item_count: menu.set_item_checked(index,menu.get_item_id(index)==quality[key])
+	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else "Antialiasing applies to Upscaled and Modern scenery")
 	for index in speed_popup.item_count:
 		speed_popup.set_item_checked(index,speed_popup.get_item_id(index)==speed)
 		speed_popup.set_item_disabled(index,busy)

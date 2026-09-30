@@ -150,6 +150,7 @@ run_check pc_live_scheduling ./tools/godot.sh --headless --quit-after 1200 --scr
 run_check pc_presentation_reuse ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_presentation_reuse.gd
 run_check pc_optional_genesis ./tools/godot.sh --headless --script res://tests/test_pc_optional_genesis.gd
 run_check pc_play_menu ./tools/godot.sh --headless --script res://tests/test_pc_play_menu.gd
+run_check pc_render_quality ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_render_quality.gd
 run_check pc_play_shortcuts ./tools/godot.sh --headless --script res://tests/test_pc_play_shortcuts.gd
 run_check pc_graphics_modes ./tools/godot.sh --headless --script res://tests/test_pc_graphics_modes.gd
 run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_draw_pass.gd

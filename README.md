@@ -33,6 +33,7 @@ The two run in tandem: the original PC executables run inside DOSBox Pure, while
 * Five save-state slots, quick save/load and **Undo last load**, alongside the original campaign saves.
 * **2x, 4x and 8x fast forward**, with sound muted during accelerated play.
 * Resizable windows and fullscreen, preserving the complete 4:3 display.
+* **4× MSAA and 16× anisotropic filtering** for remastered scenery, adjustable in Graphics.
 
 Upscaled is the default. Genesis mode uses original-resolution Genesis artwork where available; unmatched areas keep PC graphics. Modern adds source-bound low-poly vehicle and building detail, illustrated trees and a restrained battlefield palette. The original PC simulation, terrain and camera remain authoritative. Modern remains experimental while performance tuning and playtesting continue.
 

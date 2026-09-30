@@ -161,11 +161,15 @@ func _initialize() -> void:
 		audio_menu.genesis_available=not pc_only
 		audio_menu.modern_available=tandem_frame.modern_available
 		audio_menu.audio=pc_audio
-		if capture: audio_menu.config_path=""
+		if capture:
+			audio_menu.config_path=""
+			audio_menu.quality_config_path=""
 		audio_menu.load_settings()
+		audio_menu.load_quality_settings()
 		if pc_audio: pc_audio.set_mix(audio_menu.settings)
 		root.add_child(audio_menu)
 		audio_menu.graphics_selected.connect(_choose_graphics)
+		audio_menu.quality_selected.connect(_choose_graphics_quality)
 		audio_menu.speed_selected.connect(_choose_speed)
 		audio_menu.state_requested.connect(_request_state)
 		audio_menu.control_notice.connect(_show_control_notice)
@@ -565,6 +569,7 @@ func _choose_graphics(mode: String) -> void:
 		audio_menu.graphics_mode=tandem_frame.graphics_mode
 		audio_menu.state_message="Requested graphics assets are unavailable."
 		return
+	_choose_graphics_quality(audio_menu.quality.msaa,audio_menu.quality.anisotropy)
 	# Replay the already paired drawing only. No guest frame or audio advances.
 	var drawing=previous_presentation.get("draw_pass")
 	if drawing is Dictionary:
@@ -575,6 +580,11 @@ func _choose_graphics(mode: String) -> void:
 	else:
 		draw_view.apply_pass({"objects":[]})
 	audio_menu.refresh_controls()
+
+func _choose_graphics_quality(samples: int, anisotropy: int) -> void:
+	if play_display:
+		play_display.set_graphics_quality(tandem_frame.graphics_mode,samples,anisotropy)
+		invalidate_presentation_cache()
 
 func _choose_speed(multiplier: int) -> void:
 	fast_forward=multiplier

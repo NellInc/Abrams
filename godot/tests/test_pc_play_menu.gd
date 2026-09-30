@@ -9,13 +9,24 @@ func _initialize() -> void: run.call_deferred()
 func run() -> void:
 	var menu := Menu.new()
 	menu.config_path=""
+	menu.quality_config_path=""
 	root.add_child(menu)
 	var choices: Array=[]
 	menu.graphics_selected.connect(func(mode):choices.append(["graphics",mode]))
+	menu.quality_selected.connect(func(msaa,anisotropy):choices.append(["quality",msaa,anisotropy]))
 	menu.speed_selected.connect(func(speed):choices.append(["speed",speed]))
 	menu.state_requested.connect(func(op,slot):choices.append([op,slot]))
 	check(menu.get_menu_count()==3,"Audio, Session and Graphics outside source pixels")
 	check(menu.settings.music==70 and menu.menus.has("music"),"independent music mix")
+	check(menu.quality=={"msaa":4,"anisotropy":16},"4x MSAA and 16x anisotropy defaults")
+	for key in menu.QUALITY_LEVELS:
+		for samples in menu.QUALITY_LEVELS[key]:
+			check(menu.choose_quality(key,samples) and menu.quality[key]==samples,"quality selection: %s %d"%[key,samples])
+			check(choices[-1]==["quality",menu.quality.msaa,menu.quality.anisotropy],"quality signal carries both settings")
+	check(not menu.choose_quality("msaa",16) and not menu.choose_quality("anisotropy",3) and not menu.choose_quality("unknown",4),"unsupported quality selections rejected")
+	for key in menu.quality_menus:
+		menu.quality_menus[key].id_pressed.emit(0)
+		check(menu.quality[key]==0 and choices[-1]==["quality",menu.quality.msaa,menu.quality.anisotropy],"submenu dispatch: "+key)
 	for mode in ["ega","genesis","upscaled"]:
 		check(menu.choose_graphics(mode) and choices[-1]==["graphics",mode],"live graphics signal: "+mode)
 	check(not menu.choose_graphics("modern") and menu.graphics_mode=="upscaled","unavailable Modern never pretends to render")
@@ -41,7 +52,7 @@ func run() -> void:
 	check(not menu.busy and menu.request_state("load_state",0),"pre-load recovery can be loaded")
 	menu.set_state_status([{"slot":1}],"Loaded slot 1")
 	check(menu.load_popup.is_item_disabled(menu.load_popup.get_item_index(0)),"missing recovery remains disabled")
-	for popup in [menu.session_popup,menu.save_popup,menu.load_popup,menu.speed_popup,menu.graphics_popup]:
+	for popup in [menu.session_popup,menu.save_popup,menu.load_popup,menu.speed_popup,menu.graphics_popup]+menu.quality_menus.values():
 		for i in popup.item_count:
 			check(popup.get_item_accelerator(i)==0 and popup.get_item_shortcut(i)==null,"no original key intercepted")
 		popup.about_to_popup.emit()
