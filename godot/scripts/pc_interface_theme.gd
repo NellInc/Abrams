@@ -49,7 +49,11 @@ static func reference_path(name: String) -> String:
 	if name not in ["keyboard-controls.html","field-guide.html"]: return ""
 	return ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("docs/player-reference").path_join(name)
 
-static func open_reference(name: String) -> Error:
-	var path := reference_path(name)
-	if path.is_empty() or not FileAccess.file_exists(path): return ERR_FILE_NOT_FOUND
-	return OS.shell_open(path)
+static func show_reference(host: Window, name: String) -> Window:
+	var reader := host.get_node_or_null("PlayerReference") as Window
+	if reader==null:
+		reader=load("res://scripts/pc_reference_library.gd").new()
+		reader.name="PlayerReference"
+		host.add_child(reader)
+	reader.call("open_reader","Controls" if name=="keyboard-controls.html" else "Credits" if name=="credits" else "Scenarios")
+	return reader

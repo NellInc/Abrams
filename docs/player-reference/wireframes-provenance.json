@@ -1,0 +1,193 @@
+{
+  "kind": "Generatively restored technical side-view drawings from the original PC manual",
+  "manual_sha256": "4545710cf18793fe03f4147808a58db4cae72b62e96bb28cd791db661934b618",
+  "preserved": "Source silhouettes, orientation and mechanical configuration. Original lettering excluded.",
+  "absences": {
+    "BRDM-3": "The manual directs readers to the BRDM-2 illustration.",
+    "FST-1": "No illustration supplied by the manual."
+  },
+  "drawings": [
+    {
+      "name": "acrv-2",
+      "pdf_page_1_based": 33,
+      "rect": [
+        656,
+        650,
+        1005,
+        829
+      ],
+      "source_crop_sha256": "898f8c3a8a2a4965faeafb2dfa26801c5603578ee7adbb476cbe139b3360e018",
+      "file": "wireframe-acrv-2.png",
+      "output_sha256": "158692065fa701a6f584e4cdedcb4fbd89c428d5d07651f81908890e08d03338"
+    },
+    {
+      "name": "bmp-1",
+      "pdf_page_1_based": 33,
+      "rect": [
+        739,
+        1295,
+        1112,
+        1454
+      ],
+      "source_crop_sha256": "8976b94896b0ac9ff1c63444422a35941bd19be91bbbba6a66b4a21ede10cbd4",
+      "file": "wireframe-bmp-1.png",
+      "output_sha256": "663b786964d21712b9e768e0a19804ca1a42ae387f4a28abe8e2a651901b3ce9"
+    },
+    {
+      "name": "bmp-2",
+      "pdf_page_1_based": 34,
+      "rect": [
+        736,
+        619,
+        1110,
+        798
+      ],
+      "source_crop_sha256": "e345b0a3c4b96959ffd620ffa6ac5481ff94e193aa145f37a380110d51e61a90",
+      "file": "wireframe-bmp-2.png",
+      "output_sha256": "3aee1e03e44a7a15402b7553e2f57b39bb48b659dbb6afaedd3e0d895403980c"
+    },
+    {
+      "name": "brdm-2",
+      "pdf_page_1_based": 34,
+      "rect": [
+        784,
+        1390,
+        1070,
+        1545
+      ],
+      "source_crop_sha256": "6d2c68cd1c97ea1cffa27eb9e6e48dcb9f1f07035669167b2258f7351fd29441",
+      "file": "wireframe-brdm-2.png",
+      "output_sha256": "e5250692a034a2dbd26f2e5101fde191f47734360e80f6f76997c3d64b0da12b"
+    },
+    {
+      "name": "btr",
+      "pdf_page_1_based": 36,
+      "rect": [
+        726,
+        382,
+        1115,
+        565
+      ],
+      "source_crop_sha256": "d78daefc98646fb07647e4b0115d23d07e459ff615404499a4962521fc9d88ce",
+      "file": "wireframe-btr.png",
+      "output_sha256": "32e200867561ede0ac8312672e3122e1aca1b28de054d6abe3912c7c812164d5"
+    },
+    {
+      "name": "m113",
+      "pdf_page_1_based": 37,
+      "rect": [
+        667,
+        466,
+        1006,
+        617
+      ],
+      "source_crop_sha256": "6f2a189c95a148d8e9bc03bbfb0f1bece53e96d4ae885ec73e33b88c599fc239",
+      "file": "wireframe-m113.png",
+      "output_sha256": "c2edc60c5d8d408cfbf66e0c2eaae98822e55da0ad7f74420bf04edcb7981eba"
+    },
+    {
+      "name": "m1a1-abrams",
+      "pdf_page_1_based": 37,
+      "rect": [
+        730,
+        1110,
+        1148,
+        1270
+      ],
+      "source_crop_sha256": "aa8858ccce6228e726fa6b6efff3e38f8228f19eceaa692e9f8effab9158ebf9",
+      "file": "wireframe-m1a1-abrams.png",
+      "output_sha256": "15b9d6648bf65ac2c870d6c84dac55bf1e84a83eb898f178a948b7aa322763ec"
+    },
+    {
+      "name": "m2-bradley",
+      "pdf_page_1_based": 38,
+      "rect": [
+        718,
+        559,
+        1079,
+        746
+      ],
+      "source_crop_sha256": "f6fb8284e843e8361847b2f6b7957b8809823cd44d29afdb7c902e1917e954a5",
+      "file": "wireframe-m2-bradley.png",
+      "output_sha256": "9db5471a9b42d4c4804efee0a81df3f2bcab4cb5feacca22ead13eac22cf1f91"
+    },
+    {
+      "name": "m60a3",
+      "pdf_page_1_based": 38,
+      "rect": [
+        617,
+        1349,
+        1106,
+        1570
+      ],
+      "source_crop_sha256": "3fe32ecaddec1d0fb07249dc8929f965d2041547baf12633cb5f19f380e63e27",
+      "file": "wireframe-m60a3.png",
+      "output_sha256": "b1d14333d67d289fbd4c1020f5698e303789c597a2ea5de8b2730634878c7ee1"
+    },
+    {
+      "name": "mi-24-hind",
+      "pdf_page_1_based": 39,
+      "rect": [
+        680,
+        834,
+        1153,
+        1001
+      ],
+      "source_crop_sha256": "d122cb9011ba79f74fbbd6772180ddc5019ae5c989e8b9c0555ab1f18e907c86",
+      "file": "wireframe-mi-24-hind.png",
+      "output_sha256": "829fbcfac79578167c55f25738a639b0c7c55bf6d07c4a43145d519921ade915"
+    },
+    {
+      "name": "t-62",
+      "pdf_page_1_based": 40,
+      "rect": [
+        608,
+        313,
+        1090,
+        480
+      ],
+      "source_crop_sha256": "c17d3b31e834a5144f3fadf905ec76c67f4a4f3b97f072ce1df1baa9c92f4c15",
+      "file": "wireframe-t-62.png",
+      "output_sha256": "2a5861b45f79a108574b2ce7f085a9dab0c6894e9966949d6e70bcc1bcd5aeea"
+    },
+    {
+      "name": "t-64",
+      "pdf_page_1_based": 40,
+      "rect": [
+        669,
+        1060,
+        1139,
+        1242
+      ],
+      "source_crop_sha256": "b69ef9fb2812cade327a057ca9e51fb834a38241dc9cad83443d781628e8dcfd",
+      "file": "wireframe-t-64.png",
+      "output_sha256": "6e43b77d3c1ccfb939b35b7988f0f1ae1a020a8cf538cdf50a8177374e56d982"
+    },
+    {
+      "name": "t-72",
+      "pdf_page_1_based": 41,
+      "rect": [
+        626,
+        567,
+        1076,
+        722
+      ],
+      "source_crop_sha256": "46efa5d7f88d6db15e4371bf0cb14f3440d91912ff49f607a4ef23f1e309b505",
+      "file": "wireframe-t-72.png",
+      "output_sha256": "58ef7bc6ec8b9c2c201090226d664a2631fe5bbb243b82cb6ba8c5db22d6914e"
+    },
+    {
+      "name": "t-80",
+      "pdf_page_1_based": 42,
+      "rect": [
+        632,
+        299,
+        1101,
+        466
+      ],
+      "source_crop_sha256": "98be71d523c7d8e73dcf711ccfa2270b0face8830420d1d3d4dd9f2e0454a12b",
+      "file": "wireframe-t-80.png",
+      "output_sha256": "e9841a52dc1bb14ce13456a1dbadc8e0957991631a7e75b1febcf25351d819c8"
+    }
+  ]
+}

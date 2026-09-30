@@ -1,0 +1,2 @@
+# Authored PDFs are binary documents, including their cross-reference streams.
+*.pdf binary

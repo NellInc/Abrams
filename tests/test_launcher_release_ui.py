@@ -8,7 +8,7 @@ SOURCE = (Path(__file__).resolve().parents[1] / 'tools/standalone/Launcher.swift
 
 class LauncherReleaseUI(unittest.TestCase):
     def test_formal_name_and_logo_free_startup_keep_save_location(self):
-        from tools.standalone.build import APP_NAME
+        from tools.standalone.build import APP_NAME, VERSION
         root = Path(__file__).resolve().parents[1]
         config = configparser.ConfigParser()
         config.read_string('[godot]\n' + (root / 'godot/project.godot').read_text(encoding='utf-8'))
@@ -18,6 +18,7 @@ class LauncherReleaseUI(unittest.TestCase):
         windows = (root / 'tools/standalone/portable_launcher.c').read_text(encoding='utf-8')
         self.assertEqual(windows.count(f'L"{APP_NAME}"'), 2)
         self.assertEqual(application['config/name'].strip('"'), APP_NAME)
+        self.assertEqual(application['config/version'].strip('"'), VERSION)
         self.assertFalse(application.getboolean('boot_splash/show_image'))
         self.assertEqual(application.getint('boot_splash/minimum_display_time'), 0)
         self.assertEqual(application['boot_splash/bg_color'], 'Color(0, 0, 0, 1)')
@@ -75,6 +76,39 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn('Original game by Dynamix.', SOURCE)
         self.assertIn('label("Remastered by Nell Watson",', SOURCE)
         self.assertIn('Independent, unofficial fan remaster', SOURCE)
+
+    def test_embedded_reference_navigation_and_credits(self):
+        self.assertIn('import WebKit', SOURCE)
+        self.assertIn('web.loadFileURL(url, allowingReadAccessTo: navigation.directory)', SOURCE)
+        self.assertIn('configuration.websiteDataStore = .nonPersistent()', SOURCE)
+        self.assertIn('resolvingSymlinksInPath().standardizedFileURL', SOURCE)
+        self.assertIn('resolved.deletingLastPathComponent() == directory', SOURCE)
+        self.assertIn('action.navigationType == .linkActivated', SOURCE)
+        self.assertIn('["keyboard-controls.pdf", "field-guide.pdf"]', SOURCE)
+        self.assertIn('decisionHandler(.cancel)', SOURCE)
+        self.assertIn('Back to setup', SOURCE)
+        self.assertIn('originalCredits() + "\\n\\nGame content & licensing\\n\\n" + rights', SOURCE)
+        root = Path(__file__).resolve().parents[1]
+        reader = (root/'godot/scripts/pc_reference_library.gd').read_text()
+        for section in ('Controls', 'Scenarios', 'Vehicles', 'Weapons', 'Credits'):
+            self.assertIn('"'+section+'"', reader)
+        self.assertIn('key.add_theme_font_size_override("normal_font_size",24)', reader)
+        self.assertIn('key.text="[b]"', reader)
+        self.assertIn('file!=file.get_file()', reader)
+        self.assertIn('file.contains("..")', reader)
+        self.assertNotIn('OS.shell_open', reader)
+        self.assertNotIn('create_timer', reader)
+        self.assertIn('body.remove_child(child)', reader)
+        self.assertIn('["maps","wireframes","models"]', reader)
+        self.assertIn('_entries("remaster_controls","Remaster shortcuts",true)', reader)
+        self.assertIn('BarlowCondensed-SemiBold.ttf', reader)
+        self.assertIn('host.size-Vector2i(48,48)', reader)
+        self.assertNotIn('_entries("uncertainties"', reader)
+        self.assertIn('_spec_row(stack,SPEC_LABELS[field],specs[field])', reader)
+        menu = (root/'godot/scripts/pc_play_menu.gd').read_text()
+        self.assertIn('release_keys=true', menu.split('func _reader_changed',1)[1])
+        self.assertIn('open_menus["reference"]=true', menu)
+        self.assertIn('open_menus.erase("reference")', menu)
 
     def test_rights_and_original_game_requirements(self):
         for text in (

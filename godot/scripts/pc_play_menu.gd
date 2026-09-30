@@ -78,11 +78,24 @@ func _ready() -> void:
 	_watch(help_popup)
 	help_popup.add_item("Keyboard controls",0)
 	help_popup.add_item("Scenarios & vehicles",1)
+	help_popup.add_item("Original game credits",2)
 	help_popup.id_pressed.connect(func(index):
-		var name := "keyboard-controls.html" if index==0 else "field-guide.html"
-		if preload("res://scripts/pc_interface_theme.gd").open_reference(name)!=OK:
-			control_notice.emit("Offline reference missing. Reinstall the complete application."))
+		open_reference("keyboard-controls.html" if index==0 else "credits" if index==2 else "field-guide.html"))
+	var existing_reader := get_tree().root.get_node_or_null("PlayerReference")
+	if existing_reader!=null:
+		existing_reader.connect("reader_changed",_reader_changed)
+		if existing_reader.visible:_reader_changed(true)
 	refresh_controls()
+
+func open_reference(name: String) -> void:
+	var reader := preload("res://scripts/pc_interface_theme.gd").show_reference(get_tree().root,name)
+	if not reader.is_connected("reader_changed",_reader_changed):reader.connect("reader_changed",_reader_changed)
+	_reader_changed(true)
+
+func _reader_changed(open: bool) -> void:
+	release_keys=true
+	if open:open_menus["reference"]=true
+	else:open_menus.erase("reference")
 
 func load_quality_settings() -> bool:
 	quality=QUALITY_DEFAULTS.duplicate()
@@ -147,6 +160,10 @@ func handle_shortcut(event: InputEvent) -> bool:
 	return true
 
 func game_keys(held: Array) -> Array:
+	var reader := get_tree().root.get_node_or_null("PlayerReference") if is_inside_tree() else null
+	if reader!=null and reader.visible:
+		release_keys=true
+		return []
 	var modifier := Input.is_key_pressed(KEY_META) if shortcut_is_macos else Input.is_key_pressed(KEY_CTRL) and Input.is_key_pressed(KEY_ALT)
 	# Quarantine only the shortcut chord. A held trigger or steering key must
 	# survive save/load, including failures; menu/focus quarantine is separate.

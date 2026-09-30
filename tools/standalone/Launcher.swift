@@ -1,4 +1,5 @@
 import AppKit
+import WebKit
 
 // Native vibrancy provides the glass material without a live game render pass.
 final class GlassPanel: NSVisualEffectView {
@@ -38,6 +39,30 @@ final class LauncherBackdrop: NSView {
     }
 }
 
+// A reviewed document stays inside setup. Navigation never leaves this local library.
+final class LocalReferenceNavigation: NSObject, WKNavigationDelegate, WKUIDelegate {
+    let directory: URL
+    init(directory: URL) { self.directory = directory.resolvingSymlinksInPath().standardizedFileURL }
+    func allowed(_ url: URL, names: [String]) -> Bool {
+        let resolved = url.resolvingSymlinksInPath().standardizedFileURL
+        return url.isFileURL && resolved.deletingLastPathComponent() == directory && names.contains(resolved.lastPathComponent)
+    }
+    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let url = action.request.url else { decisionHandler(.cancel); return }
+        if allowed(url, names: ["keyboard-controls.html", "field-guide.html"]) && action.targetFrame?.isMainFrame == true {
+            decisionHandler(.allow); return
+        }
+        if action.navigationType == .linkActivated && allowed(url, names: ["keyboard-controls.pdf", "field-guide.pdf"]) {
+            NSWorkspace.shared.open(url)
+        }
+        decisionHandler(.cancel)
+    }
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        // New windows, arbitrary external links and script navigation are denied.
+        return nil
+    }
+}
+
 final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 610), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
     let status = NSTextField(wrappingLabelWithString: "Checking your installation…")
@@ -49,6 +74,8 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var genesisButton: NSButton!
     var playButton: NSButton!
     var aboutWindow: NSWindow?
+    var referencePane: NSView?
+    var referenceNavigation: LocalReferenceNavigation?
     var running: Process?
     var busy = false
     var pcReady = false
@@ -141,7 +168,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         icon.setAccessibilityLabel("Abrams remaster cover artwork")
         view.addSubview(icon)
         label(appName, frame: NSRect(x: 150, y: 511, width: 580, height: 58), size: 25, weight: .bold, in: view)
-        label("The original PC simulation, with remastered presentation.", frame: NSRect(x: 152, y: 477, width: 575, height: 24), size: 14, color: muted, in: view)
+        label("Original game by Dynamix · Published by Electronic Arts", frame: NSRect(x: 152, y: 477, width: 575, height: 24), size: 14, color: muted, in: view)
         label("YOUR GAME FILES", frame: NSRect(x: 32, y: 433, width: 400, height: 18), size: 11, weight: .semibold, color: muted, in: view)
         let pc = card(NSRect(x: 30, y: 319, width: 700, height: 105), in: view)
         label("Original PC game", frame: NSRect(x: 18, y: 65, width: 265, height: 24), size: 17, weight: .semibold, in: pc)
@@ -306,8 +333,52 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
             showError("The offline reference is missing. Please reinstall the complete application.")
             return
         }
-        // A local document opens only after the user chooses Help or Field guide.
-        NSWorkspace.shared.open(url)
+        let directory = url.deletingLastPathComponent()
+        guard directory.resolvingSymlinksInPath().standardizedFileURL == directory.standardizedFileURL else {
+            showError("The offline reference directory is invalid. Reinstall the complete application."); return
+        }
+        let navigation = LocalReferenceNavigation(directory: directory)
+        guard navigation.allowed(url, names: ["keyboard-controls.html", "field-guide.html"]) else {
+            showError("The offline reference path is invalid. Reinstall the complete application."); return
+        }
+        closeReference()
+        guard let host = window.contentView else { return }
+        let pane = GlassPanel(frame: host.bounds)
+        pane.autoresizingMask = [.width, .height]
+        host.addSubview(pane)
+        label(name == "keyboard-controls.html" ? "Keyboard controls" : "Field guide", frame: NSRect(x: 24, y: host.bounds.height-51, width: 440, height: 30), size: 22, weight: .semibold, in: pane)
+        let back = button("Back to setup", action: #selector(closeReference), frame: NSRect(x: host.bounds.width-174, y: host.bounds.height-54, width: 150, height: 34), in: pane)
+        back.autoresizingMask = [.minXMargin, .minYMargin]
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let web = WKWebView(frame: NSRect(x: 16, y: 16, width: host.bounds.width-32, height: host.bounds.height-82), configuration: configuration)
+        web.autoresizingMask = [.width, .height]
+        web.navigationDelegate = navigation
+        web.uiDelegate = navigation
+        web.setAccessibilityLabel("Offline Abrams player reference")
+        pane.addSubview(web)
+        referenceNavigation = navigation
+        referencePane = pane
+        web.loadFileURL(url, allowingReadAccessTo: navigation.directory)
+        window.makeKeyAndOrderFront(nil)
+        window.makeFirstResponder(web)
+    }
+    @objc func closeReference() {
+        referencePane?.removeFromSuperview()
+        referencePane = nil
+        referenceNavigation = nil
+        if pcReady { window.makeFirstResponder(playButton) }
+    }
+    func originalCredits() -> String {
+        let url = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/kit/docs/player-reference/credits.json")
+        guard let data = try? Data(contentsOf: url),
+              let credits = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let rows = credits["rows"] as? [[String: Any]] else { return "Original game by Dynamix. Published by Electronic Arts." }
+        return "Original game by Dynamix · Published by Electronic Arts\n" + rows.map { row in
+            let role = row["role"] as? String ?? ""
+            let names = row["names"] as? [String] ?? []
+            return role + ": " + names.joined(separator: ", ")
+        }.joined(separator: "\n") + "\n" + (credits["copyright"] as? String ?? "Original game copyright 1988, 1989 Dynamix, Inc.")
     }
     @objc func showAbout() {
         if let aboutWindow { aboutWindow.makeKeyAndOrderFront(nil); return }
@@ -324,10 +395,18 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         label("Dedicated to David “Ming” Kenny", frame: NSRect(x: 32, y: 400, width: 555, height: 29), size: 19, weight: .semibold, in: view)
         label("Original game by Dynamix.", frame: NSRect(x: 32, y: 369, width: 555, height: 22), size: 14, color: muted, in: view)
         label("Remastered by Nell Watson", frame: NSRect(x: 32, y: 343, width: 555, height: 22), size: 14, weight: .semibold, in: view)
-        label("GAME CONTENT & LICENSING", frame: NSRect(x: 32, y: 315, width: 555, height: 20), size: 11, weight: .semibold, color: muted, in: view)
+        label("Original creators", frame: NSRect(x: 32, y: 308, width: 555, height: 27), size: 19, weight: .semibold, color: cream, in: view)
         let rights = "This project asserts no ownership, moral rights or other rights over the original game content. Original copyrights and trademarks remain with their respective rights holders. This independent remaster is not affiliated with or endorsed by them.\n\nRemaster code and asset contributions are free under the licences included with this release. This does not change the rights in the original game content.\n\nA separate, supported copy of the original PC game is required. An original Genesis ROM is optional. Neither is bundled with this application."
-        let rightsLabel = label(rights, frame: NSRect(x: 32, y: 83, width: 555, height: 221), size: 13, color: muted, in: view)
-        rightsLabel.isSelectable = true
+        let scroll = NSScrollView(frame: NSRect(x: 32, y: 83, width: 555, height: 221))
+        scroll.hasVerticalScroller = true; scroll.drawsBackground = false
+        let text = NSTextView(frame: NSRect(x: 0, y: 0, width: 535, height: 620))
+        text.isEditable = false; text.isSelectable = true; text.drawsBackground = false
+        text.font = .systemFont(ofSize: 14); text.textColor = cream
+        text.textContainerInset = NSSize(width: 2, height: 6)
+        text.isVerticallyResizable = true; text.isHorizontallyResizable = false
+        text.textContainer?.widthTracksTextView = true
+        text.string = originalCredits() + "\n\nGame content & licensing\n\n" + rights
+        scroll.documentView = text; view.addSubview(scroll)
         _ = button("View project on GitHub ↗", action: #selector(openGitHub), frame: NSRect(x: 27, y: 26, width: 233, height: 35), in: view)
         let close = button("Close", action: #selector(closeAbout), frame: NSRect(x: 490, y: 26, width: 102, height: 35), in: view)
         close.keyEquivalent = "\u{1b}"

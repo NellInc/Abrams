@@ -67,6 +67,8 @@ func _initialize() -> void:
     _label(titles, root.title, 28)
     var subtitle := _label(titles, "The original PC simulation, with remastered presentation.", 15)
     subtitle.add_theme_color_override("font_color",InterfaceTheme.MUTED)
+    _label(titles,"Original game by Dynamix · Published by Electronic Arts",15)
+    _label(titles,"Version "+str(ProjectSettings.get_setting("application/config/version","development")),14)
     var pc_card := _card(column)
     pc_state=_label(pc_card, "Original PC game · Required", 19)
     _label(pc_card,"Choose the extracted folder containing ABRAMS.COM and SIM.EXE. Supported files are verified and copied; your source stays unchanged.",15)
@@ -107,8 +109,7 @@ func _card(parent: Node) -> VBoxContainer:
     return stack
 
 func _reference(name: String) -> void:
-    if InterfaceTheme.open_reference(name)!=OK:
-        message.text="The offline reference is missing. Reinstall the complete application."
+    InterfaceTheme.show_reference(root,name)
 
 func _label(parent: Node, text: String, size: int) -> Label:
     var label := Label.new()
@@ -178,10 +179,12 @@ func _about() -> void:
     about.theme=InterfaceTheme.build()
     about.dialog_autowrap=true
     about.title = "About " + str(ProjectSettings.get_setting("application/config/name"))
-    about.dialog_text = "Remastered by Nell Watson\nOriginal game by Dynamix\nDedicated to David “Ming” Kenny\n\nIndependent, unofficial fan remaster. Original copyrights and trademarks remain with their respective rights holders. This project asserts no ownership or moral rights over the original game content and is not affiliated with or endorsed by its rights holders.\n\nRemaster contributions are free under the licences supplied in the notices folder. Original game content is required separately.\n\nhttps://github.com/NellInc/Abrams"
+    about.dialog_text = "Original game by Dynamix\nPublished by Electronic Arts\nRemastered by Nell Watson\nDedicated to David “Ming” Kenny\n\nIndependent, unofficial fan remaster. Original copyrights and trademarks remain with their respective rights holders. This project asserts no ownership or moral rights over the original game content and is not affiliated with or endorsed by its rights holders.\n\nRemaster contributions are free under the licences supplied in the notices folder. Original game content is required separately.\n\nhttps://github.com/NellInc/Abrams"
     root.add_child(about)
     about.popup_centered(Vector2i(600, 420))
     about.confirmed.connect(about.queue_free)
+    var credits_button := about.add_button("Original game credits",false,"credits")
+    credits_button.pressed.connect(func(): InterfaceTheme.show_reference(root,"credits"))
 
 func _close() -> void:
     if busy:

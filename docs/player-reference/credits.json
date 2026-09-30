@@ -1,0 +1,49 @@
+{
+  "studio": "Dynamix",
+  "publisher": "Electronic Arts",
+  "copyright": "Original game copyright 1988, 1989 Dynamix, Inc.",
+  "rows": [
+    {
+      "role": "Director and design",
+      "names": [
+        "Damon Slye"
+      ]
+    },
+    {
+      "role": "Simulation",
+      "names": [
+        "David McClurg"
+      ]
+    },
+    {
+      "role": "Product shell",
+      "names": [
+        "Richard Rayl",
+        "Greg Volkmer"
+      ]
+    },
+    {
+      "role": "Artistry",
+      "names": [
+        "Kobi Miller",
+        "Cyrus Kanga"
+      ]
+    },
+    {
+      "role": "World creation",
+      "names": [
+        "Jerry Luttrell"
+      ]
+    },
+    {
+      "role": "Producer",
+      "names": [
+        "Rich Hilleman"
+      ]
+    }
+  ],
+  "source": {
+    "kind": "Original PC intro credit cards",
+    "sha256": "97b431e019a277f63239da90ddebd27c02a2417a2d7dfa750e94fc6faf7a07ae"
+  }
+}

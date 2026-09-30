@@ -46,6 +46,53 @@ class PlayerReference(unittest.TestCase):
         m60 = next(v for v in DATA['vehicles'] if v['name']=='M60A3')
         self.assertEqual(m60['specs']['range_m'], 750)
 
+    def test_original_creators_are_prominent_and_source_bound(self):
+        credits=json.loads((REF/'credits.json').read_text())
+        self.assertEqual(credits['studio'],'Dynamix')
+        self.assertEqual(credits['publisher'],'Electronic Arts')
+        self.assertEqual(credits['source']['sha256'],'97b431e019a277f63239da90ddebd27c02a2417a2d7dfa750e94fc6faf7a07ae')
+        names={n for r in credits['rows'] for n in r['names']}
+        self.assertEqual(names,{'Damon Slye','David McClurg','Richard Rayl','Greg Volkmer','Kobi Miller','Cyrus Kanga','Jerry Luttrell','Rich Hilleman'})
+        readme=(ROOT/'README.md').read_text()
+        self.assertLess(readme.index('## Original creators'),readme.index('## Artwork'))
+        for n in names:self.assertIn(n,readme)
+        for file in ['keyboard-controls.html','field-guide.html']:
+            if not (REF/file).exists():continue
+            text=(REF/file).read_text()
+            self.assertIn('Original creators',text)
+            for n in names:self.assertIn(n,text)
+
+    def test_visual_inventory_and_provenance(self):
+        visuals=json.loads((REF/'visuals.json').read_text())
+        self.assertEqual({r['name'] for r in visuals['maps']},{r['name'] for r in DATA['missions']})
+        self.assertEqual(len(visuals['wireframes']),16)
+        self.assertEqual(len({r['file'] for r in visuals['wireframes'] if r['file']}),14)
+        self.assertIsNone(next(r['file'] for r in visuals['wireframes'] if r['name']=='FST-1'))
+        self.assertEqual(next(r['file'] for r in visuals['wireframes'] if r['name']=='BRDM-3'),'wireframe-brdm-2.png')
+        for group in visuals.values():
+            for r in group:
+                if not r['file']:continue
+                self.assertEqual(Path(r['file']).name,r['file'])
+                self.assertIn('docs/player-reference/'+r['file'],ALLOW['private'])
+                if r.get('native_file'):
+                    self.assertEqual(Path(r['native_file']).name,r['native_file'])
+                    self.assertIn('docs/player-reference/'+r['native_file'],ALLOW['private'])
+        for file,rows,hash_key in [('maps-provenance.json','maps','svg_sha256'),('wireframes-provenance.json','drawings','output_sha256')]:
+            prov=json.loads((REF/file).read_text())
+            for r in prov[rows]:
+                path=REF/r['file']
+                if path.exists():self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),r[hash_key])
+                if r.get('native_file'):
+                    native=REF/r['native_file']
+                    if native.exists():
+                        raw=native.read_bytes()
+                        self.assertEqual(raw[:8],b'\x89PNG\r\n\x1a\n')
+                        self.assertEqual(int.from_bytes(raw[16:20],'big'),2400)
+                        self.assertEqual(hashlib.sha256(raw).hexdigest(),r['native_png_sha256'])
+        mapping=json.loads((REF/'maps-provenance.json').read_text())['mapping']
+        self.assertEqual(len(mapping['instruction_slices']),9)
+        self.assertEqual(mapping['original_titles'][0],'NUREMBURG HIGHWAY')
+
     def test_contextual_controls_are_distinct(self):
         zoom = [r for r in DATA['keyboard_controls'] if r['name']=='Z']
         self.assertEqual({tuple(r['stations']) for r in zoom}, {('gunner',), ('commander',)})
@@ -60,7 +107,7 @@ class PlayerReference(unittest.TestCase):
             path = 'docs/player-reference/' + name
             self.assertIn(path, ALLOW['private'])
             self.assertNotIn(path, ALLOW['source'])
-        for name in ['godot/scripts/pc_interface_theme.gd','tools/build_player_reference.py','tests/test_player_reference.py','godot/tests/test_pc_interface_reference.gd']:
+        for name in ['godot/scripts/pc_interface_theme.gd','godot/scripts/pc_reference_library.gd','tools/build_reference_maps.py','tools/build_player_reference.py','tests/test_player_reference.py','godot/tests/test_pc_interface_reference.gd']:
             self.assertIn(name, ALLOW['source'])
         source_ci = (ROOT/'tools/package/source_ci.py').read_text()
         self.assertIn('tests.test_player_reference', source_ci)
@@ -72,8 +119,9 @@ class PlayerReference(unittest.TestCase):
         self.assertIn('openReference("keyboard-controls.html")', swift)
         theme=(ROOT/'godot/scripts/pc_interface_theme.gd').read_text()
         self.assertIn('if name not in ["keyboard-controls.html","field-guide.html"]', theme)
-        self.assertIn('FileAccess.file_exists(path)', theme)
-        self.assertIn('OS.shell_open(path)', theme)
+        self.assertIn('FileAccess.file_exists(path)', (ROOT/'godot/scripts/pc_reference_library.gd').read_text())
+        self.assertIn('show_reference(host: Window', theme)
+        self.assertNotIn('OS.shell_open', theme)
         play=(ROOT/'godot/scripts/pc_play_menu.gd').read_text()
         help_section=play.split('help_popup=PopupMenu.new()', 1)[1].split('refresh_controls()',1)[0]
         self.assertIn('_watch(help_popup)', help_section)

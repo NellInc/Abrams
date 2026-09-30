@@ -33,6 +33,22 @@ SHORTCUTS=[
 MODEL_NAMES={'M1A1 Abrams':'M1-A1','M60A3':'M60a3','M2 Bradley':'M2','Mi-24 Hind':'HIND','FST-1':'F-ST','BTR':'BTR-70'}
 SPEC_LABELS={'introduced_year':'Introduced','combat_weight_tons':'Weight (t)','length_m':'Length (m)','width_m':'Width (m)','height_m':'Height (m)','maximum_speed_kmh':'Maximum speed (km/h)','primary_armament':'Primary weapon','secondary_armament':'Secondary weapon','reload_seconds':'Reload (s)','range_m':'Range (m)','armor':'Armour','overall_threat':'Threat'}
 
+def slug(name): return name.lower().replace(' ','-')
+
+def credit_html():
+    credits=json.loads((REF/'credits.json').read_text())
+    rows=''.join('<dt>'+ESC(r['role'])+'</dt><dd>'+ESC(', '.join(r['names']))+'</dd>' for r in credits['rows'])
+    return '<section class="credits"><h2>Original creators</h2><h3>Original game by Dynamix</h3><p>Published by Electronic Arts</p><dl>'+rows+'</dl><p>'+ESC(credits['copyright'])+'</p><h3>Fan remaster</h3><p>Remastered by Nell Watson<br>Dedicated to David “Ming” Kenny.</p></section>'
+
+def visual(name,group):
+    return next((r for r in json.loads((REF/'visuals.json').read_text()).get(group,[]) if r['name']==name),None)
+
+def figure(name,group):
+    row=visual(name,group)
+    if not row:return ''
+    if not row.get('file'):return '<p class="source">'+ESC(row['caption'])+'</p>'
+    return '<figure class="'+group+'"><img src="'+ESC(row['file'])+'" alt="'+ESC(name+': '+row['caption'])+'" loading="lazy"><figcaption>'+ESC(row['caption'])+'</figcaption></figure>'
+
 
 def refs(row):
     pages=sorted({p['printed_page'] for p in row.get('page_refs',[]) if p.get('printed_page') is not None})
@@ -122,10 +138,10 @@ def illustrations(data):
 CSS='''
 :root{color-scheme:dark;--bg:#111a21;--cream:#f4ead4;--muted:#bec7c8;--gold:#e4b879;--line:#405058}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--cream);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:1050px;margin:auto;padding:40px 32px 64px}h1,h2{font-family:Barlow,system-ui,sans-serif;line-height:1.15;letter-spacing:0}h1{font-size:46px;margin:0 0 14px}h2{font-size:30px;margin:44px 0 18px}h3{font-size:21px;line-height:1.3;margin:0 0 8px;font-weight:650}p{max-width:72ch;margin:9px 0 16px}.lead{font-size:18px;color:var(--muted)}nav{display:flex;flex-wrap:wrap;gap:20px;padding:18px 0;margin:22px 0 28px;border-block:1px solid var(--line)}a{color:var(--gold);text-underline-offset:4px}a:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:5px}input{font:inherit;background:#19262e;color:var(--cream);border:1px solid #61727b;border-radius:8px;padding:10px 14px;width:100%;max-width:540px}label{display:block;margin:18px 0 8px}article{scroll-margin-top:24px;padding:24px 0;border-bottom:1px solid var(--line);break-inside:avoid}article header{display:flex;gap:14px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}.badge{color:var(--gold);font-size:13px}.friendly{color:#b5d8c5}.objective{font-weight:650;color:var(--cream)}.source{font-size:13px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 38px}figure{margin:18px 0;background:#e9e3d5;border-radius:12px;padding:10px}figure img{width:100%;height:auto;display:block}figcaption{font-size:12px;color:#39484c;text-align:center}dl{display:grid;grid-template-columns:minmax(120px,1fr) 1.65fr;gap:6px 16px;font-size:14px;margin:16px 0}dt{color:var(--muted)}dd{margin:0}table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0 24px}th{text-align:left;font-weight:650;color:var(--gold)}th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th:first-child,td:first-child{padding-left:0}kbd{font-family:inherit;font-weight:650;color:var(--cream);white-space:nowrap}.key{width:150px}footer{margin-top:42px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}details{margin:12px 0}summary{cursor:pointer;color:var(--gold)}[hidden]{display:none!important}::selection{background:#724635;color:#fff}html{scrollbar-color:#70858d #111a21}
-@media(max-width:700px){main{padding:28px 20px}h1{font-size:36px}.grid{grid-template-columns:1fr}.key{width:100px}table{font-size:13px}th,td{padding:9px 6px}}
+main{max-width:1050px;margin:auto;padding:40px 32px 64px}h1,h2{font-family:Barlow,system-ui,sans-serif;line-height:1.15;letter-spacing:0}h1{font-size:46px;margin:0 0 14px}h2{font-size:30px;margin:44px 0 18px}h3{font-size:21px;line-height:1.3;margin:0 0 8px;font-weight:650}p{max-width:72ch;margin:9px 0 16px}.lead{font-size:18px;color:var(--muted)}nav{display:flex;flex-wrap:wrap;gap:20px;padding:18px 0;margin:22px 0 28px;border-block:1px solid var(--line)}a{color:var(--gold);text-underline-offset:4px}a:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:5px}input{font:inherit;background:#19262e;color:var(--cream);border:1px solid #61727b;border-radius:8px;padding:10px 14px;width:100%;max-width:540px}label{display:block;margin:18px 0 8px}article{scroll-margin-top:24px;padding:24px 0;border-bottom:1px solid var(--line);break-inside:avoid}article header{display:flex;gap:14px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}.badge{color:var(--gold);font-size:13px}.friendly{color:#b5d8c5}.objective{font-weight:650;color:var(--cream)}.source{font-size:13px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 38px}figure{margin:18px 0;background:#e9e3d5;border-radius:12px;padding:10px}figure img{width:100%;height:auto;display:block}figcaption{font-size:12px;color:#39484c;text-align:center}dl{display:grid;grid-template-columns:minmax(120px,1fr) 1.65fr;gap:6px 16px;font-size:14px;margin:16px 0}dt{color:var(--muted)}dd{margin:0}table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0 24px}th{text-align:left;font-weight:650;color:var(--gold)}th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th:first-child,td:first-child{padding-left:0}kbd{display:inline-block;font-family:Barlow,system-ui,sans-serif;font-size:24px;line-height:1.25;font-weight:700;color:var(--cream);padding:4px 10px;background:#26343d;border:1px solid #52656e;border-radius:6px;white-space:normal}.key{width:210px}td:has(kbd){padding-right:28px}figure.wireframes{background:#fff}figure.maps{max-width:720px;margin:24px auto}.credits{margin:40px 0;padding-block:8px 24px;border-block:1px solid var(--line)}.credits dl{max-width:680px} .credits h3{font-size:25px}footer{margin-top:42px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}details{margin:12px 0}summary{cursor:pointer;color:var(--gold)}[hidden]{display:none!important}::selection{background:#724635;color:#fff}html{scrollbar-color:#70858d #111a21}
+@media(max-width:700px){main{padding:28px 20px}h1{font-size:36px}.grid{grid-template-columns:1fr}.key{width:135px}kbd{font-size:21px}table{font-size:16px}th,td{padding:9px 6px}}
 @media(prefers-reduced-transparency:no-preference){nav{background:#152129d9;backdrop-filter:blur(12px);border-radius:10px;padding:18px}}
-@media print{body{background:white;color:#17242b}main{padding:0;max-width:none}h1{font-size:30px}h2{font-size:24px}nav,.search,.print-link{display:none}a,.badge,.source,dt,.lead,footer,th,kbd,.objective{color:#33484e}article{border-color:#b9c1c4}table{font-size:11px}th,td{padding:6px}figure{background:#eee}.grid{gap:24px}details{display:block}}
+@media print{body{background:white;color:#17242b}main{padding:0;max-width:none}h1{font-size:30px}h2{font-size:24px}nav,.search,.print-link{display:none}a,.badge,.source,dt,.lead,footer,th,kbd,.objective{color:#33484e}article{border-color:#b9c1c4}table{font-size:11px}th,td{padding:6px}kbd{background:#e1e4da;border-color:#66767b}figure{background:#eee}.grid{gap:24px}details{display:block}}
 '''
 
 
@@ -134,7 +150,7 @@ def html_page(title,body,other):
     font='';fp=ROOT/'godot/assets/fonts/BarlowCondensed-SemiBold.ttf'
     import base64
     if fp.is_file():font='@font-face{font-family:Barlow;src:url(data:font/ttf;base64,'+base64.b64encode(fp.read_bytes()).decode()+') format("truetype");font-weight:600;font-display:swap}'
-    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data:; script-src 'unsafe-inline'"><title>{ESC(title)} | Abrams Fan Remaster</title><style>{font}{CSS}</style></head><body><main><h1>{ESC(title)}</h1><p class="lead">M1 Abrams Battle Tank Fan Remaster</p><nav aria-label="Reference navigation">{other}<a href="#content">Read reference</a></nav>{body}<footer>Original game by Dynamix. Remastered by Nell Watson. Dedicated to David “Ming” Kenny.<br>Manual references use the original printed page numbers. Vehicle figures and threat ratings reproduce the manual's game-era data.</footer></main></body></html>'''
+    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data:; script-src 'unsafe-inline'"><title>{ESC(title)} | Abrams Fan Remaster</title><style>{font}{CSS}</style></head><body><main><h1>{ESC(title)}</h1><p class="lead">M1 Abrams Battle Tank Fan Remaster</p><p class="creator">Original game by <strong>Dynamix</strong>, published by <strong>Electronic Arts</strong>.</p><nav aria-label="Reference navigation">{other}<a href="#content">Read reference</a></nav>{body}{credit_html()}<footer>Original game by Dynamix. Remastered by Nell Watson. Dedicated to David “Ming” Kenny.<br>Manual references use the original printed page numbers. Vehicle figures and threat ratings reproduce the manual's game-era data.</footer></main></body></html>'''
 
 
 def controls_html(data):
@@ -155,12 +171,12 @@ def controls_html(data):
 
 
 def catalogue_html(data):
-    missions=''.join(f'<article data-search><header><h3>{ESC(row["name"])}</h3><span class="source">{refs(row)}</span></header><p>{ESC(row["description"])}</p><p class="objective">Objective: {ESC(row["primary_objective"])}</p>'+(''.join(f'<p>{ESC(row[k])}</p>' for k in ['secondary_objective','restriction'] if k in row))+('<p>Watch for: '+ESC(' '.join(row['hazards']))+'</p>' if row.get('hazards') else '')+'</article>' for row in data['missions'])
+    missions=''.join(f'<article data-search><header><h3>{ESC(row["name"])}</h3><span class="source">{refs(row)}</span></header><p>{ESC(row["description"])}</p><p class="objective">Objective: {ESC(row["primary_objective"])}</p>'+(''.join(f'<p>{ESC(row[k])}</p>' for k in ['secondary_objective','restriction'] if k in row))+('<p>Watch for: '+ESC(' '.join(row['hazards']))+'</p>' if row.get('hazards') else '')+figure(row['name'],'maps')+'</article>' for row in data['missions'])
     vehicles=[]
     for row in data['vehicles']:
         specs=''.join(f'<dt>{SPEC_LABELS[k]}</dt><dd>{ESC(str(v)) if v is not None else "Unknown / not stated"}</dd>' for k,v in row['specs'].items())
         image='vehicle-'+row['name'].lower().replace(' ','-')+'.svg'
-        vehicles.append(f'<article data-search><header><h3>{ESC(row["name"])}</h3><span class="badge '+('friendly' if row['allegiance']=='FRIENDLY' else '')+'">'+row['allegiance']+'</span></header><p class="source">'+ESC(row['role'])+' · '+refs(row)+f'</p><figure><img src="{image}" alt="{ESC(row["name"])} Modern model study" width="640" height="245" loading="lazy"><figcaption>Modern model study</figcaption></figure><p>'+ESC(row['description'])+'</p>'+('<p>The FST-1 model is the remaster’s interpretation; the manual supplies no illustration.</p>' if row['name']=='FST-1' else '')+'<details><summary>Manual specifications</summary><dl>'+specs+'</dl></details></article>')
+        vehicles.append(f'<article data-search><header><h3>{ESC(row["name"])}</h3><span class="badge '+('friendly' if row['allegiance']=='FRIENDLY' else '')+'">'+row['allegiance']+'</span></header><p class="source">'+ESC(row['role'])+' · '+refs(row)+'</p>'+figure(row['name'],'wireframes')+figure(row['name'],'models')+'<p>'+ESC(row['description'])+'</p>'+('<p>The FST-1 model is the remaster’s interpretation; the manual supplies no illustration.</p>' if row['name']=='FST-1' else '')+'<details><summary>Manual specifications</summary><dl>'+specs+'</dl></details></article>')
     extra=[]
     for key,title in [('anti_tank_guided_weapons','Anti-tank guided weapons'),('ammunition_and_armament','Ammunition & armament'),('other_units_and_objectives','Other units & objectives')]:
         entries=''.join('<article data-search><header><h3>'+ESC(row['name'])+'</h3><span class="source">'+refs(row)+'</span></header><p>'+ESC(row['description'])+'</p>'+('<p>Range: '+ESC(str(row['range_m']))+' m</p>' if row.get('range_m') is not None else '')+'</article>' for row in data[key])
@@ -195,30 +211,105 @@ class Book:
     def finish(self):self.c.save()
 
 
+def key_rows(b, rows, x, y, width, key_width=92):
+    for key,action in rows:
+        kp=Paragraph(ESC(key),ParagraphStyle('key',fontName='Helvetica-Bold',fontSize=13,leading=16,textColor=HexColor(INK)))
+        dp=Paragraph(ESC(action),ParagraphStyle('action',fontName='Helvetica',fontSize=10,leading=14,textColor=HexColor(INK)))
+        _,kh=kp.wrap(key_width-10,b.h);_,dh=dp.wrap(width-key_width-14,b.h)
+        h=max(kh,dh)+14
+        assert y-h>=47,('Key row overflow',key,y,h)
+        b.c.setFillColor(HexColor('#e5e6db'));b.c.roundRect(x-5,y-h+5,key_width,h-5,4,fill=1,stroke=0)
+        kp.drawOn(b.c,x+2,y-kh-4);dp.drawOn(b.c,x+key_width+10,y-dh-4)
+        y-=h
+    return y
+
+
 def keyboard_pdf(data):
-    b=Book(PDF/'keyboard-controls.pdf','Keyboard controls',landscape(A4));b.page('Keyboard controls')
-    columns=[(32,244),(302,244),(572,236)];top=b.h-122
+    b=Book(PDF/'keyboard-controls.pdf','Keyboard controls',landscape(A4))
+    b.page('Keyboard controls')
+    top=b.h-125
     groups=[
-      [('Stations','F1  Gunner\nF2  Commander\nF3  Cupola\nF4  Driver'),('Hull and turret','C  Switch hull / turret control\nA  Align turret to hull\nUp / KP8  Forward / raise sight\nDown / KP2  Reverse / lower sight\nLeft / KP4  Turn left\nRight / KP6  Turn right\nKP5  Stop hull / turret'),('Session','Esc  Pause / back; any key resumes\nQ  Quit mission / campaign\nF5  Sound on / off\nShift+3  Original system speed')],
-      [('Gunner','Enter  Cycle targets\nL  Lock selected target\nSpace  Fire selected weapon\nM  Fire machine gun\n1  HEAT    2  Sabot    3  AX\nS  Smoke\nT  Thermal imaging\nR  Retrieve waiting radio message\nZ  Normal, 3x, 10x sight'),('Commander','D  Damage screen; any key returns\nT  Thermal    R  Radio\nZ  Map close-up / overview\nF7  Current turret bearing\nF8  Scan +90 degrees\nF9  Scan +180 degrees\nF10  Scan +270 degrees')],
-      [('Remaster shortcuts','macOS: Cmd + key\nWindows / Linux: Ctrl+Alt + key\n\nS  Quick save to slot 1\nL  Quick load from slot 1\nShift+L  Undo last load\nG  Cycle graphics'),('Remaster menus','Session: save / load slots 1 to 5\nFast forward: Normal, 2x, 4x, 8x\nGraphics: EGA / Genesis /\nUpscaled / Modern\nHelp: keyboard / field guide'),('Keep control','Pause before opening references.\nAfter leaving a menu or another\nwindow, release all keys once.\nFast forward mutes presentation audio.')]
+      [('Stations',[('F1','Gunner'),('F2','Commander'),('F3','Cupola'),('F4','Driver')]),('Hull and turret',[('C','Switch hull / turret control'),('A','Align turret with hull'),('Up / KP8','Forward / raise sight'),('Down / KP2','Reverse / lower sight'),('Left / KP4','Turn left'),('Right / KP6','Turn right'),('KP5','Stop hull / turret')])],
+      [('Gunner',[('Enter','Cycle available targets'),('L','Lock selected target'),('Space','Fire selected weapon'),('M','Fire machine gun'),('1 / 2 / 3','HEAT / sabot / AX'),('S','Smoke'),('Z','Sight: normal, 3x, 10x')]),('Gunner & commander',[('T','Thermal imaging'),('R','Retrieve waiting radio message')])],
+      [('Commander',[('D','Damage screen, any key returns'),('Z','Map: close-up / overview'),('F7','Current turret bearing'),('F8','Scan +90 degrees'),('F9','Scan +180 degrees'),('F10','Scan +270 degrees')]),('Session',[('Esc','Pause / back, any key resumes'),('Q','Quit sequence'),('F5','Sound on / off'),('Shift+3','Original system speed')])]
     ]
-    for (x,width),group in zip(columns,groups):
+    for x,group in zip([32,303,574],groups):
         y=top
-        for title,text in group:
-            y=b.heading(title,x,y-12 if y!=top else y,19)
-            y=b.para(ESC(text).replace('\n','<br/>'),x,y,width,10)-10
-    b.c.setFont('Helvetica',8);b.c.setFillColor(HexColor('#4c5a5e'));b.c.drawString(32,53,'Original commands: manual pp. 4 to 7. Station-specific meanings are preserved. Genesis mode needs the optional original ROM.')
-    b.page('Menus, stations & practical reference')
-    y=b.h-122; x=32; width=b.w-64
-    y=b.heading('Context matters',x,y)
-    for text in ['The arrow keys and keypad control whichever part is selected by C. In hull mode, forward and reverse move the tank; in turret mode, they raise and lower the sight.', 'Gunner Z changes magnification. Commander Z changes map scale. Commander scan is relative to turret bearing and does not rotate the hull or turret.', 'Enter advances timed intro and briefing screens, changes highlighted mission/day/night/skill choices, and submits names or vehicle identification. In the gunner station it cycles targets. Space advances a mission-title screen and fires in the gunner station.', 'Left and right adjust the selected Motor Pool ammunition quantity. The loader works automatically and has no station screen.']:
-        y=b.para(ESC(text),x,y,width)
-    y=b.heading('Quick save and load',x,y-26)
-    y=b.para('Save states include the original machine and writable campaign disk. Loading rewinds both. Quick save uses slot 1; Session exposes all five slots. Undo last load restores the automatic recovery state. Existing states may be incompatible after a native-core update.',x,y,width)
-    y=b.heading('Platform shortcuts',x,y-26)
-    for action,mac,other in SHORTCUTS:y=b.para(f'<b>{ESC(action)}</b>: macOS {mac}; Windows / Linux {other}.',x,y,width)
+        for title,rows in group:
+            y=b.heading(title,x,y,21)-5
+            y=key_rows(b,rows,x,y,236)-24
+    b.page('Remaster shortcuts & menus')
+    y=b.h-126
+    y=b.para('The remaster uses Command on macOS and Control + Alt on Windows and Linux. These shortcuts are separate from the original game commands.',32,y,b.w-64,11)-12
+    b.c.setFillColor(HexColor(INK));b.c.setFont('Barlow',20)
+    for x,title in [(32,'macOS'),(276,'Windows / Linux'),(561,'Action')]:b.c.drawString(x,y,title)
+    y-=18
+    for action,mac,other in SHORTCUTS:
+        b.c.setFillColor(HexColor('#e5e6db'));b.c.roundRect(27,y-41,787,40,4,fill=1,stroke=0)
+        b.para('<b>'+mac.replace('+',' + ')+'</b>',36,y-8,225,15)
+        b.para('<b>'+other.replace('+',' + ')+'</b>',280,y-8,264,15)
+        b.para(ESC(action),561,y-11,245,11)
+        y-=50
+    y=b.heading('Session, graphics & help',32,y-23,21)
+    y=b.para('Session provides five save slots, Undo last load and Normal, 2x, 4x or 8x fast forward. Graphics switches immediately between EGA, Genesis, Upscaled and Modern. Help opens the offline controls and field guide. Audio is muted during fast forward.',32,y,b.w-64,11)
+    b.page('Menus, context & original creators')
+    y=b.h-126
+    y=b.heading('Menus and briefings',32,y,21)
+    y=key_rows(b,[('Enter','Choose mission, day/night or skill; submit names or identification; advance credits and briefings.'),('Space','Advance past a mission-title screen.'),('Left / Right','Adjust ammunition in the Motor Pool.')],32,y,365,108)-22
+    for title,text in [('Movement','Arrow keys and keypad control the hull or turret selected by C. Hull forward and reverse move the tank; turret mode raises and lowers the sight.'),('Scan and zoom','Gunner Z changes magnification. Commander Z changes map scale. Commander scan is relative to turret bearing.'),('References and saves','Pause with Esc if you want the simulation to wait while reading. Help sends no extra game command. Release held keys after returning. Save states restore the machine and campaign disk; back up your profile before upgrading.')]:
+        y=b.heading(title,32,y,21);y=b.para(ESC(text),32,y,365,10)-10
+    credits_pdf(b,439,b.h-126,365)
     b.finish()
+
+
+def credits_pdf(b,x,y,width):
+    credits=json.loads((REF/'credits.json').read_text())
+    y=b.heading('Original game by Dynamix',x,y,22)
+    y=b.para('Published by Electronic Arts',x,y,width,11)
+    for row in credits['rows']:
+        y=b.para('<b>'+ESC(row['role'])+':</b> '+ESC(', '.join(row['names'])),x,y,width,10)
+    y=b.para(ESC(credits['copyright']),x,y,width,9)
+    b.para('Remastered by Nell Watson. Dedicated to David “Ming” Kenny.',x,y-6,width,11)
+
+
+def pdf_image(b,file,x,y,width,height):
+    if file.endswith('.svg'):
+        # The authored terrain diagrams use only geometric SVG primitives.
+        # Keep them vector in print; no converter or raster enlargement.
+        import xml.etree.ElementTree as ET
+        root=ET.parse(REF/file).getroot();_,_,iw,ih=map(float,root.attrib['viewBox'].split())
+        scale=min(width/iw,height/ih)
+        b.c.saveState();b.c.translate(x+(width-iw*scale)/2,y-ih*scale);b.c.scale(scale,scale)
+        excluded=set(root.findall(".//{http://www.w3.org/2000/svg}defs//*"))
+        for node in root.iter():
+            if node in excluded:continue
+            tag=node.tag.split('}')[-1];a=node.attrib
+            if tag=='rect' and 'clipPath' not in str(node.tag):
+                b.c.setFillColor(HexColor(a.get('fill','#ffffff')) if a.get('fill')!='none' else HexColor('#ffffff'))
+                b.c.setStrokeColor(HexColor(a.get('stroke','#ffffff')));b.c.setLineWidth(float(a.get('stroke-width',0)))
+                b.c.rect(float(a['x']) if 'x' in a else 0,ih-float(a.get('y',0))-float(a['height']),float(a['width']),float(a['height']),fill=0 if a.get('fill')=='none' else 1,stroke=1 if 'stroke' in a else 0)
+            elif tag=='polygon':
+                pts=[tuple(map(float,p.split(','))) for p in a['points'].split()]
+                p=b.c.beginPath();p.moveTo(pts[0][0],ih-pts[0][1])
+                for px,py in pts[1:]:p.lineTo(px,ih-py)
+                # Same-colour edge coverage prevents hairline seams between
+                # adjacent terrain triangles in antialiased PDF viewers.
+                p.close();colour=HexColor(a.get('fill','#253c41'))
+                b.c.setFillColor(colour);b.c.setStrokeColor(colour)
+                b.c.setLineWidth(0.35);b.c.drawPath(p,stroke=1,fill=1)
+            elif tag=='text':
+                b.c.setFillColor(HexColor('#253c41'));b.c.setFont('Helvetica-Bold' if a.get('font-weight')=='bold' else 'Helvetica',float(a.get('font-size',17)))
+                b.c.drawString(float(a['x']),ih-float(a['y']),node.text or '')
+            elif tag=='line':
+                b.c.setStrokeColor(HexColor(a.get('stroke','#253c41')));b.c.setLineWidth(float(a.get('stroke-width',2)))
+                b.c.line(float(a['x1']),ih-float(a['y1']),float(a['x2']),ih-float(a['y2']))
+        b.c.restoreState()
+        return y-height
+    from reportlab.lib.utils import ImageReader
+    im=ImageReader(str(REF/file));iw,ih=im.getSize();scale=min(width/iw,height/ih)
+    w,h=iw*scale,ih*scale
+    b.c.drawImage(im,x+(width-w)/2,y-h,w,h,mask='auto')
+    return y-height
 
 
 def field_pdf(data,catalog,shapes):
@@ -230,40 +321,46 @@ def field_pdf(data,catalog,shapes):
         y=b.heading(title,32,y-25)
         y=b.para(ESC(desc),32,y,b.w-64,11)
     y=b.para('Dedicated to David “Ming” Kenny.',32,y-25,b.w-64,12)
-    for start in range(0,8,2):
-        b.page('The eight scenarios')
-        for offset,row in enumerate(data['missions'][start:start+2]):
-            y=b.h-132-offset*325
-            y=b.heading(row['name'],32,y,23)
-            y=b.para(ESC(row['description']),32,y-4,b.w-64,11)
-            y=b.para('<b>Objective:</b> '+ESC(row['primary_objective']),32,y-8,b.w-64,11)
-            for key in ['secondary_objective','restriction']:
-                if row.get(key):y=b.para(ESC(row[key]),32,y,b.w-64,11)
-            if row.get('hazards'):y=b.para('<b>Watch for:</b> '+ESC(' '.join(row['hazards'])),32,y,b.w-64,10)
-            b.para(refs(row),32,y-8,b.w-64,9,'#4c5a5e')
-    for start in range(0,16,2):
-        b.page('Vehicle recognition')
-        for offset,row in enumerate(data['vehicles'][start:start+2]):
-            y=b.h-129-offset*328; x=32
-            y=b.heading(row['name'],x,y,24)
-            y=b.para(ESC(row['allegiance']+' · '+row['role']),x,y,b.w-64,9,'#526264')
-            polys=model_polygons(catalog['models'][shapes[MODEL_NAMES.get(row['name'],row['name'])]],210,90)
-            for pts,color in polys:
-                if len(pts)==2:
-                    b.c.setStrokeColor(Color(*(c/255 for c in color)));b.c.setLineWidth(.7)
-                    b.c.line(x+pts[0][0],y-94+pts[0][1],x+pts[1][0],y-94+pts[1][1]);continue
-                b.c.setFillColor(Color(*(c/255 for c in color)));p=b.c.beginPath();p.moveTo(x+pts[0][0],y-94+pts[0][1])
-                for px,py in pts[1:]:p.lineTo(x+px,y-94+py)
-                p.close();b.c.drawPath(p,stroke=0,fill=1)
-            b.para(ESC(row['description']),x+224,y,b.w-288,10)
-            y-=112
-            left=[];right=[]
-            for i,(k,v) in enumerate(row['specs'].items()):
-                text='<b>'+SPEC_LABELS[k]+':</b> '+ESC(str(v) if v is not None else 'Unknown / not stated')
-                (left if i<6 else right).append(text)
-            b.para('<br/>'.join(left),x,y,236,9)
-            bottom=b.para('<br/>'.join(right),x+258,y,273,9)
-            b.para(refs(row),x,bottom-3,236,8,'#4c5a5e')
+    b.page('Original creators')
+    credits_pdf(b,32,b.h-138,b.w-64)
+    for row in data['missions']:
+        b.page(row['name'])
+        y=b.h-123
+        map_row=visual(row['name'],'maps')
+        y=pdf_image(b,map_row['file'],32,y,b.w-64,360)
+        y=b.para(ESC(map_row['caption']),32,y-8,b.w-64,9,'#4c5a5e')
+        y=b.para(ESC(row['description']),32,y-14,b.w-64,11)
+        y=b.para('<b>Objective:</b> '+ESC(row['primary_objective']),32,y-6,b.w-64,12)
+        for key in ['secondary_objective','restriction']:
+            if row.get(key):y=b.para(ESC(row[key]),32,y,b.w-64,11)
+        if row.get('hazards'):y=b.para('<b>Watch for:</b> '+ESC(' '.join(row['hazards'])),32,y,b.w-64,10)
+        b.para(refs(row),32,y-8,b.w-64,9,'#4c5a5e')
+    for row in data['vehicles']:
+        b.page(row['name'])
+        y=b.h-123
+        y=b.para(ESC(row['allegiance']+' · '+row['role']),32,y,b.w-64,11)
+        drawing=visual(row['name'],'wireframes')
+        if drawing.get('file'):y=pdf_image(b,drawing['file'],32,y-4,b.w-64,126)
+        y=b.para(ESC(drawing['caption']),32,y-7,b.w-64,9,'#4c5a5e')
+        # The model study is vector geometry, retaining every current mesh facet.
+        model=catalog['models'][shapes[MODEL_NAMES.get(row['name'],row['name'])]]
+        polys=model_polygons(model,b.w-64,135)
+        for pts,color in polys:
+            if len(pts)==2:
+                b.c.setStrokeColor(Color(*(c/255 for c in color)));b.c.setLineWidth(.7)
+                b.c.line(32+pts[0][0],y-135+pts[0][1],32+pts[1][0],y-135+pts[1][1]);continue
+            b.c.setFillColor(Color(*(c/255 for c in color)));p=b.c.beginPath();p.moveTo(32+pts[0][0],y-135+pts[0][1])
+            for px,py in pts[1:]:p.lineTo(32+px,y-135+py)
+            p.close();b.c.drawPath(p,stroke=0,fill=1)
+        y=b.para('Modern model study',32,y-144,b.w-64,9,'#4c5a5e')
+        y=b.para(ESC(row['description']),32,y-10,b.w-64,11)-12
+        left=[];right=[]
+        for i,(k,v) in enumerate(row['specs'].items()):
+            text='<b>'+SPEC_LABELS[k]+':</b> '+ESC(str(v) if v is not None else 'Not stated')
+            (left if i<6 else right).append(text)
+        l=b.para('<br/>'.join(left),32,y,236,10)
+        r=b.para('<br/>'.join(right),290,y,273,10)
+        b.para(refs(row),32,min(l,r)-8,b.w-64,9,'#4c5a5e')
     for key,title in [('anti_tank_guided_weapons','Anti-tank guided weapons'),('ammunition_and_armament','Ammunition & armament')]:
         b.page(title);y=b.h-127
         for row in data[key]:
@@ -285,6 +382,33 @@ def field_pdf(data,catalog,shapes):
     b.finish()
 
 
+def native_maps():
+    """Render authored SVG diagrams with their labels for Godot's SVG decoder.
+
+    The canonical SVG stays vector in HTML and PDF. Godot omits SVG text, so
+    the native reader receives a 2400-pixel rendering of the same diagram.
+    """
+    import shutil, subprocess
+    poppler=shutil.which('pdftoppm')
+    if not poppler:raise RuntimeError('Map authoring requires pdftoppm')
+    visuals=json.loads((REF/'visuals.json').read_text())
+    provenance=json.loads((REF/'maps-provenance.json').read_text())
+    destination=PDF/'native-maps';destination.mkdir(parents=True,exist_ok=True)
+    for row in visuals['maps']:
+        name=Path(row['file']).stem
+        book=Book(destination/(name+'.pdf'),row['name'],(1130,868))
+        pdf_image(book,row['file'],0,868,1130,868);book.finish()
+        prefix=REF/name
+        subprocess.run([poppler,'-singlefile','-scale-to','2400','-png',str(destination/(name+'.pdf')),str(prefix)],check=True)
+        row['native_file']=name+'.png'
+        source=next(r for r in provenance['maps'] if r['name']==row['name'])
+        source['native_file']=row['native_file']
+        source['native_png_sha256']=hashlib.sha256((REF/row['native_file']).read_bytes()).hexdigest()
+        source['native_render']='2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels'
+    (REF/'visuals.json').write_text(json.dumps(visuals,indent=2)+'\n')
+    (REF/'maps-provenance.json').write_text(json.dumps(provenance,indent=2)+'\n')
+
+
 def main():
     REF.mkdir(parents=True,exist_ok=True);PDF.mkdir(parents=True,exist_ok=True)
     data=json.loads((REF/'manual-content.json').read_text())
@@ -295,6 +419,7 @@ def main():
     (REF/'keyboard-controls.html').write_text(controls_html(data),encoding='utf-8')
     (REF/'field-guide.html').write_text(catalogue_html(data),encoding='utf-8')
     keyboard_pdf(data);field_pdf(data,catalog,shapes)
+    native_maps()
     import shutil
     for name in ['keyboard-controls.pdf','field-guide.pdf']:shutil.copyfile(PDF/name,REF/name)
     print('Created two offline HTML references and two printable PDFs; 8 scenarios, 16 vehicles.')

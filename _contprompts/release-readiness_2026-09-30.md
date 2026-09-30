@@ -156,27 +156,147 @@ references, original input quarantine still passes, both platform inventories
 contain all reference assets, and existing signed builds stay untouched until
 an admitted fresh build replaces them.
 
-Source changes add native AppKit vibrancy with Reduce Transparency handling,
-lightweight Godot panel styling, and Help/launcher reference entry points.
-Authored references contain eight scenarios, sixteen vehicle entries, contextual
-original controls, ATGW, ammunition and crew stations. HTML is searchable and
-local-only. The two PDFs have two and eighteen pages respectively, with manual
-printed-page references and current low-poly mesh studies.
+The initial reference edition at84f0b8d is superseded by Nell's request to
+bundle the PDFs, add an in-app loading-area edition, enlarge command labels,
+restore the manual's side-view drawings, generate scenario maps and prominently
+credit the original creators. The current local source implements those
+requests. macOS setup embeds the offline HTML using WebKit; the loading screen,
+in-game Help and portable setup open a native reader with Controls, Scenarios,
+Vehicles, Weapons and Credits. The guide does not inject an original pause
+command; held game keys are quarantined while reading and until released.
 
-Actual local checks: clean source-kit gate has 100 tests, five documented
-private/native skips; sixteen focused reference/launcher tests pass; all PDF
-entry names/objectives and text bounds pass; every page was rendered and
-inspected, with detailed checks after spacing/paint changes. Mac and portable
-payload closure includes the same complete 23-file reference inventory and
-excludes the original games/manual. Evidence is in
-artifacts/interface-reference-20260930/. The optional Impeccable binary was
-unavailable; no dependency/skill was installed as a workaround.
+The revised PDFs are three and31 pages. Fourteen restored manual side views
+cover sixteen entries: BRDM-3 uses BRDM-2 as the manual directs; FST-1 has no
+source illustration. Sixteen current Modern mesh studies remain alongside them.
+Eight vector maps are authored from original WLD terrain placement. The
+START selector-to-SIM world association is checked against nine exact decoded
+instruction slices and the eight original title-table entries. No guest is
+executed to generate these static north-up diagrams. Moving units/objectives
+are omitted. Source/provenance hashes are recorded without distributing the
+original games or manual.
 
-Native Swift/Godot UI validation is pending a separate finite shared-slot
-admission. The five-entry UI proposal is source/runtime/artwork-pinned at
-artifacts/interface-reference-20260930/ui-proposal.json. It uses synthetic
-setup/launcher states, no host/core/originals/import/profile, Dummy audio and
-fresh native-run output. It is separate from Mac assembly/FPS/release jobs.
-No UI native command has been launched. Existing signed app and portable
-release archives still predate these source changes. Preserve the earlier
-unfinished release/performance/package outcomes above.
+Original team roles and all eight credited names are transcribed from the PC
+intro: Damon Slye, David McClurg, Richard Rayl, Greg Volkmer, Kobi Miller, Cyrus
+Kanga, Jerry Luttrell and Rich Hilleman. Dynamix and Electronic Arts are credited
+prominently in setup/loading/About/guides/README. The original intro cards remain
+unchanged; Nell's remaster contribution is separately credited.
+
+Root actual checks: clean source-kit gate103 tests, five documented private/native
+skips; all34 PDF pages rendered and inspected, with zero out-of-page characters,
+all creator names, scenario objectives and vehicle entries. Same-colour PDF edge
+coverage corrected viewer hairline seams. Mac and portable payload closure have
+identical49-file reference inventories, excluding original games/manual.
+Impeccable ran this turn. One print contrast defect was fixed; remaining
+findings are print-size and figure-background context false positives, awaiting
+native WebKit visual confirmation. Evidence is in
+artifacts/interface-reference-20260930/.
+
+Native UI validation remains unrun until the shared coordinator grants the
+fresh finite slot. The final proposal is ui-proposal.json SHA256
+c5b86e5bd694e06a64b3b6901c2e88275533852f213131210ccb40982ab589cb;
+runner SHA2563c74f5df5bf793f6fd8c3ea0e9608fee35608fe9ecd66f18e2ab1de86488e8dd.
+It binds68 inputs, the physical Python/Swift/Godot runtimes and five serial
+synthetic UI-only commands. Explicit optimized-Python refusal precedes assertions
+and dispatch; the preview has a90-second self-exit deadline and the Godot fixture
+a60-second deadline. Fresh native-run output is absent. Audio remains Dummy/off.
+No host/core/originals/import/profile/FPS/assembly/signing/notarization scope is
+added. The prior proposals are superseded, not reusable. Existing signed apps
+and portable archives predate these changes. Preserve all earlier unfinished
+release/performance/package outcomes above.
+
+The first admitted UI batch returned naturally1 on its first Swift typecheck.
+Actual compiler error: unable to load standard library for the SDK-default
+arm64-apple-macosx27.0.0 target. Installed SDKSettings.json confirms the27.0
+default. Entries2-5 were never dispatched. Root checked actual logs, both owned
+PIDs absent, unchanged source pins and explicitly relinquished the resource.
+The coordinator independently accepted that return. No process signal or retry
+occurred. Receipts remain in native-run and ui-natural-handback.json.
+
+A separate unlaunched successor preserves the failed proposal/runner/output:
+ui-proposal-r2.json SHA2564fa1cf51e69c6815abb663c303b353516caa8ce66e72dd1c3119db4457c30083;
+run_ui_proposal_r2.py SHA2565c235c83dee5d81f7263d3845849e4eb63e30ec003826c278928e1b57956f889.
+It adds the production builder's explicit arm64-apple-macosx14.0 target to
+both Swift commands and uses fresh native-run-r2 output. Same five calls and
+68 inputs, with the successor runner bound. The target remedy remains
+unverified until a separately admitted execution. All production source and
+reference assets are unchanged. No prior grant may be reused.
+
+The separately admitted R2 also returned naturally1 at Swift typecheck, now for
+arm64-apple-macosx14.0. Thus the target-only hypothesis failed. Root inspected
+actual compiler resources instead of attempting another deployment target:
+CLT's macosx Swift.swiftmodule is absent, while the installed SDK contains it;
+SDKROOT is unset. Both failures and all undispatched calls remain preserved.
+Root verified the exact two PIDs absent and explicitly returned the R2 slot.
+
+R3 is a separately proposed, unlaunched changed strategy: explicit physical
+SDK path, with SDK metadata and actual Swift-interface source pins; same five
+calls, Godot fixtures first so compiler discovery cannot block their evidence.
+The menu fixture gains only a60-second self-failure deadline. Production UI and
+assets are unchanged. Clean source-kit103 checks still pass with five skips.
+Proposal ui-proposal-r3.json SHA256b6d91e91d098178dfa90ada84ab19033ec4f6fc6a78aabef0f7d518d8f43bd39;
+runner run_ui_proposal_r3.py SHA256e77e448dfbf2b551959d0b6cf49bbbddd316fe6d18e1325e8b3294b92e5938d8.
+Fresh native-run-r3 is absent;70 inputs plus three runtimes. Both optimized
+refusals pass. SDK discovery remedy is unverified. Await an actual fresh grant;
+no automatic rerun or reuse of consumed admissions is allowed.
+
+R3 actual menu gate passes112 checks with no errors. Its interface call failed
+naturally at the60-second self-deadline after an observed GDScript parameter/local
+name collision in pc_reference_library.gd149. Root read raw logs, verified all
+three owned PIDs absent and unchanged source pins, then relinquished the resource.
+Swift entries3–5 were not dispatched, so the SDK hypothesis remains unverified.
+R3 receipts and failures remain intact. A two-line section_key parameter rename
+corrects the observed collision. R4 proposal ea42cb8aae5377cfe385b438d217c0e9d8a45dcc95998ba2b93c3daf6c6b1ce4
+and runner0ebe81ed4e43f8e244cba02bc63f32bc4ac1621277b6164ef49b3d597ebc7536
+bind the same70source/3runtime pins and five UI-only calls with fresh output.
+Clean source-kit103 checks still passes(five skips). R4 is unlaunched pending a
+fresh admission; no grant is reused. Original creator attribution and all
+reference/PDF assets remain as reviewed; no release binary is refreshed yet.
+
+R4 actual native menu112/interface157 checks pass without errors. Production
+Swift typecheck and preview compile pass using explicit SDK27/target14, confirming
+the SDK-discovery remedy. The automatic preview self-trapped(-5) on a diagnostic
+JavaScript top-level q declaration colliding with the guide's own q. Two WebKit
+reference captures/metrics passed before that failure (24px700 keys, no horizontal
+overflow, visible diagram loaded). Root verified all six PIDs absent and raw
+logs/source pins, then relinquished. R4 is partial, never an aggregate green.
+
+Root capture review also observed missing SVG legend lettering in Godot, whole
+number values rendered with .0 suffixes and vehicle art buried below long specs.
+The native reader now uses eight matching2400px authored map PNGs, normalizes
+whole-number display and shows vehicle art before specs. The canonical SVG/HTML
+and both PDFs are unchanged. Source authoring uses the established ReportLab/
+Poppler path; native PNG provenance is bound. Both platform reference payloads
+have identical57-file inventories,37.4MB, no originals. Source-kit103 checks
+still pass (five skips). R5 binds78source/3runtime pins and only3 serial calls:
+affected Godot interface fixture, corrected synthetic preview compilation and
+automatic local WebKit preview. Successful menu and production typecheck are
+not repeated. Proposal f416fbe2a311f9fd0a1fd3a99908c7ad68e33c1dbe88c76efe550836b2963579;
+runner2cb5427fdcbfd2410aa301499e68958137439d9f5cb24c48387bd8e0e495c645.
+R5 fresh output absent/unlaunched, awaiting separate admission. All original
+creators' attribution remains unchanged and prominent. No full release build,
+publication, audible test, process control or notarization was performed.
+
+R5 was superseded before admission by R5b, one-line suppression of the synthetic
+Stations: remaster label. Actual R5b proposal12537B SHA256
+87f305ccd1e5a18412981a80d9e74482eb6be897a735b156fef686cdb825e823;
+runner3954B SHA256eb98ed40c61c18698b9392400150edd06b65da64ebf476321df3f7d2b8967005.
+An erroneous preceding size/hash message was corrected immediately after actual
+readback; use only these disk-verified values. All78source/3runtime pins and
+three-call boundaries remain, fresh native-run-r5b absent. No native call under
+R5/R5b has been admitted or launched. Coordinator currently holds all native/
+heavy map rendering, compiler, engine and preview work until fresh admission;
+the eight small PNG authoring renders predate that latest hold. All prior R4
+successes and failed preview receipts remain separately recorded. Source and
+PDF deliverables are complete; final presentation runtime acceptance and fresh
+release binaries remain incomplete, dependent on resource admissions.
+
+Coordinator requested stale proposal-description correction: actual three argv
+were still described as Five serial commands. Fresh R5c preserves R5b and fixes
+only that metadata plus required fresh runner/proposal/output naming. Production
+and asset/test pins are identical. Actual proposal12644B SHA256
+de201378de0aa08665a4c5375629057eab404988efd928c484d635a891f28d7a;
+runner3954B SHA2562a492c6e7b49147f3cb0df008601b7dd999a22666c57b6078e4c165d697b0669.
+Both optimized guards verified. R5c unadmitted/unlaunched, fresh output absent;
+COVENANT ordinary/M6 now own the native resource queue. No further native/map
+rendering is authorized. All requested final UI/package acceptance remains
+pending; no prior admission is reused.

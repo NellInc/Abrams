@@ -4,6 +4,23 @@ A high-resolution Godot fan remaster of Dynamix's **Abrams Battle Tank**, powere
 
 **Dedicated to the memory of David “Ming” Kenny.**
 
+## Original creators
+
+**Original game by Dynamix, published by Electronic Arts.**
+
+| Contribution | Creator |
+| --- | --- |
+| Director and design | Damon Slye |
+| Simulation | David McClurg |
+| Product shell | Richard Rayl, Greg Volkmer |
+| Artistry | Kobi Miller, Cyrus Kanga |
+| World creation | Jerry Luttrell |
+| Producer | Rich Hilleman |
+
+Original game copyright 1988, 1989 Dynamix, Inc. The original intro credits are retained. The full credits also appear in About and the offline player guides.
+
+**Remastered by Nell Watson.**
+
 ## Artwork and screenshots
 
 <p align="center">
@@ -65,7 +82,7 @@ These are alpha packages. macOS notarization is pending; Windows signing is not 
 | Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
 | Cycle graphics | **Cmd+G** | **Ctrl+Alt+G** |
 
-The **Session** menu provides all five save slots and fast-forward speeds. **Graphics** selects a mode directly; **Audio** controls the mix. **Help** opens the offline keyboard sheet and searchable scenario/vehicle field guide, with printable PDFs. On macOS these are in the system menu bar. The game continues while a remaster menu is open, so pause first when needed. Original game controls remain unchanged.
+The **Session** menu provides all five save slots and fast-forward speeds. **Graphics** selects a mode directly; **Audio** controls the mix. **Help** opens the in-app keyboard sheet, searchable scenario/vehicle field guide and original credits. The loading screen and setup offer the same offline guides. Printable PDFs are bundled, with larger, bold command labels, restored manual side views, Modern model studies and maps drawn from the original PC terrain. On macOS these are in the system menu bar. The game continues while a remaster menu is open, so pause first when needed. Original game controls remain unchanged.
 
 Save states restore both the running game and campaign disk. New checkpoints also preserve the remastered display. Saves live outside the app in the platform's player profile. Back up the whole profile before upgrading; checkpoints require a compatible core and game edition. See [controls and save behaviour](docs/play-controls.md).
 

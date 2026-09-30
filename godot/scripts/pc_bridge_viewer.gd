@@ -382,6 +382,9 @@ func _build_play_ui() -> void:
 	play_display.add_child(startup_splash)
 	startup_splash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	startup_splash.load_cover(ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir())
+	startup_splash.reference_selected.connect(func(name):
+		if audio_menu:audio_menu.open_reference(name)
+		else:preload("res://scripts/pc_interface_theme.gd").show_reference(root,name))
 	status=startup_splash.message
 	control_notice=_label("",18)
 	control_notice.mouse_filter=Control.MOUSE_FILTER_IGNORE

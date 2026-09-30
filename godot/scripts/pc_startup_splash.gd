@@ -1,5 +1,8 @@
 extends Control
 ## Restored box cover during local startup. No input, clock or guest-frame logic.
+signal reference_selected(name: String)
+var references := HBoxContainer.new()
+var attribution := Label.new()
 const COVER_PATH := "branding/abrams-cover-remastered.png"
 var cover := TextureRect.new()
 var message := Label.new()
@@ -40,6 +43,20 @@ func _init() -> void:
 	message.add_theme_color_override("font_color",Color("e5d2b5"))
 	message.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	add_child(message)
+	attribution.text="Original game by Dynamix · Published by Electronic Arts · Version "+str(ProjectSettings.get_setting("application/config/version","development"))
+	attribution.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	attribution.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	attribution.add_theme_font_size_override("font_size",14)
+	attribution.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	add_child(attribution)
+	references.theme=preload("res://scripts/pc_interface_theme.gd").build()
+	references.alignment=BoxContainer.ALIGNMENT_CENTER
+	for title in ["Keyboard controls","Field guide","Original credits"]:
+		var button := Button.new()
+		button.text=title
+		button.pressed.connect(func():reference_selected.emit("keyboard-controls.html" if title=="Keyboard controls" else "credits" if title=="Original credits" else "field-guide.html"))
+		references.add_child(button)
+	add_child(references)
 	resized.connect(_layout)
 
 func load_cover(directory: String) -> bool:
@@ -63,7 +80,11 @@ func _layout() -> void:
 	# Calculate wrapped height after assigning the actual window width. Errors
 	# retain their complete message and Close instruction at the minimum size.
 	var message_height := maxf(message.get_minimum_size().y,font_size*1.5)
-	message.position=Vector2(margin,size.y-margin-message_height)
+	references.position=Vector2(margin,size.y-margin-44)
+	references.size=Vector2(size.x-margin*2,40)
+	attribution.position=Vector2(margin,references.position.y-42)
+	attribution.size=Vector2(size.x-margin*2,38)
+	message.position=Vector2(margin,attribution.position.y-14-message_height)
 	message.size.y=message_height
 	var available := Vector2(maxf(1,size.x-margin*2),maxf(1,message.position.y-margin*2-14))
 	var extent := available

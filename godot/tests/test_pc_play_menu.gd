@@ -5,7 +5,9 @@ var checks := 0
 func check(ok: bool, label: String) -> void:
 	checks+=1
 	if not ok: errors.append(label)
-func _initialize() -> void: run.call_deferred()
+func _initialize() -> void:
+	create_timer(60).timeout.connect(func(): printerr("FAIL: play menu fixture deadline"); quit(1))
+	run.call_deferred()
 func run() -> void:
 	var menu := Menu.new()
 	menu.config_path=""

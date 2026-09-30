@@ -1,0 +1,154 @@
+{
+  "mapping": {
+    "START.EXE": "a6fd07ae3df4f61806852d92c0c50354b7f7afccee10da88710ef0bc3361ca6a",
+    "SIM.EXE": "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099",
+    "original_titles": [
+      "NUREMBURG HIGHWAY",
+      "MASS DESTRUCTION",
+      "THE ROAD TO BONN",
+      "HANNOVER PUSH",
+      "CONVOY",
+      "THE MOSSEL INTERCEPT",
+      "THE MOSSEL DEFENSE",
+      "SIEGEN INFILTRATION"
+    ],
+    "association": "START 1091/1172 title,1156/dff/e05/39f6 fourth handoff byte; SIM8398/7d52/7de6 SNARIO index",
+    "instruction_slices": {
+      "selector_title": {
+        "offset": "0x1091",
+        "sha256": "7834e0a64b0619b785c3bca6c2d5b2f873e877f8c04f141cc1efd939724a0899"
+      },
+      "selector_handoff": {
+        "offset": "0x1156",
+        "sha256": "5d523a4cc2bc8b63512e7dfbb413670bae4ca44f476cf987163d612361b81f60"
+      },
+      "handoff_arg": {
+        "offset": "0xdff",
+        "sha256": "c1fb99eb8b2893c75990c7e6d4310ab334657d9505ce7d31ca3806b18ab77c63"
+      },
+      "handoff_call": {
+        "offset": "0xe05",
+        "sha256": "d1cc8fb84f6cf356d93a3faa3b0b7c0727bea36c7e36a99c5b468a4eb1a03d6b"
+      },
+      "handoff_byte4": {
+        "offset": "0x3a2e",
+        "sha256": "b624ff7cb0e8c9e38f6f1358b497e411c7a8da501b54c04a60b531b5ad857e72"
+      },
+      "sim_reader_byte4": {
+        "offset": "0x83d8",
+        "sha256": "cced8864ca076c99084a843a92d908d5fb9ac3c1ebe3213244a79d7dc5810c15"
+      },
+      "sim_reader_args": {
+        "offset": "0x7d3c",
+        "sha256": "0f328302d94bee6cead4a5da34f9cf2567764e0229d7edcdaf75fa0d6bddf2e5"
+      },
+      "sim_byte4": {
+        "offset": "0x7d52",
+        "sha256": "534b5348e29a8acb8f5a6fda6b6c29432d9482f5083669f9a799dd74371cb075"
+      },
+      "resource_index": {
+        "offset": "0x7de6",
+        "sha256": "0d029359323002bdaaf57bd1d3eff3737f6e367ee34a23ac3276d156b65eb335"
+      }
+    }
+  },
+  "geometry_catalog_sha256": "ad808ba81ae3ad768f2d33efc20ae03fb764c5f9ddd864963f65613c0aff386f",
+  "maps": [
+    {
+      "name": "Nuremberg Highway",
+      "file": "scenario-nuremberg-highway.svg",
+      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "resource": "SNARIO0.WLD",
+      "source_sha256": "055bdad11836f3a2059c215c5d94f9911a84261e1ece841efc26f279e39476e3",
+      "svg_sha256": "dd229b30b26d8449bc677a9fc95b66001e3ad25764ff563b2019ca2e8f9f6564",
+      "faces": 1004,
+      "native_file": "scenario-nuremberg-highway.png",
+      "native_png_sha256": "31bc5c061b5f87598a637ff9c1e385cd8726a5bdf79d71a8d24edc9937d0252e",
+      "native_render": "2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels"
+    },
+    {
+      "name": "Mass Destruction",
+      "file": "scenario-mass-destruction.svg",
+      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "resource": "SNARIO1.WLD",
+      "source_sha256": "33e08bba4ab7772e5798441fda58230504af0ba55b95834ecc4b63761aa2c6ac",
+      "svg_sha256": "6703edb287397cb51c1dd5f6308a1d0135a12d70a34a293db578fa3132a024e7",
+      "faces": 1137,
+      "native_file": "scenario-mass-destruction.png",
+      "native_png_sha256": "c9f8952c7a8275bf2ea730ac101607e3578aa8983de4c995d2d4d0bd4c1aba08",
+      "native_render": "2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels"
+    },
+    {
+      "name": "The Road to Bonn",
+      "file": "scenario-the-road-to-bonn.svg",
+      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "resource": "SNARIO2.WLD",
+      "source_sha256": "889b329ccaab475e52fcd115ff84b597ba69dae6523d3f473835ae2cb1df6be1",
+      "svg_sha256": "a4ca3143567603cf166438f4f49709f079e16685816b8e9b6abcb76dedf63651",
+      "faces": 799,
+      "native_file": "scenario-the-road-to-bonn.png",
+      "native_png_sha256": "5eb62a7154f6a28260814eec417ae531874b964140367f52a68cdf8d91b12a1b",
+      "native_render": "2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels"
+    },
+    {
+      "name": "Hannover Push",
+      "file": "scenario-hannover-push.svg",
+      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "resource": "SNARIO3.WLD",
+      "source_sha256": "e35492831bf7e05e3eb0d4ab7bbb64c9baf58e3388688ab2af031e0b2091bfbc",
+      "svg_sha256": "14639aafb2c1fd4d2b1b7a08f46b6b6f49f796260061c2b1ea1fb58dc54887fe",
+      "faces": 1493,
+      "native_file": "scenario-hannover-push.png",
+      "native_png_sha256": "62060ff981c996698e44a1b1ada091b58a5ffd20869a651c673ceae7892c303d",
+      "native_render": "2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels"
+    },
+    {
+      "name": "Convoy",
+      "file": "scenario-convoy.svg",
+      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "resource": "SNARIO4.WLD",
+      "source_sha256": "b503f8dd34f74fd5cff9f82a1c10771cd7fec6f8fe4d408893b2b0916f50fe12",
+      "svg_sha256": "37245c0a715171c9ca70c486b2a2f35b99dfacf3a9e1a72b62dd9146ab78b8a2",
+      "faces": 1963,
+      "native_file": "scenario-convoy.png",
+      "native_png_sha256": "f8955220cb6bc1f520c3287f370912cf64103b7a84925de157531c4fdc37e026",
+      "native_render": "2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels"
+    },
+    {
+      "name": "The Mossel Intercept",
+      "file": "scenario-the-mossel-intercept.svg",
+      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "resource": "SNARIO5.WLD",
+      "source_sha256": "db883b69bdd348599dfe0fba1acd9f953b872be466c30f3c29d29d16e57f451b",
+      "svg_sha256": "03117d798428e8ee95a95c3a16a8fc3ecd38baaef2c13f5955c39ed935776416",
+      "faces": 1711,
+      "native_file": "scenario-the-mossel-intercept.png",
+      "native_png_sha256": "6eaef8b0ffd2798b41aeca8f254947e7f8050b9d8edfdd4a9b944d0f9363fa89",
+      "native_render": "2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels"
+    },
+    {
+      "name": "The Mossel Defense",
+      "file": "scenario-the-mossel-defense.svg",
+      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "resource": "SNARIO6.WLD",
+      "source_sha256": "6f91df781b00a0d483f179c621b610c529671a61c4c5e61bb92642304a9cc1ef",
+      "svg_sha256": "8d57673b0348e541bd4de2203e1197de8beece06d19cfd520fc05760ba1e8044",
+      "faces": 1713,
+      "native_file": "scenario-the-mossel-defense.png",
+      "native_png_sha256": "5ff883d23f85b59ff173dd6f22343fa3efe13f7a38c46116c99114d4745615a9",
+      "native_render": "2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels"
+    },
+    {
+      "name": "Siegen Infiltration",
+      "file": "scenario-siegen-infiltration.svg",
+      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "resource": "SNARIO7.WLD",
+      "source_sha256": "e076100bdbaf8ce24df76f8cd46bb836923bce403537e82afcf6f364cbe8ea89",
+      "svg_sha256": "891dd1eb114de8e22ad5181bcb200b766bf45ce8eb430edfe49b945ceb232b06",
+      "faces": 1963,
+      "native_file": "scenario-siegen-infiltration.png",
+      "native_png_sha256": "7b262f35e44f8a4d1a1a5e2d9ce5b93f60b84b73913e08d2c0eea2b1bd2f2742",
+      "native_render": "2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels"
+    }
+  ]
+}
