@@ -106,6 +106,16 @@ or consistent 60 fps claim follows from a partial gate.
 
 ## Resume boundary
 
+Nell approved the glass icon and explicitly requested wiring it in on
+30 September 2026. The active branding/abrams-icon.png and docs/images/abrams-icon.png
+now use SHA256 59c2a5939288d6084711ce4f546d474cf0d0057f3636854178d6a7c151317e1f.
+The previous icon is preserved in tmp/custom-icons/abrams-app-glass/original.png.
+Existing signed applications and already-built portable archives are untouched.
+All future platform builds must use the new icon; prior Build29 archives do not
+include this later change. The earlier source lock omitted icon PNGs, so the
+Mac proposal must explicitly pin both active files before fresh admission.
+This approval does not release native scheduling or Apple notarization holds.
+
 The quiet lease 2dac7b86 is closed as a natural failure. No FPS, assembly or
 packaged-test execution is active in this chat. The COVENANT coordinator's
 latest instruction is to remain LIGHT/source-only while its bounded arithmetic

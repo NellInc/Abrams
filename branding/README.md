@@ -12,6 +12,10 @@ for the square icon while retaining the original title and visual identity.
 Native sips/iconutil only scales and converts the final icon for macOS.
 
 Sources and inspection notes are retained in `tmp/custom-icons/abrams-app/`.
+The approved glass-rim pass and previous icon are retained separately in
+`tmp/custom-icons/abrams-app-glass/`. The active `abrams-icon.png` and README
+image use the glass-rim variant. macOS and Windows icon conversions read this
+same active file; the Linux kit includes it as well.
 The earlier generic navy-tank icon is superseded and is not used by the app.
 The original artwork copyrights remain with their respective owners.
 
@@ -27,7 +31,7 @@ preload and leaves when the first valid original-game frame is composed.
 There is no timed hold or extra game input. Startup failures retain the cover
 and an actionable message; a missing image falls back to a readable title.
 
-Latest built-in image-edit direction: reduce only FAN REMASTER slightly,
-preserving its ivory stencil treatment, the BATTLE TANK title, BY DYNAMIX,
-the restored tank painting and the established composition. The actual result
-was reviewed visually; no exact percentage reduction is claimed.
+Latest built-in image-edit direction: add a narrow clear-glass bevel and light
+surface sheen while preserving the title lettering, restored tank painting
+and red/orange palette. Transparent exterior corners remain transparent.
+This changes the app icon only; the full startup cover remains unchanged.
