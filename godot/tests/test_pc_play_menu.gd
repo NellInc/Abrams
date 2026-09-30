@@ -16,7 +16,7 @@ func run() -> void:
 	menu.quality_selected.connect(func(msaa,anisotropy):choices.append(["quality",msaa,anisotropy]))
 	menu.speed_selected.connect(func(speed):choices.append(["speed",speed]))
 	menu.state_requested.connect(func(op,slot):choices.append([op,slot]))
-	check(menu.get_menu_count()==3,"Audio, Session and Graphics outside source pixels")
+	check(menu.get_menu_count()==4,"Audio, Session, Graphics and Help outside source pixels")
 	check(menu.settings.music==70 and menu.menus.has("music"),"independent music mix")
 	check(menu.quality=={"msaa":4,"anisotropy":16},"4x MSAA and 16x anisotropy defaults")
 	for key in menu.QUALITY_LEVELS:
@@ -52,7 +52,7 @@ func run() -> void:
 	check(not menu.busy and menu.request_state("load_state",0),"pre-load recovery can be loaded")
 	menu.set_state_status([{"slot":1}],"Loaded slot 1")
 	check(menu.load_popup.is_item_disabled(menu.load_popup.get_item_index(0)),"missing recovery remains disabled")
-	for popup in [menu.session_popup,menu.save_popup,menu.load_popup,menu.speed_popup,menu.graphics_popup]+menu.quality_menus.values():
+	for popup in [menu.session_popup,menu.save_popup,menu.load_popup,menu.speed_popup,menu.graphics_popup,menu.help_popup]+menu.quality_menus.values():
 		for i in popup.item_count:
 			check(popup.get_item_accelerator(i)==0 and popup.get_item_shortcut(i)==null,"no original key intercepted")
 		popup.about_to_popup.emit()

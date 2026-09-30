@@ -26,8 +26,10 @@ var save_popup: PopupMenu
 var load_popup: PopupMenu
 var state_slots: Array = []
 var state_message := "Save states include the campaign disk. Loading rewinds both."
+var help_popup: PopupMenu
 
 func _ready() -> void:
+	theme=preload("res://scripts/pc_interface_theme.gd").build()
 	super._ready()
 	session_popup=PopupMenu.new()
 	session_popup.name="Session"
@@ -70,6 +72,16 @@ func _ready() -> void:
 		quality_menus[key]=menu
 	graphics_popup.add_item("",101)
 	graphics_popup.set_item_disabled(graphics_popup.get_item_index(101),true)
+	help_popup=PopupMenu.new()
+	help_popup.name="Help"
+	add_child(help_popup)
+	_watch(help_popup)
+	help_popup.add_item("Keyboard controls",0)
+	help_popup.add_item("Scenarios & vehicles",1)
+	help_popup.id_pressed.connect(func(index):
+		var name := "keyboard-controls.html" if index==0 else "field-guide.html"
+		if preload("res://scripts/pc_interface_theme.gd").open_reference(name)!=OK:
+			control_notice.emit("Offline reference missing. Reinstall the complete application."))
 	refresh_controls()
 
 func load_quality_settings() -> bool:

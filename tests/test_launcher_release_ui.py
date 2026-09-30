@@ -69,7 +69,7 @@ class LauncherReleaseUI(unittest.TestCase):
     def test_about_and_user_initiated_project_link(self):
         self.assertIn('withTitle: "About \\(appName)", action: #selector(showAbout)', SOURCE)
         self.assertIn('https://github.com/NellInc/Abrams', SOURCE)
-        self.assertEqual(SOURCE.count('NSWorkspace.shared.open('), 1)
+        self.assertEqual(SOURCE.count('NSWorkspace.shared.open('), 2)
         self.assertIn('@objc func openGitHub() { NSWorkspace.shared.open(githubURL) }', SOURCE)
         self.assertIn('Dedicated to David “Ming” Kenny', SOURCE)
         self.assertIn('Original game by Dynamix.', SOURCE)

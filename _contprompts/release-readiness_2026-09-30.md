@@ -141,3 +141,42 @@ outcomes: stable/focused FPS measurement, fresh signed macOS Build29, packaged
 setup/upgrade/held-input/graphics/fast-forward/shutdown gates, coherent private
 alpha assets/source/checksums and current release documentation. Apple
 submission remains separately held even after these are complete.
+
+
+## Interface and player-reference extension
+
+Nell's latest interface request and “Proceed please” approve local refinement
+of launcher/setup/remaster UI, a keyboard reference and a manual-grounded
+scenario/vehicle catalogue. Keep the original cockpit/game logic unchanged.
+This extends the source candidate, so the icon-only Mac proposal is superseded.
+Original games/manual remain excluded; audio off and notarization held.
+
+Working if: setup and About render correctly, Help opens the two offline
+references, original input quarantine still passes, both platform inventories
+contain all reference assets, and existing signed builds stay untouched until
+an admitted fresh build replaces them.
+
+Source changes add native AppKit vibrancy with Reduce Transparency handling,
+lightweight Godot panel styling, and Help/launcher reference entry points.
+Authored references contain eight scenarios, sixteen vehicle entries, contextual
+original controls, ATGW, ammunition and crew stations. HTML is searchable and
+local-only. The two PDFs have two and eighteen pages respectively, with manual
+printed-page references and current low-poly mesh studies.
+
+Actual local checks: clean source-kit gate has 100 tests, five documented
+private/native skips; sixteen focused reference/launcher tests pass; all PDF
+entry names/objectives and text bounds pass; every page was rendered and
+inspected, with detailed checks after spacing/paint changes. Mac and portable
+payload closure includes the same complete 23-file reference inventory and
+excludes the original games/manual. Evidence is in
+artifacts/interface-reference-20260930/. The optional Impeccable binary was
+unavailable; no dependency/skill was installed as a workaround.
+
+Native Swift/Godot UI validation is pending a separate finite shared-slot
+admission. The five-entry UI proposal is source/runtime/artwork-pinned at
+artifacts/interface-reference-20260930/ui-proposal.json. It uses synthetic
+setup/launcher states, no host/core/originals/import/profile, Dummy audio and
+fresh native-run output. It is separate from Mac assembly/FPS/release jobs.
+No UI native command has been launched. Existing signed app and portable
+release archives still predate these source changes. Preserve the earlier
+unfinished release/performance/package outcomes above.

@@ -1,5 +1,43 @@
 import AppKit
 
+// Native vibrancy provides the glass material without a live game render pass.
+final class GlassPanel: NSVisualEffectView {
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        material = .hudWindow
+        blendingMode = .withinWindow
+        state = .active
+        wantsLayer = true
+        layer?.cornerRadius = 12
+        layer?.masksToBounds = true
+        layer?.borderWidth = 1
+        layer?.borderColor = NSColor.white.withAlphaComponent(0.16).cgColor
+        refreshTransparency()
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(refreshTransparency), name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil)
+    }
+    required init?(coder: NSCoder) { fatalError("Programmatic view") }
+    @objc func refreshTransparency() {
+        let opaque = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        layer?.backgroundColor = NSColor(calibratedRed: 0.09, green: 0.12, blue: 0.15, alpha: opaque ? 1 : 0.58).cgColor
+        for view in window?.contentView?.subviews ?? [] where view is LauncherBackdrop { view.needsDisplay = true }
+    }
+    deinit { NSWorkspace.shared.notificationCenter.removeObserver(self) }
+}
+
+final class LauncherBackdrop: NSView {
+    var artwork: NSImage?
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor(calibratedRed: 0.06, green: 0.08, blue: 0.10, alpha: 1).setFill()
+        bounds.fill()
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency,
+              let artwork, artwork.size.width > 0, artwork.size.height > 0 else { return }
+        let scale = max(bounds.width / artwork.size.width, bounds.height / artwork.size.height)
+        let size = NSSize(width: artwork.size.width * scale, height: artwork.size.height * scale)
+        artwork.draw(in: NSRect(x: (bounds.width-size.width)/2, y: (bounds.height-size.height)/2, width: size.width, height: size.height), from: .zero, operation: .sourceOver, fraction: 0.18)
+    }
+}
+
 final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 610), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
     let status = NSTextField(wrappingLabelWithString: "Checking your installation…")
@@ -40,14 +78,15 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return field
     }
     func card(_ frame: NSRect, in view: NSView) -> NSView {
-        let panel = NSView(frame: frame)
-        panel.wantsLayer = true
-        panel.layer?.backgroundColor = NSColor(calibratedRed: 0.12, green: 0.16, blue: 0.20, alpha: 1).cgColor
-        panel.layer?.cornerRadius = 12
-        panel.layer?.borderWidth = 1
-        panel.layer?.borderColor = NSColor.white.withAlphaComponent(0.08).cgColor
+        let panel = GlassPanel(frame: frame)
         view.addSubview(panel)
         return panel
+    }
+    func backdrop(in view: NSView) {
+        let background = LauncherBackdrop(frame: view.bounds)
+        background.artwork = NSImage(contentsOf: Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/kit/branding/abrams-cover-remastered.png"))
+        background.autoresizingMask = [.width, .height]
+        view.addSubview(background, positioned: .below, relativeTo: nil)
     }
     func button(_ title: String, action: Selector, frame: NSRect, in view: NSView) -> NSButton {
         let button = NSButton(title: title, target: self, action: action)
@@ -81,6 +120,11 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         let helpItem = NSMenuItem(); menu.addItem(helpItem)
         let helpMenu = NSMenu(title: "Help"); helpItem.submenu = helpMenu
+        let controls = helpMenu.addItem(withTitle: "Keyboard controls", action: #selector(openControls), keyEquivalent: "")
+        controls.target = self
+        let guide = helpMenu.addItem(withTitle: "Scenarios & vehicles", action: #selector(openFieldGuide), keyEquivalent: "")
+        guide.target = self
+        helpMenu.addItem(.separator())
         let github = helpMenu.addItem(withTitle: "Abrams on GitHub", action: #selector(openGitHub), keyEquivalent: "")
         github.target = self
         NSApp.mainMenu = menu
@@ -90,13 +134,13 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.title = appName
         window.delegate = self
         let view = window.contentView!
+        backdrop(in: view)
         let icon = NSImageView(frame: NSRect(x: 30, y: 470, width: 102, height: 102))
         icon.image = NSApp.applicationIconImage
         icon.imageScaling = .scaleProportionallyUpOrDown
         icon.setAccessibilityLabel("Abrams remaster cover artwork")
         view.addSubview(icon)
-        label("DYNAMIX ORIGINAL · INDEPENDENT FAN REMASTER", frame: NSRect(x: 152, y: 548, width: 580, height: 18), size: 10, weight: .semibold, color: muted, in: view)
-        label(appName, frame: NSRect(x: 150, y: 503, width: 580, height: 40), size: 25, weight: .bold, in: view)
+        label(appName, frame: NSRect(x: 150, y: 511, width: 580, height: 58), size: 25, weight: .bold, in: view)
         label("The original PC simulation, with remastered presentation.", frame: NSRect(x: 152, y: 477, width: 575, height: 24), size: 14, color: muted, in: view)
         label("YOUR GAME FILES", frame: NSRect(x: 32, y: 433, width: 400, height: 18), size: 11, weight: .semibold, color: muted, in: view)
         let pc = card(NSRect(x: 30, y: 319, width: 700, height: 105), in: view)
@@ -132,7 +176,10 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         githubButton.controlSize = .regular
         githubButton.toolTip = "Open the Abrams project in your default browser"
         githubButton.setAccessibilityLabel("Open Abrams on GitHub in your browser")
-        label(version, frame: NSRect(x: 230, y: 34, width: 310, height: 20), size: 11, color: muted, in: view)
+        let reference = button("Field guide", action: #selector(openFieldGuide), frame: NSRect(x: 224, y: 28, width: 112, height: 32), in: view)
+        reference.controlSize = .regular
+        reference.toolTip = "Open the offline scenario and vehicle catalogue"
+        label(version, frame: NSRect(x: 346, y: 34, width: 196, height: 20), size: 10, color: muted, in: view)
         playButton = button("Play Abrams", action: #selector(play), frame: NSRect(x: 551, y: 25, width: 182, height: 39), in: view)
         playButton.bezelColor = accent; playButton.keyEquivalent = "\r"
         playButton.toolTip = "Launch the simulation after the original PC game has been verified"
@@ -250,11 +297,25 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
     @objc func openGitHub() { NSWorkspace.shared.open(githubURL) }
+    @objc func openControls() { openReference("keyboard-controls.html") }
+    @objc func openFieldGuide() { openReference("field-guide.html") }
+    func openReference(_ name: String) {
+        guard ["keyboard-controls.html", "field-guide.html"].contains(name) else { return }
+        let url = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/kit/docs/player-reference/" + name)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            showError("The offline reference is missing. Please reinstall the complete application.")
+            return
+        }
+        // A local document opens only after the user chooses Help or Field guide.
+        NSWorkspace.shared.open(url)
+    }
     @objc func showAbout() {
         if let aboutWindow { aboutWindow.makeKeyAndOrderFront(nil); return }
         let panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 620, height: 570), styleMask: [.titled, .closable], backing: .buffered, defer: false)
         configure(panel); panel.title = "About \(appName)"
         let view = panel.contentView!
+        backdrop(in: view)
+        _ = card(NSRect(x: 20, y: 73, width: 580, height: 365), in: view)
         let icon = NSImageView(frame: NSRect(x: 28, y: 435, width: 90, height: 100))
         icon.image = NSApp.applicationIconImage; icon.imageScaling = .scaleProportionallyUpOrDown; view.addSubview(icon)
         label(appName, frame: NSRect(x: 140, y: 495, width: 452, height: 34), size: 20, weight: .bold, in: view)

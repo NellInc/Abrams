@@ -65,7 +65,7 @@ These are alpha packages. macOS notarization is pending; Windows signing is not 
 | Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
 | Cycle graphics | **Cmd+G** | **Ctrl+Alt+G** |
 
-The **Session** menu provides all five save slots and fast-forward speeds. **Graphics** selects a mode directly; **Audio** controls the mix. On macOS these are in the system menu bar. The game continues while a remaster menu is open, so pause first when needed. Original game controls remain unchanged.
+The **Session** menu provides all five save slots and fast-forward speeds. **Graphics** selects a mode directly; **Audio** controls the mix. **Help** opens the offline keyboard sheet and searchable scenario/vehicle field guide, with printable PDFs. On macOS these are in the system menu bar. The game continues while a remaster menu is open, so pause first when needed. Original game controls remain unchanged.
 
 Save states restore both the running game and campaign disk. New checkpoints also preserve the remastered display. Saves live outside the app in the platform's player profile. Back up the whole profile before upgrading; checkpoints require a compatible core and game edition. See [controls and save behaviour](docs/play-controls.md).
 

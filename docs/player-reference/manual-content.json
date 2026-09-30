@@ -1,0 +1,1909 @@
+{
+  "source": {
+    "path": "Abrams-Battle-Tank_Manual_DOS_EN.pdf",
+    "bytes": 16062061,
+    "sha256": "4545710cf18793fe03f4147808a58db4cae72b62e96bb28cd791db661934b618",
+    "scope": "DOS manual only; paraphrased inventory, no historical substitutions.",
+    "page_mapping": "Printed page = 1-based PDF page minus 4 for numbered main text.",
+    "visual_checked_pdf_pages": [
+      8,
+      9,
+      10,
+      11,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42
+    ]
+  },
+  "missions": [
+    {
+      "name": "The Mossel Defense",
+      "description": "Soviet forces have broken Allied defenses and approach the Mossel River in successive waves.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        },
+        {
+          "pdf_page_1_based": 28,
+          "printed_page": 24
+        }
+      ],
+      "primary_objective": "Survive and destroy every attacking Soviet vehicle.",
+      "loadout": "Player chooses ammunition mix and governor in the Motor Pool; no mission-specific compulsory loadout stated.",
+      "loadout_page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        },
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        }
+      ],
+      "time_limit": null,
+      "time_limit_page_refs": [
+        {
+          "pdf_page_1_based": 12,
+          "printed_page": 8
+        }
+      ]
+    },
+    {
+      "name": "Siegen Infiltration",
+      "description": "Supply convoys from Essen have disappeared near hilly Siegen. Intelligence suggests one or possibly two Soviet bases; Hind sightings remain unconfirmed in the briefing.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 28,
+          "printed_page": 24
+        }
+      ],
+      "primary_objective": "Find and destroy the Soviet base or bases.",
+      "hazards": [
+        "Hilly terrain permits ground and air ambushes.",
+        "Possible Hind helicopters."
+      ],
+      "loadout": "Player chooses ammunition mix and governor in the Motor Pool; no mission-specific compulsory loadout stated.",
+      "loadout_page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        },
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        }
+      ],
+      "time_limit": null,
+      "time_limit_page_refs": [
+        {
+          "pdf_page_1_based": 12,
+          "printed_page": 8
+        }
+      ]
+    },
+    {
+      "name": "Nuremberg Highway",
+      "description": "An Allied base has lost resupply; two convoys failed to arrive. Intelligence reports heavy ATGW activity in roadside hills.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 28,
+          "printed_page": 24
+        }
+      ],
+      "primary_objective": "Clear all Soviet forces along the highway and reopen the supply route.",
+      "loadout": "Player chooses ammunition mix and governor in the Motor Pool; no mission-specific compulsory loadout stated.",
+      "loadout_page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        },
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        }
+      ],
+      "time_limit": null,
+      "time_limit_page_refs": [
+        {
+          "pdf_page_1_based": 12,
+          "printed_page": 8
+        }
+      ]
+    },
+    {
+      "name": "Mass Destruction",
+      "description": "Soviet troops approach from north and west, threatening the M1 base near the Emes River.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 29,
+          "printed_page": 25
+        }
+      ],
+      "primary_objective": "Destroy all three nearby enemy bases.",
+      "named_geography_as_printed": "Emes River",
+      "loadout": "Player chooses ammunition mix and governor in the Motor Pool; no mission-specific compulsory loadout stated.",
+      "loadout_page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        },
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        }
+      ],
+      "time_limit": null,
+      "time_limit_page_refs": [
+        {
+          "pdf_page_1_based": 12,
+          "printed_page": 8
+        }
+      ]
+    },
+    {
+      "name": "The Road to Bonn",
+      "description": "After Frankfurt falls, Soviet armor moves toward Bonn. The Mainz bridge offers passage across the Rhine around Allied forces at Koblenz.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 29,
+          "printed_page": 25
+        },
+        {
+          "pdf_page_1_based": 30,
+          "printed_page": 26
+        }
+      ],
+      "primary_objective": "Destroy the Mainz bridge.",
+      "secondary_objective": "Destroy as much of the Soviet reconnaissance team as possible.",
+      "loadout": "Player chooses ammunition mix and governor in the Motor Pool; no mission-specific compulsory loadout stated.",
+      "loadout_page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        },
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        }
+      ],
+      "time_limit": null,
+      "time_limit_page_refs": [
+        {
+          "pdf_page_1_based": 12,
+          "printed_page": 8
+        }
+      ]
+    },
+    {
+      "name": "Hannover Push",
+      "description": "Soviet forces have overrun Hannover and amassed weapons and vehicles for an attack toward Cologne. A communications fort lies east of their base.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 30,
+          "printed_page": 26
+        }
+      ],
+      "primary_objective": "Destroy the Soviet base.",
+      "secondary_objective": "Find and eliminate the communications fort.",
+      "loadout": "Player chooses ammunition mix and governor in the Motor Pool; no mission-specific compulsory loadout stated.",
+      "loadout_page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        },
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        }
+      ],
+      "time_limit": null,
+      "time_limit_page_refs": [
+        {
+          "pdf_page_1_based": 12,
+          "printed_page": 8
+        }
+      ]
+    },
+    {
+      "name": "Convoy",
+      "description": "Soviet attacks threaten civilian relief supplies moving through Siegen toward Weller.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 31,
+          "printed_page": 27
+        }
+      ],
+      "primary_objective": "Escort and protect the five-truck convoy until it reaches Allied Base Weller across the Rhine.",
+      "restriction": "Protect all five trucks throughout the journey.",
+      "narrative_follow_on": "Supplies are transferred to cargo aircraft for relief airdrops.",
+      "loadout": "Player chooses ammunition mix and governor in the Motor Pool; no mission-specific compulsory loadout stated.",
+      "loadout_page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        },
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        }
+      ],
+      "time_limit": null,
+      "time_limit_page_refs": [
+        {
+          "pdf_page_1_based": 12,
+          "printed_page": 8
+        }
+      ]
+    },
+    {
+      "name": "The Mossel Intercept",
+      "description": "Damaged Allied vehicles lie west of the player, across the Mossel, after defeating a Soviet reconnaissance group. A powerful Soviet patrol approaches southward along the river.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 31,
+          "printed_page": 27
+        },
+        {
+          "pdf_page_1_based": 32,
+          "printed_page": 28
+        }
+      ],
+      "primary_objective": "Reach the damaged Allied vehicles before the Soviet patrol, then escort them to your base.",
+      "named_geography_as_printed": "Pirmansens and the French border",
+      "loadout": "Player chooses ammunition mix and governor in the Motor Pool; no mission-specific compulsory loadout stated.",
+      "loadout_page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        },
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        }
+      ],
+      "time_limit": null,
+      "time_limit_page_refs": [
+        {
+          "pdf_page_1_based": 12,
+          "printed_page": 8
+        }
+      ]
+    }
+  ],
+  "training": {
+    "named_training_missions": [],
+    "description": "No separately named training missions in this manual. Scenario play is described as command training, with selectable mission, skill and day/night.",
+    "page_refs": [
+      {
+        "pdf_page_1_based": 13,
+        "printed_page": 9
+      },
+      {
+        "pdf_page_1_based": 14,
+        "printed_page": 10
+      }
+    ]
+  },
+  "vehicles": [
+    {
+      "name": "ACRV-2",
+      "description": "Tracked mobile command post; intended to operate away from the front line.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 33,
+          "printed_page": 29
+        }
+      ],
+      "role": "Command Vehicle",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1974,
+        "combat_weight_tons": 13,
+        "length_m": 6.32,
+        "width_m": 2.84,
+        "height_m": 2.34,
+        "maximum_speed_kmh": 58,
+        "primary_armament": "none",
+        "secondary_armament": null,
+        "reload_seconds": null,
+        "range_m": null,
+        "armor": "light",
+        "overall_threat": "Negligible"
+      }
+    },
+    {
+      "name": "BMP-1",
+      "description": "Combat-capable infantry carrier with a crew of three and room for nine infantry.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 33,
+          "printed_page": 29
+        },
+        {
+          "pdf_page_1_based": 34,
+          "printed_page": 30
+        }
+      ],
+      "role": "Infantry Fighting Vehicle",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1967,
+        "combat_weight_tons": 14,
+        "length_m": 6.74,
+        "width_m": 2.94,
+        "height_m": 2.15,
+        "maximum_speed_kmh": 78,
+        "primary_armament": "Sagger missile (5 rounds)",
+        "secondary_armament": "73mm gun (40 rounds)",
+        "reload_seconds": 3,
+        "range_m": 1500,
+        "armor": "light",
+        "overall_threat": "Moderate"
+      }
+    },
+    {
+      "name": "BMP-2",
+      "description": "BMP-1 development with a larger turret, a 30mm cannon, 7.62mm coaxial gun and Spandrel ATGW.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 34,
+          "printed_page": 30
+        }
+      ],
+      "role": "Infantry Fighting Vehicle",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1981,
+        "combat_weight_tons": 16,
+        "length_m": 6.71,
+        "width_m": 3.09,
+        "height_m": 2.06,
+        "maximum_speed_kmh": 62,
+        "primary_armament": "Spandrel missile (4 rounds)",
+        "secondary_armament": "30mm MG (40 rounds)",
+        "reload_seconds": 3,
+        "range_m": 2500,
+        "armor": "moderate",
+        "overall_threat": "High"
+      },
+      "source_discrepancy": "Table says 30mm MG; prose calls it a 30mm cannon and separately lists a 7.62mm coaxial gun. Both are retained."
+    },
+    {
+      "name": "BRDM-2",
+      "description": "Wheeled reconnaissance or tank-destroyer vehicle; reconnaissance versions generally omit ATGWs.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 34,
+          "printed_page": 30
+        },
+        {
+          "pdf_page_1_based": 35,
+          "printed_page": 31
+        }
+      ],
+      "role": "Tank Destroyer",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1966,
+        "combat_weight_tons": 8,
+        "length_m": 5.75,
+        "width_m": 2.35,
+        "height_m": 2.31,
+        "maximum_speed_kmh": 95,
+        "primary_armament": "Sagger missile (14 rounds)",
+        "secondary_armament": "14.5mm MG",
+        "reload_seconds": 3,
+        "range_m": 1500,
+        "armor": "light",
+        "overall_threat": "Moderate"
+      }
+    },
+    {
+      "name": "BRDM-3",
+      "description": "BRDM-2 development replacing Sagger with the more powerful Spandrel.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 35,
+          "printed_page": 31
+        }
+      ],
+      "role": "Tank Destroyer",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1974,
+        "combat_weight_tons": 9,
+        "length_m": 5.78,
+        "width_m": 2.38,
+        "height_m": 2.61,
+        "maximum_speed_kmh": 95,
+        "primary_armament": "Spandrel missile (15 rounds)",
+        "secondary_armament": "14.5mm MG (40 rounds)",
+        "reload_seconds": 3,
+        "range_m": 2500,
+        "armor": "light",
+        "overall_threat": "Extremely high"
+      }
+    },
+    {
+      "name": "BTR",
+      "description": "Amphibious wheeled Warsaw Pact transport; two crew and up to nine passengers; thin armor discourages combat.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 36,
+          "printed_page": 32
+        }
+      ],
+      "role": "Armored Personnel Carrier",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1978,
+        "combat_weight_tons": 12,
+        "length_m": 7.85,
+        "width_m": 2.8,
+        "height_m": 2.45,
+        "maximum_speed_kmh": 80,
+        "primary_armament": "14.5mm MG (40 rounds)",
+        "secondary_armament": "none",
+        "reload_seconds": null,
+        "range_m": 750,
+        "armor": "light",
+        "overall_threat": "Negligible"
+      }
+    },
+    {
+      "name": "FST-1",
+      "description": "Manual describes Soviet field trials and explicitly treats turretless construction, automatic loader, thermal blinder and two-person crew as beliefs or rumors.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 36,
+          "printed_page": 32
+        }
+      ],
+      "role": "Main Battle Tank",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1988,
+        "combat_weight_tons": null,
+        "length_m": null,
+        "width_m": null,
+        "height_m": null,
+        "maximum_speed_kmh": null,
+        "primary_armament": "135mm smooth bore cannon (40 rounds)",
+        "secondary_armament": "unknown",
+        "reload_seconds": 4,
+        "range_m": 2250,
+        "armor": "heavy (reactive)",
+        "overall_threat": "Extremely high"
+      },
+      "unknown_fields": "Weight, dimensions, maximum speed and secondary armament explicitly unknown; picture unavailable."
+    },
+    {
+      "name": "M113",
+      "description": "US Army troop transport; reliable and practical, with less armor than an IFV.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 37,
+          "printed_page": 33
+        }
+      ],
+      "role": "Armored Personnel Carrier",
+      "allegiance": "FRIENDLY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1960,
+        "combat_weight_tons": 12,
+        "length_m": 4.86,
+        "width_m": 2.28,
+        "height_m": 2.54,
+        "maximum_speed_kmh": 67,
+        "primary_armament": "12.7mm MG",
+        "secondary_armament": "none",
+        "reload_seconds": null,
+        "range_m": 750,
+        "armor": "light",
+        "overall_threat": "N/A"
+      }
+    },
+    {
+      "name": "M1A1 Abrams",
+      "description": "Player tank, with Rheinmetall cannon, Chobham armor and thermal imaging.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 37,
+          "printed_page": 33
+        },
+        {
+          "pdf_page_1_based": 38,
+          "printed_page": 34
+        }
+      ],
+      "role": "Main Battle Tank",
+      "allegiance": "FRIENDLY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1981,
+        "combat_weight_tons": 63,
+        "length_m": 7.91,
+        "width_m": 3.65,
+        "height_m": 2.37,
+        "maximum_speed_kmh": 72,
+        "primary_armament": "120mm smooth bore cannon (40 rounds)",
+        "secondary_armament": "7.62mm MG (80 rounds)",
+        "reload_seconds": 4,
+        "range_m": 2250,
+        "armor": "very heavy (Chobham)",
+        "overall_threat": "N/A"
+      },
+      "speed_notes": {
+        "name": "Governor",
+        "description": "Operations states approximately 72km/h governed or 100km/h ungoverned, with overheating and permanent engine failure possible when ungoverned; off-road speeds are lower.",
+        "page_refs": [
+          {
+            "pdf_page_1_based": 18,
+            "printed_page": 14
+          },
+          {
+            "pdf_page_1_based": 21,
+            "printed_page": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "M2 Bradley",
+      "description": "M1 infantry-team partner engaging softer targets and spotting or destroying anti-tank weapons; more mobile, better armed and better protected than M113.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 38,
+          "printed_page": 34
+        }
+      ],
+      "role": "Infantry Fighting Vehicle",
+      "allegiance": "FRIENDLY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1981,
+        "combat_weight_tons": 24,
+        "length_m": 6.45,
+        "width_m": 3.23,
+        "height_m": 2.56,
+        "maximum_speed_kmh": 66,
+        "primary_armament": "TOW missile (6 rounds)",
+        "secondary_armament": "25mm chaingun (40 rounds)",
+        "reload_seconds": 4,
+        "range_m": 2500,
+        "armor": "light",
+        "overall_threat": "N/A"
+      }
+    },
+    {
+      "name": "M60A3",
+      "description": "M60 development with slower speed and a higher profile than newer tanks; manual contrasts it unfavorably with T-80.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 38,
+          "printed_page": 34
+        },
+        {
+          "pdf_page_1_based": 39,
+          "printed_page": 35
+        }
+      ],
+      "role": "Main Battle Tank",
+      "allegiance": "FRIENDLY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1977,
+        "combat_weight_tons": 57,
+        "length_m": 6.94,
+        "width_m": 3.63,
+        "height_m": 3.27,
+        "maximum_speed_kmh": 48,
+        "primary_armament": "105mm rifled bore cannon (6 rounds)",
+        "secondary_armament": "7.62mm machine gun (40 rounds)",
+        "reload_seconds": 4,
+        "range_m": 750,
+        "armor": "heavy",
+        "overall_threat": "N/A"
+      },
+      "source_note": "The surprising six-round primary capacity and 750m range are visually confirmed in the printed manual, not OCR guesses."
+    },
+    {
+      "name": "Mi-24 Hind",
+      "description": "Large, fast armed helicopter carrying eight equipped troops and anti-tank guided weapons.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 39,
+          "printed_page": 35
+        }
+      ],
+      "role": "Assault Helicopter",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1971,
+        "combat_weight_tons": 11,
+        "length_m": 17.0,
+        "width_m": 12.0,
+        "height_m": 6.5,
+        "maximum_speed_kmh": 320,
+        "primary_armament": "Spiral missile (4 rounds)",
+        "secondary_armament": "23mm cannon (40 rounds)",
+        "reload_seconds": 3,
+        "range_m": 2750,
+        "armor": "light",
+        "overall_threat": "Extremely high"
+      }
+    },
+    {
+      "name": "T-62",
+      "description": "T-54/55 development; considered outclassed by newer tanks in the manual.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 40,
+          "printed_page": 36
+        }
+      ],
+      "role": "Main Battle Tank",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1962,
+        "combat_weight_tons": 44,
+        "length_m": 6.63,
+        "width_m": 3.3,
+        "height_m": 2.39,
+        "maximum_speed_kmh": 50,
+        "primary_armament": "115mm smooth bore cannon (40 rounds)",
+        "secondary_armament": "7.62mm MG (40 rounds)",
+        "reload_seconds": 12,
+        "range_m": 750,
+        "armor": "heavy",
+        "overall_threat": "Very low"
+      }
+    },
+    {
+      "name": "T-64",
+      "description": "Introduces a 125mm gun and automatic loader, reducing crew to three.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 40,
+          "printed_page": 36
+        },
+        {
+          "pdf_page_1_based": 41,
+          "printed_page": 37
+        }
+      ],
+      "role": "Main Battle Tank",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1965,
+        "combat_weight_tons": 42,
+        "length_m": 6.45,
+        "width_m": 3.62,
+        "height_m": 2.33,
+        "maximum_speed_kmh": 60,
+        "primary_armament": "125mm smooth bore cannon (40 rounds)",
+        "secondary_armament": "7.62mm MG (40 rounds)",
+        "reload_seconds": 10,
+        "range_m": 1250,
+        "armor": "heavy",
+        "overall_threat": "Low"
+      }
+    },
+    {
+      "name": "T-72",
+      "description": "Principal Soviet MBT in the manual; stabilized gun allows some moving fire, with dispersion problems beyond 1000m.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 41,
+          "printed_page": 37
+        }
+      ],
+      "role": "Main Battle Tank",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1972,
+        "combat_weight_tons": 45,
+        "length_m": 6.95,
+        "width_m": 3.6,
+        "height_m": 2.37,
+        "maximum_speed_kmh": 60,
+        "primary_armament": "125mm smooth bore cannon (40 rounds)",
+        "secondary_armament": "7.62mm MG (40 rounds)",
+        "reload_seconds": 8,
+        "range_m": 1500,
+        "armor": "heavy",
+        "overall_threat": "Moderate"
+      },
+      "source_note": "Manual calls T-72 also T-74; retained as a manual-era alias, not independently validated history."
+    },
+    {
+      "name": "T-80",
+      "description": "T-64 evolution with a 1000hp turbine, improved suspension, laser rangefinder, anti-PGM electronics and reactive-armor retrofit.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 42,
+          "printed_page": 38
+        }
+      ],
+      "role": "Main Battle Tank",
+      "allegiance": "ENEMY",
+      "allegiance_basis": "US or Soviet flag beside entry, reinforced by description.",
+      "specs": {
+        "introduced_year": 1980,
+        "combat_weight_tons": 46,
+        "length_m": 6.91,
+        "width_m": 3.64,
+        "height_m": 2.28,
+        "maximum_speed_kmh": 68,
+        "primary_armament": "125mm smooth bore cannon (40 rounds)",
+        "secondary_armament": "7.62mm MG (40 rounds)",
+        "reload_seconds": 6,
+        "range_m": 1750,
+        "armor": "heavy",
+        "overall_threat": "High"
+      }
+    }
+  ],
+  "other_units_and_objectives": [
+    {
+      "name": "Allied supply trucks",
+      "description": "Convoy objective consists of five friendly trucks; no model, armament or performance figures supplied.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 31,
+          "printed_page": 27
+        }
+      ],
+      "allegiance": "FRIENDLY"
+    },
+    {
+      "name": "Damaged Allied vehicles",
+      "description": "Rescue and escort objective; the manual does not specify their models or count.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 31,
+          "printed_page": 27
+        },
+        {
+          "pdf_page_1_based": 32,
+          "printed_page": 28
+        }
+      ],
+      "allegiance": "FRIENDLY"
+    },
+    {
+      "name": "Cargo aircraft",
+      "description": "Mentioned as relief-supply airlift after convoy arrival; no model or specifications and no assertion of simulated controllable aircraft.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 31,
+          "printed_page": 27
+        }
+      ],
+      "allegiance": "FRIENDLY"
+    },
+    {
+      "name": "Air scouts",
+      "description": "Report incoming patrol in Mossel Intercept; no aircraft type or simulation role stated.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 31,
+          "printed_page": 27
+        }
+      ],
+      "allegiance": "FRIENDLY"
+    },
+    {
+      "name": "Infantry ATGW teams",
+      "description": "Guided missiles may be vehicle-mounted or operated by infantry on the ground; most guidance uses wires.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 42,
+          "printed_page": 38
+        },
+        {
+          "pdf_page_1_based": 43,
+          "printed_page": 39
+        }
+      ],
+      "allegiance": "ENEMY in mission threat context"
+    },
+    {
+      "name": "Soviet reconnaissance group / patrol",
+      "description": "Reconnaissance units threaten Bonn and damaged Allied vehicles; composition and exact vehicle count not stated.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 29,
+          "printed_page": 25
+        },
+        {
+          "pdf_page_1_based": 30,
+          "printed_page": 26
+        },
+        {
+          "pdf_page_1_based": 31,
+          "printed_page": 27
+        },
+        {
+          "pdf_page_1_based": 32,
+          "printed_page": 28
+        }
+      ],
+      "allegiance": "ENEMY"
+    },
+    {
+      "name": "Allied base",
+      "description": "Each mission has at least one, player starts nearby; unlimited returns permit ammunition replacement, refueling and governor changes.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        }
+      ],
+      "allegiance": "FRIENDLY"
+    },
+    {
+      "name": "Soviet bases",
+      "description": "Destruction objectives for Siegen, Mass Destruction and Hannover; Mass Destruction explicitly requires three.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 28,
+          "printed_page": 24
+        },
+        {
+          "pdf_page_1_based": 29,
+          "printed_page": 25
+        },
+        {
+          "pdf_page_1_based": 30,
+          "printed_page": 26
+        }
+      ],
+      "allegiance": "ENEMY"
+    },
+    {
+      "name": "Communications fort",
+      "description": "Eastern Hannover link coordinating Soviet forces; secondary destruction objective.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 30,
+          "printed_page": 26
+        }
+      ],
+      "allegiance": "ENEMY"
+    },
+    {
+      "name": "Mainz bridge",
+      "description": "Neutral infrastructure designated primary destruction objective in Road to Bonn.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 29,
+          "printed_page": 25
+        },
+        {
+          "pdf_page_1_based": 30,
+          "printed_page": 26
+        }
+      ],
+      "allegiance": "INFRASTRUCTURE"
+    }
+  ],
+  "anti_tank_guided_weapons": [
+    {
+      "name": "AT-3 Sagger",
+      "description": "Infantry-operated anti-tank missile, also mounted on BMP-1 and BRDM-2.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 33,
+          "printed_page": 29
+        },
+        {
+          "pdf_page_1_based": 35,
+          "printed_page": 31
+        },
+        {
+          "pdf_page_1_based": 42,
+          "printed_page": 38
+        }
+      ],
+      "allegiance": "ENEMY"
+    },
+    {
+      "name": "AT-4 Spigot",
+      "description": "High-performance tube-launched infantry anti-tank missile.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 43,
+          "printed_page": 39
+        }
+      ],
+      "allegiance": "ENEMY"
+    },
+    {
+      "name": "AT-5 Spandrel",
+      "description": "More effective than Sagger; mounted on BRDM-3 and BMP-2.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 34,
+          "printed_page": 30
+        },
+        {
+          "pdf_page_1_based": 35,
+          "printed_page": 31
+        },
+        {
+          "pdf_page_1_based": 43,
+          "printed_page": 39
+        }
+      ],
+      "allegiance": "ENEMY"
+    },
+    {
+      "name": "AT-6 Spiral",
+      "description": "Manual describes a large laser-guided weapon on Hind-D helicopters.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 43,
+          "printed_page": 39
+        }
+      ],
+      "allegiance": "ENEMY"
+    },
+    {
+      "name": "TOW",
+      "description": "US wire-guided anti-tank weapon: operator maintains sight on target. Bradley primary weapon.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 38,
+          "printed_page": 34
+        },
+        {
+          "pdf_page_1_based": 45,
+          "printed_page": 41
+        }
+      ],
+      "allegiance": "FRIENDLY"
+    }
+  ],
+  "ammunition_and_armament": [
+    {
+      "name": "Sabot",
+      "description": "Armor-piercing kinetic dart; very effective against armor, ineffective against infantry, structures and aircraft.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 24,
+          "printed_page": 20
+        }
+      ],
+      "range_m": [
+        0,
+        2500
+      ]
+    },
+    {
+      "name": "HEAT",
+      "description": "Shaped-charge round; very effective against infantry and structures, effective against armor, ineffective against aircraft.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 24,
+          "printed_page": 20
+        }
+      ],
+      "range_m": [
+        0,
+        2000
+      ]
+    },
+    {
+      "name": "AX",
+      "description": "Experimental anti-helicopter/anti-armor round; slower loading because of shell size and wire guidance; strongest against aircraft, somewhat effective against other targets at extended range.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 25,
+          "printed_page": 21
+        }
+      ],
+      "range_m": [
+        770,
+        4000
+      ]
+    },
+    {
+      "name": "COAX",
+      "description": "Machine gun with quick loading independent of main rounds; mildly effective against infantry and very light armor, marginal or ineffective against aircraft.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 25,
+          "printed_page": 21
+        }
+      ],
+      "range_m": [
+        0,
+        1000
+      ]
+    },
+    {
+      "name": "120mm Rheinmetall cannon",
+      "description": "Fires HEAT, sabot and AX; performance depends on selected ammunition.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 25,
+          "printed_page": 21
+        }
+      ]
+    },
+    {
+      "name": "Smoke discharger",
+      "description": "Defensive concealment against enemies lacking thermal imaging and sight-guided missiles such as Sagger and Spigot; effect approximately twenty seconds.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 25,
+          "printed_page": 21
+        }
+      ],
+      "range_m": [
+        0,
+        100
+      ]
+    }
+  ],
+  "keyboard_controls": [
+    {
+      "name": "A",
+      "description": "Align turret with the front of the hull.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 10,
+          "printed_page": 6
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        }
+      ],
+      "stations": [
+        "gunner",
+        "commander",
+        "cupola",
+        "driver"
+      ]
+    },
+    {
+      "name": "C",
+      "description": "Switch movement control between hull and turret.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 10,
+          "printed_page": 6
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        }
+      ],
+      "stations": [
+        "gunner",
+        "commander",
+        "cupola",
+        "driver"
+      ]
+    },
+    {
+      "name": "L",
+      "description": "Lock crosshairs onto the currently selected target.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        },
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        }
+      ],
+      "stations": [
+        "gunner"
+      ]
+    },
+    {
+      "name": "M",
+      "description": "Fire machine gun.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        },
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        }
+      ],
+      "stations": [
+        "gunner"
+      ]
+    },
+    {
+      "name": "S",
+      "description": "Discharge smoke canisters.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        },
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        }
+      ],
+      "stations": [
+        "gunner"
+      ]
+    },
+    {
+      "name": "1",
+      "description": "Ready HEAT.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        },
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        }
+      ],
+      "stations": [
+        "gunner"
+      ]
+    },
+    {
+      "name": "2",
+      "description": "Ready sabot.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        },
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        }
+      ],
+      "stations": [
+        "gunner"
+      ]
+    },
+    {
+      "name": "3",
+      "description": "Ready AX.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        },
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        }
+      ],
+      "stations": [
+        "gunner"
+      ]
+    },
+    {
+      "name": "Enter",
+      "description": "Cycle available targets with the TADS box; after the final target the box turns off.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        },
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        }
+      ],
+      "stations": [
+        "gunner"
+      ]
+    },
+    {
+      "name": "Space",
+      "description": "Fire selected weapon.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        },
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        }
+      ],
+      "stations": [
+        "gunner"
+      ]
+    },
+    {
+      "name": "R",
+      "description": "Retrieve pending radio message; no effect when no message is waiting.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 18,
+          "printed_page": 14
+        }
+      ],
+      "stations": [
+        "gunner",
+        "commander"
+      ]
+    },
+    {
+      "name": "T",
+      "description": "Toggle thermal imaging.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        }
+      ],
+      "stations": [
+        "gunner",
+        "commander"
+      ]
+    },
+    {
+      "name": "Z",
+      "description": "Cycle normal 1x, 3x and 10x sight magnification.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        }
+      ],
+      "stations": [
+        "gunner"
+      ]
+    },
+    {
+      "name": "Z",
+      "description": "Alternate between full territory map and local close-up.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 23,
+          "printed_page": 19
+        }
+      ],
+      "stations": [
+        "commander"
+      ]
+    },
+    {
+      "name": "D",
+      "description": "Show system damage screen; any key returns to commander station.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 23,
+          "printed_page": 19
+        }
+      ],
+      "stations": [
+        "commander"
+      ]
+    },
+    {
+      "name": "F7",
+      "description": "Return scan to original/current turret bearing.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        },
+        {
+          "pdf_page_1_based": 23,
+          "printed_page": 19
+        }
+      ],
+      "stations": [
+        "commander"
+      ]
+    },
+    {
+      "name": "F8",
+      "description": "Scan 90 degrees clockwise from turret bearing.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        },
+        {
+          "pdf_page_1_based": 23,
+          "printed_page": 19
+        }
+      ],
+      "stations": [
+        "commander"
+      ]
+    },
+    {
+      "name": "F9",
+      "description": "Scan 180 degrees from turret bearing.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        },
+        {
+          "pdf_page_1_based": 23,
+          "printed_page": 19
+        }
+      ],
+      "stations": [
+        "commander"
+      ]
+    },
+    {
+      "name": "F10",
+      "description": "Scan 270 degrees clockwise from turret bearing.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 9,
+          "printed_page": 5
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        },
+        {
+          "pdf_page_1_based": 23,
+          "printed_page": 19
+        }
+      ],
+      "stations": [
+        "commander"
+      ]
+    },
+    {
+      "name": "Q",
+      "description": "Open quit sequence for scenario or campaign; continuation option cancels quit.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 10,
+          "printed_page": 6
+        }
+      ],
+      "stations": [
+        "global"
+      ]
+    },
+    {
+      "name": "F1",
+      "description": "Select gunner station.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 10,
+          "printed_page": 6
+        }
+      ],
+      "stations": [
+        "global"
+      ]
+    },
+    {
+      "name": "F2",
+      "description": "Select tank commander station.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 10,
+          "printed_page": 6
+        }
+      ],
+      "stations": [
+        "global"
+      ]
+    },
+    {
+      "name": "F3",
+      "description": "Select cupola view.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 10,
+          "printed_page": 6
+        }
+      ],
+      "stations": [
+        "global"
+      ]
+    },
+    {
+      "name": "F4",
+      "description": "Select driver station.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 10,
+          "printed_page": 6
+        }
+      ],
+      "stations": [
+        "global"
+      ]
+    },
+    {
+      "name": "F5",
+      "description": "Toggle sound.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 10,
+          "printed_page": 6
+        }
+      ],
+      "stations": [
+        "global"
+      ]
+    },
+    {
+      "name": "Shift+3",
+      "description": "Change system speed among slow, medium and fast; fast is the load default.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 10,
+          "printed_page": 6
+        }
+      ],
+      "stations": [
+        "global"
+      ]
+    },
+    {
+      "name": "Esc",
+      "description": "Back out of menu selection; during a scenario pause, then press any key to resume.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 11,
+          "printed_page": 7
+        },
+        {
+          "pdf_page_1_based": 16,
+          "printed_page": 12
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        }
+      ],
+      "stations": [
+        "movement_or_menu_context"
+      ]
+    },
+    {
+      "name": "Keypad 2 / Down",
+      "description": "Move backward in hull mode; lower sight in turret mode.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 11,
+          "printed_page": 7
+        },
+        {
+          "pdf_page_1_based": 16,
+          "printed_page": 12
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        }
+      ],
+      "stations": [
+        "movement_or_menu_context"
+      ]
+    },
+    {
+      "name": "Keypad 4 / Left",
+      "description": "Turn hull or turret left; decrease selected ammunition mix in Motor Pool.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 11,
+          "printed_page": 7
+        },
+        {
+          "pdf_page_1_based": 16,
+          "printed_page": 12
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        }
+      ],
+      "stations": [
+        "movement_or_menu_context"
+      ]
+    },
+    {
+      "name": "Keypad 5",
+      "description": "Stop hull or turret movement.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 11,
+          "printed_page": 7
+        },
+        {
+          "pdf_page_1_based": 16,
+          "printed_page": 12
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        }
+      ],
+      "stations": [
+        "movement_or_menu_context"
+      ]
+    },
+    {
+      "name": "Keypad 6 / Right",
+      "description": "Turn hull or turret right; increase selected ammunition mix in Motor Pool.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 11,
+          "printed_page": 7
+        },
+        {
+          "pdf_page_1_based": 16,
+          "printed_page": 12
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        }
+      ],
+      "stations": [
+        "movement_or_menu_context"
+      ]
+    },
+    {
+      "name": "Keypad 8 / Up",
+      "description": "Move forward in hull mode; raise sight in turret mode.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 11,
+          "printed_page": 7
+        },
+        {
+          "pdf_page_1_based": 16,
+          "printed_page": 12
+        },
+        {
+          "pdf_page_1_based": 17,
+          "printed_page": 13
+        }
+      ],
+      "stations": [
+        "movement_or_menu_context"
+      ]
+    },
+    {
+      "name": "Enter",
+      "description": "Cycle highlighted mission, DAY/NIGHT or NOVICE/MODERATE/EXPERT options; submit campaign name or vehicle identification.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        },
+        {
+          "pdf_page_1_based": 15,
+          "printed_page": 11
+        }
+      ],
+      "stations": [
+        "menus"
+      ]
+    },
+    {
+      "name": "Space",
+      "description": "Advance past mission-title screen.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 14,
+          "printed_page": 10
+        }
+      ],
+      "stations": [
+        "mission_start"
+      ]
+    },
+    {
+      "name": "Enter",
+      "description": "Advance timed presentation screens such as credits or Colonel Wilson briefing.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 7,
+          "printed_page": 3
+        }
+      ],
+      "stations": [
+        "presentation"
+      ]
+    }
+  ],
+  "stations": [
+    {
+      "name": "Gunner",
+      "description": "Target acquisition, identification, firing, magnified sight and thermal imaging.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 19,
+          "printed_page": 15
+        },
+        {
+          "pdf_page_1_based": 20,
+          "printed_page": 16
+        },
+        {
+          "pdf_page_1_based": 21,
+          "printed_page": 17
+        },
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        }
+      ],
+      "key": "F1"
+    },
+    {
+      "name": "Tank commander",
+      "description": "Strategy, overhead map, 360-degree periscope scan and damage information.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 22,
+          "printed_page": 18
+        },
+        {
+          "pdf_page_1_based": 23,
+          "printed_page": 19
+        }
+      ],
+      "key": "F2"
+    },
+    {
+      "name": "Cupola",
+      "description": "Hatch-level outside view, particularly useful for airborne threats.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 23,
+          "printed_page": 19
+        }
+      ],
+      "key": "F3"
+    },
+    {
+      "name": "Driver",
+      "description": "Navigation view with heading, speed, fuel and temperature.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 24,
+          "printed_page": 20
+        }
+      ],
+      "key": "F4"
+    },
+    {
+      "name": "Loader",
+      "description": "Automatic ammunition loading, with no player-view screen.",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 24,
+          "printed_page": 20
+        }
+      ],
+      "key": null
+    }
+  ],
+  "campaign": {
+    "name": "Full campaign",
+    "description": "All eight scenarios; settings determined by fate. Name up to eight characters, automatic campaign saving, continue/review/erase options.",
+    "page_refs": [
+      {
+        "pdf_page_1_based": 14,
+        "printed_page": 10
+      },
+      {
+        "pdf_page_1_based": 15,
+        "printed_page": 11
+      }
+    ],
+    "scenario_score": [
+      0,
+      500
+    ],
+    "campaign_rating": [
+      0,
+      100
+    ],
+    "rank_range": [
+      "Warrant Officer",
+      "Captain"
+    ]
+  },
+  "uncertainties": [
+    {
+      "kind": "manual_internal_discrepancy",
+      "item": "BMP-2 secondary weapon",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 34,
+          "printed_page": 30
+        }
+      ],
+      "detail": "Table calls it MG, prose cannon; no external correction applied."
+    },
+    {
+      "kind": "source_unknown",
+      "item": "FST-1",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 36,
+          "printed_page": 32
+        }
+      ],
+      "detail": "Unknown specs and rumored features preserved."
+    },
+    {
+      "kind": "manual_spelling",
+      "item": "Emes / Pirmansens / Mossel",
+      "page_refs": [
+        {
+          "pdf_page_1_based": 27,
+          "printed_page": 23
+        },
+        {
+          "pdf_page_1_based": 29,
+          "printed_page": 25
+        },
+        {
+          "pdf_page_1_based": 31,
+          "printed_page": 27
+        }
+      ],
+      "detail": "Printed spellings retained rather than silently corrected to real-world geography."
+    }
+  ],
+  "joystick": {
+    "name": "Joystick",
+    "description": "Forward/backward and left/right control motion; one button stops and another fires. Button numbers unspecified.",
+    "page_refs": [
+      {
+        "pdf_page_1_based": 11,
+        "printed_page": 7
+      }
+    ]
+  }
+}

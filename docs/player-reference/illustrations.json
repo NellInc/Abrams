@@ -1,0 +1,134 @@
+{
+  "catalog_sha256": "ad808ba81ae3ad768f2d33efc20ae03fb764c5f9ddd864963f65613c0aff386f",
+  "kind": "static orthographic studies of current Modern mesh geometry",
+  "vehicles": [
+    {
+      "name": "ACRV-2",
+      "shape_index": 139,
+      "svg": "vehicle-acrv-2.svg",
+      "triangles": 1096,
+      "lines": 2,
+      "model_sha256": "f8d3fb7a86a7409dba352bb483470275b9c847595b3af3eab50666895aeda954"
+    },
+    {
+      "name": "BMP-1",
+      "shape_index": 133,
+      "svg": "vehicle-bmp-1.svg",
+      "triangles": 1032,
+      "lines": 1,
+      "model_sha256": "4c97272f05a8b59c3a5fb1fff79dbb4e0ac010ad7871890ec35c7837209ad704"
+    },
+    {
+      "name": "BMP-2",
+      "shape_index": 135,
+      "svg": "vehicle-bmp-2.svg",
+      "triangles": 1120,
+      "lines": 1,
+      "model_sha256": "e0abffe044b9b98c50a7efea7bc5faf6514fc7c908fdc43a70061ea861e93f68"
+    },
+    {
+      "name": "BRDM-2",
+      "shape_index": 141,
+      "svg": "vehicle-brdm-2.svg",
+      "triangles": 517,
+      "lines": 0,
+      "model_sha256": "ea703a1bb92514142d7f7cb683d9d9c2129ffe2af666691f00c8e8150dc2daeb"
+    },
+    {
+      "name": "BRDM-3",
+      "shape_index": 143,
+      "svg": "vehicle-brdm-3.svg",
+      "triangles": 517,
+      "lines": 0,
+      "model_sha256": "4ba65929cb2b87c2682e0ce15c8e242f14524157338af28642edeb4c521844b2"
+    },
+    {
+      "name": "BTR",
+      "shape_index": 137,
+      "svg": "vehicle-btr.svg",
+      "triangles": 770,
+      "lines": 2,
+      "model_sha256": "501270b46fa4ad216b4339f676dca365f99faef812b8f64433e4d3efdd245e0b"
+    },
+    {
+      "name": "FST-1",
+      "shape_index": 123,
+      "svg": "vehicle-fst-1.svg",
+      "triangles": 312,
+      "lines": 0,
+      "model_sha256": "d865c25cfa8bdbc6a616090824e9ce0f14912527f212c2915e42b607942a58d6"
+    },
+    {
+      "name": "M113",
+      "shape_index": 129,
+      "svg": "vehicle-m113.svg",
+      "triangles": 795,
+      "lines": 1,
+      "model_sha256": "9233706b46ec03728c47158a2585fcfd1f82c41eb15ee29021f4cd8b39fc1353"
+    },
+    {
+      "name": "M1A1 Abrams",
+      "shape_index": 125,
+      "svg": "vehicle-m1a1-abrams.svg",
+      "triangles": 1242,
+      "lines": 2,
+      "model_sha256": "3a630673d1b78a28c216827cc297bf530f7ac1360a733f221722bf75c3e1eba3"
+    },
+    {
+      "name": "M2 Bradley",
+      "shape_index": 131,
+      "svg": "vehicle-m2-bradley.svg",
+      "triangles": 986,
+      "lines": 2,
+      "model_sha256": "5b631d2aa1b8ac2fc6046c922fd63742e80c8eb36f1c80000e6f0053b7a5afe6"
+    },
+    {
+      "name": "M60A3",
+      "shape_index": 127,
+      "svg": "vehicle-m60a3.svg",
+      "triangles": 1130,
+      "lines": 0,
+      "model_sha256": "7654d1f56087e12035bcb0e0984930e3152f232ba6868c5fa1cbdf6f36b73e43"
+    },
+    {
+      "name": "Mi-24 Hind",
+      "shape_index": 163,
+      "svg": "vehicle-mi-24-hind.svg",
+      "triangles": 344,
+      "lines": 1,
+      "model_sha256": "46e473904dd4954e9e9ba3104a9bc0e5cdae9ef8d3ac956b546d66083954381f"
+    },
+    {
+      "name": "T-62",
+      "shape_index": 115,
+      "svg": "vehicle-t-62.svg",
+      "triangles": 977,
+      "lines": 1,
+      "model_sha256": "a656a1abecb259a49bc4d6d328bbd2c2d9a467eca9b8d83dfcd8144d19b230ca"
+    },
+    {
+      "name": "T-64",
+      "shape_index": 117,
+      "svg": "vehicle-t-64.svg",
+      "triangles": 1089,
+      "lines": 2,
+      "model_sha256": "5671dd4ca74ef3aff4c2a563ea65dfa529d9382c82eac59ceb5142e44f777a00"
+    },
+    {
+      "name": "T-72",
+      "shape_index": 119,
+      "svg": "vehicle-t-72.svg",
+      "triangles": 1089,
+      "lines": 2,
+      "model_sha256": "43bf6635d9ffb5c511fc34424ee6f39fb64f389fd78fec7ccbf90a7cd8a0d969"
+    },
+    {
+      "name": "T-80",
+      "shape_index": 121,
+      "svg": "vehicle-t-80.svg",
+      "triangles": 1089,
+      "lines": 2,
+      "model_sha256": "f31513def2ad6326a99f8a79cec3382e3fc47fb7819eb0e987bfbf270736aacf"
+    }
+  ]
+}

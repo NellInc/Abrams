@@ -10,49 +10,105 @@ var genesis: Button
 var dialog: FileDialog
 var import_kind := ""
 var runtime := OS.get_environment("ABRAMS_PYTHON")
+const InterfaceTheme = preload("res://scripts/pc_interface_theme.gd")
+var pc_state: Label
+var genesis_state: Label
 
 func _initialize() -> void:
     root.title = ProjectSettings.get_setting("application/config/name")
-    root.size = Vector2i(820, 640)
-    root.min_size = Vector2i(640, 550)
+    # Setup uses native-sized controls, independent of the game canvas stretch.
+    root.content_scale_size=Vector2i.ZERO
+    root.content_scale_mode=Window.CONTENT_SCALE_MODE_DISABLED
+    root.size = Vector2i(820, 700)
+    root.min_size = Vector2i(760, 660)
     root.close_requested.connect(_close)
     auto_accept_quit = false
     var background := ColorRect.new()
     background.color = Color("172126")
     background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     root.add_child(background)
+    var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+    var cover_path := directory.path_join("branding/abrams-cover-remastered.png")
+    if FileAccess.file_exists(cover_path):
+        var image := Image.load_from_file(cover_path)
+        if image!=null:
+            var cover := TextureRect.new()
+            cover.texture=ImageTexture.create_from_image(image)
+            cover.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+            cover.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
+            cover.modulate=Color(0.38,0.38,0.38,0.48)
+            cover.mouse_filter=Control.MOUSE_FILTER_IGNORE
+            cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+            root.add_child(cover)
     var margin := MarginContainer.new()
     margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     for side in ["left", "top", "right", "bottom"]:
-        margin.add_theme_constant_override("margin_" + side, 36)
+        margin.add_theme_constant_override("margin_" + side, 28)
     root.add_child(margin)
+    margin.theme=InterfaceTheme.build()
     var column := VBoxContainer.new()
-    column.add_theme_constant_override("separation", 18)
+    column.add_theme_constant_override("separation", 12)
     margin.add_child(column)
-    _label(column, root.title, 26)
-    _label(column, "Remastered by Nell Watson\nOriginal game by Dynamix\nDedicated to David “Ming” Kenny", 18)
-    _label(column, "A separate, supported original PC game is required. Choose its extracted folder. An original Genesis ROM is optional. Neither is included.", 16)
+    var header := HBoxContainer.new()
+    header.add_theme_constant_override("separation",20)
+    column.add_child(header)
+    var icon_path := directory.path_join("branding/abrams-icon.png")
+    if FileAccess.file_exists(icon_path):
+        var icon := TextureRect.new()
+        var icon_image := Image.load_from_file(icon_path)
+        if icon_image!=null: icon.texture=ImageTexture.create_from_image(icon_image)
+        icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+        icon.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+        icon.custom_minimum_size=Vector2(100,100)
+        header.add_child(icon)
+    var titles := VBoxContainer.new()
+    titles.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    header.add_child(titles)
+    _label(titles, root.title, 28)
+    var subtitle := _label(titles, "The original PC simulation, with remastered presentation.", 15)
+    subtitle.add_theme_color_override("font_color",InterfaceTheme.MUTED)
+    var pc_card := _card(column)
+    pc_state=_label(pc_card, "Original PC game · Required", 19)
+    _label(pc_card,"Choose the extracted folder containing ABRAMS.COM and SIM.EXE. Supported files are verified and copied; your source stays unchanged.",15)
+    pc = _button(pc_card, "Choose PC folder…", func(): _pick("pc"))
+    var genesis_card := _card(column)
+    genesis_state=_label(genesis_card,"Genesis presentation · Optional",19)
+    _label(genesis_card,"Add an original Genesis ROM for its artwork. Import the PC game first. Neither original game is bundled.",15)
+    genesis = _button(genesis_card, "Add Genesis ROM…", func(): _pick("genesis"))
     message = _label(column, "Checking local installation…", 16)
     message.size_flags_vertical = Control.SIZE_EXPAND_FILL
     var row := HBoxContainer.new()
     row.add_theme_constant_override("separation", 12)
     column.add_child(row)
-    pc = _button(row, "Import PC folder", func(): _pick("pc"))
-    genesis = _button(row, "Import Genesis ROM", func(): _pick("genesis"))
+    _button(row,"Keyboard controls",func(): _reference("keyboard-controls.html"))
+    _button(row,"Field guide",func(): _reference("field-guide.html"))
+    _button(row,"About",_about)
     play = _button(row, "Play", func(): _request(["--play"]))
-    var about := _button(column, "About & licences", _about)
-    about.alignment = HORIZONTAL_ALIGNMENT_LEFT
+    play.size_flags_horizontal=Control.SIZE_EXPAND_FILL
     var link := LinkButton.new()
     link.text = "View project on GitHub"
     link.pressed.connect(func(): OS.shell_open("https://github.com/NellInc/Abrams"))
     column.add_child(link)
     dialog = FileDialog.new()
+    dialog.theme=InterfaceTheme.build()
     dialog.access = FileDialog.ACCESS_FILESYSTEM
     dialog.size = Vector2i(720, 480)
     dialog.dir_selected.connect(func(path): _request(["--game", path]))
     dialog.file_selected.connect(func(path): _request(["--genesis", path]))
     root.add_child(dialog)
     _request(["--status"])
+
+func _card(parent: Node) -> VBoxContainer:
+    var panel := PanelContainer.new()
+    parent.add_child(panel)
+    var stack := VBoxContainer.new()
+    stack.add_theme_constant_override("separation",8)
+    panel.add_child(stack)
+    return stack
+
+func _reference(name: String) -> void:
+    if InterfaceTheme.open_reference(name)!=OK:
+        message.text="The offline reference is missing. Reinstall the complete application."
 
 func _label(parent: Node, text: String, size: int) -> Label:
     var label := Label.new()
@@ -113,9 +169,14 @@ func _completed(code: int, output: String, was_play: bool) -> void:
             create_timer(0.1).timeout.connect(func(): quit())
     play.disabled = not installed
     genesis.disabled = not installed
+    pc_state.text="Original PC game · Verified" if installed else "Original PC game · Required"
+    if result is Dictionary:
+        genesis_state.text="Genesis presentation · Enabled" if result.get("genesis_enabled",false) else "Genesis presentation · Optional"
 
 func _about() -> void:
     var about := AcceptDialog.new()
+    about.theme=InterfaceTheme.build()
+    about.dialog_autowrap=true
     about.title = "About " + str(ProjectSettings.get_setting("application/config/name"))
     about.dialog_text = "Remastered by Nell Watson\nOriginal game by Dynamix\nDedicated to David “Ming” Kenny\n\nIndependent, unofficial fan remaster. Original copyrights and trademarks remain with their respective rights holders. This project asserts no ownership or moral rights over the original game content and is not affiliated with or endorsed by its rights holders.\n\nRemaster contributions are free under the licences supplied in the notices folder. Original game content is required separately.\n\nhttps://github.com/NellInc/Abrams"
     root.add_child(about)

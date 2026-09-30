@@ -22,3 +22,8 @@ builds/
 # Working if: git check-ignore branding/abrams-icon.png tmp/custom-icons/abrams-app/final.png succeeds.
 /branding/*.png
 /tmp/custom-icons/
+
+# Authored player references, never the original manual.
+# Working if: these two PDFs are trackable while the original manual remains ignored.
+!/docs/player-reference/keyboard-controls.pdf
+!/docs/player-reference/field-guide.pdf

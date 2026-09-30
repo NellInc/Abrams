@@ -1,11 +1,18 @@
 # Remaster controls
 
 Open `Abrams.app` and click **Play**, or use `Play.command` in an equipped
-source checkout. The Audio, Session and Graphics menus sit outside the original
+source checkout. The Audio, Session, Graphics and Help menus sit outside the original
 display. On macOS they appear in the system menu bar. They reserve no
 original game keys; menu navigation is withheld from the game until keys are
 released. The original continues running while a menu is open. Use its pause
 control first when you need time to choose.
+
+## Player references
+
+**Help > Keyboard controls** opens the offline keyboard sheet. **Help > Scenarios
+& vehicles** opens the searchable field guide, including all eight scenarios,
+all sixteen manual vehicle entries and printable PDFs. These are also available
+from setup. Pause the original game first if you want time to read.
 
 ## Keyboard shortcuts
 

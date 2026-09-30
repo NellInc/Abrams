@@ -78,7 +78,7 @@ func advance(multiplier: int) -> void:
 func _capture() -> void:
 	exercising=true
 	check(previous_program.get("name")=="SIM" and not previous.is_empty(),"ordinary cold boot reaches SIM")
-	check(audio_menu.get_menu_count()==3,"production controls loaded")
+	check(audio_menu.get_menu_count()==4,"production controls loaded")
 	check(tandem_frame.native_graphics.loaded==not pc_only,"donor loading follows install mode")
 	check(tandem_frame.modern_available and draw_view.modern_assets.ready,"Modern assets preloaded")
 	check(draw_view.modern_prewarmed,"Modern shaders warmed before switching")
