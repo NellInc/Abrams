@@ -2,6 +2,9 @@ extends SceneTree
 ## Exact output equivalence against the pre-reuse mapping loop. No GPU needed.
 const Modern = preload("res://scripts/pc_modern_assets.gd")
 const Geometry = preload("res://scripts/pc_surface_geometry.gd")
+# This exhaustively executes both mapping implementations. Its wall-clock
+# budget accommodates a busy development machine; it is not an FPS threshold.
+const NUMERICAL_DEADLINE_MSEC := 300000
 var failures: Array[String] = []
 var checks := 0
 var compared_facets := 0
@@ -57,8 +60,8 @@ func run() -> void:
 					for phase in [NAN,0.0,37.25,-1234.5]:
 						compare(art,object,polygon,frame,Modern.PC_PALETTE,gate,phase)
 				if mode==0 and face.triangles.size()>50: cases.append([object,polygon,frame,NAN])
-			if Time.get_ticks_msec()-started>100000:
-				printerr("FAIL: 100 second numerical deadline");quit(2);return
+			if Time.get_ticks_msec()-started>NUMERICAL_DEADLINE_MSEC:
+				printerr("FAIL: numerical deadline; elapsed_msec=",Time.get_ticks_msec()-started," checks=",checks," facets=",compared_facets);quit(2);return
 	# Independently rounded original camera anchors and actual source packet palettes.
 	var path := directory.path_join("artifacts/pc-sprite-controls-02/report.json")
 	check(FileAccess.file_exists(path),"paired replay fixture missing")
