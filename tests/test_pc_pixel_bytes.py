@@ -1,7 +1,7 @@
 """Independent scalar equivalence for the bulk observer byte operations."""
 import random
 import unittest
-from tools.pc_pixel_bytes import bgrx_rect_rgb, indexed_rgb
+from tools.pc_pixel_bytes import BgrxRectProof, bgrx_rect_rgb, indexed_rgb
 
 
 class PixelBytesTests(unittest.TestCase):
@@ -15,6 +15,7 @@ class PixelBytesTests(unittest.TestCase):
                         expected = bytes(raw[((y+dy)*w+x+dx)*4+c]
                                          for dy in range(height) for dx in range(width) for c in (2,1,0))
                         self.assertEqual(bgrx_rect_rgb(raw,w,h,(x,y,width,height)),expected)
+                        self.assertTrue(BgrxRectProof(expected,w,h,(x,y,width,height)).matches(raw))
 
     def test_native_boundaries_random_rectangles_and_nonzero_x_byte(self):
         rng = random.Random(1701)
@@ -26,6 +27,11 @@ class PixelBytesTests(unittest.TestCase):
         for x,y,w,h in cases:
             expected = bytes(raw[((y+dy)*320+x+dx)*4+c] for dy in range(h) for dx in range(w) for c in (2,1,0))
             self.assertEqual(bgrx_rect_rgb(raw,320,200,(x,y,w,h)),expected)
+            proof=BgrxRectProof(expected,320,200,(x,y,w,h))
+            self.assertTrue(proof.matches(raw))
+            if w*h:
+                changed=bytearray(raw);changed[(y*320+x)*4]^=1
+                self.assertFalse(proof.matches(changed))
 
     def test_every_palette_channel_value_with_duplicate_and_shuffled_indices(self):
         pixels = bytes(range(16))*13+bytes(reversed(range(16)))
@@ -42,3 +48,21 @@ class PixelBytesTests(unittest.TestCase):
             with self.assertRaises(ValueError): bgrx_rect_rgb(raw,1,1,(0,0,1,1))
         for pixels,palette in [(bytes([16]),[[0,0,0]]*16),(b'\0',[[0,0,0]]*15),(b'\0',[[0,0]]*16)]:
             with self.assertRaises(ValueError): indexed_rgb(pixels,palette)
+
+
+    def test_compiled_proof_requires_full_current_RGB_and_keeps_X_padding_ignored(self):
+        raw=bytes((i*17)%256 for i in range(9*7*4));rect=(2,1,5,4)
+        rgb=bgrx_rect_rgb(raw,9,7,rect);proof=BgrxRectProof(rgb,9,7,rect)
+        for y in range(1,5):
+            for x in range(2,7):
+                for channel in range(4):
+                    changed=bytearray(raw);changed[(y*9+x)*4+channel]^=1
+                    self.assertEqual(proof.matches(changed),channel==3)
+        for incomplete in (rgb[:-1],rgb+b'0',b''):
+            self.assertFalse(BgrxRectProof(incomplete,9,7,rect).matches(raw))
+        for malformed in (raw[:-1],raw+b'0'):
+            with self.assertRaises(ValueError):proof.matches(malformed)
+        for invalid in ((-1,1,5,4),(2,1,8,4),(2.0,1,5,4),(2,1,-1,4)):
+            with self.assertRaises(ValueError):BgrxRectProof(rgb,9,7,invalid)
+        changed=bytearray(raw);changed[0]^=1
+        self.assertTrue(proof.matches(changed))  # Pixels outside the source run are irrelevant.

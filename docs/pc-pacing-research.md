@@ -1,5 +1,72 @@
 # Live presentation pacing
 
+## Fidelity-preserving bridge pass, 30 September 2026
+
+The host now retains at most 128 exact expected text-colour proofs. Each use
+still compares every current framebuffer RGB bit in the source rectangle.
+Palette, glyph pixels, ink mask, foreground and rectangle are part of the key.
+Current text/event metadata is returned freshly. Native BGRX padding keeps its
+previous meaning. The compiled rectangle proof removes repeated row arithmetic
+and RGB deinterleaving without approximating colours or caching a past match.
+
+Loaded cockpit bitmap decoding now expands the four independent EGA planes
+with bounded byte tables and bulk integer operations. The explicit opacity
+plane, mask polarity, descriptor/layout rejection and flags are unchanged.
+Source font validation, original execution, input cadence, one-frame requests,
+resolution, models, materials, shaders, 4x MSAA and 16x anisotropy are unchanged.
+
+The identical 1,020-frame diagnostic route made 6,021,796 Python calls before
+and 3,594,141 after, a 40.3% reduction. Alternating scalar/bulk microbenchmarks
+on all seven original cockpit struts measured 11.1x to 36.5x faster bitmap
+verification. These are CPU-work measurements, not whole-game FPS gains.
+A whole-frame Pillow decode/crop experiment was exact but slower and discarded.
+
+### Native audit-enabled probes
+
+Apple M1 Max, Godot 4.7.2 Compatibility, 1280x960 display. The real viewer's
+interactive loop was exercised with profiling, complete-packet hashing and
+frame audits enabled. Those diagnostics add work compared with ordinary Play.
+Other apps, a VM and independent build jobs remained active. No processes were
+interrupted to improve these results.
+
+| Run | Source frames | Source-frame cadence | Mean interval | p95 | p99 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Moving baseline A1 | 1,020 | 25.37 fps | 39.42 ms | 86.63 ms | 97.99 ms |
+| Moving candidate B1 | 1,020 | 21.80 fps | 45.87 ms | 104.67 ms | 153.74 ms |
+| Moving baseline A2 | 1,020 | 24.64 fps | 40.59 ms | 84.37 ms | 109.06 ms |
+| Stationary baseline | 240 | 28.32 fps | 35.31 ms | 67.93 ms | 104.35 ms |
+| Stationary candidate | 240 | 31.43 fps | 31.82 ms | 63.94 ms | 83.69 ms |
+
+The second moving candidate lost focus: only 99/1,020 samples were focused,
+with 87 input mismatches. Its receipt is retained and excluded. The intended
+ABBA comparison is incomplete. Stationary cadence improved in this probe;
+the valid moving candidate was slower. A general FPS improvement and sustained
+60fps are **not established**. These timings also cannot establish ordinary
+Play performance or historical CPU-speed calibration. Further native timing
+needs an uninterrupted foreground window and a quiet, scheduled machine.
+
+### Exactness and validation
+
+- All 1,020 complete host-route packets, RAM/video hashes and original inputs
+  equal the preceding implementation.
+- The three valid native moving runs have identical complete packets, one-frame
+  requests, final capture metadata and all four final decoded images.
+- The stationary pair has identical requests, final capture metadata and four
+  final decoded images; per-frame stationary packet hashes were not collected.
+- All 663 staged Godot files equal the current files, including assets/shaders.
+- 57 focused observer tests pass. Locked-source Python aggregate: 557 tests,
+  one skip. Source-only package contract: 91 tests, three skips, no originals.
+- Native PlayDisplay: 739 checks and 11,521,118 pixel comparisons. Native Modern:
+  159,107 checks. Both pass.
+
+Evidence: `artifacts/performance-20260930/host-final-parity.json`,
+`native-comparison.json`, `native-handback.json` and the retained logs.
+Exactly eight serial native launches exited naturally within the admitted
+25-minute slot; no Blender launch or process signal was used. The source changes
+are verified locally. Release binaries have not been rebuilt for this pass.
+
+Self-review: this pass was authored and verified in this chat.
+
 ## Playability follow-up, 28 September 2026
 
 Profiling found repeated full-font decoding in `loaded_font`. Decoding now uses

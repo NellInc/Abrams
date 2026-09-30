@@ -4,6 +4,13 @@ Pixel storage only. Bitmap selection, positioning and timing remain original.
 """
 import struct
 
+# Independent byte lanes retain the four explicit planes and explicit opacity.
+# Native byte joins/integers replace the per-pixel Python generator arithmetic.
+EGA_PLANES = tuple(tuple(bytes(((value >> (7-bit)) & 1) << plane for bit in range(8))
+                         for value in range(256)) for plane in range(4))
+EGA_OPAQUE = tuple(bytes(int(not (value & (128 >> bit))) for bit in range(8))
+                   for value in range(256))
+
 
 def decode_bitmaps(data):
     if len(data) < 2: raise ValueError('truncated bitmap directory')
@@ -38,13 +45,13 @@ def read_ega_bitmap(ram, ds, descriptor):
     mask_start = segment * 16 + mask
     if mask_start != start + plane_size * 4 or mask_start + plane_size > len(ram):
         raise ValueError('unsupported loaded EGA bitmap layout')
-    pixels, opaque = [], []
-    for y in range(height):
-        for x in range(width):
-            byte, bit = y * stride + x // 8, 128 >> (x & 7)
-            pixels.append(sum((1 << plane) if ram[start + plane * plane_size + byte] & bit else 0
-                              for plane in range(4)))
-            opaque.append(not bool(ram[mask_start + byte] & bit))
+    packed = 0
+    for plane in range(4):
+        at = start + plane * plane_size
+        expanded = b''.join(EGA_PLANES[plane][value] for value in ram[at:at+plane_size])
+        packed |= int.from_bytes(expanded, 'little')
+    pixels = list(packed.to_bytes(width*height, 'little'))
+    opaque = list(map(bool, b''.join(EGA_OPAQUE[value] for value in ram[mask_start:mask_start+plane_size])))
     return {'width': width, 'height': height, 'pixels': pixels, 'opaque': opaque, 'flags': flags}
 
 
