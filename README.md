@@ -1,4 +1,4 @@
-# Abrams Battle Tank Remaster
+# M1 Abrams Battle Tank Fan Remaster
 
 A high-resolution Godot fan remaster of Dynamix's **Abrams Battle Tank**, powered by the original PC game.
 
@@ -17,6 +17,10 @@ Colonel Wilson's office in three graphics modes. Click an image for full resolut
 | EGA | Genesis | Upscaled |
 | --- | --- | --- |
 | [![Colonel Wilson's office in original PC EGA](docs/images/colonel-ega.png)](docs/images/colonel-ega.png) | [![Colonel Wilson's office with Genesis artwork](docs/images/colonel-genesis.png)](docs/images/colonel-genesis.png) | [![Colonel Wilson's office remastered in high resolution](docs/images/colonel-upscaled.png)](docs/images/colonel-upscaled.png) |
+
+<p align="center">
+  <img src="docs/images/startup-splash.png" width="640" alt="Box-art loading screen for M1 Abrams Battle Tank Fan Remaster">
+</p>
 
 ## About
 

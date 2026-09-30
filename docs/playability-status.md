@@ -5,6 +5,25 @@ Godot renders the supported high-resolution layers and plays event-driven audio.
 The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
+## Current candidate, 30 September 2026
+
+The app is named **M1 Abrams Battle Tank Fan Remaster**. Private alpha.3 is a
+draft with native macOS ARM64, Windows x86_64 and Linux x86_64 candidates.
+Windows/Linux native build, original-free core/checkpoint, frozen setup/About
+and package-integrity gates passed. Actual PC-game playback on those two
+platforms remains unverified. macOS is Developer ID signed; Apple notarization
+is pending. Alpha.2 remains available for rollback.
+
+Two newer local changes are awaiting rebuilt packages: exact text/bitmap CPU
+optimizations and the box-art startup splash. The splash paints before asset
+preloading, yields immediately to the first valid original frame, and retains
+readable startup errors. It adds no game timer or minimum loading delay.
+
+The audit-heavy moving performance probes did not establish an FPS improvement
+or consistent 60 fps. The release-readiness pass will measure ordinary-like
+playback in a coordinated quiet window. See [the pacing evidence](pc-pacing-research.md).
+The earlier measurements below describe their dated candidates and test loads.
+
 ## Earlier standalone alpha (28 September 2026)
 
 The Apple Silicon macOS app bundles Godot and Python/Pillow. It requires the

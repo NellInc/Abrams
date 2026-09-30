@@ -2,14 +2,16 @@
 
 ## Standalone app
 
-The tester package is `Abrams.app` for Apple Silicon macOS 14 or newer. Godot and
+Native alpha candidates exist for Apple Silicon macOS 14 or newer, x86_64
+Windows 10 or newer, and x86_64 Linux with glibc 2.35 or newer. Godot and
 Python/Pillow are bundled. **Supply the original PC files; Genesis is optional.
-Neither is bundled.** Open the app, choose the PC folder, optionally add the
-Genesis ROM, then click **Play**. See [the installation guide](standalone-macos.md)
-for the supported inputs and troubleshooting.
+Neither is bundled.** Open M1 Abrams Battle Tank Fan Remaster, choose the PC
+folder, optionally add the Genesis ROM, then click Play. See the installation
+guides for [macOS](standalone-macos.md) and [Windows/Linux](standalone-portable.md).
 
-Saves and imported content live in `~/Library/Application Support/Abrams/`, outside
-the app. Close the game and back up that whole folder before upgrading. Keep the
+Saves and imported content live outside the app: `~/Library/Application Support/Abrams/`
+on macOS, `%LOCALAPPDATA%\Abrams` on Windows, and `$XDG_DATA_HOME/abrams`
+(or `~/.local/share/abrams`) on Linux. Close the game and back up that whole folder before upgrading. Keep the
 previous app, copy the new app separately and use the same profile. Each app's
 payload installs into its own `versions/<build-id>/` directory; upgrades retain
 existing content, saves and older versions.
@@ -31,8 +33,9 @@ option. No profile is automatically deleted, migrated or repaired.
 | Current supplied private native core | Local ARM64 build | Unsupported | Unsupported | Unsupported |
 | Managed gameplay launcher | macOS ARM64 dependency gate | Rejected | Rejected | Rejected |
 
-The source CI workflow is intended to run on Ubuntu. A passing source job is not
-native Linux gameplay validation. No native Windows or Linux package is supplied.
+This table describes legacy shell developer kits. The standalone Windows/Linux
+packages use separate native builders and launchers. A passing source-only job
+does not prove native gameplay on any platform.
 
 ## Legacy developer-kit installation
 
@@ -79,15 +82,12 @@ original file, use the runtime's slot validity diagnostics, and restore a known
 good whole-profile backup if necessary. Packaging tests exercise path custody;
 the save-state tests and private runtime gates exercise checkpoint validation.
 
-## Native port work still required
+## Platform acceptance
 
-The current builder and bridge use `.dylib` paths and the local ARM64 macOS build
-receipt. Renaming that library to `.so` or `.dll` does not port it. A Linux or
-Windows port needs its own toolchain build of the pinned DOSBox Pure revision,
-reviewed observer patches, platform-specific library loading and launcher paths,
-and a recorded native build receipt. It must then pass the live protocol,
-audio/video parity, complete campaign, save/load and interrupted-recovery gates
-on that operating system. Reuse the existing Python/Godot front end and source
-helpers; do not promise an installer or binary until those gates have evidence.
-Working if: every supported native platform has its own runtime acceptance report,
-and unsupported hosts still fail before loading an incompatible core.
+Windows and Linux candidates are built natively with their own pinned tracing
+core and frozen runtime. Their CI checks cover original-free core execution,
+checkpoints, setup/About, source correspondence and package integrity. Original
+PC files are never uploaded to CI. Actual game playback, graphics/audio and
+campaign outcomes on those operating systems still need equipped target-machine
+tests. Intel Macs and ARM Linux are unsupported. Consult each release's notes
+for the exact acceptance boundary.

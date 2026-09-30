@@ -30,6 +30,7 @@ var mesh_build_begin := 0
 var mesh_reuse_begin := 0
 var awaiting_profile_focus := false
 var profile_focus_since := 0
+var minimal_profile := false
 
 func _displayed() -> void:
 	if profile_begin==0 or capture_done:return
@@ -52,6 +53,7 @@ class ProbeBridge extends "res://scripts/pc_bridge.gd":
 	var last_poll_us := 0
 	var polls := 0
 	var requests: Array = []
+	var record_poll_rows := true
 	func step(frames: int, keys: Array) -> bool:
 		var now := Time.get_ticks_usec()
 		var accepted := super.step(frames,keys)
@@ -66,7 +68,7 @@ class ProbeBridge extends "res://scripts/pc_bridge.gd":
 		var before := buffered.length()
 		var messages := super.poll()
 		polls+=1
-		if enabled:
+		if enabled and record_poll_rows:
 			rows.append({"request_id":waiting_id,"polls":polls,"pending_before":was_pending,
 				"prefix_before":before,"prefix_after":buffered.length(),"messages":messages.size(),
 				"request_age_ms":(now-sent_us)/1000.0,"poll_gap_ms":(now-last_poll_us)/1000.0,
@@ -77,9 +79,11 @@ class ProbeBridge extends "res://scripts/pc_bridge.gd":
 func _initialize() -> void:
 	RenderingServer.frame_post_draw.connect(_displayed)
 	var args := OS.get_cmdline_user_args()
+	minimal_profile="--minimal-profile" in args
 	transport_probe="--transport-probe" in args or "--replay-controls" in args
 	late_dispatch="--late-dispatch" in args
 	if transport_probe: bridge=ProbeBridge.new()
+	if transport_probe: bridge.record_poll_rows=not minimal_profile
 	presentation_cache_enabled="--no-presentation-cache" not in args
 	super._initialize()
 	draw_view.profile_builds="--build-timings" in args
@@ -147,7 +151,7 @@ func _apply_sample(message: Dictionary) -> void:
 	if profile_begin!=0 and not replay_keys.is_empty() and int(message.sequence)>=warmup_sequence:
 		var index := int(message.sequence)-warmup_sequence
 		replay_input(replay_keys[index] if index<replay_keys.size() else [])
-		if profile_begin!=0:
+		if profile_begin!=0 and not minimal_profile:
 			sample_hashes.append({"sequence":int(message.sequence),"sha256":JSON.stringify(message).sha256_text(),
 				"frame_audit":message.get("frame_audit",{})})
 	# Stop before production's early one-frame dispatch at the final boundary.
@@ -251,6 +255,7 @@ func components() -> Dictionary:
 func _capture() -> void:
 	var elapsed_ms := (profile_previous-profile_begin)/1000.0
 	var summary := {"samples":profile_rows.size(),"elapsed_ms":elapsed_ms,
+		"minimal_profile":minimal_profile,"packet_hashes_enabled":not minimal_profile,
 		"replay_cycles":replay_cycles,"deadline_ms":profile_deadline_ms,
 		"effective_fps":profile_rows.size()*1000.0/elapsed_ms,"advertised_fps":fps,"interactive_clock":interactive_clock,
 		"presentation_builds":presentation_builds,"presentation_reuses":presentation_reuses,"presentation_cache_enabled":presentation_cache_enabled,

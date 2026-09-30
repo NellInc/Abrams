@@ -161,6 +161,7 @@
     "godot/tests/fixtures/pc_warning_steps.json",
     "godot/tests/pc_outline_oracle.gd",
     "godot/tests/pc_typography_pixel_oracle.gd",
+    "godot/tests/probe_pc_intro_play.gd",
     "godot/tests/profile_pc_play.gd",
     "godot/tests/test_audio.gd",
     "godot/tests/test_audio_shutdown.gd",
