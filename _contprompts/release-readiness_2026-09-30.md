@@ -300,3 +300,35 @@ Both optimized guards verified. R5c unadmitted/unlaunched, fresh output absent;
 COVENANT ordinary/M6 now own the native resource queue. No further native/map
 rendering is authorized. All requested final UI/package acceptance remains
 pending; no prior admission is reused.
+
+On coordinator admission review, R5c was refused before any native dispatch:
+configured Python executable changed, all78source/Godot/Swift pins still matched.
+Read-only workspace dependency discovery now reports bundle26.930.11008 and the
+same canonical physical python3.12 path. Actual18058560B arm64 executable hash is
+b33be71b340c3829b6610a70cf5a89123a11d0afd23bc8ec5de385b410efb43a.
+The historical1ab9f435... pin remains unchanged in old packets. Source-only R5d
+updates that runtime identity/discovery metadata and required fresh naming only;
+no interpreter/version/probe/native execution occurred during reconciliation.
+Actual proposal13386B SHA25656c7be6c0bf5a50b2d283bb1a131b4db898fc26d0a5b2c60ec49d018149a30eb;
+runner3954B SHA256049d4ae9af030906b0e8473c5350e57e8fc574176474cda62f9ba32fbd8ccdb0.
+Same78inputs/3runtimes/3argv, source/assets unchanged except runner. R5d remains
+unadmitted/unlaunched, output absent. Static optimized-refusal prefix is identical;
+new-runtime execution verification is UNRUN. COVENANT current-three owns the slot;
+a fresh actual resource admission remains required before any UI/native job.
+
+R5d was separately admitted with the reconciled configured interpreter. Actual
+three calls returned naturally0: native interface175 checks/zero errors, synthetic
+Swift preview compilation, automatic four setup/About and four embedded guide
+captures with metrics. Root read all raw logs/metrics, verified unchanged78source
+and3runtime pins and owned82833/82950/83487/88462 absent, and explicitly returned
+the resource. Handback ui-r5d-natural-handback.json3644B SHA256
+762be7ca113cef9a88f4ea01338b20cc5d8c6edbc63680edbe9a90ab87eca06c.
+No prior failure is overwritten. Final capture review confirms restored line-art,
+current model studies, labeled maps, full original creator credits and loading
+buttons. All43 WebKit command badges are24px/700; all four document views have
+711px width and scroll width. Actual unsigned synthetic bundle contains all57
+matching reference assets, including both PDFs. This is source/synthetic UI
+acceptance, never full game release, gameplay/FPS, target-OS or signed-package
+acceptance. Those earlier outcomes remain open. No active job or resource lease
+remains in this chat. Full macOS/Windows/Linux assembly and distribution still
+need the separately admitted build/package scopes; Apple notarization stays held.
