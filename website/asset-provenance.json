@@ -188,8 +188,8 @@
     {
       "file": "dist/assets/guides/field-guide.pdf",
       "source": "docs/player-reference/field-guide.pdf",
-      "source_sha256": "d65d4990e20ee78c805a8466a76ae1f7c678f14a68ab27fb9494706c0966692d",
-      "output_sha256": "d65d4990e20ee78c805a8466a76ae1f7c678f14a68ab27fb9494706c0966692d",
+      "source_sha256": "eb77db756fa377227e799b962e6c548a986314d607f023f1e0de83e9b6b8a90d",
+      "output_sha256": "eb77db756fa377227e799b962e6c548a986314d607f023f1e0de83e9b6b8a90d",
       "kind": "Authored illustrated field guide with eight NATO/manual and extracted PC-data map pairs"
     }
   ]
