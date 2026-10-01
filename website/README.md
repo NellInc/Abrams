@@ -33,4 +33,6 @@ search engines, not by the deployment check.
 Polished website map PNGs and exact generation prompts are in artwork/maps.
 All eight maps share the approved NATO-inspired treatment. The matching field-guide PDF, including side-by-side manual and extracted PC game-data maps, is served from assets/guides/field-guide.pdf. Source originals remain unchanged.
 
-Run `python3 verify.py` and `node --check dist/app.js` before publishing.
+All eight scenario maps load and decode in the background at low network priority. Mission selection reuses the decoded image directly; failed preloads remain retryable.
+
+Run `python3 verify.py`, `node --check dist/app.js` and `node test-maps.cjs` before publishing.

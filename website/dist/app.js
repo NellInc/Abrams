@@ -45,11 +45,47 @@ document.querySelectorAll('input[name="graphics"]').forEach(input => {
   });
 });
 
-const mapImage = document.querySelector("#scenario-image");
+let mapImage = document.querySelector("#scenario-image");
 const mapPanel = document.querySelector("#map-panel");
 const mapStatus = document.querySelector("#map-status");
 const mapFull = document.querySelector("#map-full");
+const mapLinks = [...document.querySelectorAll("[data-scenario]")];
+const mapImages = new Map();
+const initialMapSource = mapImage.src;
 let mapSequence = 0;
+
+function showMapImage(image, alt) {
+  image.id = mapImage.id;
+  image.width = mapImage.width;
+  image.height = mapImage.height;
+  image.alt = alt;
+  if (image !== mapImage) {
+    mapImage.replaceWith(image);
+    mapImage = image;
+  }
+}
+
+function loadMap(src) {
+  if (mapImages.has(src)) return mapImages.get(src);
+  const image = new Image();
+  image.decoding = "async";
+  image.fetchPriority = "low";
+  image.src = src;
+  const ready = image.decode().then(() => image).catch(error => {
+    mapImages.delete(src);
+    throw error;
+  });
+  mapImages.set(src, ready);
+  return ready;
+}
+
+// Warm every mission immediately, behind the hero and font requests. Keep the
+// decoded image nodes so selecting a map never relies on another cache lookup.
+mapLinks.forEach(link => {
+  loadMap(link.href).then(image => {
+    if (mapSequence === 0 && link.href === initialMapSource) showMapImage(image, mapImage.alt);
+  }).catch(() => {});
+});
 
 async function enableMaps() {
   let scenarios;
@@ -61,7 +97,7 @@ async function enableMaps() {
     mapStatus.textContent = "Select a mission to open its full-size map.";
     return;
   }
-  document.querySelectorAll("[data-scenario]").forEach(link => {
+  mapLinks.forEach(link => {
     link.addEventListener("click", async event => {
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       const scenario = scenarios.find(item => item.slug === link.dataset.scenario);
@@ -71,10 +107,9 @@ async function enableMaps() {
       mapStatus.textContent = `Loading ${scenario.name}…`;
       mapPanel.setAttribute("aria-busy", "true");
       try {
-        await loadImage(link.href);
+        const image = await loadMap(link.href);
         if (sequence !== mapSequence) return;
-        mapImage.src = link.href;
-        mapImage.alt = `Restored manual map of ${scenario.name}, showing its roads, terrain, river crossings and marked positions.`;
+        showMapImage(image, `Restored manual map of ${scenario.name}, showing its roads, terrain, river crossings and marked positions.`);
         mapFull.href = link.href;
         mapFull.setAttribute("aria-label", `Open full-size restored map of ${scenario.name}`);
         document.querySelectorAll("[data-brief]").forEach(brief => {
@@ -82,7 +117,7 @@ async function enableMaps() {
         });
         document.querySelector("#map-open-link").href = link.href;
         document.querySelector("#map-caption").textContent = scenario.name;
-        document.querySelectorAll("[data-scenario]").forEach(item => item.removeAttribute("aria-current"));
+        mapLinks.forEach(item => item.removeAttribute("aria-current"));
         link.setAttribute("aria-current", "true");
         mapStatus.textContent = `${scenario.name} map selected.`;
       } catch {
