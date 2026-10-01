@@ -34,3 +34,7 @@ builds/
 # Public authored guide, never the source manual.
 # Working if: this one website PDF is trackable and source PDFs remain ignored.
 !/website/dist/assets/guides/field-guide.pdf
+
+# The authored controls PDF belongs beside the authored field guide.
+# Working if: these two website PDFs are trackable; the original manual remains ignored.
+!/website/dist/assets/guides/keyboard-controls.pdf

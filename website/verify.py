@@ -74,7 +74,7 @@ def main():
     if set(page.briefs) != {s["slug"] for s in scenarios} or len(page.briefs) != 8:
         errors.append("All eight mission briefs must be in the delivered HTML")
     provenance = json.loads((ROOT / "asset-provenance.json").read_text())
-    raster_files = {str(p.relative_to(ROOT)) for p in DIST.rglob("*") if p.suffix in {".webp", ".jpg"}}
+    raster_files = {str(p.relative_to(ROOT)) for p in DIST.rglob("*") if p.suffix in {".webp", ".jpg", ".png"}}
     if raster_files != {r["file"] for r in provenance["rasters"]}:
         errors.append("Raster provenance does not cover the served inventory")
     for row in provenance["rasters"] + provenance["media"] + provenance["documents"]:
@@ -83,7 +83,7 @@ def main():
             errors.append(f"Asset differs from recorded provenance: {asset.name}")
         if asset.suffix == ".webp" and not asset.with_suffix(asset.suffix + ".json").is_file():
             errors.append(f"Missing origin sidecar: {asset.name}")
-    permitted = {".html", ".css", ".js", ".json", ".webp", ".jpg", ".ttf", ".txt", ".mp4", ".vtt", ".xml", ".pdf"}
+    permitted = {".html", ".css", ".js", ".json", ".webp", ".jpg", ".png", ".svg", ".ttf", ".txt", ".mp4", ".vtt", ".xml", ".pdf"}
     for path in DIST.rglob("*"):
         if path.is_symlink():
             errors.append(f"Symbolic link in publication artifact: {path.name}")
@@ -110,8 +110,24 @@ def main():
     if "Starts muted" in html or "Download the trailer" in html or "nodownload" in html:
         errors.append("Trailer download controls must remain native to the player")
     documents = {str(p.relative_to(ROOT)) for p in DIST.rglob("*.pdf")}
-    if documents != {r["file"] for r in provenance["documents"]} or documents != {"dist/assets/guides/field-guide.pdf"}:
-        errors.append("Only the authored field guide may be published as a PDF")
+    expected_documents = {"dist/assets/guides/field-guide.pdf", "dist/assets/guides/keyboard-controls.pdf"}
+    if documents != {r["file"] for r in provenance["documents"]} or documents != expected_documents:
+        errors.append("Only the two authored player-reference PDFs may be published")
+    reference_block = re.search(r'<div class="reference-downloads".*?</div>', html, re.S)
+    if not reference_block:
+        errors.append("Missing prominent player-reference download buttons")
+    else:
+        references = Page()
+        references.feed(reference_block[0])
+        expected_links = {"assets/guides/field-guide.pdf", "assets/guides/keyboard-controls.pdf"}
+        if len(references.refs) != 2 or {urlsplit(r).path for r in references.refs} != expected_links or reference_block[0].count('download=') != 2:
+            errors.append("Reference buttons must download the two authored PDFs")
+    for favicon in ('href="favicon.svg"', 'href="favicon-32.png"', 'href="apple-touch-icon.png"'):
+        if favicon not in html:
+            errors.append("Missing star favicon format: " + favicon)
+    star = ET.parse(DIST / "favicon.svg").getroot()
+    if not star.findall("{http://www.w3.org/2000/svg}circle") or not star.findall("{http://www.w3.org/2000/svg}path"):
+        errors.append("Favicon must retain the black disc and white star")
     canonical = "https://abramsremastered.com/"
     if page.canonical != canonical or page.metas.get("og:url") != canonical:
         errors.append("Canonical and sharing URLs must match the published project path")

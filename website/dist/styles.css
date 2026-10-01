@@ -156,3 +156,9 @@ code{font-size:.875em;color:var(--paper);overflow-wrap:anywhere}
 .platform-downloads{display:grid;gap:12px;margin-top:28px;max-width:470px}
 .platform-downloads .button{margin:0}
 @media(max-width:800px){.platform-downloads{max-width:none}}
+
+.reference-downloads{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:470px;margin-top:24px}
+.reference-downloads .button{margin:0;padding:19px 20px;height:100%;justify-content:flex-start}
+.reference-downloads .button span+span{color:var(--muted)}
+@media(max-width:800px){.reference-downloads{max-width:none}}
+@media(max-width:360px){.reference-downloads{grid-template-columns:1fr}}

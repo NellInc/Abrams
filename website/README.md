@@ -35,4 +35,9 @@ All eight maps share the approved NATO-inspired treatment. The matching field-gu
 
 All eight scenario maps load and decode in the background at low network priority. Mission selection reuses the decoded image directly; failed preloads remain retryable.
 
+The download section offers large Keyboard controls and Field guide buttons.
+Both PDFs are authored remaster references; the original manual stays private.
+The field guide has one paired-map spread per scenario. Neither PDF contains game files. The favicon
+uses the title emblem's white star on a black disc, with SVG and PNG editions.
+
 Run `python3 verify.py`, `node --check dist/app.js` and `node test-maps.cjs` before publishing.

@@ -168,6 +168,22 @@
       "output_sha256": "1882e19331c1d3832707445d016f8789eaa90ba157e3a164cb331dfc770c2b42",
       "origin": "Actual frame extracted at 3.4 seconds from the accepted v4 project trailer.",
       "conversion": "1920\u00d71080, full frame; WebP quality 94 or JPEG q:v 2."
+    },
+    {
+      "file": "dist/favicon-32.png",
+      "source": "website/dist/favicon.svg",
+      "source_sha256": "59c43f0bfe10798d6654ec2fb6dae0efa14000d2a57deba9d32bb26288e872bd",
+      "output_sha256": "d8b312adbb41e837eb1b24bc19b804a0704ae9c1355ac569706e1730990e3976",
+      "origin": "Clean vector rendition of the white star on a black disc from the approved Abrams title emblem.",
+      "conversion": "32\u00d732 PNG, eight-times supersampled from the same vector geometry."
+    },
+    {
+      "file": "dist/apple-touch-icon.png",
+      "source": "website/dist/favicon.svg",
+      "source_sha256": "59c43f0bfe10798d6654ec2fb6dae0efa14000d2a57deba9d32bb26288e872bd",
+      "output_sha256": "84e809a3a6acb254b155ed07b405b15726e2d7b28d36c0e2417be72902527c65",
+      "origin": "Clean vector rendition of the white star on a black disc from the approved Abrams title emblem.",
+      "conversion": "180\u00d7180 PNG, eight-times supersampled from the same vector geometry."
     }
   ],
   "media": [
@@ -191,6 +207,13 @@
       "source_sha256": "eb77db756fa377227e799b962e6c548a986314d607f023f1e0de83e9b6b8a90d",
       "output_sha256": "eb77db756fa377227e799b962e6c548a986314d607f023f1e0de83e9b6b8a90d",
       "kind": "Authored illustrated field guide with eight NATO/manual and extracted PC-data map pairs"
+    },
+    {
+      "file": "dist/assets/guides/keyboard-controls.pdf",
+      "source": "docs/player-reference/keyboard-controls.pdf",
+      "source_sha256": "2e070a255d8a508e894b32830258dadc097d53b7e0ba8f9bdeab33074b55a8d0",
+      "output_sha256": "2e070a255d8a508e894b32830258dadc097d53b7e0ba8f9bdeab33074b55a8d0",
+      "kind": "Authored three-page remaster keyboard-controls reference."
     }
   ]
 }
