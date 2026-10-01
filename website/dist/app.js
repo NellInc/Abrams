@@ -77,9 +77,10 @@ async function enableMaps() {
         mapImage.alt = `Restored manual map of ${scenario.name}, showing its roads, terrain, river crossings and marked positions.`;
         mapFull.href = link.href;
         mapFull.setAttribute("aria-label", `Open full-size restored map of ${scenario.name}`);
-        document.querySelector("#scenario-name").textContent = scenario.name;
-        document.querySelector("#scenario-description").textContent = scenario.description;
-        document.querySelector("#scenario-objective").textContent = scenario.objective;
+        document.querySelectorAll("[data-brief]").forEach(brief => {
+          brief.hidden = brief.dataset.brief !== scenario.slug;
+        });
+        document.querySelector("#map-open-link").href = link.href;
         document.querySelector("#map-caption").textContent = scenario.name;
         document.querySelectorAll("[data-scenario]").forEach(item => item.removeAttribute("aria-current"));
         link.setAttribute("aria-current", "true");
@@ -94,3 +95,10 @@ async function enableMaps() {
   });
 }
 enableMaps();
+
+const trailer = document.querySelector("#trailer-player");
+// Keep initial playback quiet. The visitor can unmute using native controls.
+trailer.muted = true;
+trailer.addEventListener("error", () => {
+  document.querySelector("#trailer-caption").textContent = "The trailer could not load. Use the download link below to watch it.";
+});
