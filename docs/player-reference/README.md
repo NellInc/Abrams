@@ -23,11 +23,14 @@ M113, M1A1 Abrams, M2 Bradley and M60A3 are friendly units.
 
 Fourteen restored side-view drawings retain the manual's original silhouettes.
 Each vehicle also has a study of its current Modern model.
-All eight manual maps are colour-restored in a consistent ivory, blue and olive
-style and accompany the eight north-up terrain maps.
+All eight manual maps are redrawn in a consistent NATO-style cartographic
+language. Each scenario has a landscape PDF comparison page pairing its manual
+map and extracted PC game-data map side by side. The preceding portrait page
+retains a larger manual map and the complete briefing. HTML pairs the maps in
+responsive columns.
 The terrain maps use the original PC world's terrain placement and
 geometry. They show static geography; moving units and objectives are omitted.
-HTML and PDF keep the diagrams vector. The native reader uses matching
+The extracted terrain diagrams remain vector in HTML and PDF. The native reader uses matching
 2400-pixel editions, preserving the compass and legend lettering.
 
 Original creator names and roles are transcribed from the original PC intro

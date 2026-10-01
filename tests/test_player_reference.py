@@ -112,7 +112,7 @@ class PlayerReference(unittest.TestCase):
         self.assertEqual(row['caption'],'Remastered manual map')
         provenance=json.loads((REF/'manual-maps-provenance.json').read_text())
         restored=next(r for r in provenance['maps'] if r['name']=='the-mossel-defense')
-        expected='6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6'
+        expected='c12045bb2985854396164e839821cd6e7abb37c0463af82bc4394a1b343761cb'
         self.assertEqual(restored['output_sha256'],expected)
         self.assertEqual(restored['restoration_source_sha256'],expected)
         self.assertEqual(restored['source_crop_sha256'],'aa85012ec5c429d89369aa54ff0fbbb4c5f249b35360c8a49d6316079a8fb9a2')
@@ -141,7 +141,7 @@ class PlayerReference(unittest.TestCase):
         visuals=json.loads((REF/'visuals.json').read_text())
         provenance=json.loads((REF/'manual-maps-provenance.json').read_text())
         by_file={r['file']:r for r in provenance['maps']}
-        style='6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6'
+        style='c12045bb2985854396164e839821cd6e7abb37c0463af82bc4394a1b343761cb'
         self.assertEqual(len(visuals['manual_maps']),8)
         for row in visuals['manual_maps']:
             self.assertEqual(row['caption'],'Remastered manual map')
@@ -165,6 +165,41 @@ class PlayerReference(unittest.TestCase):
         self.assertIn("parser.add_argument('--field-guide-only'",source)
         self.assertIn('if args.field_guide_only:',source)
         self.assertIn("outputs=['field-guide.pdf'] if args.field_guide_only",source)
+
+    @unittest.skipUnless((REF/'field-guide.html').exists(), 'Generated private assets are outside the source-only kit')
+    def test_scenario_html_pairs_the_two_maps(self):
+        text=(REF/'field-guide.html').read_text()
+        self.assertEqual(text.count('<div class="scenario-map-pair">'),8)
+        pairs=text.split('<div class="scenario-map-pair">')[1:]
+        for mission,pair in zip(DATA['missions'],pairs):
+            markup=pair.split('</div>',1)[0]
+            self.assertIn('manual-map-',markup)
+            self.assertIn('scenario-',markup)
+            self.assertEqual(markup.count('<figure '),2)
+            self.assertIn(mission['name'],markup)
+
+    @unittest.skipUnless((REF/'field-guide.pdf').exists(), 'Generated private assets are outside the source-only kit')
+    def test_pdf_scenario_pairs_share_landscape_pages(self):
+        try:
+            from pypdf import PdfReader
+        except ImportError:
+            self.skipTest('PDF authoring dependency pypdf is unavailable')
+        pages=PdfReader(REF/'field-guide.pdf').pages
+        self.assertEqual(len(pages),39)
+        for index,mission in enumerate(DATA['missions']):
+            brief,pair=pages[2+index*2],pages[3+index*2]
+            self.assertLess(brief.mediabox.width,brief.mediabox.height)
+            self.assertGreater(pair.mediabox.width,pair.mediabox.height)
+            self.assertIn(mission['name'],pair.extract_text())
+            self.assertIn('NATO-style manual map',pair.extract_text())
+            self.assertIn('Extracted PC game-data map',pair.extract_text())
+            self.assertIn(mission['primary_objective'],' '.join(brief.extract_text().split()))
+            # The NATO raster and extracted vector drawing occupy separate columns.
+            images=[obj.get_object() for obj in pair['/Resources']['/XObject'].values()
+                    if obj.get_object().get('/Subtype')=='/Image']
+            self.assertTrue(images)
+            self.assertIn(' re',pair.get_contents().get_data().decode('latin1'))
+        self.assertTrue(all(page.mediabox.width<page.mediabox.height for page in pages[18:]))
 
     def test_reader_copy_is_concise_and_credit_is_fan_remastered(self):
         author=(ROOT/'tools/build_player_reference.py').read_text()

@@ -6,7 +6,7 @@ The portable alpha bundles Godot, Python/Pillow and a native tracing core. No se
 
 ## Install and play
 
-1. Download the package for your platform from [GitHub Releases](https://github.com/NellInc/Abrams/releases). Releases are available to repository members.
+1. Download the package for your platform from [GitHub Releases](https://github.com/NellInc/Abrams/releases). Choose the Windows or Linux x86_64 archive and its release checksums.
 2. Extract the whole archive into a writable folder. Keep the folder structure intact.
 3. On Windows, open **M1 Abrams Battle Tank Fan Remaster.exe**. **M1 Abrams Battle Tank Fan Remaster.cmd** is a diagnostic fallback. On Linux, run **M1 Abrams Battle Tank Fan Remaster.sh** from the extracted folder. If your extractor removed executable permissions, run `chmod +x "M1 Abrams Battle Tank Fan Remaster.sh" runtime/AbramsRuntime/AbramsRuntime renderer/AbramsRenderer` there.
 4. Choose **Import PC folder** and select the complete extracted PC game folder containing `ABRAMS.COM`, `SIM.EXE` and its data files.
