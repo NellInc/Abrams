@@ -87,6 +87,28 @@ finding remains.
 
 NellInc/Abrams is now PUBLIC, confirmed by GitHub metadata and anonymous HTTP
 200; its homepage points to Pages. No draft release or notarization was changed.
-Remaining gate: scoped commit/cherry-pick, Pages/source CI terminal result and
-matching served bytes.
+## Completion
+
+LIVE, VERIFIED IN SERVED BYTES at https://nellinc.github.io/Abrams/.
+Website build commit on main: 86f3eabf94e23ef4412bee43be7641ac30e0d263.
+Reviewed dist tree: 2aabba946be5ebccfe9ed04db212c9e77e39df9e.
+Both website commits are also pushed on codex/modern-lowpoly, with unrelated
+game-development changes preserved there.
+
+Pages run 36888125308 and main source safeguards run 36888125222 both completed
+successfully. Development source safeguards run 36888051003 passed too. Root's
+live GET verification checked all 44 served files, totaling 27,235,921 bytes:
+every status was 200 and every SHA256 exactly matched the local approved file.
+The actual public page decoded the 1920×1080, 60-second trailer, showed all 31
+English caption cues and remained muted. Live map selection/full-size linking
+passed, with no browser errors. Anonymous macOS download follows to HTTP 200,
+with the correct 254,206,803-byte content length; public checksums match audited
+local release archives. The repo is public and its homepage points to Pages.
+
+Only website/workflow/task-state changes were integrated onto main. No raw PC
+or Genesis game, draft release publication, signing/notarization, game benchmark
+or unrelated process intervention was included. Review receipts are local,
+ignored development artifacts. The supplied WebVTT was preserved byte-for-byte.
+
+No requested website outcome remains open.
 Prior game-release/notarization holds remain unchanged.
