@@ -185,21 +185,25 @@ class PlayerReference(unittest.TestCase):
         except ImportError:
             self.skipTest('PDF authoring dependency pypdf is unavailable')
         pages=PdfReader(REF/'field-guide.pdf').pages
-        self.assertEqual(len(pages),39)
+        self.assertEqual(len(pages),31)
+        headings=[page.extract_text().splitlines()[1] for page in pages]
         for index,mission in enumerate(DATA['missions']):
-            brief,pair=pages[2+index*2],pages[3+index*2]
-            self.assertLess(brief.mediabox.width,brief.mediabox.height)
+            pair=pages[2+index]
             self.assertGreater(pair.mediabox.width,pair.mediabox.height)
-            self.assertIn(mission['name'],pair.extract_text())
-            self.assertIn('NATO-style manual map',pair.extract_text())
-            self.assertIn('Extracted PC game-data map',pair.extract_text())
-            self.assertIn(mission['primary_objective'],' '.join(brief.extract_text().split()))
+            text=' '.join(pair.extract_text().split())
+            self.assertIn(mission['name'],text)
+            self.assertIn('NATO-style manual map',text)
+            self.assertIn('Extracted PC game-data map',text)
+            for key in ['description','primary_objective','secondary_objective','restriction']:
+                if mission.get(key):self.assertIn(mission[key],text)
+            for hazard in mission.get('hazards',[]):self.assertIn(hazard,text)
+            self.assertEqual(headings.count(mission['name']),1)
             # The NATO raster and extracted vector drawing occupy separate columns.
             images=[obj.get_object() for obj in pair['/Resources']['/XObject'].values()
                     if obj.get_object().get('/Subtype')=='/Image']
-            self.assertTrue(images)
+            self.assertEqual(len(images),1)
             self.assertIn(' re',pair.get_contents().get_data().decode('latin1'))
-        self.assertTrue(all(page.mediabox.width<page.mediabox.height for page in pages[18:]))
+        self.assertTrue(all(page.mediabox.width<page.mediabox.height for page in pages[10:]))
 
     def test_reader_copy_is_concise_and_credit_is_fan_remastered(self):
         author=(ROOT/'tools/build_player_reference.py').read_text()

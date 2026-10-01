@@ -327,28 +327,29 @@ def field_pdf(data,catalog,shapes):
     b.page('Original creators')
     credits_pdf(b,32,b.h-138,b.w-64)
     for row in data['missions']:
-        b.page(row['name'])
-        y=b.h-123
         map_row=visual(row['name'],'manual_maps')
-        y=pdf_image(b,map_row['file'],32,y,b.w-64,360)
-        y=b.para(ESC(map_row['caption']),32,y-8,b.w-64,9,'#4c5a5e')
-        y=b.para(ESC(row['description']),32,y-14,b.w-64,11)
-        y=b.para('<b>Objective:</b> '+ESC(row['primary_objective']),32,y-6,b.w-64,12)
-        for key in ['secondary_objective','restriction']:
-            if row.get(key):y=b.para(ESC(row[key]),32,y,b.w-64,11)
-        if row.get('hazards'):y=b.para('<b>Watch for:</b> '+ESC(' '.join(row['hazards'])),32,y,b.w-64,10)
-        b.para(refs(row),32,y-8,b.w-64,9,'#4c5a5e')
         b.page(row['name'],landscape(A4))
+        b.c.setFont('Helvetica',9);b.c.setFillColor(HexColor(CREAM))
+        b.c.drawRightString(b.w-32,b.h-64,refs(row))
         gap=24;column=(b.w-64-gap)/2
-        top=b.h-126;image_top=top-22;image_height=330
+        top=b.h-117;image_top=top-23;image_height=300
         b.heading('NATO-style manual map',32,top,21)
         b.heading('Extracted PC game-data map',32+column+gap,top,21)
         pdf_image(b,map_row['file'],32,image_top,column,image_height)
         terrain=visual(row['name'],'maps')
         pdf_image(b,terrain['file'],32+column+gap,image_top,column,image_height)
-        y=image_top-image_height-12
-        b.para('Manual scenario geography and tactical symbols.',32,y,column,9,'#4c5a5e')
-        b.para('Original PC terrain geometry. Moving units and objectives are omitted.',32+column+gap,y,column,9,'#4c5a5e')
+        y=image_top-image_height-10
+        left=b.para('Manual scenario geography and tactical symbols.',32,y,column,9,'#4c5a5e')
+        right=b.para('Original PC terrain geometry. Moving units and objectives are omitted.',32+column+gap,y,column,9,'#4c5a5e')
+        divider=min(left,right)-5
+        b.c.setStrokeColor(HexColor('#bbc0ba'));b.c.line(32,divider,b.w-32,divider)
+        y=divider-8
+        b.para(ESC(row['description']),32,y,column,11)
+        objectives='<b>Objective:</b> '+ESC(row['primary_objective'])
+        for key in ['secondary_objective','restriction']:
+            if row.get(key):objectives+='<br/>'+ESC(row[key])
+        if row.get('hazards'):objectives+='<br/><b>Watch for:</b> '+ESC(' '.join(row['hazards']))
+        b.para(objectives,32+column+gap,y,column,11)
     for row in data['vehicles']:
         b.page(row['name'])
         y=b.h-123

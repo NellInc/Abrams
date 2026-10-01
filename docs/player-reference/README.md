@@ -12,7 +12,7 @@ while a reference is open, so pause first when needed.
 * **Original credits:** the original game's creators, studio and publisher,
   with the remaster contribution credited separately.
 
-The three-page keyboard PDF and 39-page field-guide PDF are bundled beside the
+The three-page keyboard PDF and 31-page field-guide PDF are bundled beside the
 HTML editions. Players need no local server or original manual.
 
 ## Illustrations and sources
@@ -24,9 +24,9 @@ M113, M1A1 Abrams, M2 Bradley and M60A3 are friendly units.
 Fourteen restored side-view drawings retain the manual's original silhouettes.
 Each vehicle also has a study of its current Modern model.
 All eight manual maps are redrawn in a consistent NATO-style cartographic
-language. Each scenario has a landscape PDF comparison page pairing its manual
-map and extracted PC game-data map side by side. The preceding portrait page
-retains a larger manual map and the complete briefing. HTML pairs the maps in
+language. Each scenario has one landscape PDF page pairing its manual
+map and extracted PC game-data map side by side, with the complete briefing
+and objectives below. HTML pairs the maps in
 responsive columns.
 The terrain maps use the original PC world's terrain placement and
 geometry. They show static geography; moving units and objectives are omitted.
