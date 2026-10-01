@@ -19,7 +19,7 @@ A high-resolution Godot fan remaster of Dynamix's **Abrams Battle Tank**, powere
 
 Original game copyright 1988, 1989 Dynamix, Inc. The original intro credits are retained. The full credits also appear in About and the offline player guides.
 
-**Remastered by Nell Watson.**
+**Fan Remastered by Nell Watson.**
 
 ## Artwork and screenshots
 
@@ -52,7 +52,7 @@ The two run in tandem: the original PC executables run inside DOSBox Pure, while
 * Instant switching between **EGA**, **Genesis**, **Upscaled** and the experimental **Modern** graphics.
 * Sample-based sound effects, new music arrangements and generative crew speech, with separate volume controls.
 * Five save-state slots, quick save/load and **Undo last load**, alongside the original campaign saves.
-* **2x, 4x and 8x fast forward**, with sound muted during accelerated play.
+* **8x fast forward, toggled with Tab**, with sound muted during accelerated play.
 * Resizable windows and fullscreen, preserving the complete 4:3 display.
 * **4× MSAA and 16× anisotropic filtering** for remastered scenery, adjustable in Graphics.
 
@@ -82,7 +82,7 @@ These are alpha packages. macOS notarization is pending; Windows signing is not 
 | Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
 | Cycle graphics | **Cmd+G** | **Ctrl+Alt+G** |
 
-The **Session** menu provides all five save slots and fast-forward speeds. **Graphics** selects a mode directly; **Audio** controls the mix. **Help** opens the in-app keyboard sheet, searchable scenario/vehicle field guide and original credits. The loading screen and setup offer the same offline guides. Printable PDFs are bundled, with larger, bold command labels, restored manual side views, Modern model studies and maps drawn from the original PC terrain. On macOS these are in the system menu bar. The game continues while a remaster menu is open, so pause first when needed. Original game controls remain unchanged.
+The **Session** menu provides all five save slots and normal/8x speed. **Graphics** selects a mode directly; **Audio** controls the mix. **Help** opens the in-app keyboard sheet, searchable scenario/vehicle field guide and original credits. The loading screen and setup offer the same offline guides. Printable PDFs are bundled, with larger, bold command labels, restored manual side views, Modern model studies and original manual maps alongside maps drawn from the original PC terrain. On macOS these are in the system menu bar. The game continues while a remaster menu is open, so pause first when needed. Original game controls remain unchanged.
 
 Save states restore both the running game and campaign disk. New checkpoints also preserve the remastered display. Saves live outside the app in the platform's player profile. Back up the whole profile before upgrading; checkpoints require a compatible core and game edition. See [controls and save behaviour](docs/play-controls.md).
 

@@ -1,7 +1,7 @@
 {
   "scope": "Eight source-verified warnings/outcome calls from nine original assignment blocks. Portrait-index casting is authored. Eligibility, timing and live occurrence remain separately verified. Speech requires the complete pixel-verified original displayed message.",
   "status": "Automated wording checked; digit delivery checked where required; human listening review pending",
-  "script_sha256": "37cf3392a70cd3d0b84a9468690b5422edeccca69fefb1be20b0db9dc84b5301",
+  "script_sha256": "abb60f34222ef3952bb25ed9d9601948ae039194bf5c44667c46f47bec710017",
   "voices": {
     "pc_out_of_fuel": {
       "role": "pc_crew_2",
@@ -31,23 +31,29 @@
       "voice": "Algenib",
       "text": "Engine is overheating",
       "performed_text": "Engine is overheating",
-      "direction": "A low, slightly gravelly and matter-of-fact American tank crew member on a close dry intercom microphone. No recording artefacts or background noise. A concise, intelligible operational warning to the tank commander. Firm and urgent, without panic. Read exactly the supplied words. No extra words, vocal noises, radio effects, music or ambience.",
+      "direction": "Urgent American tank-driver warning. Clean dry close intercom voice. Immediately alert the commander to a dangerous mechanical problem, with real alarm, force and insistence. Clearly articulate the first word ENGINE as EN-jin, sharply stressed, then is OVERHEATING with rising concern and a decisive ending. Maintain the Algenib low gravelly identity, but never mumble or swallow the first consonants. Compact natural pace, fully intelligible. No extra words, gasps, shouting distortion, radio noise, music or ambience. Say exactly the supplied three words.",
       "generator": "gemini-3.8-flash-tts",
       "sample_rate": 24000,
       "channels": 1,
       "bits_per_sample": 16,
-      "sample_frames": 38400,
-      "duration_seconds": 1.6,
-      "sha256": "9e4ddc9901231289db411e0f24869154dd9f7705f8ad3d89f37a6cbd162a2d5b",
-      "source_master": "local-audio/pc-warning-gemini-3.8-v1/voice_pc_engine_overheating.wav",
-      "processing": "Unmodified generated dry master",
+      "sample_frames": 40320,
+      "duration_seconds": 1.68,
+      "sha256": "d13d94d6942c74fd775d19583a0c47f03461196a94f038a909484cdc9645ab01",
+      "source_master": "artifacts/promo-20260930-v4/motion/media/driver-overheating-urgent-clear-v4-dry.wav",
+      "processing": "Unmodified generated dry master; Nell-authorized urgent retake",
       "transcript_qa": {
         "transcript": "Engine is overheating.",
         "expected": "Engine is overheating",
         "normalized_match": true,
-        "audio_sha256": "9e4ddc9901231289db411e0f24869154dd9f7705f8ad3d89f37a6cbd162a2d5b"
+        "audio_sha256": "d13d94d6942c74fd775d19583a0c47f03461196a94f038a909484cdc9645ab01"
       },
-      "number_delivery_qa": null
+      "number_delivery_qa": null,
+      "generation_receipt": "artifacts/promo-20260930-v4/driver-overheating-urgent-clear-v4-receipt.json",
+      "actual_audio_review": {
+        "path": "artifacts/promo-20260930-v4/driver-encoded-av-urgency-review-receipt.json",
+        "sha256": "17b4704641490efbfeb2757d5ae1abccb002dd17551dacdf878b143a81df2e2e",
+        "verdict": "accepted by actual encoded-AV reviewer; not human listening"
+      }
     },
     "pc_assigned_area": {
       "role": "pc_crew_0",

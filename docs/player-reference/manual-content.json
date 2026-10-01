@@ -1934,6 +1934,13 @@
       "stations": [
         "remaster"
       ]
+    },
+    {
+      "name": "Tab",
+      "description": "Toggle 8x fast forward / normal speed. Audio is muted at 8x.",
+      "stations": [
+        "remaster"
+      ]
     }
   ]
 }

@@ -198,7 +198,7 @@ func visual_path(file: String) -> String:
 	if file.get_extension().to_lower() not in ["png","svg"]:return ""
 	var folder := DirAccess.open(directory)
 	if folder==null or folder.is_link(file):return ""
-	for group in ["maps","wireframes","models"]:
+	for group in ["manual_maps","maps","wireframes","models"]:
 		for entry in visuals.get(group,[]):
 			if entry is Dictionary and file in [entry.get("file"),entry.get("native_file")]:
 				var path := directory.path_join(file)
@@ -206,7 +206,7 @@ func visual_path(file: String) -> String:
 	return ""
 
 func _visuals(parent: Node, entry_name: String) -> void:
-	for group in ["maps","wireframes","models"]:
+	for group in ["manual_maps","maps","wireframes","models"]:
 		for entry in visuals.get(group,[]):
 			if not entry is Dictionary or str(entry.get("name",""))!=entry_name:continue
 			var file = entry.get("native_file",entry.get("file"))
@@ -218,9 +218,10 @@ func _visuals(parent: Node, entry_name: String) -> void:
 					picture.texture=ImageTexture.create_from_image(image)
 					picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 					picture.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-					picture.custom_minimum_size=Vector2(0,420 if group=="maps" else 240)
+					picture.custom_minimum_size=Vector2(0,420 if group in ["manual_maps","maps"] else 240)
 					parent.add_child(picture)
-			_label(parent,str(entry.get("caption","")),15)
+					var caption := str(entry.get("caption",""))
+					if not caption.is_empty():_label(parent,caption,15)
 
 func _render() -> void:
 	for child in body.get_children():
@@ -255,8 +256,8 @@ func _render() -> void:
 					_label(body,str(row.get("role","")),21)
 					_label(body,_plain(row.get("names",[])))
 			_label(body,str(credits.get("copyright","Original game copyright 1988, 1989 Dynamix, Inc.")),15)
-			if _matches({"name":"Remastered by Nell Watson Dedicated to David Ming Kenny"}):
+			if _matches({"name":"Fan Remastered by Nell Watson Dedicated to David Ming Kenny"}):
 				_heading("Fan remaster")
-				_label(body,"Remastered by Nell Watson\nDedicated to David “Ming” Kenny")
+				_label(body,"Fan Remastered by Nell Watson\nDedicated to David “Ming” Kenny")
 				count+=1
 	if count==0:_label(body,"No matching entries. Clear the search or choose another section.")

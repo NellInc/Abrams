@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Abrams local motion layer</title></head><body>
+<p id="status">Rendering a local Motion Canvas layer.</p>
+<script type="module">
+import project from './project.ts?project';
+import {Renderer, Vector2} from '@motion-canvas/core';
+const renderer = new Renderer(project);
+renderer.onFinished.subscribe(result => window.renderResult = result);
+await renderer.render({name:'checkpoint-marker',range:[0,5],fps:30,size:new Vector2(800,140),
+  resolutionScale:1,colorSpace:'srgb',background:'#141915',
+  exporter:{name:'@motion-canvas/ffmpeg',options:{fastStart:true,includeAudio:false}}});
+document.querySelector('#status').textContent = 'Rendering finished: '+window.renderResult;
+await fetch('/promo-render-done',{method:'POST',body:JSON.stringify({result:window.renderResult})});
+</script></body></html>

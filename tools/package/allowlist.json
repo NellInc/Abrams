@@ -483,7 +483,8 @@
     "tools/verify_pc_save_states.py",
     "tools/verify_pc_strut_coverage.py",
     "tools/verify_pc_text_trace.py",
-    "tools/verify_pc_ui_ownership.py"
+    "tools/verify_pc_ui_ownership.py",
+    "docs/player-reference/manual-maps-provenance.json"
   ],
   "private": [
     ".runtime/dosbox-pure-source/LICENSE",
@@ -1366,6 +1367,14 @@
     "local-audio/frontend-music-v1/intro.wav",
     "local-audio/frontend-music-v1/manifest.json",
     "local-audio/frontend-music-v1/menu.wav",
-    "reference/genesis/extracted/gunner/palette.gpl"
+    "reference/genesis/extracted/gunner/palette.gpl",
+    "docs/player-reference/manual-map-the-mossel-defense.png",
+    "docs/player-reference/manual-map-siegen-infiltration.png",
+    "docs/player-reference/manual-map-nuremberg-highway.png",
+    "docs/player-reference/manual-map-mass-destruction.png",
+    "docs/player-reference/manual-map-the-road-to-bonn.png",
+    "docs/player-reference/manual-map-hannover-push.png",
+    "docs/player-reference/manual-map-convoy.png",
+    "docs/player-reference/manual-map-the-mossel-intercept.png"
   ]
 }

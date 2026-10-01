@@ -1,0 +1,141 @@
+{
+  "kind": "Original manual scenario maps, with restored artwork where available",
+  "manual_sha256": "4545710cf18793fe03f4147808a58db4cae72b62e96bb28cd791db661934b618",
+  "maps": [
+    {
+      "name": "the-mossel-defense",
+      "pdf_page_1_based": 27,
+      "rect": [
+        620,
+        1080,
+        1174,
+        1587
+      ],
+      "file": "manual-map-the-mossel-defense.png",
+      "output_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6",
+      "source_crop_sha256": "aa85012ec5c429d89369aa54ff0fbbb4c5f249b35360c8a49d6316079a8fb9a2",
+      "restoration": "Approved built-in image-generated colour restoration, reused unchanged",
+      "restoration_source": "exec-7e9d4e6c-ae00-449f-bcdf-6548078a28f7.png",
+      "restoration_source_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6"
+    },
+    {
+      "name": "siegen-infiltration",
+      "pdf_page_1_based": 28,
+      "rect": [
+        617,
+        334,
+        1185,
+        855
+      ],
+      "file": "manual-map-siegen-infiltration.png",
+      "output_sha256": "f3397f05df62227c2f26655295d215e32a325bef7a27853abfa7a74e4fde7693",
+      "source_crop_sha256": "4f8e41ab952824f74decda9377ca497a1e38143f31370d4ad9e5cb2118269f8f",
+      "restoration": "Built-in image-generated colour restoration in the approved Mossel style",
+      "restoration_source": "exec-c2f6f3c9-8980-471f-9b4b-ee6d7db71170.png",
+      "restoration_source_sha256": "f3397f05df62227c2f26655295d215e32a325bef7a27853abfa7a74e4fde7693",
+      "style_reference_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6"
+    },
+    {
+      "name": "nuremberg-highway",
+      "pdf_page_1_based": 28,
+      "rect": [
+        605,
+        1107,
+        1176,
+        1624
+      ],
+      "file": "manual-map-nuremberg-highway.png",
+      "output_sha256": "815997beea4da92ffc1742d9f8be84dd5e7b298db45b85f7903bdb835749f634",
+      "source_crop_sha256": "3d198998a87aab1cbf604e655ce8cd77dd5171a28d1d4be528934fe6e241b2e3",
+      "restoration": "Built-in image-generated colour restoration in the approved Mossel style",
+      "restoration_source": "exec-eceb21c1-afe0-4541-8065-9d8732ee9e59.png",
+      "restoration_source_sha256": "815997beea4da92ffc1742d9f8be84dd5e7b298db45b85f7903bdb835749f634",
+      "style_reference_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6"
+    },
+    {
+      "name": "mass-destruction",
+      "pdf_page_1_based": 29,
+      "rect": [
+        617,
+        228,
+        1183,
+        753
+      ],
+      "file": "manual-map-mass-destruction.png",
+      "output_sha256": "bfff7462bd7f49ef1d05be282e7c87927b82e425ad22d8ee14521b7f9b575c0a",
+      "source_crop_sha256": "e63498078e010f10340201e84f7e0d4a6bfcd55ea56731ee303d955141900889",
+      "restoration": "Built-in image-generated colour restoration in the approved Mossel style",
+      "restoration_source": "exec-8ff258a0-be26-467e-b996-aacfb3e44adb.png",
+      "restoration_source_sha256": "bfff7462bd7f49ef1d05be282e7c87927b82e425ad22d8ee14521b7f9b575c0a",
+      "style_reference_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6"
+    },
+    {
+      "name": "the-road-to-bonn",
+      "pdf_page_1_based": 29,
+      "rect": [
+        620,
+        931,
+        1181,
+        1457
+      ],
+      "file": "manual-map-the-road-to-bonn.png",
+      "output_sha256": "9fc12dfa422115ce327a114201bc5be4035876ccbec35cd108863a4b1cd5cf13",
+      "source_crop_sha256": "42c8b6f4f3f6663e32152239abeb5de9b4a1d18bc8ffe61e834b085bc0f9fd45",
+      "restoration": "Built-in image-generated colour restoration in the approved Mossel style",
+      "restoration_source": "exec-1ba76220-aff2-4c91-9bcb-ba6a5c10151d.png",
+      "restoration_source_sha256": "9fc12dfa422115ce327a114201bc5be4035876ccbec35cd108863a4b1cd5cf13",
+      "style_reference_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6"
+    },
+    {
+      "name": "hannover-push",
+      "pdf_page_1_based": 30,
+      "rect": [
+        621,
+        502,
+        1206,
+        1042
+      ],
+      "file": "manual-map-hannover-push.png",
+      "output_sha256": "81a98e8a84700fb177a34dfb12f094fc47f251875a82bb61cdde4cc48ca91fe8",
+      "source_crop_sha256": "eeb790c63e738f409ea0974b3b2aa44ca05c5ed17af2376a6c03b68610554806",
+      "restoration": "Built-in image-generated colour restoration in the approved Mossel style",
+      "restoration_source": "exec-35341182-8164-42dc-b2b9-4a50d458cf44.png",
+      "restoration_source_sha256": "81a98e8a84700fb177a34dfb12f094fc47f251875a82bb61cdde4cc48ca91fe8",
+      "style_reference_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6"
+    },
+    {
+      "name": "convoy",
+      "pdf_page_1_based": 31,
+      "rect": [
+        615,
+        219,
+        1179,
+        733
+      ],
+      "file": "manual-map-convoy.png",
+      "output_sha256": "87cce35d2ac4860cd5cba02da8a117fe029aebd9a8036c0d1d4b631c4adaa254",
+      "source_crop_sha256": "334241461c6a45e5520e1d7e303db75d82172454547c08b75672ea1463cef763",
+      "restoration": "Built-in image-generated colour restoration in the approved Mossel style",
+      "restoration_source": "exec-ecd17813-b1e7-45ba-89bf-a88ac0fd6a2f.png",
+      "restoration_source_sha256": "87cce35d2ac4860cd5cba02da8a117fe029aebd9a8036c0d1d4b631c4adaa254",
+      "style_reference_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6"
+    },
+    {
+      "name": "the-mossel-intercept",
+      "pdf_page_1_based": 31,
+      "rect": [
+        613,
+        1018,
+        1175,
+        1531
+      ],
+      "file": "manual-map-the-mossel-intercept.png",
+      "output_sha256": "f594ab274a064f44ad316c2f7b2f0366daa43e479cdf0a793eaa13f04d00ecbe",
+      "source_crop_sha256": "8b8d5517961f64a6d9adec27c755ad86846d6484f50c5f5a95ed1a702cf1c1cc",
+      "restoration": "Built-in image-generated colour restoration in the approved Mossel style",
+      "restoration_source": "exec-f652a34c-0ada-4ea0-a2e4-2691b8e0fc97.png",
+      "restoration_source_sha256": "f594ab274a064f44ad316c2f7b2f0366daa43e479cdf0a793eaa13f04d00ecbe",
+      "style_reference_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6"
+    }
+  ]
+}

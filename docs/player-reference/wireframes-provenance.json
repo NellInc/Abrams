@@ -57,7 +57,9 @@
       ],
       "source_crop_sha256": "6d2c68cd1c97ea1cffa27eb9e6e48dcb9f1f07035669167b2258f7351fd29441",
       "file": "wireframe-brdm-2.png",
-      "output_sha256": "e5250692a034a2dbd26f2e5101fde191f47734360e80f6f76997c3d64b0da12b"
+      "output_sha256": "06ab9e32943e05a19a1b0524d012b71aec1646769f6bc1110f3219f0270e2a4e",
+      "previous_output_sha256": "e5250692a034a2dbd26f2e5101fde191f47734360e80f6f76997c3d64b0da12b",
+      "refinement": "Built-in image generation: clean antialiased technical linework preserving the preceding plate silhouette, wheel count, orientation and equipment layout."
     },
     {
       "name": "btr",
@@ -70,7 +72,9 @@
       ],
       "source_crop_sha256": "d78daefc98646fb07647e4b0115d23d07e459ff615404499a4962521fc9d88ce",
       "file": "wireframe-btr.png",
-      "output_sha256": "32e200867561ede0ac8312672e3122e1aca1b28de054d6abe3912c7c812164d5"
+      "output_sha256": "cb3fb3a00e6589e615a8340d2bb405bbe778947f9847db98e283fc2afb0eb020",
+      "previous_output_sha256": "32e200867561ede0ac8312672e3122e1aca1b28de054d6abe3912c7c812164d5",
+      "refinement": "Built-in image generation: clean antialiased technical linework preserving the preceding plate silhouette, wheel count, orientation and equipment layout."
     },
     {
       "name": "m113",

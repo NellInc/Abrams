@@ -65,6 +65,7 @@ class PlayerReference(unittest.TestCase):
     def test_visual_inventory_and_provenance(self):
         visuals=json.loads((REF/'visuals.json').read_text())
         self.assertEqual({r['name'] for r in visuals['maps']},{r['name'] for r in DATA['missions']})
+        self.assertEqual({r['name'] for r in visuals['manual_maps']},{r['name'] for r in DATA['missions']})
         self.assertEqual(len(visuals['wireframes']),16)
         self.assertEqual(len({r['file'] for r in visuals['wireframes'] if r['file']}),14)
         self.assertIsNone(next(r['file'] for r in visuals['wireframes'] if r['name']=='FST-1'))
@@ -77,7 +78,7 @@ class PlayerReference(unittest.TestCase):
                 if r.get('native_file'):
                     self.assertEqual(Path(r['native_file']).name,r['native_file'])
                     self.assertIn('docs/player-reference/'+r['native_file'],ALLOW['private'])
-        for file,rows,hash_key in [('maps-provenance.json','maps','svg_sha256'),('wireframes-provenance.json','drawings','output_sha256')]:
+        for file,rows,hash_key in [('maps-provenance.json','maps','svg_sha256'),('manual-maps-provenance.json','maps','output_sha256'),('wireframes-provenance.json','drawings','output_sha256')]:
             prov=json.loads((REF/file).read_text())
             for r in prov[rows]:
                 path=REF/r['file']
@@ -101,6 +102,78 @@ class PlayerReference(unittest.TestCase):
         text = (ROOT/'tools/build_player_reference.py').read_text()
         for chord in ['Cmd+S','Cmd+L','Cmd+Shift+L','Cmd+G','Ctrl+Alt+S','Ctrl+Alt+L','Ctrl+Alt+Shift+L','Ctrl+Alt+G']:
             self.assertIn(chord, text)
+        self.assertIn("('Toggle 8x / normal speed','Tab','Tab')",text)
+        self.assertEqual(len([r for r in DATA['remaster_controls'] if r['name']=='Tab']),1)
+
+    def test_mossel_defense_uses_the_approved_restoration(self):
+        visuals=json.loads((REF/'visuals.json').read_text())
+        row=next(r for r in visuals['manual_maps'] if r['name']=='The Mossel Defense')
+        self.assertEqual(row['file'],'manual-map-the-mossel-defense.png')
+        self.assertEqual(row['caption'],'Remastered manual map')
+        provenance=json.loads((REF/'manual-maps-provenance.json').read_text())
+        restored=next(r for r in provenance['maps'] if r['name']=='the-mossel-defense')
+        expected='6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6'
+        self.assertEqual(restored['output_sha256'],expected)
+        self.assertEqual(restored['restoration_source_sha256'],expected)
+        self.assertEqual(restored['source_crop_sha256'],'aa85012ec5c429d89369aa54ff0fbbb4c5f249b35360c8a49d6316079a8fb9a2')
+        path=REF/row['file']
+        if path.exists():
+            raw=path.read_bytes()
+            self.assertEqual(hashlib.sha256(raw).hexdigest(),expected)
+            self.assertEqual((int.from_bytes(raw[16:20],'big'),int.from_bytes(raw[20:24],'big')),(1254,1254))
+        terrain=next(r for r in visuals['maps'] if r['name']=='The Mossel Defense')
+        self.assertEqual(terrain['file'],'scenario-the-mossel-defense.svg')
+        html=REF/'field-guide.html'
+        if html.exists():
+            self.assertIn('alt="The Mossel Defense: Remastered manual map"',html.read_text())
+
+    def test_interface_capture_flushes_the_owned_viewport(self):
+        fixture=(ROOT/'godot/tests/test_pc_interface_reference.gd').read_text()
+        self.assertNotIn('await RenderingServer.frame_post_draw',fixture)
+        self.assertIn('RenderingServer.force_draw(false)',fixture)
+        self.assertIn('RenderingServer.force_sync()',fixture)
+        self.assertIn('create_timer(60)',fixture)
+        self.assertEqual(fixture.count('await rendered_frame()'),5)
+        self.assertIn('"complete scenario map screenshot: "+scenario',fixture)
+        self.assertIn('child.get_child(0).text==scenario',fixture)
+
+    def test_all_scenario_maps_use_matching_colour_restorations(self):
+        visuals=json.loads((REF/'visuals.json').read_text())
+        provenance=json.loads((REF/'manual-maps-provenance.json').read_text())
+        by_file={r['file']:r for r in provenance['maps']}
+        style='6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6'
+        self.assertEqual(len(visuals['manual_maps']),8)
+        for row in visuals['manual_maps']:
+            self.assertEqual(row['caption'],'Remastered manual map')
+            source=by_file[row['file']]
+            self.assertEqual(source['restoration_source_sha256'],source['output_sha256'])
+            self.assertNotEqual(source['source_crop_sha256'],source['output_sha256'])
+            self.assertEqual(source.get('style_reference_sha256',style),style)
+            path=REF/row['file']
+            if path.exists():
+                raw=path.read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(),source['output_sha256'])
+                self.assertEqual((int.from_bytes(raw[16:20],'big'),int.from_bytes(raw[20:24],'big')),(1254,1254))
+        html=REF/'field-guide.html'
+        if html.exists():
+            text=html.read_text()
+            for row in visuals['manual_maps']:
+                self.assertIn(f'alt="{row["name"]}: Remastered manual map"',text)
+
+    def test_field_guide_only_authoring_preserves_controls_and_models(self):
+        source=(ROOT/'tools/build_player_reference.py').read_text()
+        self.assertIn("parser.add_argument('--field-guide-only'",source)
+        self.assertIn('if args.field_guide_only:',source)
+        self.assertIn("outputs=['field-guide.pdf'] if args.field_guide_only",source)
+
+    def test_reader_copy_is_concise_and_credit_is_fan_remastered(self):
+        author=(ROOT/'tools/build_player_reference.py').read_text()
+        native=(ROOT/'godot/scripts/pc_reference_library.gd').read_text()
+        for source in [author,native,(ROOT/'tools/standalone/Launcher.swift').read_text(),(ROOT/'godot/scripts/portable_setup.gd').read_text()]:
+            self.assertIn('Fan Remastered by Nell Watson',source)
+        for text in [author,json.dumps(json.loads((REF/'visuals.json').read_text()))]:
+            for phrase in ['BRDM-3 uses','supplies no','no illustration','as directed by the manual']:
+                self.assertNotIn(phrase,text)
 
     def test_reviewed_static_assets_and_source_closure(self):
         for name in ['keyboard-controls.html','field-guide.html','keyboard-controls.pdf','field-guide.pdf']:

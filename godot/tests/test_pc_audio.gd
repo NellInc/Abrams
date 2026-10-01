@@ -251,7 +251,9 @@ func run() -> void:
 	var pc_script: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_crew_voice_script.json"))
 	var pc_receipt: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio/pc_crew_provenance.json"))
 	pc_script.cues.merge(damage.cues)
+	pc_script.cues.merge(warnings.cues)
 	pc_receipt.voices.merge(JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio/pc_damage_provenance.json")).voices)
+	pc_receipt.voices.merge(JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio/pc_warning_provenance.json")).voices)
 	for cue in pc_script.cues:
 		var stream := load("res://assets/audio/voice_%s.wav" % cue) as AudioStreamWAV
 		var entry: Dictionary = pc_receipt.voices[cue]

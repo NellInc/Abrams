@@ -74,7 +74,7 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn('@objc func openGitHub() { NSWorkspace.shared.open(githubURL) }', SOURCE)
         self.assertIn('Dedicated to David “Ming” Kenny', SOURCE)
         self.assertIn('Original game by Dynamix.', SOURCE)
-        self.assertIn('label("Remastered by Nell Watson",', SOURCE)
+        self.assertIn('label("Fan Remastered by Nell Watson",', SOURCE)
         self.assertIn('Independent, unofficial fan remaster', SOURCE)
 
     def test_embedded_reference_navigation_and_credits(self):
@@ -99,7 +99,7 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertNotIn('OS.shell_open', reader)
         self.assertNotIn('create_timer', reader)
         self.assertIn('body.remove_child(child)', reader)
-        self.assertIn('["maps","wireframes","models"]', reader)
+        self.assertIn('["manual_maps","maps","wireframes","models"]', reader)
         self.assertIn('_entries("remaster_controls","Remaster shortcuts",true)', reader)
         self.assertIn('BarlowCondensed-SemiBold.ttf', reader)
         self.assertIn('host.size-Vector2i(48,48)', reader)

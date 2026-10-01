@@ -29,6 +29,7 @@ SHORTCUTS=[
  ('Quick load, slot 1','Cmd+L','Ctrl+Alt+L'),
  ('Undo last load','Cmd+Shift+L','Ctrl+Alt+Shift+L'),
  ('Cycle graphics','Cmd+G','Ctrl+Alt+G'),
+ ('Toggle 8x / normal speed','Tab','Tab'),
 ]
 MODEL_NAMES={'M1A1 Abrams':'M1-A1','M60A3':'M60a3','M2 Bradley':'M2','Mi-24 Hind':'HIND','FST-1':'F-ST','BTR':'BTR-70'}
 SPEC_LABELS={'introduced_year':'Introduced','combat_weight_tons':'Weight (t)','length_m':'Length (m)','width_m':'Width (m)','height_m':'Height (m)','maximum_speed_kmh':'Maximum speed (km/h)','primary_armament':'Primary weapon','secondary_armament':'Secondary weapon','reload_seconds':'Reload (s)','range_m':'Range (m)','armor':'Armour','overall_threat':'Threat'}
@@ -38,7 +39,7 @@ def slug(name): return name.lower().replace(' ','-')
 def credit_html():
     credits=json.loads((REF/'credits.json').read_text())
     rows=''.join('<dt>'+ESC(r['role'])+'</dt><dd>'+ESC(', '.join(r['names']))+'</dd>' for r in credits['rows'])
-    return '<section class="credits"><h2>Original creators</h2><h3>Original game by Dynamix</h3><p>Published by Electronic Arts</p><dl>'+rows+'</dl><p>'+ESC(credits['copyright'])+'</p><h3>Fan remaster</h3><p>Remastered by Nell Watson<br>Dedicated to David “Ming” Kenny.</p></section>'
+    return '<section class="credits"><h2>Original creators</h2><h3>Original game by Dynamix</h3><p>Published by Electronic Arts</p><dl>'+rows+'</dl><p>'+ESC(credits['copyright'])+'</p><h3>Fan remaster</h3><p>Fan Remastered by Nell Watson<br>Dedicated to David “Ming” Kenny.</p></section>'
 
 def visual(name,group):
     return next((r for r in json.loads((REF/'visuals.json').read_text()).get(group,[]) if r['name']==name),None)
@@ -46,7 +47,7 @@ def visual(name,group):
 def figure(name,group):
     row=visual(name,group)
     if not row:return ''
-    if not row.get('file'):return '<p class="source">'+ESC(row['caption'])+'</p>'
+    if not row.get('file'):return ''
     return '<figure class="'+group+'"><img src="'+ESC(row['file'])+'" alt="'+ESC(name+': '+row['caption'])+'" loading="lazy"><figcaption>'+ESC(row['caption'])+'</figcaption></figure>'
 
 
@@ -138,7 +139,7 @@ def illustrations(data):
 CSS='''
 :root{color-scheme:dark;--bg:#111a21;--cream:#f4ead4;--muted:#bec7c8;--gold:#e4b879;--line:#405058}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--cream);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:1050px;margin:auto;padding:40px 32px 64px}h1,h2{font-family:Barlow,system-ui,sans-serif;line-height:1.15;letter-spacing:0}h1{font-size:46px;margin:0 0 14px}h2{font-size:30px;margin:44px 0 18px}h3{font-size:21px;line-height:1.3;margin:0 0 8px;font-weight:650}p{max-width:72ch;margin:9px 0 16px}.lead{font-size:18px;color:var(--muted)}nav{display:flex;flex-wrap:wrap;gap:20px;padding:18px 0;margin:22px 0 28px;border-block:1px solid var(--line)}a{color:var(--gold);text-underline-offset:4px}a:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:5px}input{font:inherit;background:#19262e;color:var(--cream);border:1px solid #61727b;border-radius:8px;padding:10px 14px;width:100%;max-width:540px}label{display:block;margin:18px 0 8px}article{scroll-margin-top:24px;padding:24px 0;border-bottom:1px solid var(--line);break-inside:avoid}article header{display:flex;gap:14px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}.badge{color:var(--gold);font-size:13px}.friendly{color:#b5d8c5}.objective{font-weight:650;color:var(--cream)}.source{font-size:13px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 38px}figure{margin:18px 0;background:#e9e3d5;border-radius:12px;padding:10px}figure img{width:100%;height:auto;display:block}figcaption{font-size:12px;color:#39484c;text-align:center}dl{display:grid;grid-template-columns:minmax(120px,1fr) 1.65fr;gap:6px 16px;font-size:14px;margin:16px 0}dt{color:var(--muted)}dd{margin:0}table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0 24px}th{text-align:left;font-weight:650;color:var(--gold)}th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th:first-child,td:first-child{padding-left:0}kbd{display:inline-block;font-family:Barlow,system-ui,sans-serif;font-size:24px;line-height:1.25;font-weight:700;color:var(--cream);padding:4px 10px;background:#26343d;border:1px solid #52656e;border-radius:6px;white-space:normal}.key{width:210px}td:has(kbd){padding-right:28px}figure.wireframes{background:#fff}figure.maps{max-width:720px;margin:24px auto}.credits{margin:40px 0;padding-block:8px 24px;border-block:1px solid var(--line)}.credits dl{max-width:680px} .credits h3{font-size:25px}footer{margin-top:42px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}details{margin:12px 0}summary{cursor:pointer;color:var(--gold)}[hidden]{display:none!important}::selection{background:#724635;color:#fff}html{scrollbar-color:#70858d #111a21}
+main{max-width:1050px;margin:auto;padding:40px 32px 64px}h1,h2{font-family:Barlow,system-ui,sans-serif;line-height:1.15;letter-spacing:0}h1{font-size:46px;margin:0 0 14px}h2{font-size:30px;margin:44px 0 18px}h3{font-size:21px;line-height:1.3;margin:0 0 8px;font-weight:650}p{max-width:72ch;margin:9px 0 16px}.lead{font-size:18px;color:var(--muted)}nav{display:flex;flex-wrap:wrap;gap:20px;padding:18px 0;margin:22px 0 28px;border-block:1px solid var(--line)}a{color:var(--gold);text-underline-offset:4px}a:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:5px}input{font:inherit;background:#19262e;color:var(--cream);border:1px solid #61727b;border-radius:8px;padding:10px 14px;width:100%;max-width:540px}label{display:block;margin:18px 0 8px}article{scroll-margin-top:24px;padding:24px 0;border-bottom:1px solid var(--line);break-inside:avoid}article header{display:flex;gap:14px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}.badge{color:var(--gold);font-size:13px}.friendly{color:#b5d8c5}.objective{font-weight:650;color:var(--cream)}.source{font-size:13px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 38px}figure{margin:18px 0;background:#e9e3d5;border-radius:12px;padding:10px}figure img{width:100%;height:auto;display:block}figcaption{font-size:12px;color:#39484c;text-align:center}dl{display:grid;grid-template-columns:minmax(120px,1fr) 1.65fr;gap:6px 16px;font-size:14px;margin:16px 0}dt{color:var(--muted)}dd{margin:0}table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0 24px}th{text-align:left;font-weight:650;color:var(--gold)}th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th:first-child,td:first-child{padding-left:0}kbd{display:inline-block;font-family:Barlow,system-ui,sans-serif;font-size:24px;line-height:1.25;font-weight:700;color:var(--cream);padding:4px 10px;background:#26343d;border:1px solid #52656e;border-radius:6px;white-space:normal}.key{width:210px}td:has(kbd){padding-right:28px}figure.wireframes{background:#fff}figure.maps,figure.manual_maps{max-width:720px;margin:24px auto}.credits{margin:40px 0;padding-block:8px 24px;border-block:1px solid var(--line)}.credits dl{max-width:680px} .credits h3{font-size:25px}footer{margin-top:42px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}details{margin:12px 0}summary{cursor:pointer;color:var(--gold)}[hidden]{display:none!important}::selection{background:#724635;color:#fff}html{scrollbar-color:#70858d #111a21}
 @media(max-width:700px){main{padding:28px 20px}h1{font-size:36px}.grid{grid-template-columns:1fr}.key{width:135px}kbd{font-size:21px}table{font-size:16px}th,td{padding:9px 6px}}
 @media(prefers-reduced-transparency:no-preference){nav{background:#152129d9;backdrop-filter:blur(12px);border-radius:10px;padding:18px}}
 @media print{body{background:white;color:#17242b}main{padding:0;max-width:none}h1{font-size:30px}h2{font-size:24px}nav,.search,.print-link{display:none}a,.badge,.source,dt,.lead,footer,th,kbd,.objective{color:#33484e}article{border-color:#b9c1c4}table{font-size:11px}th,td{padding:6px}kbd{background:#e1e4da;border-color:#66767b}figure{background:#eee}.grid{gap:24px}details{display:block}}
@@ -150,7 +151,7 @@ def html_page(title,body,other):
     font='';fp=ROOT/'godot/assets/fonts/BarlowCondensed-SemiBold.ttf'
     import base64
     if fp.is_file():font='@font-face{font-family:Barlow;src:url(data:font/ttf;base64,'+base64.b64encode(fp.read_bytes()).decode()+') format("truetype");font-weight:600;font-display:swap}'
-    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data:; script-src 'unsafe-inline'"><title>{ESC(title)} | Abrams Fan Remaster</title><style>{font}{CSS}</style></head><body><main><h1>{ESC(title)}</h1><p class="lead">M1 Abrams Battle Tank Fan Remaster</p><p class="creator">Original game by <strong>Dynamix</strong>, published by <strong>Electronic Arts</strong>.</p><nav aria-label="Reference navigation">{other}<a href="#content">Read reference</a></nav>{body}{credit_html()}<footer>Original game by Dynamix. Remastered by Nell Watson. Dedicated to David “Ming” Kenny.<br>Manual references use the original printed page numbers. Vehicle figures and threat ratings reproduce the manual's game-era data.</footer></main></body></html>'''
+    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data:; script-src 'unsafe-inline'"><title>{ESC(title)} | Abrams Fan Remaster</title><style>{font}{CSS}</style></head><body><main><h1>{ESC(title)}</h1><p class="lead">M1 Abrams Battle Tank Fan Remaster</p><p class="creator">Original game by <strong>Dynamix</strong>, published by <strong>Electronic Arts</strong>.</p><nav aria-label="Reference navigation">{other}<a href="#content">Read reference</a></nav>{body}{credit_html()}<footer>Original game by Dynamix. Fan Remastered by Nell Watson. Dedicated to David “Ming” Kenny.<br>Manual references use the original printed page numbers. Vehicle figures and threat ratings reproduce the manual's game-era data.</footer></main></body></html>'''
 
 
 def controls_html(data):
@@ -166,22 +167,22 @@ def controls_html(data):
     remaining=[r for i,r in enumerate(controls) if i not in covered]
     if remaining:sections.append('<section><h2>Additional context</h2><table>'+''.join(f'<tr><td><kbd>{ESC(r["name"])}</kbd></td><td>{ESC(r["description"])}</td></tr>' for r in remaining)+'</table></section>')
     chords=''.join(f'<tr><td>{ESC(action)}</td><td><kbd>{mac}</kbd></td><td><kbd>{other}</kbd></td></tr>' for action,mac,other in SHORTCUTS)
-    body='<p class="print-link"><a href="keyboard-controls.pdf">Printable keyboard sheet (PDF)</a></p><div id="content"><h2>Remaster shortcuts</h2><table><tr><th>Action</th><th>macOS</th><th>Windows / Linux</th></tr>'+chords+'</table><p>Session provides five save slots, Undo last load and Normal, 2x, 4x or 8x fast forward. Graphics switches EGA, Genesis, Upscaled and Modern. Audio is muted during fast forward.</p><p>Pause with Esc before opening a reference if you want the original simulation to wait. Help never sends an extra command to the game. Release held keys after returning from a menu or another window.</p>'+''.join(sections)+'<p class="source">Original controls: manual pp. 4 to 7, with station and menu context on pp. 9 to 20. Remaster shortcuts are taken from the implemented Play controls.</p></div>'
+    body='<p class="print-link"><a href="keyboard-controls.pdf">Printable keyboard sheet (PDF)</a></p><div id="content"><h2>Remaster shortcuts</h2><table><tr><th>Action</th><th>macOS</th><th>Windows / Linux</th></tr>'+chords+'</table><p>Press Tab to toggle 8x fast forward and normal speed. Session provides five save slots and Undo last load. Graphics switches EGA, Genesis, Upscaled and Modern. Audio is muted during fast forward.</p><p>Pause with Esc before opening a reference if you want the original simulation to wait. Help never sends an extra command to the game. Release held keys after returning from a menu or another window.</p>'+''.join(sections)+'<p class="source">Original controls: manual pp. 4 to 7, with station and menu context on pp. 9 to 20. Remaster shortcuts are taken from the implemented Play controls.</p></div>'
     return html_page('Keyboard controls',body,'<a href="field-guide.html">Scenarios & vehicles</a>')
 
 
 def catalogue_html(data):
-    missions=''.join(f'<article data-search><header><h3>{ESC(row["name"])}</h3><span class="source">{refs(row)}</span></header><p>{ESC(row["description"])}</p><p class="objective">Objective: {ESC(row["primary_objective"])}</p>'+(''.join(f'<p>{ESC(row[k])}</p>' for k in ['secondary_objective','restriction'] if k in row))+('<p>Watch for: '+ESC(' '.join(row['hazards']))+'</p>' if row.get('hazards') else '')+figure(row['name'],'maps')+'</article>' for row in data['missions'])
+    missions=''.join(f'<article data-search><header><h3>{ESC(row["name"])}</h3><span class="source">{refs(row)}</span></header><p>{ESC(row["description"])}</p><p class="objective">Objective: {ESC(row["primary_objective"])}</p>'+(''.join(f'<p>{ESC(row[k])}</p>' for k in ['secondary_objective','restriction'] if k in row))+('<p>Watch for: '+ESC(' '.join(row['hazards']))+'</p>' if row.get('hazards') else '')+figure(row['name'],'manual_maps')+figure(row['name'],'maps')+'</article>' for row in data['missions'])
     vehicles=[]
     for row in data['vehicles']:
         specs=''.join(f'<dt>{SPEC_LABELS[k]}</dt><dd>{ESC(str(v)) if v is not None else "Unknown / not stated"}</dd>' for k,v in row['specs'].items())
         image='vehicle-'+row['name'].lower().replace(' ','-')+'.svg'
-        vehicles.append(f'<article data-search><header><h3>{ESC(row["name"])}</h3><span class="badge '+('friendly' if row['allegiance']=='FRIENDLY' else '')+'">'+row['allegiance']+'</span></header><p class="source">'+ESC(row['role'])+' · '+refs(row)+'</p>'+figure(row['name'],'wireframes')+figure(row['name'],'models')+'<p>'+ESC(row['description'])+'</p>'+('<p>The FST-1 model is the remaster’s interpretation; the manual supplies no illustration.</p>' if row['name']=='FST-1' else '')+'<details><summary>Manual specifications</summary><dl>'+specs+'</dl></details></article>')
+        vehicles.append(f'<article data-search><header><h3>{ESC(row["name"])}</h3><span class="badge '+('friendly' if row['allegiance']=='FRIENDLY' else '')+'">'+row['allegiance']+'</span></header><p class="source">'+ESC(row['role'])+' · '+refs(row)+'</p>'+figure(row['name'],'wireframes')+figure(row['name'],'models')+'<p>'+ESC(row['description'])+'</p>'+'<details><summary>Manual specifications</summary><dl>'+specs+'</dl></details></article>')
     extra=[]
     for key,title in [('anti_tank_guided_weapons','Anti-tank guided weapons'),('ammunition_and_armament','Ammunition & armament'),('other_units_and_objectives','Other units & objectives')]:
         entries=''.join('<article data-search><header><h3>'+ESC(row['name'])+'</h3><span class="source">'+refs(row)+'</span></header><p>'+ESC(row['description'])+'</p>'+('<p>Range: '+ESC(str(row['range_m']))+' m</p>' if row.get('range_m') is not None else '')+'</article>' for row in data[key])
         extra.append('<section><h2>'+ESC(title)+'</h2>'+entries+'</section>')
-    body='<p class="print-link"><a href="field-guide.pdf">Printable scenario and vehicle catalogue (PDF)</a></p><div class="search"><label for="search">Find a scenario, vehicle or weapon</label><input id="search" type="search" placeholder="For example: Convoy, M113, sabot" autocomplete="off"><p id="count" role="status" aria-live="polite"></p></div><div id="content"><section id="scenarios"><h2>The eight scenarios</h2><p>'+ESC(data['training']['description'])+'</p><p>The manual gives these briefings as preparation. Its maps are rough guidelines. Choose your ammunition mix and governor in the Motor Pool; no compulsory mission loadout is specified.</p>'+missions+'</section><section id="vehicles"><h2>Vehicle recognition</h2><p>Friendly and enemy identification follows the manual. Specifications below are its game-era reference values, rather than a current military specification sheet. FST-1 features are explicitly tentative in that source.</p><div class="grid">'+''.join(vehicles)+'</div></section>'+''.join(extra)+'<section><h2>Campaign and stations</h2><p>'+ESC(data['campaign']['description'])+'</p>'+''.join('<article><h3>'+ESC(row['name'])+(' · '+row['key'] if row['key'] else '')+'</h3><p>'+ESC(row['description'])+'</p><p class="source">'+refs(row)+'</p></article>' for row in data['stations'])+'</section></div><script>const q=document.getElementById("search"),rows=[...document.querySelectorAll("[data-search]")],count=document.getElementById("count");q.addEventListener("input",()=>{let shown=0;for(const row of rows){row.hidden=!row.textContent.toLowerCase().includes(q.value.toLowerCase().trim());if(!row.hidden)shown++}count.textContent=q.value ? shown+" matching entries" : ""});</script>'
+    body='<p class="print-link"><a href="field-guide.pdf">Printable scenario and vehicle catalogue (PDF)</a></p><div class="search"><label for="search">Find a scenario, vehicle or weapon</label><input id="search" type="search" placeholder="For example: Convoy, M113, sabot" autocomplete="off"><p id="count" role="status" aria-live="polite"></p></div><div id="content"><section id="scenarios"><h2>The eight scenarios</h2><p>'+ESC(data['training']['description'])+'</p><p>Choose your ammunition mix and governor in the Motor Pool. Each scenario includes its original manual map and PC terrain map.</p>'+missions+'</section><section id="vehicles"><h2>Vehicle recognition</h2><p>Recognise friendly and enemy vehicles. Specifications and threat ratings follow the original game manual.</p><div class="grid">'+''.join(vehicles)+'</div></section>'+''.join(extra)+'<section><h2>Campaign and stations</h2><p>'+ESC(data['campaign']['description'])+'</p>'+''.join('<article><h3>'+ESC(row['name'])+(' · '+row['key'] if row['key'] else '')+'</h3><p>'+ESC(row['description'])+'</p><p class="source">'+refs(row)+'</p></article>' for row in data['stations'])+'</section></div><script>const q=document.getElementById("search"),rows=[...document.querySelectorAll("[data-search]")],count=document.getElementById("count");q.addEventListener("input",()=>{let shown=0;for(const row of rows){row.hidden=!row.textContent.toLowerCase().includes(q.value.toLowerCase().trim());if(!row.hidden)shown++}count.textContent=q.value ? shown+" matching entries" : ""});</script>'
     return html_page('Scenarios & vehicles',body,'<a href="keyboard-controls.html">Keyboard controls</a><a href="#scenarios">Scenarios</a><a href="#vehicles">Vehicles</a>')
 
 
@@ -199,7 +200,7 @@ class Book:
         c.setFillColor(HexColor(CREAM));c.setFont('Helvetica',10);c.drawString(32,self.h-30,'M1 ABRAMS BATTLE TANK FAN REMASTER')
         c.setFont('Barlow',27);c.drawString(32,self.h-64,heading)
         c.setStrokeColor(HexColor('#bbc0ba'));c.line(32,40,self.w-32,40)
-        c.setFont('Helvetica',8);c.setFillColor(HexColor('#4c5a5e'));c.drawString(32,25,'Original game by Dynamix · Remastered by Nell Watson')
+        c.setFont('Helvetica',8);c.setFillColor(HexColor('#4c5a5e'));c.drawString(32,25,'Original game by Dynamix · Fan Remastered by Nell Watson')
         c.drawRightString(self.w-32,25,str(self.number))
     def para(self,text,x,y,width,size=10,color=INK):
         style=ParagraphStyle('p',parent=self.style,fontSize=size,leading=size*1.4,textColor=HexColor(color))
@@ -251,7 +252,7 @@ def keyboard_pdf(data):
         b.para(ESC(action),561,y-11,245,11)
         y-=50
     y=b.heading('Session, graphics & help',32,y-23,21)
-    y=b.para('Session provides five save slots, Undo last load and Normal, 2x, 4x or 8x fast forward. Graphics switches immediately between EGA, Genesis, Upscaled and Modern. Help opens the offline controls and field guide. Audio is muted during fast forward.',32,y,b.w-64,11)
+    y=b.para('Press Tab to toggle 8x fast forward and normal speed. Session provides five save slots and Undo last load. Graphics switches immediately between EGA, Genesis, Upscaled and Modern. Help opens the offline controls and field guide. Audio is muted during fast forward.',32,y,b.w-64,11)
     b.page('Menus, context & original creators')
     y=b.h-126
     y=b.heading('Menus and briefings',32,y,21)
@@ -269,7 +270,7 @@ def credits_pdf(b,x,y,width):
     for row in credits['rows']:
         y=b.para('<b>'+ESC(row['role'])+':</b> '+ESC(', '.join(row['names'])),x,y,width,10)
     y=b.para(ESC(credits['copyright']),x,y,width,9)
-    b.para('Remastered by Nell Watson. Dedicated to David “Ming” Kenny.',x,y-6,width,11)
+    b.para('Fan Remastered by Nell Watson. Dedicated to David “Ming” Kenny.',x,y-6,width,11)
 
 
 def pdf_image(b,file,x,y,width,height):
@@ -317,7 +318,7 @@ def field_pdf(data,catalog,shapes):
     y=b.h-135
     y=b.heading('Eight missions. Know your crew and your targets.',32,y,23)
     y=b.para('A remastered companion to the original DOS manual: scenario objectives, vehicle recognition, ammunition and anti-tank threats. The original simulation remains the authority during play.',32,y-12,b.w-64,12)
-    for title,desc in [('Scenario briefs','All eight missions, with their stated objectives and relevant hazards.'),('Vehicle recognition','All sixteen manual entries. M113, M1A1, M2 Bradley and M60A3 are friendly units.'),('Weapons and objectives','ATGW teams, tank ammunition and the convoy, bases and rescue objectives.'),('Source','Content is paraphrased from the supplied DOS manual. Page references use its printed numbering; add four for the PDF page number. Specifications and threat levels reflect the manual, including unknown FST-1 values.')]:
+    for title,desc in [('Scenario briefs','All eight missions, with their stated objectives and relevant hazards.'),('Vehicle recognition','All sixteen manual entries. M113, M1A1, M2 Bradley and M60A3 are friendly units.'),('Weapons and objectives','ATGW teams, tank ammunition and the convoy, bases and rescue objectives.'),('Source','Content is paraphrased from the supplied DOS manual. Page references use its printed numbering; add four for the PDF page number. Specifications and threat levels reflect the manual, and its threat ratings.')]:
         y=b.heading(title,32,y-25)
         y=b.para(ESC(desc),32,y,b.w-64,11)
     y=b.para('Dedicated to David “Ming” Kenny.',32,y-25,b.w-64,12)
@@ -326,7 +327,7 @@ def field_pdf(data,catalog,shapes):
     for row in data['missions']:
         b.page(row['name'])
         y=b.h-123
-        map_row=visual(row['name'],'maps')
+        map_row=visual(row['name'],'manual_maps')
         y=pdf_image(b,map_row['file'],32,y,b.w-64,360)
         y=b.para(ESC(map_row['caption']),32,y-8,b.w-64,9,'#4c5a5e')
         y=b.para(ESC(row['description']),32,y-14,b.w-64,11)
@@ -335,13 +336,17 @@ def field_pdf(data,catalog,shapes):
             if row.get(key):y=b.para(ESC(row[key]),32,y,b.w-64,11)
         if row.get('hazards'):y=b.para('<b>Watch for:</b> '+ESC(' '.join(row['hazards'])),32,y,b.w-64,10)
         b.para(refs(row),32,y-8,b.w-64,9,'#4c5a5e')
+        b.page(row['name'])
+        y=b.heading('PC terrain map',32,b.h-135,23)
+        terrain=visual(row['name'],'maps')
+        pdf_image(b,terrain['file'],32,y-12,b.w-64,530)
     for row in data['vehicles']:
         b.page(row['name'])
         y=b.h-123
         y=b.para(ESC(row['allegiance']+' · '+row['role']),32,y,b.w-64,11)
         drawing=visual(row['name'],'wireframes')
         if drawing.get('file'):y=pdf_image(b,drawing['file'],32,y-4,b.w-64,126)
-        y=b.para(ESC(drawing['caption']),32,y-7,b.w-64,9,'#4c5a5e')
+        if drawing.get('file'):y=b.para(ESC(drawing['caption']),32,y-7,b.w-64,9,'#4c5a5e')
         # The model study is vector geometry, retaining every current mesh facet.
         model=catalog['models'][shapes[MODEL_NAMES.get(row['name'],row['name'])]]
         polys=model_polygons(model,b.w-64,135)
@@ -410,18 +415,32 @@ def native_maps():
 
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--render-maps',action='store_true',help='Regenerate native map PNGs when the terrain SVGs change (requires Poppler).')
+    parser.add_argument('--field-guide-only',action='store_true',help='Update the field-guide HTML/PDF while preserving controls and existing model studies.')
+    args=parser.parse_args()
     REF.mkdir(parents=True,exist_ok=True);PDF.mkdir(parents=True,exist_ok=True)
     data=json.loads((REF/'manual-content.json').read_text())
     assert len(data['missions'])==8 and len(data['vehicles'])==16
     assert next(v for v in data['vehicles'] if v['name']=='M113')['allegiance']=='FRIENDLY'
     pdfmetrics.registerFont(TTFont('Barlow',str(ROOT/'godot/assets/fonts/BarlowCondensed-SemiBold.ttf')))
-    catalog,shapes=illustrations(data)
-    (REF/'keyboard-controls.html').write_text(controls_html(data),encoding='utf-8')
+    if args.field_guide_only:
+        catalog=json.loads((ROOT/'local-art/pc-modern/catalog.json').read_text())
+        shapes=model_shapes(catalog)
+    else:
+        catalog,shapes=illustrations(data)
+        (REF/'keyboard-controls.html').write_text(controls_html(data),encoding='utf-8')
+        keyboard_pdf(data)
     (REF/'field-guide.html').write_text(catalogue_html(data),encoding='utf-8')
-    keyboard_pdf(data);field_pdf(data,catalog,shapes)
-    native_maps()
+    field_pdf(data,catalog,shapes)
+    if args.render_maps:native_maps()
+    else:
+        for row in json.loads((REF/'visuals.json').read_text())['maps']:
+            if not (REF/row.get('native_file','')).is_file():
+                raise RuntimeError('Native terrain map PNG missing; run with --render-maps')
     import shutil
-    for name in ['keyboard-controls.pdf','field-guide.pdf']:shutil.copyfile(PDF/name,REF/name)
-    print('Created two offline HTML references and two printable PDFs; 8 scenarios, 16 vehicles.')
+    outputs=['field-guide.pdf'] if args.field_guide_only else ['keyboard-controls.pdf','field-guide.pdf']
+    for name in outputs:shutil.copyfile(PDF/name,REF/name)
+    print('Updated field guide; 8 scenarios, 16 vehicles.' if args.field_guide_only else 'Created two offline HTML references and two printable PDFs; 8 scenarios, 16 vehicles.')
 
 if __name__=='__main__':main()

@@ -179,7 +179,7 @@ func _about() -> void:
     about.theme=InterfaceTheme.build()
     about.dialog_autowrap=true
     about.title = "About " + str(ProjectSettings.get_setting("application/config/name"))
-    about.dialog_text = "Original game by Dynamix\nPublished by Electronic Arts\nRemastered by Nell Watson\nDedicated to David “Ming” Kenny\n\nIndependent, unofficial fan remaster. Original copyrights and trademarks remain with their respective rights holders. This project asserts no ownership or moral rights over the original game content and is not affiliated with or endorsed by its rights holders.\n\nRemaster contributions are free under the licences supplied in the notices folder. Original game content is required separately.\n\nhttps://github.com/NellInc/Abrams"
+    about.dialog_text = "Original game by Dynamix\nPublished by Electronic Arts\nFan Remastered by Nell Watson\nDedicated to David “Ming” Kenny\n\nIndependent, unofficial fan remaster. Original copyrights and trademarks remain with their respective rights holders. This project asserts no ownership or moral rights over the original game content and is not affiliated with or endorsed by its rights holders.\n\nRemaster contributions are free under the licences supplied in the notices folder. Original game content is required separately.\n\nhttps://github.com/NellInc/Abrams"
     root.add_child(about)
     about.popup_centered(Vector2i(600, 420))
     about.confirmed.connect(about.queue_free)

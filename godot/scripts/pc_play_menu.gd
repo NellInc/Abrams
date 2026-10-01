@@ -1,5 +1,5 @@
 extends "res://scripts/pc_audio_menu.gd"
-## Remaster controls live outside the source framebuffer and claim no game keys.
+## Remaster controls live outside the source framebuffer; Tab toggles acceleration.
 signal graphics_selected(mode: String)
 signal quality_selected(msaa_samples: int, anisotropic_samples: int)
 signal speed_selected(multiplier: int)
@@ -46,8 +46,8 @@ func _ready() -> void:
 	load_popup.id_pressed.connect(func(slot):request_state("load_state",slot))
 	session_popup.add_separator()
 	speed_popup=_submenu(session_popup,"Fast forward")
-	for multiplier in [1,2,4,8]:
-		speed_popup.add_radio_check_item("Normal speed" if multiplier==1 else "%dx (sound muted)"%multiplier,multiplier)
+	for multiplier in [1,8]:
+		speed_popup.add_radio_check_item("Normal speed" if multiplier==1 else "8x (Tab, sound muted)",multiplier)
 	speed_popup.id_pressed.connect(choose_speed)
 	session_popup.add_separator()
 	session_popup.add_item(state_message,100)
@@ -137,9 +137,17 @@ func _input(event: InputEvent) -> void:
 
 func handle_shortcut(event: InputEvent) -> bool:
 	if not event is InputEventKey:return false
+	var code: int=event.keycode if event.keycode!=0 else event.physical_keycode
+	if code==KEY_TAB:
+		# Reference and native-menu Tab navigation belongs to their own controls.
+		var reader := get_tree().root.get_node_or_null("PlayerReference") if is_inside_tree() else null
+		if not window_focused or not open_menus.is_empty() or (reader!=null and reader.visible):return false
+		if event.meta_pressed or event.ctrl_pressed or event.alt_pressed or event.shift_pressed:return false
+		if "tab" not in shortcut_keys:shortcut_keys.append("tab")
+		if event.pressed and not event.echo and not release_keys:choose_speed(8 if speed==1 else 1)
+		return true
 	var modifier: bool=event.meta_pressed and not event.ctrl_pressed and not event.alt_pressed if shortcut_is_macos else event.ctrl_pressed and event.alt_pressed and not event.meta_pressed
 	if not modifier:return false
-	var code: int=event.keycode if event.keycode!=0 else event.physical_keycode
 	if code not in [KEY_S,KEY_L,KEY_G] or (event.shift_pressed and code!=KEY_L):return false
 	# Claim the entire chord, including repeats and its release. The bridge polls
 	# Input directly, so marking the event handled alone cannot protect the guest.
@@ -172,7 +180,7 @@ func game_keys(held: Array) -> Array:
 			if name in ["s","l","g","ctrl","alt"] or (name=="shift" and "l" in held):
 				if name not in shortcut_keys: shortcut_keys.append(name)
 	shortcut_keys=shortcut_keys.filter(func(name):return name in held)
-	return super.game_keys(held).filter(func(name):return name not in shortcut_keys)
+	return super.game_keys(held).filter(func(name):return name!="tab" and name not in shortcut_keys)
 
 func _submenu(parent: PopupMenu, title: String) -> PopupMenu:
 	var menu := PopupMenu.new()
@@ -200,10 +208,11 @@ func choose_graphics(mode: String) -> bool:
 	return true
 
 func choose_speed(multiplier: int) -> bool:
-	if busy or multiplier not in [1,2,4,8]: return false
+	if busy or multiplier not in [1,8]: return false
 	speed=multiplier
 	speed_selected.emit(multiplier)
 	refresh_controls()
+	control_notice.emit("8x fast forward (sound muted)" if multiplier==8 else "Normal speed")
 	return true
 
 func request_state(operation: String, slot: int) -> bool:

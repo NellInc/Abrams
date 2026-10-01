@@ -2,8 +2,8 @@
 
 Open `Abrams.app` and click **Play**, or use `Play.command` in an equipped
 source checkout. The Audio, Session, Graphics and Help menus sit outside the original
-display. On macOS they appear in the system menu bar. They reserve no
-original game keys; menu navigation is withheld from the game until keys are
+display. On macOS they appear in the system menu bar. Tab toggles fast forward;
+menu navigation is withheld from the game until keys are
 released. The original continues running while a menu is open. Use its pause
 control first when you need time to choose.
 
@@ -22,6 +22,7 @@ from setup. Pause the original game first if you want time to read.
 | Quick load from slot 1 | **Cmd+L** | **Ctrl+Alt+L** |
 | Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
 | Cycle EGA → Genesis → Upscaled → Modern | **Cmd+G** | **Ctrl+Alt+G** |
+| Toggle 8x fast forward / normal speed | **Tab** | **Tab** |
 
 Shortcuts work in Play, including fullscreen, menus and briefings. A brief
 on-screen message confirms the action. Graphics changes immediately and skips
@@ -78,7 +79,9 @@ remain incompatible. Keyboard shortcuts use this same checkpoint path.
 
 ## Fast forward
 
-Choose **Session > Fast forward > Normal speed, 2x, 4x or 8x**.
+Press **Tab** to toggle **8x fast forward / normal speed**, or choose either
+under **Session > Fast forward**. Holding Tab toggles once. Tab navigation in
+menus, setup and references is unchanged.
 Every original frame still executes in order at the same emulated CPU settings.
 The multiplier batches that many frames per presentation request, holding the
 current keys through the batch. Actual acceleration depends on machine load.

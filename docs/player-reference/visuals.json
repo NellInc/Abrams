@@ -3,49 +3,49 @@
     {
       "name": "Nuremberg Highway",
       "file": "scenario-nuremberg-highway.svg",
-      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "caption": "PC terrain map",
       "native_file": "scenario-nuremberg-highway.png"
     },
     {
       "name": "Mass Destruction",
       "file": "scenario-mass-destruction.svg",
-      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "caption": "PC terrain map",
       "native_file": "scenario-mass-destruction.png"
     },
     {
       "name": "The Road to Bonn",
       "file": "scenario-the-road-to-bonn.svg",
-      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "caption": "PC terrain map",
       "native_file": "scenario-the-road-to-bonn.png"
     },
     {
       "name": "Hannover Push",
       "file": "scenario-hannover-push.svg",
-      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "caption": "PC terrain map",
       "native_file": "scenario-hannover-push.png"
     },
     {
       "name": "Convoy",
       "file": "scenario-convoy.svg",
-      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "caption": "PC terrain map",
       "native_file": "scenario-convoy.png"
     },
     {
       "name": "The Mossel Intercept",
       "file": "scenario-the-mossel-intercept.svg",
-      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "caption": "PC terrain map",
       "native_file": "scenario-the-mossel-intercept.png"
     },
     {
       "name": "The Mossel Defense",
       "file": "scenario-the-mossel-defense.svg",
-      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "caption": "PC terrain map",
       "native_file": "scenario-the-mossel-defense.png"
     },
     {
       "name": "Siegen Infiltration",
       "file": "scenario-siegen-infiltration.svg",
-      "caption": "Terrain from the original PC game data. North-up static geography; moving units and objectives are omitted.",
+      "caption": "PC terrain map",
       "native_file": "scenario-siegen-infiltration.png"
     }
   ],
@@ -53,82 +53,82 @@
     {
       "name": "ACRV-2",
       "file": "wireframe-acrv-2.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "BMP-1",
       "file": "wireframe-bmp-1.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "BMP-2",
       "file": "wireframe-bmp-2.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "BRDM-2",
       "file": "wireframe-brdm-2.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "BRDM-3",
       "file": "wireframe-brdm-2.png",
-      "caption": "Restored manual side view. BRDM-3 uses the BRDM-2 illustration, as directed by the manual."
+      "caption": "Manual side view"
     },
     {
       "name": "BTR",
       "file": "wireframe-btr.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "FST-1",
       "file": null,
-      "caption": "The manual supplies no FST-1 illustration."
+      "caption": ""
     },
     {
       "name": "M113",
       "file": "wireframe-m113.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "M1A1 Abrams",
       "file": "wireframe-m1a1-abrams.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "M2 Bradley",
       "file": "wireframe-m2-bradley.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "M60A3",
       "file": "wireframe-m60a3.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "Mi-24 Hind",
       "file": "wireframe-mi-24-hind.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "T-62",
       "file": "wireframe-t-62.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "T-64",
       "file": "wireframe-t-64.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "T-72",
       "file": "wireframe-t-72.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     },
     {
       "name": "T-80",
       "file": "wireframe-t-80.png",
-      "caption": "Restored manual side view."
+      "caption": "Manual side view"
     }
   ],
   "models": [
@@ -211,6 +211,48 @@
       "name": "T-80",
       "file": "vehicle-t-80.svg",
       "caption": "Modern model study."
+    }
+  ],
+  "manual_maps": [
+    {
+      "name": "The Mossel Defense",
+      "file": "manual-map-the-mossel-defense.png",
+      "caption": "Remastered manual map"
+    },
+    {
+      "name": "Siegen Infiltration",
+      "file": "manual-map-siegen-infiltration.png",
+      "caption": "Remastered manual map"
+    },
+    {
+      "name": "Nuremberg Highway",
+      "file": "manual-map-nuremberg-highway.png",
+      "caption": "Remastered manual map"
+    },
+    {
+      "name": "Mass Destruction",
+      "file": "manual-map-mass-destruction.png",
+      "caption": "Remastered manual map"
+    },
+    {
+      "name": "The Road to Bonn",
+      "file": "manual-map-the-road-to-bonn.png",
+      "caption": "Remastered manual map"
+    },
+    {
+      "name": "Hannover Push",
+      "file": "manual-map-hannover-push.png",
+      "caption": "Remastered manual map"
+    },
+    {
+      "name": "Convoy",
+      "file": "manual-map-convoy.png",
+      "caption": "Remastered manual map"
+    },
+    {
+      "name": "The Mossel Intercept",
+      "file": "manual-map-the-mossel-intercept.png",
+      "caption": "Remastered manual map"
     }
   ]
 }

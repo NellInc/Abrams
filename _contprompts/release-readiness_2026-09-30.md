@@ -332,3 +332,237 @@ acceptance, never full game release, gameplay/FPS, target-OS or signed-package
 acceptance. Those earlier outcomes remain open. No active job or resource lease
 remains in this chat. Full macOS/Windows/Linux assembly and distribution still
 need the separately admitted build/package scopes; Apple notarization stays held.
+
+## Reference and acceleration refinement, 1 October 2026
+
+Nell approved removal of player-facing illustration absence/reuse commentary,
+cleaner BRDM/BTR line art, the exact credit “Fan Remastered by Nell Watson”,
+Tab toggling normal/8x speed, and original manual maps alongside PC terrain maps.
+The two technical plates were redrawn with built-in image generation; BRDM-3
+continues using the shared plate without player-facing production commentary.
+Eight original map crops are unchanged and provenance-bound. Full original
+manual/game files remain excluded. Tab is filtered from polled guest input,
+ignores repeats, and cannot accelerate in menus/references or during a checkpoint.
+Original simulation frame execution and cadence are unchanged.
+
+LIGHT authoring was separately admitted and naturally exited0 in55.59s. Actual
+48,098,383 output bytes, input/runtime pins unchanged;16 model-study SVGs and
+illustrations.json were rewritten byte-identically, all8 terrain PNGs unchanged.
+Two regenerated guides are3 and39 pages. PDF text checks confirm all8 original
+map captions,8 terrain headings and the new credit. The PDF edit marker ran once.
+Actual clean source-kit104 tests pass, five private/native skips. Focused20 pass.
+
+UI R6 was superseded, unrun, when source review caught a synthetic terrain capture
+that retained its preceding vehicle filter. R6B clears that filter, and its fresh
+output remains absent. Proposal14860B SHA256
+246c66553dc245977185f6ac76dff52d36323b73f1ba570f43111a4c8ed83d45;
+runner3964B SHA256e5c04608137b837622682ad389927c10577f8d5b311ace53adee28728000c540.
+Seven serial UI/Poppler argv,90 source/output pins+4runtimes; still requires a
+fresh shared-resource admission. Native/play/held-key and rendered-layout claims
+remain UNVERIFIED for this refinement until those fixtures finish. No old lease
+is reused. Audio stays off, original-free packaging/release refresh remains
+separate, Apple notarization remains held.
+
+R6B source review found the predecessor runner was pinned, rather than the
+executed runner. It remains unrun and is superseded by immutable R6C. R6C pins
+its own runner and explicitly checks actual __file__ identity/bytes per entry.
+Same seven commands after fresh naming, source/runtime/generated assets unchanged.
+Proposal14937B SHA256ff53b6dd2e868420d20df39e2ccc1b7b75dfca3479dc823e97dba9fc7ea7b948;
+runner4132B SHA25614339a88c4b8f79d8d5ed522aac5469eddabae77c20e063a3a673e0f9bb83bef.
+Host-only extracted actual guard plus source-order fixture accepts current exact
+runner with simulated census, and rejects changed bytes, absent self pin and
+wrong current identity before census/output. No native or actual process claim.
+Report1011B SHA256b52bb6abd3a5d135d023626c56001a724aced8f61c0e8ac85113a084d8c0b902.
+Fresh native-run-r6c absent; current COVENANT batch owns the shared slot. No prior
+lease is reused and no native R6-generation entry has launched.
+
+Final local source readback confirms all90 R6C inputs still match; native output
+is absent, no admission reused. Shared coordinator's CURRENT3 returned with its
+own failure, then an unrelated FFmpeg job entered the slot. Coordinator requires
+fresh authorization to coordinate that chat before issuing another native grant.
+This task's requested source/art/reference outcomes are implemented; current
+Tab/native UI tests, final rendered PDF review and release rebuild remain pending
+that external scheduling dependency. Do not claim runtime/visual/release acceptance.
+
+## Approved Mossel Defense artwork restored, 1 October 2026
+
+Nell explicitly requested the earlier colour restoration in place of the raw
+scan crop. Located generated exec-7e9d4e6c-ae00-449f-bcdf-6548078a28f7.png
+and reused its exact bytes as manual-map-the-mossel-defense.png (1254 square,
+SHA256 6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6).
+Shared manifest, provenance and HTML caption now select that artwork; raw crop
+remains in restoration-inputs and the independent PC terrain diagram is unchanged.
+
+Fresh LIGHT author R7 was specifically admitted. One natural builder invocation
+returned0 in222.50sec, both controller/child naturally absent. All48 input/runtime
+pins and25 preserved vector/index/terrain assets match. The two PDF copies match.
+Field guide page3 embeds the exact approved RGB pixels;39 pages retained.
+Seven original manual captions, one remastered caption, eight exact terrain
+headings. Initial overly broad terrain-word count also found the Siegen scenario
+text; its failed assertion remains documented in author-r7-handback.json. No
+artwork/PDF retry. Focused21 source tests pass. PDF marker ran once for two edits.
+
+Unrun R6C is superseded by fresh R7:91input/fourruntime pins, same seven serial
+UI/Poppler calls plus dedicated Mossel WebKit capture. Actual runner self-binding
+host fixture accepts baseline with simulated census and rejects changed source,
+missing own pin and wrong identity before census/output. No native/resource
+admission or visual/Tab runtime acceptance inferred. Fresh native-run-r7 absent.
+Proposal/readback records live in artifacts/interface-reference-20260930.
+Full UI and PDF render admission requested; smaller page3-only render proposed
+if shared native queue prevents that whole batch. Audio remains off, distribution
+builds untouched, Apple notarization held.
+
+R7 LIGHT handback was independently closed by coordinator: six output hashes,
+all48inputs/runtime/25preserved assets, natural0 and authoring PIDs absent.
+The coordinator then reported three foreign FFmpeg jobs and explicitly withheld
+new native grants. Remain LIGHT; do not reuse the spent authoring admission.
+The map-specific optional one-page render is prepared, unadmitted and unrun:
+mossel-page-preview-r7-proposal.json (2082B, be6b76581ff70e321fe5e9e58cc434ce24da331895e9b2430b38a40e1992bc57),
+run_mossel_page_preview_r7.py (3179B, afeefe256c19c248ec79f7504ec70d63c846424cf9b7292207c9a91146ce1d4b).
+This scope renders only guide page3, with no engine/compiler/GUI/audio/game.
+It cannot qualify the full guide/native Tab tests. Final rendered PDF inspection
+remains blocked by the explicit shared resource hold, not a source/artwork defect.
+
+A fresh one-page3 preview grant arrived at00:35UTC, but immediate owner preflight
+verified free2,433,024,000B below required3,231,225,472B at00:37:16UTC.
+All7inputs/two runtimes/grant/driver/proposal matched; preview output absent.
+No driver, native invocation, census after refusal, signal or retry. Receipt:
+artifacts/interface-reference-20260930/mossel-page-preview-r7-preflight-refusal.json
+(505B,79b924303e6a5ff27189f50a7b1f9c22d898f40216020b9018075b8783ca686d).
+Coordinator informed. Restored free-space floor and a fresh scoped grant required;
+do not lower the floor, delete foreign files, or reuse the00:35UTC admission.
+
+## Direct user resumption, 1 October 2026
+
+Nell's fresh “Proceed please” resumes the pending reference preview/UI scope.
+Actual owner preflight now finds ~74GB free, empty named-native ps census,
+unchanged page-preview and91-input UI candidate pins, both fresh outputs absent.
+This is a new direct user go-ahead, not reuse of the retired00:35UTC grant.
+Current runtime no longer exposes Codex chat coordination tools. Record this
+boundary explicitly; no coordinator grant or communication is claimed.
+Run one existing page3 preview, then the existing seven exact muted UI commands,
+with fresh finite entry deadlines and all actual guards. No original game/core,
+foreign files/processes, force-kill, signing, notary, upload or publication.
+
+### Reference validation readback
+
+The page3 Poppler preview completed naturally and was visually inspected. The
+approved restored Mossel artwork is correct in the PDF. R7 menu109 and
+shortcut127 checks passed with zero errors. R7 interface capture failed its
+60-second deadline; the failed receipt remains intact. R8 instrumentation isolated
+an unbounded frame_post_draw wait when macOS occluded the fixture window. Reused
+the repository's explicit force_draw/force_sync capture helper, retaining every
+assertion and the same60-second deadline. R9 interface185 checks passed. All17
+native setup/About/loading and reader captures were inspected at the three sizes:
+fixed controls fit, long content scrolls, and the restored map and bold commands
+display correctly. Source regression coverage now22 focused tests, all passing.
+
+R9 Swift compilation completed naturally0, but its40-minute duration exceeded
+the finite entry cutoff. The runner refused all three following commands. This
+is a partial batch, not aggregate acceptance. Compiler/controller absence and
+unchanged source pins were read back. Preserve native-run-r9/terminal.json and
+the compiled345712-byte preview (SHA256
+84f46006b005db1b56ecb7f9a6183678bc29aebb4337144d0709470b8c264b6d).
+
+Nell's latest direct “Proceed please” covers the unfinished checks. Prepared
+R10 with93input pins, reusing the verified executable in a fresh synthetic bundle.
+Only launcher preview and the two complete PDF renders remain. No repeat of the
+passed fixtures or compilation. Proposal SHA256
+2d59df5b91f849cacc7186587b1ebf44e9ed28963ed4b9fad1dc12fde1552048;
+runner SHA256 d331f820cce2cc1cc7e4df9970f75960cce70f3cba520b9b4b3261093f56b179.
+Its fresh native-final-r10 output is absent; no admission or dispatch yet. Actual
+process census found competing FFmpeg jobs. The shared resource guard remains in
+force. A bounded, read-only process-exit event wait observes natural completion
+without signalling any process. An initial Python context-manager mismatch failed
+before event registration, then was corrected; it did not touch other jobs.
+
+Current author-output and25preserved-asset hashes match, as do both PDF copies.
+Field guide SHA256
+865085600bb0d8d7aa6265124206e2fa03c5157a5794def631acaebd651fec78.
+Full PDF layouts and macOS WebKit screenshots still need actual rendered review.
+These results do not close the earlier performance, platform release or packaging
+outcomes. Audio remains off, unrelated audio/promo work preserved, notarization held.
+
+The read-only event waiter completed naturally0 after observing its four recorded
+children exit. Fresh R10 preflight then found a new FFmpeg child69517 of the same
+continuing batch controller12430. It refused before admission, output creation or
+native dispatch (outer session96096, exit1). Receipt is ui-r10-preflight-refusal.json.
+A subsequent census also found FFmpeg74794 of another controller52207. This is
+continuing video work, not a stable empty slot. Do not repeat equivalent child
+waits or weaken the guard under the existing admission. Asked Nell explicitly
+whether these three lightweight launcher/PDF checks may run concurrently with
+video work, or whether the exclusive-slot hold should remain. No answer yet.
+Any approval is restricted to these UI/PDF checks, never FPS benchmarking,
+assembly, publication or other-owner process control. R10 remains unrun.
+
+## All scenario maps, 1 October 2026
+
+Nell's “Do it for all scenarios, the same please” expands the map restoration to
+all eight scenarios. Seven new1254-square colour maps were generated using each
+original scan crop as geometry authority and the approved Mossel artwork as style
+reference. Compared selected outputs against the originals; corrected four first
+variants' water/island/base details before integration. Mossel Defense remains
+byte-identical. All eight map captions now select remastered artwork. Original
+crops and prior outputs remain intact; game-world maps and game logic are unchanged.
+Built-in prompts, selected filenames and hashes are in
+artifacts/scenario-map-remaster-20261001/prompts.json and integration.json.
+
+Extended the existing author with --field-guide-only to preserve controls and
+model studies. One LIGHT ReportLab invocation finished naturally0 in29.74sec.
+The PDF marker ran once for one edit. Both39-page guide copies match. All eight
+odd map pages3..17 embed their exact restored RGB pixels; the following terrain
+pages remain. All58preserved paths, including controls, model studies, terrain
+maps and unrelated audio, match. Focused24 tests pass. Source-readback.json records
+the proof. No native map raster generation, game execution, signing or publication.
+
+Treat the latest explicit “Do it” as the fresh go for the previously discussed
+small UI/document checks, now covering all scenario maps. This narrowly releases
+the exclusive-slot hold for reference-only Godot UI, the already compiled synthetic
+launcher and Poppler document renders while FFmpeg continues. It does not release
+FPS, compilation, assembly, release or notary holds. Record actual contention;
+never report this as a quiet performance measurement. Other native job classes
+remain guarded. R10 is superseded by the changed artwork pins, never admitted or
+dispatched. The fixture retains its60-second deadline and adds eight actual-reader
+map captures. New candidate and finite scoped admission are required.
+
+### All-scenario map completion
+
+The first native fixture attempt failed naturally1 with201 checks and8 errors.
+It looked for the map textures at the wrong nesting level; a broad scenario search
+also matched descriptions. The production reader and artwork were unchanged.
+Repaired the fixture to select the exact scenario VBox and its two nested textures,
+retaining every assertion and its60-second deadline. Failed receipt and captures
+remain in native-preview/. The fresh corrected batch in native-preview-fixed/
+finished all four serial entries naturally0 in70.16sec: Godot interface225 checks,
+zero errors; reused precompiled synthetic macOS launcher; complete3-page controls
+and39-page field-guide renders. This is reference UI proof, not gameplay or FPS proof.
+Concurrent FFmpeg was recorded and permitted only within the stated reference scope.
+
+Root visually inspected all eight actual-reader scenario captures, all39 guide pages
+through seven complete diagnostic sheets, all3 controls pages, the eight WebKit
+reference captures and four launcher setup/About states. Maps, labels, frames,
+credits and scrolling content display correctly. Eight WebKit metrics files show
+loaded visible images, no horizontal overflow and24px bold keyboard commands.
+Final source readback rechecked all67 author input pins,94 native input pins and
+58 preserved paths, with no changes. All eight manual-map PDF pages embed exact
+restored1254-square RGB pixels, followed by their PC terrain maps. PDF copies match
+SHA2561eb012d3da42c5db80e0ab4a3c3b66b5fc985a7666c85d9a847292928e0cef73.
+Focused24 Python tests and git diff --check pass on the final source.
+
+Map-specific requested outcome is complete locally. Final-source-check.json and
+visual-acceptance.json hold the current proof; source-readback.json remains an
+unaltered earlier source-only checkpoint. Audio remains off. No original game/core,
+foreign process control, compilation, signing, notarization or publication occurred.
+Earlier performance, packaging and platform release outcomes remain separate.
+
+## Commit and push authorization, 1 October 2026
+
+Nell explicitly requests “commit and push all files”. This covers the current
+project changes, restored map assets, guides, authored audio retake, promo tools,
+project skills and Godot UID files on codex/modern-lowpoly in NellInc/Abrams.
+Preserve repository privacy. Original games/ROM/manual, credentials, runtime
+caches, private build artifacts and temporary PDF preview renders remain excluded.
+The five existing local commits are included in the ordinary branch push; no
+merge to main, release upload or notarization is implied. Source-kit108 tests pass
+(five correctly skipped private/native tests), focused29 tests pass, and the PCM
+audit covers476 WAVs and345 source captions with zero errors or timing advisories.

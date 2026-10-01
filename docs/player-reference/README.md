@@ -12,7 +12,7 @@ while a reference is open, so pause first when needed.
 * **Original credits:** the original game's creators, studio and publisher,
   with the remaster contribution credited separately.
 
-The three-page keyboard PDF and 31-page field-guide PDF are bundled beside the
+The three-page keyboard PDF and 39-page field-guide PDF are bundled beside the
 HTML editions. Players need no local server or original manual.
 
 ## Illustrations and sources
@@ -22,9 +22,10 @@ numbering. Specifications and threat ratings retain its game-era values.
 M113, M1A1 Abrams, M2 Bradley and M60A3 are friendly units.
 
 Fourteen restored side-view drawings retain the manual's original silhouettes.
-BRDM-3 shares the BRDM-2 drawing, as the manual directs; FST-1 has no manual
-illustration. Each vehicle also has a study of its current Modern model.
-The eight north-up maps use the original PC world's terrain placement and
+Each vehicle also has a study of its current Modern model.
+All eight manual maps are colour-restored in a consistent ivory, blue and olive
+style and accompany the eight north-up terrain maps.
+The terrain maps use the original PC world's terrain placement and
 geometry. They show static geography; moving units and objectives are omitted.
 HTML and PDF keep the diagrams vector. The native reader uses matching
 2400-pixel editions, preserving the compass and legend lettering.
@@ -42,9 +43,13 @@ and the existing local geometry catalogue. It statically checks the original
 selector-to-world association before drawing maps and executes no guest code.
 Generate HTML, model studies and PDFs with
 `python3 tools/build_player_reference.py` in a ReportLab authoring environment.
-Map raster authoring also requires Poppler's `pdftoppm`. These tools are used
+Use `--field-guide-only` for catalogue updates that leave controls and existing
+model studies unchanged.
+Use `--render-maps` when terrain SVGs change; this raster authoring step
+requires Poppler's `pdftoppm`. Unchanged map PNGs are reused. These tools are used
 only during authoring; players need neither.
 
 The packaged outputs include no original game, ROM or manual. Source hashes,
 page/crop references and restoration details are recorded in
-`maps-provenance.json`, `wireframes-provenance.json` and `illustrations.json`.
+`maps-provenance.json`, `manual-maps-provenance.json`,
+`wireframes-provenance.json` and `illustrations.json`.

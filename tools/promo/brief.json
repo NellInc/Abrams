@@ -1,0 +1,161 @@
+{
+  "title": "Abrams Battle Tank Fan Remaster",
+  "aspect_ratio": "16:9",
+  "duration_seconds": 60,
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "style": "Thrilling retro tank-simulation promo: crew-command urgency, confident narration, authentic remaster gameplay and cover-derived illustrated exterior shots. Warm ivory stencil typography, charcoal and olive, restrained red accents. Preserve the complete 4:3 game display.",
+  "narration_direction": "An engaging, thrilling game promo. Orus voice, firm clear military-command diction, warm mid-low register, controlled energy rather than exaggerated movie-trailer gravel. The opening is deliberate and commanding, then pace lifts through horizon, terrain, smoke and incoming shells. Express genuine enthusiasm for the remaster. Keep the technical tandem-engine sentence particularly clear. End button up with confident anticipation. About 160 words per minute across the spoken portion, aiming for 55 to 57 seconds. Preserve Nell's exact script, including its intentional short sentences. No university-professor delivery. Do not shout, sing or read acting instructions aloud.",
+  "narration": "Four crew. One tank. Your command.\nAbrams Battle Tank by Dynamix was a revolution in its time. Scan the horizon, work the terrain, pop some smoke, and hold your crew together when the shells start landing.\nThe original PC simulation is back, remastered by fans who remember it fondly. Restored artwork. Reconstructed lettering. A choice of visual styles, including the one you first played.\nDrop back through the hatch. New sound effects and expressive crew voices bring every station to life. Underneath, the original game still calls every hit, every loss and every step of the campaign. On top, a tandem remaster in a new engine, linked directly to the old one, gives it a modern spit-shine.\nSave states mean one bad engagement no longer costs you the whole campaign.\nThe remaster is free and open. Just bring your own copy of the original PC game, then button up!",
+  "speech_model": "google/gemini-3.8-flash-tts",
+  "voice": "Orus",
+  "image_model": "openai/gpt-image-2.5-sunburst",
+  "motion_model": "bytedance/seedance-2.5",
+  "atmosphere_model": "google/veo-3.1",
+  "music_provider": "suno",
+  "music_direction": "Original instrumental score for a thrilling sixty-second retro tank simulation promo. Driving analog synth bass, tight martial percussion, low strings and restrained brass. Tense opening, forward momentum through action, a warmer nostalgic harmonic lift during the restored artwork, then a confident build and resolved final hit. Leave the narrator and short crew calls clearly audible. No vocals, chants, famous melody, or imitation of a named artist or composer.",
+  "shots": [
+    {
+      "id": "opening",
+      "start": 0,
+      "duration": 3,
+      "heading": "YOUR COMMAND",
+      "subheading": "Four crew. One tank.",
+      "image": "docs/images/gunner-upscaled.png",
+      "kind": "game_capture",
+      "purpose": "Crew portrait, gunner sight and driver controls on the narration beats; resolve into Abrams title over the cover-derived tank illustration."
+    },
+    {
+      "id": "action",
+      "start": 3,
+      "duration": 11,
+      "heading": "ABRAMS BATTLE TANK",
+      "subheading": "Dynamix heritage. Original PC simulation.",
+      "image": "docs/images/gunner-upscaled.png",
+      "kind": "game_capture",
+      "purpose": "Brief original PC footage, then captured remaster horizon scan, terrain movement, smoke and incoming fire. An illustrated Seedance exterior insert may bridge cuts."
+    },
+    {
+      "id": "restoration",
+      "start": 14,
+      "duration": 10,
+      "heading": "A familiar world, restored",
+      "subheading": "EGA / Genesis / Upscaled",
+      "image": "docs/images/colonel-upscaled.png",
+      "kind": "comparison",
+      "purpose": "Matched EGA, Genesis and Upscaled briefing/cockpit frames; an animated comparison reveals the restoration while retaining the complete display.",
+      "before_image": "docs/images/colonel-ega.png"
+    },
+    {
+      "id": "stations",
+      "start": 24,
+      "duration": 7,
+      "heading": "Back through the hatch",
+      "subheading": "Expressive crew. Authentic stations.",
+      "image": "artifacts/cupola-material-edges-20260929/scenario-frames-matched/scenario-0-driver.png",
+      "kind": "game_capture",
+      "purpose": "Return to cockpit, move through authentic station views and feature one short source-matched in-game crew call."
+    },
+    {
+      "id": "tandem",
+      "start": 31,
+      "duration": 14,
+      "heading": "Original simulation",
+      "subheading": "Linked to remastered presentation",
+      "image": "docs/images/gunner-upscaled.png",
+      "kind": "game_capture",
+      "purpose": "A compact two-panel original/remastered view with a connecting line, followed by captured remaster action. Modern graphics, if shown, are identified as experimental."
+    },
+    {
+      "id": "checkpoint",
+      "start": 45,
+      "duration": 5,
+      "heading": "Keep your campaign",
+      "subheading": "Save states / Quick load",
+      "image": "docs/images/gunner-upscaled.png",
+      "kind": "game_capture",
+      "purpose": "An actual quick-load restores a recorded checkpoint. A restrained Motion Canvas checkpoint marker makes the return legible without inventing a rewind control."
+    },
+    {
+      "id": "exterior",
+      "start": 50,
+      "duration": 8,
+      "heading": "ABRAMS BATTLE TANK",
+      "subheading": "FAN REMASTER",
+      "image": "branding/abrams-cover-remastered.png",
+      "kind": "illustration",
+      "purpose": "Cover-derived illustrated moving tank resolves into restored cover, Fan Remaster identity, GitHub project URL and Original PC game required."
+    },
+    {
+      "id": "closing",
+      "start": 58,
+      "duration": 2,
+      "heading": "ABRAMS BATTLE TANK",
+      "subheading": "FAN REMASTER",
+      "image": "branding/abrams-cover-remastered.png",
+      "kind": "endcard",
+      "purpose": "Hold the endcard and dedication to David Ming Kenny; music resolves, with a final mechanical closure only if it suits the mix."
+    }
+  ],
+  "storyboard_status": "Approved by Nell: Good, proceed please. Timings provisional until actual narration is conformed.",
+  "storyboard": [
+    {
+      "start": 0,
+      "end": 3,
+      "beat": "Four crew. One tank. Your command.",
+      "visual": "Crew portrait, gunner sight and driver controls on the narration beats; resolve into Abrams title over the cover-derived tank illustration.",
+      "source": "Actual remaster screens plus a reference-guided illustrated title reveal."
+    },
+    {
+      "start": 3,
+      "end": 14,
+      "beat": "Dynamix heritage and battlefield pressure",
+      "visual": "Brief original PC footage, then captured remaster horizon scan, terrain movement, smoke and incoming fire. An illustrated Seedance exterior insert may bridge cuts.",
+      "source": "Capture genuine original-game events in an isolated recording session; no fabricated gameplay."
+    },
+    {
+      "start": 14,
+      "end": 24,
+      "beat": "Artwork, lettering and visual styles",
+      "visual": "Matched EGA, Genesis and Upscaled briefing/cockpit frames; an animated comparison reveals the restoration while retaining the complete display.",
+      "source": "Existing matched screen references and fresh capture as needed."
+    },
+    {
+      "start": 24,
+      "end": 31,
+      "beat": "Drop back through the hatch; crew and stations",
+      "visual": "Return to cockpit, move through authentic station views and feature one short source-matched in-game crew call.",
+      "source": "Actual remaster screens and existing event-driven sound/voice bank."
+    },
+    {
+      "start": 31,
+      "end": 45,
+      "beat": "Original simulation linked to modern presentation",
+      "visual": "A compact two-panel original/remastered view with a connecting line, followed by captured remaster action. Modern graphics, if shown, are identified as experimental.",
+      "source": "Manim link/comparison graphic, original simulation captures and Godot presentation captures."
+    },
+    {
+      "start": 45,
+      "end": 50,
+      "beat": "Save-state recovery",
+      "visual": "An actual quick-load restores a recorded checkpoint. A restrained Motion Canvas checkpoint marker makes the return legible without inventing a rewind control.",
+      "source": "Real isolated save/load recording; procedural marker is a promo graphic."
+    },
+    {
+      "start": 50,
+      "end": 58,
+      "beat": "Free and open; bring your own original PC copy; button up",
+      "visual": "Cover-derived illustrated moving tank resolves into restored cover, Fan Remaster identity, GitHub project URL and Original PC game required.",
+      "source": "Reference-guided generated exterior, existing restored cover and HTML endcard."
+    },
+    {
+      "start": 58,
+      "end": 60,
+      "beat": "Final hold",
+      "visual": "Hold the endcard and dedication to David Ming Kenny; music resolves, with a final mechanical closure only if it suits the mix.",
+      "source": "HTML typography and reviewed audio."
+    }
+  ],
+  "renderer_shots_status": "Eight-beat animatic updated to approved storyboard; production will conform to recorded speech."
+}

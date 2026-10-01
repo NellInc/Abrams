@@ -14,7 +14,9 @@ func physical(code: int, pressed: bool) -> void:
 	var event:=InputEventKey.new();event.keycode=code;event.pressed=pressed
 	Input.parse_input_event(event)
 	Input.flush_buffered_events()
-func _initialize() -> void:run.call_deferred()
+func _initialize() -> void:
+	create_timer(60).timeout.connect(func():printerr("FAIL: play shortcut fixture deadline");quit(1))
+	run.call_deferred()
 func run() -> void:
 	var menu:=Menu.new()
 	menu.config_path=""
@@ -22,9 +24,11 @@ func run() -> void:
 	var commands:=[]
 	var modes:=[]
 	var notices:=[]
+	var speeds:=[]
 	menu.state_requested.connect(func(op,slot):commands.append([op,slot]))
 	menu.graphics_selected.connect(func(mode):modes.append(mode))
 	menu.control_notice.connect(func(message):notices.append(message))
+	menu.speed_selected.connect(func(multiplier):speeds.append(multiplier))
 	for mac in [true,false]:
 		menu.shortcut_is_macos=mac
 		menu.set_state_status([])
@@ -132,6 +136,46 @@ func run() -> void:
 		check(menu.game_keys(["space"])==["space"],"fresh press after focus recovery reaches guest")
 		physical(KEY_SPACE,false)
 		menu.game_keys([])
+	# Bare Tab is presentation acceleration only, preserving other held controls.
+	var tab:=InputEventKey.new();tab.keycode=KEY_TAB;tab.pressed=true
+	check(menu.handle_shortcut(tab) and menu.speed==8 and speeds[-1]==8,"Tab enables 8x")
+	check(menu.game_keys(["tab","space","up"])==["space","up"],"Tab never reaches guest, steering and fire remain held")
+	var count:=speeds.size()
+	tab.echo=true
+	check(menu.handle_shortcut(tab) and speeds.size()==count,"Tab repeat cannot toggle again")
+	tab.pressed=false;tab.echo=false
+	check(menu.handle_shortcut(tab) and speeds.size()==count,"Tab release never changes speed")
+	menu.game_keys([])
+	tab.pressed=true
+	root.push_input(tab)
+	check(menu.speed==1 and speeds[-1]==1,"viewport Tab returns to normal speed")
+	tab.pressed=false;root.push_input(tab);menu.game_keys([])
+	tab.pressed=true;tab.shift_pressed=true
+	check(not menu.handle_shortcut(tab) and menu.speed==1,"Shift Tab is not acceleration")
+	tab.shift_pressed=false;tab.ctrl_pressed=true
+	check(not menu.handle_shortcut(tab),"modified Tab is not acceleration")
+	tab.ctrl_pressed=false
+	menu.session_popup.about_to_popup.emit()
+	check(not menu.handle_shortcut(tab) and menu.speed==1,"menu Tab navigation does not accelerate")
+	menu.session_popup.popup_hide.emit()
+	check(menu.handle_shortcut(tab) and menu.speed==1,"post-menu quarantine cannot accelerate a stale press")
+	menu.game_keys([])
+	menu.window_focused=false
+	check(not menu.handle_shortcut(tab) and menu.speed==1,"unfocused Tab ignored")
+	menu.window_focused=true
+	menu.handle_shortcut(tab)
+	check(menu.speed==8,"fresh Tab after focus recovery enables 8x")
+	menu.request_state("save_state",1)
+	count=speeds.size()
+	menu.handle_shortcut(tab)
+	check(menu.speed==8 and speeds.size()==count,"saving rejects speed changes")
+	menu.set_state_status([{"slot":1}],"Saved")
+	tab.echo=true;menu.handle_shortcut(tab)
+	check(menu.speed==8 and speeds.size()==count,"Tab held across save completion stays at 8x")
+	check(menu.game_keys(["tab","space"])==["space"],"checkpoint cannot leak held Tab to guest")
+	tab.echo=false;tab.pressed=false;menu.handle_shortcut(tab);menu.game_keys([])
+	tab.pressed=true;menu.handle_shortcut(tab)
+	check(menu.speed==1,"released then repressed Tab restores normal after save")
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_PLAY_SHORTCUTS: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)
