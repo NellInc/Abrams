@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Abrams star</title>
+  <circle cx="32" cy="32" r="31" fill="#050505"/>
+  <path fill="#fff" d="M32 10.5 37.05 25.04 52.45 25.36 40.17 34.65 44.64 49.39 32 40.6 19.36 49.39 23.82 34.65 11.55 25.36 26.95 25.04Z"/>
+</svg>
