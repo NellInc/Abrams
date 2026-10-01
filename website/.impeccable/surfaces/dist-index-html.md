@@ -8,8 +8,7 @@ related_targets: ["dist/styles.css","dist/app.js"]
 # Project landing page
 
 Mode: Persuade, with actual restoration work as proof. Provisional code-led build
-using approved project artwork; optional build choices remain unanswered. Local
-only until hosting approval. No persistent buildPath preference is recorded.
+using approved project artwork; optional build choices remain unanswered. GitHub Pages publication is authorized. No persistent buildPath preference is recorded.
 
 ## Direction contract
 
@@ -20,7 +19,7 @@ OWN-WORLD: Near-black, box-art yellow and flame orange, followed by the ivory
 and olive of the approved mission maps. Barlow Condensed supplies strong upright
 titles. Controls are crisp rectangles, with no dashboard cards or military UI costume.
 
-STORY: Recognise Dynamix's game, inspect the restoration, browse its missions,
+STORY: Recognise Dynamix's game, inspect the restoration, watch the captioned trailer, browse its missions,
 and understand how to install with a separately supplied PC copy.
 
 FIRST VIEWPORT: A tall intact cover occupies the right half. An oversized cream

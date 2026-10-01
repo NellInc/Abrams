@@ -4,11 +4,85 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#181a17">
-  <meta name="description" content="M1 Abrams Battle Tank Fan Remaster. Dynamix's classic tank simulation, with high-resolution artwork, new audio and the original PC gameplay running underneath.">
-  <title>M1 Abrams Battle Tank Fan Remaster</title>
+  <meta name="description" content="A free fan remaster of Dynamix’s M1 Abrams Battle Tank, with restored artwork, new crew voices, scenario maps and original PC gameplay. Bring your own PC game.">
+  <title>M1 Abrams Battle Tank Fan Remaster | Free Download &amp; Scenarios</title>
+  <link rel="canonical" href="https://nellinc.github.io/Abrams/">
+  <link rel="sitemap" href="sitemap.xml" type="application/xml">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-video-preview:-1">
+  <meta name="author" content="Nell Watson">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nellinc.github.io/Abrams/">
+  <meta property="og:site_name" content="Abrams Fan Remaster">
+  <meta property="og:title" content="M1 Abrams Battle Tank Fan Remaster">
+  <meta property="og:description" content="Back in the commander’s seat. Dynamix’s classic, restored with new artwork and audio. Free fan remaster; original PC game required.">
+  <meta property="og:image" content="https://nellinc.github.io/Abrams/assets/images/trailer-poster.jpg">
+  <meta property="og:image:width" content="1920">
+  <meta property="og:image:height" content="1080">
+  <meta property="og:image:alt" content="An Abrams tank at sunset, with the Battle Tank by Dynamix logo and Fan Remaster lettering.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="M1 Abrams Battle Tank Fan Remaster">
+  <meta name="twitter:description" content="Dynamix’s classic tank simulation, restored. Free fan remaster; original PC game required.">
+  <meta name="twitter:image" content="https://nellinc.github.io/Abrams/assets/images/trailer-poster.jpg">
+  <meta name="twitter:image:alt" content="Abrams Battle Tank by Dynamix, Fan Remaster, with an M1 tank at sunset.">
   <link rel="icon" href="assets/images/abrams-icon.webp" type="image/webp">
   <link rel="preload" href="assets/fonts/BarlowCondensed-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="styles.css">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://nellinc.github.io/Abrams/#page",
+      "url": "https://nellinc.github.io/Abrams/",
+      "name": "M1 Abrams Battle Tank Fan Remaster",
+      "description": "A free fan remaster of Dynamix’s M1 Abrams Battle Tank, with restored artwork, new crew voices, scenario maps and original PC gameplay. Bring your own PC game.",
+      "inLanguage": "en",
+      "author": {
+        "@type": "Person",
+        "name": "Nell Watson"
+      },
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Abrams Fan Remaster",
+        "url": "https://nellinc.github.io/Abrams/"
+      },
+      "video": {
+        "@id": "https://nellinc.github.io/Abrams/#trailer-video"
+      },
+      "about": {
+        "@type": "VideoGame",
+        "name": "M1 Abrams Battle Tank",
+        "creator": {
+          "@type": "Organization",
+          "name": "Dynamix"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Electronic Arts"
+        }
+      }
+    },
+    {
+      "@type": "VideoObject",
+      "@id": "https://nellinc.github.io/Abrams/#trailer-video",
+      "name": "M1 Abrams Battle Tank Fan Remaster trailer",
+      "description": "A one-minute project trailer showing restored artwork, crew voices, graphics modes and the original PC simulation running in tandem with Godot.",
+      "thumbnailUrl": [
+        "https://nellinc.github.io/Abrams/assets/images/trailer-poster.jpg"
+      ],
+      "uploadDate": "2026-10-01",
+      "duration": "PT1M",
+      "contentUrl": "https://nellinc.github.io/Abrams/assets/video/abrams-fan-remaster-trailer.mp4",
+      "inLanguage": "en",
+      "creator": {
+        "@type": "Person",
+        "name": "Nell Watson"
+      }
+    }
+  ]
+}
+  </script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -19,6 +93,7 @@
       <span>ABRAMS <span class="brand-sub">FAN REMASTER</span></span>
     </a>
     <nav aria-label="Main navigation">
+      <a href="#trailer">Trailer</a>
       <a href="#restoration">The remaster</a>
       <a href="#scenarios">Scenarios</a>
       <a href="#credits">Credits</a>
@@ -35,7 +110,7 @@
         <p class="creator-line">Original game by <strong>Dynamix</strong><br>Published by Electronic Arts</p>
         <div class="hero-actions">
           <a class="button button-primary" href="#install">Get the alpha</a>
-          <a class="button button-outline" href="#restoration">Explore the remaster</a>
+          <a class="button button-outline" href="#trailer">Watch the trailer</a>
         </div>
         <p class="hero-requirement">Requires your own copy of the original PC game.</p>
         <p class="fan-credit">Fan Remastered by Nell Watson</p>
@@ -45,9 +120,26 @@
       </figure>
     </section>
 
-    <div class="platform-strip" aria-label="Supported platforms">
-      <span>Apple Silicon macOS</span><span>Windows</span><span>Linux</span><span class="strip-end">Original PC game required. Genesis optional.</span>
+    <div class="platform-strip" aria-label="Download requirements">
+      <span>Free fan remaster</span><span>macOS alpha available</span><span class="strip-end">Original PC game required. Genesis optional.</span>
     </div>
+
+    <section class="trailer section-shell" id="trailer" aria-labelledby="trailer-title">
+      <div class="section-heading">
+        <h2 id="trailer-title">Back in command.</h2>
+        <p>Watch the one-minute trailer. Restored crew, familiar instruments and a new view of the battlefield.</p>
+      </div>
+      <figure class="trailer-figure">
+        <video id="trailer-player" controls playsinline muted preload="none" width="1920" height="1080" poster="assets/images/trailer-poster.webp" aria-label="M1 Abrams Battle Tank Fan Remaster project trailer" aria-describedby="trailer-caption">
+          <source src="assets/video/abrams-fan-remaster-trailer.mp4" type="video/mp4">
+          <track kind="captions" label="English" srclang="en" src="assets/video/abrams-fan-remaster-trailer.vtt" default>
+          <p><a href="assets/video/abrams-fan-remaster-trailer.mp4">Download the trailer</a>.</p>
+        </video>
+        <figcaption id="trailer-caption"><span>Project trailer · 1 minute</span><span>Starts muted. Sound and captions are in the player controls.</span></figcaption>
+      </figure>
+      <p class="trailer-download"><a href="assets/video/abrams-fan-remaster-trailer.mp4">Download the trailer</a></p>
+      <details class="trailer-transcript"><summary>Read the trailer transcript</summary><p>Four crew. One tank. Your command. Abrams Battle Tank by Dynamix was a revolution for its time. Now, it&#x27;s back! Scan the horizon, work the terrain, and hold your crew together when the shells start landing. Restored artwork. Reconstructed lettering. A choice of visual styles, including the one you first played. New sound effects and expressive crew voices bring every station to life. [Commander] T-72 destroyed. [Gunner] On the way! [Loader] Up! [Driver] Engine is overheating Underneath, the original game still calls every hit, every loss and every step of the campaign. On top, a tandem remaster in a new engine, linked directly to the old one, gives it a modern spit-shine. Save states mean one bad engagement no longer costs you the whole campaign. Fast-forward functions keep you engaged through the quiet parts. The remaster is free and open. Just bring your own copy of the original PC game, then button up!</p></details>
+    </section>
 
     <section class="restoration section-shell" id="restoration" aria-labelledby="restoration-title">
       <div class="section-heading">
@@ -109,7 +201,7 @@
       <div class="section-shell">
         <div class="section-heading">
           <h2 id="scenarios-title">Eight missions.<br>Know the ground.</h2>
-          <p>The original scenarios, with colour-restored maps from the manual. River crossings, supply routes and enemy positions, ready for your next briefing.</p>
+          <p>The original scenarios, with freshly refined maps from the manual. Clear lettering, rich river blue and the familiar terrain, ready for your next briefing.</p>
         </div>
         <div class="scenario-layout">
           <div class="scenario-sidebar">
@@ -123,15 +215,50 @@
               <a href="assets/maps/manual-map-convoy.webp" data-scenario="convoy">Convoy</a>
               <a href="assets/maps/manual-map-the-mossel-intercept.webp" data-scenario="the-mossel-intercept">The Mossel Intercept</a>
             </nav>
-            <div class="mission-brief">
-              <h3 id="scenario-name">The Mossel Defense</h3>
-              <p id="scenario-description">Soviet forces have broken Allied defenses and approach the Mossel River in successive waves.</p>
-              <p class="mission-objective"><strong>Objective</strong><span id="scenario-objective">Survive and destroy every attacking Soviet vehicle.</span></p>
-            </div>
+            <article class="mission-brief" data-brief="the-mossel-defense">
+              <h3>The Mossel Defense</h3>
+              <p>Soviet forces have broken Allied defenses and approach the Mossel River in successive waves.</p>
+              <p class="mission-objective"><strong>Objective</strong><span>Survive and destroy every attacking Soviet vehicle.</span></p>
+            </article>
+            <article class="mission-brief" data-brief="siegen-infiltration" hidden>
+              <h3>Siegen Infiltration</h3>
+              <p>Supply convoys from Essen have disappeared near hilly Siegen. Intelligence suggests one or possibly two Soviet bases; Hind sightings remain unconfirmed in the briefing.</p>
+              <p class="mission-objective"><strong>Objective</strong><span>Find and destroy the Soviet base or bases.</span></p>
+            </article>
+            <article class="mission-brief" data-brief="nuremberg-highway" hidden>
+              <h3>Nuremberg Highway</h3>
+              <p>An Allied base has lost resupply; two convoys failed to arrive. Intelligence reports heavy ATGW activity in roadside hills.</p>
+              <p class="mission-objective"><strong>Objective</strong><span>Clear all Soviet forces along the highway and reopen the supply route.</span></p>
+            </article>
+            <article class="mission-brief" data-brief="mass-destruction" hidden>
+              <h3>Mass Destruction</h3>
+              <p>Soviet troops approach from north and west, threatening the M1 base near the Emes River.</p>
+              <p class="mission-objective"><strong>Objective</strong><span>Destroy all three nearby enemy bases.</span></p>
+            </article>
+            <article class="mission-brief" data-brief="the-road-to-bonn" hidden>
+              <h3>The Road to Bonn</h3>
+              <p>After Frankfurt falls, Soviet armor moves toward Bonn. The Mainz bridge offers passage across the Rhine around Allied forces at Koblenz.</p>
+              <p class="mission-objective"><strong>Objective</strong><span>Destroy the Mainz bridge.</span></p>
+            </article>
+            <article class="mission-brief" data-brief="hannover-push" hidden>
+              <h3>Hannover Push</h3>
+              <p>Soviet forces have overrun Hannover and amassed weapons and vehicles for an attack toward Cologne. A communications fort lies east of their base.</p>
+              <p class="mission-objective"><strong>Objective</strong><span>Destroy the Soviet base.</span></p>
+            </article>
+            <article class="mission-brief" data-brief="convoy" hidden>
+              <h3>Convoy</h3>
+              <p>Soviet attacks threaten civilian relief supplies moving through Siegen toward Weller.</p>
+              <p class="mission-objective"><strong>Objective</strong><span>Escort and protect the five-truck convoy until it reaches Allied Base Weller across the Rhine.</span></p>
+            </article>
+            <article class="mission-brief" data-brief="the-mossel-intercept" hidden>
+              <h3>The Mossel Intercept</h3>
+              <p>Damaged Allied vehicles lie west of the player, across the Mossel, after defeating a Soviet reconnaissance group. A powerful Soviet patrol approaches southward along the river.</p>
+              <p class="mission-objective"><strong>Objective</strong><span>Reach the damaged Allied vehicles before the Soviet patrol, then escort them to your base.</span></p>
+            </article>
           </div>
           <figure class="map-figure" id="map-panel" aria-busy="false">
             <a id="map-full" href="assets/maps/manual-map-the-mossel-defense.webp" aria-label="Open full-size restored map of The Mossel Defense"><img id="scenario-image" src="assets/maps/manual-map-the-mossel-defense.webp" alt="Restored map of The Mossel Defense, showing the Mossel river, crossing, M1 base, bridge, roads and hills." width="1254" height="1254" loading="lazy"></a>
-            <figcaption><span id="map-caption">The Mossel Defense</span><span>Restored manual map · Click to view full size</span></figcaption>
+            <figcaption><span id="map-caption">The Mossel Defense</span><a id="map-open-link" href="assets/maps/manual-map-the-mossel-defense.webp">Open full-size map</a></figcaption>
             <p class="interaction-status" id="map-status" role="status"></p>
           </figure>
         </div>
@@ -142,20 +269,27 @@
       <div class="install-intro">
         <h2 id="install-title">Ready to roll?</h2>
         <p>The fan remaster is free. Bring your own supported copy of the original PC game. A Genesis ROM is optional; neither game is included.</p>
-        <a class="button button-primary" href="https://github.com/NellInc/Abrams/releases">View alpha releases on GitHub</a>
-        <p class="access-note">The repository is currently private. Downloads require repository access.</p>
+        <a class="button button-primary download-button" href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.2/Abrams-0.1.0-alpha.2-macOS-arm64.zip"><span>Download for macOS</span><span>Apple Silicon · Alpha 0.1.0-alpha.2 · 254 MB ZIP</span></a>
+        <div class="download-links">
+          <a href="https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.2">Release notes &amp; installation help</a>
+          <a href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.2/SHA256SUMS.txt">SHA-256 checksums</a>
+        </div>
         <div class="platform-details">
           <p><strong>macOS</strong>Apple Silicon, macOS 14+</p>
-          <p><strong>Windows</strong>x86_64</p>
-          <p><strong>Linux</strong>x86_64</p>
+          <p><strong>Windows &amp; Linux</strong>Packages are not published yet.</p>
         </div>
-        <p class="release-note">Alpha software. macOS notarization is pending; Windows signing is not supplied. Modern graphics and wider hardware testing are still in progress.</p>
+        <p class="release-note">Screenshots and trailer show newer development work. This downloadable alpha is ad-hoc signed and has not been notarized by Apple. See the release notes for macOS approval instructions.</p>
+        <div class="source-download">
+          <h3>Build, explore, contribute.</h3>
+          <p><a href="https://github.com/NellInc/Abrams">Open the GitHub repository</a> or <a href="https://github.com/NellInc/Abrams/archive/refs/heads/main.zip">download the source ZIP</a>.</p>
+          <p><a href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.2/Abrams-DOSBox-Pure-corresponding-source.tar.gz">DOSBox-Pure corresponding source</a></p>
+        </div>
       </div>
       <ol class="install-steps">
-        <li><h3>Download &amp; open</h3><p>Extract your platform’s ZIP. Open M1 Abrams Battle Tank Fan Remaster. On macOS, move the app to Applications.</p></li>
+        <li><h3>Download &amp; open</h3><p>Extract the macOS ZIP and move <strong>Abrams.app</strong> to Applications. Open Abrams. Godot and Python are included.</p></li>
         <li><h3>Import your PC game</h3><p>Choose the extracted folder containing <code>ABRAMS.COM</code>, <code>SIM.EXE</code> and the remaining original game files. The importer leaves your originals unchanged.</p></li>
         <li><h3>Add Genesis, if you have it</h3><p>Import your Genesis ROM to enable its donor artwork and music. The PC game is still required.</p></li>
-        <li><h3>Take command</h3><p>Click Play. The original game supplies the simulation, and the remaster supplies the presentation.</p></li>
+        <li><h3>Take command</h3><p>Click Play Abrams. The original game supplies the simulation, and the remaster supplies the presentation.</p></li>
       </ol>
     </section>
 

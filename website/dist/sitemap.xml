@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  <url>
+    <loc>https://nellinc.github.io/Abrams/</loc>
+    <lastmod>2026-10-01</lastmod>
+    <video:video>
+      <video:thumbnail_loc>https://nellinc.github.io/Abrams/assets/images/trailer-poster.jpg</video:thumbnail_loc>
+      <video:title>M1 Abrams Battle Tank Fan Remaster trailer</video:title>
+      <video:description>A one-minute look at the restored artwork, crew voices and tandem PC simulation.</video:description>
+      <video:content_loc>https://nellinc.github.io/Abrams/assets/video/abrams-fan-remaster-trailer.mp4</video:content_loc>
+      <video:duration>60</video:duration>
+      <video:publication_date>2026-10-01</video:publication_date>
+    </video:video>
+  </url>
+</urlset>

@@ -1,5 +1,5 @@
 {
-  "kind": "Existing approved Abrams project assets, web-optimized copies",
+  "kind": "Approved project artwork, polished scenario maps and the accepted project trailer",
   "rasters": [
     {
       "file": "dist/assets/images/abrams-cover-remastered.webp",
@@ -51,67 +51,91 @@
     },
     {
       "file": "dist/assets/maps/manual-map-convoy.webp",
-      "source": "docs/player-reference/manual-map-convoy.png",
-      "source_sha256": "87cce35d2ac4860cd5cba02da8a117fe029aebd9a8036c0d1d4b631c4adaa254",
-      "output_sha256": "e27613b45ae5801c4671ade92597943ec0a548dd2e2642739f5ab4cbd990a562",
-      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "source": "website/artwork/maps/convoy-polished.png",
+      "source_sha256": "642bef280333a2d243e15e7540f68b80de83ec6e79bfcc85b871398ceae74473",
+      "output_sha256": "c40489b7d49bdf2236dbf7e4761d31c900e69485cb332a11c4278b79c735731b",
+      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
+      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
+      "reference_source": "docs/player-reference/manual-map-convoy.png",
+      "reference_sha256": "87cce35d2ac4860cd5cba02da8a117fe029aebd9a8036c0d1d4b631c4adaa254",
+      "generation_prompt": "artwork/maps/convoy-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-hannover-push.webp",
-      "source": "docs/player-reference/manual-map-hannover-push.png",
-      "source_sha256": "81a98e8a84700fb177a34dfb12f094fc47f251875a82bb61cdde4cc48ca91fe8",
-      "output_sha256": "d6b3e301ef96039cdd98bea53bfcdcb04fb1b3271ecc281d3db2017cbeb24c3b",
-      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "source": "website/artwork/maps/hannover-push-polished.png",
+      "source_sha256": "728269f56ad68b5295029f846fdc4bc32d1a3acc1698f40aba034f974e470108",
+      "output_sha256": "744bab2de1ad830a06595e4007d7c2c83e23ba5f9ad50c11681e893c611aef84",
+      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
+      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
+      "reference_source": "docs/player-reference/manual-map-hannover-push.png",
+      "reference_sha256": "81a98e8a84700fb177a34dfb12f094fc47f251875a82bb61cdde4cc48ca91fe8",
+      "generation_prompt": "artwork/maps/hannover-push-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-mass-destruction.webp",
-      "source": "docs/player-reference/manual-map-mass-destruction.png",
-      "source_sha256": "bfff7462bd7f49ef1d05be282e7c87927b82e425ad22d8ee14521b7f9b575c0a",
-      "output_sha256": "015abdc8ff8e258e26f5ffe3edaff6c9c613a8d7993425fb578d61b4df4f849b",
-      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "source": "website/artwork/maps/mass-destruction-polished.png",
+      "source_sha256": "c63828b91ea1582ad90e30cd82c799d5f18392ae511d378227c8eb762f9767f4",
+      "output_sha256": "15b9ac9adc9374d2fd6639e165b9e035bb3090e2777b08c664dd3c061ae792b1",
+      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
+      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
+      "reference_source": "docs/player-reference/manual-map-mass-destruction.png",
+      "reference_sha256": "bfff7462bd7f49ef1d05be282e7c87927b82e425ad22d8ee14521b7f9b575c0a",
+      "generation_prompt": "artwork/maps/mass-destruction-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-nuremberg-highway.webp",
-      "source": "docs/player-reference/manual-map-nuremberg-highway.png",
-      "source_sha256": "815997beea4da92ffc1742d9f8be84dd5e7b298db45b85f7903bdb835749f634",
-      "output_sha256": "e5017d827ddf8d59d417bc2a9572c4f64ceaaf0c05e6e269b911456547447d95",
-      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "source": "website/artwork/maps/nuremberg-highway-polished.png",
+      "source_sha256": "4d54ab782d1d05c695a7446fa4159f3ae27a1213b354cdf5d19421143505ddf7",
+      "output_sha256": "c22d7ffdb41d625e281e41b4dee7255ca4a5a3a077c48226dd9af5eb3db85b58",
+      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
+      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
+      "reference_source": "docs/player-reference/manual-map-nuremberg-highway.png",
+      "reference_sha256": "815997beea4da92ffc1742d9f8be84dd5e7b298db45b85f7903bdb835749f634",
+      "generation_prompt": "artwork/maps/nuremberg-highway-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-siegen-infiltration.webp",
-      "source": "docs/player-reference/manual-map-siegen-infiltration.png",
-      "source_sha256": "f3397f05df62227c2f26655295d215e32a325bef7a27853abfa7a74e4fde7693",
-      "output_sha256": "d62e5da5759c2dad6bc39ad08d0a7e2bb60606d8173e7fb87fb59595526a9c40",
-      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "source": "website/artwork/maps/siegen-infiltration-polished.png",
+      "source_sha256": "fe6db243790b4f43129e3863f9ea22a4a735261689b1484f532a3cf776064135",
+      "output_sha256": "466c980d59be130eb6cc8ba32d8f325873aac3ce13f52b3fccbd1fb9eb4aa105",
+      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
+      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
+      "reference_source": "docs/player-reference/manual-map-siegen-infiltration.png",
+      "reference_sha256": "f3397f05df62227c2f26655295d215e32a325bef7a27853abfa7a74e4fde7693",
+      "generation_prompt": "artwork/maps/siegen-infiltration-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-the-mossel-defense.webp",
-      "source": "docs/player-reference/manual-map-the-mossel-defense.png",
-      "source_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6",
-      "output_sha256": "bb0c2f389c2cec68df342df41229140c4dee0c4cca44b13acdc313d77942e0d0",
-      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "source": "website/artwork/maps/the-mossel-defense-polished.png",
+      "source_sha256": "3e590cd4c323dc05b1da9cd9f16c4e7edc9194c4069bca4c2bacaa959329d9bb",
+      "output_sha256": "bbbfe2b0d285e0263ce5ec5285e1410be5add61bfb778eb155ace61965832623",
+      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
+      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
+      "reference_source": "docs/player-reference/manual-map-the-mossel-defense.png",
+      "reference_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6",
+      "generation_prompt": "artwork/maps/the-mossel-defense-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-the-mossel-intercept.webp",
-      "source": "docs/player-reference/manual-map-the-mossel-intercept.png",
-      "source_sha256": "f594ab274a064f44ad316c2f7b2f0366daa43e479cdf0a793eaa13f04d00ecbe",
-      "output_sha256": "d1b22bc739ab1d43050eaaea5673eed59b0c4f65828b437f0e61b3f7ffc57034",
-      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "source": "website/artwork/maps/the-mossel-intercept-polished.png",
+      "source_sha256": "bd0f0f7a2a396c5099affe9d9ba0798064cd918e5aa75f3c3c29362d11737159",
+      "output_sha256": "a17354168331fc0a586dfb074aa7d57c7bb58de8a376523bedf339423a7e77d9",
+      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
+      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
+      "reference_source": "docs/player-reference/manual-map-the-mossel-intercept.png",
+      "reference_sha256": "f594ab274a064f44ad316c2f7b2f0366daa43e479cdf0a793eaa13f04d00ecbe",
+      "generation_prompt": "artwork/maps/the-mossel-intercept-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-the-road-to-bonn.webp",
-      "source": "docs/player-reference/manual-map-the-road-to-bonn.png",
-      "source_sha256": "9fc12dfa422115ce327a114201bc5be4035876ccbec35cd108863a4b1cd5cf13",
-      "output_sha256": "42cef0b2726ed0aa21bdd334896c5ecbe4311990bad4abc18c710dee872e102d",
-      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "source": "website/artwork/maps/the-road-to-bonn-polished.png",
+      "source_sha256": "33ea7ef312b100fa6f65bccde05f00bf3ecee4576ce9d82d90dada926fb90397",
+      "output_sha256": "a936ffc95bfc455458d2446b8d158880ac2a11f997dedabc80fd6c2ef6cfaeb6",
+      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
+      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
+      "reference_source": "docs/player-reference/manual-map-the-road-to-bonn.png",
+      "reference_sha256": "9fc12dfa422115ce327a114201bc5be4035876ccbec35cd108863a4b1cd5cf13",
+      "generation_prompt": "artwork/maps/the-road-to-bonn-prompt.txt"
     },
     {
       "file": "dist/assets/images/modern-cupola.webp",
@@ -128,6 +152,36 @@
       "output_sha256": "c2e954585137ef83b5f1a3f67147dcc9043e206797788a1db98c47df27f9e5e9",
       "origin": "Modern production-renderer replay capture; artifacts/cupola-material-edges-20260929/scenario-frames-matched/report.json.",
       "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/trailer-poster.webp",
+      "source": "artifacts/promo-20260930-v4/abrams-promo-clean.mp4",
+      "source_sha256": "3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919",
+      "output_sha256": "464e69a70a23beb0640428dd7f801e57a57df9104f44be0f1d08cf0841ff2a35",
+      "origin": "Actual frame extracted at 3.4 seconds from the accepted v4 project trailer.",
+      "conversion": "1920×1080, full frame; WebP quality 94 or JPEG q:v 2."
+    },
+    {
+      "file": "dist/assets/images/trailer-poster.jpg",
+      "source": "artifacts/promo-20260930-v4/abrams-promo-clean.mp4",
+      "source_sha256": "3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919",
+      "output_sha256": "1882e19331c1d3832707445d016f8789eaa90ba157e3a164cb331dfc770c2b42",
+      "origin": "Actual frame extracted at 3.4 seconds from the accepted v4 project trailer.",
+      "conversion": "1920×1080, full frame; WebP quality 94 or JPEG q:v 2."
+    }
+  ],
+  "media": [
+    {
+      "file": "dist/assets/video/abrams-fan-remaster-trailer.mp4",
+      "source": "artifacts/promo-20260930-v4/abrams-promo-clean.mp4",
+      "output_sha256": "3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919",
+      "origin": "Accepted v4 final clean trailer, unchanged. H.264/AAC, 1920×1080, 60 seconds."
+    },
+    {
+      "file": "dist/assets/video/abrams-fan-remaster-trailer.vtt",
+      "source": "artifacts/promo-20260930-v4/final-review/abrams-promo.vtt",
+      "output_sha256": "236379afab8f09d7d0b8ab3257adef8445499279935ecde179d5de74b20bde5c",
+      "origin": "Actual final-audio caption transcript, unchanged."
     }
   ]
 }
