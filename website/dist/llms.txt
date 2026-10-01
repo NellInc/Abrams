@@ -1,0 +1,11 @@
+# M1 Abrams Battle Tank Fan Remaster
+
+> A fan remaster project for M1 Abrams Battle Tank, presenting restored scenario maps, a graphics comparison, a trailer, installation information, and original creator credits.
+
+## Public resources
+
+- [Project webpage](https://nellinc.github.io/Abrams/): Project overview and downloads.
+- [Restoration](https://nellinc.github.io/Abrams/#restoration): Comparison of original and remastered graphics.
+- [Scenarios](https://nellinc.github.io/Abrams/#scenarios): Eight restored scenario maps.
+- [Installation](https://nellinc.github.io/Abrams/#install): Platform availability and installation instructions.
+- [Credits](https://nellinc.github.io/Abrams/#credits): Original creators and project acknowledgements.
