@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#181a17">
+  <meta name="description" content="M1 Abrams Battle Tank Fan Remaster. Dynamix's classic tank simulation, with high-resolution artwork, new audio and the original PC gameplay running underneath.">
+  <title>M1 Abrams Battle Tank Fan Remaster</title>
+  <link rel="icon" href="assets/images/abrams-icon.webp" type="image/webp">
+  <link rel="preload" href="assets/fonts/BarlowCondensed-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Abrams Fan Remaster, home">
+      <img src="assets/images/abrams-icon.webp" alt="" width="44" height="44">
+      <span>ABRAMS <span class="brand-sub">FAN REMASTER</span></span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#restoration">The remaster</a>
+      <a href="#scenarios">Scenarios</a>
+      <a href="#credits">Credits</a>
+      <a class="nav-action" href="#install">Get the alpha</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero section-shell" id="top" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <h1 id="hero-title">M1 ABRAMS<br>BATTLE TANK<span>FAN REMASTER</span></h1>
+        <p class="hero-intro">Back in the commander’s seat.</p>
+        <p class="hero-description">Dynamix’s classic tank simulation, restored in high resolution. New artwork and audio. The original PC game at its heart.</p>
+        <p class="creator-line">Original game by <strong>Dynamix</strong><br>Published by Electronic Arts</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#install">Get the alpha</a>
+          <a class="button button-outline" href="#restoration">Explore the remaster</a>
+        </div>
+        <p class="hero-requirement">Requires your own copy of the original PC game.</p>
+        <p class="fan-credit">Fan Remastered by Nell Watson</p>
+      </div>
+      <figure class="cover-art">
+        <img src="assets/images/abrams-cover-remastered.webp" alt="Remastered Abrams Battle Tank box art: an M1 tank charges through a fiery landscape, beneath the original title, by Dynamix and Fan Remaster." width="1039" height="1514" fetchpriority="high">
+      </figure>
+    </section>
+
+    <div class="platform-strip" aria-label="Supported platforms">
+      <span>Apple Silicon macOS</span><span>Windows</span><span>Linux</span><span class="strip-end">Original PC game required. Genesis optional.</span>
+    </div>
+
+    <section class="restoration section-shell" id="restoration" aria-labelledby="restoration-title">
+      <div class="section-heading">
+        <h2 id="restoration-title">A familiar face.<br>A clearer view.</h2>
+        <p>From the Colonel’s office to the gunner’s instruments, the artwork and lettering keep the character of the originals.</p>
+      </div>
+      <div class="comparison-layout">
+        <figure class="comparison-figure" id="comparison-panel" aria-busy="false">
+          <div class="screen-frame"><img id="comparison-image" src="assets/images/colonel-upscaled.webp" alt="Upscaled graphics: the Colonel in his office, with restored portrait, desk and briefing lettering." width="1280" height="960" loading="lazy"></div>
+          <figcaption><span id="comparison-caption">Upscaled</span><span>The same original PC briefing, three graphics modes.</span></figcaption>
+        </figure>
+        <div class="comparison-copy">
+          <fieldset class="mode-picker">
+            <legend>See the difference</legend>
+            <div class="mode-options">
+              <input type="radio" name="graphics" id="mode-ega" value="ega"><label for="mode-ega">EGA</label>
+              <input type="radio" name="graphics" id="mode-genesis" value="genesis"><label for="mode-genesis">Genesis</label>
+              <input type="radio" name="graphics" id="mode-upscaled" value="upscaled" checked><label for="mode-upscaled">Upscaled</label>
+            </div>
+          </fieldset>
+          <p id="mode-description">The remastered artwork in high resolution, with carefully rebuilt lettering. Upscaled is the game’s default graphics mode.</p>
+          <p class="interaction-status" id="comparison-status" role="status"></p>
+          <h3>The PC game still runs the show.</h3>
+          <p>The original simulation runs in tandem with Godot. Missions, aiming, damage and vehicle behaviour remain with the PC game, while the remaster handles what you see and hear.</p>
+          <p>Switch graphics immediately during play, including the experimental Modern mode.</p>
+          <noscript><p>Open the original-resolution <a href="assets/images/colonel-ega.webp">EGA</a>, <a href="assets/images/colonel-genesis.webp">Genesis</a> or <a href="assets/images/colonel-upscaled.webp">Upscaled</a> screenshots.</p></noscript>
+        </div>
+      </div>
+    </section>
+
+    <section class="inside section-shell" aria-labelledby="inside-title">
+      <div class="section-heading">
+        <h2 id="inside-title">Every station.<br>Back in service.</h2>
+        <p>Restored crew portraits, gauges and ammunition displays, with an optional Modern battlefield built around the original geometry.</p>
+      </div>
+      <div class="station-gallery">
+        <figure class="station-large">
+          <a href="assets/images/gunner-upscaled.webp" aria-label="Open full-size Upscaled gunner station screenshot"><img src="assets/images/gunner-upscaled.webp" alt="Upscaled gunner station with crisp instruments, ammunition icons and the original PC battlefield." width="1280" height="960" loading="lazy"></a>
+          <figcaption><strong>Gunner station</strong><span>Upscaled</span></figcaption>
+        </figure>
+        <figure>
+          <a href="assets/images/modern-cupola.webp" aria-label="Open full-size Modern cupola screenshot"><img src="assets/images/modern-cupola.webp" alt="Modern cupola view: restored tank rails and screws, with a low-poly vehicle, bright terrain and a clouded sky." width="1280" height="960" loading="lazy"></a>
+          <figcaption><strong>Cupola view</strong><span>Modern, experimental</span></figcaption>
+        </figure>
+        <figure>
+          <a href="assets/images/modern-driver.webp" aria-label="Open full-size Modern driver station screenshot"><img src="assets/images/modern-driver.webp" alt="Modern driver station, showing the restored instrument panel and crisp original road geometry." width="1280" height="960" loading="lazy"></a>
+          <figcaption><strong>Driver station</strong><span>Modern, experimental</span></figcaption>
+        </figure>
+      </div>
+      <dl class="feature-list">
+        <div><dt>Sound &amp; crew</dt><dd>Sample-based effects, newly arranged music and expressive generated crew speech.</dd></div>
+        <div><dt>Save &amp; return</dt><dd>Five save-state slots, quicksave, quickload and undo-last-load.</dd></div>
+        <div><dt>Your pace</dt><dd>Tap <kbd>Tab</kbd> to toggle normal speed and 8× fast forward. Sound is muted during acceleration.</dd></div>
+        <div><dt>On hand</dt><dd>Keyboard reference, scenario maps and a vehicle field guide, in the app and as printable PDFs.</dd></div>
+      </dl>
+    </section>
+
+    <section class="scenarios" id="scenarios" aria-labelledby="scenarios-title">
+      <div class="section-shell">
+        <div class="section-heading">
+          <h2 id="scenarios-title">Eight missions.<br>Know the ground.</h2>
+          <p>The original scenarios, with colour-restored maps from the manual. River crossings, supply routes and enemy positions, ready for your next briefing.</p>
+        </div>
+        <div class="scenario-layout">
+          <div class="scenario-sidebar">
+            <nav class="scenario-picker" aria-label="Choose a scenario map">
+              <a href="assets/maps/manual-map-the-mossel-defense.webp" data-scenario="the-mossel-defense" aria-current="true">The Mossel Defense</a>
+              <a href="assets/maps/manual-map-siegen-infiltration.webp" data-scenario="siegen-infiltration">Siegen Infiltration</a>
+              <a href="assets/maps/manual-map-nuremberg-highway.webp" data-scenario="nuremberg-highway">Nuremberg Highway</a>
+              <a href="assets/maps/manual-map-mass-destruction.webp" data-scenario="mass-destruction">Mass Destruction</a>
+              <a href="assets/maps/manual-map-the-road-to-bonn.webp" data-scenario="the-road-to-bonn">The Road to Bonn</a>
+              <a href="assets/maps/manual-map-hannover-push.webp" data-scenario="hannover-push">Hannover Push</a>
+              <a href="assets/maps/manual-map-convoy.webp" data-scenario="convoy">Convoy</a>
+              <a href="assets/maps/manual-map-the-mossel-intercept.webp" data-scenario="the-mossel-intercept">The Mossel Intercept</a>
+            </nav>
+            <div class="mission-brief">
+              <h3 id="scenario-name">The Mossel Defense</h3>
+              <p id="scenario-description">Soviet forces have broken Allied defenses and approach the Mossel River in successive waves.</p>
+              <p class="mission-objective"><strong>Objective</strong><span id="scenario-objective">Survive and destroy every attacking Soviet vehicle.</span></p>
+            </div>
+          </div>
+          <figure class="map-figure" id="map-panel" aria-busy="false">
+            <a id="map-full" href="assets/maps/manual-map-the-mossel-defense.webp" aria-label="Open full-size restored map of The Mossel Defense"><img id="scenario-image" src="assets/maps/manual-map-the-mossel-defense.webp" alt="Restored map of The Mossel Defense, showing the Mossel river, crossing, M1 base, bridge, roads and hills." width="1254" height="1254" loading="lazy"></a>
+            <figcaption><span id="map-caption">The Mossel Defense</span><span>Restored manual map · Click to view full size</span></figcaption>
+            <p class="interaction-status" id="map-status" role="status"></p>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="installation section-shell" id="install" aria-labelledby="install-title">
+      <div class="install-intro">
+        <h2 id="install-title">Ready to roll?</h2>
+        <p>The fan remaster is free. Bring your own supported copy of the original PC game. A Genesis ROM is optional; neither game is included.</p>
+        <a class="button button-primary" href="https://github.com/NellInc/Abrams/releases">View alpha releases on GitHub</a>
+        <p class="access-note">The repository is currently private. Downloads require repository access.</p>
+        <div class="platform-details">
+          <p><strong>macOS</strong>Apple Silicon, macOS 14+</p>
+          <p><strong>Windows</strong>x86_64</p>
+          <p><strong>Linux</strong>x86_64</p>
+        </div>
+        <p class="release-note">Alpha software. macOS notarization is pending; Windows signing is not supplied. Modern graphics and wider hardware testing are still in progress.</p>
+      </div>
+      <ol class="install-steps">
+        <li><h3>Download &amp; open</h3><p>Extract your platform’s ZIP. Open M1 Abrams Battle Tank Fan Remaster. On macOS, move the app to Applications.</p></li>
+        <li><h3>Import your PC game</h3><p>Choose the extracted folder containing <code>ABRAMS.COM</code>, <code>SIM.EXE</code> and the remaining original game files. The importer leaves your originals unchanged.</p></li>
+        <li><h3>Add Genesis, if you have it</h3><p>Import your Genesis ROM to enable its donor artwork and music. The PC game is still required.</p></li>
+        <li><h3>Take command</h3><p>Click Play. The original game supplies the simulation, and the remaster supplies the presentation.</p></li>
+      </ol>
+    </section>
+
+    <section class="credits" id="credits" aria-labelledby="credits-title">
+      <div class="section-shell">
+        <div class="credits-heading"><h2 id="credits-title">Made by Dynamix.<br>Remembered with care.</h2><p>Original game by Dynamix.<br>Published by Electronic Arts.<br>Copyright 1988, 1989 Dynamix, Inc.</p></div>
+        <dl class="creator-grid">
+          <div><dt>Director &amp; design</dt><dd>Damon Slye</dd></div>
+          <div><dt>Simulation</dt><dd>David McClurg</dd></div>
+          <div><dt>Product shell</dt><dd>Richard Rayl<br>Greg Volkmer</dd></div>
+          <div><dt>Artistry</dt><dd>Kobi Miller<br>Cyrus Kanga</dd></div>
+          <div><dt>World creation</dt><dd>Jerry Luttrell</dd></div>
+          <div><dt>Producer</dt><dd>Rich Hilleman</dd></div>
+        </dl>
+        <p class="remaster-credit">Fan Remastered by <strong>Nell Watson</strong></p>
+      </div>
+    </section>
+
+    <section class="dedication section-shell" aria-labelledby="dedication-title">
+      <p>Dedicated to the memory of</p>
+      <h2 id="dedication-title">David “Ming” Kenny</h2>
+    </section>
+  </main>
+
+  <footer class="site-footer section-shell">
+    <div class="footer-top"><a class="footer-title" href="#top">M1 ABRAMS<span>BATTLE TANK FAN REMASTER</span></a><div><a href="https://github.com/NellInc/Abrams">Project on GitHub</a><a href="https://github.com/NellInc/Abrams/blob/main/NOTICE.md">Rights &amp; project notice</a></div></div>
+    <p>An unofficial, independent fan project, unaffiliated with the original rights holders. No ownership, moral rights or other rights are claimed over the original game or its content. Original copyrights and trademarks remain with their holders.</p>
+    <p>The remaster is free. Its own code is MIT-licensed, emulator modifications are GPL-2.0-or-later, and its original creative contributions are CC0. These licences do not relicense the original game or third-party material. A separately obtained original PC copy is required. Software is provided as is, without warranty.</p>
+  </footer>
+</body>
+</html>

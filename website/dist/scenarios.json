@@ -1,0 +1,50 @@
+[
+  {
+    "name": "The Mossel Defense",
+    "slug": "the-mossel-defense",
+    "description": "Soviet forces have broken Allied defenses and approach the Mossel River in successive waves.",
+    "objective": "Survive and destroy every attacking Soviet vehicle."
+  },
+  {
+    "name": "Siegen Infiltration",
+    "slug": "siegen-infiltration",
+    "description": "Supply convoys from Essen have disappeared near hilly Siegen. Intelligence suggests one or possibly two Soviet bases; Hind sightings remain unconfirmed in the briefing.",
+    "objective": "Find and destroy the Soviet base or bases."
+  },
+  {
+    "name": "Nuremberg Highway",
+    "slug": "nuremberg-highway",
+    "description": "An Allied base has lost resupply; two convoys failed to arrive. Intelligence reports heavy ATGW activity in roadside hills.",
+    "objective": "Clear all Soviet forces along the highway and reopen the supply route."
+  },
+  {
+    "name": "Mass Destruction",
+    "slug": "mass-destruction",
+    "description": "Soviet troops approach from north and west, threatening the M1 base near the Emes River.",
+    "objective": "Destroy all three nearby enemy bases."
+  },
+  {
+    "name": "The Road to Bonn",
+    "slug": "the-road-to-bonn",
+    "description": "After Frankfurt falls, Soviet armor moves toward Bonn. The Mainz bridge offers passage across the Rhine around Allied forces at Koblenz.",
+    "objective": "Destroy the Mainz bridge."
+  },
+  {
+    "name": "Hannover Push",
+    "slug": "hannover-push",
+    "description": "Soviet forces have overrun Hannover and amassed weapons and vehicles for an attack toward Cologne. A communications fort lies east of their base.",
+    "objective": "Destroy the Soviet base."
+  },
+  {
+    "name": "Convoy",
+    "slug": "convoy",
+    "description": "Soviet attacks threaten civilian relief supplies moving through Siegen toward Weller.",
+    "objective": "Escort and protect the five-truck convoy until it reaches Allied Base Weller across the Rhine."
+  },
+  {
+    "name": "The Mossel Intercept",
+    "slug": "the-mossel-intercept",
+    "description": "Damaged Allied vehicles lie west of the player, across the Mossel, after defeating a Soviet reconnaissance group. A powerful Soviet patrol approaches southward along the river.",
+    "objective": "Reach the damaged Allied vehicles before the Soviet patrol, then escort them to your base."
+  }
+]

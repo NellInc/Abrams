@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-01T14:54:58.253470+00:00",
+  "title": "Design System: Abrams project webpage",
+  "extensions": {
+    "shadows": [
+      {
+        "name": "cover",
+        "value": "0 24px 62px rgba(0,0,0,.48)",
+        "purpose": "Cast shadow beneath the complete remastered box art."
+      }
+    ],
+    "motion": [
+      {
+        "name": "cover-ease",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "Existing --ease for the one-time cover settle."
+      },
+      {
+        "name": "cover-settle",
+        "value": "1.15s",
+        "purpose": "From translateY(14px) rotate(3deg), brightness(.92), to translateY(0) rotate(2deg), brightness(1). Disabled on mobile and with reduced motion."
+      },
+      {
+        "name": "control-transition",
+        "value": ".18s ease",
+        "purpose": "Button background and text color; mission background. Reduced motion disables transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-cover-min",
+        "value": "1500px"
+      },
+      {
+        "name": "compact-desktop-max",
+        "value": "1100px"
+      },
+      {
+        "name": "tablet-max",
+        "value": "800px"
+      },
+      {
+        "name": "phone-max",
+        "value": "520px"
+      },
+      {
+        "name": "narrow-phone-max",
+        "value": "360px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The alpha installation action, with its actual hover and keyboard focus.",
+      "html": "<a class=\"ds-primary\" href=\"#install\">Get the alpha</a>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:48px;padding:13px 23px;border-radius:var(--radius,4px);font-family:var(--body,Arial,Helvetica,sans-serif);font-size:.9375rem;line-height:1.4;font-weight:700;text-decoration:none;text-align:center;transition:background .18s ease,color .18s ease;background:var(--yellow,#ffd02f);color:var(--ink,#181a17)}.ds-primary:hover{background:#ffe477;color:var(--ink,#181a17)}.ds-primary:focus-visible{outline:3px solid var(--yellow,#ffd02f);outline-offset:5px;}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+    },
+    {
+      "name": "Outline action",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "The secondary exploration action on the dark site ground.",
+      "html": "<div class=\"ds-outline-ground\"><a class=\"ds-outline\" href=\"#restoration\">Explore the remaster</a></div>",
+      "css": ".ds-outline-ground{background:var(--ink,#181a17);padding:12px}.ds-outline{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:48px;padding:13px 23px;border-radius:var(--radius,4px);font-family:var(--body,Arial,Helvetica,sans-serif);font-size:.9375rem;line-height:1.4;font-weight:700;text-decoration:none;text-align:center;transition:background .18s ease,color .18s ease;color:var(--paper,#fff2db);border:1px solid #707664}.ds-outline:hover{background:var(--surface,#232620);border-color:var(--paper,#fff2db)}.ds-outline:focus-visible{outline:3px solid var(--yellow,#ffd02f);outline-offset:5px;}@media(prefers-reduced-motion:reduce){.ds-outline{transition:none}}"
+    },
+    {
+      "name": "Graphics mode selector",
+      "kind": "input",
+      "refersTo": "mode-option",
+      "description": "Native radio labels preserve checked and keyboard-focus behavior; sample selection does not change a screenshot.",
+      "html": "<div class=\"ds-modes\"><input type=\"radio\" name=\"ds-graphics\" id=\"ds-ega\"><label for=\"ds-ega\">EGA</label><input type=\"radio\" name=\"ds-graphics\" id=\"ds-genesis\"><label for=\"ds-genesis\">Genesis</label><input type=\"radio\" name=\"ds-graphics\" id=\"ds-upscaled\" checked><label for=\"ds-upscaled\">Upscaled</label></div>",
+      "css": ".ds-modes{display:flex;flex-wrap:wrap;gap:6px;position:relative;background:var(--ink,#181a17);padding:12px;font-family:var(--body,Arial,Helvetica,sans-serif);line-height:1.65}.ds-modes input{position:absolute;width:1px;height:1px;clip-path:inset(50%);overflow:hidden}.ds-modes label{display:flex;flex:1 0 auto;box-sizing:border-box;justify-content:center;align-items:center;min-height:46px;border:1px solid #616957;border-radius:var(--radius,4px);padding:8px 12px;cursor:pointer;color:var(--paper,#fff2db);font-weight:700;font-size:.875rem}.ds-modes input:checked+label{background:var(--orange,#ff753d);border-color:var(--orange,#ff753d);color:var(--ink,#181a17)}.ds-modes label:hover{background:var(--surface,#232620)}.ds-modes input:focus-visible+label{outline:3px solid var(--yellow,#ffd02f);outline-offset:4px}"
+    },
+    {
+      "name": "Selected mission link",
+      "kind": "nav",
+      "refersTo": "mission-link-selected",
+      "description": "The current scenario is a rust-filled link on map ivory.",
+      "html": "<nav class=\"ds-missions\" aria-label=\"Choose a scenario map\"><a href=\"assets/maps/manual-map-the-mossel-defense.webp\" aria-current=\"true\">The Mossel Defense</a><a href=\"assets/maps/manual-map-siegen-infiltration.webp\">Siegen Infiltration</a></nav>",
+      "css": ".ds-missions{display:flex;flex-direction:column;background:var(--map-paper,#f5efd9);color:var(--map-ink,#252b20);border-top:1px solid #adae98}.ds-missions a{box-sizing:border-box;padding:12px 14px;min-height:48px;display:flex;align-items:center;border-bottom:1px solid #adae98;font-family:var(--display,\"Barlow Condensed\",Arial,sans-serif);font-size:1.45rem;font-weight:400;line-height:1.2;text-decoration:none;color:inherit;transition:background .18s ease}.ds-missions a:hover{background:#e7dec0}.ds-missions a[aria-current]{background:var(--map-accent,#80361e);color:var(--paper,#fff2db);border-color:var(--map-accent,#80361e)}.ds-missions a:focus-visible{outline:3px solid var(--map-accent,#80361e);outline-offset:5px}@media(max-width:800px){.ds-missions a{font-size:1.25rem}}@media(max-width:520px){.ds-missions{display:grid;grid-template-columns:1fr 1fr;border-top:0;gap:6px}.ds-missions a{font-size:1.2rem;border:1px solid #adae98;border-radius:var(--radius,4px);padding:10px;min-height:54px}.ds-missions a[aria-current]{border-color:var(--map-accent,#80361e)}}@media(prefers-reduced-motion:reduce){.ds-missions a{transition:none}}"
+    },
+    {
+      "name": "Main navigation",
+      "kind": "nav",
+      "refersTo": "navigation-link",
+      "description": "Visible wrapping navigation with a bordered installation action.",
+      "html": "<nav class=\"ds-navigation\" aria-label=\"Main navigation\"><a href=\"#restoration\">The remaster</a><a href=\"#scenarios\">Scenarios</a><a href=\"#credits\">Credits</a><a class=\"ds-nav-action\" href=\"#install\">Get the alpha</a></nav>",
+      "css": ".ds-navigation{display:flex;gap:30px;align-items:center;flex-wrap:wrap;background:var(--ink,#181a17);color:var(--paper,#fff2db);padding:12px;font-family:var(--body,Arial,Helvetica,sans-serif);font-size:.875rem;font-weight:700;line-height:1.65}.ds-navigation a{color:inherit;text-decoration:none;padding-block:8px}.ds-navigation a:hover{color:var(--yellow,#ffd02f)}.ds-navigation .ds-nav-action{border:1px solid var(--line,#45493f);border-radius:var(--radius,4px);padding:10px 18px}.ds-navigation a:focus-visible{outline:3px solid var(--yellow,#ffd02f);outline-offset:5px;}@media(max-width:1100px){.ds-navigation{gap:20px}}@media(max-width:800px){.ds-navigation{justify-content:space-between;gap:16px;font-size:.8125rem}.ds-navigation .ds-nav-action{padding:8px 12px}}@media(max-width:520px){.ds-navigation{gap:9px}.ds-navigation a{font-size:.75rem}}@media(max-width:360px){.ds-navigation .ds-nav-action{padding:8px}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The remastered game box",
+    "overview": "This child website takes its visual authority from the approved remastered cover, game screenshots and restored manual maps. Upright condensed titles, cream text and hot accents give the dark sections the presence of a game box; the map section changes to ivory and olive for close reading.\n\nThe presentation is spacious around large artwork and compact around interactive choices. The metaphor describes the implemented site. It does not prescribe the parent Godot game or establish a persistent stack or workflow preference.",
+    "keyCharacteristics": [
+      "Approved artwork carries the identity.",
+      "Barlow Condensed titles sit above clear Arial body copy.",
+      "Dark exhibit surfaces alternate with a light map-reading surface.",
+      "Rectangular controls show selection through color and visible focus."
+    ],
+    "rules": [],
+    "dos": [
+      "Do preserve complete cover lettering and the proportions of screenshots and maps. Working if: the supplied title remains visible, station images remain 4:3 and maps remain square.",
+      "Do keep display headings in Barlow Condensed and reading copy in Arial. Working if: computed typography follows the documented roles.",
+      "Do retain visible keyboard focus, native radio selection and reduced-motion behavior. Working if: keyboard users can locate and operate each gallery control, and reduced-motion mode disables the cover animation and transitions."
+    ],
+    "donts": [
+      "Don't crop approved artwork into decorative fragments. Working if: the cover, instruments and map legends remain readable in their full compositions.",
+      "Don't substitute generic dashboard cards or military-interface decoration for the artwork-led exhibit. Working if: screenshots and maps remain the visual evidence, with controls limited to their actual functions."
+    ]
+  }
+}

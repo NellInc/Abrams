@@ -1,0 +1,133 @@
+{
+  "kind": "Existing approved Abrams project assets, web-optimized copies",
+  "rasters": [
+    {
+      "file": "dist/assets/images/abrams-cover-remastered.webp",
+      "source": "docs/images/abrams-cover-remastered.png",
+      "source_sha256": "2ac4e10003dcaf7466c65e77f469d5fc23b2bbb543ba58b99b8ad945545006ea",
+      "output_sha256": "ca72e116546edb19df877d927d7058c48ea78e2992ba1e135ca5a1ec20dc13dc",
+      "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/abrams-icon.webp",
+      "source": "docs/images/abrams-icon.png",
+      "source_sha256": "59c2a5939288d6084711ce4f546d474cf0d0057f3636854178d6a7c151317e1f",
+      "output_sha256": "0fd3faa87922d87af60c63551f7fb7a7bc024a993236d2ad166fdb47e0afd516",
+      "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/colonel-ega.webp",
+      "source": "docs/images/colonel-ega.png",
+      "source_sha256": "ebe6d220f9f441a413348e39e5db0b1234d55d40e115c730d3d6dfd74c0a96f9",
+      "output_sha256": "b60dbaefde06d04abf8c0f97b159ca178c5b14f776e50154128d619ba6b2a126",
+      "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/colonel-genesis.webp",
+      "source": "docs/images/colonel-genesis.png",
+      "source_sha256": "e9c7cb489ccf8af9dc973bbbeaed697bbfef1fdc12793092aad1fe9adcef5c84",
+      "output_sha256": "192ffe64709c33865c4e29fb9227d5272948bdeaafc4c134b0b1c9fa6e6f2fdd",
+      "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/colonel-upscaled.webp",
+      "source": "docs/images/colonel-upscaled.png",
+      "source_sha256": "7f08c47a7b226d262fa562e0945c8017b64a14806e22b67a8a0f80f64c3468dd",
+      "output_sha256": "90fed2f74f89767ec50f15d70cd77e5b36901d2939a55f5d77f5a4153a25f084",
+      "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/gunner-upscaled.webp",
+      "source": "docs/images/gunner-upscaled.png",
+      "source_sha256": "c8e78d64e2acf0c64637def5feab3be45e1d3aa8ec488823f4041bc818502ea6",
+      "output_sha256": "affd6c7859fdb22a3b0657f4b165949e129e5b89f7b6bcfaa9ba709fb6b90de4",
+      "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/maps/manual-map-convoy.webp",
+      "source": "docs/player-reference/manual-map-convoy.png",
+      "source_sha256": "87cce35d2ac4860cd5cba02da8a117fe029aebd9a8036c0d1d4b631c4adaa254",
+      "output_sha256": "e27613b45ae5801c4671ade92597943ec0a548dd2e2642739f5ab4cbd990a562",
+      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/maps/manual-map-hannover-push.webp",
+      "source": "docs/player-reference/manual-map-hannover-push.png",
+      "source_sha256": "81a98e8a84700fb177a34dfb12f094fc47f251875a82bb61cdde4cc48ca91fe8",
+      "output_sha256": "d6b3e301ef96039cdd98bea53bfcdcb04fb1b3271ecc281d3db2017cbeb24c3b",
+      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/maps/manual-map-mass-destruction.webp",
+      "source": "docs/player-reference/manual-map-mass-destruction.png",
+      "source_sha256": "bfff7462bd7f49ef1d05be282e7c87927b82e425ad22d8ee14521b7f9b575c0a",
+      "output_sha256": "015abdc8ff8e258e26f5ffe3edaff6c9c613a8d7993425fb578d61b4df4f849b",
+      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/maps/manual-map-nuremberg-highway.webp",
+      "source": "docs/player-reference/manual-map-nuremberg-highway.png",
+      "source_sha256": "815997beea4da92ffc1742d9f8be84dd5e7b298db45b85f7903bdb835749f634",
+      "output_sha256": "e5017d827ddf8d59d417bc2a9572c4f64ceaaf0c05e6e269b911456547447d95",
+      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/maps/manual-map-siegen-infiltration.webp",
+      "source": "docs/player-reference/manual-map-siegen-infiltration.png",
+      "source_sha256": "f3397f05df62227c2f26655295d215e32a325bef7a27853abfa7a74e4fde7693",
+      "output_sha256": "d62e5da5759c2dad6bc39ad08d0a7e2bb60606d8173e7fb87fb59595526a9c40",
+      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/maps/manual-map-the-mossel-defense.webp",
+      "source": "docs/player-reference/manual-map-the-mossel-defense.png",
+      "source_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6",
+      "output_sha256": "bb0c2f389c2cec68df342df41229140c4dee0c4cca44b13acdc313d77942e0d0",
+      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/maps/manual-map-the-mossel-intercept.webp",
+      "source": "docs/player-reference/manual-map-the-mossel-intercept.png",
+      "source_sha256": "f594ab274a064f44ad316c2f7b2f0366daa43e479cdf0a793eaa13f04d00ecbe",
+      "output_sha256": "d1b22bc739ab1d43050eaaea5673eed59b0c4f65828b437f0e61b3f7ffc57034",
+      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/maps/manual-map-the-road-to-bonn.webp",
+      "source": "docs/player-reference/manual-map-the-road-to-bonn.png",
+      "source_sha256": "9fc12dfa422115ce327a114201bc5be4035876ccbec35cd108863a4b1cd5cf13",
+      "output_sha256": "42cef0b2726ed0aa21bdd334896c5ecbe4311990bad4abc18c710dee872e102d",
+      "origin": "Approved restored scenario map; docs/player-reference/manual-maps-provenance.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/modern-cupola.webp",
+      "source": "artifacts/cupola-material-edges-20260929/scenario-frames-matched/scenario-0-cupola.png",
+      "source_sha256": "01efc2132d6f4c7a5bd59392e4fcbfb752e60aa5e2af0d787c581fa1f5f12cdf",
+      "output_sha256": "7ff16a9783235572b761dfb8f27e5cd6836bc3706f6ed6c355b03e431b6f9a88",
+      "origin": "Modern production-renderer replay capture; artifacts/cupola-material-edges-20260929/scenario-frames-matched/report.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/modern-driver.webp",
+      "source": "artifacts/cupola-material-edges-20260929/scenario-frames-matched/scenario-0-driver.png",
+      "source_sha256": "9b0fe4f25215c2d90ae15d56b226f97a2925d26128cf9612313a7861ed476a44",
+      "output_sha256": "c2e954585137ef83b5f1a3f67147dcc9043e206797788a1db98c47df27f9e5e9",
+      "origin": "Modern production-renderer replay capture; artifacts/cupola-material-edges-20260929/scenario-frames-matched/report.json.",
+      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+    }
+  ]
+}
