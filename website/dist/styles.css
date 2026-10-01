@@ -151,4 +151,8 @@ code{font-size:.875em;color:var(--paper);overflow-wrap:anywhere}
 @media(max-width:800px){.trailer{padding-block:64px 0}.scenario-layout{grid-template-columns:1fr}.download-button{max-width:none}}
 @media(max-width:520px){.trailer{padding-block:54px 0}.trailer-figure figcaption{flex-direction:column;gap:4px}.map-figure>a{padding:5px}.download-button{padding:18px 20px}.download-button span+span{font-size:.8125rem}.platform-details{grid-template-columns:1fr 1fr}}
 
-.trailer-download{font-size:.875rem;color:var(--muted);margin-top:20px}
+.guide-link{margin-top:28px;font-size:.9375rem}
+
+.platform-downloads{display:grid;gap:12px;margin-top:28px;max-width:470px}
+.platform-downloads .button{margin:0}
+@media(max-width:800px){.platform-downloads{max-width:none}}

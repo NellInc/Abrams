@@ -97,8 +97,6 @@ async function enableMaps() {
 enableMaps();
 
 const trailer = document.querySelector("#trailer-player");
-// Keep initial playback quiet. The visitor can unmute using native controls.
-trailer.muted = true;
 trailer.addEventListener("error", () => {
-  document.querySelector("#trailer-caption").textContent = "The trailer could not load. Use the download link below to watch it.";
+  document.querySelector("#trailer-caption").textContent = "The trailer could not load. Reload the page or try another browser.";
 });

@@ -77,17 +77,17 @@ def main():
     raster_files = {str(p.relative_to(ROOT)) for p in DIST.rglob("*") if p.suffix in {".webp", ".jpg"}}
     if raster_files != {r["file"] for r in provenance["rasters"]}:
         errors.append("Raster provenance does not cover the served inventory")
-    for row in provenance["rasters"] + provenance["media"]:
+    for row in provenance["rasters"] + provenance["media"] + provenance["documents"]:
         asset = ROOT / row["file"]
         if hashlib.sha256(asset.read_bytes()).hexdigest() != row["output_sha256"]:
             errors.append(f"Asset differs from recorded provenance: {asset.name}")
         if asset.suffix == ".webp" and not asset.with_suffix(asset.suffix + ".json").is_file():
             errors.append(f"Missing origin sidecar: {asset.name}")
-    permitted = {".html", ".css", ".js", ".json", ".webp", ".jpg", ".ttf", ".txt", ".mp4", ".vtt", ".xml"}
+    permitted = {".html", ".css", ".js", ".json", ".webp", ".jpg", ".ttf", ".txt", ".mp4", ".vtt", ".xml", ".pdf"}
     for path in DIST.rglob("*"):
         if path.is_symlink():
             errors.append(f"Symbolic link in publication artifact: {path.name}")
-        elif path.is_file() and path.suffix not in permitted:
+        elif path.is_file() and path.suffix not in permitted and path.name != "CNAME":
             errors.append(f"Unexpected publication file: {path.name}")
     for forbidden in ("ABRAMS.COM", "SIM.EXE", "<iframe", "<audio"):
         if forbidden.startswith("<") and forbidden in html.lower():
@@ -98,14 +98,21 @@ def main():
         errors.append("Expected one requested project trailer")
     else:
         video = page.videos[0]
-        if any(key not in video for key in ("controls", "muted", "playsinline")) or "autoplay" in video or video.get("preload") != "none":
-            errors.append("Trailer must use quiet, user-controlled, non-preloaded playback")
+        if any(key not in video for key in ("controls", "playsinline")) or "muted" in video or "autoplay" in video or video.get("preload") != "none":
+            errors.append("Trailer must use unmuted, user-controlled, non-preloaded playback")
     if len(page.tracks) != 1 or page.tracks[0].get("kind") != "captions" or "default" not in page.tracks[0]:
         errors.append("The trailer needs its default English caption track")
     media_files = {str(p.relative_to(ROOT)) for p in DIST.rglob("*") if p.suffix in {".mp4", ".vtt"}}
     if media_files != {r["file"] for r in provenance["media"]}:
         errors.append("Unexpected media in static publication")
-    canonical = "https://nellinc.github.io/Abrams/"
+    if (DIST / "CNAME").read_text().strip() != "abramsremastered.com":
+        errors.append("CNAME must match the requested domain")
+    if "Starts muted" in html or "Download the trailer" in html or "nodownload" in html:
+        errors.append("Trailer download controls must remain native to the player")
+    documents = {str(p.relative_to(ROOT)) for p in DIST.rglob("*.pdf")}
+    if documents != {r["file"] for r in provenance["documents"]} or documents != {"dist/assets/guides/field-guide.pdf"}:
+        errors.append("Only the authored field guide may be published as a PDF")
+    canonical = "https://abramsremastered.com/"
     if page.canonical != canonical or page.metas.get("og:url") != canonical:
         errors.append("Canonical and sharing URLs must match the published project path")
     for key in ("description", "og:title", "og:description", "og:image", "og:image:alt", "twitter:card", "twitter:image"):
@@ -125,7 +132,7 @@ def main():
         errors.append("Private-only copy in the authorized public site")
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"PASS: {len(page.refs)} links/assets, 8 scenarios, {len(provenance["rasters"])} image origins, captioned muted trailer, search metadata; isolated static artifact")
+    print(f"PASS: {len(page.refs)} links/assets, 8 scenarios, {len(provenance["rasters"])} image origins, captioned user-controlled trailer, search metadata; isolated static artifact")
 
 
 if __name__ == "__main__":

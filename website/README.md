@@ -18,21 +18,19 @@ retains its original rights, as described by the project notice.
 
 Nell selected GitHub Pages. The project's `Project webpage` workflow verifies
 and publishes only `dist`, on changes to the website on `main`.
-Project URL: https://nellinc.github.io/Abrams/.
+Project URL: https://abramsremastered.com/.
 Nell authorized making NellInc/Abrams public with the website publication.
-The download block identifies the actual published macOS alpha.2 package;
-Windows/Linux packages are not yet published. Newer screenshots and trailer
-are identified as development work. Original PC files and the optional Genesis
+The download block links to macOS alpha.2 and native Windows/Linux alpha.4 packages, their release notes, checksums and matching DOSBox-Pure source archives. Original PC files and the optional Genesis
 ROM are excluded from both Git and the download package.
 
 The native trailer player has captions, a transcript and an extracted poster.
-It does not autoplay or preload the movie, and initial playback is muted.
+It does not autoplay or preload the movie, and playback starts with sound after the visitor presses Play. The native player retains its own download option; no separate trailer download link is shown.
 Canonical, Open Graph and Twitter metadata use the project URL; the sitemap
 includes the trailer. Structured metadata describes the webpage and video,
 without fabricated reviews or ratings. Search indexing is controlled by the
 search engines, not by the deployment check.
 
 Polished website map PNGs and exact generation prompts are in artwork/maps.
-The original game/manual map files elsewhere in the repository are unchanged.
+All eight maps share the approved NATO-inspired treatment. The matching field-guide PDF, including side-by-side manual and extracted PC game-data maps, is served from assets/guides/field-guide.pdf. Source originals remain unchanged.
 
 Run `python3 verify.py` and `node --check dist/app.js` before publishing.
