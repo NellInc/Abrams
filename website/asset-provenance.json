@@ -4,9 +4,9 @@
     {
       "file": "dist/assets/images/abrams-cover-remastered.webp",
       "source": "docs/images/abrams-cover-remastered.png",
-      "source_sha256": "2ac4e10003dcaf7466c65e77f469d5fc23b2bbb543ba58b99b8ad945545006ea",
-      "output_sha256": "ca72e116546edb19df877d927d7058c48ea78e2992ba1e135ca5a1ec20dc13dc",
-      "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
+      "source_sha256": "12f1c55af86a46aa7ffc28637a28279eb2db5788f156f782f63d718d06e7eeae",
+      "output_sha256": "2c3f3ec05108b528a98dab4a6348a3690d2535d6e40f32f154439213223d5d9b",
+      "origin": "Approved restored cover; existing FAN REMASTER glyphs and shadow shifted 20 pixels right to the main title centreline, with local sky repair beneath their former positions.",
       "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
     },
     {
