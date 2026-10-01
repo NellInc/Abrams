@@ -51,91 +51,91 @@
     },
     {
       "file": "dist/assets/maps/manual-map-convoy.webp",
-      "source": "website/artwork/maps/convoy-polished.png",
-      "source_sha256": "642bef280333a2d243e15e7540f68b80de83ec6e79bfcc85b871398ceae74473",
-      "output_sha256": "c40489b7d49bdf2236dbf7e4761d31c900e69485cb332a11c4278b79c735731b",
-      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
-      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
-      "reference_source": "docs/player-reference/manual-map-convoy.png",
-      "reference_sha256": "87cce35d2ac4860cd5cba02da8a117fe029aebd9a8036c0d1d4b631c4adaa254",
-      "generation_prompt": "artwork/maps/convoy-prompt.txt"
+      "source": "website/artwork/maps/convoy-nato.png",
+      "source_sha256": "5b5a4b07d7f87c8a8e9ea21a0a3c97ea9710c595dc6274cb2f89370263935cc6",
+      "output_sha256": "43088cd4a5f30d7fa6988258ab3a980cb68cc446d076c0c367006e0a21f99744",
+      "origin": "Built-in image generation, NATO-style cartography matching the approved second Mossel version. Source labels, roads, waterways, hill regions and landmarks visually checked.",
+      "conversion": "WebP quality 94, 1254\u00d71254, full composition preserved.",
+      "reference_source": "website/artwork/maps/convoy-polished.png",
+      "reference_sha256": "642bef280333a2d243e15e7540f68b80de83ec6e79bfcc85b871398ceae74473",
+      "generation_prompt": "artwork/maps/convoy-nato-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-hannover-push.webp",
-      "source": "website/artwork/maps/hannover-push-polished.png",
-      "source_sha256": "728269f56ad68b5295029f846fdc4bc32d1a3acc1698f40aba034f974e470108",
-      "output_sha256": "744bab2de1ad830a06595e4007d7c2c83e23ba5f9ad50c11681e893c611aef84",
-      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
-      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
-      "reference_source": "docs/player-reference/manual-map-hannover-push.png",
-      "reference_sha256": "81a98e8a84700fb177a34dfb12f094fc47f251875a82bb61cdde4cc48ca91fe8",
-      "generation_prompt": "artwork/maps/hannover-push-prompt.txt"
+      "source": "website/artwork/maps/hannover-push-nato.png",
+      "source_sha256": "7a3f6d52eefc16c2d92774234d2b85e00897a230b82148df45d0c71f4fc70a9c",
+      "output_sha256": "2c0b10093f0a739702151fbe2b9fcc18b0a9ce66cab0d68f2a6e37cf912358a6",
+      "origin": "Built-in image generation, NATO-style cartography matching the approved second Mossel version. Source labels, roads, waterways, hill regions and landmarks visually checked.",
+      "conversion": "WebP quality 94, 1254\u00d71254, full composition preserved.",
+      "reference_source": "website/artwork/maps/hannover-push-polished.png",
+      "reference_sha256": "728269f56ad68b5295029f846fdc4bc32d1a3acc1698f40aba034f974e470108",
+      "generation_prompt": "artwork/maps/hannover-push-nato-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-mass-destruction.webp",
-      "source": "website/artwork/maps/mass-destruction-polished.png",
-      "source_sha256": "c63828b91ea1582ad90e30cd82c799d5f18392ae511d378227c8eb762f9767f4",
-      "output_sha256": "15b9ac9adc9374d2fd6639e165b9e035bb3090e2777b08c664dd3c061ae792b1",
-      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
-      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
-      "reference_source": "docs/player-reference/manual-map-mass-destruction.png",
-      "reference_sha256": "bfff7462bd7f49ef1d05be282e7c87927b82e425ad22d8ee14521b7f9b575c0a",
-      "generation_prompt": "artwork/maps/mass-destruction-prompt.txt"
+      "source": "website/artwork/maps/mass-destruction-nato.png",
+      "source_sha256": "02058bcbda153d797947179413a2dc0d4386aa8e5e23c64253b17e132c682e8e",
+      "output_sha256": "91f441b7b137aaff331eaf990f20796b9bff17613bc0126e9e079b6e2ae48bf9",
+      "origin": "Built-in image generation, NATO-style cartography matching the approved second Mossel version. Source labels, roads, waterways, hill regions and landmarks visually checked.",
+      "conversion": "WebP quality 94, 1254\u00d71254, full composition preserved.",
+      "reference_source": "website/artwork/maps/mass-destruction-polished.png",
+      "reference_sha256": "c63828b91ea1582ad90e30cd82c799d5f18392ae511d378227c8eb762f9767f4",
+      "generation_prompt": "artwork/maps/mass-destruction-nato-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-nuremberg-highway.webp",
-      "source": "website/artwork/maps/nuremberg-highway-polished.png",
-      "source_sha256": "4d54ab782d1d05c695a7446fa4159f3ae27a1213b354cdf5d19421143505ddf7",
-      "output_sha256": "c22d7ffdb41d625e281e41b4dee7255ca4a5a3a077c48226dd9af5eb3db85b58",
-      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
-      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
-      "reference_source": "docs/player-reference/manual-map-nuremberg-highway.png",
-      "reference_sha256": "815997beea4da92ffc1742d9f8be84dd5e7b298db45b85f7903bdb835749f634",
-      "generation_prompt": "artwork/maps/nuremberg-highway-prompt.txt"
+      "source": "website/artwork/maps/nuremberg-highway-nato.png",
+      "source_sha256": "6fb807333de87426dd93553f55a80219982be45aafc89c922a56551cc7933af3",
+      "output_sha256": "c1611227c57839aca90d5155f7d623eb570edb99c6a0e8594b449d41ddf69afc",
+      "origin": "Built-in image generation, NATO-style cartography matching the approved second Mossel version. Source labels, roads, waterways, hill regions and landmarks visually checked.",
+      "conversion": "WebP quality 94, 1254\u00d71254, full composition preserved.",
+      "reference_source": "website/artwork/maps/nuremberg-highway-polished.png",
+      "reference_sha256": "4d54ab782d1d05c695a7446fa4159f3ae27a1213b354cdf5d19421143505ddf7",
+      "generation_prompt": "artwork/maps/nuremberg-highway-nato-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-siegen-infiltration.webp",
-      "source": "website/artwork/maps/siegen-infiltration-polished.png",
-      "source_sha256": "fe6db243790b4f43129e3863f9ea22a4a735261689b1484f532a3cf776064135",
-      "output_sha256": "466c980d59be130eb6cc8ba32d8f325873aac3ce13f52b3fccbd1fb9eb4aa105",
-      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
-      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
-      "reference_source": "docs/player-reference/manual-map-siegen-infiltration.png",
-      "reference_sha256": "f3397f05df62227c2f26655295d215e32a325bef7a27853abfa7a74e4fde7693",
-      "generation_prompt": "artwork/maps/siegen-infiltration-prompt.txt"
+      "source": "website/artwork/maps/siegen-infiltration-nato.png",
+      "source_sha256": "11e8e7f80d6b44124f798f00cb038db1a1a2473fbdb248f7bcb0107977d2ce4d",
+      "output_sha256": "6e8743da145f05414fa5514a2fdda7ce7aab2ac7ab0643599981e7420b2f9900",
+      "origin": "Built-in image generation, NATO-style cartography matching the approved second Mossel version. Source labels, roads, waterways, hill regions and landmarks visually checked.",
+      "conversion": "WebP quality 94, 1254\u00d71254, full composition preserved.",
+      "reference_source": "website/artwork/maps/siegen-infiltration-polished.png",
+      "reference_sha256": "fe6db243790b4f43129e3863f9ea22a4a735261689b1484f532a3cf776064135",
+      "generation_prompt": "artwork/maps/siegen-infiltration-nato-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-the-mossel-defense.webp",
-      "source": "website/artwork/maps/the-mossel-defense-polished.png",
-      "source_sha256": "3e590cd4c323dc05b1da9cd9f16c4e7edc9194c4069bca4c2bacaa959329d9bb",
-      "output_sha256": "bbbfe2b0d285e0263ce5ec5285e1410be5add61bfb778eb155ace61965832623",
-      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
-      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
-      "reference_source": "docs/player-reference/manual-map-the-mossel-defense.png",
-      "reference_sha256": "6dfc75ccd77ce776331e644b1722977ef96a991c7990ea8becd477003ef4d7f6",
-      "generation_prompt": "artwork/maps/the-mossel-defense-prompt.txt"
+      "source": "website/artwork/maps/the-mossel-defense-nato-concept.png",
+      "source_sha256": "c12045bb2985854396164e839821cd6e7abb37c0463af82bc4394a1b343761cb",
+      "output_sha256": "ab5baf9964b1c9ed1fdcfd6a2f9144c51d891979cd8d42f75bc276eb510d0730",
+      "origin": "Built-in image generation, NATO-style cartography matching the approved second Mossel version. Source labels, roads, waterways, hill regions and landmarks visually checked.",
+      "conversion": "WebP quality 94, 1254\u00d71254, full composition preserved.",
+      "reference_source": "website/artwork/maps/the-mossel-defense-polished.png",
+      "reference_sha256": "3e590cd4c323dc05b1da9cd9f16c4e7edc9194c4069bca4c2bacaa959329d9bb",
+      "generation_prompt": "artwork/maps/the-mossel-defense-nato-concept-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-the-mossel-intercept.webp",
-      "source": "website/artwork/maps/the-mossel-intercept-polished.png",
-      "source_sha256": "bd0f0f7a2a396c5099affe9d9ba0798064cd918e5aa75f3c3c29362d11737159",
-      "output_sha256": "a17354168331fc0a586dfb074aa7d57c7bb58de8a376523bedf339423a7e77d9",
-      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
-      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
-      "reference_source": "docs/player-reference/manual-map-the-mossel-intercept.png",
-      "reference_sha256": "f594ab274a064f44ad316c2f7b2f0366daa43e479cdf0a793eaa13f04d00ecbe",
-      "generation_prompt": "artwork/maps/the-mossel-intercept-prompt.txt"
+      "source": "website/artwork/maps/the-mossel-intercept-nato.png",
+      "source_sha256": "7524d46cde786025f8ec599d2d55216842c8b874816a6a1586f6f74ab9c5a3a3",
+      "output_sha256": "59a20f7623e7d690e13c21b8197798177909614535e1f79e4afeaf7cee4ce2a0",
+      "origin": "Built-in image generation, NATO-style cartography matching the approved second Mossel version. Source labels, roads, waterways, hill regions and landmarks visually checked.",
+      "conversion": "WebP quality 94, 1254\u00d71254, full composition preserved.",
+      "reference_source": "website/artwork/maps/the-mossel-intercept-polished.png",
+      "reference_sha256": "bd0f0f7a2a396c5099affe9d9ba0798064cd918e5aa75f3c3c29362d11737159",
+      "generation_prompt": "artwork/maps/the-mossel-intercept-nato-prompt.txt"
     },
     {
       "file": "dist/assets/maps/manual-map-the-road-to-bonn.webp",
-      "source": "website/artwork/maps/the-road-to-bonn-polished.png",
-      "source_sha256": "33ea7ef312b100fa6f65bccde05f00bf3ecee4576ce9d82d90dada926fb90397",
-      "output_sha256": "a936ffc95bfc455458d2446b8d158880ac2a11f997dedabc80fd6c2ef6cfaeb6",
-      "origin": "Built-in image generation, refinement of the approved restored manual map. Landmarks, roads, bridges and labels visually checked against the reference.",
-      "conversion": "WebP quality 94, 1254×1254, full composition preserved.",
-      "reference_source": "docs/player-reference/manual-map-the-road-to-bonn.png",
-      "reference_sha256": "9fc12dfa422115ce327a114201bc5be4035876ccbec35cd108863a4b1cd5cf13",
-      "generation_prompt": "artwork/maps/the-road-to-bonn-prompt.txt"
+      "source": "website/artwork/maps/the-road-to-bonn-nato.png",
+      "source_sha256": "b7bfbfa70694c071b5c21be38371a2ca6b92a3256621d16a09f84dedef00da79",
+      "output_sha256": "76f65cb85a41a0cbca95936850755e35ebd1635eaecffac5b91779b6e797f5f0",
+      "origin": "Built-in image generation, NATO-style cartography matching the approved second Mossel version. Source labels, roads, waterways, hill regions and landmarks visually checked.",
+      "conversion": "WebP quality 94, 1254\u00d71254, full composition preserved.",
+      "reference_source": "website/artwork/maps/the-road-to-bonn-polished.png",
+      "reference_sha256": "33ea7ef312b100fa6f65bccde05f00bf3ecee4576ce9d82d90dada926fb90397",
+      "generation_prompt": "artwork/maps/the-road-to-bonn-nato-prompt.txt"
     },
     {
       "file": "dist/assets/images/modern-cupola.webp",
@@ -159,7 +159,7 @@
       "source_sha256": "3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919",
       "output_sha256": "464e69a70a23beb0640428dd7f801e57a57df9104f44be0f1d08cf0841ff2a35",
       "origin": "Actual frame extracted at 3.4 seconds from the accepted v4 project trailer.",
-      "conversion": "1920×1080, full frame; WebP quality 94 or JPEG q:v 2."
+      "conversion": "1920\u00d71080, full frame; WebP quality 94 or JPEG q:v 2."
     },
     {
       "file": "dist/assets/images/trailer-poster.jpg",
@@ -167,7 +167,7 @@
       "source_sha256": "3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919",
       "output_sha256": "1882e19331c1d3832707445d016f8789eaa90ba157e3a164cb331dfc770c2b42",
       "origin": "Actual frame extracted at 3.4 seconds from the accepted v4 project trailer.",
-      "conversion": "1920×1080, full frame; WebP quality 94 or JPEG q:v 2."
+      "conversion": "1920\u00d71080, full frame; WebP quality 94 or JPEG q:v 2."
     }
   ],
   "media": [
@@ -175,13 +175,22 @@
       "file": "dist/assets/video/abrams-fan-remaster-trailer.mp4",
       "source": "artifacts/promo-20260930-v4/abrams-promo-clean.mp4",
       "output_sha256": "3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919",
-      "origin": "Accepted v4 final clean trailer, unchanged. H.264/AAC, 1920×1080, 60 seconds."
+      "origin": "Accepted v4 final clean trailer, unchanged. H.264/AAC, 1920\u00d71080, 60 seconds."
     },
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.vtt",
       "source": "artifacts/promo-20260930-v4/final-review/abrams-promo.vtt",
       "output_sha256": "236379afab8f09d7d0b8ab3257adef8445499279935ecde179d5de74b20bde5c",
       "origin": "Actual final-audio caption transcript, unchanged."
+    }
+  ],
+  "documents": [
+    {
+      "file": "dist/assets/guides/field-guide.pdf",
+      "source": "docs/player-reference/field-guide.pdf",
+      "source_sha256": "d65d4990e20ee78c805a8466a76ae1f7c678f14a68ab27fb9494706c0966692d",
+      "output_sha256": "d65d4990e20ee78c805a8466a76ae1f7c678f14a68ab27fb9494706c0966692d",
+      "kind": "Authored illustrated field guide with eight NATO/manual and extracted PC-data map pairs"
     }
   ]
 }

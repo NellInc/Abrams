@@ -30,3 +30,7 @@ builds/
 # Working if: these two PDFs are trackable while the original manual remains ignored.
 !/docs/player-reference/keyboard-controls.pdf
 !/docs/player-reference/field-guide.pdf
+
+# Public authored guide, never the source manual.
+# Working if: this one website PDF is trackable and source PDFs remain ignored.
+!/website/dist/assets/guides/field-guide.pdf
