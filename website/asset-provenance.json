@@ -155,19 +155,19 @@
     },
     {
       "file": "dist/assets/images/trailer-poster.webp",
-      "source": "artifacts/promo-20260930-v4/abrams-promo-clean.mp4",
-      "source_sha256": "3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919",
-      "output_sha256": "464e69a70a23beb0640428dd7f801e57a57df9104f44be0f1d08cf0841ff2a35",
-      "origin": "Actual frame extracted at 3.4 seconds from the accepted v4 project trailer.",
-      "conversion": "1920\u00d71080, full frame; WebP quality 94 or JPEG q:v 2."
+      "source": "artifacts/promo-20261002-v8/abrams-promo.mp4",
+      "source_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
+      "output_sha256": "b82795b142a1be2a3e41eba3ee225ade7560de6d0d6422638cc7091ef50b0719",
+      "origin": "Actual decoded frame at 3.0 seconds from the accepted V8 project trailer.",
+      "conversion": "1920x1080, full frame; WebP quality94 or JPEG quality95."
     },
     {
       "file": "dist/assets/images/trailer-poster.jpg",
-      "source": "artifacts/promo-20260930-v4/abrams-promo-clean.mp4",
-      "source_sha256": "3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919",
-      "output_sha256": "1882e19331c1d3832707445d016f8789eaa90ba157e3a164cb331dfc770c2b42",
-      "origin": "Actual frame extracted at 3.4 seconds from the accepted v4 project trailer.",
-      "conversion": "1920\u00d71080, full frame; WebP quality 94 or JPEG q:v 2."
+      "source": "artifacts/promo-20261002-v8/abrams-promo.mp4",
+      "source_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
+      "output_sha256": "cdf65250d7727e963a01bc39c34abe93fd711802e72419c7147049439b371b9d",
+      "origin": "Actual decoded frame at 3.0 seconds from the accepted V8 project trailer.",
+      "conversion": "1920x1080, full frame; WebP quality94 or JPEG quality95."
     },
     {
       "file": "dist/favicon-32.png",
@@ -189,15 +189,19 @@
   "media": [
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.mp4",
-      "source": "artifacts/promo-20260930-v4/abrams-promo-clean.mp4",
-      "output_sha256": "3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919",
-      "origin": "Accepted v4 final clean trailer, unchanged. H.264/AAC, 1920\u00d71080, 60 seconds."
+      "source": "artifacts/promo-20261002-v8/abrams-promo.mp4",
+      "output_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
+      "origin": "Accepted V8 final trailer, exact bytes. H.264/AAC, 1920x1080, 59.5seconds.",
+      "source_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
+      "duration_seconds": 59.5,
+      "captions_burned_in": true
     },
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.vtt",
-      "source": "artifacts/promo-20260930-v4/final-review/abrams-promo.vtt",
-      "output_sha256": "236379afab8f09d7d0b8ab3257adef8445499279935ecde179d5de74b20bde5c",
-      "origin": "Actual final-audio caption transcript, unchanged."
+      "source": "artifacts/promo-20261002-v8/final-review/abrams-promo.vtt",
+      "output_sha256": "26f49be04cd0fcdd9b41bb75a1a5ca0a3bb0767f4d5047a61dd3119ef6c0961d",
+      "origin": "Actual final-audio captions for V8; optional native track, since the accepted movie already displays captions.",
+      "source_sha256": "26f49be04cd0fcdd9b41bb75a1a5ca0a3bb0767f4d5047a61dd3119ef6c0961d"
     }
   ],
   "documents": [

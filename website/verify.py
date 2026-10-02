@@ -100,8 +100,13 @@ def main():
         video = page.videos[0]
         if any(key not in video for key in ("controls", "playsinline")) or "muted" in video or "autoplay" in video or video.get("preload") != "none":
             errors.append("Trailer must use unmuted, user-controlled, non-preloaded playback")
-    if len(page.tracks) != 1 or page.tracks[0].get("kind") != "captions" or "default" not in page.tracks[0]:
-        errors.append("The trailer needs its default English caption track")
+    if len(page.tracks) != 1 or page.tracks[0].get("kind") != "captions":
+        errors.append("The trailer needs its English caption track")
+    else:
+        movie = next(r for r in provenance["media"] if r["file"].endswith(".mp4"))
+        expected_default = not movie.get("captions_burned_in", False)
+        if ("default" in page.tracks[0]) != expected_default:
+            errors.append("Native caption default must avoid duplicating captions already in the movie")
     media_files = {str(p.relative_to(ROOT)) for p in DIST.rglob("*") if p.suffix in {".mp4", ".vtt"}}
     if media_files != {r["file"] for r in provenance["media"]}:
         errors.append("Unexpected media in static publication")
@@ -138,7 +143,9 @@ def main():
     else:
         graph = json.loads(blocks[0])["@graph"]
         video_schema = next(r for r in graph if r["@type"] == "VideoObject")
-        if video_schema["duration"] != "PT1M" or video_schema["contentUrl"] != canonical + "assets/video/abrams-fan-remaster-trailer.mp4":
+        movie = next(r for r in provenance["media"] if r["file"].endswith(".mp4"))
+        expected_url = canonical + "assets/video/abrams-fan-remaster-trailer.mp4?v=" + movie["output_sha256"][:12]
+        if video_schema["duration"] != f"PT{movie['duration_seconds']:g}S" or video_schema["contentUrl"] != expected_url:
             errors.append("Trailer metadata does not match the accepted media")
         if "aggregateRating" in blocks[0] or "review" in blocks[0]: errors.append("Unsubstantiated ratings in metadata")
     sitemap = ET.parse(DIST / "sitemap.xml")

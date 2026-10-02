@@ -4,6 +4,12 @@ A high-resolution Godot fan remaster of Dynamix's **Abrams Battle Tank**, powere
 
 **Dedicated to the memory of David “Ming” Kenny.**
 
+## Trailer
+
+[![Watch the Abrams Battle Tank Fan Remaster trailer](website/dist/assets/images/trailer-poster.jpg)](https://abramsremastered.com/#trailer)
+
+[Watch the captioned trailer](https://abramsremastered.com/#trailer) · [Project website](https://abramsremastered.com/)
+
 ## Artwork and screenshots
 
 <p align="center">

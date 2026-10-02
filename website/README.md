@@ -24,6 +24,7 @@ The download block links to macOS alpha.2 and native Windows/Linux alpha.4 packa
 ROM are excluded from both Git and the download package.
 
 The native trailer player has captions, a transcript and an extracted poster.
+The accepted V8 movie is captioned directly; its matching optional English text track is off by default to avoid duplicate captions.
 It does not autoplay or preload the movie, and playback starts with sound after the visitor presses Play. The native player retains its own download option; no separate trailer download link is shown.
 Canonical, Open Graph and Twitter metadata use the project URL; the sitemap
 includes the trailer. Structured metadata describes the webpage and video,
