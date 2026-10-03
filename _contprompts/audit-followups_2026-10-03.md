@@ -29,37 +29,29 @@ passes 26/26. `git_boundary` passes on a throwaway index holding the whole tree.
 - Import fallbacks (85 handlers, 71 tools): a missing real dependency such as
   Pillow now surfaces under its own name instead of "No module named <sibling>".
 
-## Needs Nell
+- **Published 3 October 2026.** The notarized macOS alpha.4 (signed build
+  1a61287931510c16adc4; submission 871599ab-b8f4-45c7-a920-e303cf985360,
+  Accepted, 0 issues; stapled; Gatekeeper "Notarized Developer ID" from the
+  extracted ZIP) is attached to the v0.1.0-alpha.4 release with its source
+  archive and a combined SHA256SUMS.txt (GitHub digests match). Commits
+  a824e01 (pre-audit WIP), 7e3d1d2 (this pass) and merge e4fc48f were pushed to
+  main as a fast-forward; Pages and source CI succeeded, and the live index is
+  byte-identical to the local one. Receipt: `artifacts/notarization-20261003/`.
 
-1. **Publish the notarized Mac build.** Nell accepted Apple's agreement; a fresh
-   current-source app (signed build 1a61287931510c16adc4) was Developer ID
-   signed, notarized (submission 871599ab-b8f4-45c7-a920-e303cf985360,
-   Accepted, 0 issues), stapled, and passes Gatekeeper as a notarized app, also
-   from the extracted release ZIP. Everything is in
-   `artifacts/notarization-20261003/` with `RELEASE-RECEIPT.json`. Not yet
-   published: attach the ZIP, its SHA-256 and the GPL source to the alpha.4
-   release, then swap the website's macOS links/copy (button, step 1 app name,
-   FAQ signing answer, checksums, JSON-LD operatingSystem, llms.txt, the
-   verify.py alpha.2 tripwire) and the docs that still say notarization is pending.
-2. **F067** stays deferred by judgment: removing the dead store rotates the
+## Remaining
+
+1. **F067** stays deferred by judgment: removing the dead store rotates the
    pinned trace-core hash, invalidates every checkpoint and needs parity reruns,
    for zero behavioural change. Do it with the next deliberate core rebuild.
-3. **Endurance receipt** on an idle machine:
+2. **Endurance receipt** on an idle machine:
    `python3 tools/verify_pc_endurance.py --output artifacts/endurance-host-<date>`.
-4. **Website decisions** (defaults kept): optional caption-free trailer encode;
+3. **Optional website choices** (defaults kept): a caption-free trailer encode;
    clean Modern recaptures instead of the recorded 4:3 trim; a player-facing
-   name for the supported PC edition; GitHub repo homepage URL ->
-   abramsremastered.com; publish timing. origin/main has diverged from this
-   branch (it already carries the published website/llms index), so integrate
-   main before publishing; never force-push.
-5. **Project-rules files** from `/init-project` (the bilateral-alignment quick
-   reference and the Bash hook registration) still need a fresh
-   `consent-gate approve policy-gate-edit --ttl 300 --uses 3`.
-6. **Commit together.** New untracked files are referenced by tracked code and
-   by `tools/package/allowlist.json` (`tools/source_guard.py`, seven new
-   `tests/test_*.py`, `website/dist/404.html`, `robots.txt`, the WOFF2 and the
-   resized webp images + sidecars). The source-bundle builder refuses
-   unrecognised untracked files, so stage them with the edits.
+   name for the supported PC edition; the GitHub repo homepage URL ->
+   abramsremastered.com.
+4. **Project-rules files** from `/init-project` (the bilateral-alignment quick
+   reference and the Bash hook registration in `hooks/`, left uncommitted) still
+   need a fresh `consent-gate approve policy-gate-edit --ttl 300 --uses 3`.
 
 ## Local environment changes (not in Git)
 

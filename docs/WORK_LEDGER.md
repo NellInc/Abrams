@@ -3126,5 +3126,8 @@ build 1a61287931510c16adc4, 87 Developer ID targets, core text unchanged) passed
 signed-app import and capture smoke, was notarized (submission 871599ab-b8f4-45c7-
 a920-e303cf985360: Accepted, 0 issues), stapled, and passes Gatekeeper as
 "Notarized Developer ID", including from the extracted release ZIP. Receipt:
-`artifacts/notarization-20261003/RELEASE-RECEIPT.json`. Not yet published. The
+`artifacts/notarization-20261003/RELEASE-RECEIPT.json`. On Nell's "All live, all
+finished" it was attached to the v0.1.0-alpha.4 release (GitHub asset digests
+match), the website switched to it, and the work merged to main as a fast-forward
+with Pages and source CI green and the live index byte-identical to local. The
 website dedication also gained Nell's portrait of her father, David "Ming" Kenny.
