@@ -5,6 +5,8 @@ from tools.extract_pc_ui import PLATES, screen_pixels, loaded_struts
 from tools.inspect_scenarios import decode_resource
 from tools.pc_bitmaps import decode_bitmaps
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 class UiAssetTests(unittest.TestCase):
     def test_screen_nibbles_and_strict_size(self):
@@ -12,11 +14,12 @@ class UiAssetTests(unittest.TestCase):
         for length in (0,31999,32001):
             with self.assertRaises(ValueError): screen_pixels(bytes(length))
 
+    @unittest.skipUnless(all((ROOT/'GAME'/name).is_file() for name in PLATES+('STRUTS.BMP',)), 'Requires separately supplied original PC files')
     def test_supplied_plates_and_strut_directory(self):
         for name in PLATES:
             with self.subTest(name=name):
-                self.assertEqual(len(screen_pixels(decode_resource((Path('GAME')/name).read_bytes()))),64000)
-        sources = decode_bitmaps(decode_resource(Path('GAME/STRUTS.BMP').read_bytes()))
+                self.assertEqual(len(screen_pixels(decode_resource((ROOT/'GAME'/name).read_bytes()))),64000)
+        sources = decode_bitmaps(decode_resource((ROOT/'GAME/STRUTS.BMP').read_bytes()))
         self.assertEqual(len(sources),7)
         self.assertEqual(sum(p['width']*p['height'] for p in sources),16024)
 

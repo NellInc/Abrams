@@ -38,21 +38,21 @@ const COLUMNS := 5
 const ROWS := 4
 var sources: Dictionary = {}
 var bounds: Dictionary = {}
-var textures: Array[Texture2D] = []
+var loaded := false
 var atlas: Texture2D
 var correction: Texture2D
 
 func load_assets(root_path: String) -> bool:
 	sources.clear()
 	bounds.clear()
-	textures.clear()
+	loaded = false
 	correction = null
 	atlas = null
 	var path := root_path.path_join("local-art/genesis/source/effects-v1/effects.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path) != SOURCE_HASH: return false
 	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if not data is Dictionary or not data.get("images") is Array or data.images.size() != 64: return false
-	var loaded: Array[Texture2D] = []
+	var tile := 0
 	var packed := Image.create(STRIDE*COLUMNS,STRIDE*ROWS,false,Image.FORMAT_RGBA8)
 	packed.fill(Color(0,0,0,0))
 	for asset: Array in ASSETS:
@@ -64,9 +64,9 @@ func load_assets(root_path: String) -> bool:
 		# A bounded 512-square tile exceeds the largest original 56x45 sprite at
 		# tested 5x scale. Two transparent texels isolate linear filter footprints.
 		image.resize(TILE,TILE,Image.INTERPOLATE_LANCZOS)
-		var n := loaded.size()
-		packed.blit_rect(image,Rect2i(0,0,TILE,TILE),Vector2i((n%COLUMNS)*STRIDE+PAD,(n/COLUMNS)*STRIDE+PAD))
-		loaded.append(ImageTexture.create_from_image(image))
+		# Only the packed atlas is sampled; per-donor textures would duplicate VRAM.
+		packed.blit_rect(image,Rect2i(0,0,TILE,TILE),Vector2i((tile%COLUMNS)*STRIDE+PAD,(tile/COLUMNS)*STRIDE+PAD))
+		tile += 1
 	for index: int in DONORS:
 		var source: Dictionary = data.images[index]
 		if int(source.index) != index: return false
@@ -87,11 +87,11 @@ func load_assets(root_path: String) -> bool:
 	for n in 256: lut.set_pixel(n,0,Colour.input_color([n,n,n],compatibility))
 	correction = ImageTexture.create_from_image(lut)
 	atlas = ImageTexture.create_from_image(packed)
-	textures = loaded
+	loaded = true
 	return true
 
 func mapping(object: Dictionary, camera: Dictionary, palette: Array) -> Dictionary:
-	if textures.size()!=ASSETS.size() or atlas==null or palette.size()!=16: return {}
+	if not loaded or atlas==null or palette.size()!=16: return {}
 	# JSON numbers arrive as floats; nested Array equality is type-sensitive.
 	# Compare the actual channels rather than rejecting an identical live palette.
 	for i in 16:

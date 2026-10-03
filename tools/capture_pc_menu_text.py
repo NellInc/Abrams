@@ -3,12 +3,16 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.pc_reference_core import PcReferenceCore
 from tools.pc_live_state import SimStateReader
 from tools.pc_session import PresentationSession
 from tools.inspect_scenarios import decode_resource
 from tools.capture_pc_session import information_steps,steps
+from tools.source_guard import inside_source
 ROOT=Path(__file__).resolve().parents[1]
 
 def menu_steps():
@@ -38,7 +42,7 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--compare',type=Path)
     args=parser.parse_args()
-    if any(args.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')):parser.error('output must be outside original sources')
+    if inside_source(args.output):parser.error('output must be outside original sources')
     args.output.mkdir(parents=True,exist_ok=False)
     manifest=json.loads((ROOT/'.runtime/pc-core/abrams-trace.json').read_text())
     library='abrams-trace.dylib' if args.mode=='trace' else 'source-baseline.dylib'

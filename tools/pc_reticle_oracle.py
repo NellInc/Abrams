@@ -18,11 +18,14 @@ try:
     from tools.pc_live_state import SimStateReader,SIM_SHA256
     from tools.unpack_pc_executables import unpack
     from tools.pc_reticle import lines,ink_pixels,TABLE_SHA256,CLIP,ReticleRuns
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import cpu,set_registers,run_until
     from pc_live_state import SimStateReader,SIM_SHA256
     from unpack_pc_executables import unpack
     from pc_reticle import lines,ink_pixels,TABLE_SHA256,CLIP,ReticleRuns
+    from source_guard import inside_source
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -138,6 +141,6 @@ def verify(ram):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--capture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')): p.error('output must be outside original references')
+    if inside_source(a.output,ROOT,('GAME','GENESIS')): p.error('output must be outside original references')
     result=verify(a.capture.read_bytes());a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps({k:v for k,v in result.items() if k not in ('cases','raster_cases')},indent=2))

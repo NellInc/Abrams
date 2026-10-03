@@ -11,7 +11,8 @@ try:
     from tools.pc_readiness import ReadinessBark
     from tools.pc_crew_voice import CrewBarks,RadioBarks
     from tools.pc_frontend_text import FrontendText, FrontendSources
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_audio_events import audio_status
     from pc_live_state import active_program
     from pc_render_trace import Collector

@@ -5,7 +5,9 @@ No guest is executed and no actor/mission-trigger position is inferred. The
 START scenario selector and SIM resource loader bind title index to WLD index.
 """
 from pathlib import Path
-import hashlib,html,json,math,struct
+import hashlib,html,json,math,struct,sys
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.inspect_scenarios import decode_resource,parse_world
 from tools.unpack_pc_executables import unpack
 ROOT=Path(__file__).resolve().parents[1]

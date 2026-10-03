@@ -17,8 +17,8 @@ def run():
   set_registers(m,((UC_X86_REG_CS,LOAD),(UC_X86_REG_DS,LOAD+ds),(UC_X86_REG_SS,0x4000),(UC_X86_REG_SP,0xffe0),(UC_X86_REG_EFLAGS,2)))
   run_until(m,LOAD*16+start,LOAD*16+call,50)
   arg=struct.unpack('<H',m.mem_read(0x40000+m.reg_read(UC_X86_REG_SP),2))[0]
-  assert arg==pointer and bytes(m.mem_read((LOAD+ds)*16+arg,6))==b'frame\0'
-  assert image[call:call+5]==b'\x9a'+struct.pack('<HH',ip,LOAD+segment)
+  if arg!=pointer or bytes(m.mem_read((LOAD+ds)*16+arg,6))!=b'frame\0':raise ValueError(f'{name} FRAME argument block differs')
+  if image[call:call+5]!=b'\x9a'+struct.pack('<HH',ip,LOAD+segment):raise ValueError(f'{name} FRAME loader call differs')
   rows.append({'program':name,'source_sha256':sha256(raw),'ds':ds,'argument_block':start,'loader_call':call,
                'filename_pointer':arg,'filename':'frame','loader_target':[segment,ip],'unpack':proof})
  return {'schema':1,'scope':__doc__,'rows':rows}

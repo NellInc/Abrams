@@ -120,6 +120,15 @@ func _color(value: Variant) -> bool:
 func _point(p: Array, divisor := 1.0) -> Vector2:
 	return Vector2(float(p[0]),float(p[1]))/divisor-Vector2(source_rect.position)+Vector2(0.5,0.5)
 
+# Source-local stroke span of one grid call. Original vertical calls exclude
+# their final y endpoint (box.end.y); horizontal calls light their final
+# column (box.end.x-1), as the CPU oracle shows in every case.
+func _grid_span(p: Array) -> PackedVector2Array:
+	var a := _point([p[0],p[1]])
+	var b := _point([p[2],p[3]])
+	var direction := (b-a).normalized()
+	return PackedVector2Array([a-direction*0.5,b+direction*(0.5 if p[1]==p[3] else -0.5)])
+
 func _draw() -> void:
 	if packet.is_empty(): return
 	# Scale geometry, not the antialiasing fringe. Godot then smooths over one
@@ -128,12 +137,8 @@ func _draw() -> void:
 	var stroke := minf(factor.x,factor.y)
 	draw_rect(Rect2(Vector2.ZERO,size),Color.BLACK)
 	for line in packet.grid:
-		# Original axis rasterizer excludes its final endpoint.
-		var p: Array = line.points
-		var a := _point([p[0],p[1]])
-		var b := _point([p[2],p[3]])
-		var direction := (b-a).normalized()
-		draw_line((a-direction*0.5)*factor,(b-direction*0.5)*factor,PALETTE[int(line.color)],stroke,true)
+		var span := _grid_span(line.points)
+		draw_line(span[0]*factor,span[1]*factor,PALETTE[int(line.color)],stroke,true)
 	for quad in packet.quads:
 		var points := PackedVector2Array()
 		for p in quad.vertices_q14: points.append(_point(p,16384.0)*factor)

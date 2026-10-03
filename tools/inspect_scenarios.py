@@ -238,8 +238,13 @@ def main() -> int:
     if not names:
         parser.error("no matching reference files")
     # Resolve every input and output before writing. Never overwrite original data.
-    out = args.output.resolve()
-    if out.is_relative_to(args.game.resolve()):
+    try:
+        from tools.source_guard import inside_source
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
+        from source_guard import inside_source
+    game = args.game.resolve()  # Case, symlink and ".." aliases of the game directory count as inside it.
+    if inside_source(args.output, game.parent, (game.name,)):
         parser.error("report output must be outside GAME")
     reports = [inspect_file(args.game / name) for name in names]
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -9,10 +9,13 @@ import hashlib
 import json
 from pathlib import Path
 import struct
-from tools.extract_genesis_aftermath import record
-from tools.extract_genesis_newspapers import ROM_SHA
+import sys
 
 ROOT=Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
+from tools.extract_genesis_aftermath import record
+from tools.extract_genesis_newspapers import ROM_SHA
+from tools.source_guard import inside_source
 DESCRIPTORS=[0x9AD4,0x9AC4,0x9ACC,0x9ADC,0x9ABC]
 PC_ORIGINS=[(188,54),(206,38),(203,83),(251,50),(146,65)]
 
@@ -44,7 +47,7 @@ def decode(rom):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--render',action='store_true');a=p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ['GAME','GENESIS']):p.error('output must be outside original sources')
+    if inside_source(a.output,ROOT,('GAME','GENESIS')):p.error('output must be outside original sources')
     rom=(ROOT/'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').read_bytes()
     if a.render:
         from PIL import Image

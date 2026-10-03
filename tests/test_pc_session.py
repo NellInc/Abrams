@@ -37,6 +37,27 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(route[-1]['label'],'second-mission')
         self.assertTrue(all(1<=s['frames']<=600 for s in route))
 
+    def test_menu_geometry_predicate_accepts_only_START_owned_scenery(self):
+        from tools.capture_pc_session import no_sim_geometry
+        scene={'frontend_scene':'START/ANIM'}
+        sample=lambda name,draw,state=None:{'program':{'name':name} if name else None,'state':state,'presentation':{'draw_pass':draw}}
+        self.assertTrue(no_sim_geometry(sample('START',scene)))
+        self.assertTrue(no_sim_geometry(sample('START',None)))
+        self.assertTrue(no_sim_geometry(sample(None,None)))
+        self.assertFalse(no_sim_geometry(sample('START',{'objects':[]})))
+        self.assertFalse(no_sim_geometry(sample('END',scene)))
+        self.assertFalse(no_sim_geometry(sample('BRIEF',scene)))
+        self.assertFalse(no_sim_geometry(sample(None,scene)))
+        self.assertFalse(no_sim_geometry(sample('START',scene,{'station':'gunner'})))
+        self.assertFalse(no_sim_geometry(sample('START',None,{'station':'gunner'})))
+
+    def test_incomplete_ui_overlay_records_failed_check(self):
+        from tools.capture_pc_session import ui_fully_original
+        self.assertFalse(ui_fully_original({'ui_overlay':None}))
+        self.assertFalse(ui_fully_original({}))
+        self.assertFalse(ui_fully_original({'ui_overlay':{'ui_pixels':63999}}))
+        self.assertTrue(ui_fully_original({'ui_overlay':{'ui_pixels':64000}}))
+
     def test_combat_loss_bound_cannot_substitute_quitting_or_fake_end(self):
         from tools.capture_pc_session import combat_loss_steps
         session=SimpleNamespace(sample=lambda:{'program':{'name':'SIM'}})

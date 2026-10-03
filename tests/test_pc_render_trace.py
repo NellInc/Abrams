@@ -242,6 +242,33 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 19, 2, bytes(64000))
         with self.assertRaisesRegex(ValueError, 'slots differ'): self.event(c, 11, 0)
 
+    def test_first_error_survives_cascading_events_from_one_native_call(self):
+        c = self.collector()
+        def send(event, raw=b''):
+            data = C.create_string_buffer(raw)
+            c.observe(event, (C.c_uint16 * 12)(*[0] * 12), C.addressof(data), 0, len(raw))
+        send(10)
+        send(19, bytes([7])*64000)
+        send(31, bytes(64000*3))
+        send(24, bytes(64000))
+        self.assertRegex(str(c.error), 'invalid UI provenance mask')
+        with self.assertRaisesRegex(ValueError, 'invalid UI provenance mask'):
+            c.paired_video((b'\0'*4, 1, 1, 4))
+
+    def test_unknown_draw_lookups_name_the_missing_source(self):
+        world = lambda: {'unsupported': [], 'objects': [], 'world': {'static': [], 'dynamic': []}}
+        c = self.collector(); c.active = world()
+        with self.assertRaisesRegex(ValueError, 'unknown sprite root object 0x3e7'):
+            self.event(c, 7, 0, b'\x80\x05', [0, 999] + [0] * 10)
+        c = self.collector(); c.active = world()
+        raw = bytearray(0x1300); raw[0x12CC:0x12CE] = (0x4321).to_bytes(2, 'little')
+        with self.assertRaisesRegex(ValueError, 'unknown draw object 0x4321'):
+            self.event(c, 2, 0, bytes(raw))
+        c = self.collector(); c.active = world()
+        c.current = {'shape_index': 0, 'primitive_ids': [0xFFFF], 'polygons': []}
+        with self.assertRaisesRegex(ValueError, 'not in source shape'):
+            self.event(c, 6, 0, bytes(0x1A70))
+
     def test_redrawing_displayed_page_invalidates_scanout_even_if_pass_finishes(self):
         c = self.collector()
         self.finish_pass(c, 1, 0)

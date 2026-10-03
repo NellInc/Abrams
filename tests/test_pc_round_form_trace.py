@@ -91,6 +91,15 @@ class RoundFormTraceTests(unittest.TestCase):
         self.assertNotIn('static bool abrams_round',header)
         self.assertIn("'round_form_event_schema': 1",(ROOT/'tools/build_pc_trace_core.py').read_text())
         self.assertIn('manifest.get("round_form_event_schema") != 1',(ROOT/'tools/pc_bridge_host.py').read_text())
+    def test_patched_upstream_sources_keep_lf_bytes_on_every_platform(self):
+        # Default write_text would emit CRLF on Windows and split the patched-source hashes by platform.
+        import ast
+        tree=ast.parse((ROOT/'tools/build_pc_trace_core.py').read_text())
+        writes=[n for n in ast.walk(tree) if isinstance(n,ast.Call) and getattr(n.func,'attr',None)=='write_text'
+                and n.args and isinstance(n.args[0],ast.Name) and n.args[0].id in ('changed','after')]
+        self.assertEqual(len(writes),2)
+        for n in writes:
+            self.assertIn(("newline","\n"),[(k.arg,getattr(k.value,'value',None)) for k in n.keywords])
 
 
 class NativeRoundHookTests(unittest.TestCase):

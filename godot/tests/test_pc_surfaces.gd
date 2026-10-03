@@ -35,6 +35,8 @@ func color_check(im: Image, x: int, y: int, index: int, context: String) -> void
 	check(actual.to_rgba32() == Color(PALETTE[index]).to_rgba32(), "%s pixel %d,%d actual=%s expected=%s" % [context,x,y,actual.to_html(),PALETTE[index]])
 
 func _initialize() -> void:
+	# A runtime script error aborts _run before quit(); fail instead of idling.
+	create_timer(600.0).timeout.connect(func(): printerr("FAIL: PC_SURFACES deadline"); quit(1))
 	_run.call_deferred()
 
 func _run() -> void:
@@ -59,7 +61,7 @@ func _run() -> void:
 	for i in 16: stripes.append(quad(32 + i * 16, 13, 16, 97, 1024, i))
 	view.apply_pass(fixture(stripes))
 	check(view.mesh_node.mesh != null and view.polygon_count == 16, "solid polygon stream missing")
-	check(view.mesh_node.mesh.surface_get_array_len(0) == 102, "one background and sixteen ordered quads")
+	check(view.mesh_node.mesh != null and view.mesh_node.mesh.surface_get_array_len(0) == 102, "one background and sixteen ordered quads")
 	check(view.render_warnings.is_empty(), "unexpected surface warning")
 	if "--native" in OS.get_cmdline_user_args():
 		await process_frame

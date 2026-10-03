@@ -67,6 +67,8 @@ launcher uses `~/Library/Application Support/Abrams/saves/states/`.
 Preserve the whole save directory. Checkpoints are pinned to the game bytes,
 native core, emulation options and platform; they are not portable interchange
 files or a substitute for backups. A core update can make old states incompatible.
+The core fingerprint is its pre-signing identity, so re-signing an unchanged
+core keeps checkpoints compatible.
 The original auto-save and Take R+R system remains available independently.
 
 New checkpoints preserve validated host-side EGA artwork ownership alongside
@@ -142,5 +144,5 @@ cross-process reload, exact campaign-disk restoration, rejected corrupt or
 incompatible states and recovery after native rejection. Graphics checks cover
 158 original transition fixtures. Production-viewer integration separately checks
 same-frame switching and identical original RAM/video after fifteen frames at
-normal speed versus 1+2+4+8-frame requests. These are bounded checks, not a claim
+normal speed versus seven 1x requests and one 8x request. These are bounded checks, not a claim
 that every mission or campaign has been completed.

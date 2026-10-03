@@ -18,10 +18,13 @@ try:
     from tools.pc_bearing_oracle import cpu, set_registers, run_until
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.unpack_pc_executables import unpack
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import cpu, set_registers, run_until
     from pc_live_state import SimStateReader, SIM_SHA256
     from unpack_pc_executables import unpack
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -150,7 +153,7 @@ if __name__ == '__main__':
     parser.add_argument('--capture', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    if any(args.output.resolve().is_relative_to((ROOT/name).resolve()) for name in ('GAME', 'GENESIS')):
+    if inside_source(args.output):
         parser.error('output must be outside original reference directories')
     result = verify(args.capture.read_bytes())
     args.output.parent.mkdir(parents=True, exist_ok=True)

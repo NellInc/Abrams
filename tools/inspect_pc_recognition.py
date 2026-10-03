@@ -6,6 +6,9 @@ state or copy-protection control flow is changed.
 """
 import hashlib,json,struct
 from pathlib import Path
+import sys
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.unpack_pc_executables import unpack
 from tools.inspect_scenarios import decode_resource
 from tools.pc_bitmaps import decode_bitmaps

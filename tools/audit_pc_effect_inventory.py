@@ -13,7 +13,8 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.inspect_shapes import inspect_shapes
     from tools.pc_bitmaps import decode_bitmaps
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from extract_genesis_effects import ROM_HASH, decode_effects
     from inspect_scenarios import decode_resource
     from inspect_shapes import inspect_shapes

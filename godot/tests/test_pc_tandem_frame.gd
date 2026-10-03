@@ -30,6 +30,11 @@ func matches(image: Image, source: Image, x: int, y: int, scale: int, label: Str
 	check(actual == expected, "%s pixel %d,%d: %x != %x" % [label,x,y,actual,expected])
 
 func _initialize() -> void:
+	# A runtime script error aborts _run before quit(); fail instead of idling.
+	# Manual --fixture runs are untimed unless --deadline SECONDS is given.
+	var args := OS.get_cmdline_user_args()
+	var deadline := float(args[args.find("--deadline")+1]) if "--deadline" in args and args.find("--deadline")+1<args.size() else (0.0 if "--fixture" in args else 600.0)
+	if deadline>0.0: create_timer(deadline).timeout.connect(func(): printerr("FAIL: PC_TANDEM_FRAME deadline"); quit(1))
 	_run.call_deferred()
 
 func _run() -> void:

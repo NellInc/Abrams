@@ -10,7 +10,8 @@ import struct
 try:
     from tools.pc_bitmaps import decode_bitmaps,read_ega_bitmap
     from tools.inspect_scenarios import decode_resource
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bitmaps import decode_bitmaps,read_ega_bitmap
     from inspect_scenarios import decode_resource
 

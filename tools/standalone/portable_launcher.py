@@ -42,11 +42,12 @@ def main():
             # through the existing original-game shutdown/overlay flush path.
             result=subprocess.run([str(runtime),*extra],capture_output=True,text=True,
                                   timeout=None if '--play' in extra else 300)
-            print(result.stdout or result.stderr,end='')
+            # Success replies are JSON on stdout; failures explain themselves on stderr.
+            print(result.stdout if result.returncode==0 or not result.stderr.strip() else result.stderr,end='')
             return result.returncode
         renderer=bundle/'renderer'/('AbramsRenderer.exe' if os.name=='nt' else 'AbramsRenderer')
-        env=dict(os.environ,ABRAMS_BUNDLE=str(bundle),ABRAMS_PYTHON=str(runtime))
-        for name in ('PYTHONHOME','PYTHONPATH','GODOT_BIN'):env.pop(name,None)
+        env=dict(os.environ,ABRAMS_PYTHON=str(runtime))
+        for name in ('PYTHONHOME','PYTHONPATH','GODOT_BIN','ABRAMS_BUNDLE'):env.pop(name,None)
         return subprocess.call([str(renderer),'--path',str(bundle/'kit/godot'),
             '--script','res://scripts/portable_setup.gd',*extra],env=env)
     except (ValueError,OSError,KeyError,subprocess.SubprocessError) as error:

@@ -167,7 +167,10 @@ func _completed(code: int, output: String, was_play: bool) -> void:
             quit(1)
         else:
             _about()
-            create_timer(0.1).timeout.connect(func(): quit())
+            # CI requires this receipt: Godot exits 0 even when a script fails to parse.
+            create_timer(0.1).timeout.connect(func():
+                print("PORTABLE_SETUP_SMOKE: PASS")
+                quit())
     play.disabled = not installed
     genesis.disabled = not installed
     pc_state.text="Original PC game · Verified" if installed else "Original PC game · Required"

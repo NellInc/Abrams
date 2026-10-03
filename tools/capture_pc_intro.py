@@ -7,12 +7,16 @@ memory writes, authored animation timer or changes to original reference files.
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.pc_reference_core import PcReferenceCore
 from tools.pc_live_state import SimStateReader
 from tools.pc_session import PresentationSession
 from tools.inspect_scenarios import decode_resource
+from tools.source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,7 +33,7 @@ def main():
     if not 3 <= args.frames <= 6000: p.error('frames must be 3..6000')
     if args.skip_after is not None and not 3 <= args.skip_after <= args.frames-3:
         p.error('skip must follow joystick selection and fit in recorded frames')
-    if any(args.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ['GAME', 'GENESIS']):
+    if inside_source(args.output, ROOT):
         p.error('output must be outside source directories')
     args.output.mkdir(parents=True, exist_ok=False)
     manifest = json.loads((ROOT/'.runtime/pc-core/abrams-trace.json').read_text())

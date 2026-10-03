@@ -75,6 +75,8 @@ func load_sources(root_path: String) -> bool:
 	catalog.clear()
 	portraits.clear()
 	flow_typography.load_sources(root_path.path_join("GAME"))
+	# Text restoration needs only its own pinned GAME fonts, never the office art.
+	typography.load_sources(root_path.path_join("GAME"))
 	original_cursor.load_sources(root_path)
 	_load_motor_pool(root_path)
 	intro_art.load_sources(root_path)
@@ -100,7 +102,6 @@ func load_sources(root_path: String) -> bool:
 	portraits.assign(textures.slice(1))
 	if not _load_wilson_completion(root_path,data): return false
 	catalog = data
-	typography.load_sources(root_path.path_join("GAME"))
 	return true
 
 func _load_wilson_completion(root_path:String,data:Dictionary) -> bool:
@@ -216,11 +217,13 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}, 
 	if not overlay is Dictionary or overlay.get("width")!=320 or overlay.get("height")!=200 or not overlay.get("mask_png") is String: return restored
 	var mask:=Image.new()
 	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK or mask.get_size()!=Vector2i(320,200) or mask.get_format()!=Image.FORMAT_L8: return restored
-	for bit in mask.get_data():
-		if bit!=0 and bit!=255: return restored
+	var bits:=mask.get_data()
+	if bits.count(0)+bits.count(255)!=bits.size(): return restored
+	var replay:=false
 	if paired_world and program.get("name")=="START" and presentation.get("draw_pass") is Dictionary and presentation.draw_pass.get("frontend_scene")=="START/ANIM":
 		material.set_shader_parameter("scene_mask",ImageTexture.create_from_image(mask))
 		material.set_shader_parameter("scene_enabled",true)
+		replay=true
 		active.preview="Original START/ANIM draw, high-resolution replay"
 	if not text_enabled: return restored
 	original_cursor.set_frame(source,presentation)
@@ -234,6 +237,7 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}, 
 	if not restored:
 		texture=ImageTexture.create_from_image(source)
 		active={"scene":"text","name":"Original "+name+" typography"}
+		if replay: active.preview="Original START/ANIM draw, high-resolution replay"
 	visible=true
 	return true
 

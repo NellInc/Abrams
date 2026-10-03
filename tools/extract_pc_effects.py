@@ -12,10 +12,13 @@ try:
     from tools.pc_bitmaps import decode_bitmaps, verify_loaded_effects
     from tools.pc_live_state import SimStateReader
     from tools.inspect_scenarios import decode_resource
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bitmaps import decode_bitmaps, verify_loaded_effects
     from pc_live_state import SimStateReader
     from inspect_scenarios import decode_resource
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -26,7 +29,7 @@ def main():
     p.add_argument('--trace', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
-    if args.output.resolve().is_relative_to((ROOT / 'GAME').resolve()): p.error('output must be outside GAME')
+    if inside_source(args.output, ROOT, ('GAME',)): p.error('output must be outside GAME')
     ram = args.capture.read_bytes()
     trace = json.loads(args.trace.read_text())
     first = trace['render_passes'][0]

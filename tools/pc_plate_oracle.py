@@ -14,7 +14,8 @@ import struct
 try:
     from tools.inspect_scenarios import decode_resource
     from tools.pc_live_state import SimStateReader, SIM_SHA256
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from inspect_scenarios import decode_resource
     from pc_live_state import SimStateReader, SIM_SHA256
 
@@ -76,7 +77,8 @@ def verify(ram):
         UC_X86_REG_BP, UC_X86_REG_SI, UC_X86_REG_DI)
     try:
         from tools.pc_bearing_oracle import cpu, set_registers, run_until
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from pc_bearing_oracle import cpu, set_registers, run_until
     if unicorn.__version__ != '2.1.4': raise ValueError('requires pinned unicorn==2.1.4')
     state = SimStateReader(ROOT / 'GAME/SIM.EXE').read(ram)

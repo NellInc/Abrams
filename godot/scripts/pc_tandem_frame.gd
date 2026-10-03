@@ -340,13 +340,11 @@ func set_graphics_mode(mode: String) -> bool:
 		present_frontend(_cached_program)
 	return true
 
+# Callers run set_frame first; it already routes Genesis native graphics.
 func present_frontend(program: Dictionary) -> bool:
-	var changed:=program!=_cached_program
 	_cached_program=program
 	if graphics_mode not in ["upscaled","modern"]:
 		frontend_art.clear()
-		if graphics_mode=="genesis" and changed and _cached_source!=null:
-			native_graphics.set_frame(_cached_source,_cached_presentation,program)
 		return false
 	return frontend_art.set_frame(_cached_source,program,_cached_presentation,world_enabled)
 

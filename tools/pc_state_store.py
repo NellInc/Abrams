@@ -6,17 +6,21 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import struct
 import sys
 import tempfile
 import time
 import zipfile
+import zlib
 
 MAX_STATE = 128 * 1024 * 1024
 MAX_DISK = 64 * 1024 * 1024
 MAX_RESUME = 32 * 1024 * 1024
 OPTIONAL_LIMITS = {'observer.bin': 2 * 1024 * 1024}
 LIMITS = {'state.bin': MAX_STATE, 'resume.json': MAX_RESUME, 'campaign.zip': MAX_DISK}
+# zipfile passes decompression faults through unwrapped; report them as invalid data.
+DAMAGED = (zlib.error, NotImplementedError, EOFError, RuntimeError, zipfile.BadZipFile, zipfile.LargeZipFile)
 
 def sha(raw):
     return hashlib.sha256(raw).hexdigest()
@@ -63,7 +67,26 @@ def validate_disk(raw):
             name = item.filename.replace('\\', '/')
             if name.startswith('/') or '..' in name.split('/') or ':' in name or item.flag_bits & 1:
                 raise ValueError('unsafe campaign archive member')
-        if archive.testzip() is not None: raise ValueError('campaign overlay CRC mismatch')
+        try: bad = archive.testzip()
+        except DAMAGED as error: raise ValueError(f'damaged campaign overlay: {error}') from error
+        if bad is not None: raise ValueError('campaign overlay CRC mismatch')
+
+
+def core_identity(core):
+    """Return (checkpoint key, shipped-bytes hash) for a native core.
+
+    Developer ID signing rewrites the core's bytes but not its code, and records
+    the pre-signing hash in the adjacent build receipt. That identity is used
+    only when the receipt's trace_sha256 pins exactly these shipped bytes (the
+    receipt the core loader trusts, itself hash-checked by the signed payload
+    manifest); anything else falls back to the bytes themselves."""
+    actual = sha(Path(core).read_bytes())
+    try: receipt = json.loads(read_bounded(Path(core).with_suffix('.json'), 65536))
+    except (OSError, ValueError): return actual, actual
+    if not isinstance(receipt, dict) or receipt.get('trace_sha256') != actual: return actual, actual
+    unsigned = receipt.get('unsigned_trace_sha256')
+    if isinstance(unsigned, str) and re.fullmatch('[0-9a-f]{64}', unsigned): return unsigned, actual
+    return actual, actual
 
 
 class StateStore:
@@ -71,11 +94,15 @@ class StateStore:
         self.root = Path(saves).resolve() / 'states'
         if self.root.is_symlink(): raise ValueError('state directory must not be a symlink')
         self.root.mkdir(parents=True, exist_ok=True)
+        identity, actual = core_identity(core)
         self.compatibility = {'schema': 1, 'backend': backend,
-            'core_sha256': sha(Path(core).read_bytes()), 'content_sha256': sha(Path(content).read_bytes()),
+            'core_sha256': identity, 'content_sha256': sha(Path(content).read_bytes()),
             'platform': sys.platform, 'machine': platform.machine(),
             'byteorder': sys.byteorder, 'pointer_bits': struct.calcsize('P') * 8,
             'options': 'abrams-ega-normal-386-3000-v1'}
+        # Slots written before checkpoints used the pre-signing identity were
+        # keyed on these exact signed bytes; they remain readable.
+        self.accepted = [self.compatibility, self.compatibility | {'core_sha256': actual}]
         self.disk = Path(saves).resolve() / (Path(content).stem + '.pure.zip')
         if self.disk.is_symlink(): raise ValueError('campaign overlay must not be a symlink')
 
@@ -89,20 +116,22 @@ class StateStore:
         path = self.path(slot)
         if not path.exists(): raise ValueError(f'Slot {slot} is empty')
         raw = read_bounded(path, sum(LIMITS.values()) + sum(OPTIONAL_LIMITS.values()) + 65536)
-        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
-            infos = archive.infolist()
-            names = {i.filename for i in infos}
-            if (len(infos) != len(names) or not {*LIMITS, 'manifest.json'} <= names
-                    or names - {*LIMITS, *OPTIONAL_LIMITS, 'manifest.json'}):
-                raise ValueError('invalid checkpoint members')
-            for item in infos:
-                if item.file_size > ((LIMITS | OPTIONAL_LIMITS).get(item.filename, 65536)) or item.flag_bits & 1:
-                    raise ValueError('checkpoint member exceeds limit or is encrypted')
-            manifest = json.loads(archive.read('manifest.json'))
-            if not isinstance(manifest, dict): raise ValueError('invalid checkpoint manifest')
-            if manifest.get('compatibility') != self.compatibility:
-                raise ValueError('Checkpoint belongs to a different core, game, or platform')
-            files = {name: archive.read(name) for name in (LIMITS | OPTIONAL_LIMITS) if name in names}
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                infos = archive.infolist()
+                names = {i.filename for i in infos}
+                if (len(infos) != len(names) or not {*LIMITS, 'manifest.json'} <= names
+                        or names - {*LIMITS, *OPTIONAL_LIMITS, 'manifest.json'}):
+                    raise ValueError('invalid checkpoint members')
+                for item in infos:
+                    if item.file_size > ((LIMITS | OPTIONAL_LIMITS).get(item.filename, 65536)) or item.flag_bits & 1:
+                        raise ValueError('checkpoint member exceeds limit or is encrypted')
+                manifest = json.loads(archive.read('manifest.json'))
+                if not isinstance(manifest, dict): raise ValueError('invalid checkpoint manifest')
+                if manifest.get('compatibility') not in self.accepted:
+                    raise ValueError('Checkpoint belongs to a different core, game, or platform')
+                files = {name: archive.read(name) for name in (LIMITS | OPTIONAL_LIMITS) if name in names}
+        except DAMAGED as error: raise ValueError(f'damaged checkpoint: {error}') from error
         if not files['state.bin']: raise ValueError('empty native checkpoint')
         if manifest.get('files') != {name: {'size': len(data), 'sha256': sha(data)} for name, data in files.items()}:
             raise ValueError('Checkpoint integrity check failed')
@@ -150,7 +179,8 @@ class StateStore:
                 if row['exists']:
                     manifest, _ = self.read(slot)
                     row.update(valid=True, saved_at=manifest['saved_at'], program=manifest['program'])
-            except (ValueError, OSError, KeyError, zipfile.BadZipFile) as error: row['message'] = str(error)
+            # One damaged file must never break the listing (or the host that sends it).
+            except Exception as error: row['message'] = str(error) or type(error).__name__
             result.append(row)
         return result
 

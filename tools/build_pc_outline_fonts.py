@@ -10,11 +10,15 @@ of the supplied bitmap designs, not recovered original vector masters.
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.pc_fonts import decode_font
 from tools.pc_font_optical import shape
+from tools.source_guard import inside_source
 
 ROOT=Path(__file__).resolve().parents[1]
 PINS={
@@ -129,7 +133,7 @@ def build_face(path,output):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
-    if any(args.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ['GAME','GENESIS']):p.error('output must be outside source directories')
+    if inside_source(args.output):p.error('output must be outside source directories')
     args.output.mkdir(parents=True,exist_ok=False)
     faces=[build_face(ROOT/'GAME'/name,args.output) for name in PINS]
     data={'schema':2,'outline_revision':5,'units_per_em':UNITS,'faces':faces,'fill_rule':'nonzero','scope':__doc__}

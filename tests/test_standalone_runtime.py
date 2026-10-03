@@ -279,6 +279,22 @@ class StandaloneRuntimeTests(unittest.TestCase):
         self.assertEqual(save.read_bytes(), b'important campaign and profile state')
         self.prepare.assert_called_once()
 
+    def test_changed_imported_game_file_points_to_fresh_home_not_reimport(self):
+        self.imported()
+        save = self.preserved_save()
+        changed = self.content() / 'GAME/ABRAMS.COM'
+        changed.write_bytes(b'changed import retained for recovery')
+        problem = runtime.status(self.bundle, self.home)['problem']
+        with self.assertRaises(ValueError) as reimport:
+            self.imported()
+        # Re-choosing the PC folder is deliberately refused, so never advise it.
+        for message in (problem, str(reimport.exception)):
+            self.assertNotIn('folder again', message)
+            self.assertIn('ABRAMS_DATA_HOME', message)
+        self.assertEqual(changed.read_bytes(), b'changed import retained for recovery')
+        self.assertEqual(save.read_bytes(), b'important campaign and profile state')
+        self.prepare.assert_called_once()
+
     def test_reconstruction_failure_does_not_commit_receipt_or_content(self):
         self.prepare.side_effect = ValueError('synthetic reconstruction failure')
         with self.assertRaisesRegex(ValueError, 'reconstruction failure'):

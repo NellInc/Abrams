@@ -177,10 +177,9 @@ def shape(font,code,name,source_contours=None):
     bold=name in ['8X8.FNT','STENCIL.FNT'];stencil=name=='STENCIL.FNT'
     weight=(2.0,1.0) if bold else (1.0,1.0)
     wx,wy=weight;left=x0+wx/2;right=x1-wx/2;top=y0+wy/2;bottom=y1-wy/2
-    # Original slab stems sit one cell in from their left cap/foot serifs.
+    # Original uppercase slab stems sit one cell in from their left cap/foot serifs.
     serif=bold and char in 'BDEFHKLPR'
-    if serif or (bold and char in 'bhkr'):left=x0+1+wx/2
-    if name=='8X8.FNT' and char in 'adug':right-=1
+    if serif:left=x0+1+wx/2
     if char in 'IEFTL':
         return None # Already rectilinear: retain distinctive source serifs.
     mid=(top+bottom)/2;cx=(left+right)/2

@@ -10,7 +10,8 @@ import struct
 try:
     from tools.pc_world import world_position, window_origin
     from tools.inspect_shapes import primitive_vertices
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_world import world_position, window_origin
     from inspect_shapes import primitive_vertices
 

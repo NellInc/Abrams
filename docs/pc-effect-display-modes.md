@@ -69,6 +69,10 @@ Receipts under `artifacts/finish-20260928/`:
 * `effects-modes-native/report.json`: 19,930,986 checks, zero errors;
   19,326,976 rendered pixels and 301,890 independent color/cutout samples,
   maximum RGB error one byte. Includes 256,000 exact STATUS compositor pixels.
+  A headless gate run overwrote this `report.json` on 2026-10-03 (271 checks,
+  no native pixels); `effects-modes-native.log` keeps the native receipt line.
+  Headless runs now default to `artifacts/pc-effect-modes-test`; only
+  `--native` writes into `effects-modes-native`.
 * `effects-modes-python.log`: five source-mode and inventory tests pass.
 
 The implementing assistant authored these tests and reviewed their images;

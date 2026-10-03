@@ -23,8 +23,14 @@ func bilinear(im:Image,p:Vector2)->Color:
 func run()->void:
 	var root_path:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	var args:=OS.get_cmdline_user_args();native="--native" in args
-	if "--output" in args:output=args[args.find("--output")+1]
-	if native:DirAccess.make_dir_recursive_absolute(output)
+	if "--output" in args:
+		var at:=args.find("--output")+1
+		output=args[at] if at<args.size() and not args[at].begins_with("--") else ""
+		check(not output.is_empty(),"missing value for --output")
+	elif native:output=root_path.path_join("artifacts/pc-newspapers-native")
+	if native:
+		check(not output.is_empty() and DirAccess.make_dir_recursive_absolute(output)==OK,"output directory")
+		if output.is_empty():native=false # Never write native captures relative to godot/.
 	viewport=SubViewport.new();viewport.size=Vector2i(1280,800);viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(viewport)
 	frame=Frame.new();frame.size=viewport.size;viewport.add_child(frame)
 	check(frame.load_genesis_art(root_path),"art bank loads")
@@ -33,6 +39,8 @@ func run()->void:
 	check(art.entries.size()==3,"three exact source ending families")
 	for entry in art.entries:
 		var original:=Image.load_from_file(root_path.path_join("local-art/pc-newspapers-v1/"+entry.name+"-pc.png"))
+		check(original!=null,"original newspaper fixture present: "+entry.name)
+		if original==null:continue
 		var immutable:=original.get_data()
 		for prose in [false,true]:
 			var source:Image=original.duplicate()

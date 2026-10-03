@@ -35,6 +35,9 @@ func run() -> void:
 	check(frame.load_genesis_art(root_path),"verified Genesis set loaded")
 	check(frame.genesis_art_enabled,"Genesis rendering profile selected")
 	var source := Image.load_from_file(root_path.path_join("local-art/pc-ui-v2/gps-bin.png"))
+	check(source!=null and source.get_size()==Vector2i(320,200),"gps-bin.png source available")
+	# A missing local plate must fail promptly, not abort run() before quit().
+	if source==null or source.get_size()!=Vector2i(320,200): done(); return
 	var tags := Image.create_empty(320,200,false,Image.FORMAT_L8)
 	tags.fill(Color(1.0/255,0,0))
 	var ui := Image.create_empty(320,200,false,Image.FORMAT_L8)
@@ -62,6 +65,8 @@ func run() -> void:
 		var valid_args := fixture_arg>=0 and fixture_arg+1<args.size() and output_arg>=0 and output_arg+1<args.size()
 		check(valid_args,"native run requires --fixture and --output paths")
 		if valid_args: await fixtures(args[fixture_arg+1],args[output_arg+1])
+	done()
+func done() -> void:
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_GENESIS_COCKPITS: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

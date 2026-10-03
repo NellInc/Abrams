@@ -15,7 +15,8 @@ try:
     from tools.pc_reference_core import PcReferenceCore, CORE_SHA256
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.inspect_scenarios import decode_resource, parse_world
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_reference_core import PcReferenceCore, CORE_SHA256
     from pc_live_state import SimStateReader, SIM_SHA256
     from inspect_scenarios import decode_resource, parse_world

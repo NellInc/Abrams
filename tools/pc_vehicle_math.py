@@ -7,7 +7,8 @@ bridge captures that register at the actual drawing boundary.
 from __future__ import annotations
 try:
     from tools.pc_render_state import signed16, transform
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_render_state import signed16, transform
 
 IDENTITY = [16384, 0, 0, 0, 16384, 0, 0, 0, 16384]
@@ -85,7 +86,8 @@ def primitive_camera_vertices(shape, primitive, context):
     """Use an observed original drawing context, including the actual matrix."""
     try:
         from tools.inspect_shapes import primitive_vertices
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from inspect_shapes import primitive_vertices
     if context['static_path']:
         return [transform([signed16(a + b) for a, b in zip(vertex, context['world_delta'])],

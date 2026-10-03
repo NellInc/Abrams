@@ -18,16 +18,20 @@ def asr(out,path,action,model='openai/whisper-1'):
 def sources(out):
     from concurrent.futures import ThreadPoolExecutor
     b=json.loads((out/'approved-script.json').read_text())
+    # Same file resolution as revise_v3.make(). v5+ briefs mix speech_segments,
+    # which no longer map 1:1 to narration_chunks; this check covers the chunks.
+    files=b.get('narration_files',[f'narration-v3-part-{i}-dry.wav' for i in range(3)])
+    assert len(files)==len(b['narration_chunks']),'narration_files and narration_chunks differ in length'
     def one(i):
-        p=out/'motion/media'/f'narration-v3-part-{i}-dry.wav'
+        p=out/'motion/media'/files[i]
         r=asr(out,p,f'dry-asr-{i}')
         differences=[x for x in difflib.ndiff(normalized(b['narration_chunks'][i]),normalized(r['text'])) if not x.startswith('  ')]
-        write(out/f'dry-word-check-{i}.json',{'source_sha256':sha(p),'expected':b['narration_chunks'][i],'heard':r['text'],'differences':differences})
+        write(out/f'dry-word-check-{i}.json',{'file':files[i],'source_sha256':sha(p),'expected':b['narration_chunks'][i],'heard':r['text'],'differences':differences})
         print('SOURCE_ASR',i,r['text'],differences,flush=True)
         assert not differences
         assert all(w['end']>w['start'] for w in r['words'])
     with ThreadPoolExecutor(max_workers=3) as ex:
-        for f in [ex.submit(one,i) for i in range(3)]:f.result()
+        for f in [ex.submit(one,i) for i in range(len(files))]:f.result()
 
 def mix(out):
     b=json.loads((out/'production-brief.json').read_text());m=out/'motion/media'
@@ -67,6 +71,11 @@ def sequential_segment_words(raw,offset,expected):
         assert normalized(token)==normalized(heard),(token,heard)
         cursor+=count
     return base[:cursor],offset+cursor
+
+def ordered_cue(records,record):
+    """Absorb sub-millisecond ASR overlap so SRT, VTT and burned cues stay strictly ordered."""
+    if records and 0<records[-1]['end']-record['start']<=.001:record['start']=records[-1]['end']
+    return record
 
 def captions(out):
     b=json.loads((out/'production-brief.json').read_text());review=out/'final-review';review.mkdir(exist_ok=True)
@@ -139,13 +148,13 @@ def captions(out):
     for i,c in enumerate(cues,1):
         text=' '.join(w['word'].strip() for w in c)
         if c[0]['speaker']!='narrator':text='['+b.get('caption_speaker_labels',{}).get(c[0]['speaker'],c[0]['speaker'].capitalize())+'] '+text
-        record={'start':c[0]['start'],'end':c[-1]['end'],'text':text};records.append(record)
+        record=ordered_cue(records,{'start':c[0]['start'],'end':c[-1]['end'],'text':text});records.append(record)
         if len(text)>46:
             t=text.split();mid=min(range(1,len(t)),key=lambda j:abs(len(' '.join(t[:j]))-len(' '.join(t[j:]))));text=' '.join(t[:mid])+'\n'+' '.join(t[mid:])
         assert max(map(len,text.splitlines()))<=46
         srt += [str(i),clock(record['start'])+' --> '+clock(record['end']),text,'']
         vtt += [clock(record['start'],'.')+' --> '+clock(record['end'],'.'),text,'']
-    assert all(a['end']<=z['start']+.001 for a,z in zip(records,records[1:]))
+    assert all(a['end']<=z['start'] and z['end']>z['start'] for a,z in zip(records,records[1:]))
     write(review/'caption-cues.json',records);write(review/'abrams-promo-words.json',{**data,'words':display,'provenance':'Actual final AAC-mix Nova3 word timings, approved case/punctuation. Spoken T seventy two canonicalizes to T-72 over the same measured three-word span. Nell explicitly requested spoken Dynamics; caption retains the studio brand spelling Dynamix over the same measured word span. AAC stream will be copied into final video; decoded-audio hash equality required.'})
     (review/'abrams-promo.srt').write_text('\n'.join(srt)+'\n');(review/'abrams-promo.vtt').write_text('\n'.join(vtt)+'\n')
     print('CAPTIONS_READY',len(words),'words',len(cues),'cues')

@@ -9,10 +9,12 @@ func _initialize() -> void:
 	var entered_before_load:=draw.is_inside_tree()
 	var loaded: bool=draw.load_modern_assets(directory)
 	var native:=DisplayServer.get_name()!="headless"
-	var passed:=loaded and (not native or draw.modern_prewarmed)
-	if not passed: printerr("FAIL: synchronous Modern startup: "+draw.modern_status)
+	# The regression only means something if the node has not yet entered the tree.
+	if entered_before_load: printerr("FAIL: precondition: draw node already inside tree at _initialize; pre-tree startup path not exercised")
+	var passed:=not entered_before_load and loaded and (not native or draw.modern_prewarmed)
+	if not entered_before_load and not passed: printerr("FAIL: synchronous Modern startup: "+draw.modern_status)
 	print("PC_MODERN_STARTUP: %s; entered_before_load=%s; native=%s; prewarmed=%s"%["PASS" if passed else "FAIL",entered_before_load,native,draw.modern_prewarmed])
-	quit(0 if passed else 1)
+	quit(0 if passed else (3 if entered_before_load else 1))
 func _process(_delta: float) -> bool:
 	if Time.get_ticks_msec()-started>120000: quit(2)
 	return false

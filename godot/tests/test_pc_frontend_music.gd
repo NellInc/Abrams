@@ -78,6 +78,24 @@ func run()->void:
 	check(not audio.music.playing and audio.last_event_id==0 and audio.last_frame==-1 and audio.epoch==0,"restore resets audio timeline and stops music")
 	check(audio.apply_audio(packet(1,true)) and audio.delivered==1,"restored host can begin a fresh event sequence")
 	check(await audio.drain_for_shutdown(),"all streams drain including music")
+	# One bad local track silences only its own context and records why.
+	var bank=preload("res://scripts/pc_frontend_music.gd").new()
+	check(bank.IntroArt.CATALOG_SHA==preload("res://scripts/pc_intro_art.gd").CATALOG_SHA,"intro music shares the intro art pin")
+	var folder:=OS.get_user_data_dir().path_join("frontend-music-latch")
+	DirAccess.make_dir_recursive_absolute(folder)
+	var pcm:=AudioStreamWAV.new()
+	pcm.format=AudioStreamWAV.FORMAT_16_BITS;pcm.stereo=true;pcm.mix_rate=24000
+	var silence:=PackedByteArray();silence.resize(9600);pcm.data=silence
+	for context in ["menu","briefing"]:check(pcm.save_to_wav(folder.path_join(context+".wav"))==OK,"temporary track written: "+context)
+	var good:=FileAccess.get_sha256(folder.path_join("briefing.wav"))
+	var manifest:=FileAccess.open(folder.path_join("manifest.json"),FileAccess.WRITE)
+	manifest.store_string(JSON.stringify({"schema":1,"tracks":{"menu":{"file":"menu.wav","sha256":"0".repeat(64)},"briefing":{"file":"briefing.wav","sha256":good},"debrief":{"file":"debrief.wav","sha256":good}}}))
+	manifest.close()
+	bank.directory=folder
+	check(bank.get_stream("menu")==null and str(bank.failures.get("menu","")).contains("hash mismatch: menu"),"bad menu hash recorded")
+	check(bank.get_stream("debrief")==null and str(bank.failures.get("debrief","")).contains("missing: debrief"),"missing debrief file recorded")
+	check(bank.get_stream("briefing")!=null,"bad menu track leaves briefing music available")
+	check(bank.failure.is_empty() and bank.failures.size()==2,"track failures stay per context")
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_FRONTEND_MUSIC: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

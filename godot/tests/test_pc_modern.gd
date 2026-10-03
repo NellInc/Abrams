@@ -57,6 +57,7 @@ func run() -> void:
 	check(art.configure(fixture()),"valid synthetic catalogue rejected")
 	running_gear_contract()
 	hind_livery_contract()
+	roof_grain_contract()
 	bridge_line_contract()
 	affine_invariant_contract()
 	var malformed := fixture()
@@ -740,6 +741,37 @@ func hind_livery_contract() -> void:
 				data.camera.world_position_raw=[30000,-30000,50]
 				data.epoch=99;data.sequence=0
 				check(JSON.stringify(facets)==JSON.stringify(paint.mapping(actor,polygon,data.camera,data.palette_rgb,false)),"source rebase/restore cannot slide Hind paint")
+
+func roof_grain_contract() -> void:
+	# A roof whose normal leans along x (structure_axis 0) and one leaning along y
+	# (axis 1) both carry (x,y) object-local grain, never a 1-D (y,y) line.
+	for lean in [Vector2(0.2,0.0),Vector2(0.0,0.2)]:
+		var source:=fixture()
+		var model:Dictionary=source.models[0]
+		model.shape_index=47
+		model.source_primitives["10"]=[[-40,-20,0],[40,-20,0],[40,20,0],[-40,20,0]]
+		var vertices:=[]
+		for p:Array in [[-100,-50],[100,-50],[0,80]]: vertices.append([p[0],p[1],roundi(p[0]*lean.x+p[1]*lean.y)-4])
+		model.triangles=[{"source_primitive":10,"vertices":vertices,"color":[150,90,70],"material":"roof"}]
+		var roof:=Modern.new()
+		check(roof.configure(source),"roof grain fixture accepted")
+		if not roof.ready: continue
+		var triangle:Dictionary=roof.models[47].faces[10].triangles[0]
+		check(triangle.structure_kind==20.4375 and triangle.structure_axis==(0 if lean.x>0 else 1),"roof fixture covers structure axis %d"%(0 if lean.x>0 else 1))
+		var data:=packet()
+		var actor:Dictionary=data.objects[0]
+		actor.shape_index=47
+		var polygon:Dictionary=actor.polygons[0]
+		polygon.camera_vertices=[]
+		for raw:Array in model.source_primitives["10"]: polygon.camera_vertices.append([raw[0],raw[1]+160,raw[2]])
+		var facets:=roof.mapping(actor,polygon,data.camera,data.palette_rgb,false)
+		check(not facets.is_empty(),"roof grain fixture maps")
+		for facet:Dictionary in facets:
+			for point:Array in facet.points:
+				check(point.size()==5,"roof facet carries surface coordinates")
+				if point.size()!=5: continue
+				var raw:=Modern.vec(point)-Vector3(0,160,0)
+				check(Vector2(point[3],point[4]).distance_to(Vector2(raw.x,raw.y))<0.01,"roof grain uses both horizontal object-local axes")
 
 func bridge_fixture() -> Dictionary:
 	var source:=fixture();var model:Dictionary=source.models[0]

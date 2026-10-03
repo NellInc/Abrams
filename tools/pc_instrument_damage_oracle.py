@@ -18,11 +18,16 @@ try:
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap
     from tools.inspect_scenarios import decode_resource
-except ModuleNotFoundError:
+    from tools.unpack_pc_executables import unpack
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import cpu, set_registers, run_until
     from pc_live_state import SimStateReader, SIM_SHA256
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap
     from inspect_scenarios import decode_resource
+    from unpack_pc_executables import unpack
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,8 +44,8 @@ def verify(ram, output):
     for source in images:
         descriptor, = struct.unpack_from('<H',ram,ds*16+table+source['index']*2)
         sprite=read_ega_bitmap(ram,ds*16,descriptor)
-        assert all(sprite[k]==source[k] for k in ('width','height','pixels'))
-        assert sprite['opaque']==[p!=0 for p in source['pixels']]
+        if not all(sprite[k]==source[k] for k in ('width','height','pixels')):raise ValueError(f"loaded DAMAGE sprite {source['index']} differs from source")
+        if sprite['opaque']!=[p!=0 for p in source['pixels']]:raise ValueError(f"DAMAGE sprite {source['index']} mask differs")
         loaded.append(sprite|{'index':source['index'],'descriptor':descriptor})
     ip, cs = struct.unpack_from('<HH', ram, ds * 16 + 0x35BC)
     if cs * 16 + ip != (state['load_segment'] + 0xF8D) * 16 + 0x4512:
@@ -48,7 +53,6 @@ def verify(ram, output):
     m = cpu()
     m.mem_write(0, ram)
     planes = [bytearray(65536) for _ in range(4)]
-    from tools.unpack_pc_executables import unpack
     original, report=unpack((ROOT/'GAME/SIM.EXE').read_bytes());original=bytearray(original)
     for item in report['relocations']:
         at=item['load_offset'];struct.pack_into('<H',original,at,(struct.unpack_from('<H',original,at)[0]+state['load_segment'])&65535)
@@ -57,7 +61,7 @@ def verify(ram, output):
         at=address-state['load_segment']*16
         if size>16 or address+size>0x100000:raise ValueError(f'invalid instruction address={address:x} size={size} cs={m.reg_read(UC_X86_REG_CS):x} ip={m.reg_read(UC_X86_REG_IP):x} sp={m.reg_read(UC_X86_REG_SP):x}')
         if (address,size) not in checked:
-            assert bytes(m.mem_read(address,size))==original[at:at+size], hex(address)
+            if bytes(m.mem_read(address,size))!=original[at:at+size]:raise ValueError(f'instruction differs from original at {address:x}')
             checked.add((address,size))
     m.hook_add(UC_HOOK_CODE,instruction)
     latch = [0] * 4
@@ -103,7 +107,7 @@ def verify(ram, output):
     if hashlib.sha256(plate).hexdigest()!='7d2abcfd40a79002087bd1534c9ac74ba846dd1cbf03b93f3f66314068b62166':raise ValueError('unsupported STATUS source')
     packed=decode_resource(plate)
     base_pixels=bytes(color for byte in packed for color in (byte>>4,byte&15))
-    assert len(base_pixels)==64000
+    if len(base_pixels)!=64000:raise ValueError('unexpected STATUS plate size')
     cases=[]
     origins=[(188,54),(206,38),(203,83),(251,50),(146,65)]
     for mode in (16,):
@@ -123,7 +127,7 @@ def verify(ram, output):
             set_registers(m,((UC_X86_REG_CS,cs),(UC_X86_REG_DS,ds),(UC_X86_REG_ES,ds),
                 (UC_X86_REG_SS,ds),(UC_X86_REG_SP,0xF000),(UC_X86_REG_EFLAGS,2)))
             run_until(m,cs*16+ip,cs*16+0x1862,200000)
-            assert m.reg_read(UC_X86_REG_SP)==0xF000
+            if m.reg_read(UC_X86_REG_SP)!=0xF000:raise ValueError('stack imbalance before RETF')
         expected=bytearray(base_pixels);tags=bytearray([5])*64000
         for sprite,(x,y) in zip(loaded,origins):
             if not bits&(1<<sprite['index']):continue
@@ -136,7 +140,7 @@ def verify(ram, output):
         for at,color in enumerate(expected):
             for p in range(4):
                 if color&(1<<p):expected_planes[p][page+at//8]|=128>>(at&7)
-        assert planes==expected_planes, (bits,mode,page)
+        if planes!=expected_planes:raise ValueError(f'plane mismatch bits={bits} mode={mode} page={page}')
         if mode==16 and page==0:
             (output/f'state-{bits:02}.bin').write_bytes(expected)
             (output/f'tags-{bits:02}.bin').write_bytes(tags)
@@ -151,7 +155,7 @@ def main():
     parser.add_argument('--capture', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    if any(args.output.resolve().is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
+    if inside_source(args.output, ROOT, ('GAME','GENESIS')):
         parser.error('output must be outside original reference directories')
     raw = args.capture.read_bytes()
     args.output.parent.mkdir(parents=True,exist_ok=True)

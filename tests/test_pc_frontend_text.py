@@ -47,7 +47,8 @@ class FrontendTextTests(unittest.TestCase):
             t=TextRuns(ROOT/'GAME',p);t.begin(ram,regs)
             w,h,ink=text_pixels(decode_font(font),b'NAME: NELL')
             pixels=bytes(1 if b else 4 for b in ink)
-            t.finish(struct.pack('<6H',30,30,w,h,0,caller)+pixels)
+            packet=struct.pack('<6H',30,30,w,h,0,caller)+pixels
+            t.finish(packet)
             self.assertEqual(t.scanout(0)[0][0]['text'],'NAME: NELL')
             self.assertEqual(t.scanout(0)[0][0]['kind'],'frontend')
             self.assertIsNone(t.scanout(0)[0][0]['speaker'])
@@ -57,8 +58,14 @@ class FrontendTextTests(unittest.TestCase):
             self.assertIsNone(self.sources.match(changed,regs))
             changed=bytearray(ram);struct.pack_into('<H',changed,regs['ss']*16+regs['sp'],0xffff)
             self.assertIsNone(self.sources.match(changed,regs))
+            # A tampered in-guest font is rejected at entry, so even the genuine
+            # returned glyph pixels cannot publish the label.
             changed=bytearray(ram);changed[0x70000]^=1
-            t.begin(bytes(changed),regs);t.finish(b'')
+            t.begin(bytes(changed),regs)
+            self.assertIsNone(t.pending[1])
+            self.assertEqual(t.counts['unsupported_entries'],1)
+            self.assertEqual(t.counts['unsupported: loaded font differs from supplied native resources'],1)
+            t.finish(packet)
             self.assertEqual(t.scanout(0),())
 
     def test_source_profile_pins_and_native_config_agree(self):

@@ -25,7 +25,8 @@ func run()->void:
 	var native:= "--native" in args
 	var output:=repo.path_join("artifacts/cockpit-refinement-20260929/refinement")
 	if "--output" in args:output=args[args.find("--output")+1]
-	DirAccess.make_dir_recursive_absolute(output)
+	elif not native:output="" # Headless gate runs never rewrite the dated native receipt.
+	if not output.is_empty():DirAccess.make_dir_recursive_absolute(output)
 	var base:=repo.path_join("artifacts/pc-live-type-cockpit-02")
 	var report:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(base.path_join("report.json")))
 	view=SubViewport.new();view.size=Vector2i(1280,960);view.transparent_bg=true;view.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(view)
@@ -141,7 +142,7 @@ func run()->void:
 			frame.graphics_mode=mode;frame.set_frame(source,packet,world)
 			check(not edge.active and not edge.visible and not frame.commander_trim.active,"original mode clears all new trim "+mode)
 	await moving_roofs(frame,repo,native,output)
-	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"native":native,"timings":timings},"  "))
+	if not output.is_empty():FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"native":native,"timings":timings},"  "))
 	for e in errors:printerr("FAIL: "+e)
 	print("PC_COCKPIT_REFINEMENT: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

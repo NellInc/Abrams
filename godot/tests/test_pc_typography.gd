@@ -16,7 +16,10 @@ var predicate_timings: Array = []
 func check(ok: bool, why: String) -> void:
 	checks += 1
 	if not ok and errors.size()<20: errors.append(why)
-func _initialize() -> void: run.call_deferred()
+func _initialize() -> void:
+	# A script error aborts run() before quit(); fail the headless gate instead of hanging it.
+	if "--native" not in OS.get_cmdline_user_args(): create_timer(300).timeout.connect(func(): printerr("FAIL: typography deadline (%d checks)"%checks); quit(2))
+	run.call_deferred()
 func snapshot() -> Image:
 	await process_frame
 	RenderingServer.force_draw(false)
@@ -66,14 +69,14 @@ func run() -> void:
 	var label := words("HEAT READY ",12,165)
 	check(view.set_frame(source,presentation([label]),world),"valid composition")
 	check(view.typography.runs.size()==1,"source text not accepted")
-	check(view.typography.runs[0].font_sha256==label.font_sha256 and view.typography.runs[0].cell_size==Vector2i(6,6),"source font identity and metrics survive verification")
+	check(view.typography.runs.size()==1 and view.typography.runs[0].font_sha256==label.font_sha256 and view.typography.runs[0].cell_size==Vector2i(6,6),"source font identity and metrics survive verification")
 	verify_geometry()
 	var args := OS.get_cmdline_user_args()
 	var native := "--native" in args
 	var output := directory.path_join("artifacts/pc-typography-test")
 	if "--output" in args: output = args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
-	if native:
+	if native and view.typography.runs.size()==1:
 		var image := await snapshot()
 		var verified_box := Rect2i(label.rect[0]*4,label.rect[1]*4,label.rect[2]*4,label.rect[3]*4)
 		for y in 800:
@@ -111,7 +114,7 @@ func run() -> void:
 	view.size = Vector2(960,600)
 	await process_frame
 	check(view.typography.size==view.size,"typography did not follow viewport resize")
-	check(view.typography.labels[0].position==Vector2(label.rect[0]*3,label.rect[1]*3) and view.typography.labels[0].size==Vector2(label.rect[2]*3,label.rect[3]*3),"resized label left original cell bounds")
+	check(view.typography.labels.size()==1 and view.typography.labels[0].position==Vector2(label.rect[0]*3,label.rect[1]*3) and view.typography.labels[0].size==Vector2(label.rect[2]*3,label.rect[3]*3),"resized label left original cell bounds")
 	view.size = viewport.size
 	await process_frame
 	# Bitmap and unobserved fixed labels require the same full glyph/UI proof.

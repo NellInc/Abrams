@@ -7,6 +7,7 @@ func check(condition: bool, message: String) -> void:
 	if not condition: failures.append(message)
 
 func _initialize() -> void:
+	create_timer(120).timeout.connect(func(): printerr("FAIL: draw-pass deadline"); quit(2))
 	_run.call_deferred()
 
 func _run() -> void:
@@ -83,10 +84,20 @@ func _run() -> void:
 					failures.append("point=%s actual=%s expected=%s viewport=%s" % [str(point), str(actual), str(expected), str(viewport.size)])
 				projected += 1
 		check(projected > 0 and drawn.dynamic_polygon_count > 0, "fixture must include projected vehicle geometry")
-		if "--capture" in args and args.find("--capture") + 1 < args.size():
-			capture_path = args[args.find("--capture") + 1]
-			await RenderingServer.frame_post_draw
-			check(viewport.get_texture().get_image().save_png(capture_path) == OK, "native capture failed")
+		if "--capture" in args:
+			var at := args.find("--capture") + 1
+			capture_path = args[at] if at < args.size() and not args[at].begins_with("--") else ""
+			if capture_path.is_empty():
+				check(false, "missing value for --capture")
+			elif DisplayServer.get_name() == "headless":
+				check(false, "native capture requires a windowed run (omit --headless)")
+			else:
+				await process_frame
+				# An occluded macOS window can stop emitting frame_post_draw indefinitely.
+				RenderingServer.force_draw(false)
+				RenderingServer.force_sync()
+				var image := viewport.get_texture().get_image()
+				check(image != null and not image.is_empty() and image.save_png(capture_path) == OK, "native capture failed")
 		print("PC_DRAW_PASS_FIXTURE: %d passes, %d projections, maximum error %.6f source pixels; %d dynamic polygons in final pass" % [pass_count, projected, maximum_error, drawn.dynamic_polygon_count])
 		print("PC_DRAW_PASS_SPRITES: %d" % sprites)
 	print("PC_DRAW_PASS: basic axes, geometry, classification and clearing checks complete")

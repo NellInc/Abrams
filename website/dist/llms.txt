@@ -1,0 +1,35 @@
+# M1 Abrams Battle Tank Fan Remaster
+
+> A free, unofficial fan remaster of Abrams Battle Tank, Dynamix’s MS-DOS tank simulator published by Electronic Arts. The original PC game runs the simulation inside DOSBox Pure while a Godot front end adds high-resolution artwork, new sound and crew voices. Fan Remastered by Nell Watson. Dedicated to the memory of David “Ming” Kenny.
+
+Key facts:
+
+- Your own original PC game is required; a Sega Genesis ROM is optional; neither is included.
+- Platforms (0.1.0-alpha.4): macOS 14+ on Apple Silicon (signed and notarized by Apple), Windows 10+ x86_64 and Linux x86_64 with glibc 2.35+. Free.
+- Graphics modes: EGA, Genesis, Upscaled (default) and Modern (experimental).
+- Licences: remaster code MIT; emulator modifications GPL-2.0-or-later; original creative contributions CC0. The original game’s rights remain with their holders.
+- Unofficial and unaffiliated: not affiliated with, endorsed by or sponsored by Dynamix, Electronic Arts or the other rights holders.
+
+## Pages
+
+- [Project webpage](https://abramsremastered.com/): Project overview and downloads.
+- [Trailer](https://abramsremastered.com/#trailer): One-minute project trailer, with a full transcript.
+- [Restoration](https://abramsremastered.com/#restoration): The same original PC briefing in EGA, Genesis and Upscaled graphics.
+- [Features](https://abramsremastered.com/#features): Stations, sound and crew voices, save states, fast-forward and player references.
+- [Scenarios](https://abramsremastered.com/#scenarios): The eight original scenarios, with restored maps and briefs.
+- [Installation](https://abramsremastered.com/#install): Downloads, requirements and installation steps.
+- [Before you download](https://abramsremastered.com/#faq): Questions about the required game, the Genesis ROM, signing, upgrades and bug reports.
+- [Credits](https://abramsremastered.com/#credits): The original Dynamix creators.
+- [Dedication](https://abramsremastered.com/#dedication): Dedicated to the memory of David “Ming” Kenny.
+
+## Downloads
+
+- [Releases](https://github.com/NellInc/Abrams/releases): macOS, Windows and Linux packages, checksums and corresponding source.
+- [Keyboard controls (PDF)](https://abramsremastered.com/assets/guides/keyboard-controls.pdf): Three-page remaster keyboard reference.
+- [Field guide (PDF)](https://abramsremastered.com/assets/guides/field-guide.pdf): 31 illustrated pages of scenarios and vehicles.
+
+## Optional
+
+- [GitHub repository](https://github.com/NellInc/Abrams): Source code.
+- [Rights and project notice](https://github.com/NellInc/Abrams/blob/main/NOTICE.md): Licences and rights.
+- [Issues](https://github.com/NellInc/Abrams/issues): Bug reports.

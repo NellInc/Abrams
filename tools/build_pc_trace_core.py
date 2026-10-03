@@ -57,7 +57,7 @@ def main():
     shutil.copyfile(plates, target.with_name(plates.name))
     observer = ROOT / 'tools/pc_core/abrams_observer_checkpoint.h'
     shutil.copyfile(observer, target.with_name(observer.name))
-    target.write_text(changed)
+    target.write_text(changed, newline='\n')  # keep upstream LF bytes on Windows too
     state_overlay = ROOT / 'tools/pc_core/abrams_state_overlay.h'
     shutil.copyfile(state_overlay, SOURCE / 'src/dos/abrams_state_overlay.h')
     patches = {
@@ -116,7 +116,7 @@ def main():
             if after.count(old) != count: raise ValueError('unexpected ownership source anchor: ' + name)
             after = after.replace(old, new)
         if path.read_text() not in (before, previous, after): raise ValueError('preserve unrecognized edits: ' + name)
-        path.write_text(after)
+        path.write_text(after, newline='\n')
         patch_hashes[name] = {'original': hashlib.sha256(before.encode()).hexdigest(), 'patched': sha(path)}
     build_command=['make', '-C', str(SOURCE), '-j4']
     if sys.platform == 'win32':

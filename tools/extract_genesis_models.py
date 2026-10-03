@@ -302,7 +302,8 @@ def compare_pc(models, shape_file: Path) -> dict:
     try:
         from tools.inspect_shapes import inspect_shapes, primitive_vertices
         from tools.inspect_scenarios import decode_resource
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from inspect_shapes import inspect_shapes, primitive_vertices
         from inspect_scenarios import decode_resource
     shapes = inspect_shapes(decode_resource(shape_file.read_bytes()))["shapes"]
@@ -359,7 +360,8 @@ def obj(model, pose, material_file):
 def export_models(rom_path: Path, capture: Path, output: Path) -> dict:
     try:
         from tools.extract_genesis_vdp import VDP
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from extract_genesis_vdp import VDP
     rom = rom_path.read_bytes()
     catalog = decode_models(rom)
@@ -402,7 +404,12 @@ def main():
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--compare-pc", type=Path)
     a = p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT / n).resolve()) for n in ("GAME", "GENESIS")):
+    try:
+        from tools.source_guard import inside_source
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
+        from source_guard import inside_source
+    if inside_source(a.output):
         p.error("output must be outside original source directories")
     result = export_models(a.rom, a.capture, a.output)
     if a.compare_pc:

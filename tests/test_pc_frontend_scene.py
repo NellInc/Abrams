@@ -89,6 +89,37 @@ class FrontendSceneTests(unittest.TestCase):
         raw[(y*320+x+1)*4]^=1
         self.assertIsNone(self.scene.paired(raw,palette,runs,cursor))
 
+    def test_every_colour_channel_inside_and_outside_cursor_rows_is_compared(self):
+        raw,palette,runs=self.ready();x,y=12,90
+        cursor={'rect':[x,y,2,1],'indices':base64.b64encode(bytes([15,0])).decode()}
+        for px,py in [(x+1,y),(200,y),(160,120)]:
+            for c in (0,1,2):
+                changed=bytearray(raw);changed[(py*320+px)*4+c]^=1
+                self.assertIsNone(self.scene.paired(changed,palette,runs,cursor))
+                self.assertIsNone(self.scene.paired(changed,palette,runs,None))
+        # A covered cell next to an uncovered mismatch in the same row still fails.
+        changed=bytearray(raw);changed[(y*320+x)*4+2]^=1;changed[(y*320+x+5)*4+1]^=1
+        self.assertIsNone(self.scene.paired(changed,palette,runs,cursor))
+        changed[(y*320+x+5)*4+1]^=1;self.assertIsNotNone(self.scene.paired(changed,palette,runs,cursor))
+
+    def test_out_of_range_source_index_fails_closed(self):
+        raw,palette,runs=self.ready();drawing,pixels=self.scene.completed[-1]
+        changed=bytearray(pixels);changed[100*320+50]=16
+        self.scene.completed[-1]=(drawing,bytes(changed))
+        self.assertIsNone(self.scene.paired(raw,palette,runs,None))
+
+    def test_main_menu_pairing_fits_a_frame_budget(self):
+        import time
+        raw,palette,_=self.ready()
+        runs=[{'text':s,'rect':r} for s,r in [('SCENARIO',[20,12,64,8]),
+              ('CAMPAIGN',[104,12,64,8]),('M1-INFO',[188,12,56,8]),('EXIT',[264,12,32,8])]]
+        # Best of several runs, so a busy shared machine cannot fail the guard.
+        best=float('inf')
+        for _ in range(5):
+            start=time.perf_counter();self.assertIsNotNone(self.scene.paired(raw,palette,runs,None))
+            best=min(best,time.perf_counter()-start)
+        self.assertLess(best,0.016)
+
     def test_wrong_palette_missing_labels_partial_panel_and_transition_fail_closed(self):
         raw,palette,runs=self.ready()
         self.assertIsNone(self.scene.paired(raw,palette,runs[:-1],None))

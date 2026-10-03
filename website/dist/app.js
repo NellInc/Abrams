@@ -24,6 +24,7 @@ document.querySelectorAll('input[name="graphics"]').forEach(input => {
     const mode = input.value;
     const sequence = ++comparisonSequence;
     comparisonPanel.setAttribute("aria-busy", "true");
+    comparisonStatus.removeAttribute("data-tone");
     comparisonStatus.textContent = `Loading ${graphics[mode].name}…`;
     try {
       const src = `assets/images/colonel-${mode}.webp`;
@@ -38,6 +39,7 @@ document.querySelectorAll('input[name="graphics"]').forEach(input => {
     } catch {
       if (sequence !== comparisonSequence) return;
       document.querySelector(`#mode-${currentMode}`).checked = true;
+      comparisonStatus.setAttribute("data-tone", "error");
       comparisonStatus.textContent = "That screenshot could not load. Please try selecting it again.";
     } finally {
       if (sequence === comparisonSequence) comparisonPanel.setAttribute("aria-busy", "false");
@@ -79,13 +81,38 @@ function loadMap(src) {
   return ready;
 }
 
-// Warm every mission immediately, behind the hero and font requests. Keep the
-// decoded image nodes so selecting a map never relies on another cache lookup.
-mapLinks.forEach(link => {
-  loadMap(link.href).then(image => {
-    if (mapSequence === 0 && link.href === initialMapSource) showMapImage(image, mapImage.alt);
-  }).catch(() => {});
-});
+// Warm the missions at low priority once the section approaches, the initial map
+// first. Keep the decoded image nodes so selecting a map never relies on another
+// cache lookup. With Save-Data on, maps load only when a mission is selected.
+const saveData = typeof navigator !== "undefined" && navigator.connection?.saveData === true;
+let mapsWarmed = false;
+function warmMaps() {
+  if (mapsWarmed) return;
+  mapsWarmed = true;
+  const initial = mapLinks.filter(link => link.href === initialMapSource);
+  [...initial, ...mapLinks.filter(link => link.href !== initialMapSource)].forEach(link => {
+    loadMap(link.href).then(image => {
+      if (mapSequence === 0 && link.href === initialMapSource) showMapImage(image, mapImage.alt);
+    }).catch(() => {});
+  });
+}
+const scenarioSection = document.querySelector("#scenarios");
+if (!saveData) {
+  if (typeof IntersectionObserver !== "function" || !scenarioSection) warmMaps();
+  else {
+    const observer = new IntersectionObserver(entries => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      observer.disconnect();
+      warmMaps();
+    }, { rootMargin: "1500px 0px" });
+    observer.observe(scenarioSection);
+    const picker = document.querySelector(".scenario-picker");
+    picker?.addEventListener("pointerenter", warmMaps, { once: true });
+    picker?.addEventListener("focusin", warmMaps, { once: true });
+  }
+}
+
+const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 async function enableMaps() {
   let scenarios;
@@ -94,8 +121,39 @@ async function enableMaps() {
     if (!response.ok) throw new Error("Scenario content unavailable");
     scenarios = await response.json();
   } catch {
+    mapStatus.setAttribute("data-tone", "notice");
     mapStatus.textContent = "Select a mission to open its full-size map.";
     return;
+  }
+  async function select(link, scenario, reveal) {
+    const sequence = ++mapSequence;
+    mapStatus.removeAttribute("data-tone");
+    mapStatus.textContent = `Loading ${scenario.name}…`;
+    mapPanel.setAttribute("aria-busy", "true");
+    try {
+      const image = await loadMap(link.href);
+      if (sequence !== mapSequence) return;
+      showMapImage(image, `Restored manual map of ${scenario.name}, showing its roads, terrain, river crossings and marked positions.`);
+      mapFull.href = link.href;
+      mapFull.setAttribute("aria-label", `Open full-size restored map of ${scenario.name}`);
+      document.querySelectorAll("[data-brief]").forEach(brief => {
+        brief.hidden = brief.dataset.brief !== scenario.slug;
+      });
+      document.querySelector("#map-open-link").href = link.href;
+      document.querySelector("#map-caption").textContent = scenario.name;
+      mapLinks.forEach(item => item.removeAttribute("aria-current"));
+      link.setAttribute("aria-current", "true");
+      mapStatus.textContent = `${scenario.name} map selected.`;
+      if (typeof history !== "undefined") history.replaceState(null, "", `#scenario-${scenario.slug}`);
+      if (reveal && typeof matchMedia === "function" && matchMedia("(max-width: 800px)").matches)
+        mapPanel.scrollIntoView?.({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+    } catch {
+      if (sequence !== mapSequence) return;
+      mapStatus.setAttribute("data-tone", "error");
+      mapStatus.textContent = "That map could not load. Please try again, or open its link in a new tab.";
+    } finally {
+      if (sequence === mapSequence) mapPanel.setAttribute("aria-busy", "false");
+    }
   }
   mapLinks.forEach(link => {
     link.addEventListener("click", async event => {
@@ -103,35 +161,37 @@ async function enableMaps() {
       const scenario = scenarios.find(item => item.slug === link.dataset.scenario);
       if (!scenario) return;
       event.preventDefault();
-      const sequence = ++mapSequence;
-      mapStatus.textContent = `Loading ${scenario.name}…`;
-      mapPanel.setAttribute("aria-busy", "true");
-      try {
-        const image = await loadMap(link.href);
-        if (sequence !== mapSequence) return;
-        showMapImage(image, `Restored manual map of ${scenario.name}, showing its roads, terrain, river crossings and marked positions.`);
-        mapFull.href = link.href;
-        mapFull.setAttribute("aria-label", `Open full-size restored map of ${scenario.name}`);
-        document.querySelectorAll("[data-brief]").forEach(brief => {
-          brief.hidden = brief.dataset.brief !== scenario.slug;
-        });
-        document.querySelector("#map-open-link").href = link.href;
-        document.querySelector("#map-caption").textContent = scenario.name;
-        mapLinks.forEach(item => item.removeAttribute("aria-current"));
-        link.setAttribute("aria-current", "true");
-        mapStatus.textContent = `${scenario.name} map selected.`;
-      } catch {
-        if (sequence !== mapSequence) return;
-        mapStatus.textContent = "That map could not load. Please try again, or open its link in a new tab.";
-      } finally {
-        if (sequence === mapSequence) mapPanel.setAttribute("aria-busy", "false");
-      }
+      await select(link, scenario, true);
     });
   });
+  // A shared #scenario-<slug> link opens that mission's map.
+  const requested = typeof location !== "undefined" && location.hash.startsWith("#scenario-") ? location.hash.slice(10) : "";
+  const shared = scenarios.find(item => item.slug === requested);
+  const sharedLink = shared && mapLinks.find(link => link.dataset.scenario === shared.slug);
+  if (sharedLink) {
+    scenarioSection?.scrollIntoView?.();
+    await select(sharedLink, shared, false);
+  }
 }
 enableMaps();
 
 const trailer = document.querySelector("#trailer-player");
-trailer.addEventListener("error", () => {
+const showTrailerError = () => {
   document.querySelector("#trailer-caption").textContent = "The trailer could not load. Reload the page or try another browser.";
+};
+trailer.addEventListener("error", showTrailerError);
+trailer.querySelector?.("source:last-of-type")?.addEventListener("error", showTrailerError);
+
+// S5: downloads have equal weight without JavaScript; promote the visitor's own
+// desktop platform when it can be detected. Phones and tablets promote nothing.
+function desktopPlatform() {
+  if (typeof navigator === "undefined") return "";
+  const agent = navigator.userAgent || "";
+  if (/Android|iPhone|iPad|iPod|CrOS/.test(agent) || (/Mac/.test(navigator.platform || "") && navigator.maxTouchPoints > 1)) return "";
+  const name = (navigator.userAgentData?.platform || navigator.platform || agent).toLowerCase();
+  return name.includes("mac") ? "macos" : name.includes("win") ? "windows" : name.includes("linux") ? "linux" : "";
+}
+const platform = desktopPlatform();
+document.querySelectorAll(".download-button[data-platform]").forEach(button => {
+  if (platform && button.dataset.platform === platform) button.classList.replace("button-outline", "button-primary");
 });

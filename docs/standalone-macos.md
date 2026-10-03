@@ -39,13 +39,16 @@ five slots and fast-forward speeds; **Audio** controls the mix.
   Its SHA-256 is `ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea`.
   You can continue with PC-only play. The importer stores a revision receipt,
   without copying the ROM into the profile.
-* **macOS blocks the app:** Developer ID signing and Apple notarization are separate. Notarization remains pending for this alpha. Check the release status and report the warning; do not disable system security. See [the notarization workflow](macos-notarization.md).
+* **macOS blocks the app:** Alpha 4 is Developer ID signed and notarized by Apple, with its ticket stapled, so Gatekeeper should open it normally. A warning means the download is not the published build or was altered: compare it with the release `SHA256SUMS.txt` and report the warning; do not disable system security. See [the notarization workflow](macos-notarization.md).
 * **Startup error:** keep the displayed message and the profile's `logs/` folder.
   Do not delete the profile or alter integrity receipts to work around an error.
+* **Imported game files changed:** choosing the PC folder again will not repair
+  them. Restore the profile from a backup, or use a fresh data home
+  (`ABRAMS_DATA_HOME` or `--data-home`); the changed profile is kept for diagnosis.
 
 The application excludes the original PC game files, reconstructed PC content
 archive and Genesis ROM. Original and third-party rights remain intact; see [the notice](../NOTICE.md).
- Releases are available to people who have access to the GitHub repository.
+ Releases are public on [GitHub](https://github.com/NellInc/Abrams/releases).
 The launcher includes **About** and **GitHub** buttons, licence information and
 the dedication to David “Ming” Kenny.
 

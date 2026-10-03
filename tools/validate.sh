@@ -5,10 +5,15 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 OUT="artifacts/validation-$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$OUT"
+# A GDScript runtime error before quit() leaves Godot running forever; bound every check.
+CHECK_TIMEOUT=${VALIDATE_CHECK_TIMEOUT:-1200}
 run_check() {
   name=$1
   shift
-  if "$@" > "$OUT/$name.log" 2>&1; then
+  echo "RUN $name" >&2
+  start=$(date +%s)
+  # The pending alarm survives exec (godot.sh execs Godot), so SIGALRM ends the real process.
+  if perl -e 'alarm shift; exec @ARGV or exit 127' "$CHECK_TIMEOUT" "$@" > "$OUT/$name.log" 2>&1; then
     if grep -Eq 'SCRIPT ERROR:|Parse Error:|^ERROR:' "$OUT/$name.log"; then
       cat "$OUT/$name.log"
       echo "FAIL: $name (engine error despite successful process exit)" >&2
@@ -34,7 +39,12 @@ run_check() {
       echo "FAIL: $name (bounded run did not report completion)" >&2
       exit 1
     fi
-    if [ "$name" = pc_motor_pool_art ] && ! grep -Eq '^PC_MOTOR_POOL_ART: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
+    if [ "$name" = pc_interface_reference ] && ! grep -Eq '^PC_INTERFACE_REFERENCE: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing complete interface reference receipt)" >&2
+      exit 1
+    fi
+    if { [ "$name" = pc_motor_pool_art ] || [ "$name" = pc_motor_pool_controls_art ] || [ "$name" = pc_motor_pool_arming_art ]; } && ! grep -Eq '^PC_MOTOR_POOL_ART: [1-9][0-9]* checks, 0 errors$' "$OUT/$name.log"; then
       cat "$OUT/$name.log"
       echo "FAIL: $name (bounded run did not report completion)" >&2
       exit 1
@@ -104,8 +114,33 @@ run_check() {
       echo "FAIL: $name (missing complete three-scene receipt)" >&2
       exit 1
     fi
+    if [ "$name" = runtime ] && ! grep -Eq '^RUNTIME_SMOKE_PASS:' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing runtime smoke receipt)" >&2
+      exit 1
+    fi
+    if [ "$name" = simulation ] && ! grep -Eq '^SIMULATION: [1-9][0-9]* checks passed$' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing simulation receipt)" >&2
+      exit 1
+    fi
+    if [ "$name" = pc_graphics_modes ] && ! grep -Eq '^PC_GRAPHICS_MODES: PASS; [1-9][0-9]* checks;' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing graphics modes receipt)" >&2
+      exit 1
+    fi
+    if [ "$name" = pc_draw_pass ] && ! grep -Eq '^PC_DRAW_PASS: basic axes' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing draw pass receipt)" >&2
+      exit 1
+    fi
+    if [ "$name" = pc_plate_art ] && ! grep -Eq '^PC_PLATE_ART: [0-9]+ exact RGB checks, [0-9]+ changed source samples, 0 failures; [1-9][0-9]* assertions$' "$OUT/$name.log"; then
+      cat "$OUT/$name.log"
+      echo "FAIL: $name (missing plate art receipt)" >&2
+      exit 1
+    fi
     case "$name" in
-      pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
+      pc_portrait_art|pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
         if ! grep -Eq '^(PC_[A-Z_]+|CURSOR_STRUTS): [1-9][0-9]* checks, 0 errors([,;].*)?$' "$OUT/$name.log"; then
           cat "$OUT/$name.log"
           echo "FAIL: $name (missing successful completion receipt)" >&2
@@ -117,21 +152,12 @@ run_check() {
     printf 'PASS %s\n' "$name" >> "$OUT/results.txt"
   else
     rc=$?
-    if [ "$name" = pc_splash_aftermath ] && ! grep -Eq '^SPLASH_AFTERMATH_TEST: failures=0 entries=3$' "$OUT/$name.log"; then
-      cat "$OUT/$name.log"
-      echo "FAIL: $name (missing complete three-scene receipt)" >&2
-      exit 1
-    fi
-    case "$name" in
-      pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_cursor_struts|pc_effect_modes|pc_audio_limiter)
-        if ! grep -Eq '^(PC_[A-Z_]+|CURSOR_STRUTS): [1-9][0-9]* checks, 0 errors([,;].*)?$' "$OUT/$name.log"; then
-          cat "$OUT/$name.log"
-          echo "FAIL: $name (missing successful completion receipt)" >&2
-          exit 1
-        fi
-        ;;
-    esac
     cat "$OUT/$name.log"
+    if [ $(( $(date +%s) - start )) -ge "$CHECK_TIMEOUT" ]; then
+      echo "FAIL: $name (timed out after ${CHECK_TIMEOUT}s; likely a GDScript runtime error before quit())" >&2
+      printf 'FAIL %s timeout=%ss exit=%s\n' "$name" "$CHECK_TIMEOUT" "$rc" >> "$OUT/results.txt"
+      exit 124
+    fi
     printf 'FAIL %s exit=%s\n' "$name" "$rc" >> "$OUT/results.txt"
     exit "$rc"
   fi
@@ -152,6 +178,7 @@ run_check pc_optional_genesis ./tools/godot.sh --headless --script res://tests/t
 run_check pc_play_menu ./tools/godot.sh --headless --script res://tests/test_pc_play_menu.gd
 run_check pc_render_quality ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_render_quality.gd
 run_check pc_play_shortcuts ./tools/godot.sh --headless --script res://tests/test_pc_play_shortcuts.gd
+run_check pc_interface_reference ./tools/godot.sh --headless --script res://tests/test_pc_interface_reference.gd
 run_check pc_graphics_modes ./tools/godot.sh --headless --script res://tests/test_pc_graphics_modes.gd
 run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_draw_pass.gd
 run_check pc_modern ./tools/godot.sh --headless --quit-after 3000 --script res://tests/test_pc_modern.gd
@@ -193,6 +220,8 @@ run_check pc_cursor_struts ./tools/godot.sh --headless --script res://tests/test
 run_check pc_map_art ./tools/godot.sh --headless --script res://tests/test_pc_map_art.gd
 run_check pc_intro_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_intro_art.gd
 run_check pc_motor_pool_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_motor_pool_art.gd -- --text
+run_check pc_motor_pool_controls_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_motor_pool_art.gd -- --text --fixture artifacts/pc-motor-pool-controls-01/report.json
+run_check pc_motor_pool_arming_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_motor_pool_art.gd -- --text --fixture artifacts/pc-genesis-arming-allocations-trace-01/report.json
 run_check pc_information_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_information_art.gd -- --tandem
 run_check pc_typography ./tools/godot.sh --headless --script res://tests/test_pc_typography.gd
 run_check pc_menu_text ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_menu_text.gd

@@ -41,14 +41,11 @@ void fragment(){
 		for xi in range(n):
 			var x := (float(xi)-n/2.0)*step
 			var z := (float(zi)-n/2.0)*step
-			var shade := rng.randf_range(-0.028,0.028)
-			var c := Color(0.28+shade,0.31+shade,0.22+shade)
-			if absf(x) < 12 and z < 25 and z > -900:
-				c = Color(0.33+shade,0.31+shade,0.25+shade)
+			# The ground shader ignores vertex colour (its rut term draws the lane); keep this draw so tree and grass placement stays identical.
+			rng.randf_range(-0.028,0.028)
 			for v in [Vector2(0,0),Vector2(1,0),Vector2(0,1),Vector2(1,0),Vector2(1,1),Vector2(0,1)]:
 				var xx: float = x+v.x*step
 				var zz: float = z+v.y*step
-				st.set_color(c)
 				st.add_vertex(Vector3(xx,height_at(xx,zz)-0.05,zz))
 	st.generate_normals()
 	var terrain := MeshInstance3D.new()

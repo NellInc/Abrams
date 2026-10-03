@@ -5,7 +5,8 @@ try:
     from tools.pc_pixel_bytes import bgrx_rect_rgb, indexed_rgb
     from tools.pc_live_state import SIM_SHA256
     from tools.pc_reticle import CLIP
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_pixel_bytes import bgrx_rect_rgb, indexed_rgb
     from pc_live_state import SIM_SHA256
     from pc_reticle import CLIP

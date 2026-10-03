@@ -15,10 +15,13 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap
     from tools.pc_live_state import SimStateReader
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from inspect_scenarios import decode_resource
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap
     from pc_live_state import SimStateReader
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 PLATES = ('FRAME', 'DRIVER.BIN', 'AA.BIN', 'TC.BIN', 'GPS.BIN', 'STATUS.BIN', 'IDENTIFY')
@@ -50,7 +53,7 @@ def main():
     parser.add_argument('--trace', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    if args.output.resolve().is_relative_to((ROOT / 'GAME').resolve()): parser.error('output must be outside GAME')
+    if inside_source(args.output): parser.error('output must be outside GAME')
     ram = args.capture.read_bytes()
     ram_hash = hashlib.sha256(ram).hexdigest()
     trace = json.loads(args.trace.read_text())

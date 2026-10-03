@@ -11,7 +11,16 @@ func check(ok: bool, reason: String) -> void:
 	checks+=1
 	if not ok and errors.size()<20: errors.append(reason)
 
-func _initialize() -> void: run.call_deferred()
+func _initialize() -> void:
+	create_timer(180).timeout.connect(func(): printerr("FAIL: portrait art deadline"); quit(2))
+	run.call_deferred()
+
+func arg_value(args: PackedStringArray, flag: String) -> String:
+	var index := args.find(flag)
+	if index<0: return ""
+	var ok := index+1<args.size() and not args[index+1].begins_with("--")
+	check(ok,"missing value for "+flag)
+	return args[index+1] if ok else ""
 
 func packet(id: int, at: Vector2i) -> Dictionary:
 	return {"text_runs":[{"kind":"crew_primary","speaker":id,"rect":[at.x+9,at.y+53,60,6]}]}
@@ -66,7 +75,8 @@ func run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var native := "--native" in args
 	var output := root_path.path_join("artifacts/pc-portrait-test")
-	if "--output" in args and args.find("--output")+1<args.size(): output=args[args.find("--output")+1]
+	if "--output" in args: output=arg_value(args,"--output")
+	if output.is_empty(): finish(); return
 	if native: check(DirAccess.make_dir_recursive_absolute(output)==OK,"output directory")
 	view=SubViewport.new()
 	view.size=Vector2i(1280,800)
@@ -162,7 +172,7 @@ func run() -> void:
 	tandem.queue_free()
 	if native:
 		var fixture := root_path.path_join("artifacts/pc-live-type-crew-02/report.json")
-		if "--fixture" in args and args.find("--fixture")+1<args.size(): fixture=args[args.find("--fixture")+1]
+		if "--fixture" in args: fixture=arg_value(args,"--fixture")
 		check(FileAccess.file_exists(fixture),"recorded fixture exists")
 		if FileAccess.file_exists(fixture): await recorded(fixture,output)
 	check(not portraits.load_sources(root_path.path_join("artifacts/missing-portrait-assets")),"missing original/art set rejected")

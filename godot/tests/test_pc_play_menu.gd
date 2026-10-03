@@ -44,6 +44,13 @@ func run() -> void:
 	menu.genesis_available=true
 	menu.choose_graphics("upscaled")
 	menu.refresh_controls()
+	# A viewer that cannot show a mode resets graphics_mode; callers must see the rejection.
+	var notices: Array=[]
+	menu.control_notice.connect(func(message):notices.append(message))
+	var reject := func(_mode):menu.graphics_mode="upscaled"
+	menu.graphics_selected.connect(reject)
+	check(not menu.choose_graphics("genesis") and menu.graphics_mode=="upscaled" and notices[-1]=="Genesis graphics are unavailable","viewer rejection is reported, not claimed")
+	menu.graphics_selected.disconnect(reject)
 	for speed in [8,1]:check(menu.choose_speed(speed) and choices[-1]==["speed",speed],"speed selection")
 	check(menu.speed_popup.item_count==2,"only normal and 8x speeds offered")
 	check(not menu.choose_speed(2) and not menu.choose_speed(4) and not menu.choose_speed(3) and menu.speed==1,"unsupported speed rejected")

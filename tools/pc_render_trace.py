@@ -29,7 +29,8 @@ try:
     from tools.pc_live_state import SIM_SHA256
     from tools.pc_message_events import visible_messages
     from tools.pc_plate_trace import PlateLoads, PLATE_IDS
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
     from inspect_shapes import inspect_shapes
     from inspect_scenarios import decode_resource
@@ -211,8 +212,9 @@ class Collector:
                 self.current = None
                 self.composition_cx = None
                 if raw[0] & 128:
-                    obj = next(o for name in ('static', 'dynamic') for o in self.active['world'][name]
-                               if o['pointer'] == regs['bx'])
+                    obj = next((o for name in ('static', 'dynamic') for o in self.active['world'][name]
+                               if o['pointer'] == regs['bx']), None)
+                    if obj is None: raise ValueError(f"unknown sprite root object {regs['bx']:#x}")
                     self.current = {'kind': 'sprite', 'pointer': regs['bx'], 'root': regs['di'],
                         'shape_index': obj['shape_index'], 'bitmap_index': raw[1], 'sprite_status': 'pending',
                         'dynamic_instance': any(o['pointer'] == regs['bx'] for o in self.active['world']['dynamic']),
@@ -250,7 +252,8 @@ class Collector:
                 self.composition_cx = regs['cx']
             elif event == 2:
                 pointer = word(0x12CC)
-                obj = next(o for name in ('static','dynamic') for o in self.active['world'][name] if o['pointer'] == pointer)
+                obj = next((o for name in ('static','dynamic') for o in self.active['world'][name] if o['pointer'] == pointer), None)
+                if obj is None: raise ValueError(f'unknown draw object {pointer:#x}')
                 matrix = words(word(0x1CDA), 9)
                 self.current = {'pointer': pointer, 'shape_index': obj['shape_index'], 'root': regs['di'],
                     'dynamic_instance': any(o['pointer'] == pointer for o in self.active['world']['dynamic']),
@@ -273,7 +276,8 @@ class Collector:
                 if not 0 <= count <= 16: raise ValueError('unsupported polygon buffer length')
                 shape = self.shapes[self.current['shape_index']]
                 primitive_id = self.current['primitive_ids'][-1] if self.current['primitive_ids'] else None
-                primitive = next(p for p in shape['primitives'] if p['offset'] == primitive_id)
+                primitive = next((p for p in shape['primitives'] if p['offset'] == primitive_id), None)
+                if primitive is None: raise ValueError(f"primitive {primitive_id!r} not in source shape {shape['index']}")
                 vertices = primitive_camera_vertices(shape, primitive, self.current)
                 for encoded, expected in zip(primitive['encoded_indices'], vertices):
                     index = (encoded & 127) * 2
@@ -300,7 +304,8 @@ class Collector:
                 self.drawing_pages.discard(self.active['page_offset'])
                 self.active = None
         except Exception as error:
-            self.error = error
+            # Keep the root cause; later events in the same native call cascade from it.
+            if self.error is None: self.error = error
             self.active = None
             self.current = None
 

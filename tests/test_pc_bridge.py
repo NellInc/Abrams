@@ -64,9 +64,89 @@ class PcBridgeTests(unittest.TestCase):
                 with lock_saves(Path(directory)/'independent'):pass
             finally:first.close()
             with lock_saves(path):pass
-            for source in ('GAME','GENESIS'):
+            for source in ('GAME','GENESIS','game','Genesis'):
                 with self.assertRaisesRegex(ValueError,'outside original'):
                     lock_saves(ROOT/source/'forbidden-saves')
+
+    def test_lock_refusal_reaches_the_player_as_a_json_error(self):
+        import contextlib,io
+        from tools.pc_state_host import supervise
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'saves'
+            first=lock_saves(path)
+            try:
+                out=io.StringIO()
+                args=SimpleNamespace(saves=path,backend='reference',core=path/'core',content=path/'game.zip')
+                with contextlib.redirect_stdout(out),self.assertRaisesRegex(ValueError,'already open'):
+                    supervise(args,[],lock_saves,validate_command)
+            finally:first.close()
+        lines=out.getvalue().splitlines()
+        self.assertEqual(len(lines),1)
+        self.assertEqual(json.loads(lines[0])['type'],'error')
+        self.assertIn('already open in another Abrams window',json.loads(lines[0])['message'])
+
+    STUB_WORKER = (
+        "import json,os,sys,time\n"
+        "marker=sys.argv[1]\n"
+        "print(json.dumps({'type':'ready','pid':os.getpid()}),flush=True)\n"
+        "for line in sys.stdin:\n"
+        "    command=json.loads(line)\n"
+        "    if command['op']=='quit':\n"
+        "        open(marker,'w').close(); sys.exit(0)\n"
+        "    if 'h' in command['keys']: time.sleep(3600)\n"
+        "    if 's' in command['keys']: time.sleep(0.6)\n"
+        "    print(json.dumps({'type':'sample','id':command['id']}),flush=True)\n")
+
+    def supervise_stub(self, stdin, grace=5.0):
+        """Run the real supervisor against a stub worker; returns (error, quit_flushed, output)."""
+        import contextlib,io,os
+        from unittest import mock
+        from tools import pc_state_host
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); path=root/'saves'
+            (root/'core').write_bytes(b'core'); (root/'game.zip').write_bytes(b'game')
+            (root/'worker.py').write_text(self.STUB_WORKER)
+            marker=root/'quit-flushed'
+            args=SimpleNamespace(saves=path,backend='reference',core=root/'core',content=root/'game.zip')
+            out=io.StringIO(); error=None; strays=[]
+            try:
+                with mock.patch.object(pc_state_host,'WORKER',root/'worker.py'),mock.patch.object(pc_state_host,'ORPHAN_GRACE',grace),\
+                        mock.patch('sys.stdin',io.StringIO(stdin)),contextlib.redirect_stdout(out):
+                    try: pc_state_host.supervise(args,[str(marker)],lock_saves,validate_command)
+                    except Exception as raised: error=raised
+                pid=json.loads(out.getvalue().splitlines()[0])['pid']
+                # The save overlay is free again however the session ended.
+                lock_saves(path).close()
+            finally:
+                # Shared machine: never leave a stub behind, but record any survivor.
+                for line in out.getvalue().splitlines():
+                    stray=json.loads(line).get('pid')
+                    try: os.kill(stray,0) if stray else None
+                    except OSError: continue
+                    if stray: strays.append(stray); os.kill(stray,9)
+            self.assertEqual(strays,[],'worker outlived its supervisor')
+            return error,marker.exists(),[json.loads(line) for line in out.getvalue().splitlines()]
+
+    def test_client_eof_during_a_hung_step_kills_only_the_owned_worker_and_frees_the_lock(self):
+        step=json.dumps({'op':'step','id':1,'frames':1,'keys':['h']})+'\n'
+        error,flushed,lines=self.supervise_stub(step,grace=0.3)
+        self.assertRegex(str(error),'client closed while the original-game worker was unresponsive')
+        self.assertFalse(flushed)
+        self.assertEqual(lines[-1]['type'],'error')
+        # A quit queued by the client before it vanished does not rescue a hung worker.
+        error,flushed,_=self.supervise_stub(step+'{"op":"quit"}\n',grace=0.3)
+        self.assertRegex(str(error),'unresponsive')
+        self.assertFalse(flushed)
+
+    def test_client_eof_never_kills_an_idle_or_replying_worker(self):
+        step=lambda id,key:json.dumps({'op':'step','id':id,'frames':1,'keys':[key]})+'\n'
+        # Normal quit, idle EOF, and a slow step that replies within the grace after EOF.
+        for stdin in (step(1,'a')+'{"op":"quit"}\n','',step(1,'a'),step(1,'s')):
+            with self.subTest(stdin=stdin):
+                error,flushed,lines=self.supervise_stub(stdin,grace=3.0)
+                self.assertIsNone(error)
+                self.assertTrue(flushed)
+                self.assertEqual([line['type'] for line in lines],['ready']+['sample']*stdin.count('step'))
 
     @unittest.skipUnless((ROOT / 'GAME/SIM.EXE').is_file(), 'Requires separately supplied original PC executable')
     def test_anchor_rejects_absent_incomplete_and_ambiguous_images(self):

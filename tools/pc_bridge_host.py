@@ -28,13 +28,16 @@ try:
     from tools.inspect_shapes import inspect_shapes, primitive_vertices
     from tools.pc_render_state import static_faces_for_state
     from tools.pc_session import PresentationSession
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_reference_core import PcReferenceCore, CORE_SHA256, KEYS, core_suffix
     from pc_live_state import SimStateReader
     from inspect_scenarios import decode_resource
     from inspect_shapes import inspect_shapes, primitive_vertices
     from pc_render_state import static_faces_for_state
     from pc_session import PresentationSession
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -58,7 +61,7 @@ class FramePng:
 def lock_saves(directory):
     """One host owns an overlay until its final original-game flush completes."""
     directory=directory.resolve()
-    if any(directory.is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
+    if inside_source(directory,ROOT,('GAME','GENESIS')):
         raise ValueError('Save overlays must remain outside original source directories')
     directory.mkdir(parents=True,exist_ok=True)
     handle=(directory/'.abrams-session.lock').open('a+b')
@@ -134,7 +137,8 @@ def main():
     if not args.state_worker:
         try:
             from tools.pc_state_host import supervise
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as error:
+            if error.name != 'tools': raise
             from pc_state_host import supervise
         return supervise(args, sys.argv[1:], lock_saves, validate_command)
     # Core printf/log output must never corrupt the JSON channel.
@@ -192,7 +196,8 @@ def main():
             resume = json.loads((args.local_resume / 'resume.json').read_text())
             try:
                 from tools.pc_state_store import atomic_write
-            except ModuleNotFoundError:
+            except ModuleNotFoundError as error:
+                if error.name != 'tools': raise
                 from pc_state_store import atomic_write
             disk_path = args.saves / (args.content.stem + '.pure.zip')
             disk = (args.local_resume / 'campaign.zip').read_bytes()

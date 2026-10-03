@@ -6,12 +6,13 @@ from pathlib import Path
 import struct
 import tempfile
 import unittest
+from unittest import mock
 
 from tools.build_pc_modern_assets import (
     ROOT, MATERIALS, add_face, area2, bounds, build, export, glb_bytes,
     inset_patch, track_patch, triangulate, validate_model, wheel, octagonal_barrel,
     face_outline, surface_relief, rectangle, inset_outline, BRIDGE_DECKS, cross, sub, dot,
-    VEHICLE_PAINT, TWO_TONE_SHAPES, DOOR_PAINT, BUILDING_RUINS, finish_colours,
+    VEHICLE_PAINT, TWO_TONE_SHAPES, DOOR_PAINT, BUILDING_RUINS, finish_colours, inside_source,
 )
 
 
@@ -118,6 +119,18 @@ class GeometryTests(unittest.TestCase):
             if mutation=='owner':t['source_primitive']=5
             if mutation=='degenerate':t['vertices'][1]=t['vertices'][0]
             with self.subTest(mutation=mutation),self.assertRaises(ValueError):validate_model(m)
+
+    def test_export_refuses_original_trees_in_any_case(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);(root/'GAME').mkdir();(root/'local-art').mkdir()
+            with mock.patch('tools.build_pc_modern_assets.ROOT',root):
+                for name in ('GAME/x','game/x','Game/new/x','GENESIS/x','genesis','reference/x','REFERENCE'):
+                    with self.subTest(name=name):self.assertTrue(inside_source(root/name))
+                self.assertFalse(inside_source(root/'local-art/pc-modern'));self.assertFalse(inside_source(root/'gamey'))
+                # The guard rejects before any directory or file is created.
+                with mock.patch.object(Path,'mkdir',side_effect=AssertionError('wrote')),self.assertRaises(ValueError):
+                    export(root/'game'/'pc-modern',{'models':[]})
+        if (ROOT/'GAME').exists():self.assertTrue(inside_source(ROOT/'game'/'pc-modern'))
 
     def test_glb_is_valid_flat_shaded_raw_coordinate_container(self):
         triangles=[];add_face(triangles,[[0,0,0],[1,0,0],[0,1,2]],'olive',4,[2],'test')

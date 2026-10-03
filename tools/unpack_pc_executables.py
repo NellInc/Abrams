@@ -148,7 +148,13 @@ def main() -> int:
     parser.add_argument("--compare-dir", type=Path)
     args = parser.parse_args()
     try:
-        if args.out.resolve().is_relative_to(args.root.resolve()):
+        from tools.source_guard import inside_source
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
+        from source_guard import inside_source
+    try:
+        source = args.root.resolve()  # Case, symlink and ".." aliases of the source directory count as inside it.
+        if inside_source(args.out, source.parent, (source.name,)):
             raise ValueError("outputs must be outside original reference directory")
         # Validate the entire batch before writing any output.
         batch = []

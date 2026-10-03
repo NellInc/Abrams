@@ -10,12 +10,36 @@
       "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
     },
     {
-      "file": "dist/assets/images/abrams-icon.webp",
+      "file": "dist/assets/images/abrams-cover-remastered-520.webp",
+      "source": "docs/images/abrams-cover-remastered.png",
+      "source_sha256": "12f1c55af86a46aa7ffc28637a28279eb2db5788f156f782f63d718d06e7eeae",
+      "output_sha256": "e0c0eb6681babce546d6f218919d7993291a63e1c312311e85867c38143a873b",
+      "origin": "Approved restored cover; existing FAN REMASTER glyphs and shadow shifted 20 pixels right to the main title centreline, with local sky repair beneath their former positions.",
+      "conversion": "Lanczos downscale of the whole cover to 520x758, WebP quality 90, for responsive srcset. Uncropped; no artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/abrams-cover-remastered-760.webp",
+      "source": "docs/images/abrams-cover-remastered.png",
+      "source_sha256": "12f1c55af86a46aa7ffc28637a28279eb2db5788f156f782f63d718d06e7eeae",
+      "output_sha256": "339a1742633c65265b2fb71e1be60172d7bf54e316a2af4c3c1e8d21458b27db",
+      "origin": "Approved restored cover; existing FAN REMASTER glyphs and shadow shifted 20 pixels right to the main title centreline, with local sky repair beneath their former positions.",
+      "conversion": "Lanczos downscale of the whole cover to 760x1107, WebP quality 90, for responsive srcset. Uncropped; no artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/abrams-icon-88.webp",
       "source": "docs/images/abrams-icon.png",
       "source_sha256": "59c2a5939288d6084711ce4f546d474cf0d0057f3636854178d6a7c151317e1f",
-      "output_sha256": "0fd3faa87922d87af60c63551f7fb7a7bc024a993236d2ad166fdb47e0afd516",
+      "output_sha256": "9ae9f97691085e74a5c55fa49bc7ab0c660945968b8f8609a5b96b1ebbd38896",
       "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "conversion": "88x88 WebP quality 90 (cwebp -sharp_yuv resize) for the 44px header icon at 2x density. No artwork retouching."
+    },
+    {
+      "file": "dist/assets/images/abrams-icon-132.webp",
+      "source": "docs/images/abrams-icon.png",
+      "source_sha256": "59c2a5939288d6084711ce4f546d474cf0d0057f3636854178d6a7c151317e1f",
+      "output_sha256": "0bce22dd2e2fbc342a113b196698a642fd8bf7473ff9e573cbb85a30086846ae",
+      "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
+      "conversion": "132x132 WebP quality 90 (cwebp -sharp_yuv resize) for the 44px header icon at 3x density. No artwork retouching."
     },
     {
       "file": "dist/assets/images/colonel-ega.webp",
@@ -45,9 +69,9 @@
       "file": "dist/assets/images/gunner-upscaled.webp",
       "source": "docs/images/gunner-upscaled.png",
       "source_sha256": "c8e78d64e2acf0c64637def5feab3be45e1d3aa8ec488823f4041bc818502ea6",
-      "output_sha256": "affd6c7859fdb22a3b0657f4b165949e129e5b89f7b6bcfaa9ba709fb6b90de4",
+      "output_sha256": "7c1bea3df1fe22c99acdcffee84cf59922323c82260914c9528e4142a12cd36a",
       "origin": "Approved project artwork or actual development-build screenshot, docs/images/README.md.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "conversion": "WebP quality 90 (cwebp -sharp_yuv) at original 1280x960 dimensions. No artwork retouching."
     },
     {
       "file": "dist/assets/maps/manual-map-convoy.webp",
@@ -141,33 +165,33 @@
       "file": "dist/assets/images/modern-cupola.webp",
       "source": "artifacts/cupola-material-edges-20260929/scenario-frames-matched/scenario-0-cupola.png",
       "source_sha256": "01efc2132d6f4c7a5bd59392e4fcbfb752e60aa5e2af0d787c581fa1f5f12cdf",
-      "output_sha256": "7ff16a9783235572b761dfb8f27e5cd6836bc3706f6ed6c355b03e431b6f9a88",
+      "output_sha256": "b610a7a822a1a07c948246b992dac07961cd451ab5973506264ad56811ca781b",
       "origin": "Modern production-renderer replay capture; artifacts/cupola-material-edges-20260929/scenario-frames-matched/report.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "conversion": "4:3 trim (x 28\u20131252, y 42\u2013960) removing the in-game mode-switch notice; no retouching. 1224x918, WebP quality 92."
     },
     {
       "file": "dist/assets/images/modern-driver.webp",
       "source": "artifacts/cupola-material-edges-20260929/scenario-frames-matched/scenario-0-driver.png",
       "source_sha256": "9b0fe4f25215c2d90ae15d56b226f97a2925d26128cf9612313a7861ed476a44",
-      "output_sha256": "c2e954585137ef83b5f1a3f67147dcc9043e206797788a1db98c47df27f9e5e9",
+      "output_sha256": "ca5f082b79372651244c686bcf85fc9dc92a0a4df6ecf2ee38e999e4cc52cebc",
       "origin": "Modern production-renderer replay capture; artifacts/cupola-material-edges-20260929/scenario-frames-matched/report.json.",
-      "conversion": "WebP at original dimensions, lossless for pixel artwork; quality 92 for illustrated imagery. No artwork retouching."
+      "conversion": "4:3 trim (x 28\u20131252, y 42\u2013960) removing the in-game mode-switch notice; no retouching. 1224x918, WebP quality 92."
     },
     {
       "file": "dist/assets/images/trailer-poster.webp",
       "source": "artifacts/promo-20261002-v8/abrams-promo.mp4",
       "source_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
-      "output_sha256": "b82795b142a1be2a3e41eba3ee225ade7560de6d0d6422638cc7091ef50b0719",
-      "origin": "Actual decoded frame at 3.0 seconds from the accepted V8 project trailer.",
-      "conversion": "1920x1080, full frame; WebP quality94 or JPEG quality95."
+      "output_sha256": "6d6dc2516d2b2276baf1577f9fa98438edeebb6e7defe1fe279925c0cdae9539",
+      "origin": "Actual decoded frame at 2.70 seconds from the accepted V8 project trailer, between the opening captions, so no caption is burned into the poster.",
+      "conversion": "1920x1080, full frame; WebP quality 85 / JPEG quality 86 (progressive)."
     },
     {
       "file": "dist/assets/images/trailer-poster.jpg",
       "source": "artifacts/promo-20261002-v8/abrams-promo.mp4",
       "source_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
-      "output_sha256": "cdf65250d7727e963a01bc39c34abe93fd711802e72419c7147049439b371b9d",
-      "origin": "Actual decoded frame at 3.0 seconds from the accepted V8 project trailer.",
-      "conversion": "1920x1080, full frame; WebP quality94 or JPEG quality95."
+      "output_sha256": "23882e13ac7d1b2d29b8578c07323c1dd7be9d6a1de1cd052d6caec1470e708a",
+      "origin": "Actual decoded frame at 2.70 seconds from the accepted V8 project trailer, between the opening captions, so no caption is burned into the poster.",
+      "conversion": "1920x1080, full frame; WebP quality 85 / JPEG quality 86 (progressive)."
     },
     {
       "file": "dist/favicon-32.png",
@@ -184,6 +208,22 @@
       "output_sha256": "84e809a3a6acb254b155ed07b405b15726e2d7b28d36c0e2417be72902527c65",
       "origin": "Clean vector rendition of the white star on a black disc from the approved Abrams title emblem.",
       "conversion": "180\u00d7180 PNG, eight-times supersampled from the same vector geometry."
+    },
+    {
+      "file": "dist/assets/images/david-kenny-400.webp",
+      "source": "website/artwork/DavidKenny.png",
+      "source_sha256": "e9e86cae67b6434652b4a33400edf48821ddf58ad3d6bc46327638888cf6304e",
+      "output_sha256": "63775f940caa067987198e1ba307b9f6a5a897c3b2bdf14f44d941c2266b33f9",
+      "origin": "Illustrated portrait of David \u201cMing\u201d Kenny, supplied by Nell Watson for the dedication.",
+      "conversion": "400\u00d7500 WebP quality 88 (cwebp -m 6 -sharp_yuv resize), full 4:5 composition, no retouching or cropping."
+    },
+    {
+      "file": "dist/assets/images/david-kenny-800.webp",
+      "source": "website/artwork/DavidKenny.png",
+      "source_sha256": "e9e86cae67b6434652b4a33400edf48821ddf58ad3d6bc46327638888cf6304e",
+      "output_sha256": "0412422391f67a688961d9b346a41d06033d9419bbedc7117f6d8622be522e0d",
+      "origin": "Illustrated portrait of David \u201cMing\u201d Kenny, supplied by Nell Watson for the dedication.",
+      "conversion": "800\u00d71000 WebP quality 88 (cwebp -m 6 -sharp_yuv resize), full 4:5 composition, no retouching or cropping."
     }
   ],
   "media": [
@@ -208,15 +248,15 @@
     {
       "file": "dist/assets/guides/field-guide.pdf",
       "source": "docs/player-reference/field-guide.pdf",
-      "source_sha256": "eb77db756fa377227e799b962e6c548a986314d607f023f1e0de83e9b6b8a90d",
-      "output_sha256": "eb77db756fa377227e799b962e6c548a986314d607f023f1e0de83e9b6b8a90d",
+      "source_sha256": "88f6025204d0216a3b0eb348cd4e1da9d8d9e33a11d9e90c72daf763d321d392",
+      "output_sha256": "88f6025204d0216a3b0eb348cd4e1da9d8d9e33a11d9e90c72daf763d321d392",
       "kind": "Authored illustrated field guide with eight NATO/manual and extracted PC-data map pairs"
     },
     {
       "file": "dist/assets/guides/keyboard-controls.pdf",
       "source": "docs/player-reference/keyboard-controls.pdf",
-      "source_sha256": "2e070a255d8a508e894b32830258dadc097d53b7e0ba8f9bdeab33074b55a8d0",
-      "output_sha256": "2e070a255d8a508e894b32830258dadc097d53b7e0ba8f9bdeab33074b55a8d0",
+      "source_sha256": "a8498f39c0ef7a3dd651e7ccb3eee32d24f8b9aa5f8bfd616557748b422d60ec",
+      "output_sha256": "a8498f39c0ef7a3dd651e7ccb3eee32d24f8b9aa5f8bfd616557748b422d60ec",
       "kind": "Authored three-page remaster keyboard-controls reference."
     }
   ]

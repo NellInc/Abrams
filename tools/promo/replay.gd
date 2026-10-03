@@ -18,15 +18,24 @@ func _initialize() -> void:
 	super._initialize()
 	run_promo.call_deferred()
 
-func _process(_delta: float) -> bool: return false
+func _process(_delta: float) -> bool:
+	if Time.get_ticks_msec()-started>900000:
+		printerr("PROMO_REPLAY exceeded its finite 15-minute bound")
+		quit(2)
+	return false
 
 func run_promo() -> void:
 	var file := FileAccess.open(promo_source,FileAccess.READ)
+	if file == null:
+		printerr("PROMO_REPLAY cannot open %s: %s"%[promo_source,error_string(FileAccess.get_open_error())]);quit(1);return
 	var index := 0
 	while not file.eof_reached():
 		var line := file.get_line()
 		if line.is_empty(): continue
-		var packet: Dictionary=JSON.parse_string(line)
+		var parsed: Variant=JSON.parse_string(line)
+		if not parsed is Dictionary:
+			printerr("PROMO_REPLAY bad packet after frame %d in %s"%[index,promo_source]);quit(1);return
+		var packet: Dictionary=parsed
 		_apply_sample(packet)
 		await process_frame
 		RenderingServer.force_draw(false)

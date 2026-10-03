@@ -24,6 +24,11 @@ SECRET_PATTERNS = [
 ]
 
 
+def limit_text():
+    # Read at call time so the reported limit always matches the enforced one.
+    return f'{MAX_BYTES // 1_000_000} MB' if MAX_BYTES % 1_000_000 == 0 else f'{MAX_BYTES:,} bytes'
+
+
 def path_problem(name):
     p = PurePosixPath(name)
     parts = [part.lower() for part in p.parts]
@@ -50,7 +55,7 @@ def known_inputs():
 
 def inspect_blob(data, known_hashes):
     if len(data) > MAX_BYTES:
-        return 'file exceeds 50 MB'
+        return f'file exceeds {limit_text()}'
     if hashlib.sha256(data).hexdigest() in known_hashes:
         return 'fingerprinted original game/ROM/content archive'
     if any(pattern.search(data) for pattern in SECRET_PATTERNS):
@@ -98,7 +103,7 @@ def check(root, history=False, known_hashes=None):
                               stdin=subprocess.PIPE, stdout=subprocess.PIPE) as process:
             for oid, names in sorted(blobs.items()):
                 if sizes[oid] > MAX_BYTES:
-                    problem = 'file exceeds 50 MB'
+                    problem = f'file exceeds {limit_text()}'
                 else:
                     process.stdin.write((oid + '\n').encode()); process.stdin.flush()
                     header = process.stdout.readline().split()
@@ -138,7 +143,7 @@ def main():
             print(f'{name!r}: {reason}')
         if failures:
             raise SystemExit(1)
-        print('PASS: index' + (' and all reachable history' if args.history else '') + ' boundary (50 MB; known inputs; credential signatures)')
+        print('PASS: index' + (' and all reachable history' if args.history else '') + f' boundary ({limit_text()}; known inputs; credential signatures)')
     except (ValueError, OSError, subprocess.SubprocessError) as error:
         parser.exit(1, f'Boundary check failed: {error}\n')
 

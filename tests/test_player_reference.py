@@ -137,6 +137,38 @@ class PlayerReference(unittest.TestCase):
         self.assertIn('"complete scenario map screenshot: "+scenario',fixture)
         self.assertIn('child.get_child(0).text==scenario',fixture)
 
+    def test_gate_runs_interface_reference_and_requires_receipts(self):
+        gate=(ROOT/'tools/validate.sh').read_text()
+        self.assertIn('run_check pc_interface_reference ./tools/godot.sh --headless --script res://tests/test_pc_interface_reference.gd',gate)
+        for receipt in ["'^PC_INTERFACE_REFERENCE: [1-9][0-9]* checks, 0 errors$'","'^RUNTIME_SMOKE_PASS:'","'^SIMULATION: [1-9][0-9]* checks passed$'","'^PC_GRAPHICS_MODES: PASS; [1-9][0-9]* checks;'"]:
+            self.assertIn(receipt,gate)
+        self.assertIn('run_check runtime ./tools/godot.sh --headless --verbose -- --smoke-test',gate)
+        self.assertIn('pc_portrait_art|',gate)
+        smoke=(ROOT/'godot/scripts/main.gd').read_text().split('func _smoke_test()',1)[1]
+        self.assertNotIn('assert(',smoke)
+        self.assertIn('print("RUNTIME_SMOKE_PASS:',smoke)
+
+    def test_godot_fixtures_fail_instead_of_hanging(self):
+        draw=(ROOT/'godot/tests/test_pc_draw_pass.gd').read_text()
+        self.assertNotIn('await RenderingServer.frame_post_draw',draw)
+        self.assertIn('RenderingServer.force_draw(false)',draw)
+        self.assertIn('RenderingServer.force_sync()',draw)
+        self.assertIn('native capture requires a windowed run',draw)
+        for name,deadline in [('test_pc_draw_pass','create_timer(120)'),('test_pc_plate_art','create_timer(180)'),('test_pc_portrait_art','create_timer(180)'),('test_pc_newspaper_art','create_timer(90)'),('test_simulation','create_timer(60)')]:
+            self.assertIn(deadline,(ROOT/f'godot/tests/{name}.gd').read_text(),name)
+        self.assertIn('_run.call_deferred()',(ROOT/'godot/tests/test_simulation.gd').read_text())
+        modes=(ROOT/'godot/tests/test_pc_graphics_modes.gd').read_text()
+        self.assertNotIn('var report:Dictionary=JSON.parse_string',modes)
+        self.assertNotIn(')[0]',modes)
+        plate=(ROOT/'godot/tests/test_pc_plate_art.gd').read_text()
+        self.assertNotIn('args[args.find(',plate)
+        for flag in ['--fixture','--art','--output']:self.assertIn(f'arg_value(args,"{flag}")',plate)
+        news=(ROOT/'godot/tests/test_pc_newspaper_art.gd').read_text()
+        self.assertIn('artifacts/pc-newspapers-native',news)
+        self.assertNotIn('output=args[args.find("--output")+1]',news)
+        reticle=(ROOT/'godot/tests/test_pc_reticle_target.gd').read_text()
+        for fault in ['"ink_color"','"ink_color_white"','pixel_sha256=digest(data[0].get_region(Reticle.TARGET_BOX))']:self.assertIn(fault,reticle)
+
     def test_all_scenario_maps_use_matching_colour_restorations(self):
         visuals=json.loads((REF/'visuals.json').read_text())
         provenance=json.loads((REF/'manual-maps-provenance.json').read_text())
@@ -165,6 +197,20 @@ class PlayerReference(unittest.TestCase):
         self.assertIn("parser.add_argument('--field-guide-only'",source)
         self.assertIn('if args.field_guide_only:',source)
         self.assertIn("outputs=['field-guide.pdf'] if args.field_guide_only",source)
+        # Kept SVG studies and the PDF studies must come from the same catalogue.
+        branch=source.split('if args.field_guide_only:',1)[1].split('else:',1)[0]
+        self.assertIn("get('catalog_sha256')",branch)
+        self.assertIn('SystemExit',branch)
+        # Preflight fails before any reference file is rewritten.
+        main=source.split('def main():',1)[1]
+        for write in ["(REF/'keyboard-controls.html').write_text","(REF/'field-guide.html').write_text",'illustrations(data)','keyboard_pdf(data)','field_pdf(data']:
+            self.assertLess(main.index('Native terrain map PNG missing'),main.index(write),write)
+            self.assertLess(main.index('if args.render_maps:native_maps()'),main.index(write),write)
+
+    @unittest.skipUnless((ROOT/'local-art/pc-modern/catalog.json').exists() and (REF/'illustrations.json').exists(), 'Private Modern catalogue is outside the source-only kit')
+    def test_model_studies_match_the_current_modern_catalogue(self):
+        built=json.loads((REF/'illustrations.json').read_text())['catalog_sha256']
+        self.assertEqual(built,hashlib.sha256((ROOT/'local-art/pc-modern/catalog.json').read_bytes()).hexdigest())
 
     @unittest.skipUnless((REF/'field-guide.html').exists(), 'Generated private assets are outside the source-only kit')
     def test_scenario_html_pairs_the_two_maps(self):
@@ -205,6 +251,25 @@ class PlayerReference(unittest.TestCase):
             self.assertIn(' re',pair.get_contents().get_data().decode('latin1'))
         self.assertTrue(all(page.mediabox.width<page.mediabox.height for page in pages[10:]))
 
+    @unittest.skipUnless((REF/'field-guide.pdf').exists() and (REF/'keyboard-controls.pdf').exists(), 'Generated private assets are outside the source-only kit')
+    def test_pdfs_are_branded_and_compact(self):
+        try:
+            from pypdf import PdfReader
+        except ImportError:
+            self.skipTest('PDF authoring dependency pypdf is unavailable')
+        for name,title,count in [('field-guide.pdf','M1 Abrams Battle Tank Fan Remaster – Field Guide: Scenarios & Vehicles',31),('keyboard-controls.pdf','M1 Abrams Battle Tank Fan Remaster – Keyboard Controls',3)]:
+            reader=PdfReader(REF/name)
+            self.assertEqual(len(reader.pages),count)
+            self.assertEqual(reader.metadata.title,title)
+            self.assertEqual(reader.metadata.creator,'Abrams Fan Remaster')
+            self.assertIn('Dynamix',reader.metadata.subject)
+            self.assertIn('fan remaster',reader.metadata.get('/Keywords',''))
+        self.assertLessEqual((REF/'field-guide.pdf').stat().st_size,6_000_000)
+        for page in PdfReader(REF/'field-guide.pdf').pages:
+            for obj in (page['/Resources'].get('/XObject') or {}).values():
+                image=obj.get_object()
+                if image.get('/Subtype')=='/Image':self.assertEqual(list(image.get('/Filter')),['/DCTDecode'])
+
     def test_reader_copy_is_concise_and_credit_is_fan_remastered(self):
         author=(ROOT/'tools/build_player_reference.py').read_text()
         native=(ROOT/'godot/scripts/pc_reference_library.gd').read_text()
@@ -230,8 +295,11 @@ class PlayerReference(unittest.TestCase):
         self.assertIn('fileExists(atPath: url.path)', swift)
         self.assertIn('openReference("keyboard-controls.html")', swift)
         theme=(ROOT/'godot/scripts/pc_interface_theme.gd').read_text()
-        self.assertIn('if name not in ["keyboard-controls.html","field-guide.html"]', theme)
-        self.assertIn('FileAccess.file_exists(path)', (ROOT/'godot/scripts/pc_reference_library.gd').read_text())
+        # The help reader maps names to tabs; only its manifest allowlist opens files.
+        self.assertNotIn('reference_path', theme)
+        library=(ROOT/'godot/scripts/pc_reference_library.gd').read_text()
+        self.assertIn('if name not in ["manual-content.json","visuals.json","credits.json"]: return {}', library)
+        self.assertIn('FileAccess.file_exists(path)', library)
         self.assertIn('show_reference(host: Window', theme)
         self.assertNotIn('OS.shell_open', theme)
         play=(ROOT/'godot/scripts/pc_play_menu.gd').read_text()
@@ -261,8 +329,10 @@ class PlayerReference(unittest.TestCase):
             self.assertIn('default-src \'none\'', text)
             self.assertIn('prefers-reduced-transparency', text)
         catalogue=(REF/'field-guide.html').read_text()
-        for section in ['missions','vehicles','anti_tank_guided_weapons','ammunition_and_armament','other_units_and_objectives']:
+        for section in ['missions','vehicles','anti_tank_guided_weapons','ammunition_and_armament','other_units_and_objectives','stations']:
             for row in DATA[section]:self.assertIn(row['name'], catalogue)
+        # Every catalogue card takes part in search filtering and the match count.
+        self.assertEqual(catalogue.count('<article data-search'),catalogue.count('<article'))
         controls=(REF/'keyboard-controls.html').read_text()
         self.assertIn('Menus and briefings', controls)
         self.assertIn('Radio and thermal', controls)

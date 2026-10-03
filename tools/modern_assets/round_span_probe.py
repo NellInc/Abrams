@@ -11,6 +11,9 @@ from pathlib import Path
 import struct
 from unicorn import UC_HOOK_CODE,UC_HOOK_INSN,UC_HOOK_MEM_WRITE
 from unicorn.x86_const import *
+import sys
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[2]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.pc_bearing_oracle import cpu,set_registers,run_until
 from tools.pc_live_state import SimStateReader
 from tools.pc_render_trace import Collector

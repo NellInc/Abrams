@@ -45,9 +45,6 @@ func _run() -> void:
 	var output := ""
 	for i in args.size():
 		if args[i]=="--output" and i+1<args.size(): output=args[i+1]
-	check(InterfaceTheme.reference_path("../elsewhere").is_empty(),"reference path rejects traversal")
-	check(InterfaceTheme.reference_path("missing.html").is_empty(),"unknown reference never resolves")
-	check(InterfaceTheme.reference_path("field-guide.html").ends_with("docs/player-reference/field-guide.html"),"reference path uses installed sibling payload")
 	check(not installed and play.disabled and genesis.disabled and not pc.disabled,"original-required controls")
 	check(thread==null and not busy,"fixture starts no host worker")
 	for size in [Vector2i(820,700),Vector2i(760,660),Vector2i(1024,800)]:
@@ -73,6 +70,8 @@ func _run() -> void:
 	check(reader.visible,"reader opens inside setup")
 	check(reader.call("_plain",1974.0)=="1974","whole-number year has no decimal suffix")
 	check(reader.call("_plain",6.32)=="6.32","fractional specifications retain precision")
+	for name in ["../manual-content.json","manual-content.json/../credits.json","/etc/passwd"]:
+		check(reader.call("_read_json",name).is_empty(),"reader JSON rejects unlisted path: "+name)
 	for map in reader.get("visuals").get("maps",[]):
 		var native_path: String=reader.call("visual_path",map.get("native_file",""))
 		check(native_path.ends_with(".png"),"native map includes rendered legend labels")
@@ -137,6 +136,13 @@ func _run() -> void:
 			var view := await rendered_frame()
 			var filename: String=str(map.get("file","")).trim_prefix("manual-map-")
 			check(view.save_png(output.path_join("scenario-"+filename))==OK,"complete scenario map screenshot: "+scenario)
+	stage("vehicle illustrations reuse decoded textures")
+	reader.call("show_section","Vehicles")
+	var picture: TextureRect=_first_picture(reader.get("body"))
+	check(picture!=null,"vehicle illustration displayed")
+	reader.call("_render")
+	var again: TextureRect=_first_picture(reader.get("body"))
+	check(picture!=null and again!=null and again!=picture and again.texture==picture.texture,"search re-render reuses the decoded illustration")
 	stage("reader recovery and held input")
 	reader.call("show_section","Controls")
 	reader.get("search").text="__no_such_entry__"
@@ -148,7 +154,7 @@ func _run() -> void:
 	reader.call("_render")
 	check(_has_text(reader.get("body"),"missing or unreadable"),"missing manual gives reinstall recovery")
 	reader.call("close_reader")
-	check(not reader.visible and reader.get("body").get_child_count()==0,"reader closes and releases textures")
+	check(not reader.visible and reader.get("body").get_child_count()==0 and reader.get("_textures").is_empty(),"reader closes and releases textures")
 	var menu := preload("res://scripts/pc_play_menu.gd").new()
 	menu.config_path=""
 	menu.quality_config_path=""
@@ -192,6 +198,13 @@ func _run() -> void:
 	for error in failures:printerr("FAIL: "+error)
 	print("PC_INTERFACE_REFERENCE: %d checks, %d errors"%[checks,failures.size()])
 	quit(0 if failures.is_empty() else 1)
+
+func _first_picture(node: Node) -> TextureRect:
+	if node is TextureRect and not node.is_queued_for_deletion():return node
+	for child in node.get_children():
+		var found := _first_picture(child)
+		if found!=null:return found
+	return null
 
 func _has_text(node: Node, words: String) -> bool:
 	if node is Label and node.text.contains(words):return true

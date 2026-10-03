@@ -7,7 +7,8 @@ from pathlib import Path
 from PIL import Image
 try:
     from tools.pc_plate_trace import PlateLoads, PLATE_IDS
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_plate_trace import PlateLoads, PLATE_IDS
 
 ROOT = Path(__file__).resolve().parents[1]

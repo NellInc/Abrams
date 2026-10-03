@@ -3,6 +3,10 @@ extends RefCounted
 const SPECIAL = {KEY_SHIFT: "shift", KEY_CTRL: "ctrl", KEY_ALT: "alt", KEY_UP: "up", KEY_DOWN: "down", KEY_LEFT: "left", KEY_RIGHT: "right",
 	KEY_ESCAPE: "escape", KEY_BACKSPACE: "backspace", KEY_TAB: "tab",
 	KEY_SPACE: "space", KEY_ENTER: "return", KEY_KP_ENTER: "return"}
+# Protocol limit; mirrors validate_command in tools/pc_bridge_host.py, which
+# ends the session on a larger set. SPECIAL comes first, so modifiers and
+# steering survive the cap.
+const MAX_KEYS := 16
 
 static func encode(pressed: Array) -> Array:
 	var keys: Array = []
@@ -14,6 +18,7 @@ static func encode(pressed: Array) -> Array:
 		elif key >= KEY_KP_0 and key <= KEY_KP_9: name = "kp%d" % (key-KEY_KP_0)
 		elif key >= KEY_F1 and key <= KEY_F12: name = "f%d" % (key-KEY_F1+1)
 		if not name.is_empty() and name not in keys: keys.append(name)
+		if keys.size()==MAX_KEYS: break
 	return keys
 
 static func held() -> Array:

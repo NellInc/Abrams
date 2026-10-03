@@ -30,6 +30,7 @@ func run() -> void:
 	var output := repo.path_join("artifacts/cockpit-refinement-20260929/console")
 	if "--fixture" in args: path=args[args.find("--fixture")+1]
 	if "--output" in args: output=args[args.find("--output")+1]
+	elif not "--native" in args: output="" # Headless gate runs never rewrite the dated native receipt.
 	check(FileAccess.file_exists(path),"real cockpit fixture exists")
 	if errors.is_empty(): await native(repo,path,output,"--native" in args)
 	for e in errors: printerr("FAIL: "+e)
@@ -55,7 +56,7 @@ func native(repo: String,path: String,output: String,native_render: bool) -> voi
 		trim=Trim.new()
 		frame.add_child(trim)
 		frame.move_child(trim,3)
-	DirAccess.make_dir_recursive_absolute(output)
+	if not output.is_empty(): DirAccess.make_dir_recursive_absolute(output)
 	for stage in ["commander-settled","damage-settled"]:
 		var entries: Array = report.ui_presentations.filter(func(e):return e.stage==stage)
 		check(entries.size()==1,"one real fixture for "+stage)
@@ -101,7 +102,7 @@ func native(repo: String,path: String,output: String,native_render: bool) -> voi
 				for p in Trim.SCREWS: circle(result,p,dimensions)
 		if stage=="commander-settled": await rejection(source,ui,tags,world,native_render)
 		check(source.get_data()==source_bytes and ui.get_data()==ui_bytes and tags.get_data()==tag_bytes,"all source inputs immutable")
-	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"native":native_render,"fixture":path,"fixture_sha256":FileAccess.get_sha256(path)},"  "))
+	if not output.is_empty(): FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"native":native_render,"fixture":path,"fixture_sha256":FileAccess.get_sha256(path)},"  "))
 func circle(result: Image,p: Vector2,dimensions: Vector2i) -> void:
 	var c: Vector2=trim.screw_center(p)
 	var r: float=trim.screw_radius()

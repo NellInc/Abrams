@@ -56,10 +56,12 @@ class StrutCompletionTests(unittest.TestCase):
         draw,ram,regs=self.fixture();ds=regs['ds']*16
         ram[ds+0x359B]=1;struct.pack_into('<4h',ram,ds+0x3593,160,318,112,114)
         draw.begin(bytes(ram),regs,5);_,mask=draw.finish(bytes(draw.plates[3]),0)
-        for at in range(64000):
-            if mask[at//8]&(128>>(at&7)):
-                self.assertTrue(160<=at%320<=318 and 112<=at//320<=114)
-                self.assertEqual(draw.plates[3][at],1)
+        # Two-way: no claim outside the clip or on transparent pixels, and no lost claim inside it.
+        claimed=[at for at in range(64000) if mask[at//8]&(128>>(at&7))]
+        expected=[at for at in range(64000) if 160<=at%320<=318 and 112<=at//320<=114 and draw.plates[3][at]==1]
+        self.assertEqual(claimed,expected)
+        self.assertEqual(len(claimed),381)
+        self.assertEqual(draw.counts['verified_pixels'],381)
 
 
 if __name__=='__main__':unittest.main()

@@ -52,10 +52,17 @@ func contracts() -> void:
 	for field in ["schema","source_sha256","page_offset","rect","center","color","lines","pixel_sha256"]:
 		data=fixture();data[2].target_box.erase(field);bind(data,world)
 		check(frame.target_box_art.packet.is_empty(),"missing field fails closed: "+field)
-	for fault in ["ink","background","ownership","line","page","palette","camera","fraction","color","hash"]:
+	for fault in ["ink","ink_color","ink_color_white","background","ownership","line","page","palette","camera","fraction","color","hash"]:
 		data=fixture()
 		match fault:
-			"ink": data[0].set_pixel(154,55,Color.MAGENTA)
+			# Re-hash so the declared-colour ink guard, not the crop hash, must reject these.
+			"ink":
+				data[0].set_pixel(154,55,Color.MAGENTA)
+				data[2].target_box.pixel_sha256=digest(data[0].get_region(Reticle.TARGET_BOX))
+			"ink_color": data[2].target_box.color=1
+			"ink_color_white":
+				data=fixture(Vector2i(159,60),1)
+				data[2].target_box.color=0
 			"background": data[0].set_pixel(32,13,Color.MAGENTA)
 			"ownership": data[1].set_pixel(154,55,Color.BLACK)
 			"line": data[2].target_box.lines[0][0]+=1
@@ -67,6 +74,8 @@ func contracts() -> void:
 			"hash": data[2].target_box.pixel_sha256="bad"
 		bind(data,world)
 		check(frame.target_box_art.ink.is_empty(),"unsafe target preserves original: "+fault)
+	data=fixture(Vector2i(159,60),1)
+	check(bind(data,world) and frame.target_box_art.ink.size()==40,"white original target binds when declared white")
 	data=fixture();bind(data,world)
 	check(not frame.target_box_art.ink.is_empty(),"visible target before clear")
 	data[2].erase("target_box");bind(data,world)

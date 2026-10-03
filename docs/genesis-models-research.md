@@ -173,6 +173,10 @@ python3 tools/extract_genesis_models.py \
 ```
 
 Use `--assets` on the Godot test to select another generated study directory.
+The builder records `source` relative to the repository; the Godot test also
+accepts older absolute paths and falls back to
+`reference/genesis/models-source-v2` when the recorded directory is gone, with
+the pinned hashes still authenticating every source file.
 Original ROM/captures, Pillow, Blender and the existing Unicorn environment are
 local prerequisites. No new dependencies were installed.
 

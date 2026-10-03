@@ -57,6 +57,11 @@ func run() -> void:
 		for expected in ["ega","genesis","upscaled"]:
 			menu.handle_shortcut(key(KEY_G,mac))
 			check(menu.graphics_mode==expected and modes[-1]==expected,"graphics cycle skips unavailable Modern")
+		menu.genesis_available=false
+		for expected in ["ega","upscaled","ega","upscaled"]:
+			menu.handle_shortcut(key(KEY_G,mac))
+			check(menu.graphics_mode==expected and modes[-1]==expected,"graphics cycle skips unloaded Genesis")
+		menu.genesis_available=true
 		var count:=modes.size()
 		menu.handle_shortcut(key(KEY_G,mac,true,false,true))
 		check(modes.size()==count,"holding graphics shortcut switches only once")

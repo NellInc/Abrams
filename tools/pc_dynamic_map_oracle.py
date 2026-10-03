@@ -15,20 +15,22 @@ def run():
     set_registers(m,((UC_X86_REG_CS,LOAD),(UC_X86_REG_DS,LOAD+0x19e0),(UC_X86_REG_SS,0x4000),(UC_X86_REG_SP,0x7fc0),(UC_X86_REG_BP,0x8000),(UC_X86_REG_EFLAGS,2)))
     run_until(m,LOAD*16+start,LOAD*16+stop,100)
     actual=list(struct.unpack('<4h',m.mem_read(0x40000+m.reg_read(UC_X86_REG_SP),8)))
-    assert actual==expected
-    assert bytes(m.mem_read((LOAD+0x19e0)*16+0x359d,2))==bytes([color,color])
+    if actual!=expected:raise ValueError(f'line arguments differ at {stop:x}: {actual}')
+    if bytes(m.mem_read((LOAD+0x19e0)*16+0x359d,2))!=bytes([color,color]):raise ValueError(f'line colour differs at {stop:x}')
     cases.append({'caller':stop,'line':actual,'color_fixture':color})
  for start,stop,expected in [(0x1253,0x1263,[87,110,88,110]),(0x126b,0x1279,[87,111,88,111])]:
   m.mem_write(0x47ffe,struct.pack('<h',88));m.mem_write(0x47ffc,struct.pack('<h',111))
   set_registers(m,((UC_X86_REG_CS,LOAD),(UC_X86_REG_DS,LOAD+0x19e0),(UC_X86_REG_SS,0x4000),(UC_X86_REG_SP,0x7fc0),(UC_X86_REG_BP,0x8000),(UC_X86_REG_EFLAGS,2)))
   run_until(m,LOAD*16+start,LOAD*16+stop,100)
-  actual=list(struct.unpack('<4h',m.mem_read(0x40000+m.reg_read(UC_X86_REG_SP),8)));assert actual==expected
+  actual=list(struct.unpack('<4h',m.mem_read(0x40000+m.reg_read(UC_X86_REG_SP),8)))
+  if actual!=expected:raise ValueError(f'line arguments differ at {stop:x}: {actual}')
   cases.append({'caller':stop,'line':actual})
  for color in (5,6):
   m.mem_write(0x47ffc,struct.pack('<h',73));m.mem_write(0x47ffa,struct.pack('<h',101))
   set_registers(m,((UC_X86_REG_CS,LOAD),(UC_X86_REG_DS,LOAD+0x19e0),(UC_X86_REG_SS,0x4000),(UC_X86_REG_SP,0x7fc0),(UC_X86_REG_BP,0x8000),(UC_X86_REG_AX,color),(UC_X86_REG_EFLAGS,2)))
   run_until(m,LOAD*16+0x1190,LOAD*16+0x1197,100)
-  actual=list(struct.unpack('<3h',m.mem_read(0x40000+m.reg_read(UC_X86_REG_SP),6)));assert actual==[73,101,color]
+  actual=list(struct.unpack('<3h',m.mem_read(0x40000+m.reg_read(UC_X86_REG_SP),6)))
+  if actual!=[73,101,color]:raise ValueError(f'point arguments differ: {actual}')
   cases.append({'caller':0x1197,'point_color':actual})
  return {'source_sha256':sha256(raw),'scope':__doc__,'unpack':proof,'cases':cases}
 if __name__=='__main__':

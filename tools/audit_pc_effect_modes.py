@@ -9,7 +9,8 @@ from PIL import Image
 try:
     from tools.unpack_pc_executables import unpack
     from tools.pc_live_state import SIM_SHA256
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from unpack_pc_executables import unpack
     from pc_live_state import SIM_SHA256
 

@@ -11,8 +11,11 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[2]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.standalone.build import verify
 from tools.standalone.runtime import sha
+from tools.source_guard import inside_source
 
 MACH_O = {b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf', b'\xca\xfe\xba\xbe', b'\xbe\xba\xfe\xca'}
 
@@ -61,8 +64,11 @@ def refresh_payload(bundle, before, team):
     receipt_path = core.with_suffix('.json')
     receipt = json.loads(receipt_path.read_text())
     # Signing changes Mach-O file bytes even though the executable text is
-    # unchanged. The importer/checkpoint loader must pin the shipped bytes.
-    receipt['unsigned_trace_sha256'] = receipt['trace_sha256']
+    # unchanged. The core loader pins the shipped bytes; the pre-signing
+    # identity is recorded so the checkpoint store can key slots on code
+    # identity rather than signed bytes. A repeat signing (e.g. a notarization
+    # retry) must keep the first pre-signing identity, not the signed hash.
+    receipt.setdefault('unsigned_trace_sha256', receipt['trace_sha256'])
     receipt['trace_sha256'] = sha(core)
     receipt_path.write_text(json.dumps(receipt,indent=2)+'\n')
     for row in manifest['files']:
@@ -110,7 +116,7 @@ def main():
     a = p.parse_args()
     if sys.platform != 'darwin':p.error('macOS signing tools are required')
     if a.report.exists():p.error('Use a new report path')
-    if a.report.resolve().is_relative_to(a.app.resolve()):p.error('Keep the report outside the sealed bundle')
+    if inside_source(a.report,a.app.resolve().parent,(a.app.resolve().name,)):p.error('Keep the report outside the sealed bundle')
     result = sign(a.app.resolve(),a.identity,a.team)
     a.report.parent.mkdir(parents=True,exist_ok=True)
     a.report.write_text(json.dumps(result,indent=2)+'\n')

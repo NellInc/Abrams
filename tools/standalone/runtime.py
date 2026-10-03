@@ -90,7 +90,7 @@ def validate_content(resources, content):
         path = content/'GAME'/row['name']
         managed(content, path)
         if not regular(path) or sha(path) != row['sha256']:
-            raise ValueError('PC game files are missing or changed. Choose the supported original PC game folder again.')
+            raise ValueError('Imported PC game files in the player data folder are missing or changed. They and your saves were kept for diagnosis. Restore the profile from a backup, or use a fresh data home (ABRAMS_DATA_HOME or --data-home).')
     archive = content/'.runtime/pc-core/abrams-ref.zip'
     managed(content, archive)
     if not regular(archive) or sha(archive) != CONTENT_SHA:
@@ -231,7 +231,17 @@ def launch(bundle, home, extra):
     if not genesis_enabled(home): args.append('--pc-only')
     args.extend(extra)
     if portable:
-        return subprocess.call(args, env=env)
+        # Game console output goes to the profile log, not the bounded setup pipes;
+        # a failure reports the exit code and this session's last log lines.
+        game_log = home/'logs/game.log'
+        with game_log.open('ab') as log:
+            log.write(b'\n== game session ==\n'); log.flush(); start = log.tell()
+            code = subprocess.call(args, env=env, stdout=log, stderr=subprocess.STDOUT)
+        if code:
+            with game_log.open('rb') as log:
+                log.seek(max(start, log.seek(0, 2)-1000)); tail = log.read().decode('utf-8', 'replace').strip()
+            print(json.dumps({'error': f'The game exited with code {code}. Details: {game_log}'+('\n'+tail if tail else '')}), file=sys.stderr)
+        return code
     os.execve(godot,args,env)
 
 

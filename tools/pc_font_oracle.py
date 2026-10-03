@@ -17,7 +17,8 @@ try:
     from tools.pc_bearing_oracle import cpu,set_registers,run_until
     from tools.pc_live_state import SimStateReader,SIM_SHA256
     from tools.pc_fonts import FONT_NAMES,decode_font,loaded_font
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import cpu,set_registers,run_until
     from pc_live_state import SimStateReader,SIM_SHA256
     from pc_fonts import FONT_NAMES,decode_font,loaded_font

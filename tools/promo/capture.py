@@ -59,10 +59,17 @@ def main():
                 saved=request('save_state',slot=1);assert saved['success'];checkpoints.append(saved)
                 shot('checkpoint-away',[(60,['up'] if a.drive_checkpoint else ['kp8']),(28,[]),(2,['kp5'])])
                 restored=request('load_state',slot=1);assert restored['success'];checkpoints.append(restored)
+                # Both packets are the worker's held local-checkpoint frame; equality
+                # shows slot identity and no display advance, not a fresh audit.
+                # Native integrity is the host restore_local conventional-RAM sha256.
+                for result in (saved,restored):
+                    assert result['restored'].get('held_frame') is True and result['restored'].get('startup')=='local-checkpoint',result['restored'].get('startup')
                 assert restored['restored']['frame_audit']==saved['restored']['frame_audit']
                 with (out/'checkpoint-return.jsonl').open('w') as f:
                     packet=restored['restored'];f.write(json.dumps(packet,separators=(',',':'))+'\n')
-                    for _ in range(89):f.write(json.dumps(request('step',frames=2,keys=[]),separators=(',',':'))+'\n')
+                    for _ in range(89):
+                        step=request('step',frames=2,keys=[]);assert not step.get('held_frame'),'Post-restore step did not produce a fresh frame audit'
+                        f.write(json.dumps(step,separators=(',',':'))+'\n')
                 path=out/'checkpoint-return.jsonl';records.append({'name':'checkpoint-return','packets':path.name,'frames':90,'fps':30,'duration':3,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
                 print('CAPTURE checkpoint-return 90',flush=True)
         finally:

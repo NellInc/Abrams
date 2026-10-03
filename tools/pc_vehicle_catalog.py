@@ -16,11 +16,14 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.inspect_shapes import inspect_shapes, primitive_vertices
     from tools.pc_live_state import SimStateReader, SIM_SHA256
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from unpack_pc_executables import unpack
     from inspect_scenarios import decode_resource
     from inspect_shapes import inspect_shapes, primitive_vertices
     from pc_live_state import SimStateReader, SIM_SHA256
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = 0x19E00
@@ -145,7 +148,7 @@ def export(output, catalog, shapes):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--capture',type=Path,required=True);a=p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')):p.error('output must be outside original source directories')
+    if inside_source(a.output,ROOT,('GAME','GENESIS')):p.error('output must be outside original source directories')
     catalog,shapes=source_catalog();catalog['live']=verify_live(a.capture.read_bytes(),catalog)
     result=export(a.output,catalog,shapes)
     print(json.dumps({'classes':len(result['classes']),'models':len(result['models']),'live':result['live']},indent=2))

@@ -204,8 +204,10 @@ func choose_graphics(mode: String) -> bool:
 	graphics_mode=mode
 	graphics_selected.emit(mode)
 	refresh_controls()
-	control_notice.emit("Graphics: "+{"ega":"EGA","genesis":"Genesis","upscaled":"Upscaled","modern":"Modern"}[graphics_mode])
-	return true
+	# The viewer may reject a mode whose assets failed to load; report what is shown.
+	var names := {"ega":"EGA","genesis":"Genesis","upscaled":"Upscaled","modern":"Modern"}
+	control_notice.emit("Graphics: "+names[graphics_mode] if graphics_mode==mode else names[mode]+" graphics are unavailable")
+	return graphics_mode==mode
 
 func choose_speed(multiplier: int) -> bool:
 	if busy or multiplier not in [1,8]: return false

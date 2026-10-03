@@ -9,21 +9,48 @@ import contextlib
 import json
 import os
 from pathlib import Path
+import queue
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 try:
     from tools.pc_state_store import StateStore, atomic_write, read_bounded, MAX_DISK
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_state_store import StateStore, atomic_write, read_bounded, MAX_DISK
 
+WORKER = Path(__file__).with_name('pc_bridge_host.py')
+# After the client's stdin closes, an outstanding reply gets this long before the
+# owned worker is killed; a reply in time keeps the graceful quit and final flush.
+ORPHAN_GRACE = 5.0
+
+
+def _pump(read, lines):
+    # EOF ('') and read errors are queued too, so the consumer always wakes.
+    while True:
+        try: line = read()
+        except Exception as error:
+            lines.put(error)
+            return
+        lines.put(line)
+        if not line: return
+
+
 class Worker:
+    client_closed = None  # supervise() binds its stdin-EOF event on a subclass
+    killed = False
+
     def __init__(self, argv, lock, resume=None):
-        command = [sys.executable, str(Path(__file__).with_name('pc_bridge_host.py')), *argv, '--state-worker']
+        command = [sys.executable, str(WORKER), *argv, '--state-worker']
         if resume: command += ['--local-resume', str(resume)]
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             text=True, bufsize=1, **({"pass_fds": (lock.fileno(),)} if os.name != "nt" else {}))
+        # A thread, not select(): a worker wedged mid-line must still be observable.
+        self.lines = queue.Queue()
+        threading.Thread(target=_pump, args=(lambda: self.process.stdout.readline(40 * 1024 * 1024), self.lines), daemon=True).start()
         try:
             self.ready = self.read()
         except Exception:
@@ -34,7 +61,25 @@ class Worker:
             raise
 
     def read(self):
-        line = self.process.stdout.readline(40 * 1024 * 1024)
+        deadline = None
+        while True:
+            try:
+                line = self.lines.get(timeout=0.25)
+                break
+            except queue.Empty:
+                if self.client_closed is None or not self.client_closed.is_set(): continue
+                if deadline is None: deadline = time.monotonic() + ORPHAN_GRACE
+                if time.monotonic() < deadline: continue
+                # The client is gone and the owned worker is unresponsive: kill only
+                # this child, which also drops its inherited save-lock descriptor.
+                self.killed = True
+                self.process.kill()
+                self.process.wait()
+                for pipe in (self.process.stdin, self.process.stdout):
+                    try: pipe.close()
+                    except OSError: pass
+                raise RuntimeError('Bridge client closed while the original-game worker was unresponsive; worker stopped')
+        if isinstance(line, Exception): raise line
         if not line or not line.endswith('\n'):
             raise RuntimeError('Original-game worker ended before replying')
         message = json.loads(line)
@@ -47,12 +92,16 @@ class Worker:
         return self.read()
 
     def close(self):
+        if self.killed: return
         if self.process.poll() is None:
             try:
                 self.process.stdin.write('{"op":"quit"}\n')
                 self.process.stdin.flush()
             except BrokenPipeError: pass
-        self.process.stdin.close()
+        # A worker that exits on its own (after 'captured') can leave unflushed
+        # buffered bytes; close() then hits the same broken pipe.
+        try: self.process.stdin.close()
+        except BrokenPipeError: pass
         code = self.process.wait()
         self.process.stdout.close()
         if code: raise RuntimeError(f'Original-game worker failed with exit {code}')
@@ -73,22 +122,32 @@ def capture_workspace(root):
 def supervise(args, argv, lock_saves, validate_command):
     try:
         from tools.pc_reference_core import core_suffix
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from pc_reference_core import core_suffix
     core_path = args.core
     if args.backend == 'trace': core_path = Path(__file__).resolve().parents[1] / ('.runtime/pc-core/abrams-trace' + core_suffix())
-    lock = lock_saves(args.saves)
-    worker = None
+    lock = worker = None
     def send(message):
         print(json.dumps(message, separators=(',', ':')), flush=True)
+    # stdin is read on a thread so EOF is seen while a worker reply is outstanding.
+    commands, client_closed = queue.Queue(), threading.Event()
+    def read_stdin():
+        try: _pump(lambda: sys.stdin.readline(8193), commands)
+        finally: client_closed.set()
     try:
+        # Inside the try so 'already open in another window' reaches the player.
+        lock = lock_saves(args.saves)
         store = StateStore(args.saves, core_path, args.content, args.backend)
-        worker = Worker(argv, lock)
+        threading.Thread(target=read_stdin, daemon=True).start()
+        OwnedWorker = type('Worker', (Worker,), {'client_closed': client_closed})
+        worker = OwnedWorker(argv, lock)
         ready = worker.ready
         ready.update(slots=store.slots(), save_states=args.backend == 'trace')
         send(ready)
         while True:
-            line = sys.stdin.readline(8193)
+            line = commands.get()
+            if isinstance(line, Exception): raise line
             if not line: break
             if len(line) > 8192: raise ValueError('oversized bridge command')
             command = json.loads(line)
@@ -107,9 +166,14 @@ def supervise(args, argv, lock_saves, validate_command):
                     capture = Path(directory)
                     result = worker.request({'op': '_capture', 'directory': str(capture)})
                     if result.get('type') != 'captured':
+                        # The worker replied and is still live: nothing here needs recovery.
+                        shutil.rmtree(capture, ignore_errors=True)
                         raise ValueError(result.get('message', 'Checkpoint capture failed'))
-                    worker.close()
-                    worker = None
+                    # The capture is complete once 'captured' arrives; a close fault must
+                    # not strand a dead worker or skip recovery.
+                    closing, worker = worker, None
+                    try: closing.close()
+                    except Exception as error: print(f'Checkpoint worker close: {error}', file=sys.stderr, flush=True)
                     disk = read_bounded(store.disk, MAX_DISK) if store.disk.exists() else b''
                     atomic_write(capture / 'campaign.zip', disk)
                     # Once the native worker has closed, always recover it even
@@ -121,9 +185,9 @@ def supervise(args, argv, lock_saves, validate_command):
                                 restore = Path(restore_dir)
                                 for name, raw in selected.items(): atomic_write(restore / name, raw)
                                 store.install_disk(selected['campaign.zip'])
-                                worker = Worker(argv, lock, restore)
+                                worker = OwnedWorker(argv, lock, restore)
                         else:
-                            worker = Worker(argv, lock, capture)
+                            worker = OwnedWorker(argv, lock, capture)
                         response.update(success=True, message=f'Slot {slot} saved' if operation == 'save_state' else f'Slot {slot} loaded; previous session kept in recovery slot',
                                         restored=worker.ready | {'type': 'sample', 'id': command['id'], 'timeline_reset': True})
                     except Exception:
@@ -132,7 +196,7 @@ def supervise(args, argv, lock_saves, validate_command):
                             except Exception: pass
                             worker = None
                         store.install_disk(disk)
-                        worker = Worker(argv, lock, capture)
+                        worker = OwnedWorker(argv, lock, capture)
                         response['restored'] = worker.ready | {'type': 'sample', 'id': command['id'], 'timeline_reset': True}
                         shutil.rmtree(capture)  # rollback succeeded; slot 0 remains the durable recovery
                         raise
@@ -144,9 +208,12 @@ def supervise(args, argv, lock_saves, validate_command):
     except BrokenPipeError:
         pass
     except Exception as error:
-        send({'type': 'error', 'message': str(error)})
+        # The client may already be gone; keep the real error for the host log.
+        try: send({'type': 'error', 'message': str(error)})
+        except BrokenPipeError: pass
         raise
     finally:
         try:
             if worker: worker.close()
-        finally: lock.close()
+        finally:
+            if lock is not None: lock.close()

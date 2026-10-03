@@ -5,7 +5,8 @@ const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
 func run() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	var args := OS.get_cmdline_user_args()
-	output = directory.path_join("artifacts/finish-20260928/effects-modes-native")
+	# The dated directory is native evidence; headless gate runs use a scratch default.
+	output = directory.path_join("artifacts/finish-20260928/effects-modes-native" if "--native" in args else "artifacts/pc-effect-modes-test")
 	if "--output" in args: output = args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	var fixture := directory.path_join("artifacts/finish-20260928/effect-mode-fixtures.json")

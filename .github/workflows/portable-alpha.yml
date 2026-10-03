@@ -62,6 +62,9 @@ jobs:
           archive=pathlib.Path(os.environ['RUNNER_TEMP'])/'port-input.zip'
           assert hashlib.sha256(archive.read_bytes()).hexdigest()==os.environ['INPUT_SHA256'],'Input fingerprint mismatch'
           root=pathlib.Path.cwd().resolve()
+          trusted=json.loads((root/'tools/package/game-inputs.json').read_bytes())
+          banned={r['sha256'] for r in trusted['files']}
+          assert banned,'Checkout original-input inventory is empty'
           with zipfile.ZipFile(archive) as z:
               names=set()
               for member in z.infolist():
@@ -74,7 +77,7 @@ jobs:
                   assert not any(part.lower().endswith('.env') or part.lower()=='.env' for part in p.parts),'Secrets forbidden'
                   destination=root.joinpath(*p.parts)
                   assert destination.resolve().is_relative_to(root),'Escaping ZIP member'
-              banned={r['sha256'] for r in json.loads(z.read('tools/package/game-inputs.json'))['files']}
+              if 'tools/package/game-inputs.json' in names:assert json.loads(z.read('tools/package/game-inputs.json'))==trusted,'Input inventory differs from checkout'
               banned|={'c1821239d91a23883a44c4484ca13091479bf0c75347f01b8cb7b3a089565d05','ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea'}
               for member in z.infolist():
                   if not member.is_dir():assert hashlib.sha256(z.read(member)).hexdigest() not in banned,'Original bytes forbidden'
@@ -136,7 +139,7 @@ jobs:
             RUNTIME="$APP/runtime/AbramsRuntime/AbramsRuntime"
             RENDERER="$APP/renderer/AbramsRenderer"
           fi
-          export ABRAMS_DATA_HOME="$RUNNER_TEMP/abrams-smoke-data" ABRAMS_PYTHON="$RUNTIME" ABRAMS_BUNDLE="$APP"
+          export ABRAMS_DATA_HOME="$RUNNER_TEMP/abrams-smoke-data" ABRAMS_PYTHON="$RUNTIME"
           "$RUNTIME" --status
           python - <<'PY'
           import os, pathlib, subprocess
@@ -145,8 +148,12 @@ jobs:
           launcher = bundle / (APP_NAME + ('.exe' if os.name == 'nt' else '.sh'))
           subprocess.run([str(launcher.resolve()), '--invoke', '--status'], check=True, timeout=60)
           PY
-          "$RENDERER" --headless --audio-driver Dummy --path "$APP/kit/godot" --script res://scripts/portable_setup.gd --check-only
-          "$RENDERER" --headless --audio-driver Dummy --path "$APP/kit/godot" --script res://scripts/portable_setup.gd -- --setup-smoke --no-audio
+          CHECK_LOG="$RUNNER_TEMP/portable-setup-check.log" SMOKE_LOG="$RUNNER_TEMP/portable-setup-smoke.log"
+          "$RENDERER" --headless --audio-driver Dummy --path "$APP/kit/godot" --script res://scripts/portable_setup.gd --check-only 2>&1 | tee "$CHECK_LOG"
+          "$RENDERER" --headless --audio-driver Dummy --path "$APP/kit/godot" --script res://scripts/portable_setup.gd -- --setup-smoke --no-audio 2>&1 | tee "$SMOKE_LOG"
+          # Godot exits 0 after script parse errors; apply the validate.sh log check.
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|^ERROR:' "$CHECK_LOG" "$SMOKE_LOG"; then echo 'Portable setup reported a script error' >&2; exit 1; fi
+          if ! grep -q 'PORTABLE_SETUP_SMOKE: PASS' "$SMOKE_LOG"; then echo 'Portable setup smoke receipt missing' >&2; exit 1; fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Abrams-${{ runner.os }}-x86_64

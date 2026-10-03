@@ -8,6 +8,8 @@ var commands: Array = []
 var index := 0
 var started := 0
 var stopping := false
+var stop_started := 0
+var finished := false
 var drained := false
 var errors: Array[String] = []
 var events: Array = []
@@ -42,8 +44,7 @@ func start() -> void:
 		[3,["space"]],[200,[]]]
 	for step in steps:
 		for _i in int(step[0]): commands.append(step[1])
-	var python := OS.get_environment("ABRAMS_PYTHON")
-	if python.is_empty(): python = "/opt/homebrew/bin/python3"
+	var python := Bridge.default_python()
 	bridge.start(python,directory.path_join("artifacts/pc-source-boot-01/mission-entry/reference.state"),
 		output.path_join("saves"),output.path_join("host.log"),"trace")
 	started = Time.get_ticks_msec()
@@ -89,7 +90,13 @@ func _process(_delta: float) -> bool:
 	if not bridge.failure.is_empty() and bridge.failure not in errors: errors.append(bridge.failure)
 	if Time.get_ticks_msec()-started > 240000 and not stopping: errors.append("native audio bridge deadline")
 	if stopping:
-		if drained and bridge.has_exited(): finish()
+		if finished: pass
+		elif drained and bridge.has_exited(): finish()
+		elif Time.get_ticks_msec()-stop_started > 15000:
+			# A wedged host never reads quit; bound shutdown and leave no orphan child.
+			bridge.kill()
+			errors.append("PC child did not exit after quit; terminated")
+			finish()
 	elif not errors.is_empty(): stop.call_deferred()
 	elif not bridge.pending:
 		if index < commands.size():
@@ -101,6 +108,7 @@ func _process(_delta: float) -> bool:
 func stop() -> void:
 	if stopping: return
 	stopping = true
+	stop_started = Time.get_ticks_msec()
 	bridge.close()
 	drained = await audio.drain_for_shutdown()
 	if not drained:
@@ -108,6 +116,7 @@ func stop() -> void:
 		drained = true
 
 func finish() -> void:
+	finished = true
 	var counts := {}
 	var speech_counts := {}
 	for event in heard:

@@ -3,8 +3,11 @@
 import base64
 import hashlib
 import json
+import sys
 from pathlib import Path
 from PIL import Image
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.inspect_scenarios import decode_resource
 from tools.extract_pc_ui import screen_pixels
 

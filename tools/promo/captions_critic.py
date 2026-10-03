@@ -34,11 +34,17 @@ def audio_hash(media):
 
 def transcribe(media,out,model):
     if model == 'openai/whisper-1':
-        from generate import request
+        from generate import budget,request,receipt
         audio=out/'asr-input.wav'
         subprocess.run(['ffmpeg','-v','error','-y','-i',str(media),'-vn','-ar','16000','-ac','1',str(audio)],check=True)
+        # Paid call: same approval, budget and duplicate-action ledger as every
+        # other OpenRouter request. A review folder inside a production uses
+        # the production's authorization; otherwise budget() refuses.
+        ledger=next((d for d in (out,out.parent) if (d/'authorization.json').exists()),out)
+        budget(ledger,'captions-asr',.1)
         response=request('POST','/audio/transcriptions',json={'model':model,'input_audio':{'data':base64.b64encode(audio.read_bytes()).decode(),'format':'wav'},'language':'en','temperature':0,'response_format':'verbose_json','timestamp_granularities':['word','segment']}).json()
         (out/'asr-response.json').write_text(json.dumps(response,indent=2)+'\n')
+        receipt(ledger,'captions-asr',{'model':model,'source_sha256':hashlib.sha256(media.read_bytes()).hexdigest(),'audio_sha256':hashlib.sha256(audio.read_bytes()).hexdigest(),'usage':response.get('usage')},audio)
         words=[{'word':w['word'].strip(),'start':w['start'],'end':w['end']} for w in response['words']]
         heard=response['text'];language='en'
     else:
@@ -80,6 +86,20 @@ def transcribe(media,out,model):
     print(json.dumps({'words':len(words),'cues':len(cues),'word_differences':mismatches,'last_word_seconds':words[-1]['end']}))
 
 
+def loudness_checks(returncode,stderr):
+    """Fail closed: an unmeasured or unparsed loudness pass is a failed check."""
+    matches=re.findall(r'\{\s*"input_i".*?\}',stderr,re.S)
+    try:metrics=json.loads(matches[-1]) if matches else {}
+    except ValueError:metrics={}
+    def value(key):
+        try:return float(metrics[key])
+        except (KeyError,TypeError,ValueError):return None
+    peak,integrated=value('input_tp'),value('input_i')
+    return {'loudness_measured':returncode==0 and peak is not None and integrated is not None,
+            'true_peak_below_minus_1_db':peak is not None and peak<=-1.0,
+            'integrated_loudness_in_delivery_range':integrated is not None and -19<=integrated<=-14},metrics
+
+
 def critique(media,out):
     actual=out.parent/'production-brief.json'
     brief=json.loads((actual if actual.exists() else ROOT/'tools/promo/brief.json').read_text());probe=ffprobe(media)
@@ -92,11 +112,7 @@ def critique(media,out):
     (out/'decode-errors.txt').write_text(result.stderr)
     loudness=subprocess.run(['ffmpeg','-hide_banner',*serial,'-i',str(media),'-af','loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json','-f','null','-'],capture_output=True,text=True)
     (out/'loudness.txt').write_text(loudness.stderr)
-    matches=re.findall(r'\{\s*"input_i".*?\}',loudness.stderr,re.S)
-    metrics=json.loads(matches[-1]) if matches else {}
-    if metrics:
-        checks['true_peak_below_minus_1_db']=float(metrics['input_tp'])<=-1.0
-        checks['integrated_loudness_in_delivery_range']=-19<=float(metrics['input_i'])<=-14
+    loudness_result,metrics=loudness_checks(loudness.returncode,loudness.stderr);checks.update(loudness_result)
     frames=out/'review-frames';frames.mkdir(exist_ok=True)
     transitions=[s['start'] for s in brief['shots'][1:]]+brief.get('internal_transitions',[])
     times=[s['start']+s['duration']/2 for s in brief['shots']]+[s['start']+.5 for s in brief['shots']]+[max(0,t+delta) for t in transitions for delta in (-1/30,0,1/30)]+[23.4,29.1,32.2,34.5,40.5,46.9,51.8,52.2,57,58.5]

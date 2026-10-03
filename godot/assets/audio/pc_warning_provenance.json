@@ -196,7 +196,7 @@
   },
   "qa_inputs": [
     {
-      "path": "/Users/nellwatson/Documents/GitHub/Abrams/local-audio/pc-warning-gemini-3.8-v1/qa-first/transcription-check.json",
+      "path": "local-audio/pc-warning-gemini-3.8-v1/qa-first/transcription-check.json",
       "sha256": "f13683e0c2025bec5ff52d33b0404bcdfa4a7cb4e8c59d9f06ce08d32d7fb6a5"
     }
   ],

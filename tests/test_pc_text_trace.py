@@ -80,8 +80,12 @@ class TextTests(unittest.TestCase):
         raw[12:]=bytes([7])*len(raw[12:]);self.observer.finish(bytes(raw))
         self.assertEqual(self.observer.scanout(0),())
         self.assertEqual(self.observer.counts['glyph_mismatches'],1)
-        raw,_=self.draw();self.observer.finish(b'')
+        # An empty return at the key of a live verified label must drop it.
+        raw,_=self.draw();self.observer.finish(raw)
+        self.assertEqual(len(self.observer.scanout(0)),1)
+        self.draw();self.observer.finish(b'')
         self.assertEqual(self.observer.scanout(0),())
+        self.assertEqual(self.observer.counts['unsupported_returns'],1)
 
     def test_blank_clears_candidate_and_offscreen_runs_fail_closed(self):
         raw,_=self.draw();self.observer.finish(raw)

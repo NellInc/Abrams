@@ -38,10 +38,13 @@ bounded driver probe. This is not a complete keyboard-layout test.
 Shift+3 reaches the original system-speed command. A 530-frame baseline/trace
 comparison cycles its original speed index through 0, 1 and 2. The original
 also selects AX when its scancode-3 poll sees that chord; this behavior is retained.
+At most 16 held keys are sent per frame (the helper's limit), modifiers and arrows first.
 
 Closing the window asks only its own helper to exit and waits for its exit. It
-does not signal the separately running DOSBox-X app. The authored range remains
-separate and is never instantiated by this bridge. The native Play window and
+does not signal the separately running DOSBox-X app. If the helper has not exited
+5 seconds after a failure (30 seconds otherwise), the window closes anyway without
+signalling it; a helper that recovers finishes its own shutdown on end-of-input.
+The authored range remains separate and is never instantiated by this bridge. The native Play window and
 supported high-resolution layers are live. Sustained pacing and remaining
 presentation families remain open; see [pacing measurements](pc-pacing-research.md).
 
@@ -86,6 +89,7 @@ Bounded actual-launcher diagnostics:
 ./Play.command --capture --capture-menu name --output artifacts/menu-name
 ```
 
+Relative `--output` and `--saves` paths resolve against the repository root.
 `main` is also supported. These routes send ordinary original keys and exit their
 own helper after capture. `--original-text` disables all refined lettering.
 
@@ -183,7 +187,11 @@ restore contract. Restoring a recorded held-key snapshot is rejected.
 inherited stdin/stdout pipes. It exposes no network listener, memory-write
 operation, arbitrary file operation or replacement simulation. Core logs use
 stderr. Godot uses [nonblocking process pipes](https://docs.godotengine.org/en/stable/classes/class_os.html#class-os-method-execute-with-pipe)
-with one request outstanding. Interactive pacing retains fractional clock phase
+with one request outstanding. If Godot exits or closes the pipe while a reply
+is outstanding, the supervisor waits five seconds, then kills only its own
+worker so the save lock is released. A `quit` or EOF with no reply outstanding
+shuts down gracefully, flushing the original game's disk writes; a `quit`
+queued behind a hung request cannot be honoured and takes the kill path. Interactive pacing retains fractional clock phase
 and reuses only exactly matching observer/presentation byte predicates. After
 source/audio/PNG validation, the next eligible one-frame request can run while
 Godot builds the current picture. Captures retain their explicit batch ordering.

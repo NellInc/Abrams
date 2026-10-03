@@ -104,7 +104,7 @@ def check_source_closure(root, names, include_assets=False):
     for name in names:
         path = root / name
         if path.suffix == '.gd':
-            for dependency in re.findall(r'preload\(\s*["\']res://([^"\']+)["\']\s*\)', path.read_text()):
+            for dependency in re.findall(r'(?<![A-Za-z_])(?:pre)?load\(\s*["\']res://([^"\']+)["\']\s*\)', path.read_text()):
                 if dependency.endswith(('.gd', '.gdshader')) and 'godot/' + dependency not in selected:
                     raise ValueError(f'Missing code dependency: {name} -> godot/{dependency}')
         if include_assets and path.suffix in {'.gd', '.tscn'}:
@@ -113,12 +113,22 @@ def check_source_closure(root, names, include_assets=False):
                     raise ValueError(f'Missing resource dependency: {name} -> godot/{dependency}')
         if path.suffix == '.py':
             for node in ast.walk(ast.parse(path.read_text(), filename=name)):
-                if not isinstance(node, ast.ImportFrom) or not node.module:
+                level = getattr(node, 'level', 0) or 0
+                if isinstance(node, ast.Import):
+                    modules = [a.name for a in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    # Relative imports resolve against the importing file; absolute ones against the repo root.
+                    parts = PurePosixPath(name).parent.parts
+                    module = '.'.join((*parts[:len(parts) - level + 1], node.module or '') if level else (node.module or '',)).strip('.')
+                    modules = [module] * bool(module) + [f'{module}.{a.name}'.strip('.') for a in node.names if a.name != '*']
+                else:
                     continue
-                module = node.module
-                candidate = (module.replace('.', '/') if module.startswith('tools.') else 'tools/' + module) + '.py'
-                if (root / candidate).is_file() and candidate not in selected:
-                    raise ValueError(f'Missing code dependency: {name} -> {candidate}')
+                for module in modules:
+                    stem = module.replace('.', '/')
+                    # Bare absolute names also cover tools scripts that import siblings through sys.path.
+                    for candidate in (stem + '.py', stem + '/__init__.py', *(('tools/' + stem + '.py',) if not level else ())):
+                        if (root / candidate).is_file() and candidate not in selected:
+                            raise ValueError(f'Missing code dependency: {name} -> {candidate}')
 
 
 def verify_private_inputs(root):

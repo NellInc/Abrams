@@ -15,9 +15,8 @@ uniform sampler2D material_means : source_color, filter_nearest, repeat_disable;
 uniform float hill_mean;
 uniform mat3 camera_to_local;
 uniform vec3 world_origin;
+// One atlas holds every effect donor (burst, fading, smoke); kind 4 only.
 uniform sampler2D impact_burst : filter_linear, repeat_disable;
-uniform sampler2D impact_fading : filter_linear, repeat_disable;
-uniform sampler2D impact_smoke : filter_linear, repeat_disable;
 uniform sampler2D effect_correction : filter_linear, repeat_disable;
 uniform sampler2D vehicle_panels : filter_linear_mipmap_anisotropic, repeat_disable;
 uniform sampler2D vehicle_colours : source_color, filter_nearest, repeat_disable;
@@ -227,11 +226,8 @@ void fragment() {
         float level = clamp(round(32.0+(panel.r-mean)*128.0*smoothstep(0.5,0.9,panel.a)*fade),0.0,64.0);
         if (UV.y > 12.5) level=32.0;
         ALBEDO=texture(vehicle_colours,vec2((round(UV.x)+0.5)/vehicle_materials,(level+0.5)/65.0)).rgb;
-    } else if (UV.y > 3.5 && UV.y < 6.5) {
-        vec4 effect;
-        if (UV.y < 4.5) effect = texture(impact_burst,UV2);
-        else if (UV.y < 5.5) effect = texture(impact_fading,UV2);
-        else effect = texture(impact_smoke,UV2);
+    } else if (UV.y > 3.5 && UV.y < 4.5) {
+        vec4 effect = texture(impact_burst,UV2);
         // Cutout keeps the complete mesh in its original opaque painter stream.
         // Discard low-alpha generation residue rather than exposing RGB fringes.
         if (effect.a < 0.5) discard;

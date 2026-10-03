@@ -33,9 +33,7 @@ func _initialize() -> void:
 		root.add_child(tandem_frame)
 	DirAccess.make_dir_recursive_absolute(output)
 	started = Time.get_ticks_msec()
-	var python := OS.get_environment("ABRAMS_PYTHON")
-	if python.is_empty():
-		python = "/opt/homebrew/bin/python3"
+	var python := Bridge.default_python()
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
 	bridge.start(python, root_path.path_join(state_path), output.path_join("saves"),
 		output.path_join("host.log"), "trace" if trace_mode else "reference")

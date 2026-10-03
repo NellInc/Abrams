@@ -22,7 +22,9 @@ def main():
     def item(path,duration):
         if duration>0:concat.extend([f"file '{path}'",f'duration {duration:.6f}'])
     for n,cue in enumerate(cues):
-        begin,end=cue['start'],cue['end'];assert begin>=last and end>begin and end<=duration
+        begin,end=cue['start'],cue['end']
+        if 0<last-begin<=.001:begin=last  # older cue files may overlap by float noise
+        assert begin>=last and end>begin and end<=duration
         item(blank,begin-last)
         im=Image.new('RGBA',(1920,156));d=ImageDraw.Draw(im);text=cue['text']
         if len(text)>46:

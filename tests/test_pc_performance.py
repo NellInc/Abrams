@@ -203,12 +203,16 @@ class TextRGBProofTests(unittest.TestCase):
     def test_bounded_lru_and_warm_encoding_reuse(self):
         with patch('tools.pc_text_trace.indexed_rgb',wraps=indexed_rgb) as encode:
             self.compare();self.compare();self.assertEqual(encode.call_count,1)
+            # The setUp value lies inside the loop range, so the loop refreshes it.
+            self.assertEqual(self.palette[3][0],21);original=next(iter(self.observer.rgb_proofs))
             for i in range(MAX_RGB_PROOFS+1):
                 self.palette[3][0]=i
                 self.compare(self.frame())
+            self.assertIn(original,self.observer.rgb_proofs)  # Hit at i=21 moved it to the end.
             self.palette[3][0]=0
             before=encode.call_count;self.compare(self.frame())
-            self.assertEqual(encode.call_count,before+1)  # Original proof was evicted.
+            # Least recently used key (palette[3][0]=0) was evicted; FIFO would have evicted the original instead.
+            self.assertEqual(encode.call_count,before+1)
         self.assertEqual(len(self.observer.rgb_proofs),MAX_RGB_PROOFS)
 
 

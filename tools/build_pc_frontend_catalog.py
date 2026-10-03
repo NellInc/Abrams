@@ -15,10 +15,13 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.extract_pc_ui import screen_pixels
     from tools.pc_bitmaps import decode_bitmaps
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from inspect_scenarios import decode_resource
     from extract_pc_ui import screen_pixels
     from pc_bitmaps import decode_bitmaps
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 # Every used entry is observed in exact native office/character pixels. BRIEF
@@ -93,7 +96,8 @@ def crew_information(game, capture):
     from PIL import Image
     try:
         from tools.extract_pc_portraits import verify_loaded
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from extract_pc_portraits import verify_loaded
     source=Image.open(capture/'crew.png').convert('RGB')
     fingerprint=hashlib.sha256(source.tobytes()).hexdigest()
@@ -184,7 +188,8 @@ def information_text(game, capture, name):
     from PIL import Image
     try:
         from tools.pc_fonts import decode_font, text_pixels
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from pc_fonts import decode_font, text_pixels
     ram=(capture/'ax.bin').read_bytes()
     start=ram.index(b'C  R  E  W    S  T  A  T  I  O  N  S\0')
@@ -231,7 +236,8 @@ def information(game, capture):
     try:
         from tools.capture_pc_session import INFORMATION_PAGES, INFORMATION_HEIGHT
         from tools.extract_pc_portraits import verify_loaded
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from capture_pc_session import INFORMATION_PAGES, INFORMATION_HEIGHT
         from extract_pc_portraits import verify_loaded
     pins={'START.EXE':'a6fd07ae3df4f61806852d92c0c50354b7f7afccee10da88710ef0bc3361ca6a',
@@ -284,7 +290,7 @@ def main():
     mode.add_argument('--motor-pool',action='store_true')
     mode.add_argument('--arming-panel',action='store_true')
     mode.add_argument('--information-capture',type=Path);a=p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')):
+    if inside_source(a.output, ROOT):
         p.error('output must be outside original sources')
     data=information(ROOT/'GAME',a.information_capture) if a.information_capture else arming_panel(ROOT/'GAME') if a.arming_panel else motor_pool(ROOT/'GAME') if a.motor_pool else build(ROOT/'GAME')
     a.output.mkdir(parents=True,exist_ok=False)

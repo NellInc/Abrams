@@ -3097,3 +3097,34 @@ limiter was weakened. Native popup callbacks were not exposed to GDScript on thi
 engine build; UI selections were independently observed. Physically held hardware
 keys, campaign victories, independent listening, other OSs and release rights are
 not claimed. Modern remains deferred. See the local ACCEPTANCE.md for exact logs.
+
+## Whole-codebase audit, fixes and website polish, 2026-10-03
+
+Nell asked Claude Code to scan and fix all contemporary code and polish the
+website. Baseline before any edit (WIP snapshotted as
+`refs/claude/baseline-20261003`): Python 580 OK/1 skip; validate.sh Godot checks
+67/69, with `pc_live_scheduling` failing (fixture never set `startup_ready`
+after the startup splash) and `pc_audio_assets` failing (a retired promo dry
+master; restored byte-identical from the installed voice, hash matching the
+retained receipt). Thirty-nine read-only finders produced 155 candidates;
+adversarial verification confirmed 148 (2 high, 11 medium, 135 low, none
+gameplay-affecting). Two reviewed fix passes resolved all but three: F025 needs
+a local-art catalogue hash rotation, F067 waits for the next pinned core rebuild,
+and F038's strengthened check needs a windowed native run. Final: Python 683
+OK/1 opt-in skip (with unicorn available), validate.sh 72/72 including three
+newly wired checks and a per-check time bound, source CI PASS, native
+`verify_pc_save_states` 26/26, joystick and scenario launcher captures clean.
+The website gained aligned layout, FAQ, branded 404, robots/sitemap/JSON-LD/
+llms.txt, WOFF2 and right-sized images, and a 4.8 MB field guide (was 36 MB).
+Nothing committed or deployed. Follow-ups: `_contprompts/audit-followups_2026-10-03.md`.
+Finishing pass the same day: Nell applied the gated CI patch; F025's map-frame
+catalogue now records its rebuilt footer (hash rotated); F038 ran natively at
+208 checks, 0 errors, after replacing the stale 1+2+4+8 replay with the menu's
+real 1x/8x speeds; tool import fallbacks no longer mask missing dependencies.
+After Nell accepted Apple's updated agreement, a fresh current-source app (signed
+build 1a61287931510c16adc4, 87 Developer ID targets, core text unchanged) passed a
+signed-app import and capture smoke, was notarized (submission 871599ab-b8f4-45c7-
+a920-e303cf985360: Accepted, 0 issues), stapled, and passes Gatekeeper as
+"Notarized Developer ID", including from the extracted release ZIP. Receipt:
+`artifacts/notarization-20261003/RELEASE-RECEIPT.json`. Not yet published. The
+website dedication also gained Nell's portrait of her father, David "Ming" Kenny.

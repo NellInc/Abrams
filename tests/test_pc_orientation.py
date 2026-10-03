@@ -98,8 +98,17 @@ class OrientationTests(unittest.TestCase):
         self.begin(raw);self.finish(raw,lines=lines[::-1]);self.assertIsNone(self.observer.scanout(0))
 
     def test_entry_modes_hash_and_protocol_reject(self):
-        for offset,value in [(0x35AE,4),(0x799D,4),(0x3593,0),(0x359C,3),(0xC9D,4),(0xCB6,16),(0x1D9C,7)]:
-            raw=self.entry();raw[offset]=value;self.begin(raw);self.observer.finish(b'')
+        # A rejected entry and an undrawn valid one both leave scanout None; check the rejection itself.
+        self.begin(self.entry());self.assertTrue(self.observer.pending['valid']);self.observer.finish(b'')
+        for offset,value,reason in [(0x35AE,4,'unsupported orientation video mode'),(0x799D,4,'unsupported orientation station'),
+                (0x3593,0,'unsupported orientation clip bounds'),(0x359C,3,'unsupported orientation fill mode'),
+                (0xC9D,4,'unsupported orientation component status'),(0xCB6,16,'unsupported orientation edge colour'),
+                (0x1D9C,7,'unknown orientation trig table')]:
+            raw=self.entry();raw[offset]=value;before=dict(self.observer.counts);self.begin(raw)
+            self.assertFalse(self.observer.pending['valid'],hex(offset))
+            changed={k:v-before.get(k,0) for k,v in self.observer.counts.items() if v!=before.get(k,0)}
+            self.assertEqual(changed,{'entries':1,'unsupported: '+reason:1},hex(offset))
+            self.observer.finish(b'')
             self.assertIsNone(self.observer.scanout(0))
         with self.assertRaises(ValueError): self.begin(b'')
         with self.assertRaises(ValueError): self.observer.finish(b'')

@@ -105,6 +105,9 @@ The following records cover the earlier Genesis panel implementation and its
 source-logic parity. Current clipboard appearance and spacing are checked by
 `test_pc_motor_pool_art.gd`, including all four OFF/ON and focus combinations,
 complete outline contours, paper margins and unchanged protected pixels.
+`tools/validate.sh` runs it on the default trace, the governor controls trace
+(`pc-motor-pool-controls-01`) and the arming trace
+(`pc-genesis-arming-allocations-trace-01`).
 
 * `pc-genesis-arming-allocations-parity-01.json`: all 7,630 full RAM/video/input
   records, 74 stage states and program boundaries equal the original baseline.

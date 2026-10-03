@@ -1,6 +1,6 @@
 extends Control
 ## Source-shaped mission/strategic FRAME surround only, never tactical contents.
-const CATALOG_SHA:="8f8bb4ddb362a518ad51ab80975249649e42d1f047f43eb0a70f4e00ac99fa15"
+const CATALOG_SHA:="8b1fc84c34f69262e9aa4373d50da8e3541b0c9d8af20b65d483da2d256d86de"
 var catalog:Dictionary={}
 var active:Dictionary={}
 func _init()->void:

@@ -16,7 +16,8 @@ from unicorn.x86_const import (UC_X86_REG_CS, UC_X86_REG_DS, UC_X86_REG_ES,
 try:
     from tools.pc_bearing_oracle import (ROOT, LOAD, DATA_SEGMENT, RETURN_IP,
         SIM_SHA256, cpu, original_unpack, set_registers, run_until, sha256)
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import (ROOT, LOAD, DATA_SEGMENT, RETURN_IP,
         SIM_SHA256, cpu, original_unpack, set_registers, run_until, sha256)
 

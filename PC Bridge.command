@@ -23,7 +23,10 @@ for file in .runtime/pc-core/abrams-ref.zip $BACKEND_FILES; do
   fi
 done
 if [ -z "${ABRAMS_PYTHON:-}" ]; then
-  ABRAMS_PYTHON=$(command -v python3)
+  if ! ABRAMS_PYTHON=$(command -v python3); then
+    printf 'Python 3 was not found on PATH. Set ABRAMS_PYTHON to a Python 3 interpreter.\nSee docs/pc-live-bridge.md.\n' >&2
+    exit 127
+  fi
   export ABRAMS_PYTHON
 fi
 exec ./tools/godot.sh --script res://scripts/pc_bridge_viewer.gd -- "$@"

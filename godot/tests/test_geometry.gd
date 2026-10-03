@@ -10,6 +10,11 @@ func _initialize() -> void:
 			printerr("FAIL: terrain triangle faces underground")
 			quit(1)
 			return
+	# Placement is seeded: these counts change if the RNG draw order before or during placement changes.
+	if land.get_child(1).multimesh.instance_count != 287 or land.get_child(2).multimesh.instance_count != 287 or land.get_child(3).multimesh.instance_count != 3181:
+		printerr("FAIL: seeded tree/grass placement changed")
+		quit(1)
+		return
 	for x in [-1200,0,1200]:
 		for z in [-1800,0,300]:
 			if landscape.height_at(x,z) != 0:

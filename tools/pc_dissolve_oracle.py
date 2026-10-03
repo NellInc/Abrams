@@ -10,7 +10,8 @@ try:
     from tools.pc_plate_oracle import PlateVga, ROOT
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.pc_bearing_oracle import cpu, set_registers
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_plate_oracle import PlateVga, ROOT
     from pc_live_state import SimStateReader, SIM_SHA256
     from pc_bearing_oracle import cpu, set_registers

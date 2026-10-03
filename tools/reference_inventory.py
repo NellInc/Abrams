@@ -5,6 +5,11 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+try:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source
 
 
 def inventory(root: Path) -> dict:
@@ -61,7 +66,8 @@ def main() -> int:
             changes = verify(args.root, args.manifest)
             print("\n".join(changes) if changes else "Reference inventory verified unchanged")
             return int(bool(changes))
-        if args.manifest.resolve().is_relative_to(args.root.resolve()):
+        source = args.root.resolve()
+        if inside_source(args.manifest, source.parent, (source.name,)):
             raise ValueError("manifest must be outside reference directory")
         if args.manifest.exists():
             raise ValueError("baseline already exists; use --verify, or choose a new manifest path")

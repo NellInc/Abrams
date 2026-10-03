@@ -15,6 +15,14 @@ var last_source_bytes := PackedByteArray()
 var last_program := ""
 var cached_frontend: Image
 var cached_active: Dictionary = {}
+# Last validated (plate, UI) mask pair. Masks rarely change between SIM frames;
+# source-pixel checks (portraits, pristine plate 5) still run every frame.
+var mask_keys := ["",""]
+var mask_valid := false
+var mask_values := PackedByteArray()
+var mask_bits := PackedByteArray()
+var mask_textures := []
+var mask_decode_count := 0
 
 func _init() -> void:
 	expand_mode=TextureRect.EXPAND_IGNORE_SIZE
@@ -34,6 +42,7 @@ func load_sources(root: String) -> bool:
 	newspaper_art.load_sources(root)
 	splash_aftermath_art.load_sources(root)
 	loaded=false;catalog.clear();catalogs.clear();images.clear();fonts.clear()
+	mask_keys=["",""];mask_valid=false;mask_values.clear();mask_bits.clear();mask_textures.clear()
 	var path:=root.path_join("local-art/pc-graphics-native-v1/graphics.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA:return false
 	var data:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -178,12 +187,9 @@ func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> 
 	if not plate is Dictionary or not ui is Dictionary:return
 	if plate.get("width")!=320 or plate.get("height")!=200 or ui.get("width")!=320 or ui.get("height")!=200:return
 	if not plate.get("mask_png") is String or not ui.get("mask_png") is String:return
-	var tags:=Image.new();var mask:=Image.new()
-	if tags.load_png_from_buffer(Marshalls.base64_to_raw(plate.mask_png))!=OK or mask.load_png_from_buffer(Marshalls.base64_to_raw(ui.mask_png))!=OK:return
-	if tags.get_size()!=Vector2i(320,200) or mask.get_size()!=Vector2i(320,200) or tags.get_format()!=Image.FORMAT_L8 or mask.get_format()!=Image.FORMAT_L8:return
-	var values:=tags.get_data();var bits:=mask.get_data()
-	for i in values.size():
-		if values[i]>8 or bits[i] not in [0,255] or (values[i]!=0 and bits[i]!=255):return
+	if plate.mask_png!=mask_keys[0] or ui.mask_png!=mask_keys[1]:_validate_masks(plate.mask_png,ui.mask_png)
+	if not mask_valid:return
+	var values:=mask_values;var bits:=mask_bits
 	if program.get("name")=="SIM":
 		for item in portrait_templates:
 			var matches:=true
@@ -192,7 +198,7 @@ func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> 
 				if bits[y*320+x]!=255 or source.get_pixel(x,y)!=point[2]:matches=false;break
 			if not matches:continue
 			for point in item.points:composed.set_pixel(37+point[0],59+point[1],item.donor.get_pixel(point[0],point[1]))
-			texture=ImageTexture.create_from_image(composed)
+			(texture as ImageTexture).update(composed)
 			active.donors.append("portrait:"+item.name)
 			break
 	var enabled:=0
@@ -209,8 +215,26 @@ func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> 
 					if not pristine:break
 				if not pristine:continue
 			enabled|=1<<id
-	material.set_shader_parameter("plate_tags",ImageTexture.create_from_image(tags))
-	material.set_shader_parameter("ui_mask",ImageTexture.create_from_image(mask))
+	material.set_shader_parameter("plate_tags",mask_textures[0])
+	material.set_shader_parameter("ui_mask",mask_textures[1])
 	material.set_shader_parameter("enabled_bits",enabled)
 	material.set_shader_parameter("plates_enabled",enabled!=0)
 	active["plate_bits"]=enabled
+
+# Keys are stored even on failure, so a repeated invalid pair stays rejected.
+func _validate_masks(plate_png: String, ui_png: String) -> void:
+	mask_decode_count+=1
+	mask_keys=[plate_png,ui_png];mask_valid=false;mask_values.clear();mask_bits.clear();mask_textures.clear()
+	var tags:=Image.new();var mask:=Image.new()
+	if tags.load_png_from_buffer(Marshalls.base64_to_raw(plate_png))!=OK or mask.load_png_from_buffer(Marshalls.base64_to_raw(ui_png))!=OK:return
+	if tags.get_size()!=Vector2i(320,200) or mask.get_size()!=Vector2i(320,200) or tags.get_format()!=Image.FORMAT_L8 or mask.get_format()!=Image.FORMAT_L8:return
+	var values:=tags.get_data();var bits:=mask.get_data()
+	if bits.count(0)+bits.count(255)!=bits.size():return
+	var tagged:=0
+	for id in 9:tagged+=values.count(id)
+	if tagged!=values.size():return
+	for i in values.size():
+		if values[i]!=0 and bits[i]!=255:return
+	mask_values=values;mask_bits=bits
+	mask_textures=[ImageTexture.create_from_image(tags),ImageTexture.create_from_image(mask)]
+	mask_valid=true

@@ -21,8 +21,11 @@ from unicorn.x86_const import (
 
 try:
     from tools.unpack_pc_executables import NAMES, unpack, sha256
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from unpack_pc_executables import NAMES, unpack, sha256
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 SIM_SHA256 = "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099"
@@ -142,7 +145,8 @@ def main() -> int:
     parser.add_argument("--out", type=Path, default=ROOT / "artifacts/pc-bearing-oracle.json")
     parser.add_argument("--check-fixture", type=Path)
     args = parser.parse_args()
-    if args.out.resolve().is_relative_to(args.root.resolve()):
+    source = args.root.resolve()
+    if inside_source(args.out, source.parent, (source.name,)):
         parser.error("output must be outside original reference directory")
     result = run(args.root)
     if args.check_fixture and result != json.loads(args.check_fixture.read_text()):

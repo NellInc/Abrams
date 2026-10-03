@@ -37,10 +37,10 @@ are available; Modern remains experimental.
 
 The original PC game is required, a Genesis ROM is optional, and neither is
 bundled. Packages target Apple Silicon macOS 14+, Windows x86_64 and Linux
-x86_64. GitHub is private and the published alpha requires repository access.
-Nell subsequently selected GitHub Pages, authorizing publication of this webpage.
-That covers a scoped website commit, deployment workflow and Pages publication.
-Repository visibility, game releases and notarization remain unchanged.
+x86_64. The GitHub repository and its releases are public.
+Nell selected GitHub Pages, authorizing publication of this webpage, and made the
+repository public with it. That covers a scoped website commit, deployment
+workflow and Pages publication. Game releases and notarization are unchanged by it.
 
 ## Brand Commitments
 

@@ -24,7 +24,15 @@ func snapshot() -> Image:
 	return viewport.get_texture().get_image()
 
 func _initialize() -> void:
+	# 180 s also covers the native --fixture capture mode.
+	create_timer(180).timeout.connect(func(): printerr("FAIL: plate art deadline"); quit(2))
 	_run.call_deferred()
+
+func arg_value(args: PackedStringArray, flag: String) -> String:
+	var index := args.find(flag)
+	var ok := index >= 0 and index+1 < args.size() and not args[index+1].begins_with("--")
+	check(ok,"missing value for "+flag)
+	return args[index+1] if ok else ""
 
 func _run() -> void:
 	viewport = SubViewport.new()
@@ -96,7 +104,7 @@ func _run() -> void:
 		invalid_ui.set_pixel(319,199,Color(value/255.0,0,0))
 		check(not composite.set_frame(source,packet(invalid_ui,tags),world) and not composite.gunner_art_enabled,"bulk predicate rejects every nonbinary class")
 	check(composite.set_frame(source,presentation,world) and composite.gunner_art_enabled,"original byte pair survives caller mutations")
-	for kind in ["palette","source","dimensions","ids","world","missing"]:
+	for kind in ["palette","source","dimensions","ids","unowned","missing"]:
 		var bad := presentation.duplicate(true)
 		match kind:
 			"palette": bad.palette_rgb[0] = [1,0,0]
@@ -104,28 +112,43 @@ func _run() -> void:
 			"dimensions": bad.plate_overlay.width = 321
 			"missing": bad.erase("plate_overlay")
 			_:
+				# "ids": out-of-range tag 9 on an owned pixel (1,5) in a row the cache
+				# cases above never touch, so only the plate-ID range rule can reject it.
+				# "unowned": a valid tag on unowned (0,0), rejected by the ownership rule.
 				var corrupt := tags.duplicate()
-				corrupt.set_pixel(0,0,Color(float(8 if kind == "ids" else 1)/255.0,0,0))
+				if kind == "ids": corrupt.set_pixel(1,5,Color(9.0/255.0,0,0))
+				else: corrupt.set_pixel(0,0,Color(1.0/255.0,0,0))
 				bad.plate_overlay.mask_png = Marshalls.raw_to_base64(corrupt.save_png_to_buffer())
 		check(composite.set_frame(source,bad,world) and not composite.gunner_art_enabled,"unsafe material accepted: "+kind)
+	# A valid transport ID with no loaded art (8) on an owned pixel is ignored, not rejected.
+	var unloaded_id := tags.duplicate()
+	unloaded_id.set_pixel(1,5,Color(8.0/255.0,0,0))
+	check(composite.set_frame(source,packet(ui,unloaded_id),world) and composite.gunner_art_enabled,"valid ID without loaded art disabled material")
 	check(not composite.set_frame(source,{},world) and not composite.gunner_art_enabled,"original fallback retained stale art")
 	var args := OS.get_cmdline_user_args()
 	if native and "--fixture" in args:
-		await _fixtures(args[args.find("--fixture")+1],args[args.find("--art")+1],args[args.find("--output")+1])
+		var fixture := arg_value(args,"--fixture")
+		var art_path := arg_value(args,"--art")
+		var output := arg_value(args,"--output")
+		if not (fixture.is_empty() or art_path.is_empty() or output.is_empty()): await _fixtures(fixture,art_path,output)
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_PLATE_ART: %d exact RGB checks, %d changed source samples, %d failures; %d assertions" % [checks,changed_pixels,errors.size(),assertions])
 	quit(0 if errors.is_empty() else 1)
 
 func _fixtures(path: String, art_path: String, output: String) -> void:
 	var report = JSON.parse_string(FileAccess.get_file_as_string(path))
-	check(report is Dictionary,"plate fixture unavailable")
-	if not report is Dictionary: return
-	DirAccess.make_dir_recursive_absolute(output)
+	var usable: bool = report is Dictionary and report.get("ui_presentations") is Array and report.get("presentations") is Array and report.get("render_passes") is Array
+	check(usable,"plate fixture unavailable")
+	if not usable: return
+	check(DirAccess.make_dir_recursive_absolute(output) == OK,"output directory")
 	check(composite.set_gunner_art(Image.load_from_file(art_path)),"local material study unavailable")
 	var summaries: Array = []
 	for entry: Dictionary in report.ui_presentations:
+		var passes: Array = report.render_passes.filter(func(p): return p.sequence == entry.draw_sequence)
+		check(not passes.is_empty() and int(entry.frame_index) < report.presentations.size(),"paired fixture frame missing: "+entry.stage)
+		if passes.is_empty() or int(entry.frame_index) >= report.presentations.size(): continue
 		var paired: Dictionary = report.presentations[int(entry.frame_index)].duplicate(true)
-		var drawing: Dictionary = report.render_passes.filter(func(p): return p.sequence == entry.draw_sequence)[0]
+		var drawing: Dictionary = passes[0]
 		paired.draw_pass = drawing
 		var source := Image.load_from_file(path.get_base_dir().path_join(entry.image))
 		var ui := Image.load_from_file(path.get_base_dir().path_join(entry.mask))

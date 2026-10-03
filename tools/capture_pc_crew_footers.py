@@ -2,6 +2,9 @@
 """Observe crew footer variants through ordinary START menu input only."""
 import hashlib,json
 from pathlib import Path
+import sys
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.bootstrap_pc_source import STEPS
 from tools.pc_reference_core import PcReferenceCore
 from tools.pc_live_state import active_program

@@ -94,10 +94,8 @@ def make_html(brief, out, final):
         sid, start, duration = shot["id"], shot["start"], shot["duration"]
         heading, subtitle = html.escape(shot["heading"]), html.escape(shot["subheading"])
         source = shot["image_local"]
-        video_name = {"opening": "veo-opening.mp4", "exterior": "seedance-exterior.mp4"}.get(sid)
-        if final and video_name and (out / "motion/media" / video_name).exists():
-            body = f'<video class="cinema" src="media/{video_name}" data-start="{start}" data-duration="{duration}" data-media-start="0" muted playsinline></video><div class="shade"></div><div class="hero-copy"><h1>{heading}</h1><p>{subtitle}</p></div>'
-        elif shot["kind"] in ("illustration", "endcard"):
+        # Final mode returned above; this is the animatic composition only.
+        if shot["kind"] in ("illustration", "endcard"):
             extra = ''
             if sid == "closing":
                 extra = '<div class="closing-details"><p class="url">github.com/NellInc/Abrams</p><p>Free fan remaster. Original PC game required.</p><p class="dedication">Dedicated to the memory of<br>David “Ming” Kenny.</p></div>'
@@ -119,13 +117,12 @@ def make_html(brief, out, final):
                 animations += [f"tl.set('#station-two',{{autoAlpha:0}},0);tl.to('#station-two',{{autoAlpha:1,duration:.6}},{start+4.8});"]
             note = '<p class="experimental">Modern graphics: experimental</p>' if "/scenario-frames" in shot["image"] else ''
             body = f'<div class="left-copy"><h2>{heading}</h2><p>{subtitle}</p>{note}</div><div class="screen-frame">{content}</div>'
-        label = '' if final else '<div class="animatic-label">ANIMATIC / Illustrative placeholders</div>'
+        label = '<div class="animatic-label">ANIMATIC / Illustrative placeholders</div>'
         elements.append(f'<section id="{sid}" class="shot">{body}{label}</section>')
         animations += [f"gsap.set('#{sid}',{{autoAlpha:0}});tl.set('#{sid}',{{autoAlpha:1}},{start});",
                        f"tl.fromTo('#{sid} h1,#{sid} h2',{{y:22,opacity:0}},{{y:0,opacity:1,duration:.8,ease:'power2.out'}},{start+.15});"]
         if sid != "closing":
             animations += [f"tl.set('#{sid}',{{autoAlpha:0}},{start+duration});"]
-    audio = '<audio src="media/final-mix.wav" data-start="0" data-duration="60" data-media-start="0"></audio>' if final and (out / "motion/media/final-mix.wav").exists() else ''
     document = '''<!doctype html><html><head><meta charset="utf-8"><title>Abrams promo</title>
 <style>
 @font-face{font-family:Barlow;src:url('media/Barlow.ttf')}@font-face{font-family:Plex;src:url('media/Plex.ttf')}
@@ -137,7 +134,7 @@ def make_html(brief, out, final):
 .cinema{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(12,17,12,.94),transparent 60%)}.hero-copy{position:absolute;left:100px;bottom:165px}.hero-copy h1{font-size:115px;letter-spacing:7px;margin:0;line-height:.98}.hero-copy p{font-size:38px;letter-spacing:5px;color:#e9d4a3}
 .animatic-label{position:absolute;left:100px;bottom:36px;font:20px Plex;color:#c4ab76}
 </style><script src="node_modules/gsap/dist/gsap.min.js"></script></head><body>
-<main id="main" data-composition-id="main" data-start="0" data-duration="60" data-width="1920" data-height="1080">'''+''.join(elements)+'''<div class="masthead">ABRAMS BATTLE TANK / FAN REMASTER</div><div class="rule"></div>'''+audio+'''</main><script>
+<main id="main" data-composition-id="main" data-start="0" data-duration="60" data-width="1920" data-height="1080">'''+''.join(elements)+'''<div class="masthead">ABRAMS BATTLE TANK / FAN REMASTER</div><div class="rule"></div></main><script>
 window.__timelines=window.__timelines||{};const tl=gsap.timeline({paused:true});
 '''+"\n".join(animations)+'''
 tl.to('#main',{opacity:0,duration:.7},59.3);window.__timelines.main=tl;
@@ -198,7 +195,7 @@ def make_production_html(brief,out):
     scene('engine-link',38.6,43.2,paired(38.6,43.2,'game-original.mp4','game-horizon.mp4',.2,True),'diagram',['game-original.mp4','game-horizon.mp4','engine-link.mp4'],'Manim arrow connects source simulation and Godot presentation over a matched recording.')
     scene('combat-return',43.2,45.5,vid('game-clear-fire.mp4',43.2,45.5,4.5)+label('ORIGINAL SIMULATION / NEW SOUND AND CREW'),'game_capture',['game-clear-fire.mp4'],'Captured original firing and reload presentation following the engine explanation.')
     cp=vid('game-checkpoint-away.mp4',45.5,46.8,.8,extra='id="cp-away"')+vid('game-checkpoint-return.mp4',46.8,49.4,0,extra='id="cp-return"')+vid('checkpoint-marker.mp4',45.5,49.4,0,'checkpoint-marker')+label('SAVE STATES / QUICK LOAD')
-    scene('checkpoint',45.5,49.4,cp,'game_capture',['game-checkpoint-away.mp4','game-checkpoint-return.mp4','checkpoint-marker.mp4'],'Real isolated slot 1 restore, original frame-audit equality checked. Motion Canvas marker is an editorial annotation.')
+    scene('checkpoint',45.5,49.4,cp,'game_capture',['game-checkpoint-away.mp4','game-checkpoint-return.mp4','checkpoint-marker.mp4'],'Real isolated slot 1 restore; held frame matches the saved frame audit; restored RAM sha256 verified by the original host. Motion Canvas marker is an editorial annotation.')
     animations.extend(["gsap.set('#cp-return',{autoAlpha:0});tl.set('#cp-away',{autoAlpha:0},46.8);tl.set('#cp-return',{autoAlpha:1},46.8);"])
     cta=vid('seedance-exterior.mp4',49.4,55.8,0,'cinema')+'<div class="shade"></div><div class="hero cta"><h1>ABRAMS BATTLE TANK</h1><p>FAN REMASTER</p><span>FREE AND OPEN</span><small>Original PC game required</small></div>'
     scene('exterior',49.4,55.8,cta,'illustration',['seedance-exterior.mp4'],'Reference-guided illustrated moving tank, Seedance 2.5, followed by the required original-game condition.')
@@ -257,13 +254,15 @@ def main():
     brief=prepare(json.loads(BRIEF.read_text()),out)
     frames=out/'animatic-frames';frames.mkdir(exist_ok=True)
     for shot in brief['shots']:card(shot,frames/(shot['id']+'.png'))
+    # --final swaps brief['shots'] for production receipts; the animatic keeps its cards.
+    animatic_shots=list(brief['shots'])
     destination=make_html(brief,out,args.final)
     timeline(brief,out,args.final)
     (out/'production-brief.json').write_text(json.dumps(brief,indent=2)+'\n')
     if args.animatic:
         lines=[]
-        for shot in brief['shots']:lines += [f"file '{frames / (shot['id']+'.png')}'",f"duration {shot['duration']}"]
-        lines.append(f"file '{frames / (brief['shots'][-1]['id']+'.png')}'")
+        for shot in animatic_shots:lines += [f"file '{frames / (shot['id']+'.png')}'",f"duration {shot['duration']}"]
+        lines.append(f"file '{frames / (animatic_shots[-1]['id']+'.png')}'")
         (out/'animatic-concat.txt').write_text('\n'.join(lines)+'\n')
         run('ffmpeg','-hide_banner','-loglevel','error','-y','-f','concat','-safe','0','-i',out/'animatic-concat.txt','-t','60','-vf','scale=1280:720,fps=12','-c:v','libx264','-preset','fast','-crf','22','-pix_fmt','yuv420p','-movflags','+faststart',out/'abrams-animatic.mp4')
     print(json.dumps({'composition':str(destination),'timeline_seconds':60,'mode':'final' if args.final else 'animatic'}))

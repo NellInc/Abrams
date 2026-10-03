@@ -96,6 +96,17 @@ class CrewTests(unittest.TestCase):
             elif fault=='epoch':bad['message_epochs']=[]
             self.assertFalse(all(verify(bad,baseline)['checks'].values()),fault)
 
+    def test_damage_gate_reports_missing_or_short_epochs_instead_of_crashing(self):
+        base={'changes':[],'audio_events':[],'state_sha256':'s','state_core_sha256':'c','frames':[],
+            'final_state':{},'final_program':{'name':'SIM'},'text_epochs':[]}
+        baseline={'state_sha256':'s','core_sha256':'c','frames':[],'final_state':{},'final_program':{'name':'SIM'}}
+        for epochs in ([],[{'assignments':[{'id':i,'parts':[]} for i in range(1,11)],'counts':{}},
+                           {'assignments':[],'counts':{}}]):
+            checks=verify(base|{'message_epochs':epochs},baseline)['checks']
+            self.assertFalse(checks['one_SIM_message_epoch'])
+            self.assertFalse(checks['all_17_original_assignments_observed'])
+            self.assertFalse(checks['unseen_COAX_destroyed_stays_silent'])
+
     def test_visible_assignment_once_repeated_words_distinct_and_old_pages_silent(self):
         first,=self.step([message()]);self.assertEqual(first['voice'],'pc_hit_zero_four_three')
         self.assertIsNone(first['sample'])

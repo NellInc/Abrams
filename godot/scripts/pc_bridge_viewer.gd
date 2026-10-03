@@ -46,6 +46,7 @@ var previous_program: Dictionary = {}
 var elapsed := 0.0
 var fps := 59.9227
 var closing := false
+var close_deadline := 0
 var capture := false
 var capture_done := false
 var capture_effect := -1
@@ -152,7 +153,13 @@ func _initialize() -> void:
 	_configure_art_requests(args)
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	output = directory.path_join("artifacts/pc-boot-viewer" if boot_mode else ("artifacts/pc-trace-viewer" if trace_mode else "artifacts/pc-bridge-viewer"))
-	if "--output" in args and args.find("--output")+1 < args.size(): output = args[args.find("--output")+1]
+	if "--output" in args:
+		var index := args.find("--output")+1
+		if index>=args.size() or args[index].begins_with("--"):
+			printerr("--output requires a directory")
+			quit(2)
+			return
+		output = anchor_path(directory,args[index])
 	DirAccess.make_dir_recursive_absolute(output)
 	_build_ui()
 	# Ordinary Play paints its cover before the synchronous presentation preload.
@@ -299,14 +306,16 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		_layout_audio_menu.call_deferred()
 	_load_cockpit_presentation(directory)
 	if play_mode:
+		# Offer Genesis only when its native pack actually loaded (hash-checked).
+		audio_menu.genesis_available=not pc_only and tandem_frame.native_graphics.loaded
+		audio_menu.refresh_controls()
 		var initial_mode := "ega" if "--original-art" in args else "upscaled"
 		if "--graphics" in args: initial_mode=args[args.find("--graphics")+1]
 		if not audio_menu.choose_graphics(initial_mode):
 			printerr("Requested graphics assets are unavailable: "+initial_mode)
 			quit(2)
 			return
-	var python := OS.get_environment("ABRAMS_PYTHON")
-	if python.is_empty(): python = "/opt/homebrew/bin/python3"
+	var python := Bridge.default_python()
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
 	var startup_state := "" if boot_mode else directory.path_join(state_path)
 	# Frame-sensitive intro comparison requires a shared neutral START boundary.
@@ -320,7 +329,7 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 			printerr("--saves requires a local save directory")
 			quit(2)
 			return
-		save_path=ProjectSettings.globalize_path(args[index])
+		save_path=anchor_path(directory,args[index])
 	bridge.start(python, startup_state, save_path,
 		output.path_join("host.log"), "trace" if trace_mode else "reference", "--frame-audit" in args)
 	startup_ready=true
@@ -329,6 +338,11 @@ func _finish_startup_display() -> void:
 	if not play_mode: return
 	status.hide()
 	startup_splash.finish()
+
+## Godot runs from godot/ under --path; relative paths mean the repo root, as in the launchers.
+static func anchor_path(directory: String, path: String) -> String:
+	var resolved := ProjectSettings.globalize_path(path)
+	return directory.path_join(resolved) if resolved.is_relative_path() else resolved
 
 static func audio_requested(tracing: bool, args: Array) -> bool:
 	return tracing and "--no-audio" not in args
@@ -595,7 +609,6 @@ func _choose_graphics(mode: String) -> void:
 	if not tandem_frame.set_graphics_mode(mode):
 		draw_view.modern_enabled=was_modern
 		audio_menu.graphics_mode=tandem_frame.graphics_mode
-		audio_menu.state_message="Requested graphics assets are unavailable."
 		return
 	_choose_graphics_quality(audio_menu.quality.msaa,audio_menu.quality.anisotropy)
 	# Replay the already paired drawing only. No guest frame or audio advances.
@@ -618,7 +631,9 @@ func _choose_speed(multiplier: int) -> void:
 	fast_forward=multiplier
 	elapsed=0.0
 	if pc_audio: pc_audio.set_transport_muted(multiplier>1 or inflight_fast or state_control_pending or not pending_state_command.is_empty())
-	if play_mode: root.title="Abrams Battle Tank" if multiplier==1 else "Abrams Battle Tank (%dx fast forward)"%multiplier
+	if play_mode:
+		var app_name := str(ProjectSettings.get_setting("application/config/name"))
+		root.title=app_name if multiplier==1 else "%s (%dx fast forward)"%[app_name,multiplier]
 
 func _request_state(operation: String, slot: int) -> void:
 	if closing or state_control_pending or not pending_state_command.is_empty(): return
@@ -669,6 +684,12 @@ func _process(delta: float) -> bool:
 			return false
 	if closing:
 		if bridge.has_exited() and audio_drained: quit(0 if bridge.failure.is_empty() and bridge.exit_code() == 0 else 1)
+		elif _close_expired():
+			# Never signal the child: exiting closes its pipes, and a helper that
+			# recovers still flushes on EOF. A hung one is reaped by the supervisor
+			# five seconds after EOF, which releases the save lock.
+			printerr("PC_VIEW_FAILED: PC core host did not exit after close; see the local host log")
+			quit(1)
 		return false
 	if not bridge.pending:
 		if not pending_state_command.is_empty():
@@ -793,26 +814,30 @@ func _apply_sample(message: Dictionary) -> void:
 			if previous_presentation.get("palette_rgb") is Array:
 				displayed.palette_rgb = previous_presentation.palette_rgb
 			draw_view.presentation_palette = genesis_style.for_original(displayed.palette_rgb) if genesis_colours_requested else []
+			frame = drawing.camera.duplicate(true)
+			frame.matrix_q14_columns = [16384,0,0,0,16384,0,0,0,16384]
+			frame.world_position_raw = [0,0,0]
+			var dimensions: Vector2i = PcCamera.apply(camera, frame, Vector3.ZERO)
+			if play_mode: play_display.set_camera_dimensions(dimensions)
+			else: world_viewport.size = dimensions * 4
+			# As on the menu: ownership and colour viewports share this clip's
+			# extent, so a station switch never registers at the old aspect.
 			draw_view.apply_pass(displayed)
 			if capture_effect>=0 and not capture_effect_seen:
 				for object: Dictionary in displayed.objects:
 					if object.get("sprite_status","")=="observed" and int(object.get("bitmap_index",-1))==capture_effect:
 						capture_effect_seen = true
 						auto_index = auto_steps.size()
-			frame = drawing.camera.duplicate(true)
-			frame.matrix_q14_columns = [16384,0,0,0,16384,0,0,0,16384]
-			frame.world_position_raw = [0,0,0]
 		else:
 			draw_view.apply_pass({"objects": []})
-			frame = null
 	else:
 		world_view.apply_state(state)
-	if frame is Dictionary:
-		var dimensions: Vector2i = PcCamera.apply(camera, frame, Vector3.ZERO if trace_mode else world_view.anchor)
-		if play_mode: play_display.set_camera_dimensions(dimensions)
-		else: world_viewport.size = dimensions * 4
-		# Source 320x200 pixels stretch to 4:3 outside the 3D projection.
-		if not trace_mode: world_aspect.ratio = float(dimensions.x) / (float(dimensions.y) * 1.2)
+		if frame is Dictionary:
+			var dimensions: Vector2i = PcCamera.apply(camera, frame, world_view.anchor)
+			if play_mode: play_display.set_camera_dimensions(dimensions)
+			else: world_viewport.size = dimensions * 4
+			# Source 320x200 pixels stretch to 4:3 outside the 3D projection.
+			world_aspect.ratio = float(dimensions.x) / (float(dimensions.y) * 1.2)
 	var frontend := false
 	if trace_mode:
 		frontend = _present_tandem(image, previous_presentation, world_viewport.get_texture(), previous_program)
@@ -909,5 +934,10 @@ func _close() -> void:
 		audio_drained = false
 		_drain_audio.call_deferred()
 	if not closing and not bridge.failure.is_empty(): printerr("PC_VIEW_FAILED: " + bridge.failure)
+	# A failed (possibly hung) host gets a short grace; a healthy one time to flush.
+	close_deadline = Time.get_ticks_msec() + (5000 if not bridge.failure.is_empty() else 30000)
 	closing = true
 	bridge.close()
+
+func _close_expired() -> bool:
+	return close_deadline>0 and Time.get_ticks_msec()>=close_deadline

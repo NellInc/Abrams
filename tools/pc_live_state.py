@@ -14,7 +14,8 @@ try:
     from tools.unpack_pc_executables import unpack
     from tools.pc_world import world_position, window_origin, read_objects
     from tools.pc_render_state import read_camera
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from unpack_pc_executables import unpack
     from pc_world import world_position, window_origin, read_objects
     from pc_render_state import read_camera

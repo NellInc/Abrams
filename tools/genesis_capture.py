@@ -230,6 +230,26 @@ class ReferenceCore:
         self.core.retro_deinit()
 
 
+def parse_capture_sequence(raw: str) -> list[tuple[int, list[str], str]]:
+    """Validate every step before emulating, so a late typo cannot leave partial captures."""
+    steps, names = [], set()
+    for step in raw.split(","):
+        frame_spec, _, name = step.partition(":")
+        frame_count, *buttons = frame_spec.split("+")
+        count = int(frame_count)
+        if not 1 <= count <= 36000:
+            raise ValueError("Each step must run between 1 and 36000 frames")
+        if any(b not in BUTTONS for b in buttons):
+            raise ValueError(f"Unknown controller button in {step!r}; expected {', '.join(sorted(BUTTONS))}")
+        if name and (Path(name).name != name or name in (".", "..")):
+            raise ValueError("Capture names must be single safe path components")
+        if name and name in names:
+            raise ValueError(f"Duplicate capture name {name!r}")
+        names.add(name)
+        steps.append((count, buttons, name))
+    return steps
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rom", type=Path, default=ROOT / "GENESIS/M-1 Abrams Battle Tank (USA, Europe).md")
@@ -238,19 +258,18 @@ def main():
     parser.add_argument("--restore", type=Path)
     parser.add_argument("--sequence", default="180:title", help="Comma-separated frames[+button+button][:capture-name] steps")
     args = parser.parse_args()
+    try:
+        steps = parse_capture_sequence(args.sequence)
+    except ValueError as error:
+        parser.error(str(error))
+    if existing := [name for _, _, name in steps if name and (args.output / name).exists()]:
+        parser.error(f"Capture destinations already exist: {', '.join(existing)}")
     args.output.mkdir(parents=True, exist_ok=True)
     core = ReferenceCore(args.core, args.rom, ROOT / ".runtime/genesis/saves")
     try:
         if args.restore:
             core.restore(args.restore)
-        for step in args.sequence.split(","):
-            frame_spec, _, name = step.partition(":")
-            frame_count, *buttons = frame_spec.split("+")
-            count = int(frame_count)
-            if not 1 <= count <= 36000:
-                raise ValueError("Each step must run between 1 and 36000 frames")
-            if name and (Path(name).name != name or name in (".", "..")):
-                raise ValueError("Capture names must be single safe path components")
+        for count, buttons, name in steps:
             core.run(count, buttons)
             if name:
                 core.dump(args.output / name)

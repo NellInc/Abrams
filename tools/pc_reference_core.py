@@ -16,7 +16,8 @@ from PIL import Image
 
 try:
     from tools.genesis_capture import AVInfo, GameInfo, Variable
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from genesis_capture import AVInfo, GameInfo, Variable
 
 def core_suffix():

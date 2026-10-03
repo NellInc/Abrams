@@ -26,9 +26,28 @@ class Page(HTMLParser):
         self.metas = {}
         self.canonical = None
         self.errors = []
+        self.text = []
+        self.downloads = []
+        self.skip = 0
+
+    def handle_data(self, data):
+        if not self.skip:
+            self.text.append(data)
+            if self.downloads and self.downloads[-1][2]:
+                self.downloads[-1][1].append(data)
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style"):
+            self.skip -= 1
+        elif tag == "a" and self.downloads:
+            self.downloads[-1][2] = False
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag in ("script", "style"):
+            self.skip += 1
+        if tag == "a" and "download-button" in attrs.get("class", "").split():
+            self.downloads.append([attrs.get("href", ""), [], True])
         if "id" in attrs:
             if attrs["id"] in self.ids:
                 self.errors.append(f"Duplicate id: {attrs['id']}")
@@ -44,8 +63,40 @@ class Page(HTMLParser):
         for key in ("href", "src", "poster"):
             if key in attrs:
                 self.refs.append(attrs[key])
+        for candidate in attrs.get("srcset", "").split(","):
+            if candidate.strip():
+                self.refs.append(candidate.split()[0])
         if "data-scenario" in attrs:
             self.scenarios.append(attrs["data-scenario"])
+
+    def visible_text(self):
+        return re.sub(r"\s+", " ", " ".join(self.text))
+
+
+def dist_file(url):
+    """Map a site URL or root-relative path (query and fragment ignored) to its dist file."""
+    path = unquote(urlsplit(url).path).lstrip("/")
+    if not path or path.endswith("/"):
+        path += "index.html"
+    return (DIST / path).resolve()
+
+
+def token_matches(url):
+    """A ?v= cache token must be the first 12 hex digits of the referenced file's SHA-256."""
+    file = dist_file(url.removeprefix("https://abramsremastered.com"))
+    token = dict(part.split("=", 1) for part in urlsplit(url).query.split("&") if "=" in part).get("v")
+    return file.is_file() and token == hashlib.sha256(file.read_bytes()).hexdigest()[:12]
+
+
+def id_references(node):
+    if isinstance(node, dict):
+        if set(node) == {"@id"}:
+            yield node["@id"]
+        for value in node.values():
+            yield from id_references(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from id_references(value)
 
 
 def main():
@@ -83,7 +134,7 @@ def main():
             errors.append(f"Asset differs from recorded provenance: {asset.name}")
         if asset.suffix == ".webp" and not asset.with_suffix(asset.suffix + ".json").is_file():
             errors.append(f"Missing origin sidecar: {asset.name}")
-    permitted = {".html", ".css", ".js", ".json", ".webp", ".jpg", ".png", ".svg", ".ttf", ".txt", ".mp4", ".vtt", ".xml", ".pdf"}
+    permitted = {".html", ".css", ".js", ".json", ".webp", ".jpg", ".png", ".svg", ".ttf", ".woff2", ".txt", ".mp4", ".vtt", ".xml", ".pdf"}
     for path in DIST.rglob("*"):
         if path.is_symlink():
             errors.append(f"Symbolic link in publication artifact: {path.name}")
@@ -148,14 +199,86 @@ def main():
         if video_schema["duration"] != f"PT{movie['duration_seconds']:g}S" or video_schema["contentUrl"] != expected_url:
             errors.append("Trailer metadata does not match the accepted media")
         if "aggregateRating" in blocks[0] or "review" in blocks[0]: errors.append("Unsubstantiated ratings in metadata")
+        node_ids = {node.get("@id") for node in graph}
+        for reference in id_references(graph):
+            if reference not in node_ids:
+                errors.append(f"Structured metadata references a missing node: {reference}")
     sitemap = ET.parse(DIST / "sitemap.xml")
-    if sitemap.findtext(".//{http://www.sitemaps.org/schemas/sitemap/0.9}loc") != canonical:
+    sm, smv, smi = "{http://www.sitemaps.org/schemas/sitemap/0.9}", "{http://www.google.com/schemas/sitemap-video/1.1}", "{http://www.google.com/schemas/sitemap-image/1.1}"
+    if sitemap.findtext(f".//{sm}loc") != canonical:
         errors.append("Sitemap URL mismatch")
-    if "currently private" in html or "Downloads require repository access" in html:
-        errors.append("Private-only copy in the authorized public site")
+    for loc in [e.text for e in sitemap.iter(f"{sm}loc")] + [e.text for e in sitemap.iter(f"{smi}loc")]:
+        if urlsplit(loc).netloc == "abramsremastered.com" and not dist_file(loc).is_file():
+            errors.append(f"Sitemap lists a missing file: {loc}")
+    if len(blocks) == 1:
+        sitemap_video = {key: sitemap.findtext(f".//{smv}{key}") for key in ("thumbnail_loc", "content_loc", "publication_date", "description")}
+        if sitemap_video != {"thumbnail_loc": video_schema["thumbnailUrl"][0], "content_loc": video_schema["contentUrl"],
+                             "publication_date": video_schema["uploadDate"][:10], "description": video_schema["description"]}:
+            errors.append("Sitemap video entry differs from the structured trailer metadata")
+        posters = [page.videos[0].get("poster", "") if page.videos else "", page.metas.get("og:image", ""), page.metas.get("twitter:image", ""),
+                   video_schema["thumbnailUrl"][0], sitemap_video["thumbnail_loc"] or ""]
+        for poster in posters:
+            if not token_matches(poster):
+                errors.append(f"Poster cache token must be the poster file's own hash: {poster}")
+    for name, text in (("index.html", html), ("PRODUCT.md", (ROOT / "PRODUCT.md").read_text())):
+        if any(private in text for private in ("currently private", "Downloads require repository access", "requires repository access", "GitHub is private")):
+            errors.append(f"Private-only copy in the authorized public site: {name}")
+    visible = page.visible_text()
+    for commitment in ("Original game by Dynamix", "Published by Electronic Arts", "Fan Remastered by Nell Watson", "Dedicated to the memory of",
+                       "David “Ming” Kenny", "original PC game", "optional", "neither"):
+        if commitment not in visible:
+            errors.append(f"Brand commitment missing from visible text: {commitment}")
+    if not re.search(r'<img[^>]*\ssrc="[^"]*abrams-cover-remastered', html):
+        errors.append("The remastered box art must stay on the page")
+    for href, text, _ in page.downloads:
+        release = re.search(r"releases/download/v0\.1\.0-alpha\.(\d+)", href)
+        if release and f"alpha {release[1]}" not in re.sub(r"\s+", " ", " ".join(text)):
+            errors.append(f"Download label must name its alpha: {href}")
+    if any("macOS" in href and "v0.1.0-alpha.2/" in href for href, _, _ in page.downloads):
+        errors.append("The macOS download must be the notarized alpha.4 build, not alpha.2")
+    # The notarized alpha.4 Mac app has Tab fast forward, in-app guides and Gatekeeper approval.
+    for stale in ("the macOS alpha uses the Session menu", "Windows and Linux builds also open them in the app", "not yet notarized"):
+        if stale in visible:
+            errors.append(f"Stale alpha.2 macOS qualifier still shown: {stale}")
+    robots = DIST / "robots.txt"
+    if not robots.is_file() or "Sitemap: https://abramsremastered.com/sitemap.xml" not in robots.read_text():
+        errors.append("robots.txt must point at the sitemap")
+    missing = DIST / "404.html"
+    if not missing.is_file():
+        errors.append("Missing branded 404 page")
+    else:
+        not_found = Page()
+        not_found.feed(missing.read_text())
+        errors += [f"404.html: {error}" for error in not_found.errors]
+        if "noindex" not in (not_found.metas.get("robots") or "") or not_found.canonical:
+            errors.append("404.html must be noindex without a canonical URL")
+        for ref in not_found.refs:
+            url = urlsplit(ref)
+            if url.scheme or url.netloc:
+                if url.scheme != "https":
+                    errors.append(f"404.html: unexpected external scheme: {ref}")
+            elif not url.path.startswith("/"):
+                errors.append(f"404.html must use root-absolute URLs: {ref}")
+            elif not dist_file(ref).is_relative_to(DIST) or not dist_file(ref).is_file():
+                errors.append(f"404.html: missing asset: {ref}")
+            elif url.fragment and url.fragment not in page.ids:
+                errors.append(f"404.html: missing section: {ref}")
+    llms = DIST / "llms.txt"
+    if not llms.is_file():
+        errors.append("Missing llms.txt")
+    else:
+        facts = llms.read_text()
+        for fact in ("Fan Remastered by Nell Watson", "Dynamix", "Electronic Arts", "Ming"):
+            if fact not in facts:
+                errors.append(f"llms.txt omits: {fact}")
+        if "not included" not in facts and "neither" not in facts:
+            errors.append("llms.txt must say the original games are not included")
+        for fragment in re.findall(r"https://abramsremastered\.com/#([\w-]+)", facts):
+            if fragment not in page.ids:
+                errors.append(f"llms.txt links a missing section: #{fragment}")
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"PASS: {len(page.refs)} links/assets, 8 scenarios, {len(provenance["rasters"])} image origins, captioned user-controlled trailer, search metadata; isolated static artifact")
+    print(f"PASS: {len(page.refs)} links/assets incl. srcset variants, 8 scenarios, {len(provenance['rasters'])} image origins, captioned user-controlled trailer, search metadata, robots, branded 404, llms.txt and brand guard; isolated static artifact")
 
 
 if __name__ == "__main__":

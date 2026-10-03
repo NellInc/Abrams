@@ -14,13 +14,22 @@ try:
     from tools.check_crew_transcripts import normalized,wording_matches
     from tools.generate_crew_voice import validate_wav,pronounce_headings,PREFERRED
     from tools.pc_crew_voice import SCRIPT,DAMAGE,WARNINGS,RADIO,REMAINING
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from check_crew_transcripts import normalized,wording_matches
     from generate_crew_voice import validate_wav,pronounce_headings,PREFERRED
     from pc_crew_voice import SCRIPT,DAMAGE,WARNINGS,RADIO,REMAINING
 
 DIGITS='zero one two three four five six seven eight nine'.split()
 ROOT=Path(__file__).resolve().parents[1]
+
+
+def _repo_rel(path):
+    # Receipts ship in packages: record repo-relative paths, never a developer's
+    # absolute home path or a cwd-relative one that audit_pc_audio cannot resolve.
+    path=Path(path).resolve()
+    try:return str(path.relative_to(ROOT.resolve()))
+    except ValueError:raise ValueError(f'source outside repository: {path}') from None
 
 
 def check_take(voice,transcription,delivery=None):
@@ -83,13 +92,13 @@ def prepare(source,script_path=SCRIPT,*,source_script=None,repair=None,additiona
         path=dest/f'voice_{name}.wav'
         if path.exists() and path.read_bytes()!=raw:raise ValueError('refusing to replace different installed voice')
         payloads[path]=raw
-        voices[name]=voice|{'source_master':str((folder/f'voice_{name}.wav').relative_to(ROOT) if folder.is_absolute() else folder/f'voice_{name}.wav'),
+        voices[name]=voice|{'source_master':_repo_rel(folder/f'voice_{name}.wav'),
             'generation_script_sha256':batch['manifest']['script_sha256'],
             'processing':'Unmodified generated dry master','transcript_qa':transcript,
             'number_delivery_qa':delivery}
     receipt={'scope':script['scope'],'status':'Automated wording checked; digit delivery checked where required; human listening review pending',
              'script_sha256':hashlib.sha256(script_path.read_bytes()).hexdigest(),'voices':voices,
-             'qa_inputs':[{'path':str(f),'sha256':hashlib.sha256(f.read_bytes()).hexdigest()} for batch in batches for f in batch['inputs']]}
+             'qa_inputs':[{'path':_repo_rel(f),'sha256':hashlib.sha256(f.read_bytes()).hexdigest()} for batch in batches for f in batch['inputs']]}
     if 'revalidation' in base['qa']:receipt['qa_revalidation']=base['qa']['revalidation']
     return payloads,receipt
 

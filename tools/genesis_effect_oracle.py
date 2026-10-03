@@ -16,7 +16,8 @@ from unicorn.m68k_const import (UC_CPU_M68K_M68000, UC_M68K_REG_SR,
     UC_M68K_REG_PC)
 try:
     from tools.extract_genesis_effects import ROOT, ROM_HASH, TABLE, decode_effects
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from extract_genesis_effects import ROOT, ROM_HASH, TABLE, decode_effects
 
 

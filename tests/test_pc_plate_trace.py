@@ -1,12 +1,16 @@
 from pathlib import Path
 import struct
 import unittest
-from tools.pc_plate_trace import PlateLoads
+from tools.pc_plate_trace import PLATES, PlateLoads
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
+@unittest.skipUnless(all((ROOT / 'GAME' / name).is_file() for name in PLATES + ('ATBASE.BIN', 'SCENE1.BIN', 'SCENE2.BIN')),
+                     'Requires separately supplied original PC files')
 class PlateTraceTests(unittest.TestCase):
     def make(self):
-        return PlateLoads(Path('GAME'), history_limit=2)
+        return PlateLoads(ROOT / 'GAME', history_limit=2)
 
     def chunk(self, trace, y=0, count=3200, page=0xA000, x=0, data=None):
         if data is None: data = trace.resources['GPS.BIN'][0][y*160:y*160+count]

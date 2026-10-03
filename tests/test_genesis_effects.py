@@ -37,8 +37,9 @@ class GenesisEffectDecoderTests(unittest.TestCase):
                 decode_effects(bytes(64), table=table, count=count)
 
 
-@unittest.skipUnless(ROM.exists(), "Requires the user's local Genesis ROM")
-class LocalGenesisEffectsTests(unittest.TestCase):
+@unittest.skipUnless((ROOT / "GAME/SHAPE.TBL").exists(), "Requires the local original PC game")
+class LocalPcShapeTests(unittest.TestCase):
+    """PC-only: runs in the supported PC-present, ROM-absent checkout."""
     def test_pc_shape_roots_define_the_nine_bound_detail_variants(self):
         shapes = inspect_shapes(decode_resource((ROOT / "GAME/SHAPE.TBL").read_bytes()))["shapes"]
         for phase in range(3):
@@ -48,6 +49,10 @@ class LocalGenesisEffectsTests(unittest.TestCase):
             self.assertEqual([s["target"] for s in source["selectors"]], [33696 + phase * 26 + lod * 2 for lod in range(3)])
             self.assertEqual([s["hex"] for s in source["opaque_commands"]], [f"80 {15 + phase + lod * 18:02x}" for lod in range(3)])
 
+
+@unittest.skipUnless(ROM.exists(), "Requires the user's local Genesis ROM")
+class LocalGenesisEffectsTests(unittest.TestCase):
+    @unittest.skipUnless((ROOT / "GAME/EFFECTS.BMP").exists(), "Requires the local original PC game")
     def test_pinned_directory_and_complete_pc_pixel_correspondence(self):
         rom = ROM.read_bytes()
         self.assertEqual(hashlib.sha256(rom).hexdigest(), ROM_HASH)

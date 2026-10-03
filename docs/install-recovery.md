@@ -18,7 +18,10 @@ existing content, saves and older versions.
 
 New checkpoints preserve the remastered display as well as native game and
 campaign state. Legacy same-core checkpoints may temporarily show PC artwork
-until the game redraws it. A changed core can make checkpoints incompatible;
+until the game redraws it. Checkpoints are keyed to the core's pre-signing
+identity, so re-signing an unchanged core keeps them compatible. Slots saved
+by a Developer ID build made before this change still need that build. A changed
+core can make checkpoints incompatible;
 retain the old app and profile backup rather than modifying receipt hashes.
 The original campaign save system remains separate from save-state slots.
 

@@ -17,17 +17,21 @@ try:
     from tools.pc_live_state import SimStateReader, active_program
     from tools.pc_audio_events import audio_status
     from tools.verify_pc_bridge import STEPS
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_reference_core import PcReferenceCore, CORE_SHA256
     from pc_live_state import SimStateReader, active_program
     from pc_audio_events import audio_status
     from verify_pc_bridge import STEPS
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
 try:
     from tools.pc_render_trace import Collector
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_render_trace import Collector
 
 
@@ -43,7 +47,7 @@ def main():
     parser.add_argument('--capture-ui', action='store_true', help='save paired source/UI masks at end-of-stage samples')
     args = parser.parse_args()
     if not 1 <= args.frames <= 3000: parser.error('frames must be 1..3000')
-    if args.output.resolve().is_relative_to((ROOT / 'GAME').resolve()): parser.error('output must be outside original GAME')
+    if inside_source(args.output, ROOT, ('GAME',)): parser.error('output must be outside original GAME')
     args.output.mkdir(parents=True, exist_ok=False)
     manifest = json.loads((ROOT / '.runtime/pc-core/abrams-trace.json').read_text())
     if args.mode == 'reference':

@@ -12,7 +12,8 @@ try:
     from tools.pc_bearing_oracle import cpu,set_registers,run_until
     from tools.pc_live_state import SimStateReader
     from tools.unpack_pc_executables import unpack
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_vehicle_catalog import ROOT,DATA,TABLE,STRIDE,COUNT,VARIANTS,source_catalog,verify_live
     from pc_bearing_oracle import cpu,set_registers,run_until
     from pc_live_state import SimStateReader

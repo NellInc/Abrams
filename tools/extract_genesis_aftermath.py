@@ -9,7 +9,11 @@ import hashlib
 import json
 from pathlib import Path
 import struct
+import sys
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.extract_genesis_newspapers import ROM_SHA, render
+from tools.source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENES = {'scene1': (0x937E, 9, 21, 0x58E42), 'scene2': (0x93A0, 10, 22, 0x58E68)}
@@ -100,7 +104,7 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--render', action='store_true')
     args = p.parse_args()
-    if any(args.output.resolve().is_relative_to((ROOT/name).resolve()) for name in ['GAME','GENESIS']):
+    if inside_source(args.output, ROOT, ('GAME','GENESIS')):
         p.error('output must stay outside original input directories')
     rom = (ROOT / 'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').read_bytes()
     if hashlib.sha256(rom).hexdigest() != ROM_SHA: raise ValueError('unsupported ROM')

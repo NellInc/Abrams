@@ -1,4 +1,4 @@
 {
-  "prompt": "Origin: actual 3.4-second frame from accepted v4 project trailer. Source artifacts/promo-20260930-v4/abrams-promo-clean.mp4, SHA256 3087e0ff6f79f17015ae7a58b567ab5c6716198e26f9f512c0f14d861aa0d919. Full frame at 1920×1080, WebP quality 94. Original and third-party rights retained.",
-  "createdAt": "2026-10-01T15:31:44.078Z"
+  "prompt": "Origin: actual decoded frame at 2.70 seconds from the accepted V8 project trailer, artifacts/promo-20261002-v8/abrams-promo.mp4, SHA-256 0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217. The frame falls between the opening captions, so no caption is burned in. Full frame at 1920x1080, WebP quality 85. Original and third-party rights retained.",
+  "createdAt": "2026-10-03T02:16:10.254527+00:00"
 }

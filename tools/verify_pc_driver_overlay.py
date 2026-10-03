@@ -11,7 +11,8 @@ from PIL import Image
 try:
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.unpack_pc_executables import unpack
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_live_state import SimStateReader, SIM_SHA256
     from unpack_pc_executables import unpack
 

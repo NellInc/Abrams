@@ -106,15 +106,19 @@ func run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	style = Art.new()
 	check(not style.load_assets(directory.path_join("absent")),"missing assets accepted")
-	check(style.textures.is_empty(),"failed load retained textures")
+	check(not style.loaded and style.atlas==null and style.sources.is_empty(),"failed load retained textures")
 	check(style.load_assets(directory),"pinned source/art unavailable")
-	if style.textures.size()!=Art.ASSETS.size(): finish(); return
+	if not style.loaded: finish(); return
 	var packed: Image = style.atlas.get_image()
 	check(not packed.has_mipmaps(),"effect atlas unexpectedly has mipmaps")
 	for donor in Art.ASSETS.size():
 		var start := Vector2i((donor%Art.COLUMNS)*Art.STRIDE,(donor/Art.COLUMNS)*Art.STRIDE)
 		var interior := Rect2i(start+Vector2i(Art.PAD,Art.PAD),Vector2i(Art.TILE,Art.TILE))
-		check(packed.get_region(interior).get_data()==style.textures[donor].get_image().get_data(),"atlas donor bytes changed")
+		# Independent reload: the atlas tile must equal the pinned donor resized alone.
+		var source := Image.load_from_file(directory.path_join("local-art/genesis/remastered/"+Art.ASSETS[donor][0]))
+		source.convert(Image.FORMAT_RGBA8)
+		source.resize(Art.TILE,Art.TILE,Image.INTERPOLATE_LANCZOS)
+		check(packed.get_region(interior).get_data()==source.get_data(),"atlas donor bytes changed")
 		for y in Art.STRIDE:
 			for x in Art.STRIDE:
 				if x>=Art.PAD and x<Art.PAD+Art.TILE and y>=Art.PAD and y<Art.PAD+Art.TILE: continue
@@ -186,8 +190,10 @@ func run() -> void:
 	# Ordered source replay checks selection and disappearance without inventing a
 	# playback timer. Native screenshots are separate from this metadata check.
 	var replay_path := directory.path_join("artifacts/pc-sprite-controls-02/report.json")
-	if FileAccess.file_exists(replay_path):
-		var replay = JSON.parse_string(FileAccess.get_file_as_string(replay_path))
+	check(FileAccess.file_exists(replay_path),"original replay fixture missing")
+	var replay = JSON.parse_string(FileAccess.get_file_as_string(replay_path)) if FileAccess.file_exists(replay_path) else null
+	if FileAccess.file_exists(replay_path): check(replay is Dictionary and replay.get("render_passes") is Array,"replay fixture unreadable")
+	if replay is Dictionary and replay.get("render_passes") is Array:
 		var sequence: Array = []
 		view.effect_art = style
 		for pass_data: Dictionary in replay.render_passes:

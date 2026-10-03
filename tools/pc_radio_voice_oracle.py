@@ -15,9 +15,12 @@ from unicorn.x86_const import UC_X86_REG_CS,UC_X86_REG_DS,UC_X86_REG_ES,UC_X86_R
 try:
     from tools.pc_bearing_oracle import ROOT,LOAD,DATA_SEGMENT,RETURN_IP,SIM_SHA256,cpu,original_unpack,set_registers,run_until,sha256
     from tools.inspect_scenarios import decode_resource,parse_scenario
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import ROOT,LOAD,DATA_SEGMENT,RETURN_IP,SIM_SHA256,cpu,original_unpack,set_registers,run_until,sha256
     from inspect_scenarios import decode_resource,parse_scenario
+    from source_guard import inside_source
 
 
 def run():
@@ -99,7 +102,7 @@ def run():
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);p.add_argument('--check-fixture',type=Path);a=p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')):p.error('output must be outside original files')
+    if inside_source(a.output,ROOT,('GAME','GENESIS')):p.error('output must be outside original files')
     result=run()
     if a.check_fixture and json.loads(a.check_fixture.read_text())!=result:raise ValueError('original radio fixture differs')
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(result,indent=2)+'\n')

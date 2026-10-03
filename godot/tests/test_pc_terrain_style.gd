@@ -22,7 +22,10 @@ func check(ok: bool, message: String) -> void:
 	checks += 1
 	if not ok and errors.size() < 20: errors.append(message)
 
-func _initialize() -> void: run.call_deferred()
+func _initialize() -> void:
+	# A script error aborts run() before quit(); fail the headless gate instead of hanging it.
+	if "--native" not in OS.get_cmdline_user_args(): create_timer(300).timeout.connect(func(): printerr("FAIL: terrain style deadline (%d checks)"%checks); quit(2))
+	run.call_deferred()
 
 func snapshot(target: SubViewport) -> Image:
 	await process_frame
@@ -101,7 +104,8 @@ func run() -> void:
 	var sample := {"camera":frame,"palette_rgb":Terrain.PC_PALETTE,"materials":materials,
 		"background":{"kind":"horizon","line":[[32,61],[287,61]],"colors":[5,8]},
 		"objects":[{"shape_index":50,"dynamic_instance":false,"static_path":1,"polygons":[ground]}]}
-	compare_geometry(sample)
+	compare_geometry(sample,true)
+	check(draw.terrain_active and draw.terrain_polygon_count==1,"synthetic ground not styled by draw pass")
 	var args := OS.get_cmdline_user_args()
 	var native := "--native" in args
 	var output := directory.path_join("artifacts/pc-terrain-style-test")
@@ -143,20 +147,27 @@ func run() -> void:
 	print("PC_TERRAIN_STYLE: ",JSON.stringify(receipt))
 	quit(0 if errors.is_empty() else 1)
 
-func compare_geometry(pass_data: Dictionary) -> void:
+func compare_geometry(pass_data: Dictionary, require_terrain := false) -> void:
 	var before := JSON.stringify(pass_data)
 	draw.presentation_palette = genesis.for_original(pass_data.palette_rgb)
 	draw.terrain_style = null
 	draw.apply_pass(pass_data)
-	var plain: Array = draw.mesh_node.mesh.surface_get_arrays(0)
+	var plain: Array = draw.mesh_node.mesh.surface_get_arrays(0) if draw.mesh_node.mesh else []
 	draw.terrain_style = style
 	draw.apply_pass(pass_data)
-	var detailed: Array = draw.mesh_node.mesh.surface_get_arrays(0)
-	check(plain[Mesh.ARRAY_VERTEX]==detailed[Mesh.ARRAY_VERTEX],"terrain changed original triangle geometry/order")
-	var neutral: PackedVector2Array = plain[Mesh.ARRAY_TEX_UV]
-	var tagged: PackedVector2Array = detailed[Mesh.ARRAY_TEX_UV]
-	check(neutral.size()==tagged.size(),"terrain changed triangle count")
-	for i in neutral.size(): check(neutral[i].x==tagged[i].x,"terrain changed original material identity")
+	var detailed: Array = draw.mesh_node.mesh.surface_get_arrays(0) if draw.mesh_node.mesh else []
+	if plain.is_empty() or detailed.is_empty():
+		check(plain.is_empty() and detailed.is_empty() and not require_terrain,"draw pass geometry missing or changed by terrain")
+	else:
+		check(plain[Mesh.ARRAY_VERTEX]==detailed[Mesh.ARRAY_VERTEX],"terrain changed original triangle geometry/order")
+		var neutral: PackedVector2Array = plain[Mesh.ARRAY_TEX_UV]
+		var tagged: PackedVector2Array = detailed[Mesh.ARRAY_TEX_UV]
+		check(neutral.size()==tagged.size(),"terrain changed triangle count")
+		for i in neutral.size(): check(neutral[i].x==tagged[i].x,"terrain changed original material identity")
+		if require_terrain:
+			var kinds := 0
+			for i in mini(neutral.size(),tagged.size()): if tagged[i].y!=neutral[i].y: kinds+=1
+			check(kinds>0,"terrain kind never tagged on styled ground")
 	check(JSON.stringify(pass_data)==before,"terrain mutated original data")
 	check(draw.render_warnings.is_empty(),"unexpected terrain surface warnings")
 

@@ -26,12 +26,15 @@ try:
     from tools.pc_world import read_objects, world_position, STATIC_START, STATIC_STRIDE
     from tools.inspect_scenarios import decode_resource, parse_world, parse_shape_table
     from tools.inspect_shapes import inspect_shapes, primitive_vertices
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import cpu, set_registers, run_until, original_unpack, LOAD, DATA_SEGMENT
     from pc_live_state import SimStateReader, SIM_SHA256
     from pc_world import read_objects, world_position, STATIC_START, STATIC_STRIDE
     from inspect_scenarios import decode_resource, parse_world, parse_shape_table
     from inspect_shapes import inspect_shapes, primitive_vertices
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 CODE_SEGMENT = LOAD + 0xB4D
@@ -240,7 +243,8 @@ def main():
     parser.add_argument("--capture", type=Path, default=ROOT / "reference/pc-live/mission-entry/conventional.bin")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    if args.output.resolve().is_relative_to(args.root.resolve()):
+    source = args.root.resolve()
+    if inside_source(args.output, source.parent, (source.name,)):
         parser.error("output must be outside original directory")
     result = run(args.root, args.capture)
     args.output.parent.mkdir(parents=True, exist_ok=True)

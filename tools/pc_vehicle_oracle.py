@@ -19,10 +19,13 @@ try:
     from tools.pc_bearing_oracle import cpu, set_registers, run_until
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.pc_vehicle_math import object_matrix, orientation_mode, compose, packed_axis_table
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import cpu, set_registers, run_until
     from pc_live_state import SimStateReader, SIM_SHA256
     from pc_vehicle_math import object_matrix, orientation_mode, compose, packed_axis_table
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -123,7 +126,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if unicorn.__version__ != '2.1.4': raise ValueError('pinned Unicorn 2.1.4 required')
-    if args.output.resolve().is_relative_to((ROOT / 'GAME').resolve()): parser.error('output must be outside original GAME')
+    if inside_source(args.output, ROOT, ('GAME',)): parser.error('output must be outside original GAME')
     result = run(args.capture.read_bytes())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + '\n')

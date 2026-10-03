@@ -14,6 +14,7 @@ var stage := "ready"
 var started: int
 var output: String
 var closing := false
+var closing_since := 0
 var handling := false
 var native := false
 var rgb_checks := 0
@@ -55,8 +56,7 @@ func _initialize() -> void:
 	composite = TandemFrame.new()
 	composite.size = Vector2(1280,800)
 	viewport.add_child(composite)
-	var python := OS.get_environment("ABRAMS_PYTHON")
-	if python.is_empty(): python = "/opt/homebrew/bin/python3"
+	var python := Bridge.default_python()
 	started = Time.get_ticks_msec()
 	bridge.start(python,"",output.path_join("saves"),output.path_join("host.log"),"trace")
 
@@ -68,17 +68,18 @@ func _process(_delta: float) -> bool:
 		for message in bridge.poll():
 			handling = true
 			_accept.call_deferred(message)
+	# A step in flight at _stop() can still reply; keep draining so the host can read quit and exit.
+	elif closing: bridge.poll()
 	if not bridge.failure.is_empty() and not closing:
 		errors.append(bridge.failure)
 		_stop()
 	if closing and bridge.has_exited():
 		check(bridge.exit_code()==0,"host shutdown failed")
-		var file := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
-		file.store_string(JSON.stringify({"errors":errors,"samples":samples,"programs":programs,
-			"paired":paired,"rgb_checks":rgb_checks,"host_exit":bridge.exit_code()},"  "))
-		for error in errors: printerr("FAIL: " + error)
-		print("PC_SESSION_BRIDGE: %d stages, %d paired worlds, %d exact RGB checks, %d failures, host exit %d" % [samples.size(),paired,rgb_checks,errors.size(),bridge.exit_code()])
-		quit(0 if errors.is_empty() else 1)
+		_finish()
+	elif closing and Time.get_ticks_msec()-closing_since > 30000:
+		errors.append("host shutdown exceeded 30 seconds")
+		bridge.kill()
+		_finish()
 	if not closing and Time.get_ticks_msec()-started > 240000:
 		errors.append("session deadline")
 		_stop()
@@ -145,5 +146,14 @@ func _accept(message: Dictionary) -> void:
 	handling = false
 
 func _stop() -> void:
+	if closing_since == 0: closing_since = Time.get_ticks_msec()
 	closing = true
 	bridge.close()
+
+func _finish() -> void:
+	var file := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
+	file.store_string(JSON.stringify({"errors":errors,"samples":samples,"programs":programs,
+		"paired":paired,"rgb_checks":rgb_checks,"host_exit":bridge.exit_code()},"  "))
+	for error in errors: printerr("FAIL: " + error)
+	print("PC_SESSION_BRIDGE: %d stages, %d paired worlds, %d exact RGB checks, %d failures, host exit %d" % [samples.size(),paired,rgb_checks,errors.size(),bridge.exit_code()])
+	quit(0 if errors.is_empty() else 1)

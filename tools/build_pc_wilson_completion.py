@@ -11,13 +11,17 @@ import hashlib
 import json
 from pathlib import Path
 import struct
+import sys
 from PIL import Image
 
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.build_pc_frontend_catalog import PALETTE, HEIGHTS, PINS, compose
 from tools.extract_pc_ui import screen_pixels
 from tools.inspect_scenarios import decode_resource
 from tools.pc_bitmaps import decode_bitmaps
 from tools.unpack_pc_executables import unpack
+from tools.source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 PLACEMENTS = [(3,84,36,'arm-lowered'),(4,82,36,'pistol-raised'),(5,66,33,'thumbs-up')]
@@ -106,7 +110,7 @@ def main():
     parser.add_argument('--output',type=Path,default=ROOT/'local-art/pc-wilson-completion-v1/office.json')
     args=parser.parse_args()
     destination=args.extract or args.output
-    if any(destination.resolve().is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
+    if inside_source(destination, ROOT):
         parser.error('output must be outside original sources')
     if args.extract:
         extract(ROOT,args.extract)

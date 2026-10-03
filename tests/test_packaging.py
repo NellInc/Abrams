@@ -97,6 +97,30 @@ class PackagingTests(unittest.TestCase):
                 package.build(root, root / 'bad.zip', 'source')
             self.assertFalse((root / 'bad.zip').exists())
 
+    def test_unselected_load_and_package_imports_are_rejected(self):
+        # load(), tests.* / tools.* package imports, plain imports and relative imports all count as code dependencies.
+        cases = {
+            'godot/scripts/a.gd': ('extends Node\nvar b = load("res://scripts/b.gd")\n', 'godot/scripts/b.gd'),
+            'tests/test_a.py': ('from tests.test_b import x\n', 'tests/test_b.py'),
+            'tests/test_c.py': ('import tools.helper\n', 'tools/helper.py'),
+            'tools/pkg/a.py': ('from .b import x\n', 'tools/pkg/b.py'),
+        }
+        for member, (text, dependency) in cases.items():
+            with self.subTest(member=member), tempfile.TemporaryDirectory() as directory:
+                root = self.fixture(directory)
+                for name, body in ((member, text), (dependency, 'x = 1\n')):
+                    (root / name).parent.mkdir(parents=True, exist_ok=True)
+                    (root / name).write_text(body)
+                manifest = json.loads((root / package.MANIFEST).read_text())
+                manifest['source'].append(member)
+                (root / package.MANIFEST).write_text(json.dumps(manifest))
+                with self.assertRaisesRegex(ValueError, 'Missing code dependency: .* -> ' + dependency):
+                    package.build(root, root / 'bad.zip', 'source')
+                self.assertFalse((root / 'bad.zip').exists())
+                manifest['source'].append(dependency)
+                (root / package.MANIFEST).write_text(json.dumps(manifest))
+                package.check_source_closure(root, package.selected_files(root, 'source'))
+
     def test_symlink_archive_metadata_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self.fixture(directory)
@@ -146,6 +170,9 @@ class PackagingTests(unittest.TestCase):
     def test_real_source_allowlist_and_private_custody(self):
         source = package.selected_files(ROOT, 'source')
         self.assertIn('tools/package_build.py', source)
+        # Output guards (and the runtime host) import the shared helper.
+        self.assertIn('tools/source_guard.py', source)
+        package.check_source_closure(ROOT, source)
         if not (ROOT / 'GAME').exists():
             return  # The source kit deliberately has no private dependencies.
         private = package.selected_files(ROOT, 'private')

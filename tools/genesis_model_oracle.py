@@ -16,7 +16,8 @@ from unicorn.m68k_const import (UC_CPU_M68K_M68000, UC_M68K_REG_SR,
     UC_M68K_REG_D0, UC_M68K_REG_D2, UC_M68K_REG_D7, UC_M68K_REG_PC)
 try:
     from tools.extract_genesis_models import ROOT, ROM_HASH, DISPATCH, MATERIAL_MAP, PATTERNS, POLYGONS, decode_models
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from extract_genesis_models import ROOT, ROM_HASH, DISPATCH, MATERIAL_MAP, PATTERNS, POLYGONS, decode_models
 
 STOP = 0x70000

@@ -11,6 +11,14 @@ func check(ok:bool,message:String)->void:
 	checks+=1
 	if not ok and errors.size()<30:errors.append(message)
 func _initialize()->void:run.call_deferred()
+# Fixtures are local, untracked captures: a missing or malformed one must fail, not crash the run.
+func read_report(path:String)->Variant:
+	var parsed=JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+	return parsed if parsed is Dictionary else null
+func labelled(fixtures:Array,label:String)->Variant:
+	var hits:=fixtures.filter(func(e):return e.label==label)
+	check(not hits.is_empty(),"fixture label present: "+label)
+	return null if hits.is_empty() else hits[0]
 func snapshot()->Image:
 	await process_frame
 	RenderingServer.force_draw(false);RenderingServer.force_sync()
@@ -39,16 +47,23 @@ func run()->void:
 	var fixtures:=[]
 	for folder in ["pc-live-type-lifecycle-01","pc-information-baseline-02"]:
 		var path:=root_path.path_join("artifacts/"+folder+"/report.json")
-		check(FileAccess.file_exists(path),"fixture: "+folder)
-		var report:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
+		var report=read_report(path)
+		check(report is Dictionary and report.get("samples") is Array,"fixture readable: "+folder)
+		if not report is Dictionary or not report.get("samples") is Array:continue
 		for e in report.samples:fixtures.append({"label":folder+"-"+e.label,"image":path.get_base_dir().path_join(e.image),"presentation":e.presentation,"program":e.program if e.program is Dictionary else {}})
 	var intro:Dictionary=frame.native_graphics.catalogs.intro
 	for e in intro.entries:fixtures.append({"label":"intro-"+e.name,"image":root_path.path_join("artifacts/pc-intro-trace-01/"+e.capture_image),"presentation":{},"program":{"name":"START"}})
 	var path:=root_path.path_join("artifacts/pc-live-type-cockpit-02/report.json")
-	var report:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
-	for e in report.ui_presentations:
+	var report=read_report(path)
+	var cockpit_ok:bool=report is Dictionary and report.get("ui_presentations") is Array and report.get("presentations") is Array and report.get("render_passes") is Array
+	check(cockpit_ok,"fixture readable: pc-live-type-cockpit-02")
+	for e in (report.ui_presentations if cockpit_ok else []):
+		var passes:Array=report.render_passes.filter(func(p):return p.sequence==e.draw_sequence)
+		var present:bool=int(e.frame_index)>=0 and int(e.frame_index)<report.presentations.size() and not passes.is_empty()
+		check(present,"fixture frame present: cockpit "+str(e.get("stage")))
+		if not present:continue
 		var packet:Dictionary=report.presentations[int(e.frame_index)].duplicate(true)
-		packet.draw_pass=report.render_passes.filter(func(p):return p.sequence==e.draw_sequence)[0]
+		packet.draw_pass=passes[0]
 		for pair in [["ui_overlay",e.mask],["plate_overlay",e.plate_mask]]:
 			var im:=Image.load_from_file(path.get_base_dir().path_join(pair[1]))
 			packet[pair[0]].mask_png=Marshalls.raw_to_base64(im.save_png_to_buffer())
@@ -116,8 +131,11 @@ func run()->void:
 		check(source.get_data()==original and JSON.stringify(e.presentation)==metadata,"switch leaves source and metadata immutable")
 		check(frame.native_graphics.load_count==1,"switch does not load assets")
 	# An untrusted/stale tag cannot authorize a pristine native damage diagram.
-	var status:Dictionary=fixtures.filter(func(e):return e.label=="cockpit-damage-settled-1727")[0]
+	var status=labelled(fixtures,"cockpit-damage-settled-1727")
+	if status==null:finish();return
 	var damaged:=Image.load_from_file(status.image)
+	check(damaged!=null,"fixture image present: "+status.label)
+	if damaged==null:finish();return
 	damaged.set_pixel(160,60,Color.RED)
 	frame.set_graphics_mode("genesis")
 	frame.set_frame(damaged,status.presentation,null,status.program)
@@ -130,8 +148,44 @@ func run()->void:
 	bad.ui_overlay.mask_png=Marshalls.raw_to_base64(Image.create_empty(320,200,false,Image.FORMAT_RGB8).save_png_to_buffer())
 	frame.set_frame(damaged,bad,null,status.program)
 	check(not frame.native_graphics.material.get_shader_parameter("plates_enabled"),"malformed mask disables native plates")
-	var title:Dictionary=fixtures.filter(func(e):return e.label=="intro-title")[0]
-	var changed:=Image.load_from_file(title.image);changed.set_pixel(0,0,Color.MAGENTA)
+	# Validated masks are reused only while both encoded masks are unchanged;
+	# source pixels are still checked on every frame.
+	var pristine:=Image.load_from_file(status.image)
+	frame.set_frame(pristine,status.presentation,null,status.program)
+	var decodes:int=frame.native_graphics.mask_decode_count
+	var accepted:int=frame.native_graphics.active.get("plate_bits",0)
+	var tag_texture=frame.native_graphics.material.get_shader_parameter("plate_tags")
+	check(accepted & (1<<5)!=0,"pristine damage diagram accepted")
+	frame.set_frame(pristine,status.presentation,null,status.program)
+	check(frame.native_graphics.mask_decode_count==decodes and frame.native_graphics.active.get("plate_bits",0)==accepted and frame.native_graphics.material.get_shader_parameter("plate_tags")==tag_texture,"unchanged masks reuse validation")
+	frame.set_frame(damaged,status.presentation,null,status.program)
+	check(frame.native_graphics.mask_decode_count==decodes and (int(frame.native_graphics.active.get("plate_bits",0)) & (1<<5))==0,"cached masks never hide a changed source pixel")
+	var tagged_at:=-1
+	for kind in ["tag value 9","tag outside UI"]:
+		var stray:Dictionary=status.presentation.duplicate(true)
+		var stray_tags:=Image.new();stray_tags.load_png_from_buffer(Marshalls.base64_to_raw(stray.plate_overlay.mask_png))
+		var stray_ui:=Image.new();stray_ui.load_png_from_buffer(Marshalls.base64_to_raw(stray.ui_overlay.mask_png))
+		if kind=="tag value 9":
+			stray_tags.set_pixel(0,0,Color8(9,9,9))
+			stray.plate_overlay.mask_png=Marshalls.raw_to_base64(stray_tags.save_png_to_buffer())
+		else:
+			var raw:=stray_tags.get_data()
+			for i in raw.size():
+				if raw[i]!=0:tagged_at=i;break
+			if tagged_at<0:continue
+			stray_ui.set_pixel(tagged_at%320,tagged_at/320,Color.BLACK)
+			stray.ui_overlay.mask_png=Marshalls.raw_to_base64(stray_ui.save_png_to_buffer())
+		decodes=frame.native_graphics.mask_decode_count
+		for attempt in 2:
+			frame.set_frame(pristine,stray,null,status.program)
+			check(frame.native_graphics.mask_decode_count==decodes+1 and not frame.native_graphics.material.get_shader_parameter("plates_enabled"),"changed mask revalidates and stays rejected: "+kind+" "+str(attempt))
+	check(tagged_at>=0,"status fixture carries plate tags")
+	var title=labelled(fixtures,"intro-title")
+	if title==null:finish();return
+	var changed:=Image.load_from_file(title.image)
+	check(changed!=null,"fixture image present: "+title.label)
+	if changed==null:finish();return
+	changed.set_pixel(0,0,Color.MAGENTA)
 	frame.set_frame(changed,{},null,title.program)
 	check(frame.native_graphics.active.donors.is_empty(),"one changed title pixel rejects complete donor")
 	var expected:=changed.duplicate();expected.convert(Image.FORMAT_RGBA8)

@@ -16,14 +16,29 @@ try:
     from tools.pc_session import PresentationSession
     from tools.inspect_scenarios import decode_resource
     from tools.pc_render_trace import Collector
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_reference_core import PcReferenceCore
     from pc_live_state import SimStateReader, active_program
     from pc_session import PresentationSession
     from inspect_scenarios import decode_resource
     from pc_render_trace import Collector
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def no_sim_geometry(s):
+    """No SIM state; only START may carry its own pixel-paired START/ANIM scenery."""
+    draw=(s.get('presentation') or {}).get('draw_pass')
+    return s.get('state') is None and (not draw or
+        (s.get('program') or {}).get('name')=='START' and draw.get('frontend_scene')=='START/ANIM')
+
+
+def ui_fully_original(presentation):
+    # An incomplete native UI mask is reported as ui_overlay None.
+    return (presentation.get('ui_overlay') or {}).get('ui_pixels')==64000
 
 # Exact first 175 rows: the original leaves variable menu residue in row 175.
 # This row and all later pixels remain untouched by presentation replacement.
@@ -41,7 +56,8 @@ INFORMATION_PAGES = {
 def information_steps():
     try:
         from tools.bootstrap_pc_source import STEPS
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from bootstrap_pc_source import STEPS
     route=[{'label':f'boot-{i:02d}','frames':n,'keys':keys} for i,(n,keys) in enumerate(STEPS[:9])]
     actions=[('campaign-select','right'),('information-select','right'),('information-menu','return'),
@@ -176,7 +192,7 @@ def main():
     if args.information and (args.motor_pool_controls or args.motor_pool_allocations):
         p.error('information and motor-pool routes are separate')
     other = json.loads(args.compare.read_text()) if args.compare else None
-    if any(args.output.resolve().is_relative_to((ROOT / name).resolve()) for name in ('GAME','GENESIS')):
+    if inside_source(args.output, ROOT):
         p.error('output must be outside original source directories')
     args.output.mkdir(parents=True,exist_ok=False)
     manifest = json.loads((ROOT / '.runtime/pc-core/abrams-trace.json').read_text())
@@ -274,7 +290,7 @@ def main():
             checks['eight_original_mission_lifecycles']=programs==['START']+['BRIEF','SIM','END','START']*8
         elif args.information:
             checks={'START_owns_information': programs==['START'],
-                    'no_SIM_state_or_geometry':all(s['state'] is None and s['presentation'].get('draw_pass') is None for s in samples)}
+                    'no_SIM_state_or_geometry':all(no_sim_geometry(s) for s in samples)}
             for name,pin in INFORMATION_PAGES.items():
                 from PIL import Image
                 picture=Image.open(args.output/(name+'.png')).convert('RGB')
@@ -285,16 +301,14 @@ def main():
                 'program_lifecycle': programs == ['START','BRIEF','SIM','END','START','BRIEF','SIM'],
                 'debrief_is_original_END': by_name['debrief']['program']['name']=='END',
                 'menus_have_no_SIM_state_or_geometry': all(
-                    s['state'] is None and (s['presentation'].get('draw_pass') is None or
-                        (s['program'] or {}).get('name')=='START' and s['presentation']['draw_pass'].get('frontend_scene')=='START/ANIM')
-                    for s in samples if not s['program'] or s['program']['name']!='SIM'),
+                    no_sim_geometry(s) for s in samples if not s['program'] or s['program']['name']!='SIM'),
                 'second_mission_initialized': bool(by_name['second-mission']['state']) and
                     by_name['second-mission']['state']['scenario_resource_index']==6,
             }
             if args.mode == 'trace':
                 checks['fresh_second_render_epoch'] = by_name['second-mission']['render_epoch']==2
                 checks['second_mission_paired'] = bool(by_name['second-mission']['presentation'].get('draw_pass'))
-                checks['quit_dialog_fully_original'] = by_name['quit-dialog']['presentation'].get('ui_overlay',{}).get('ui_pixels')==64000
+                checks['quit_dialog_fully_original'] = ui_fully_original(by_name['quit-dialog']['presentation'])
         report = {'mode':args.mode,'core_sha256':core.core_sha256,'source_commit':manifest['commit'],
             'initial_unrecorded_frames':240,'records':records,'samples':samples,
             'boot_state_sha256':hashlib.sha256(args.boot_state.read_bytes()).hexdigest() if args.boot_state else None,

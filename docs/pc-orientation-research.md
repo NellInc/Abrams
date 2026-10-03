@@ -34,7 +34,9 @@ are relative to original DS, load segment plus `19e0`.
 * `6040` calls the black clear and grid routine `55e6`. Position words at
   body pointer `799b`, offsets 4 and 6, select the grid's 16-pixel phase.
   Calls `567f`, `56a5`, `56dd` produce vertical/horizontal lines in source
-  order. The axis rasterizer excludes its final endpoint.
+  order. Vertical calls exclude their final y endpoint (`box.end.y`);
+  horizontal calls light their final column `x=left+61`, as every
+  `pc-orientation-cpu-01` oracle case shows.
 * Four calls return at `6135`, `615e`, `6214`, `62a3`. Function `5da8`
   prepares four signed integer points at `6486/648e` and six signed Q14
   basis values at `6496`. Far call `5f81` draws the polygon.

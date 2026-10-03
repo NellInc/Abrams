@@ -29,10 +29,12 @@ var original := false
 var textures: Dictionary = {}
 var font: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
 var heading: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
-var error_message := ""
+var errors: Dictionary = {}
 var controls: Array[Dictionary] = []
 
 func _ready() -> void:
+	# main.tscn turns auto_accept_quit off for its audio drain; the flag outlives the scene change, so accept close here.
+	get_tree().auto_accept_quit = true
 	var root := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-art/genesis")
 	for entry in ART:
 		_load_art(root.path_join("source/"+entry.source),entry.source)
@@ -51,17 +53,19 @@ func _ready() -> void:
 
 func _load_art(filename: String, key: String) -> void:
 	if not FileAccess.file_exists(filename):
-		error_message = "Local artwork missing. See docs/genesis-art-workflow.md."
+		errors[key] = "Local artwork missing: " + filename.get_file() + ". See docs/genesis-art-workflow.md."
 		return
 	var image := Image.load_from_file(filename)
 	if image == null or image.is_empty():
-		error_message = "Cannot read artwork: " + filename.get_file()
+		errors[key] = "Cannot read artwork: " + filename.get_file()
 		return
 	textures[key] = ImageTexture.create_from_image(image)
 
 func _add_button(label: String, area: Rect2, action: Callable) -> void:
 	var button := Button.new()
 	button.text = label
+	# Every button has a key; without focus, Left/Right page instead of moving button focus after a click.
+	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_font_override("font",font)
 	button.pressed.connect(action)
 	add_child(button)
@@ -121,14 +125,16 @@ func _draw() -> void:
 			if textures.has(portrait):
 				var rect := Rect2(art_rect.position+Vector2(80,32)*(art_rect.size/Vector2(320,200)),Vector2(136,128)*(art_rect.size/Vector2(320,200)))
 				draw_texture_rect(textures[portrait],rect,false)
+			else:
+				draw_string(font,Vector2(250,430),errors.get(portrait,""),HORIZONTAL_ALIGNMENT_LEFT,-1,20,Color("e7b566"))
 	else:
-		draw_string(font,Vector2(250,430),error_message,HORIZONTAL_ALIGNMENT_LEFT,-1,20,Color("e7b566"))
+		draw_string(font,Vector2(250,430),errors.get(key,"Local artwork missing. See docs/genesis-art-workflow.md."),HORIZONTAL_ALIGNMENT_LEFT,-1,20,Color("e7b566"))
 	draw_string(font,Vector2(820,868),"ORIGINAL GENESIS" if original else "LOCAL REMASTER",HORIZONTAL_ALIGNMENT_LEFT,-1,18,Color("e7b566"))
 
 func _capture() -> void:
 	var args := OS.get_cmdline_user_args()
 	var at := args.find("--capture-art")
-	if at+1 >= args.size() or not error_message.is_empty():
+	if at+1 >= args.size() or not errors.is_empty():
 		push_error("Artwork capture needs an output path and all local source/remaster files.")
 		get_tree().quit(1)
 		return

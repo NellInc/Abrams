@@ -45,10 +45,6 @@ static func build() -> Theme:
 		theme.set_stylebox(state,"Button",style)
 	return theme
 
-static func reference_path(name: String) -> String:
-	if name not in ["keyboard-controls.html","field-guide.html"]: return ""
-	return ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("docs/player-reference").path_join(name)
-
 static func show_reference(host: Window, name: String) -> Window:
 	var reader := host.get_node_or_null("PlayerReference") as Window
 	if reader==null:

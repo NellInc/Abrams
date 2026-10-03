@@ -30,10 +30,19 @@ class TestBridge extends RefCounted:
 
 class TestDraw extends Node3D:
 	var events: Array
-	func apply_pass(_drawing: Dictionary) -> void: events.append("draw")
+	var extents: Array = []
+	var dynamic_polygon_count := 0
+	var sprite_count := 0
+	var render_warnings: Array = []
+	var presentation_palette: Array = []
+	func apply_pass(_drawing: Dictionary) -> void:
+		events.append("draw")
+		# What DrawPass hands Modern ownership.prepare as its extent.
+		extents.append(Vector2i(get_viewport().get_visible_rect().size))
 
 class TestFrame extends TextureRect:
 	var events: Array
+	var world_enabled := true
 	func set_frame(_source: Image, _presentation: Dictionary, _world: Texture2D, _program: Dictionary={}) -> bool:
 		events.append("frame")
 		return false
@@ -59,6 +68,8 @@ func _initialize() -> void:
 	caption=Label.new()
 	for node in [draw_view,tandem_frame,picture,status,caption]: root.add_child(node)
 	trace_mode=true
+	# This fixture deliberately bypasses _complete_startup, which opens the gate.
+	startup_ready=true
 	started=Time.get_ticks_msec()
 	var source := Image.create_empty(320,200,false,Image.FORMAT_RGB8)
 	source.fill(Color.BLACK)
@@ -113,6 +124,10 @@ func run() -> void:
 		var before: int=bridge.requests.size()
 		reply()
 		super._process(period)
+		if events.is_empty() or bridge.requests.is_empty():
+			check(false,"super._process polled and dispatched (startup gate open)")
+			finish()
+			return
 		check(bridge.requests.size()==before+1,"one request per validated available boundary")
 		check(events==["poll","step","draw","frame"],"original frame starts before presentation construction")
 		var actual: Array=bridge.requests[-1].keys.duplicate()
@@ -291,6 +306,32 @@ func run() -> void:
 		bad.png=Marshalls.raw_to_base64("not a PNG".to_utf8_buffer())
 		_apply_sample(bad)
 		check(bridge.requests.size()==stopped_count and events.is_empty() and bridge.failure=="invalid original framebuffer","invalid original image cannot dispatch")
+	# A station switch changes the clip: the SIM pass must be built at the new
+	# world extent, as on the menu, or Modern ownership registers at the old aspect.
+	bridge.failure="hold transport"
+	camera=Camera3D.new()
+	world_viewport=SubViewport.new()
+	world_viewport.size=Vector2i(1024,388)
+	root.add_child(world_viewport)
+	world_viewport.add_child(camera)
+	draw_view.reparent(camera)
+	for clip in [[32,13,287,109],[0,10,319,52],[32,13,287,109]]:
+		var sim := valid_sample.duplicate(true)
+		sim.program={"name":"SIM"}
+		sim.state={"station":"gunner","heading_degrees":0,"bearing_degrees":0,"speed_display":0,"fuel_display":0,
+			"ammunition":{"HEAT":0,"SABOT":0,"AX":0,"COAX":0},"world_position_raw":[0,0,0],"camera":{},
+			"world":{"window_origin":[0,0],"static":[]}}
+		sim.presentation={"draw_pass":{"sequence":1,"objects":[],"unsupported":[],"camera":{"clip":clip,"center":[159,61],
+			"near_raw":16,"focal_pixels":128,"matrix_q14_columns":[16384,0,0,0,16384,0,0,0,16384],"world_position_raw":[0,0,0]}}}
+		draw_view.extents.clear()
+		_apply_sample(sim)
+		var wanted := Vector2i(clip[2]-clip[0]+1,clip[3]-clip[1]+1)*4
+		check(draw_view.extents==[wanted] and world_viewport.size==wanted,"SIM pass built at the current clip's world extent %s: %s"%[wanted,draw_view.extents])
+	draw_view.reparent(root)
+	world_viewport.queue_free()
+	world_viewport=null
+	camera=null
+	bridge.failure=""
 	set_keys([])
 	capture=false
 	status.hide()
@@ -298,6 +339,49 @@ func run() -> void:
 	super._process(period)
 	check(status.visible and status.text.contains(bridge.failure),"interactive launch errors remain visible")
 	check(bridge.stopped and not closing,"error gracefully closes only the child, leaving explanation visible")
+	check(anchor_path("/repo","artifacts/x")=="/repo/artifacts/x" and anchor_path("/repo","/abs/x")=="/abs/x","relative --output/--saves resolve against the repo root")
+	check(anchor_path("/repo","user://x")==ProjectSettings.globalize_path("user://x"),"Godot virtual paths keep their meaning")
+	# The host's own error line outlives its prompt exit; a silent exit stays generic.
+	for script in ["printf '{\"type\":\"error\",\"message\":\"Rebuild the local trace core for X\"}\\n'","exit 1"]:
+		var real := Bridge.new()
+		real.process=OS.execute_with_pipe("/bin/sh",["-c",script],false)
+		var deadline := Time.get_ticks_msec()+5000
+		while OS.is_process_running(int(real.process.pid)) and Time.get_ticks_msec()<deadline: OS.delay_msec(10)
+		real.poll()
+		check(real.failure==("PC core host exited; see the local host log." if script=="exit 1" else "Rebuild the local trace core for X"),"host failure text survives its exit: "+real.failure)
+	# Harness-only kill ends a wedged child (one that never reads quit) and is a no-op without one.
+	var wedged := Bridge.new()
+	wedged.kill()
+	wedged.process=OS.execute_with_pipe("/bin/sh",["-c","sleep 30"],false)
+	wedged.close()
+	check(not wedged.has_exited(),"wedged child outlives its quit request")
+	var wedged_pid := int(wedged.process.pid)
+	wedged.kill()
+	# Independent of Godot's process table: the pid itself is gone.
+	check(wedged.has_exited() and wedged.exit_code()==-1 and OS.execute("/bin/kill",["-0",str(wedged_pid)])!=0,"Bridge.kill ends a wedged child")
+	var saved_python := OS.get_environment("ABRAMS_PYTHON")
+	OS.unset_environment("ABRAMS_PYTHON")
+	check(Bridge.default_python()=="python3","viewer falls back to python3 on PATH, like PC Bridge.command")
+	OS.set_environment("ABRAMS_PYTHON","/opt/test/python3")
+	check(Bridge.default_python()=="/opt/test/python3","ABRAMS_PYTHON selects the interpreter")
+	if saved_python.is_empty(): OS.unset_environment("ABRAMS_PYTHON")
+	else: OS.set_environment("ABRAMS_PYTHON",saved_python)
+	play_mode=true
+	_choose_speed(8)
+	var fast_title := root.title
+	_choose_speed(1)
+	play_mode=false
+	var app_name := str(ProjectSettings.get_setting("application/config/name"))
+	check(fast_title==app_name+" (8x fast forward)" and root.title==app_name,"fast forward keeps the project window title")
+	# A host that never exits after Close (has_exited stays false) cannot hold the window forever.
+	_close()
+	check(closing and close_deadline>Time.get_ticks_msec() and close_deadline<=Time.get_ticks_msec()+5000,"failed host gets a short close grace")
+	check(not _close_expired(),"Close waits for the host during its grace")
+	close_deadline=Time.get_ticks_msec()-1
+	check(_close_expired(),"hung host Close is bounded")
+	finish()
+
+func finish() -> void:
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_LIVE_SCHEDULING: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

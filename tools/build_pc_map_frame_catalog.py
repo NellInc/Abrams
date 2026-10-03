@@ -39,8 +39,8 @@ def build(root=ROOT):
   'donor':{'path':str(donor.relative_to(root)),'sha256':sha(donor),'matched_motif_rects':matches,
            'basis':'All 25 source motif pixels match grayscale palette roles; geometry shared with Genesis commander'},
   'guard_rects':RECTS,'border_rgb_sha256':hashlib.sha256(border_bytes(im)).hexdigest(),'content_rect':[10,10,300,166],
-  'rivets':rivets,'render_rect':[0,0,320,187],'preserved_footer':[0,187,320,13],
-  'scope':'Analytic original-shaped bevel/green rule/Genesis-shared fasteners. Original content and lower patterned strip remain untouched.'}
+  'rivets':rivets,'render_rect':[0,0,320,200],'rebuilt_footer':[0,187,320,13],
+  'scope':'Analytic original-shaped bevel/green rule/Genesis-shared fasteners and a rebuilt matte-metal footer, applied only when the complete border, footer included, matches border_rgb_sha256. The original content rect remains untouched.'}
 if __name__=='__main__':
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,default=ROOT/'local-art/pc-map-frame-v1/frame.json');a=p.parse_args();d=build()
  a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(d,indent=2)+'\n');print(sha(a.output))

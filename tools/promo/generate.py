@@ -10,7 +10,6 @@ import subprocess
 import time
 import wave
 from pathlib import Path
-from urllib.parse import urlparse
 
 import requests
 
@@ -71,12 +70,31 @@ def receipt(out, action, metadata, media=None):
     (out / (action+"-receipt.json")).write_text(json.dumps(metadata,indent=2)+"\n")
 
 
-def download(url, target):
-    if urlparse(url).scheme != "https":
-        raise RuntimeError("Media download requires HTTPS")
-    r=requests.get(url,timeout=180)
-    r.raise_for_status()
-    target.write_bytes(r.content)
+def free_get(path, deadline):
+    """Free status/content GET. Retries only transient faults, never past deadline."""
+    delay=5
+    while True:
+        try:
+            response=requests.request("GET",BASE+path,headers={"Authorization":"Bearer "+secret("openrouter")},timeout=600,allow_redirects=False)
+            if response.status_code in (200, 201, 202):
+                return response
+            if response.status_code < 500 and response.status_code != 429:
+                raise RuntimeError(f"OpenRouter GET {path}: HTTP {response.status_code}: {response.text[:1000]}")
+            fault=f"HTTP {response.status_code}"
+        except (requests.ConnectionError, requests.Timeout) as error:
+            fault=type(error).__name__
+        if time.monotonic()+delay > deadline:
+            raise RuntimeError(f"OpenRouter GET {path} still failing ({fault}) at the deadline; the job ID is retained for recover-<action>.")
+        time.sleep(delay);delay=min(delay*2,60)
+
+
+def complete(out, action):
+    with (out/'paid-ledger.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        ledger_path=out/"paid-ledger.json";ledger=json.loads(ledger_path.read_text())
+        for item in ledger:
+            if item["action"]==action:item["state"]="completed"
+        ledger_path.write_text(json.dumps(ledger,indent=2)+"\n")
 
 
 def image(brief, out):
@@ -115,23 +133,36 @@ def video(brief,out,action):
     receipt(out,action,{'model':model,'prompt':prompt,'job_id':j.get('id'),'status':j.get('status'),'usage':j.get('usage')})
     if not j.get('id'):
         raise RuntimeError('Submission returned no recoverable job ID. Stop without retry.')
-    deadline=time.monotonic()+1800
+    finish_video(out,action,model,prompt,j)
+
+
+def finish_video(out,action,model,prompt,j):
+    job_id=j['id'];deadline=time.monotonic()+1800
     while j.get('status') not in ('completed','succeeded','failed','cancelled','canceled'):
         if time.monotonic()>deadline:
-            raise RuntimeError('Job remains unresolved after thirty minutes; its ID is retained for recovery.')
+            raise RuntimeError(f'Job remains unresolved after thirty minutes; its ID is retained. Run recover-{action} later; it never resubmits.')
         time.sleep(30)
-        j=request('GET','/videos/'+j['id']).json()
-        receipt(out,action,{'model':model,'prompt':prompt,'job_id':j.get('id'),'status':j.get('status'),'usage':j.get('usage')})
+        j=free_get('/videos/'+job_id,deadline).json()
+        receipt(out,action,{'model':model,'prompt':prompt,'job_id':job_id,'status':j.get('status'),'usage':j.get('usage')})
     if j.get('status') not in ('completed','succeeded'):
         raise RuntimeError('Video generation ended with '+str(j.get('status')))
     target=out/'motion/media'/(action+'.mp4')
-    response=request('GET','/videos/'+j['id']+'/content?index=0')
+    response=free_get('/videos/'+job_id+'/content?index=0',time.monotonic()+600)
     if response.headers.get('content-type','').startswith('video/'):
         target.write_bytes(response.content)
     else:
-        raise RuntimeError('Completed job content was not video; recover the retained ID without resubmitting.')
-    receipt(out,action,{'model':model,'prompt':prompt,'job_id':j.get('id'),'status':j.get('status'),'usage':j.get('usage')},target)
+        raise RuntimeError(f'Completed job content was not video; run recover-{action} without resubmitting.')
+    receipt(out,action,{'model':model,'prompt':prompt,'job_id':job_id,'status':j.get('status'),'usage':j.get('usage')},target)
+    complete(out,action)
     print('VIDEO_COMPLETE',action,target)
+
+
+def recover_video(out,action):
+    """Resume polling/downloading an already submitted job. No budget, no POST."""
+    prior=json.loads((out/(action+'-receipt.json')).read_text())
+    if not prior.get('job_id'):
+        raise RuntimeError('Receipt holds no job ID; nothing to recover.')
+    finish_video(out,action,prior['model'],prior['prompt'],{'id':prior['job_id'],'status':None})
 
 
 def music(brief,out):
@@ -149,7 +180,7 @@ def music(brief,out):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['keyframe','narration','narration-name-fix','narration-pronunciation-v2','narration-pronunciation-v2-phonetic','veo-opening','seedance-exterior','music']);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['keyframe','narration','narration-name-fix','narration-pronunciation-v2','narration-pronunciation-v2-phonetic','veo-opening','seedance-exterior','recover-veo-opening','recover-seedance-exterior','music']);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
     out=args.output.resolve();brief=json.loads((ROOT/'tools/promo/brief.json').read_text())
     if args.action=='keyframe':image(brief,out)
     elif args.action=='narration':speech(brief,out)
@@ -162,6 +193,7 @@ def main():
         brief['narration_direction']='Same firm, clear, energetic Orus military-command promo delivery, mid-low warm register, steady brisk rhythm, approximately 180 words per minute. Nell specifies this pronunciation of the studio name: DYE-NAHH-MIX. First syllable DYE rhymes with eye. Middle syllable NAHH has the broad ah vowel of father, deliberately audible, not the weak uh sound. Final MIX has the short i vowel of mix and kicks, never max. Say the three syllables naturally as one name, DYE-NAHH-MIX. Read only the supplied sentence, no directions or phonetic spelling aloud.'
         speech(brief,out,args.action)
     elif args.action=='music':music(brief,out)
+    elif args.action.startswith('recover-'):recover_video(out,args.action.removeprefix('recover-'))
     else:video(brief,out,args.action)
 
 

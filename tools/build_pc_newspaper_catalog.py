@@ -7,11 +7,15 @@ A matched 72-row header never authorizes replacing any lower-page pixel.
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from PIL import Image
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.inspect_scenarios import decode_resource
 from tools.extract_pc_ui import screen_pixels
 from tools.extract_genesis_newspapers import ENTRIES, ROM_SHA
+from tools.source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 PINS = {'END.EXE':'82ab4efab14dfdfd6d9d0c6c8276e2c2187dbe4e6f8f09cc9fc0fa6267ad0c40'}
@@ -49,7 +53,7 @@ def build(root=ROOT):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
+    if inside_source(a.output, ROOT):
         p.error('output must remain outside original source directories')
     data=build();a.output.mkdir(parents=True,exist_ok=False)
     for e in data['entries']:

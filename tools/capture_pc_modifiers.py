@@ -11,11 +11,14 @@ try:
     from tools.pc_live_state import SimStateReader
     from tools.pc_session import PresentationSession
     from tools.inspect_scenarios import decode_resource
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_reference_core import PcReferenceCore
     from pc_live_state import SimStateReader
     from pc_session import PresentationSession
     from inspect_scenarios import decode_resource
+    from source_guard import inside_source
 ROOT=Path(__file__).resolve().parents[1]
 
 
@@ -24,7 +27,7 @@ def main():
     p.add_argument('--mode',choices=['baseline','trace'],required=True)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--compare',type=Path);args=p.parse_args()
-    if any(args.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')):
+    if inside_source(args.output,ROOT,('GAME','GENESIS')):
         p.error('output must be outside original source directories')
     args.output.mkdir(parents=True,exist_ok=False)
     manifest=json.loads((ROOT/'.runtime/pc-core/abrams-trace.json').read_text())

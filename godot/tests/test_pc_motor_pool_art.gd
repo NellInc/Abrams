@@ -103,7 +103,7 @@ func run() -> void:
 			var at := args.find(flag)+1
 			if at>=args.size(): check(false,"missing argument "+flag); finish(); return
 			if flag=="--output": output=args[at]
-			else: fixture=args[at]
+			else: fixture=args[at] if args[at].is_absolute_path() else root_path.path_join(args[at])
 	if native: check(DirAccess.make_dir_recursive_absolute(output)==OK,"output directory")
 	viewport=SubViewport.new();viewport.size=Vector2i(1280,800)
 	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(viewport)

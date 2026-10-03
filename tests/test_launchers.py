@@ -59,6 +59,33 @@ class LauncherTests(unittest.TestCase):
                                             check=True, text=True, capture_output=True)
                     self.assertEqual(json.loads(result.stdout), ['--path', str(root / 'godot'), *expected])
 
+    def test_missing_python_is_reported(self):
+        with tempfile.TemporaryDirectory(prefix='abrams launch ') as temp:
+            root = Path(temp)
+            (root / 'tools').mkdir()
+            (root / '.runtime/pc-core').mkdir(parents=True)
+            for name in ['PC Bridge.command', 'tools/godot.sh']:
+                shutil.copy2(ROOT / name, root / name)
+            for name in ['abrams-ref.zip', 'abrams-trace.dylib', 'abrams-trace.json']:
+                (root / '.runtime/pc-core' / name).touch()
+            bin_dir = root / 'bin'
+            bin_dir.mkdir()
+            (bin_dir / 'dirname').symlink_to(shutil.which('dirname'))
+            result = subprocess.run(['/bin/sh', str(root / 'PC Bridge.command')], cwd='/',
+                                    env={'PATH': str(bin_dir), 'GODOT_BIN': '/nonexistent'},
+                                    check=False, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 127)
+            self.assertIn('ABRAMS_PYTHON', result.stderr)
+            self.assertIn('docs/pc-live-bridge.md', result.stderr)
+
+    def test_shipped_launchers_carry_no_machine_paths(self):
+        source = json.loads((ROOT / 'tools/package/allowlist.json').read_text())['source']
+        launchers = [name for name in source if name.endswith(('.command', '.sh'))]
+        self.assertIn('tools/godot.sh', launchers)
+        for name in launchers:
+            with self.subTest(launcher=name):
+                self.assertNotIn('/Users/', (ROOT / name).read_text())
+
 
 if __name__ == '__main__':
     unittest.main()

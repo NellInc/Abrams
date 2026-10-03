@@ -8,7 +8,8 @@ from pathlib import Path
 try:
     from tools.pc_readiness import ReadinessBark
     from tools.verify_pc_audio_trace import verify as verify_audio
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_readiness import ReadinessBark
     from verify_pc_audio_trace import verify as verify_audio
 

@@ -8,6 +8,9 @@ import hashlib
 import json
 from pathlib import Path
 from PIL import Image
+import sys
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.build_pc_frontend_catalog import PALETTE
 from tools.capture_pc_session import INFORMATION_PAGES
 from tools.extract_pc_portraits import verify_loaded

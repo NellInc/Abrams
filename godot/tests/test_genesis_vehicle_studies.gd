@@ -41,8 +41,12 @@ func run() -> void:
 		quit(1)
 		return
 	var manifest: Dictionary = parsed
+	# Older manifests record an absolute checkout path; hashes below still authenticate the fallback.
+	var source_dir := str(manifest.get("source",""))
+	if source_dir.is_relative_path(): source_dir=directory.path_join(source_dir)
+	if not DirAccess.dir_exists_absolute(source_dir): source_dir=directory.path_join("reference/genesis/models-source-v2")
 	check(manifest.rom_sha256=="ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea","Genesis source fingerprint")
-	check(FileAccess.get_sha256(manifest.source.path_join("catalog.json"))==manifest.source_catalog_sha256,"source catalog unchanged")
+	check(FileAccess.get_sha256(source_dir.path_join("catalog.json"))==manifest.source_catalog_sha256,"source catalog unchanged")
 	DirAccess.make_dir_recursive_absolute(output)
 	var viewport := SubViewport.new()
 	viewport.size=Vector2i(1280,800)
@@ -73,9 +77,13 @@ func run() -> void:
 		indices.append(int(entry.index))
 		var path: String = assets.path_join(entry.glb)
 		check(FileAccess.get_sha256(path)==entry.glb_sha256,"GLB hash: "+entry.glb)
-		var source_path: String = manifest.source.path_join("shape-%03d.json"%int(entry.index))
+		var source_path: String = source_dir.path_join("shape-%03d.json"%int(entry.index))
 		check(FileAccess.get_sha256(source_path)==entry.source_model_sha256,"model source unchanged")
-		var source: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(source_path))
+		var source_parsed = JSON.parse_string(FileAccess.get_file_as_string(source_path))
+		var source_ok: bool = source_parsed is Dictionary and source_parsed.get("poses") is Array and not source_parsed.poses.is_empty()
+		check(source_ok,"model source parses: "+source_path)
+		if not source_ok: continue
+		var source: Dictionary = source_parsed
 		var minimum := Vector3(INF,INF,INF)
 		var maximum := Vector3(-INF,-INF,-INF)
 		for primitive in source.poses[0].polygons+source.poses[0].lines:

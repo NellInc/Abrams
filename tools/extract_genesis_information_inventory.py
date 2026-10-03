@@ -4,9 +4,12 @@
 Decoding executes the untouched original ROM routine in isolated private RAM.
 Map previews use diagnostic grayscale, not a claim about the live palette.
 """
-import argparse,hashlib,json,struct
+import argparse,hashlib,json,struct,sys
 from pathlib import Path
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.extract_genesis_newspapers import ROOT,ROM_SHA
+from tools.source_guard import inside_source
 
 def chain(rom,start,stop,kind):
     items=[];at=start
@@ -65,7 +68,9 @@ def render(out,report,rom):
     sheet.save(out/'map-candidate-contact-sheet.png')
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);p.add_argument('--render',action='store_true');a=p.parse_args();rom=(ROOT/'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').read_bytes()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);p.add_argument('--render',action='store_true');a=p.parse_args()
+    if inside_source(a.output, ROOT):p.error('output must be outside original source directories')
+    rom=(ROOT/'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').read_bytes()
     if hashlib.sha256(rom).hexdigest()!=ROM_SHA:raise ValueError('ROM differs')
     if a.render:
         report=json.loads((a.output/'inventory.json').read_text());render(a.output,report,rom)

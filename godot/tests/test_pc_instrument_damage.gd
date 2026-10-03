@@ -19,9 +19,14 @@ func run() -> void:
 	var directory := repo.path_join("artifacts/finish-20260928/status-damage-oracle-02")
 	var ui := Image.create_empty(320,200,false,Image.FORMAT_L8)
 	ui.fill(Color.WHITE)
+	var oracle_ok := true
 	for bits in 32:
 		var source := Image.load_from_file(directory.path_join("state-%02d.png"%bits))
 		var tags := Image.load_from_file(directory.path_join("tags-%02d.png"%bits))
+		# Missing local oracle images must fail promptly, not abort run() before quit().
+		oracle_ok = source!=null and tags!=null and source.get_size()==Vector2i(320,200) and tags.get_size()==Vector2i(320,200)
+		check(oracle_ok,"status-damage oracle state-%02d available"%bits)
+		if not oracle_ok: break
 		var plates := {}
 		for id in Frame.COCKPIT_SOURCES:
 			plates[str(id)]={"source":Frame.COCKPIT_SOURCES[id][0],"source_sha256":Frame.COCKPIT_SOURCES[id][1]}
@@ -51,7 +56,7 @@ func run() -> void:
 		check(art.state==-1,"no stale state %d"%bits)
 	frame.queue_free()
 	var args := OS.get_cmdline_user_args()
-	if "--native" in args:
+	if "--native" in args and oracle_ok:
 		await native(art,directory,args[args.find("--output")+1])
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_INSTRUMENT_DAMAGE: %d checks, %d errors"%[checks,errors.size()])

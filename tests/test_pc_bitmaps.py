@@ -4,6 +4,8 @@ from pathlib import Path
 from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap
 from tools.inspect_scenarios import decode_resource
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 class BitmapTests(unittest.TestCase):
     def test_nibbles_and_separate_dimension_arrays(self):
@@ -27,8 +29,9 @@ class BitmapTests(unittest.TestCase):
         struct.pack_into('<H', ram, 104, 5)
         with self.assertRaisesRegex(ValueError, 'layout'): read_ega_bitmap(ram, 0, 100)
 
+    @unittest.skipUnless((ROOT / 'GAME/EFFECTS.BMP').is_file(), 'Requires separately supplied original PC files')
     def test_entire_supplied_effects_resource(self):
-        images = decode_bitmaps(decode_resource(Path('GAME/EFFECTS.BMP').read_bytes()))
+        images = decode_bitmaps(decode_resource((ROOT / 'GAME/EFFECTS.BMP').read_bytes()))
         self.assertEqual(len(images), 64)
         self.assertEqual([(p['width'], p['height']) for p in images[51:54]], [(8, 7), (16, 7), (16, 8)])
 

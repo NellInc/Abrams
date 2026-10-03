@@ -13,7 +13,8 @@ try:
     from tools.unpack_pc_executables import unpack
     from tools.pc_live_state import active_program
     from tools.pc_vehicle_math import primitive_camera_vertices
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from inspect_scenarios import decode_resource
     from inspect_shapes import inspect_shapes, primitive_vertices
     from unpack_pc_executables import unpack
@@ -29,6 +30,23 @@ MENU_PREVIEW = (10, 22, 300, 154)
 START_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
                  [255,85,85],[170,85,0],[0,170,0],[85,255,85],[255,255,85],[0,0,0],
                  [255,85,85],[255,85,255],[255,255,85],[255,255,255]]
+
+def exposed_matches(raw,pixels,palette,preview,cursor,covered):
+    """Every uncovered preview pixel equals the completed page through the palette."""
+    rgb=[bytes((p[2],p[1],p[0])) for p in palette]
+    # BGRA bytes 0/1/2 against per-channel translate tables; whole rows at a time.
+    tables=[bytes(p[c] for p in palette).ljust(256,b'\0') for c in (2,1,0)]
+    x,y,w,h=preview
+    cy,ch=(cursor['rect'][1],cursor['rect'][3]) if cursor else (0,0)
+    for yy in range(y,y+h):
+        a=yy*320+x;idx=bytes(pixels[a:a+w])
+        if len(idx)!=w or max(idx)>=len(palette):return False
+        if cy<=yy<cy+ch:
+            if any(raw[i*4:i*4+3]!=rgb[pixels[i]] for i in range(a,a+w) if i not in covered):return False
+            continue
+        seg=bytes(raw[a*4:(a+w)*4])
+        if any(seg[c::4]!=idx.translate(tables[c]) for c in range(3)):return False
+    return True
 
 class FrontendScene:
     def __init__(self, directory):
@@ -155,12 +173,11 @@ class FrontendScene:
             import base64
             x,y,w,h=cursor['rect']
             covered={((y+i//w)*320+x+i%w) for i,c in enumerate(base64.b64decode(cursor['indices'])) if c}
-        rgb=[bytes((p[2],p[1],p[0])) for p in palette]
-        x,y,w,h=preview
         for drawing,pixels in reversed(self.completed):
             if not drawing['objects'] or drawing['background'] is None:continue
-            if any(raw[i*4:i*4+3]!=rgb[pixels[i]] for yy in range(y,y+h) for i in range(yy*320+x,yy*320+x+w) if i not in covered):continue
-            result=copy.deepcopy(drawing)
+            if not exposed_matches(raw,pixels,palette,preview,cursor,covered):continue
+            # Copy only the containers rewritten below; source geometry stays shared and read-only.
+            result=drawing|{'objects':[o|{'primitive_ids':list(o['primitive_ids']),'polygons':[dict(p) for p in o['polygons']]} for o in drawing['objects']]}
             result['frontend_view']=view
             result['preview_rect']=list(preview)
             for obj in result['objects']:

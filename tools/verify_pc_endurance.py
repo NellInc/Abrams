@@ -20,10 +20,13 @@ from PIL import Image
 
 try:
     from tools.verify_pc_save_states import Client, ROOT
-    from tools.capture_pc_session import scenario_steps, information_steps, INFORMATION_PAGES
-except ModuleNotFoundError:
+    from tools.capture_pc_session import scenario_steps, information_steps, INFORMATION_PAGES, no_sim_geometry
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from verify_pc_save_states import Client, ROOT
-    from capture_pc_session import scenario_steps, information_steps, INFORMATION_PAGES
+    from capture_pc_session import scenario_steps, information_steps, INFORMATION_PAGES, no_sim_geometry
+    from source_guard import inside_source
 
 
 def source_hashes():
@@ -122,7 +125,7 @@ def run(output):
         check(label+':complete-audit', audit.get('ram_bytes') == 655360 and audit.get('video_bytes') == 256000)
         program = (packet.get('program') or {}).get('name')
         if program != 'SIM':
-            check(label+':no-stale-simulation', packet.get('state') is None and not packet.get('presentation', {}).get('draw_pass'))
+            check(label+':no-stale-simulation', no_sim_geometry(packet))
         audio = packet.get('audio', {})
         check(label+':audio-boundary', all(event['frame'] <= audio['frame'] for event in audio.get('events', [])))
         stages.append({'label': label, 'sequence': packet['sequence'], 'program': program,
@@ -247,7 +250,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     target = args.output.resolve()
-    if any(target.is_relative_to(ROOT/name) for name in ('GAME', 'GENESIS')):
+    if inside_source(target, ROOT):
         parser.error('output must be outside original source directories')
     target.mkdir(parents=True, exist_ok=False)
     return run(target)

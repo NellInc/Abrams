@@ -12,6 +12,7 @@ import json
 import math
 from pathlib import Path
 from reportlab.pdfgen import canvas
+from reportlab import rl_config
 from reportlab.lib.colors import HexColor, Color
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfbase import pdfmetrics
@@ -23,6 +24,7 @@ ROOT=Path(__file__).resolve().parents[1]
 REF=ROOT/'docs/player-reference'
 PDF=ROOT/'output/pdf'
 ESC=html.escape
+rl_config.useA85=0  # binary streams: ASCII85 would add a quarter to every embedded image
 BG='#111a21'; INK='#17242b'; CREAM='#f4ead4'; MUTED='#bec7c8'; RED='#b84638'; GOLD='#e4b879'
 SHORTCUTS=[
  ('Quick save, slot 1','Cmd+S','Ctrl+Alt+S'),
@@ -182,14 +184,16 @@ def catalogue_html(data):
     for key,title in [('anti_tank_guided_weapons','Anti-tank guided weapons'),('ammunition_and_armament','Ammunition & armament'),('other_units_and_objectives','Other units & objectives')]:
         entries=''.join('<article data-search><header><h3>'+ESC(row['name'])+'</h3><span class="source">'+refs(row)+'</span></header><p>'+ESC(row['description'])+'</p>'+('<p>Range: '+ESC(str(row['range_m']))+' m</p>' if row.get('range_m') is not None else '')+'</article>' for row in data[key])
         extra.append('<section><h2>'+ESC(title)+'</h2>'+entries+'</section>')
-    body='<p class="print-link"><a href="field-guide.pdf">Printable scenario and vehicle catalogue (PDF)</a></p><div class="search"><label for="search">Find a scenario, vehicle or weapon</label><input id="search" type="search" placeholder="For example: Convoy, M113, sabot" autocomplete="off"><p id="count" role="status" aria-live="polite"></p></div><div id="content"><section id="scenarios"><h2>The eight scenarios</h2><p>'+ESC(data['training']['description'])+'</p><p>Choose your ammunition mix and governor in the Motor Pool. Each scenario pairs a NATO-style manual map with its extracted PC game-data map.</p>'+missions+'</section><section id="vehicles"><h2>Vehicle recognition</h2><p>Recognise friendly and enemy vehicles. Specifications and threat ratings follow the original game manual.</p><div class="grid">'+''.join(vehicles)+'</div></section>'+''.join(extra)+'<section><h2>Campaign and stations</h2><p>'+ESC(data['campaign']['description'])+'</p>'+''.join('<article><h3>'+ESC(row['name'])+(' · '+row['key'] if row['key'] else '')+'</h3><p>'+ESC(row['description'])+'</p><p class="source">'+refs(row)+'</p></article>' for row in data['stations'])+'</section></div><script>const q=document.getElementById("search"),rows=[...document.querySelectorAll("[data-search]")],count=document.getElementById("count");q.addEventListener("input",()=>{let shown=0;for(const row of rows){row.hidden=!row.textContent.toLowerCase().includes(q.value.toLowerCase().trim());if(!row.hidden)shown++}count.textContent=q.value ? shown+" matching entries" : ""});</script>'
+    body='<p class="print-link"><a href="field-guide.pdf">Printable scenario and vehicle catalogue (PDF)</a></p><div class="search"><label for="search">Find a scenario, vehicle or weapon</label><input id="search" type="search" placeholder="For example: Convoy, M113, sabot" autocomplete="off"><p id="count" role="status" aria-live="polite"></p></div><div id="content"><section id="scenarios"><h2>The eight scenarios</h2><p>'+ESC(data['training']['description'])+'</p><p>Choose your ammunition mix and governor in the Motor Pool. Each scenario pairs a NATO-style manual map with its extracted PC game-data map.</p>'+missions+'</section><section id="vehicles"><h2>Vehicle recognition</h2><p>Recognise friendly and enemy vehicles. Specifications and threat ratings follow the original game manual.</p><div class="grid">'+''.join(vehicles)+'</div></section>'+''.join(extra)+'<section><h2>Campaign and stations</h2><p>'+ESC(data['campaign']['description'])+'</p>'+''.join('<article data-search><h3>'+ESC(row['name'])+(' · '+row['key'] if row['key'] else '')+'</h3><p>'+ESC(row['description'])+'</p><p class="source">'+refs(row)+'</p></article>' for row in data['stations'])+'</section></div><script>const q=document.getElementById("search"),rows=[...document.querySelectorAll("[data-search]")],count=document.getElementById("count");q.addEventListener("input",()=>{let shown=0;for(const row of rows){row.hidden=!row.textContent.toLowerCase().includes(q.value.toLowerCase().trim());if(!row.hidden)shown++}count.textContent=q.value ? shown+(shown===1?" matching entry":" matching entries") : ""});</script>'
     return html_page('Scenarios & vehicles',body,'<a href="keyboard-controls.html">Keyboard controls</a><a href="#scenarios">Scenarios</a><a href="#vehicles">Vehicles</a>')
 
 
 class Book:
-    def __init__(self,path,title,page_size=A4):
+    def __init__(self,path,title,page_size=A4,doc_title=None):
         self.c=canvas.Canvas(str(path),pagesize=page_size,pageCompression=1)
-        self.c.setTitle(title);self.c.setAuthor('Nell Watson / Abrams Fan Remaster')
+        self.c.setTitle(doc_title or title);self.c.setAuthor('Nell Watson / Abrams Fan Remaster')
+        self.c.setSubject('Player reference for the fan remaster of Dynamix’s Abrams Battle Tank')
+        self.c.setKeywords('Abrams Battle Tank, Dynamix, M1 Abrams, tank simulator, MS-DOS, fan remaster');self.c.setCreator('Abrams Fan Remaster')
         self.w,self.h=page_size;self.page_size=page_size;self.number=0;self.title=title
         self.style=ParagraphStyle('body',fontName='Helvetica',fontSize=10,leading=14,textColor=HexColor(INK))
     def page(self,heading,page_size=None):
@@ -228,7 +232,7 @@ def key_rows(b, rows, x, y, width, key_width=92):
 
 
 def keyboard_pdf(data):
-    b=Book(PDF/'keyboard-controls.pdf','Keyboard controls',landscape(A4))
+    b=Book(PDF/'keyboard-controls.pdf','Keyboard controls',landscape(A4),'M1 Abrams Battle Tank Fan Remaster – Keyboard Controls')
     b.page('Keyboard controls')
     top=b.h-125
     groups=[
@@ -308,15 +312,24 @@ def pdf_image(b,file,x,y,width,height):
                 b.c.line(float(a['x1']),ih-float(a['y1']),float(a['x2']),ih-float(a['y2']))
         b.c.restoreState()
         return y-height
+    # Rasters are opaque RGB, capped at 300 dpi of their printed size; ReportLab passes
+    # JPEG through as DCTDecode, keeping the guide a few MB instead of tens of MB of Flate RGB.
+    from io import BytesIO
+    from PIL import Image
     from reportlab.lib.utils import ImageReader
-    im=ImageReader(str(REF/file));iw,ih=im.getSize();scale=min(width/iw,height/ih)
-    w,h=iw*scale,ih*scale
-    b.c.drawImage(im,x+(width-w)/2,y-h,w,h,mask='auto')
+    buffer=BytesIO()
+    with Image.open(REF/file) as source:
+        iw,ih=source.size;scale=min(width/iw,height/ih);w,h=iw*scale,ih*scale
+        image=source.convert('RGB');limit=round(w*300/72)
+        if iw>limit*1.05:image=image.resize((limit,round(ih*limit/iw)),Image.LANCZOS)
+        image.save(buffer,'JPEG',quality=90,optimize=True,subsampling=0)
+    buffer.seek(0)
+    b.c.drawImage(ImageReader(buffer),x+(width-w)/2,y-h,w,h)
     return y-height
 
 
 def field_pdf(data,catalog,shapes):
-    b=Book(PDF/'field-guide.pdf','Scenarios & vehicles');b.page('Scenarios & vehicles')
+    b=Book(PDF/'field-guide.pdf','Scenarios & vehicles',doc_title='M1 Abrams Battle Tank Fan Remaster – Field Guide: Scenarios & Vehicles');b.page('Scenarios & vehicles')
     y=b.h-135
     y=b.heading('Eight missions. Know your crew and your targets.',32,y,23)
     y=b.para('A remastered companion to the original DOS manual: scenario objectives, vehicle recognition, ammunition and anti-tank threats. The original simulation remains the authority during play.',32,y-12,b.w-64,12)
@@ -427,27 +440,31 @@ def native_maps():
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--render-maps',action='store_true',help='Regenerate native map PNGs when the terrain SVGs change (requires Poppler).')
-    parser.add_argument('--field-guide-only',action='store_true',help='Update the field-guide HTML/PDF while preserving controls and existing model studies.')
+    parser.add_argument('--field-guide-only',action='store_true',help='Update the field-guide HTML/PDF and keyboard HTML, keeping the keyboard PDF and existing model studies; requires an unchanged Modern catalogue.')
     args=parser.parse_args()
     REF.mkdir(parents=True,exist_ok=True);PDF.mkdir(parents=True,exist_ok=True)
     data=json.loads((REF/'manual-content.json').read_text())
     assert len(data['missions'])==8 and len(data['vehicles'])==16
     assert next(v for v in data['vehicles'] if v['name']=='M113')['allegiance']=='FRIENDLY'
     pdfmetrics.registerFont(TTFont('Barlow',str(ROOT/'godot/assets/fonts/BarlowCondensed-SemiBold.ttf')))
-    if args.field_guide_only:
-        catalog=json.loads((ROOT/'local-art/pc-modern/catalog.json').read_text())
-        shapes=model_shapes(catalog)
-    else:
-        catalog,shapes=illustrations(data)
-        (REF/'keyboard-controls.html').write_text(controls_html(data),encoding='utf-8')
-        keyboard_pdf(data)
-    (REF/'field-guide.html').write_text(catalogue_html(data),encoding='utf-8')
-    field_pdf(data,catalog,shapes)
+    # Preflight before any reference file is rewritten, so a failure never leaves a half-updated set.
     if args.render_maps:native_maps()
     else:
         for row in json.loads((REF/'visuals.json').read_text())['maps']:
             if not (REF/row.get('native_file','')).is_file():
                 raise RuntimeError('Native terrain map PNG missing; run with --render-maps')
+    if args.field_guide_only:
+        # PDF studies must match the kept SVG studies, which were built from the catalogue recorded here.
+        raw=(ROOT/'local-art/pc-modern/catalog.json').read_bytes()
+        built=json.loads((REF/'illustrations.json').read_text()).get('catalog_sha256') if (REF/'illustrations.json').is_file() else None
+        if built!=hashlib.sha256(raw).hexdigest():raise SystemExit('Modern catalogue changed since the model studies were built; rerun without --field-guide-only')
+        catalog=json.loads(raw);shapes=model_shapes(catalog)
+    else:
+        catalog,shapes=illustrations(data)
+        keyboard_pdf(data)
+    (REF/'keyboard-controls.html').write_text(controls_html(data),encoding='utf-8')
+    (REF/'field-guide.html').write_text(catalogue_html(data),encoding='utf-8')
+    field_pdf(data,catalog,shapes)
     import shutil
     outputs=['field-guide.pdf'] if args.field_guide_only else ['keyboard-controls.pdf','field-guide.pdf']
     for name in outputs:shutil.copyfile(PDF/name,REF/name)

@@ -51,7 +51,8 @@ class VehicleArtSourceTests(unittest.TestCase):
                 self.assertEqual(len(vertices), 6)
                 self.assertEqual(len({v[0] for v in vertices}), 1)
 
-    @unittest.skipUnless((ROOT / 'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').exists(), 'Local Genesis source required')
+    @unittest.skipUnless((ROOT / 'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').exists()
+                         and (ROOT / 'GAME/SHAPE.TBL').exists(), 'Local PC and Genesis sources required')
     def test_each_face_matches_genesis_program(self):
         catalog = decode_models((ROOT / 'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').read_bytes())
         result = compare_pc(catalog['models'], ROOT / 'GAME/SHAPE.TBL')
@@ -84,7 +85,11 @@ class VehicleArtSourceTests(unittest.TestCase):
                         for p in shapes[index]['primitives'] if p['prefix_bytes'][2] == 3
                         and len(primitive_vertices(shapes[index], p)) != 6}
             self.assertEqual(faces, expected)
+
+    @unittest.skipUnless((ROOT / 'reference/genesis/extracted/gunner/palette.gpl').exists(), 'Native Genesis gunner palette capture required')
+    def test_genesis_dark_matches_native_palette_capture(self):
         palette = (ROOT / 'reference/genesis/extracted/gunner/palette.gpl').read_text()
+        self.assertEqual(constant('GENESIS_DARK', r'\n'), [65, 68, 65])
         self.assertRegex(palette, r'65\s+68\s+65\s+Index 51\b')
 
 

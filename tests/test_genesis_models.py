@@ -81,6 +81,7 @@ class LocalGenesisModelTests(unittest.TestCase):
                 self.assertTrue(set(c['successors']) <= boundaries)
                 self.assertEqual(bytes.fromhex(c['hex']), self.rom[c['offset']:c['end']])
 
+    @unittest.skipUnless((ROOT / 'GAME/SHAPE.TBL').exists(), 'Requires local original PC shapes')
     def test_pc_topology_and_material_correspondence_is_bounded(self):
         report = compare_pc(self.catalog['models'], ROOT / 'GAME/SHAPE.TBL')
         self.assertEqual(report['source_sha256'], '81cf10917d8647e8ac187e49887494992828277333f17d6c1926e59581f0a193')

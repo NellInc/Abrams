@@ -1,15 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://abramsremastered.com/</loc>
-    <lastmod>2026-10-02</lastmod>
+    <lastmod>2026-10-03</lastmod>
     <video:video>
-      <video:thumbnail_loc>https://abramsremastered.com/assets/images/trailer-poster.jpg?v=0e7827a20d6c</video:thumbnail_loc>
+      <video:thumbnail_loc>https://abramsremastered.com/assets/images/trailer-poster.jpg?v=23882e13ac7d</video:thumbnail_loc>
       <video:title>M1 Abrams Battle Tank Fan Remaster trailer</video:title>
-      <video:description>A one-minute look at the restored artwork, crew voices and tandem PC simulation.</video:description>
+      <video:description>A one-minute project trailer showing restored artwork, crew voices, graphics modes and the original PC simulation running in tandem with Godot.</video:description>
       <video:content_loc>https://abramsremastered.com/assets/video/abrams-fan-remaster-trailer.mp4?v=0e7827a20d6c</video:content_loc>
       <video:duration>60</video:duration>
       <video:publication_date>2026-10-02</video:publication_date>
     </video:video>
+    <image:image><image:loc>https://abramsremastered.com/assets/images/abrams-cover-remastered.webp?v=centred-1</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/maps/manual-map-the-mossel-defense.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/maps/manual-map-siegen-infiltration.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/maps/manual-map-nuremberg-highway.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/maps/manual-map-mass-destruction.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/maps/manual-map-the-road-to-bonn.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/maps/manual-map-hannover-push.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/maps/manual-map-convoy.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/maps/manual-map-the-mossel-intercept.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/images/colonel-ega.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/images/colonel-genesis.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/images/colonel-upscaled.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/images/gunner-upscaled.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/images/modern-cupola.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/images/modern-driver.webp</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://abramsremastered.com/assets/guides/field-guide.pdf</loc>
+    <lastmod>2026-10-03</lastmod>
+  </url>
+  <url>
+    <loc>https://abramsremastered.com/assets/guides/keyboard-controls.pdf</loc>
+    <lastmod>2026-10-03</lastmod>
   </url>
 </urlset>

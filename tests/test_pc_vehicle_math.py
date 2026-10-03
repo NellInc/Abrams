@@ -43,5 +43,19 @@ class VehicleMathTests(unittest.TestCase):
         context['static_path'] = 1
         self.assertEqual(primitive_camera_vertices(shape, primitive, context), [[-246,2000,286]])
 
+    def test_rotated_static_and_dynamic_paths_translate_in_their_own_order(self):
+        # Non-identity yaw, distinct deltas and shifts: the identity case above cannot tell the orders apart.
+        yaw = [0,16384,0,-16384,0,0,0,0,16384]
+        shape = {'vectors_i16le': [[0,8,16]], 'header_byte_2': 3}
+        primitive = {'encoded_indices': [128]}
+        context = {'static_path': 0, 'matrix': yaw, 'matrix_mode': 1,
+                   'packed_shift': 2, 'view_origin': [10,20,30], 'world_delta': [100,200,300]}
+        dynamic = primitive_camera_vertices(shape, primitive, context)
+        self.assertEqual(dynamic, [[10,-492,542]])
+        context['static_path'] = 1
+        static = primitive_camera_vertices(shape, primitive, context)
+        self.assertEqual(static, [[-200,-156,556]])
+        self.assertNotEqual(dynamic, static)
+
 
 if __name__ == '__main__': unittest.main()

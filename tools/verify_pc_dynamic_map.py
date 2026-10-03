@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Original keyboard-only map route, independently compared trace and baseline."""
+"""Original keyboard-only map route: run it once per core (--mode), then --compare the trace and baseline reports."""
 import argparse,hashlib,json
 from pathlib import Path
 from pc_reference_core import PcReferenceCore
@@ -36,5 +36,25 @@ def run(mode,state,out):
   core.pause_at_frame_end()
   if mode=='trace':collector.detach(core)
   core.close()
+def verify(trace_path,baseline_path,manifest_path=ROOT/'.runtime/pc-core/abrams-trace.json'):
+ # Parity is only evidence when both runs saw identical guest RAM, video and input on the pinned cores.
+ trace=json.loads(Path(trace_path).read_text());baseline=json.loads(Path(baseline_path).read_text())
+ manifest=json.loads(Path(manifest_path).read_text()) if Path(manifest_path).is_file() else {}
+ observer=trace.get('observer',{})
+ checks={'modes_correct':trace.get('mode')=='trace' and baseline.get('mode')=='baseline',
+  'all_RAM_video_input_frames_equal':trace.get('frames')==baseline.get('frames') and len(trace.get('frames',[]))==sum(count for _,count,_ in STEPS),
+  'all_stage_states_equal':trace.get('stages')==baseline.get('stages') and set(trace.get('stages',{}))=={stage for stage,_,_ in STEPS},
+  'core_pins_distinct_and_match_receipt':trace.get('core_sha256')!=baseline.get('core_sha256') and
+   trace.get('core_sha256')==manifest.get('trace_sha256') and baseline.get('core_sha256')==manifest.get('baseline_sha256'),
+  'new_trace_header':trace.get('trace_header_sha256')==baseline.get('trace_header_sha256')==manifest.get('trace_header_sha256'),
+  'both_map_modes_observed':{p['mode'] for p in trace.get('packets',[])}=={0,1},
+  'occluded_or_stale_frames_rejected':observer.get('presented',0)>0 and observer.get('frame_mismatch',0)>0}
+ return {'checks':checks,'frames':len(trace.get('frames',[])),'observer':observer,
+  'trace_sha256':trace.get('core_sha256'),'baseline_sha256':baseline.get('core_sha256'),'trace_header_sha256':trace.get('trace_header_sha256')}
 if __name__=='__main__':
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--mode',choices=['trace','baseline'],required=True);p.add_argument('--state',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False);r=run(a.mode,a.state,a.output);print(json.dumps({'frames':len(r['frames']),'observer':r['observer'],'packet_modes':sorted(set(p['mode'] for p in r['packets']))}))
+ p=argparse.ArgumentParser(description=__doc__);g=p.add_mutually_exclusive_group(required=True);g.add_argument('--mode',choices=['trace','baseline']);g.add_argument('--compare',nargs=2,type=Path,metavar=('TRACE','BASELINE'))
+ p.add_argument('--state',type=Path);p.add_argument('--output',type=Path);p.add_argument('--manifest',type=Path,default=ROOT/'.runtime/pc-core/abrams-trace.json');a=p.parse_args()
+ if a.compare:
+  r=verify(*a.compare,a.manifest);print(json.dumps(r,indent=2));raise SystemExit(0 if all(r['checks'].values()) else 1)
+ if not a.state or not a.output:p.error('--mode needs --state and --output')
+ a.output.mkdir(parents=True,exist_ok=False);r=run(a.mode,a.state,a.output);print(json.dumps({'frames':len(r['frames']),'observer':r['observer'],'packet_modes':sorted(set(p['mode'] for p in r['packets']))}))

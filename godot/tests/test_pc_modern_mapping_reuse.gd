@@ -15,6 +15,11 @@ var frame := {"clip":[0,0,319,199],"center":[160,100],"focal_pixels":192,"near_r
 var started := Time.get_ticks_msec()
 
 func _initialize() -> void: run.call_deferred()
+# run() is synchronous, so --quit-after cannot stop it; every phase polls this.
+func over_deadline() -> bool:
+	if Time.get_ticks_msec()-started<=NUMERICAL_DEADLINE_MSEC: return false
+	printerr("FAIL: numerical deadline; elapsed_msec=",Time.get_ticks_msec()-started," checks=",checks," facets=",compared_facets);quit(2)
+	return true
 func check(ok: bool, message: String) -> void:
 	checks += 1
 	if not ok and failures.size()<20: failures.append(message)
@@ -60,8 +65,7 @@ func run() -> void:
 					for phase in [NAN,0.0,37.25,-1234.5]:
 						compare(art,object,polygon,frame,Modern.PC_PALETTE,gate,phase)
 				if mode==0 and face.triangles.size()>50: cases.append([object,polygon,frame,NAN])
-			if Time.get_ticks_msec()-started>NUMERICAL_DEADLINE_MSEC:
-				printerr("FAIL: numerical deadline; elapsed_msec=",Time.get_ticks_msec()-started," checks=",checks," facets=",compared_facets);quit(2);return
+			if over_deadline(): return
 	# Independently rounded original camera anchors and actual source packet palettes.
 	var path := directory.path_join("artifacts/pc-sprite-controls-02/report.json")
 	check(FileAccess.file_exists(path),"paired replay fixture missing")
@@ -74,6 +78,7 @@ func run() -> void:
 				for polygon: Dictionary in object.get("polygons",[]):
 					for gate in [false,true]: compare(art,object,polygon,packet.camera,packet.palette_rgb,gate,phase)
 					if not art.mapping(object,polygon,packet.camera,packet.palette_rgb,false,phase).is_empty(): replay_cases.append([object,polygon,packet.camera,phase])
+			if over_deadline(): return
 	var diagnostic_path := directory.path_join("artifacts/performance-60fps-20260929/optimized-canvas/diagnostic-draws.json")
 	if FileAccess.file_exists(diagnostic_path):
 		var diagnostic: Array = JSON.parse_string(FileAccess.get_file_as_string(diagnostic_path))
@@ -83,6 +88,7 @@ func run() -> void:
 				for polygon: Dictionary in object.get("polygons",[]):
 					for gate in [false,true]: compare(art,object,polygon,packet.camera,packet.palette_rgb,gate,phase)
 					if not art.mapping(object,polygon,packet.camera,packet.palette_rgb,false,phase).is_empty(): diagnostic_cases.append([object,polygon,packet.camera,phase])
+			if over_deadline(): return
 	# Explicit piecewise interpolation, >2-unit rejection and palette/identity gates.
 	var synthetic := {"schema":1,"models":[{"shape_index":115,"roots":[{"offset":1,"group_pointers":[2]}],"groups":[{"offset":2,"primitive_pointers":[10]}],"source_primitives":{"10":[[-40,0,-20],[40,0,-20],[40,0,20],[-40,0,20]]},"triangles":[{"source_primitive":10,"vertices":[[-40,-4,-20],[40,-4,-20],[40,-4,20]],"color":[90,110,70]},{"source_primitive":10,"vertices":[[-40,-4,-20],[40,-4,20],[-40,-4,20]],"color":[90,110,70]}]}]}
 	var probe = Modern.new()
@@ -129,6 +135,7 @@ func run() -> void:
 				else: oracle_mapping(art,sample[0],sample[1],sample[2],Modern.PC_PALETTE,false,sample[3])
 			pair["optimized_ms" if optimized else "before_ms"]=(Time.get_ticks_usec()-begin)/1000.0
 		if round_index>0: timings.append(pair)
+		if over_deadline(): return
 	var replay_timings: Array = []
 	for round_index in 7:
 		var pair := {}
@@ -139,6 +146,7 @@ func run() -> void:
 				else: oracle_mapping(art,sample[0],sample[1],sample[2],Modern.PC_PALETTE,false,sample[3])
 			pair["optimized_ms" if optimized else "before_ms"]=(Time.get_ticks_usec()-begin)/1000.0
 		if round_index>0: replay_timings.append(pair)
+		if over_deadline(): return
 	var diagnostic_timings: Array = []
 	for round_index in 7:
 		var pair := {}
@@ -150,10 +158,17 @@ func run() -> void:
 					else: oracle_mapping(art,sample[0],sample[1],sample[2],Modern.PC_PALETTE,false,sample[3])
 			pair["optimized_ms" if optimized else "before_ms"]=(Time.get_ticks_usec()-begin)/20000.0
 		if round_index>0: diagnostic_timings.append(pair)
+		if over_deadline(): return
 	var result := {"checks":checks,"failures":failures,"position_cache_hits":art.position_cache_hits,"position_cache_misses":art.position_cache_misses,"compared_facets":compared_facets,"source_corners":source_corners,"unique_positions":unique_positions,"timing_case_count":cases.size(),"timings":timings,"diagnostic_case_count":diagnostic_cases.size(),"diagnostic_timings":diagnostic_timings,"replay_case_count":replay_cases.size(),"replay_timings":replay_timings,"elapsed_ms":Time.get_ticks_msec()-started}
-	var output := directory.path_join("artifacts/performance-60fps-20260929/mapping")
-	DirAccess.make_dir_recursive_absolute(output)
-	FileAccess.open(output.path_join("equivalence.json"),FileAccess.WRITE).store_string(JSON.stringify(result,"  "))
+	# The dated 2026-09-29 snapshot is evidence; write a report only where asked (-- --output <dir>).
+	var args := OS.get_cmdline_user_args()
+	var at := args.find("--output")+1
+	if at>0:
+		var output: String = args[at] if at<args.size() else ""
+		if not output.is_empty(): DirAccess.make_dir_recursive_absolute(output)
+		var file: FileAccess = FileAccess.open(output.path_join("equivalence.json"),FileAccess.WRITE) if not output.is_empty() else null
+		check(file!=null,"cannot write equivalence report: %s"%output)
+		if file: file.store_string(JSON.stringify(result,"  "))
 	for failure in failures: printerr("FAIL: "+failure)
 	print("PC_MODERN_MAPPING_REUSE: %s; %d checks; %d facets; %s"%["PASS" if failures.is_empty() else "FAIL",checks,compared_facets,JSON.stringify(timings)])
 	quit(0 if failures.is_empty() else 1)
@@ -196,7 +211,8 @@ func oracle_mapping(art, object: Dictionary, polygon: Dictionary, frame: Diction
 				# screen/world-space sliding or seams between owning source faces.
 				vertex.append_array([float(raw[1])+float(raw[0])*.45,float(raw[2])+float(raw[0])*.25])
 			elif kind>20.3:
-				vertex.append_array([float(raw[0]) if int(triangle.structure_axis)==1 else float(raw[1]),float(raw[2]) if kind<20.4 else float(raw[1])])
+				# Mirrors the F064 roof-grain fix in pc_modern_assets.gd: roofs (>=20.4) use both horizontal axes.
+				vertex.append_array([float(raw[0]) if int(triangle.structure_axis)==1 or kind>=20.4 else float(raw[1]),float(raw[2]) if kind<20.4 else float(raw[1])])
 			elif kind>20.2:
 				var center: Vector3=Modern.vec(motion.center)
 				var radius: float=float(motion.radius)

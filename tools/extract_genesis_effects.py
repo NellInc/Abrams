@@ -57,7 +57,8 @@ def export_effects(rom_path: Path, capture: Path, output: Path, palette_bank: in
     from PIL import Image, ImageDraw
     try:
         from tools.extract_genesis_vdp import VDP
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from extract_genesis_vdp import VDP
 
     rom = rom_path.read_bytes()
@@ -115,7 +116,12 @@ def main():
     parser.add_argument("--palette-bank", type=int, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    if args.output.resolve().is_relative_to((ROOT / "GENESIS").resolve()):
+    try:
+        from tools.source_guard import inside_source
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
+        from source_guard import inside_source
+    if inside_source(args.output, ROOT, ("GENESIS",)):
         parser.error("output must be outside GENESIS")
     manifest = export_effects(args.rom, args.capture, args.output, args.palette_bank)
     print(f"Extracted {len(manifest['images'])} original Genesis effects: {args.output}")

@@ -54,8 +54,12 @@ class GitBoundaryTests(unittest.TestCase):
 
     def test_oversized_blob(self):
         self.add('large.txt', b'x' * 33)
+        self.assertEqual(boundary.limit_text(), '50 MB')
         with patch.object(boundary, 'MAX_BYTES', 32):
-            self.assertIn(('large.txt', 'file exceeds 50 MB'), boundary.check(self.root, known_hashes=set()))
+            self.assertIn(('large.txt', 'file exceeds 32 bytes'), boundary.check(self.root, known_hashes=set()))
+        with patch.object(boundary, 'MAX_BYTES', 100_000_000):
+            self.assertEqual(boundary.inspect_blob(b'x' * 33, set()), None)
+            self.assertEqual(boundary.limit_text(), '100 MB')
 
     def test_deleted_historical_violation_is_still_rejected(self):
         self.add('GENESIS/old.md')

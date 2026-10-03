@@ -17,12 +17,15 @@ try:
     from tools.pc_session import PresentationSession
     from tools.pc_render_trace import Collector
     from tools.inspect_scenarios import decode_resource
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_reference_core import PcReferenceCore
     from pc_live_state import SimStateReader, active_program
     from pc_session import PresentationSession
     from pc_render_trace import Collector
     from inspect_scenarios import decode_resource
+    from source_guard import inside_source
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -53,7 +56,7 @@ def main():
     if not 1<=a.frames<=18000:p.error('frames must be 1..18000')
     if a.capture_window and not (a.capture_ui and 0<=a.capture_window[0]<=a.capture_window[1]<a.frames):
         p.error('capture-window requires capture-ui and 0 <= FIRST <= LAST < frames')
-    if any(a.output.resolve().is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
+    if inside_source(a.output,ROOT,('GAME','GENESIS')):
         p.error('output must be outside original sources')
     a.output.mkdir(parents=True,exist_ok=False)
     manifest=json.loads((ROOT/'.runtime/pc-core/abrams-trace.json').read_text())
@@ -94,9 +97,10 @@ def main():
                 unseen=set(new)-seen
                 if unseen:
                     filename=f'text-{i:05d}.png';core.screenshot().save(a.output/filename);item['image']=filename
-                    if a.capture_ui and view.get('ui_overlay',{}).get('mask_png'):
+                    mask=(view.get('ui_overlay') or {}).get('mask_png')
+                    if a.capture_ui and mask:
                         maskname=f'text-{i:05d}-mask.png'
-                        (a.output/maskname).write_bytes(base64.b64decode(view['ui_overlay']['mask_png'],validate=True))
+                        (a.output/maskname).write_bytes(base64.b64decode(mask,validate=True))
                         ui_presentations.append({'stage':f'dialogue-{i:05d}','frame_index':i,
                                                  'image':filename,'mask':maskname,'presentation':view})
                     if any(r['kind']=='crew_secondary' for r in runs):

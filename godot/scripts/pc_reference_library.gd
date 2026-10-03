@@ -10,6 +10,7 @@ var directory := ""
 var content: Dictionary = {}
 var visuals: Dictionary = {}
 var credits: Dictionary = {}
+var _textures := {} # Decoded illustrations for the current section, keyed by path.
 var section := "Controls"
 var search: LineEdit
 var body: VBoxContainer
@@ -88,10 +89,11 @@ func close_reader() -> void:
 	for child in body.get_children():
 		body.remove_child(child)
 		child.queue_free()
-	content.clear(); visuals.clear(); credits.clear()
+	content.clear(); visuals.clear(); credits.clear(); _textures.clear()
 	reader_changed.emit(false)
 
 func show_section(tab: String) -> void:
+	if tab!=section: _textures.clear() # Hold one section's illustrations at a time.
 	section=tab if tab in SECTIONS else "Controls"
 	if search==null:return
 	search.text=""
@@ -212,10 +214,15 @@ func _visuals(parent: Node, entry_name: String) -> void:
 			var file = entry.get("native_file",entry.get("file"))
 			var path := visual_path(str(file)) if file!=null else ""
 			if not path.is_empty():
-				var image := Image.load_from_file(path)
-				if image!=null and not image.is_empty():
+				var texture: Texture2D = _textures.get(path)
+				if texture==null:
+					var image := Image.load_from_file(path)
+					if image!=null and not image.is_empty():
+						texture=ImageTexture.create_from_image(image)
+						_textures[path]=texture
+				if texture!=null:
 					var picture := TextureRect.new()
-					picture.texture=ImageTexture.create_from_image(image)
+					picture.texture=texture
 					picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 					picture.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 					picture.custom_minimum_size=Vector2(0,420 if group in ["manual_maps","maps"] else 240)

@@ -7,13 +7,17 @@ and four cumulative flash poses. Credits retain exact source-shaped lettering.
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 from PIL import Image, ImageChops
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.inspect_scenarios import decode_resource
 from tools.extract_pc_ui import screen_pixels
 from tools.pc_bitmaps import decode_bitmaps
 from tools.pc_fonts import decode_font, text_pixels
+from tools.source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 PINS = {'START.EXE':'a6fd07ae3df4f61806852d92c0c50354b7f7afccee10da88710ef0bc3361ca6a',
@@ -124,7 +128,7 @@ def main():
     p.add_argument('--capture',type=Path,default=ROOT/'artifacts/pc-intro-trace-01')
     p.add_argument('--output',type=Path,required=True)
     args = p.parse_args()
-    if any(args.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ['GAME','GENESIS']):
+    if inside_source(args.output, ROOT, ('GAME','GENESIS')):
         p.error('output must be outside source directories')
     data = build(ROOT,args.capture)
     args.output.mkdir(parents=True,exist_ok=False)

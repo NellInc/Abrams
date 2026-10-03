@@ -109,9 +109,13 @@ python3 -m unittest tests.test_pc_dynamic_map tests.test_pc_render_trace
 The local live gate uses `tools/verify_pc_dynamic_map.py` separately in trace and
 baseline modes from the same source-baseline mission-entry checkpoint. Its
 455-frame keyboard route covers commander entry, both Z map toggles, station
-exit and commander return. The report binds RAM/video/input parity to the exact
-new core SHA. This short gate does not renew long endurance evidence obtained
-against an earlier core.
+exit and commander return. `--compare TRACE BASELINE` then checks the two
+reports: identical RAM/video/input frames and stage states, both map modes
+observed, and both core pins plus the trace header equal to the current
+`.runtime/pc-core/abrams-trace.json` receipt. It prints the parity JSON and exits
+non-zero on any mismatch, so evidence captured against an earlier core fails.
+This short gate does not renew long endurance evidence obtained against an
+earlier core.
 
 For complete paired-presentation integration, capture to
 `artifacts/finish-20260928/maps/live-integration` with the verifier above, then add

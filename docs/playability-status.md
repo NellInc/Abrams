@@ -12,7 +12,8 @@ draft with native macOS ARM64, Windows x86_64 and Linux x86_64 candidates.
 Windows/Linux native build, original-free core/checkpoint, frozen setup/About
 and package-integrity gates passed. Actual PC-game playback on those two
 platforms remains unverified. macOS is Developer ID signed; Apple notarization
-is pending. Alpha.2 remains available for rollback.
+was pending at that date. Alpha 4 for macOS has since been notarized and published
+(3 October 2026); alpha.2 remains available for rollback.
 
 Two newer local changes are awaiting rebuilt packages: exact text/bitmap CPU
 optimizations and the box-art startup splash. The splash paints before asset
@@ -30,7 +31,7 @@ The Apple Silicon macOS app bundles Godot and Python/Pillow. It requires the
 player's PC files, accepts Genesis optionally, and contains neither original
 game. Fresh PC-only launch, optional Genesis import, profile-preserving upgrades,
 checkpoint recovery and native fullscreen/focus/menu use have been exercised.
-The app is ad-hoc signed and remains local. The private GitHub repository contains
+The app is ad-hoc signed and remains local. The public GitHub repository contains
 source and selected gallery images; the latest application changes are still local.
 
 The packaged runtime completed 1,801 seconds of normal-speed SIM play, all four
@@ -183,7 +184,7 @@ See [packaging](packaging.md) and [rights review](release-rights.md).
   is in `graphics-coverage.md`. Modern geometry and its separate validation are documented in `modern-renderer.md` and `modern-asset-register.md`.
 * Intel Mac support, target-platform gameplay checks, Apple notarization and
   public community-release clearance. The Apple Silicon alpha and gallery are
-  distributed through the private [GitHub repository](https://github.com/NellInc/Abrams/releases).
+  distributed through the public [GitHub repository](https://github.com/NellInc/Abrams/releases).
 
 Each additional parity claim requires its own source comparison and runtime evidence.
 
@@ -193,7 +194,7 @@ Each additional parity claim requires its own source comparison and runtime evid
 Version 0.1.0-alpha.2 integrates Modern, all current first-person refinements,
 exact geometry/cockpit-proof performance reuse, and a native setup/About interface.
 The release requires separately imported PC files, with optional Genesis.
-Neither original game is bundled. The repository stays private.
+Neither original game is bundled. The repository was private at the time; it is now public.
 
 The corrected moving native route measured 38.77 fps before and 40.12 after,
 with identical requested inputs and final rendered output. All 32 station/scenario

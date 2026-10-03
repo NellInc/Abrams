@@ -13,9 +13,12 @@ from pathlib import Path
 try:
     from tools.inspect_scenarios import decode_resource
     from tools.pc_bitmaps import decode_bitmaps
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from inspect_scenarios import decode_resource
     from pc_bitmaps import decode_bitmaps
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_SHA256 = 'e769b71bee8a40023e6ffdb3ac0fd5db0a7485148c1d2eb3fd4fe3b1da6ffa42'
@@ -64,7 +67,7 @@ def main():
     parser.add_argument('--trace', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    if any(args.output.resolve().is_relative_to((ROOT / n).resolve()) for n in ('GAME', 'GENESIS')):
+    if inside_source(args.output, ROOT):
         parser.error('output must be outside original sources')
     ram = args.capture.read_bytes()
     trace = json.loads(args.trace.read_text())['render_passes'][0]

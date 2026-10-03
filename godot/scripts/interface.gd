@@ -10,6 +10,8 @@ var green := Color("c5e1ac")
 var panel := Color(0.055,0.076,0.062,0.94)
 var buttons: Array[Dictionary] = []
 var gradient_texture: GradientTexture2D
+var reload_seen := 0
+var reload_span := 0
 const STATIONS := ["GUNNER", "COMMANDER", "CUPOLA", "DRIVER"]
 const WEAPONS := ["HEAT", "SABOT", "AX", "M240"]
 const MISSIONS := [
@@ -153,7 +155,7 @@ func _manual() -> void:
 	for i in range(3):
 		text(Vector2(columns[i],280),labels[i],20,amber,true)
 		line(Vector2(columns[i],298),Vector2(columns[i]+410,298))
-	var station_lines := [["F1","Gunner: sight, target and fire"],["F2","Commander: survey the field"],["F3","Cupola: elevated observation"],["F4","Driver: low hull view"],["F7-F10","Scan original / 90 / 180 / 270"],["ESC","Pause and range settings"],["H","Show the controls overlay"]]
+	var station_lines := [["F1","Gunner: sight, target and fire"],["F2","Commander: survey the field"],["F3","Cupola: elevated observation"],["F4","Driver: low hull view"],["F7-F10","Commander scan: 0 / 90 / 180 / 270"],["ESC","Pause and range settings"],["H","Show the controls overlay"]]
 	var gun_lines := [["1 / 2 / 3","HEAT / SABOT / AX"],["M","Fire machine gun directly"],["ENTER","Select a target in the sight"],["L","Lock selected target"],["SPACE","Fire selected main round"],["A","Align turret with hull"],["Z / T","1x / 3x / 10x; thermal"]]
 	var system_lines := [["ARROWS","Drive or rotate turret"],["C","Hull / turret control"],["R","Radio report"],["S","Deploy smoke"],["D","Damage panel"],["F5","Sound on / off"],["Q","Open pause / return menu"]]
 	var groups := [station_lines,gun_lines,system_lines]
@@ -237,7 +239,8 @@ func _instruments() -> void:
 	text(Vector2(674,808),WEAPONS[sim.weapon],36,cream,true)
 	var ready: bool = (sim.mg_cooldown_ticks == 0) if sim.weapon == 3 else (sim.reload_ticks == 0)
 	text(Vector2(804,803),"READY" if ready else "LOADING",22,green if ready else amber,true)
-	var loaded := 1.0 - clampf(float(sim.reload_ticks)/240.0,0,1)
+	var main_loaded := reload_fraction(sim.reload_ticks)
+	var loaded := 1.0 - clampf(float(sim.mg_cooldown_ticks)/float(sim.rules.reload_ticks[3]),0,1) if sim.weapon == 3 else main_loaded
 	rect(Rect2(805,816,153,3),Color("3b4536"))
 	rect(Rect2(805,816,153*loaded,3),green)
 	text(Vector2(1028,766),"SYSTEMS",13,muted)
@@ -271,8 +274,16 @@ func _instruments() -> void:
 	elif sim.status != "active":
 		_debrief()
 
+# Loaded fraction of the main-gun reload in progress. A rise in reload ticks marks a new shot, whose length
+# is the span; weapon changes mid-reload therefore cannot mix up divisors (AX reloads 300 ticks, HEAT/SABOT 240).
+func reload_fraction(ticks: int) -> float:
+	if ticks > reload_seen or reload_span < ticks:
+		reload_span = ticks
+	reload_seen = ticks
+	return 1.0 - clampf(float(ticks)/float(maxi(reload_span,1)),0,1)
+
 func _compass() -> void:
-	var bearing: float = fposmod(-rad_to_deg(main.sim.turret),360.0)
+	var bearing: float = fposmod(-rad_to_deg(main.view_bearing()),360.0)
 	for i in range(-4,5):
 		var degrees := int(round(bearing/10.0))*10 + i*10
 		var x := 800.0+(degrees-bearing)*7
@@ -308,16 +319,30 @@ func _commander_map() -> void:
 	for i in range(9):
 		line(inner.position+Vector2(inner.size.x*i/8,0),inner.position+Vector2(inner.size.x*i/8,inner.size.y),Color("35452e"))
 		line(inner.position+Vector2(0,inner.size.y*i/8),inner.position+Vector2(inner.size.x,inner.size.y*i/8),Color("35452e"))
+	# Overview shows the whole drivable range (padded bounds); close keeps the target-lane window.
+	var b: Array = main.sim.range_data.bounds
+	var extent := Rect2(b[0]-100,b[2]-100,b[1]-b[0]+200,b[3]-b[2]+200) if main.map_overview else Rect2(-450,-1400,900,1750)
 	for target in main.sim.targets:
-		var p: Vector2 = inner.position+Vector2((target.pos.x+450)/900.0,(target.pos.y+1400)/1750.0)*inner.size
+		var p: Vector2 = map_point(target.pos,inner,extent)
 		draw_circle(p,5.0,amber if target.alive else muted)
-		text(p+Vector2(10,4),target.name,12,cream)
+		if extent.has_point(target.pos):
+			text(p+Vector2(10,4),target.name,12,cream)
 	var pos: Vector2 = main.sim.pos
-	var p: Vector2 = inner.position+Vector2((pos.x+450)/900.0,(pos.y+1400)/1750.0)*inner.size
-	if inner.has_point(p):
-		draw_circle(p,6.0,green)
+	var p: Vector2 = map_point(pos,inner,extent)
+	draw_circle(p,6.0,green)
+	if extent.has_point(pos):
 		line(p,p+Vector2(-sin(main.sim.heading),-cos(main.sim.heading))*22,green,2)
 		text(p+Vector2(11,4),"M1",12,green)
+	else:
+		# Off-map: pin the marker to the edge and point it towards the tank.
+		var outward: Vector2 = (pos-extent.get_center()).normalized()
+		line(p,p+outward*16,green,2)
+		text(p+Vector2(-16,-12) if p.y > inner.get_center().y else p+Vector2(-16,22),"M1",12,green)
+
+# World x/z to map point, clamped onto the map edge when outside the shown extent.
+static func map_point(world: Vector2, inner: Rect2, extent: Rect2) -> Vector2:
+	var p: Vector2 = inner.position+(world-extent.position)/extent.size*inner.size
+	return Vector2(clampf(p.x,inner.position.x,inner.end.x),clampf(p.y,inner.position.y,inner.end.y))
 
 func _pause() -> void:
 	rect(Rect2(0,0,1600,900),Color(0.01,0.018,0.012,0.80))

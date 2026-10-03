@@ -8,8 +8,11 @@ import hashlib
 import json
 from pathlib import Path
 import struct
+import sys
 from unicorn import UC_HOOK_CODE, UC_HOOK_INSN, UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE
 from unicorn.x86_const import UC_X86_INS_OUT, UC_X86_REG_CS, UC_X86_REG_DS, UC_X86_REG_ES, UC_X86_REG_SS, UC_X86_REG_SP, UC_X86_REG_EFLAGS
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.pc_bearing_oracle import cpu,set_registers,run_until
 from tools.pc_live_state import SimStateReader,SIM_SHA256
 from tools.pc_bitmaps import decode_bitmaps,read_ega_bitmap
@@ -17,6 +20,7 @@ from tools.inspect_scenarios import decode_resource
 from tools.unpack_pc_executables import unpack
 from tools.pc_plate_trace import PlateLoads
 from tools.pc_strut_trace import StrutDraws
+from tools.source_guard import inside_source
 
 ROOT=Path(__file__).resolve().parents[1]
 POSITIONS={0:[(57,10),(257,10)],1:[(72,18)],2:[(0,128)],3:[(240,128)],4:[(0,110)],5:[(159,110)],6:[(95,85)]}
@@ -118,6 +122,6 @@ def verify(ram):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--capture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')):p.error('output must stay outside originals')
+    if inside_source(a.output):p.error('output must stay outside originals')
     report=verify(a.capture.read_bytes());a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:v for k,v in report.items() if k not in ('cases','observer')},indent=2))

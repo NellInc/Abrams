@@ -314,7 +314,11 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 DispatchQueue.main.async { self.status.stringValue = "Game session active" }
                 let tail = Self.readOutput(pipe, limit: 16384)
                 process.waitUntilExit()
-                let message = String(data: tail, encoding: .utf8) ?? "The game exited unexpectedly."
+                // Prefer the runtime's JSON error; otherwise show the newest log lines.
+                let text = String(decoding: tail, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+                let lastLine = text.split(separator: "\n").last.map { Data($0.utf8) } ?? Data()
+                let structured = [tail, lastLine].lazy.compactMap { ((try? JSONSerialization.jsonObject(with: $0)) as? [String: Any])?["error"] as? String }.first
+                let message = structured ?? (text.isEmpty ? "The game exited unexpectedly." : (text.count > 1799 ? "…" : "") + String(text.suffix(1799)))
                 DispatchQueue.main.async {
                     self.running = nil; self.busy = false
                     self.window.makeKeyAndOrderFront(nil)

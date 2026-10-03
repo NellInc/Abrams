@@ -1,4 +1,5 @@
 import copy
+import shutil
 import tempfile
 from unittest.mock import patch
 import hashlib
@@ -148,6 +149,10 @@ class RadioTests(unittest.TestCase):
                 self.assertEqual(len(payloads),2)
                 self.assertEqual(receipt['voices'][fixed]['source_master'],'repair/voice_pc_radio_airborne.wav')
                 self.assertNotEqual(receipt['voices'][names[0]]['generation_script_sha256'],receipt['voices'][fixed]['generation_script_sha256'])
+                self.assertEqual({q['path'] for q in receipt['qa_inputs']},{'base/manifest.json','old.json','base/qa-first/transcription-check.json',
+                    'repair/manifest.json','current.json','repair/qa-first/transcription-check.json'})
+                with tempfile.TemporaryDirectory() as outside, self.assertRaisesRegex(ValueError,'outside repository'):
+                    shutil.copytree(base,Path(outside)/'base');prepare(Path(outside)/'base',current,source_script=old)
                 with self.assertRaisesRegex(ValueError,'generation script changed'):prepare(base,current,repair=repair)
                 with self.assertRaisesRegex(ValueError,'selected generation cue'):prepare(base,current,source_script=old)
                 path=repair/'qa-first/transcription-check.json';bad=json.loads(path.read_text())

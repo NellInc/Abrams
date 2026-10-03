@@ -14,8 +14,11 @@ from unicorn.x86_const import (UC_X86_REG_CS, UC_X86_REG_DS, UC_X86_REG_ES,
     UC_X86_REG_SS, UC_X86_REG_SP, UC_X86_REG_BP, UC_X86_REG_EFLAGS)
 try:
     from tools.pc_bearing_oracle import ROOT, LOAD, DATA_SEGMENT, SIM_SHA256, cpu, original_unpack, set_registers, run_until, sha256
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import ROOT, LOAD, DATA_SEGMENT, SIM_SHA256, cpu, original_unpack, set_registers, run_until, sha256
+    from source_guard import inside_source
 
 # Exact original argument-producing blocks through the returned original setter.
 CASES=[('out_of_fuel',0x704d,0x7058,2,0x3d8e,[0xd0e]),
@@ -63,7 +66,7 @@ def run():
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--check-fixture',type=Path);a=p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS')):p.error('output must be outside original files')
+    if inside_source(a.output, ROOT):p.error('output must be outside original files')
     result=run()
     if a.check_fixture and result!=json.loads(a.check_fixture.read_text()):raise ValueError('warning fixture differs')
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(result,indent=2)+'\n')

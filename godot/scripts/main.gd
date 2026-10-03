@@ -36,6 +36,8 @@ var recorded_commands: Array = []
 var capture_mode := false
 var thermal_material: StandardMaterial3D
 var shutting_down := false
+var thermal_overlay_state := -1
+var range_save := "user://range-save.bin"
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -137,11 +139,15 @@ func _physics_process(_delta: float) -> void:
 	if Input.is_key_pressed(KEY_M):
 		input.machinegun = true
 	if capture_mode:
-		input = commands.duplicate()
+		# Deterministic --capture runs drive the sim from _capture_sequence; ignore all live keyboard input.
+		input = {}
 	recorded_commands.append(input.duplicate(true))
+	var was_locked: bool = sim.locked
 	var events: Array = sim.tick(input)
 	for event in events:
 		_process_event(event)
+	if not was_locked and sim.locked:
+		announce("GUNNER", "Target acquired.", "target")
 	_update_targets()
 	if sim.status != "active":
 		ui.rebuild_buttons()
@@ -164,8 +170,7 @@ func _process(delta: float) -> void:
 		camera.look_at(Vector3(3.0,1.1,0))
 		camera.fov = 39
 	else:
-		var bearing: float = sim.heading if sim.station == 3 else sim.turret
-		bearing += scan_angle
+		var bearing: float = view_bearing()
 		var eye := 2.65
 		if sim.station == 2:
 			eye = 3.05
@@ -185,6 +190,10 @@ func _process(delta: float) -> void:
 	_update_effects(delta)
 	sound.update_engine(sim.speed,screen == "range" and not paused and sim.status == "active")
 	ui.queue_redraw()
+
+# Camera and compass yaw. F7-F10 scan is a commander-only view offset; the gunner sight always follows the gun.
+func view_bearing() -> float:
+	return (sim.heading if sim.station == 3 else sim.turret) + (scan_angle if sim.station == 1 else 0.0)
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
@@ -212,10 +221,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_F5:
 			sound.muted = not sound.muted
 			sound.stop_all()
-		KEY_F7: scan_angle = 0
-		KEY_F8: scan_angle = -PI/2
-		KEY_F9: scan_angle = PI
-		KEY_F10: scan_angle = PI/2
+		KEY_F7,KEY_F8,KEY_F9,KEY_F10:
+			if int(commands.get("station",sim.station)) == 1:
+				scan_angle = [0.0,-PI/2,PI,PI/2][event.keycode-KEY_F7]
 		KEY_1,KEY_2,KEY_3:
 			commands.select_weapon = int(event.keycode-KEY_1)
 		KEY_M: commands.machinegun = true
@@ -232,10 +240,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_R: commands.radio = true
 		KEY_D: show_damage = not show_damage
 		KEY_ENTER: commands.select_target = true
-		KEY_L:
-			commands.lock_target = true
-			if sim.selected_target >= 0:
-				announce("GUNNER", "Target acquired.", "target")
+		KEY_L: commands.lock_target = true
 		KEY_H: show_help = not show_help
 		KEY_Q:
 			paused = true
@@ -313,7 +318,12 @@ func _update_targets() -> void:
 		var node := target_nodes[i]
 		node.position = Vector3(sim.targets[i].pos.x,0,sim.targets[i].pos.y)
 		node.visible = sim.targets[i].alive
-		_apply_thermal(node,sim.thermal and screen == "range")
+	# Overlays are only re-applied on change; re-setting ~800 instances every tick costs RenderingServer updates.
+	var thermal_on: bool = sim.thermal and screen == "range"
+	if int(thermal_on) != thermal_overlay_state:
+		thermal_overlay_state = int(thermal_on)
+		for node in target_nodes:
+			_apply_thermal(node,thermal_on)
 
 func _apply_thermal(node: Node, enabled: bool) -> void:
 	if node is GeometryInstance3D:
@@ -358,19 +368,27 @@ func clear_effects() -> void:
 	effects.clear()
 
 func save_range() -> void:
-	var file := FileAccess.open("user://range-save.bin",FileAccess.WRITE)
+	# Write a temporary file and replace the save only after a verified write, so a failure keeps the previous save.
+	var temp := range_save + ".tmp"
+	var file := FileAccess.open(temp,FileAccess.WRITE)
 	if file == null:
 		set_notice("Save failed: cannot open user data directory.")
 		return
-	file.store_var({"simulation":sim.snapshot(),"shots":shots,"hits":hit_count},false)
+	var ok: bool = file.store_var({"simulation":sim.snapshot(),"shots":shots,"hits":hit_count},false)
+	file.flush()
+	ok = ok and file.get_error() == OK
 	file.close()
+	if not ok or DirAccess.rename_absolute(ProjectSettings.globalize_path(temp),ProjectSettings.globalize_path(range_save)) != OK:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(temp))
+		set_notice("Save failed: could not write range state. Previous save kept.")
+		return
 	set_notice("Range state saved locally.")
 
 func load_range() -> void:
-	if not FileAccess.file_exists("user://range-save.bin"):
+	if not FileAccess.file_exists(range_save):
 		set_notice("No saved range state.")
 		return
-	var file := FileAccess.open("user://range-save.bin",FileAccess.READ)
+	var file := FileAccess.open(range_save,FileAccess.READ)
 	if file == null or file.get_length() > 1048576:
 		set_notice("Save rejected: unreadable or oversized.")
 		return
@@ -422,6 +440,10 @@ func _capture_sequence() -> void:
 	print("CAPTURE_COMPLETE ",out)
 	request_quit()
 
+func _smoke_fail(message: String) -> void:
+	push_error("RUNTIME_SMOKE_FAIL: " + message)
+	get_tree().quit(1)
+
 func _smoke_test() -> void:
 	start_range()
 	sound.muted = true
@@ -431,22 +453,95 @@ func _smoke_test() -> void:
 		var events: Array = sim.tick({"throttle":0.5,"steer":0.1})
 		for event in events:
 			_process_event(event)
-	assert(sim.pos != Vector2(initial.pos[0],initial.pos[1]))
-	assert(sim.restore(initial))
+	if sim.pos == Vector2(initial.pos[0],initial.pos[1]):
+		_smoke_fail("no movement")
+		return
+	var restored: bool = sim.restore(initial)
+	if not restored:
+		_smoke_fail("restore rejected")
+		return
 	for station in range(4):
 		sim.tick({"station":station})
 		_update_targets()
 		await get_tree().process_frame
+		if sim.station != station:
+			_smoke_fail("station %d" % station)
+			return
+	sim.turret = 0.4
+	scan_angle = PI
+	for station in range(4):
+		sim.station = station
+		var expected: float = sim.heading if station == 3 else sim.turret + (PI if station == 1 else 0.0)
+		if not is_equal_approx(view_bearing(),expected):
+			_smoke_fail("scan offset at station %d" % station)
+			return
+	scan_angle = 0
+	sim.thermal = true
+	_update_targets()
+	var meshes: Array = target_nodes[0].find_children("*","GeometryInstance3D",true,false) if not target_nodes.is_empty() else []
+	if meshes.is_empty():
+		_smoke_fail("no target geometry")
+		return
+	var sample: GeometryInstance3D = meshes[0]
+	if sample.material_overlay != thermal_material:
+		_smoke_fail("thermal overlay not applied")
+		return
+	sim.thermal = false
+	_update_targets()
+	if sample.material_overlay != null:
+		_smoke_fail("thermal overlay not cleared")
+		return
+	sim.restore(initial)
 	sim.tick({"station":0,"select_target":true,"lock_target":true})
 	for event in sim.tick({"fire":true}):
 		_process_event(event)
-	assert(shots == 1)
-	assert(effects.size() == 1)
+	if shots != 1 or effects.size() != 1:
+		_smoke_fail("fire: %d shots, %d effects" % [shots,effects.size()])
+		return
+	sim.restore(initial)
+	paused = false
+	subtitle = ""
+	commands = {"select_target":true,"lock_target":true}
+	_physics_process(0)
+	if not sim.locked or not "Target acquired." in subtitle:
+		_smoke_fail("lock announcement")
+		return
+	subtitle = ""
+	commands = {"lock_target":true}
+	_physics_process(0)
+	if sim.locked or not subtitle.is_empty():
+		_smoke_fail("unlock announced as acquisition")
+		return
+	paused = true
+	var real_save := range_save
+	range_save = "user://smoke-range-save.bin"
+	save_range()
+	var saved_shots := shots
+	shots = 99
+	load_range()
+	if notice != "Range state restored.":
+		range_save = real_save
+		_smoke_fail("save restore")
+		return
+	save_range()
+	if shots != saved_shots or notice != "Range state saved locally." or FileAccess.file_exists(range_save + ".tmp"):
+		range_save = real_save
+		_smoke_fail("save round trip")
+		return
+	DirAccess.make_dir_absolute(ProjectSettings.globalize_path(range_save + ".tmp"))
+	save_range()
+	var kept := FileAccess.file_exists(range_save) and notice.begins_with("Save failed")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(range_save + ".tmp"))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(range_save))
+	range_save = real_save
+	if not kept:
+		_smoke_fail("failed save did not keep previous save")
+		return
 	set_screen("manual")
 	await get_tree().process_frame
 	set_screen("record")
 	await get_tree().process_frame
 	set_screen("menu")
 	await get_tree().process_frame
-	print("RUNTIME_SMOKE_PASS: movement, four stations, selection, fire, effects, screen navigation")
+	print("RUNTIME_SMOKE_PASS: movement, four stations, scan view, thermal overlay, selection, lock cue, fire, effects, atomic save, screen navigation")
 	request_quit()

@@ -36,10 +36,16 @@ class Client:
         return value
     def step(self, frames, keys=()): return self.request('step',frames=frames,keys=list(keys))
     def close(self):
-        if self.process.poll() is None:
-            self.process.stdin.write('{"op":"quit"}\n'); self.process.stdin.flush()
-        assert self.process.wait() == 0
-        self.process.stdin.close(); self.process.stdout.close()
+        try:
+            if self.process.poll() is None:
+                try: self.process.stdin.write('{"op":"quit"}\n'); self.process.stdin.flush()
+                except BrokenPipeError: pass
+            code = self.process.wait()
+        finally:
+            for stream in (self.process.stdin, self.process.stdout):
+                try: stream.close()
+                except OSError: pass
+        if code != 0: raise RuntimeError(f'host exited {code}')
 
 def rewrite(path, transform):
     with zipfile.ZipFile(path) as z: files = {n:z.read(n) for n in z.namelist()}
@@ -61,9 +67,10 @@ def main():
     saves = args.output/'saves'; saves.mkdir()
     sources = {str(p.relative_to(ROOT)):sha(p.read_bytes()) for d in ('GAME','GENESIS') for p in (ROOT/d).rglob('*') if p.is_file()}
     checks = {}
+    completed = False; error = None; client = None
     log = (args.output/'native.log').open('w')
-    client = Client(saves,log)
     try:
+        client = Client(saves,log)
         checks['protocol4_preserved'] = client.ready['protocol'] == 4 and len(client.ready['slots']) == 6
         missing = client.request('load_state',slot=5)
         checks['empty_slot_nonfatal'] = missing['success'] is False and client.step(1)['type'] == 'sample'
@@ -186,12 +193,22 @@ def main():
         checks['campaign_restore_playable']=client.step(30)['type']=='sample'
         client.close();client=None
         checks['original_sources_unchanged']=all(sha((ROOT/name).read_bytes())==digest for name,digest in sources.items())
+        completed = True
+    except BaseException as exc:
+        error = repr(exc); raise
     finally:
-        if client: client.close()
-        log.close()
-        (args.output/'report.json').write_text(json.dumps({'checks':checks,'passed':all(checks.values()),
-            'scope':'Native RAM/disk persistence and host-only EGA provenance continuation against an uninterrupted run; held-frame transition excluded from fresh-video claims.'},indent=2)+'\n')
+        # An aborted run or failed host must still leave a truthful receipt.
+        try:
+            if client: client.close()
+        except Exception as close_error:
+            error = error or repr(close_error)
+        finally:
+            log.close()
+            passed = completed and error is None and bool(checks) and all(checks.values())
+            (args.output/'report.json').write_text(json.dumps({'checks':checks,'passed':passed,
+                'completed':completed,'error':error,
+                'scope':'Native RAM/disk persistence and host-only EGA provenance continuation against an uninterrupted run; held-frame transition excluded from fresh-video claims.'},indent=2)+'\n')
     print(json.dumps(checks,indent=2))
-    return 0 if all(checks.values()) else 1
+    return 0 if passed else 1
 
 if __name__=='__main__': raise SystemExit(main())

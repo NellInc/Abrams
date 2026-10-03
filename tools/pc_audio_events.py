@@ -7,7 +7,8 @@ from collections import deque
 import struct
 try:
     from tools.pc_audio_loops import read_loops
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_audio_loops import read_loops
 
 # Return IPs immediately after verified near calls to 0000:9107.

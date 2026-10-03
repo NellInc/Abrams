@@ -10,7 +10,8 @@ try:
     from tools.pc_pixel_bytes import BgrxRectProof, indexed_rgb
     from tools.pc_fonts import FONT_NAMES, loaded_font, text_pixels
     from tools.pc_message_events import MessageAssignments
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_pixel_bytes import BgrxRectProof, indexed_rgb
     from pc_fonts import FONT_NAMES, loaded_font, text_pixels
     from pc_message_events import MessageAssignments

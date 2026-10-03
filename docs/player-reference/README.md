@@ -46,10 +46,14 @@ and the existing local geometry catalogue. It statically checks the original
 selector-to-world association before drawing maps and executes no guest code.
 Generate HTML, model studies and PDFs with
 `python3 tools/build_player_reference.py` in a ReportLab authoring environment.
-Use `--field-guide-only` for catalogue updates that leave controls and existing
-model studies unchanged.
-Use `--render-maps` when terrain SVGs change; this raster authoring step
-requires Poppler's `pdftoppm`. Unchanged map PNGs are reused. These tools are used
+Use `--field-guide-only` for catalogue updates that leave the keyboard PDF and
+existing model studies unchanged; it refuses to run if the Modern catalogue no
+longer matches `illustrations.json`.
+Use `--render-maps` when terrain SVGs change, including after any
+`build_reference_maps` run; this raster authoring step requires Poppler's
+`pdftoppm`. Otherwise map PNGs are reused, and the builder checks them before it
+rewrites any reference. PDF rasters are embedded as JPEG, capped at 300 dpi of
+their printed size. These tools are used
 only during authoring; players need neither.
 
 The packaged outputs include no original game, ROM or manual. Source hashes,

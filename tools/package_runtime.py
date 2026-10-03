@@ -19,7 +19,9 @@ def data_home(root=ROOT):
     path = Path(override).expanduser() if override else Path.home() / 'Library/Application Support/Abrams'
     if not path.is_absolute():
         raise ValueError('ABRAMS_DATA_HOME must be absolute')
-    if path.resolve().is_relative_to(root.resolve()):
+    # resolve() keeps case on APFS, so 'kit/x' must also match 'Kit' through samefile.
+    path, root = path.resolve(), root.resolve()
+    if path.is_relative_to(root) or any(os.path.samefile(a, root) for a in (path, *path.parents) if a.exists() and root.exists()):
         raise ValueError('Player data must remain outside the kit, so upgrades preserve it')
     return path.resolve()
 
@@ -50,7 +52,8 @@ def dependencies(root=ROOT):
             raise ValueError(f'Missing private input: {name}. The source kit is not playable.')
     try:
         from tools.package_build import selected_files, verify_private_inputs, check_source_closure
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
         from package_build import selected_files, verify_private_inputs, check_source_closure
     check_source_closure(root, selected_files(root, 'private'), include_assets=True)
     verify_private_inputs(root)

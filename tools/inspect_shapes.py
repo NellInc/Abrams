@@ -14,8 +14,11 @@ import struct
 
 try:
     from tools.inspect_scenarios import decode_resource, parse_shape_table
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from inspect_scenarios import decode_resource, parse_shape_table
+    from source_guard import inside_source
 
 
 def inspect_shapes(data: bytes) -> dict:
@@ -195,7 +198,8 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=Path("reference/reports/shape-structure.json"))
     parser.add_argument("--export-cube", action="store_true")
     args = parser.parse_args()
-    if args.output.resolve().is_relative_to(args.source.parent.resolve()):
+    source_dir = args.source.resolve().parent
+    if inside_source(args.output) or inside_source(args.output, source_dir.parent, (source_dir.name,)):
         parser.error("output must be outside source directory")
     result = inspect_shapes(decode_resource(args.source.read_bytes()))
     args.output.parent.mkdir(parents=True, exist_ok=True)

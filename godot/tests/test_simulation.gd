@@ -4,6 +4,11 @@ var checks: int = 0
 var failures: Array[String] = []
 
 func _initialize() -> void:
+	# A runtime error aborts _run before quit(); the deadline still ends the process.
+	create_timer(60).timeout.connect(func(): printerr("FAIL: simulation deadline"); quit(2))
+	_run.call_deferred()
+
+func _run() -> void:
 	_test_determinism()
 	_test_weapons()
 	_test_stations()
@@ -12,6 +17,7 @@ func _initialize() -> void:
 	_test_targeting()
 	_test_snapshots()
 	_test_completion()
+	_test_range_presentation()
 	if failures.is_empty():
 		print("SIMULATION: %d checks passed" % checks)
 		quit(0)
@@ -237,3 +243,39 @@ func _test_corrected_controls() -> void:
 	check(sim.locked and sim.elevation == sim.elevation_to(sim.targets[sim.selected_target].pos), "lock follows target elevation")
 	sim.tick({"toggle_control": true, "sight_axis": 1})
 	check(not sim.locked, "manual sight elevation releases lock")
+
+func _test_range_presentation() -> void:
+	# Presentation helpers only: none of these feed the simulation or its recorded commands.
+	var main = load("res://scripts/main.gd").new()
+	main.sim.turret = 0.4
+	main.sim.heading = -0.3
+	main.scan_angle = PI
+	for station in 4:
+		main.sim.station = station
+		var expected: float = -0.3 if station == 3 else 0.4 + (PI if station == 1 else 0.0)
+		check(is_equal_approx(main.view_bearing(), expected), "scan offset commander-only, station %d" % station)
+	main.free()
+	var ui_script = load("res://scripts/interface.gd")
+	var inner := Rect2(100, 200, 400, 300)
+	var b: Array = Sim.new().range_data.bounds
+	var overview := Rect2(b[0] - 100, b[2] - 100, b[1] - b[0] + 200, b[3] - b[2] + 200)
+	for corner in [Vector2(b[0], b[2]), Vector2(b[1], b[3]), Vector2(b[0], b[3]), Vector2(b[1], b[2])]:
+		var p: Vector2 = ui_script.map_point(corner, inner, overview)
+		check(inner.has_point(p), "overview map shows range corner %s" % corner)
+	var close := Rect2(-450, -1400, 900, 1750)
+	check(ui_script.map_point(Vector2(500, 0), inner, close) == Vector2(500, 200 + 1400.0 / 1750.0 * 300), "close map clamps off-map tank to right edge")
+	check(ui_script.map_point(Vector2(-450, -1400), inner, close) == inner.position, "close map origin")
+	var ui = ui_script.new()
+	var sim = Sim.new()
+	for weapon in [2, 0, 1]:
+		sim.tick({"select_weapon": weapon, "fire": true})
+		ui.reload_fraction(sim.reload_ticks)
+		sim.tick({})
+		var span: float = float(sim.rules.reload_ticks[weapon])
+		check(is_equal_approx(ui.reload_fraction(sim.reload_ticks), 1.0 / span), "reload bar uses weapon %d reload length" % weapon)
+		sim.tick({"select_weapon": 3})
+		while sim.reload_ticks > 1:
+			ui.reload_fraction(sim.reload_ticks)
+			sim.tick({})
+	check(is_equal_approx(ui.reload_fraction(sim.reload_ticks), 1.0 - 1.0 / float(sim.rules.reload_ticks[1])), "reload bar span survives weapon switch")
+	ui.free()

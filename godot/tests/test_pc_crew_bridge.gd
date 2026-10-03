@@ -8,6 +8,8 @@ var output := ""
 var index := 0
 var started := 0
 var stopping := false
+var stop_started := 0
+var finished := false
 var drained := false
 var errors: Array[String] = []
 var heard: Array = []
@@ -23,25 +25,34 @@ func _initialize() -> void: start.call_deferred()
 func start() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	var args := OS.get_cmdline_user_args()
-	output = args[args.find("--output")+1]
+	approach = "--approach" in args
+	var at := args.find("--output")+1
+	var reference_at := args.find("--reference")+1
+	var valid := func(i: int) -> bool: return i > 0 and i < args.size() and not args[i].begins_with("--")
+	if not valid.call(at) or (not approach and not valid.call(reference_at)):
+		printerr("usage: test_pc_crew_bridge.gd -- (--approach | --reference <report.json>) --output <fresh dir>")
+		quit(2)
+		return
+	output = args[at]
 	if DirAccess.dir_exists_absolute(output):
 		printerr("Fresh native crew output required")
 		quit(1)
 		return
-	DirAccess.make_dir_recursive_absolute(output)
-	approach = "--approach" in args
 	if approach:
 		var steps: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_vehicle_approach_steps.json"))
 		for step: Array in steps:
 			for i in int(step[0]): approach_keys.append(step[1])
 	else:
-		var reference := args[args.find("--reference")+1]
-		var report: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(reference))
+		var report = JSON.parse_string(FileAccess.get_file_as_string(args[reference_at]))
+		if not report is Dictionary or not report.get("audio_events") is Array:
+			printerr("Crew reference report unreadable: " + args[reference_at])
+			quit(2)
+			return
 		expected = report.audio_events.filter(func(e): return e.kind == "crew_visible")
+	DirAccess.make_dir_recursive_absolute(output)
 	audio = PcAudio.new()
 	root.add_child(audio)
-	var python := OS.get_environment("ABRAMS_PYTHON")
-	if python.is_empty(): python = "/opt/homebrew/bin/python3"
+	var python := Bridge.default_python()
 	bridge.start(python,directory.path_join("artifacts/pc-source-boot-01/mission-entry/reference.state"),
 		output.path_join("saves"),output.path_join("host.log"),"trace")
 	started = Time.get_ticks_msec()
@@ -75,7 +86,13 @@ func _process(_delta: float) -> bool:
 	if not bridge.failure.is_empty() and bridge.failure not in errors: errors.append(bridge.failure)
 	if Time.get_ticks_msec()-started > 600000 and not stopping: errors.append("native crew bridge deadline")
 	if stopping:
-		if drained and bridge.has_exited(): finish()
+		if finished: pass
+		elif drained and bridge.has_exited(): finish()
+		elif Time.get_ticks_msec()-stop_started > 15000:
+			# A wedged host never reads quit; bound shutdown and leave no orphan child.
+			bridge.kill()
+			errors.append("PC core host did not exit after quit; terminated")
+			finish()
 	elif not errors.is_empty(): stop.call_deferred()
 	elif not bridge.pending:
 		if approach:
@@ -96,6 +113,7 @@ func _process(_delta: float) -> bool:
 func stop() -> void:
 	if stopping: return
 	stopping = true
+	stop_started = Time.get_ticks_msec()
 	bridge.close()
 	drained = await audio.drain_for_shutdown()
 	if not drained:
@@ -103,6 +121,7 @@ func stop() -> void:
 		drained = true
 
 func finish() -> void:
+	finished = true
 	if approach:
 		if received_frames != approach_keys.size()+1: errors.append("Approach route frame count differs")
 		if final_program != "SIM": errors.append("Approach unexpectedly left original mission")

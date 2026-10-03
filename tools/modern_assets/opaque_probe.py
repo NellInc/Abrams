@@ -8,11 +8,15 @@ import argparse
 import json
 from pathlib import Path
 import struct
+import sys
+ROOT_FOR_IMPORT = Path(__file__).resolve().parents[2]
+if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
 from tools.pc_world_oracle import OriginalWorld, CODE_SEGMENT, DS
 from tools.pc_bearing_oracle import LOAD, DATA_SEGMENT, set_registers, run_until
 from tools.pc_vehicle_catalog import source_catalog, ROOT
 from tools.inspect_shapes import primitive_vertices
 from tools.inspect_scenarios import decode_resource
+from tools.source_guard import inside_source
 from unicorn import UC_HOOK_CODE
 from unicorn.x86_const import UC_X86_REG_CS,UC_X86_REG_DS,UC_X86_REG_ES,UC_X86_REG_SS,UC_X86_REG_SP,UC_X86_REG_EFLAGS,UC_X86_REG_BP,UC_X86_REG_DI
 
@@ -59,4 +63,5 @@ def run():
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,default=ROOT/'local-art/pc-modern/opaque-command-proof.json');args=p.parse_args()
+    if inside_source(args.output,ROOT,('GAME','GENESIS','reference')):p.error('--output must be outside original GAME, GENESIS and reference')
     result=run();args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(result,indent=2)+'\n');print(f"{result['cases_matched']} original CPU command cases matched")

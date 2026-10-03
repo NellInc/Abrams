@@ -71,5 +71,6 @@ def main():
         receipt={'source_pins':source_pins,'route':route,'frames':frames,'packet_sha256':sha(path),'scope':'Original PC SIM, ordinary station/steering/throttle/stop/1x3x10x magnification keys only. No synthetic packets, state edits or fabricated game graphics. Genuine enemy armour optical close view. Damage voice is an editorial use of the installed warning bank, not proof of this recorded event.'}
         (out/'recording-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
         roster=[{'name':'modern-close-combat','packets':str(path),'sha256':sha(path),'begin':0,'end':90,'station':'gunner'}]
-        (out.parent/'close-capture-roster.json').write_text(json.dumps(roster,indent=2)+'\n');print('ORIGINAL_CLOSE_ENEMY_COMPLETE',counter,len(frames))
+        # Beside its packets, inside the exist_ok=False output: never replaces another run's roster.
+        (out/'close-capture-roster.json').write_text(json.dumps(roster,indent=2)+'\n');print('ORIGINAL_CLOSE_ENEMY_COMPLETE',counter,len(frames),'roster',out/'close-capture-roster.json')
 if __name__=='__main__':main()

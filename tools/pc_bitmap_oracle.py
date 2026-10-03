@@ -18,7 +18,8 @@ try:
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.pc_bitmaps import decode_bitmaps, verify_loaded_effects
     from tools.inspect_scenarios import decode_resource
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import cpu, set_registers, run_until
     from pc_live_state import SimStateReader, SIM_SHA256
     from pc_bitmaps import decode_bitmaps, verify_loaded_effects

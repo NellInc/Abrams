@@ -26,12 +26,15 @@ try:
     from tools.inspect_shapes import inspect_shapes
     from tools.inspect_scenarios import decode_resource
     from tools.pc_render_state import transform, static_faces_for_state, select_root
-except ModuleNotFoundError:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import cpu, set_registers, run_until
     from pc_live_state import SimStateReader, SIM_SHA256
     from inspect_shapes import inspect_shapes
     from inspect_scenarios import decode_resource
     from pc_render_state import transform, static_faces_for_state, select_root
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -178,8 +181,8 @@ def main():
     args = parser.parse_args()
     if unicorn.__version__ != "2.1.4":
         raise ValueError("pinned Unicorn 2.1.4 required")
-    if args.output.resolve().is_relative_to((ROOT / "GAME").resolve()):
-        parser.error("output must be outside original GAME")
+    if inside_source(args.output, ROOT):
+        parser.error("output must be outside original GAME and GENESIS")
     reader = SimStateReader(ROOT / "GAME/SIM.EXE")
     shapes = inspect_shapes(decode_resource((ROOT / "GAME/SHAPE.TBL").read_bytes()))["shapes"]
     captures = {}

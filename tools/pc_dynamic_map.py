@@ -5,7 +5,8 @@ from collections import Counter
 try:
     from tools.pc_live_state import SIM_SHA256
     from tools.pc_pixel_bytes import bgrx_rect_rgb, indexed_rgb
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_live_state import SIM_SHA256
     from pc_pixel_bytes import bgrx_rect_rgb, indexed_rgb
 RECT=(16,63,144,96)

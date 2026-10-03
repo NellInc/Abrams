@@ -15,7 +15,8 @@ import urllib.error
 import urllib.request
 try:
     from tools.generate_crew_voice import keychain_secret,validate_wav,BASE
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from generate_crew_voice import keychain_secret,validate_wav,BASE
 
 

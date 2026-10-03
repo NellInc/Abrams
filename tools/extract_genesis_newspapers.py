@@ -54,7 +54,11 @@ def decode(rom):
 
 def palette(rom):
     # Command 8 is a BE start/count/CRAM-word list, terminated by FFFF.
-    from tools.extract_genesis_vdp import color_rgb565
+    try:
+        from tools.extract_genesis_vdp import color_rgb565
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
+        from extract_genesis_vdp import color_rgb565
     colours = [(0, 0, 0)] * 64
     for at in [0x58E8E, 0x58FE6]:
         while True:
@@ -94,7 +98,12 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--render', action='store_true', help='render a previously decoded output using system Pillow')
     a = p.parse_args()
-    if any(a.output.resolve().is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):
+    try:
+        from tools.source_guard import inside_source
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
+        from source_guard import inside_source
+    if inside_source(a.output, ROOT, ('GAME','GENESIS')):
         p.error('output must remain outside original source directories')
     rom = (ROOT/'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').read_bytes()
     if hashlib.sha256(rom).hexdigest() != ROM_SHA: p.error('unsupported ROM')

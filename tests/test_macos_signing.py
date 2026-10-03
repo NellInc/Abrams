@@ -64,6 +64,12 @@ class MacSigningContracts(unittest.TestCase):
             self.assertEqual(details['trace_sha256'],sha(core))
             self.assertEqual(details['unsigned_trace_sha256'],'unsigned-core')
             self.assertNotEqual(updated['build_id'],'unsigned-build')
+            # A repeat signing (notarization retry) keeps the pre-signing identity.
+            core.write_bytes(b'signed twice')
+            refresh_payload(app,updated,'TEAM')
+            again=json.loads(receipt.read_text())
+            self.assertEqual(again['trace_sha256'],sha(core))
+            self.assertEqual(again['unsigned_trace_sha256'],'unsigned-core')
 
     def test_signature_metadata_requires_developer_id_and_runtime(self):
         text='CodeDirectory flags=0x10000(runtime)\nAuthority=Developer ID Application: Example (TEAM)\nTeamIdentifier=TEAM\nTimestamp=29 Sep 2026\n'

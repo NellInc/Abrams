@@ -17,7 +17,8 @@ try:
     from tools.pc_bitmaps import decode_bitmaps,read_ega_bitmap
     from tools.inspect_scenarios import decode_resource
     from tools.pc_frontend_scene import FrontendScene
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_live_state import active_program
     from pc_text_trace import TextRuns
     from unpack_pc_executables import unpack
@@ -52,13 +53,13 @@ def visible_runs(candidates,raw,width,height,palette,cursor=None):
     for item,pixels,ink in candidates:
         x,y,w,h=item['rect'];cell=item['cell_size'][0];groups=[]
         for i,char in enumerate(item['text']):
-            colours=[set(),set()];actual=bytearray()
+            colours=[set(),set()]
             for dy in range(h):
                 for dx in range(cell):
                     if (x+i*cell+dx,y+dy) in covered:continue
                     start=((y+dy)*320+x+i*cell+dx)*4
                     rgb=bytes((raw[start+2],raw[start+1],raw[start]))
-                    actual.extend(rgb);colours[ink[dy*w+i*cell+dx]].add(rgb)
+                    colours[ink[dy*w+i*cell+dx]].add(rgb)
             if len(colours[0])==1 and not colours[1]:
                 bg=next(iter(colours[0]))
                 if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==x+i*cell and groups[-1]['uniform_background_rgb']==list(bg):
@@ -75,8 +76,8 @@ def visible_runs(candidates,raw,width,height,palette,cursor=None):
             else:groups.append(value)
         for value in groups:
             xx,yy,ww,hh=value['rect']
-            actual=bytes(raw[((yy+dy)*320+xx+dx)*4+c] for dy in range(hh) for dx in range(ww) for c in (2,1,0))
-            value['pixel_sha256']=hashlib.sha256(actual).hexdigest()
+            crop=bytes(raw[((yy+dy)*320+xx+dx)*4+c] for dy in range(hh) for dx in range(ww) for c in (2,1,0))
+            value['pixel_sha256']=hashlib.sha256(crop).hexdigest()
             key=(tuple(value['rect']),value['font_sha256'],value['text'])
             if key not in found or value['draw_sequence']>found[key]['draw_sequence']:found[key]=value
     return sorted(found.values(),key=lambda r:r['draw_sequence'])
@@ -182,7 +183,8 @@ class FrontendText:
                 self.presented={'draw_pass':None,'reason':'original frontend text only',
                     'frontend_program':frame.get('program'),'palette_rgb':frame.get('palette_rgb'),
                     'width':width,'height':height,'video_sha256':hashlib.sha256(raw).hexdigest()}
-        except Exception as error:self.error=error
+        except Exception as error:
+            if self.error is None:self.error=error  # Keep the root cause, not its cascade.
 
     def paired_video(self,video,ram=None):
         if self.error:raise self.error

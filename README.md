@@ -77,7 +77,7 @@ Standalone packages target **Apple Silicon macOS 14+**, **Windows x86_64** and *
 
 The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA, PC-only Upscaled and Modern remain playable, with high-resolution lettering and crew speech; Genesis-based graphics and music stay disabled.
 
-These are alpha packages. macOS notarization is pending; Windows signing is not supplied. Intel Macs are not supported. See [macOS installation](docs/standalone-macos.md), [Windows/Linux installation](docs/standalone-portable.md) and the release notes for platform testing status.
+These are alpha packages. The macOS app is Developer ID signed and notarized by Apple; Windows signing is not supplied. Intel Macs are not supported. See [macOS installation](docs/standalone-macos.md), [Windows/Linux installation](docs/standalone-portable.md) and the release notes for platform testing status.
 
 ## Controls
 

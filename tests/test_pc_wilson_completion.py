@@ -22,8 +22,7 @@ class WilsonSourceTests(unittest.TestCase):
             for height in HEIGHTS:
                 original=rgb[:320*height*3]
                 self.assertEqual(hashlib.sha256(original).hexdigest(),entry['hashes'][str(height)])
-                changed=bytes([original[0]^1])+original[1:]
-                self.assertNotEqual(hashlib.sha256(changed).hexdigest(),entry['hashes'][str(height)])
+        # Prefix-mutation rejection is a runtime property; test_pc_wilson_completion.gd checks the real matcher.
 
     @unittest.skipUnless((ROOT/'local-art/pc-wilson-completion-v1/office.json').exists(),
                          'requires private generated Wilson artwork')

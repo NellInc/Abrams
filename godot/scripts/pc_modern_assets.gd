@@ -460,7 +460,9 @@ func mapping(object: Dictionary, polygon: Dictionary, frame: Dictionary, palette
 			# screen/world-space sliding or seams between owning source faces.
 			vertex.append_array([float(raw[1])+float(raw[0])*.45,float(raw[2])+float(raw[0])*.25])
 		elif kind>20.3:
-			vertex.append_array([float(raw[0]) if int(corner.axis)==1 else float(raw[1]),float(raw[2]) if kind<20.4 else float(raw[1])])
+			# Walls use (horizontal, height); roofs (>=20.4) use both horizontal
+			# object-local axes whatever their facet axis, so grain stays 2-D.
+			vertex.append_array([float(raw[0]) if int(corner.axis)==1 or kind>=20.4 else float(raw[1]),float(raw[2]) if kind<20.4 else float(raw[1])])
 		elif kind>20.2:
 			var center: Vector3=vec(motion.center)
 			var radius: float=float(motion.radius)

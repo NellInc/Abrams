@@ -20,12 +20,16 @@ try:
     from tools.pc_bearing_oracle import cpu, set_registers, run_until
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.pc_materials import read_materials, material_pixel
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_bearing_oracle import cpu, set_registers, run_until
     from pc_live_state import SimStateReader, SIM_SHA256
     from pc_materials import read_materials, material_pixel
 
 ROOT = Path(__file__).resolve().parents[1]
+# Written pixels are masked with & 15, so 16 can never be painted; colour 15 is
+# itself a material (solid white) and would make its cases pass vacuously.
+UNTOUCHED = 16
 
 
 def verify(ram):
@@ -35,7 +39,7 @@ def verify(ram):
     ds, cs = load + 0x19E0, load + 0xF8D
     m = cpu()
     m.mem_write(0, ram)
-    mask, observed = [255], [15] * 320
+    mask, observed = [255], [UNTOUCHED] * 320
 
     def out(_m, port, size, value, _user):
         if port != 0x3CE or size != 2 or value & 255 != 8:
@@ -60,7 +64,7 @@ def verify(ram):
         for y in (0, 1):
             for x in range(16):
                 for width in (0, 1, 2, 7, 8, 9, 15, 16, 31, 64):
-                    observed[:] = [15] * 320
+                    observed[:] = [UNTOUCHED] * 320
                     mask[0] = 255
                     m.mem_write(ds * 16 + 0x3644, struct.pack('<H', y & 1))
                     m.mem_write(0x8F000, struct.pack('<HH', 0xFF00, cs))
@@ -70,7 +74,7 @@ def verify(ram):
                         (UC_X86_REG_CX, width), (UC_X86_REG_DI, 0), (UC_X86_REG_EFLAGS, 2)))
                     entry = 0x5AEF if first == second else 0x59FD
                     run_until(m, cs * 16 + entry, cs * 16 + 0xFF00, 20_000)
-                    expected = [material_pixel(words, at, y) if x <= at < x + width else 15 for at in range(320)]
+                    expected = [material_pixel(words, at, y) if x <= at < x + width else UNTOUCHED for at in range(320)]
                     if observed != expected:
                         raise ValueError(f'material {material}, x={x}, y={y}, width={width}: '
                                          f'{[(i,a,b) for i,(a,b) in enumerate(zip(observed, expected)) if a!=b][:10]}')

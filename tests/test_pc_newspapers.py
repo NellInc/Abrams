@@ -1,4 +1,9 @@
 import hashlib
+import json
+import os
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 import struct
 import unittest
@@ -40,5 +45,13 @@ class NewspaperTests(unittest.TestCase):
         self.assertEqual(colors[0],(0,0,0))
         self.assertEqual(colors[30],(0,0,0))
         self.assertEqual(colors[31],colors[1])
+        # Script mode (`python tools/extract_genesis_newspapers.py --render`) has tools/, not the repo, on sys.path.
+        code=('import json,sys;sys.path[0]=sys.argv[1];import extract_genesis_newspapers as m;'
+              'print(json.dumps(m.palette(open(sys.argv[2],"rb").read())))')
+        rom_path=next((ROOT/'GENESIS').glob('*.md'))
+        run=subprocess.run([sys.executable,'-c',code,str(ROOT/'tools'),str(rom_path)],cwd=tempfile.gettempdir(),
+            capture_output=True,text=True,env={k:v for k,v in os.environ.items() if k!='PYTHONPATH'}|{'PYTHONDONTWRITEBYTECODE':'1'})
+        self.assertEqual(run.returncode,0,run.stderr)
+        self.assertEqual([tuple(c) for c in json.loads(run.stdout)],colors)
 
 if __name__=='__main__':unittest.main()

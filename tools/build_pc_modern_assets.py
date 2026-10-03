@@ -16,10 +16,13 @@ try:
     from tools.pc_vehicle_catalog import ROOT, source_catalog, mesh_reference
     from tools.inspect_scenarios import decode_resource, parse_world, parse_scenario
     from tools.inspect_shapes import primitive_vertices
-except ModuleNotFoundError:
+    from tools import source_guard
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_vehicle_catalog import ROOT, source_catalog, mesh_reference
     from inspect_scenarios import decode_resource, parse_world, parse_scenario
     from inspect_shapes import primitive_vertices
+    import source_guard
 
 SCHEMA = 1
 TRACKED = {'T-62': 5, 'T-64': 6, 'T-72': 6, 'T-80': 6, 'M1-A1': 7,
@@ -665,7 +668,7 @@ def octagonal_barrel(primitives, groups, fraction=.292893):
     """Cut only cross-section corners; retain length, slanted breech and ownership.
 
     Each original side owns half of the adjacent diagonal facet. Muzzle cap is
-    clipped to the shared eight-point rim. The original open breech stays open.
+    clipped to the shared rim (three points per cross-section vertex). The original open breech stays open.
     """
     neighbours={}
     for p in primitives:
@@ -685,9 +688,6 @@ def octagonal_barrel(primitives, groups, fraction=.292893):
     for p in primitives:
         poly=p['vertices']
         if len({v[1] for v in poly})==1:
-            rim=[]
-            for i,v in enumerate(poly):
-                rim.extend((lerp(v,poly[i-1],fraction),lerp(v,poly[(i+1)%len(poly)],fraction)))
             # Split the diagonal rim at each shared side-facet midpoint so
             # muzzle topology has no T-junctions. Convex center fan is exact.
             rim=[]
@@ -1040,9 +1040,17 @@ def build(source=ROOT/'GAME'):
             'visibility_contract':'Per-triangle source_primitive ownership is mandatory. Lines, opaque commands and sprite-only programs remain original-authoritative. Offline whole-model GLB is an authoring preview, never a visibility list.'}
 
 
+SOURCE_DIRS=('GAME','GENESIS','reference')
+
+
+def inside_source(path):
+    """Case- and alias-correct: on APFS 'game/x' is GAME/x, yet is_relative_to differs."""
+    return source_guard.inside_source(path,ROOT,SOURCE_DIRS)
+
+
 def export(output, result):
     output=output.resolve()
-    if any(output.is_relative_to((ROOT/name).resolve()) for name in ('GAME','GENESIS')):raise ValueError('output cannot overwrite source')
+    if inside_source(output):raise ValueError('output cannot overwrite source')
     output.mkdir(parents=True,exist_ok=True)
     (output/'models').mkdir(exist_ok=True)
     for model in result['models']:

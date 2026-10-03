@@ -35,6 +35,7 @@ Do not open two games against one profile. Close the game before closing setup. 
 * **Genesis rejected:** use the supported raw ROM. Continue with PC-only play if unavailable.
 * **Security warning:** Windows signing is not supplied in this alpha. Check the download source and release checksum; do not disable system security.
 * **Linux will not start:** run `./"M1 Abrams Battle Tank Fan Remaster.sh"` in a terminal and retain the error. Check executable permissions and your graphics driver.
-* **Verification/startup error:** preserve the displayed message and profile `logs/`. Do not alter manifests or delete saves to bypass integrity checks.
+* **Verification/startup error:** preserve the displayed message and profile `logs/` (the game's console output is in `logs/game.log`). Do not alter manifests or delete saves to bypass integrity checks.
+* **Imported game files changed:** choosing the PC folder again will not repair them. Restore the profile from a backup, or use a fresh data home (`ABRAMS_DATA_HOME`); the changed profile is kept for diagnosis.
 
 The setup includes About, licences, the GitHub link, Nell Watson's remaster credit and the dedication to David “Ming” Kenny. See [rights and original game requirements](../NOTICE.md).

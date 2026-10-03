@@ -13,8 +13,17 @@ def put(source,target):
     if target.exists():target.unlink()
     shutil.copy2(source,target)
 
-def make(out,duration,picture_only=False):
+def make(out,duration,picture_only=False,base_html=ROOT/'artifacts/promo-20260929/motion/index.html'):
     media=out/'motion/media';long=duration==75;k=1 if long else 1/1.12
+    # Resolve every input before put()/ffmpeg replace anything in motion/media.
+    if not base_html.exists():raise SystemExit(f'Base composition {base_html} is missing; pass --base-html <v1 motion/index.html>.')
+    if base_html.resolve()==(out/'motion/index.html').resolve():raise SystemExit('--base-html must be the v1 composition, not this revision output (its v2 CSS would be appended twice).')
+    needed=[out/f'colonel-stills/colonel-{mode}.png' for mode in ['genesis','modern']]+[out/f'model-pairs/pair-{index:03}.png' for index in [125,163,161,155,156]]
+    if not picture_only:needed+=[media/n for n in ['narration-dry.wav','narration-pronunciation-v2-ah-only-dry.wav','music-suno.wav','smoke.wav','cannon.wav']]
+    missing=[str(p) for p in needed if not p.exists()]
+    if missing:raise SystemExit('Missing revision inputs: '+', '.join(missing))
+    base_styles=re.search(r'<style>(.*?)</style>',base_html.read_text(),re.S).group(1)
+    if '.logo-bug{' in base_styles:raise SystemExit(f'{base_html} already carries the v2 styles; pass the v1 composition.')
     crew_start=31.4*k;crew_pause=8 if long else 5.4;extra_pause=4 if long else 0
     model_start=crew_start+crew_pause;model_end=44.1*k+crew_pause+extra_pause-.7*(1 if long else 0)
     checkpoint=56.1 if long else 44.1*k+crew_pause
@@ -87,7 +96,7 @@ def make(out,duration,picture_only=False):
     body=pic('cover.png','cover')+'<div class="end-copy">'+logo('end-logo')+'<h2>FAN REMASTER</h2><p class="free">Free and open</p><p class="requirement">Bring your own original PC game.</p><p class="url">github.com/NellInc/Abrams</p><p class="dedication">Dedicated to the memory of<br>David “Ming” Kenny.</p></div>'
     add('closing',closing,duration,body,'endcard',['cover.png','game-logo.png'],'Actual game logo, project URL, original-PC requirement and memorial.')
     assert all(abs(a['start']+a['duration']-b['start'])<1e-6 for a,b in zip(shots,shots[1:]))
-    styles=re.search(r'<style>(.*?)</style>',(ROOT/'artifacts/promo-20260929/motion/index.html').read_text(),re.S).group(1)
+    styles=base_styles
     styles+='''.logo-bug{position:absolute;right:60px;top:48px;width:160px;height:120px;object-fit:contain}.cinema-logo{position:absolute;left:100px;bottom:280px;width:370px;height:277px;object-fit:contain;box-shadow:0 5px 35px #0008}.logo-tag{position:absolute;left:100px;bottom:166px;font:27px Plex;letter-spacing:3px;color:#eee8d7;line-height:1.6}.logo-tag b{font:27px Plex;color:#dfc796}.logo-tag small{display:block;font:26px Barlow;letter-spacing:0}.avatar-roster{position:absolute;left:100px;top:260px;display:flex;gap:45px}.avatar-roster>div{width:395px}.avatar{width:395px;height:395px;object-fit:contain}.avatar-roster p{text-align:center;font:28px Plex;color:#c4ab76;letter-spacing:2px}.roster-heading{position:absolute;left:100px;top:100px;font-size:72px;letter-spacing:3px}.solo-avatar{position:absolute;left:200px;top:160px;width:680px;height:680px;object-fit:contain}.crew-copy{position:absolute;left:1040px;top:335px;width:670px}.crew-copy h1{font-size:82px;letter-spacing:4px;margin:0 0 35px}.crew-copy p{font-size:52px;line-height:1.2;color:#c4ab76}.mode-panel{position:absolute;top:310px;width:640px}.mode-0{left:230px}.mode-1{left:1050px}.mode-panel .style-screen{width:640px;height:480px}.mode-panel p{text-align:center;font:28px Plex;color:#c4ab76}.model-heading{position:absolute;left:100px;top:70px;font-size:70px;letter-spacing:3px;margin:0}.unit-pair{position:absolute;left:100px;top:230px;width:1720px;height:516px;object-fit:contain}.model-side{position:absolute;top:780px;width:860px;text-align:center;font:28px Plex;color:#c4ab76}.original-side{left:100px}.modern-side{left:960px}.model-link{position:absolute;left:100px;top:855px;width:1720px;height:100px;object-fit:contain}.model-note{position:absolute;left:100px;top:190px;margin:0;font:20px Plex;color:#c4ab76}.end-copy{top:85px}.end-logo{width:390px;height:292px;object-fit:contain}.end-copy h2{margin:15px 0 28px}.end-copy .dedication{padding-top:8px}.end-copy p{margin:16px 0}'''
     styles += '#restoration .source-label{left:100px;top:180px;width:240px;line-height:1.5}'
     document='<!doctype html><html><head><meta charset="utf-8"><style>'+styles+'</style><script src="node_modules/gsap/dist/gsap.min.js"></script></head><body>'+f'<main id="main" data-composition-id="main" data-start="0" data-duration="{duration}" data-width="1920" data-height="1080" data-fps="30">'+''.join(scenes)+'</main><script>window.__timelines=window.__timelines||{};const tl=gsap.timeline({paused:true});'+''.join(animation)+f"tl.to('#closing',{{opacity:0,duration:.4}},{duration-.4});window.__timelines.main=tl;"+'</script></body></html>'
@@ -133,4 +142,4 @@ def mix(out,duration,k,pause,extra,crews):
     write(out/'audio-edit-receipt.json',{'duration':duration,'narration_tempo':tempo,'replacement_sentence':str(fix),'replacement_sha256':sha(fix),'replacement_tempo':factor,'crew_pause':pause,'additional_pause':extra,'crew_showcase':crews,'final_mix_sha256':sha(target),'filters':filters})
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--duration',type=int,choices=[60,75],default=60);p.add_argument('--picture-only',action='store_true');a=p.parse_args();make(a.output.resolve(),a.duration,a.picture_only)
+    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--duration',type=int,choices=[60,75],default=60);p.add_argument('--picture-only',action='store_true');p.add_argument('--base-html',type=Path,default=ROOT/'artifacts/promo-20260929/motion/index.html');a=p.parse_args();make(a.output.resolve(),a.duration,a.picture_only,a.base_html)

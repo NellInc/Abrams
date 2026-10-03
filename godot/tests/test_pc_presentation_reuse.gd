@@ -3,6 +3,7 @@ extends "res://scripts/pc_bridge_viewer.gd"
 var errors: Array[String] = []
 var checks := 0
 var native := false
+var pixels_compared := 0
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -38,7 +39,10 @@ func equivalent(source: Image, paired: Dictionary, world: Texture2D, program: Di
 	var actual := await snapshot()
 	invalidate_presentation_cache()
 	_present_tandem(source,paired,world,program)
-	check(actual==(await snapshot()),label+": cached and uncached pixels")
+	# Headless snapshots are empty: count only pixel comparisons that really ran.
+	if native:
+		check(actual==(await snapshot()),label+": cached and uncached pixels")
+		pixels_compared+=1
 	check(source.get_data()==original and JSON.stringify(paired)==metadata,label+": immutable input")
 
 func run() -> void:
@@ -68,8 +72,9 @@ func run() -> void:
 			_present_tandem(source,delivered,world,program)
 			check(presentation_reuses==hits+1 and presentation_builds==builds,"identical paired cockpit reused: "+str(e.stage)+"/"+mode)
 			check(tandem_frame._cached_presentation==delivered,"mode replay remembers current delivery")
-			check(expected==(await snapshot()),"reused native cockpit pixels: "+str(e.stage)+"/"+mode)
 			if native:
+				check(expected==(await snapshot()),"reused native cockpit pixels: "+str(e.stage)+"/"+mode)
+				pixels_compared+=1
 				# Only the production-owned source viewport can retain the final
 				# composite. Arbitrary mutable Texture2D inputs stay continuously live.
 				_present_tandem(source,paired,world_viewport.get_texture(),program)
@@ -84,8 +89,9 @@ func run() -> void:
 				_present_tandem(source,paired,world,program)
 			# In-place mutations cannot retroactively change the saved comparison.
 			delivered.page_offset=-1
+			var before_change := presentation_builds
 			await equivalent(source,delivered,world,program,"page provenance change")
-			check(presentation_builds>=builds+2,"changed metadata rebuilt")
+			check(presentation_builds==before_change+2,"changed metadata rebuilt")
 			await equivalent(source,paired,world,program,"restore original pair")
 			var changed := source.duplicate()
 			changed.set_pixel(160,60,Color.MAGENTA)
@@ -112,5 +118,5 @@ func run() -> void:
 			tandem_frame.set_graphics_mode(mode)
 			await equivalent(source,paired,world,program,"return from frontend")
 	for error in errors: printerr("FAIL: "+error)
-	print("PC_PRESENTATION_REUSE: %d checks, %d errors; native=%s; builds=%d, reuses=%d"%[checks,errors.size(),native,presentation_builds,presentation_reuses])
+	print("PC_PRESENTATION_REUSE: %d checks, %d errors; native=%s; pixels_compared=%d; builds=%d, reuses=%d"%[checks,errors.size(),native,pixels_compared,presentation_builds,presentation_reuses])
 	quit(0 if errors.is_empty() else 1)

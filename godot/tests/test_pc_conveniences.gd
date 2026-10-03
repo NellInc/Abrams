@@ -78,8 +78,13 @@ func advance(multiplier: int) -> void:
 func _capture() -> void:
 	exercising=true
 	check(previous_program.get("name")=="SIM" and not previous.is_empty(),"ordinary cold boot reaches SIM")
+	if audio_menu==null:
+		printerr("FAIL: production menus missing; run with --trace --play --frame-audit --capture --output DIR")
+		quit(1)
+		return
 	check(audio_menu.get_menu_count()==4,"production controls loaded")
 	check(tandem_frame.native_graphics.loaded==not pc_only,"donor loading follows install mode")
+	check(audio_menu.genesis_available==tandem_frame.native_graphics.loaded,"Genesis menu follows the loaded native pack")
 	check(tandem_frame.modern_available and draw_view.modern_assets.ready,"Modern assets preloaded")
 	check(draw_view.modern_prewarmed,"Modern shaders warmed before switching")
 	var source:=picture.texture.get_image().get_data()
@@ -117,16 +122,30 @@ func _capture() -> void:
 	check(not normal.is_empty(),"normal replay has source RAM/video audit")
 	await state_action("load_state",1)
 	check((await rendered_frame()).get_data()==mode_images[starting_mode],"loading restores complete rendered cockpit")
-	for multiplier in [1,2,4,8]:await advance(multiplier)
+	# The Session menu offers only normal and 8x; 7x1 + 1x8 replays the same fifteen frames.
+	for multiplier in [1,1,1,1,1,1,1,8]:await advance(multiplier)
 	check((await rendered_frame()).get_data()==normal_image.get_data(),"fast forward preserves complete rendered cockpit")
 	check(last_packet.get("frame_audit",{})==normal,"1x and fast-forward execute the same fifteen original frames")
+	var accelerated:Dictionary=last_packet.get("frame_audit",{}).duplicate(true)
 	check(JSON.stringify(previous)==normal_state,"same complete game state after accelerated replay")
 	audio_menu.speed_popup.id_pressed.emit(1)
 	check(not pc_audio.transport_muted,"normal-speed audio resumes without stale queued speech")
+	check(root.title==str(ProjectSettings.get_setting("application/config/name")),"fast forward restores the project window title")
 	check(audio_menu.state_slots.any(func(row):return int(row.slot)==0 and row.get("exists",false)),"pre-load recovery available")
+	# Move off the recovery point first, so a no-op undo cannot pass.
+	for i in 3:await advance(1)
+	var diverged:Dictionary=last_packet.get("frame_audit",{}).duplicate(true)
+	check(not diverged.is_empty() and diverged!=normal,"pre-undo state differs from recovery slot")
+	var undo_before:=state_results.size()
 	await state_action("load_state",0)
+	check(state_results.size()==undo_before+1 and state_results[-1].get("restored") is Dictionary,"undo carries a restored sample")
 	check(last_packet.get("frame_audit",{})==normal,"Undo load shortcut restores pre-load original RAM/video")
-	FileAccess.open(output.path_join("conveniences-report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"normal_audit":normal,"accelerated_audit":last_packet.get("frame_audit",{}),"state_results":state_results.map(func(r):return {"success":r.get("success"),"message":r.get("message")}),"scope":"Production native viewer; keyboard events through the live shortcut handler; graphics switches on frozen source frame; persisted quick save/load and recovery; 1x vs 1+2+4+8 original-frame replay. No mission victory claim."},"  "))
+	check((await rendered_frame()).get_data()==normal_image.get_data(),"undo restores the pre-load rendered cockpit")
+	check(JSON.stringify(previous)==normal_state,"undo restores pre-load game state")
+	# The restored audit is the stored packet; only fresh frames reach the restored core.
+	for i in 3:await advance(1)
+	check(last_packet.get("frame_audit",{})==diverged,"fresh frames after undo match original continuation")
+	FileAccess.open(output.path_join("conveniences-report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"normal_audit":normal,"diverged_audit":diverged,"accelerated_audit":accelerated,"state_results":state_results.map(func(r):return {"success":r.get("success"),"message":r.get("message")}),"scope":"Production native viewer; keyboard events through the live shortcut handler; graphics switches on frozen source frame; persisted quick save/load and recovery; 1x vs 7x1+8 original-frame replay. No mission victory claim."},"  "))
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_CONVENIENCES: %d checks, %d errors"%[checks,errors.size()])
 	if not errors.is_empty():bridge.failure=errors[0]

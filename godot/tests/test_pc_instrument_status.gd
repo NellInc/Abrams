@@ -5,7 +5,11 @@ func run() -> void:
 	repo = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	instruments = Instruments.new()
 	root.add_child(instruments)
-	check(instruments.load_sources(repo,Image.load_from_file(repo.path_join("local-art/genesis/cockpit-v2/gunner-genesis-v1.png"))),"source art loaded")
+	var loaded: bool=instruments.load_sources(repo,Image.load_from_file(repo.path_join("local-art/genesis/cockpit-v2/gunner-genesis-v1.png")))
+	check(loaded,"source art loaded")
+	for spec in Instruments.system_lamps(): check(instruments.plates.has(spec.plate),"system plate %d available"%spec.plate)
+	# Missing local inputs must fail promptly, not abort run() before quit().
+	if not loaded or not Instruments.system_lamps().all(func(s):return instruments.plates.has(s.plate)): done(); return
 	for spec in Instruments.system_lamps():
 		for color in [Instruments.GREEN,Instruments.YELLOW,Instruments.RED]:
 			bind(fixture(spec,0,color))
@@ -26,6 +30,8 @@ func run() -> void:
 		FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify(receipt,"  "))
 	instruments.clear()
 	check(instruments.gauges.is_empty(),"system lamps clear without cached state")
+	done()
+func done() -> void:
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_INSTRUMENT_STATUS: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

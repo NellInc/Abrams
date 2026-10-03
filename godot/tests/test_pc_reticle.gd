@@ -58,10 +58,13 @@ func contracts() -> void:
 	for field in ["schema","source_sha256","table_sha256","page_offset","rect","center_y","color","lines","pixel_sha256"]:
 		data=fixture();data[2].reticle.erase(field);bind(data,world)
 		check(frame.reticle_art.packet.is_empty(),"missing field fails closed: "+field)
-	for fault in ["ink","background","ownership","line","page","palette","camera","fraction","color","hash"]:
+	for fault in ["ink","ink_color","white_ink_color","background","ownership","line","page","palette","camera","fraction","color","hash"]:
 		data=fixture()
 		match fault:
-			"ink": data[0].set_pixel(159,40,Color.MAGENTA)
+			# Re-hash so the per-pixel ink colour guard, not the hash, must reject these.
+			"ink": data[0].set_pixel(159,40,Color.MAGENTA);data[2].reticle.pixel_sha256=digest(data[0].get_region(Reticle.BOX))
+			"ink_color": data[2].reticle.color=1
+			"white_ink_color": data=fixture(60,1);data[2].reticle.color=0
 			"background": data[0].set_pixel(160,60,Color.MAGENTA)
 			"ownership": data[1].set_pixel(159,40,Color.BLACK)
 			"line": data[2].reticle.lines[0][0]+=1

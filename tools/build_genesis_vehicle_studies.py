@@ -16,6 +16,7 @@ from mathutils import Vector
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from tools.extract_genesis_models import ROM_HASH, canonical_cycle
+from tools.source_guard import inside_source
 
 
 def build(source: Path, output: Path):
@@ -185,7 +186,11 @@ def build(source: Path, output: Path):
             collection.hide_render = True
             collection.hide_viewport = True
     bpy.ops.wm.save_as_mainfile(filepath=str(output / 'genesis-source-fitted-studies.blend'))
-    manifest = {'schema': 1, 'rom_sha256': ROM_HASH, 'source': str(source),
+    try:  # Repo-relative, so the study survives a moved or re-cloned checkout.
+        recorded_source = str(source.resolve().relative_to(ROOT))
+    except ValueError:
+        recorded_source = str(source.resolve())
+    manifest = {'schema': 1, 'rom_sha256': ROM_HASH, 'source': recorded_source,
                 'source_catalog_sha256': hashlib.sha256(catalog_path.read_bytes()).hexdigest(),
                 'blender': bpy.app.version_string, 'models': receipts,
                 'transformation': {'raw_units_per_blender_unit': 64, 'bevel_raw_units': .45,
@@ -201,6 +206,6 @@ if __name__ == '__main__':
     p.add_argument('--source', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     a = p.parse_args(sys.argv[sys.argv.index('--') + 1:])
-    if any(a.output.resolve().is_relative_to((ROOT / n).resolve()) for n in ('GAME', 'GENESIS', 'reference')):
+    if inside_source(a.output, ROOT, ('GAME', 'GENESIS', 'reference')):
         p.error('author studies outside original/reference directories')
     build(a.source, a.output)

@@ -26,7 +26,10 @@ func snapshot() -> Image:
 func settings_contract() -> void:
 	var menu := Menu.new()
 	menu.config_path=""
-	menu.quality_config_path=output.path_join("graphics-%d.cfg"%Time.get_ticks_usec())
+	# Disposable config outside the documented receipts folder; must start absent.
+	var path:=OS.get_temp_dir().path_join("abrams-render-quality-%d.cfg"%OS.get_process_id())
+	DirAccess.remove_absolute(path)
+	menu.quality_config_path=path
 	root.add_child(menu)
 	check(menu.load_quality_settings() and menu.quality==Menu.QUALITY_DEFAULTS,"missing config defaults")
 	check(menu.choose_quality("msaa",2) and menu.choose_quality("anisotropy",8),"write both preferences")
@@ -42,8 +45,10 @@ func settings_contract() -> void:
 	for value in [4.0,"4",true]:
 		cfg.set_value("graphics","msaa",value);cfg.save(menu.quality_config_path)
 		check(not loaded.load_quality_settings(),"wrong preference type rejected")
-	menu.quality_config_path=output.path_join("absent/graphics.cfg")
+	menu.quality_config_path=OS.get_temp_dir().path_join("abrams-render-quality-absent-%d/graphics.cfg"%OS.get_process_id())
 	check(menu.choose_quality("msaa",0) and not menu.quality_error.is_empty(),"save failure retains live choice and reports it")
+	DirAccess.remove_absolute(path)
+	check(not FileAccess.file_exists(path),"scratch quality config removed")
 	loaded.free();menu.free()
 
 func packet() -> Dictionary:

@@ -9,7 +9,11 @@ import unittest
 import wave
 
 from tools.extract_genesis_audio import WaveSink, audio_metrics, parse_sequence
-from tools.genesis_capture import ReferenceCore
+import sys
+from unittest import mock
+
+from tools import genesis_capture
+from tools.genesis_capture import ReferenceCore, parse_capture_sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,6 +27,27 @@ class AudioSequenceTests(unittest.TestCase):
         for value in ("", "0", "-1", "36001", "36000,1", "1+fire", "1+", "2.5"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 parse_sequence(value)
+
+
+class CaptureSequenceTests(unittest.TestCase):
+    def test_named_steps(self):
+        self.assertEqual(parse_capture_sequence("120:boot,240:title,1+start,120:menu"),
+                         [(120, [], "boot"), (240, [], "title"), (1, ["start"], ""), (120, [], "menu")])
+
+    def test_invalid_steps(self):
+        for value in ("1+Start", "0:x", "36001:x", "1:../x", "1:a,1:a", "x:boot", "1+:x"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                parse_capture_sequence(value)
+
+    def test_late_bad_step_fails_before_emulating_or_writing(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "capture"
+            argv = ["genesis_capture.py", "--output", str(output), "--sequence", "120:boot,240:title,1+Start,120:menu"]
+            with mock.patch.object(sys, "argv", argv), \
+                    mock.patch.object(genesis_capture, "ReferenceCore", side_effect=AssertionError("emulated")), \
+                    mock.patch("sys.stderr"), self.assertRaises(SystemExit):
+                genesis_capture.main()
+            self.assertFalse(output.exists())
 
 
 class WaveSinkTests(unittest.TestCase):

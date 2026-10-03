@@ -15,14 +15,16 @@ import bmesh
 from mathutils import Vector
 
 ROOT=Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
+from tools.source_guard import inside_source
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--source',type=Path,default=ROOT/'reference/pc-vehicles/source-v1')
 p.add_argument('--output',type=Path,required=True)
 a=p.parse_args(sys.argv[sys.argv.index('--')+1:])
-if any(a.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ('GAME','GENESIS','reference')):raise ValueError('author studies outside original/reference directories')
-a.output.mkdir(parents=True,exist_ok=False)
+if inside_source(a.output,ROOT,('GAME','GENESIS','reference')):raise ValueError('author studies outside original/reference directories')
 catalog=json.loads((a.source/'catalog.json').read_text())
 if catalog['schema']!=1 or catalog['live']['classes_matched']!=31:raise ValueError('source-named model proof required')
+a.output.mkdir(parents=True,exist_ok=False)
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
 scene=bpy.context.scene
 scene.render.engine='CYCLES';scene.cycles.samples=40
@@ -124,7 +126,7 @@ def t62_detail(collection):
         for y,radius in [(-90,7),(110,9)]:
             cylinder('T62_endwheel',(sign*58.4,y,-4),radius,.2,rim,primitive)
         for first,last in zip(contour,contour[1:]+contour[:1]):
-            delta=Vector((last[0]-first[0],last[1]-first[1]));count=max(1,int(delta.length()/5))
+            delta=Vector((last[0]-first[0],last[1]-first[1]));count=max(1,int(delta.length/5))
             for i in range(count):
                 at=Vector(first).lerp(Vector(last),(i+.5)/count)
                 bpy.ops.mesh.primitive_cube_add(size=1,location=(sign*58.3/64,at.x/64,at.y/64))
@@ -137,6 +139,12 @@ def t62_detail(collection):
         bpy.ops.mesh.primitive_cube_add(size=1,location=(x/64,-77/64,17.2/64))
         obj=bpy.context.object;obj.name='T62_engine_grille';obj.scale=(2/64,25/64,.4/64)
         obj.data.materials.append(track);attach(obj,13367)
+    # One import object per source primitive keeps the study within the Godot check's mesh-object bound.
+    for primitive in sorted({obj['source_primitive'] for obj in collection.objects if obj.get('authored_detail')}):
+        parts=[obj for obj in collection.objects if obj.get('authored_detail') and obj['source_primitive']==primitive]
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in parts:obj.select_set(True)
+        bpy.context.view_layer.objects.active=parts[0];bpy.ops.object.join();parts[0].name=f'T62_detail_{primitive}'
     return {'roadwheels_per_side':5,'authored_surface_relief':True,
             'reference':'https://odin.t2com.army.mil/WEG/Asset/T-62_Russian_Medium_Tank',
             'scope':'Visual wheel count reference only. Positions, relief, hatch and grille fitted by the artist to original model proportions; no drivetrain or damage semantics.'}

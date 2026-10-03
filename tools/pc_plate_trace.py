@@ -9,7 +9,8 @@ import struct
 try:
     from tools.pc_plate_oracle import PLATES
     from tools.inspect_scenarios import decode_resource
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from pc_plate_oracle import PLATES
     from inspect_scenarios import decode_resource
 

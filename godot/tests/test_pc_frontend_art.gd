@@ -158,6 +158,45 @@ func run() -> void:
 	tandem.set_frame(Image.create_empty(320,200,false,Image.FORMAT_RGB8),{},null)
 	check(not tandem.frontend_art.visible and tandem.frontend_art.active.is_empty(),"tandem clears stale frontend")
 	tandem.queue_free()
+	# Outline text needs only the pinned GAME fonts: a missing Wilson supplement
+	# disables the office but never information-page typography.
+	var partial:=OS.get_user_data_dir().path_join("frontend-art-partial-root")
+	DirAccess.make_dir_recursive_absolute(partial.path_join("local-art"))
+	var links:=DirAccess.open(partial)
+	if not DirAccess.dir_exists_absolute(partial.path_join("GAME")): links.create_link(root_path.path_join("GAME"),partial.path_join("GAME"))
+	for folder in DirAccess.get_directories_at(root_path.path_join("local-art")):
+		if folder!="pc-wilson-completion-v1" and not DirAccess.dir_exists_absolute(partial.path_join("local-art/"+folder)):
+			links.create_link(root_path.path_join("local-art/"+folder),partial.path_join("local-art/"+folder))
+	var fresh=Frontend.new() # No fonts retained from the complete load above.
+	fresh.text_enabled=true
+	check(not fresh.load_sources(partial) and fresh.catalog.is_empty(),"missing Wilson supplement disables office art")
+	check(fresh.typography.fonts.size()==4,"office failure keeps verified outline fonts")
+	var info_path:=root_path.path_join("artifacts/pc-information-baseline-02/report.json")
+	if FileAccess.file_exists(info_path):
+		var info:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(info_path))
+		var heat:Dictionary=info.samples.filter(func(e):return e.label=="heat")[0]
+		check(fresh.set_frame(Image.load_from_file(info_path.get_base_dir().path_join(heat.image)),heat.program) and fresh.active.get("scene")=="information","information art independent of office")
+		check(not fresh.typography.runs.is_empty(),"information outline text independent of office")
+	fresh.free()
+	# START/ANIM replay marker survives the text-only presentation, and a
+	# nonbinary UI mask rejects both the replay and the menu typography.
+	var menu_path:=root_path.path_join("artifacts/pc-menu-text-trace-04/report.json")
+	if FileAccess.file_exists(menu_path):
+		var menus:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(menu_path))
+		var prompt:Dictionary=menus.samples.filter(func(e):return e.label=="joystick")[0]
+		var menu:=Image.load_from_file(menu_path.get_base_dir().path_join(prompt.image))
+		var replay:Dictionary=prompt.presentation.duplicate(true)
+		replay.draw_pass={"frontend_scene":"START/ANIM"}
+		var text_was: bool=art.text_enabled
+		art.text_enabled=true
+		check(art.set_frame(menu,prompt.program,replay,true) and art.active.get("scene")=="text","paired START menu shows original typography")
+		check(art.active.get("preview")=="Original START/ANIM draw, high-resolution replay","visible text keeps START/ANIM replay marker")
+		var ui_bits:=Image.new()
+		ui_bits.load_png_from_buffer(Marshalls.base64_to_raw(replay.ui_overlay.mask_png))
+		ui_bits.set_pixel(0,0,Color8(128,128,128))
+		replay.ui_overlay.mask_png=Marshalls.raw_to_base64(ui_bits.save_png_to_buffer())
+		check(not art.set_frame(menu,prompt.program,replay,true) and art.flow_typography.runs.is_empty() and not art.material.get_shader_parameter("scene_enabled"),"nonbinary UI mask rejects menu typography and replay")
+		art.text_enabled=text_was
 	check(not art.load_sources(root_path.path_join("artifacts/missing-frontends")),"missing assets rejected")
 	check(art.catalog.is_empty() and not art.visible,"failed load clears old art")
 	if native:

@@ -129,6 +129,43 @@ class PortableContracts(unittest.TestCase):
             finally:first.close()
             second=lock_saves(directory);second.close()
 
+    def test_invoke_forwards_failure_stderr_and_success_json_only(self):
+        import contextlib,io,subprocess,sys
+        from tools.standalone import portable_launcher
+        error='{"error": "PC_VIEW_FAILED: synthetic"}\n'
+        for code,out,err,expected in [(2,'Godot Engine v4.7.2 banner\n',error,error),
+                                      (1,'Godot Engine banner only\n','','Godot Engine banner only\n'),
+                                      (0,'{"pc_installed": true}','renderer warning\n','{"pc_installed": true}')]:
+            with self.subTest(code=code,err=err), tempfile.TemporaryDirectory() as temporary:
+                stream=io.StringIO()
+                with patch.object(portable_launcher,'verify'), patch.object(portable_launcher.sys,'platform','linux'), \
+                     patch.object(portable_launcher.subprocess,'run',return_value=subprocess.CompletedProcess([],code,out,err)), \
+                     patch.object(sys,'argv',['launcher','--bundle',temporary,'--invoke','--play']), contextlib.redirect_stdout(stream):
+                    self.assertEqual(portable_launcher.main(),code)
+                self.assertEqual(stream.getvalue(),expected)
+
+    def test_portable_game_output_goes_to_profile_log_and_failure_is_json(self):
+        import contextlib,io,subprocess,sys
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary).resolve();bundle=root/'portable app';home=root/'player data';home.mkdir()
+            for name in ['renderer/AbramsRenderer.exe' if sys.platform=='win32' else 'renderer/AbramsRenderer',
+                         'runtime/AbramsRuntime/'+('AbramsRuntime.exe' if sys.platform=='win32' else 'AbramsRuntime')]:
+                path=bundle/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'synthetic');path.chmod(0o755)
+            def game(arguments,env,stdout,stderr):
+                self.assertEqual(stderr,subprocess.STDOUT)
+                stdout.write(b'Godot Engine banner\nPC_VIEW_FAILED: synthetic\n');return game.code
+            for game.code in (3,0):
+                stream=io.StringIO()
+                with self.subTest(code=game.code), patch.object(runtime,'app_resources',return_value=(bundle,{})), \
+                     patch.object(runtime,'prepare_install',return_value=root/'install'), patch.object(runtime,'genesis_enabled',return_value=False), \
+                     patch.object(runtime.subprocess,'run'), patch.object(runtime.subprocess,'call',side_effect=game), contextlib.redirect_stderr(stream):
+                    self.assertEqual(runtime.launch(bundle,home,[]),game.code)
+                if game.code:
+                    message=json.loads(stream.getvalue())['error']
+                    self.assertIn('exited with code 3',message);self.assertIn('game.log',message);self.assertIn('PC_VIEW_FAILED: synthetic',message)
+                else:self.assertEqual(stream.getvalue(),'')
+            self.assertEqual((home/'logs/game.log').read_bytes().count(b'PC_VIEW_FAILED: synthetic'),2)
+
 @unittest.skipUnless(os.environ.get('ABRAMS_PORTABLE_SMOKE'), 'Native portable core smoke opt-in')
 class NativePortableCoreSmoke(unittest.TestCase):
     def test_native_observer_exports_and_original_free_boot(self):

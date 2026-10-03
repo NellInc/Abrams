@@ -44,6 +44,22 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn('git clone --config core.autocrlf=false --config core.eol=lf', workflow)
         self.assertNotIn('git -c core.autocrlf=false clone', workflow)
 
+    def test_portable_alpha_gates_original_bytes_and_setup_parse_errors(self):
+        path = Path(__file__).resolve().parents[1] / '.github/workflows/portable-alpha.yml'
+        if not path.is_file():
+            self.skipTest('Repository workflow is outside the isolated player source kit')
+        workflow = path.read_text(encoding='utf-8')
+        # The denylist comes from the checkout, never from the ZIP being vetted.
+        trusted = workflow.index("(root/'tools/package/game-inputs.json').read_bytes()")
+        self.assertLess(trusted, workflow.index('with zipfile.ZipFile(archive) as z:'))
+        self.assertNotIn("z.read('tools/package/game-inputs.json'))['files']", workflow)
+        self.assertIn("'Input inventory differs from checkout'", workflow)
+        self.assertLess(workflow.index("'Input inventory differs from checkout'"), workflow.index('z.extractall(root)'))
+        # Godot exits 0 on parse errors, so the setup smoke must read its logs.
+        self.assertIn("grep -Eq 'SCRIPT ERROR:|Parse Error:|^ERROR:' \"$CHECK_LOG\" \"$SMOKE_LOG\"", workflow)
+        self.assertIn("grep -q 'PORTABLE_SETUP_SMOKE: PASS' \"$SMOKE_LOG\"", workflow)
+        self.assertNotIn('ABRAMS_BUNDLE', workflow)
+
     def test_box_cover_loading_screen_is_packaged_without_a_logo_or_hold(self):
         import json
         root = Path(__file__).resolve().parents[1]
@@ -137,6 +153,20 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn('func windowShouldClose(_ sender: NSWindow) -> Bool { canCloseLauncher() }', SOURCE)
         self.assertIn('if running != nil || busy {', SOURCE)
         self.assertNotIn('process.terminate(', SOURCE)
+
+    def test_play_failure_shows_runtime_error_or_newest_log_lines(self):
+        play = SOURCE[SOURCE.index('@objc func play()'):SOURCE.index('@objc func openGitHub()')]
+        self.assertIn('String(decoding: tail, as: UTF8.self)', play)
+        self.assertIn('JSONSerialization.jsonObject(with: $0)', play)
+        self.assertIn('String(text.suffix(1799))', play)
+        self.assertNotIn('prefix(', play)
+
+    def test_portable_setup_smoke_receipt_only_on_success(self):
+        setup = (Path(__file__).resolve().parents[1] / 'godot/scripts/portable_setup.gd').read_text()
+        smoke = setup[setup.index('if "--setup-smoke" in OS.get_cmdline_user_args():'):setup.index('play.disabled = not installed')]
+        self.assertEqual(setup.count('PORTABLE_SETUP_SMOKE: PASS'), 1)
+        self.assertLess(smoke.index('quit(1)'), smoke.index('else:'))
+        self.assertGreater(smoke.index('PORTABLE_SETUP_SMOKE: PASS'), smoke.index('else:'))
 
     def test_accessibility_keyboard_and_release_version(self):
         self.assertIn('setAccessibilityLabel("Installation status")', SOURCE)

@@ -14,7 +14,8 @@ try:
     from tools.generate_crew_voice import validate_wav, pronounce_headings
     from tools.install_pc_crew_voice import check_take
     from tools.pc_crew_voice import BEARINGS
-except ModuleNotFoundError:
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
     from generate_crew_voice import validate_wav, pronounce_headings
     from install_pc_crew_voice import check_take
     from pc_crew_voice import BEARINGS

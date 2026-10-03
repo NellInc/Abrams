@@ -95,6 +95,18 @@ func corruption() -> void:
 	instruments.clear()
 	check(instruments.orientation.packet.is_empty() and not instruments.orientation.visible,"fallback clears diagram")
 
+func grid_spans() -> void:
+	# Horizontal calls end inclusively at box.end.x-1; vertical calls exclude box.end.y.
+	for station in [0,1]:
+		check(bind(synthetic(station)),"grid span fixture "+str(station))
+		var panel: Control = instruments.orientation
+		for line in panel.packet.grid:
+			var p: Array = line.points
+			var span: PackedVector2Array = panel._grid_span(p)
+			var local := Vector2(p[0],p[1])-Vector2(panel.source_rect.position)+Vector2(0.5,0.5)
+			var expected := [Vector2(0,local.y),Vector2(62,local.y)] if p[1]==p[3] else [Vector2(local.x,0),Vector2(local.x,44)]
+			check(span[0].is_equal_approx(expected[0]) and span[1].is_equal_approx(expected[1]),"grid stroke span follows original endpoints %s"%[p])
+
 # Frozen pre-optimization predicate, independent of the packed-byte path.
 func original_guard(source: Image, ui: Image, tags: Image, original: Image, guard: Rect2i, box: Rect2i, plate: int) -> bool:
 	for y in range(guard.position.y,guard.end.y):
@@ -157,13 +169,37 @@ func guard_parity() -> void:
 		images[1].set_pixelv(guard.end-Vector2i.ONE,Color.BLACK)
 		check(not bind(images),"current image mutation never uses stale validity")
 
+func report_at(path: String, field: String) -> Variant:
+	var report = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+	check(report is Dictionary and report.get(field) is Array,"unreadable report "+path)
+	return report if report is Dictionary and report.get(field) is Array else null
+
+func arg_value(args: PackedStringArray, flag: String) -> String:
+	var index := args.find(flag)
+	if index<0: return ""
+	var ok := index+1<args.size() and not args[index+1].begins_with("--")
+	check(ok,"missing value for "+flag)
+	return args[index+1] if ok else ""
+
 func oracle(path: String) -> void:
-	var report: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var report = report_at(path,"cases")
+	if report==null: return
 	check(report.case_count==1024,"full original CPU sweep")
 	for item in report.cases:
-		check(bind(fixture(item.presentation,item.pixels_hex.hex_decode())),"original CPU case %s/%s/%s"%[item.station,item.theme,item.heading])
+		var pixels: PackedByteArray = item.pixels_hex.hex_decode()
+		check(bind(fixture(item.presentation,pixels)),"original CPU case %s/%s/%s"%[item.station,item.theme,item.heading])
 		if not instruments.orientation.packet.is_empty():
 			check(instruments.orientation.packet.quads==item.presentation.quads,"source geometry and damage colours retained")
+			# Each grid stroke's end cells are lit in the original, and the original
+			# lit run does not continue past either end inside the 62x44 box.
+			for line in instruments.orientation.packet.grid:
+				var span: PackedVector2Array = instruments.orientation._grid_span(line.points)
+				var step := (span[1]-span[0]).normalized()*0.5
+				for end in [[span[0]+step,span[0]-step],[span[1]-step,span[1]+step]]:
+					var inside := Vector2i(end[0].floor())
+					var beyond := Vector2i(end[1].floor())
+					check(pixels[inside.y*62+inside.x]==8,"grid stroke end matches original pixel %s"%[line.points])
+					check(not Rect2i(0,0,62,44).has_point(beyond) or pixels[beyond.y*62+beyond.x]!=8,"grid stroke stops short of original pixel %s"%[line.points])
 
 func capture(viewport: SubViewport) -> Image:
 	await process_frame
@@ -172,7 +208,8 @@ func capture(viewport: SubViewport) -> Image:
 	return viewport.get_texture().get_image()
 
 func native(path: String, output: String, oracle_path: String) -> void:
-	var report: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var report = report_at(path,"ui_presentations")
+	if report==null: return
 	DirAccess.make_dir_recursive_absolute(output)
 	var viewport := SubViewport.new()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -223,8 +260,8 @@ func native(path: String, output: String, oracle_path: String) -> void:
 				check(frame.set_frame(source,wrong,world) and panel.packet.is_empty(),"unsupported palette clears orientation")
 				check(not frame.set_frame(source,{},world) and panel.packet.is_empty(),"fallback clears orientation")
 	# Source CPU cases demonstrate warning-edge variants and outline-only mode.
-	if not oracle_path.is_empty():
-		var cases: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(oracle_path))
+	var cases = null if oracle_path.is_empty() else report_at(oracle_path,"cases")
+	if cases!=null:
 		viewport.size = Vector2i(1280,800)
 		frame.hide()
 		var panel: Control = Orientation.new()
@@ -237,6 +274,11 @@ func native(path: String, output: String, oracle_path: String) -> void:
 			panel.size = Vector2(62,44)*12
 			var picture := await capture(viewport)
 			picture.save_png(output.path_join("cpu-variant-%04d.png"%index))
+			# Horizontal grid calls light the final source column (61) to the edge.
+			for line in images[3].grid:
+				if line.points[1]!=line.points[3]: continue
+				var at: Color = picture.get_pixel(160+61*12+6,80+(int(line.points[1])-int(images[3].rect[1]))*12+6)
+				check(at.g>0.5 and at.r<0.2 and at.b<0.2,"horizontal grid reaches final source column %d"%index)
 	check(coverage.size()==2,"both live stations rendered")
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"coverage":coverage,"all_pixels_compared":compared,"samples":samples},"  "))
 
@@ -246,11 +288,16 @@ func run() -> void:
 	root.add_child(instruments)
 	check(instruments.load_sources(repo,Image.load_from_file(repo.path_join("local-art/genesis/cockpit-v2/gunner-genesis-v1.png"))),"original and Genesis sources loaded")
 	corruption()
+	grid_spans()
 	guard_parity()
 	var args := OS.get_cmdline_user_args()
-	var oracle_path := args[args.find("--oracle")+1] if "--oracle" in args else ""
+	var oracle_path := arg_value(args,"--oracle")
 	if not oracle_path.is_empty(): oracle(oracle_path)
-	if "--native" in args: await native(args[args.find("--fixture")+1],args[args.find("--output")+1],oracle_path)
+	if "--native" in args:
+		var fixture_path := arg_value(args,"--fixture")
+		var output := arg_value(args,"--output")
+		check(not fixture_path.is_empty() and not output.is_empty(),"native run needs --fixture and --output")
+		if not fixture_path.is_empty() and not output.is_empty(): await native(fixture_path,output,oracle_path)
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_ORIENTATION: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

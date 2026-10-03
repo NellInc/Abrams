@@ -17,7 +17,10 @@ func check(ok: bool, label: String) -> void:
 	checks+=1
 	if not ok: errors.append(label)
 
-func _initialize() -> void: run.call_deferred()
+func _initialize() -> void:
+	# A script error aborts run() before quit(); fail the gate instead of hanging it.
+	create_timer(120).timeout.connect(func(): printerr("FAIL: optional genesis deadline (%d checks)"%checks); quit(2))
+	run.call_deferred()
 func _process(_delta: float) -> bool: return false
 
 func run() -> void:
