@@ -8,7 +8,7 @@ from tools.pc_fonts import decode_font
 from tools.build_pc_outline_fonts import build_face
 
 ROOT=Path(__file__).resolve().parents[1]
-DIRECTORY=ROOT/'local-art/pc-outline-fonts-v3'
+DIRECTORY=ROOT/'local-art/pc-outline-fonts-v5'
 
 
 def classify(point,contours):
@@ -91,9 +91,109 @@ class OutlineFontTests(unittest.TestCase):
                         for x,y in polygon:self.assertTrue(0<=x<=w and 0<=y<=h)
                     changed+=int(item['redrawn'])
                     optical+=int(item['optically_shaped'])
-        self.assertEqual(changed,295)
-        self.assertEqual(optical,203)
+        self.assertEqual(changed,290)
+        self.assertEqual(optical,223)
         self.assertEqual(cells,21660)
+
+    def test_capitals_figures_and_symbols_keep_approved_geometry(self):
+        # Pins are the complete non-lowercase contour inventories from v3.
+        expected={
+            '6X6.FNT':'709a0cb707f9d1d773081d02abf90692fca3d321a5b076752355192a8b4ff572',
+            '8X6.FNT':'85979323cc9c03d32136265b0419b21f583ab914022eb46ea26cdc52334ab1d4',
+            '8X8.FNT':'f3a6a586da9235327f20dd0dd5066ae02db8027cf0496f2d26856469a37295fb',
+            'STENCIL.FNT':'7f74d7d79baa48c8c3ebb068441cfebdcea3614a85e62e0574d2b4f3cfa7f533'}
+        manifest=json.loads((DIRECTORY/'manifest.json').read_text())
+        for face in manifest['faces']:
+            records=[(g['code'],g['contours']) for g in face['glyphs']
+                     if not chr(g['code']).islower()]
+            actual=hashlib.sha256(json.dumps(records,separators=(',',':')).encode()).hexdigest()
+            self.assertEqual(actual,expected[face['source']])
+
+    def test_all_lowercase_keep_source_extents_and_regular_stems(self):
+        manifest=json.loads((DIRECTORY/'manifest.json').read_text())
+        for face in manifest['faces']:
+            source=decode_font((ROOT/'GAME'/face['source']).read_bytes());w=source['width']
+            glyphs={chr(g['code']):g['contours'] for g in face['glyphs']}
+            for item in face['glyphs']:
+                if not chr(item['code']).islower():continue
+                self.assertTrue(item['optically_shaped'])
+                ink=[(i%w,i//w) for i,b in enumerate(source['glyphs'][item['code']-32]) if b]
+                pts=[p for poly in item['contours'] for p in poly]
+                self.assertEqual((min(p[0] for p in pts),min(p[1] for p in pts),
+                                  max(p[0] for p in pts),max(p[1] for p in pts)),
+                                 (min(p[0] for p in ink),min(p[1] for p in ink),
+                                  max(p[0] for p in ink)+1,max(p[1] for p in ink)+1),
+                                 (face['source'],chr(item['code'])))
+            # Source classifications are mandatory for every lowercase face,
+            # including open light e, split stencil shoulders, m/w branches,
+            # serif feet and the original unequal s terminals.
+            for item in face['glyphs']:
+                if not chr(item['code']).islower():continue
+                bits=source['glyphs'][item['code']-32]
+                for i,ink in enumerate(bits):
+                    actual=classify((i%w+.5,i//w+.5),item['contours'])
+                    self.assertIsNotNone(actual,(face['source'],chr(item['code']),i))
+                    self.assertEqual(actual,bool(ink),(face['source'],chr(item['code']),i))
+            # Measure the actual source stems, rather than insisting that the
+            # asymmetric stencil face have the dialogue face's two-unit stem.
+            for char in 'hn':
+                bands=intervals(glyphs[char],4.5 if face['cell'][1]==8 else 3.5)
+                self.assertEqual(len(bands),2,(face['source'],char,bands))
+                row=4 if face['cell'][1]==8 else 3
+                bits=source['glyphs'][ord(char)-32][row*w:(row+1)*w]
+                weights=[];length=0
+                for ink in bits+[0]:
+                    if ink:length+=1
+                    elif length:weights.append(length);length=0
+                self.assertEqual(len(weights),len(bands),(face['source'],char))
+                for (a,b),weight in zip(bands,weights):self.assertAlmostEqual(b-a,weight,delta=.012)
+
+    def test_distinctive_source_letter_topology_is_retained(self):
+        manifest=json.loads((DIRECTORY/'manifest.json').read_text())
+        probes={
+            '8X8.FNT':{'r':[(5.5,4.5,True)],'a':[(4.5,6.5,False),(5.5,6.5,True)],
+                       'g':[(4.5,2.5,False),(5.5,7.5,False)],
+                       'm':[(3.5,6.5,False),(3.5,4.5,True)],
+                       'w':[(.5,6.5,False),(3.5,4.5,True)]},
+            '8X6.FNT':{'e':[(3.5,2.5,True),(3.5,3.5,True)],
+                       's':[(.5,2.5,False),(5.5,2.5,True),(3.5,3.5,True)]},
+            'STENCIL.FNT':{'n':[(2.5,2.5,False)],'a':[(4.5,3.5,False)],
+                           'w':[(1.5,2.5,False)],'e':[(3.5,2.5,False)]}}
+        for face in manifest['faces']:
+            glyphs={chr(g['code']):g['contours'] for g in face['glyphs']}
+            for char,points in probes.get(face['source'],{}).items():
+                for x,y,ink in points:self.assertEqual(classify((x,y),glyphs[char]),ink,(face['source'],char,x,y))
+
+    def test_lowercase_freetype_pixels_match_the_actual_outline_interior(self):
+        from PIL import Image, ImageDraw, ImageFont
+        manifest=json.loads((DIRECTORY/'manifest.json').read_text())
+        for face in manifest['faces']:
+            w,h=face['cell']
+            for scale in (3,6):
+                font=ImageFont.truetype(str(DIRECTORY/face['file']),h*scale)
+                for item in face['glyphs']:
+                    if not chr(item['code']).islower():continue
+                    glyph=Image.new('L',(w*scale,h*scale))
+                    ImageDraw.Draw(glyph).text((0,h*scale),chr(item['code']),font=font,
+                                              fill=255,anchor='ls',stroke_width=0)
+                    segments=[(a,b) for poly in item['contours']
+                              for a,b in zip(poly,poly[1:]+poly[:1])]
+                    for py in range(h*scale):
+                        for px in range(w*scale):
+                            x,y=(px+.5)/scale,(py+.5)/scale
+                            distance=1e6
+                            for a,b in segments:
+                                dx,dy=b[0]-a[0],b[1]-a[1]
+                                t=max(0,min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy)))
+                                distance=min(distance,((x-a[0]-t*dx)**2+(y-a[1]-t*dy)**2)**.5)
+                            if distance*scale<=.8:continue
+                            ink=classify((x,y),item['contours'])
+                            self.assertIsNotNone(ink)
+                            # FreeType's area coverage rounds to 8-bit gray.
+                            # Use the same 2/255 allowance as the native oracle.
+                            self.assertAlmostEqual(glyph.getpixel((px,py)),255 if ink else 0,
+                                                   delta=2,
+                                                   msg=(face['source'],chr(item['code']),scale,px,py))
 
     def test_measured_stem_weights_bars_and_stencil_bridges(self):
         manifest=json.loads((DIRECTORY/'manifest.json').read_text())

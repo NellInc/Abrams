@@ -34,6 +34,9 @@ func render(source: Image, label: String) -> void:
 	RenderingServer.force_sync()
 	var image := view.get_texture().get_image()
 	var height := int(art.active.get("height",0))
+	var map_frame: bool = art.active.get("scene","")=="map_frame"
+	if map_frame:
+		check(art.map_art.active.get("content_preserved")==[10,10,300,166],"source-verified map content bounds")
 	var changed := 0
 	for y in 800:
 		for x in 1280:
@@ -42,8 +45,15 @@ func render(source: Image, label: String) -> void:
 			for run in art.typography.runs:
 				if run.rect.has_point(Vector2(x/4,y/4)): text_run=run; break
 			if not text_run.is_empty(): check(outlines.matches(image.get_pixel(x,y),text_run,Vector2(x+0.5,y+0.5)/4,Vector2(4,4)),"outline office letterform: "+label)
+			elif map_frame:
+				# END can legitimately select the remastered FRAME surround.
+				# Its protected contents still require exact original pixels.
+				if Rect2i(10,10,300,166).has_point(Vector2i(x/4,y/4)):
+					check(same,"protected map contents changed: "+label)
+				elif not same: changed+=1
 			elif y>=height*4: check(same,"protected original text/fallback changed: "+label)
 			elif not same: changed+=1
+	if map_frame: check(changed>1000,"source-verified FRAME surround visibly remastered")
 	if height>0:
 		check(changed>100000,"restored office visibly drawn: "+label)
 		var office: Image = art.material.get_shader_parameter("office").get_image()

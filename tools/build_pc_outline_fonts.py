@@ -2,8 +2,9 @@
 """Reconstruct local scalable outline faces from the four original PC fonts.
 
 Fixed cells and original character identity are retained. Authored centre lines
-regularize alphanumeric stroke weights, bevels, bowls and stencil gaps. Source
-serifs and symbols retain their traced contours. These are optical reconstructions
+regularize alphanumeric stroke weights, bevels, bowls and stencil gaps. Lowercase
+topology, stems, islands and serif terminals follow the actual source. Approved
+capital and symbol contours are preserved. These are optical reconstructions
 of the supplied bitmap designs, not recovered original vector masters.
 """
 import argparse
@@ -78,7 +79,7 @@ def point_in_polygon(p,poly):
 def glyph_contours(font,code,name):
     bits=font['glyphs'][code-font['first']]
     original=contours(bits,font['width'],font['height'])
-    optical=shape(font,code,name)
+    optical=shape(font,code,name,original)
     if optical is not None:return optical,optical!=original
     result=[simplify(poly,name.removesuffix('.FNT'),code) for poly in original]
     for i,ink in enumerate(bits):
@@ -106,14 +107,14 @@ def build_face(path,output):
         if glyph.numberOfContours:glyph.recalcBounds(None)
         metrics[key]=(round(w/h*UNITS),glyph.xMin if glyph.numberOfContours else 0)
         entries.append({'code':code,'contours':polygons,'redrawn':changed,
-                        'optically_shaped':shape(font,code,name) is not None})
+                        'optically_shaped':chr(code).islower() or shape(font,code,name) is not None})
     fb=FontBuilder(UNITS,isTTF=True);fb.setupGlyphOrder(order)
     fb.setupCharacterMap({i:f'uni{i:04X}' for i in range(32,127)})
     fb.setupGlyf(glyphs);fb.setupHorizontalMetrics(metrics)
     fb.setupHorizontalHeader(ascent=UNITS,descent=0,lineGap=0)
     fb.setupOS2(sTypoAscender=UNITS,sTypoDescender=0,sTypoLineGap=0,usWinAscent=UNITS,usWinDescent=0)
     family='Abrams Remaster '+path.stem
-    fb.setupNameTable({'familyName':family,'styleName':'Regular','uniqueFontIdentifier':family+' v2',
+    fb.setupNameTable({'familyName':family,'styleName':'Regular','uniqueFontIdentifier':family+' v5',
                       'fullName':family,'psName':family.replace(' ','-'),
                       'copyright':'Local derivative of supplied original game font. Redistribution rights unestablished.'})
     fb.setupPost(isFixedPitch=1);fb.setupMaxp()
@@ -131,7 +132,7 @@ def main():
     if any(args.output.resolve().is_relative_to((ROOT/n).resolve()) for n in ['GAME','GENESIS']):p.error('output must be outside source directories')
     args.output.mkdir(parents=True,exist_ok=False)
     faces=[build_face(ROOT/'GAME'/name,args.output) for name in PINS]
-    data={'schema':2,'units_per_em':UNITS,'faces':faces,'fill_rule':'nonzero','scope':__doc__}
+    data={'schema':2,'outline_revision':5,'units_per_em':UNITS,'faces':faces,'fill_rule':'nonzero','scope':__doc__}
     path=args.output/'manifest.json';path.write_text(json.dumps(data,indent=2)+'\n')
     print('Four original-style outline faces;',sum(f['redrawn_glyphs'] for f in faces),'contour-redrawn glyphs;',hashlib.sha256(path.read_bytes()).hexdigest())
 

@@ -1,13 +1,13 @@
 extends RefCounted
 ## Local outline reconstructions of the original faces, with fixed source cells.
-const MANIFEST_SHA := "a9d68ef60adbca97c3f3917817c272dacf6f81f5e92171a8cb8cab837fe1b099"
+const MANIFEST_SHA := "f5450780ff5161c57837fe758a5bc4d6fd90cbb3cb164d7b31fe464c10aac74d"
 var fonts: Dictionary = {}
 var names: Dictionary = {}
 var catalog: Dictionary = {}
 
 func load_sources(root_path: String) -> bool:
 	fonts.clear();names.clear();catalog.clear()
-	var directory:=root_path.path_join("local-art/pc-outline-fonts-v3")
+	var directory:=root_path.path_join("local-art/pc-outline-fonts-v5")
 	var path:=directory.path_join("manifest.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=MANIFEST_SHA: return false
 	var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))

@@ -7,6 +7,87 @@ four original faces after a second, independent Godot source-pixel check. The so
 remain available with `--original-text`. The READY-specific loader voice gate
 is described in `pc-audio-research.md`.
 
+## Original-typeface fidelity, 2026-10-02
+
+Revision 5 restores the actual lowercase construction of all four source faces.
+Revision 4 regularised them too far: it replaced distinct `m`/`w` branches,
+closed the light `e`, shortened the dialogue `r` hook, and changed stencil
+islands and terminals. Direct source comparison confirmed Nell's observation.
+
+Each lowercase starts from its original contour topology. Local staircase
+chords are accepted only when every source ink and blank centre keeps its
+classification, ink centres retain at least 0.4 source units of clearance, and
+all original extents remain exact. This preserves the original asymmetric
+serifs, shoulders, stem widths, split terminals, stencil gaps and descenders.
+Unambiguous square features remain square. Approved v3 capitals, figures and
+symbols are unchanged, including the earlier R and baseline corrections.
+Original wording, colours, cells, source recognition and game logic are unchanged.
+
+The selected pack is `local-art/pc-outline-fonts-v5/manifest.json`, SHA-256
+`f5450780ff5161c57837fe758a5bc4d6fd90cbb3cb164d7b31fe464c10aac74d`.
+The shared runtime loader and private packaging allowlist select it for dialogue,
+briefings, menus and existing text overlays. Previous packs remain preserved.
+
+Working if: every lowercase source-cell centre retains the exact original ink
+classification, source extents and measured stem widths remain intact, actual
+TTF pixels match the outline interiors at multiple scales, and existing fixed
+advance, capital, symbol, alias and stencil-channel tests pass.
+
+Evidence is under `artifacts/pc-font-cohesion-20261002/`. 21 focused font/text tests and 110 clean-source tests pass (seven skips). Both
+new source-fidelity regressions reject the preserved v4 pack. The isolated
+fidelity assessment and actual TTF/source comparisons are separate from native rendering.
+The optional design detector does not cover Python or Godot. New native Godot
+validation is pending a fresh shared-resource admission; v4 native passes cannot
+establish acceptance of changed v5 bytes. Existing windows and built apps keep
+the fonts loaded at launch until a fresh launch/build.
+
+The prior menu test also compared composited vector-arrow pixels against a
+2-colour glyph oracle. All 191 independently reproduced joystick mismatches are
+inside the verified cursor allocation. The corrected test checks every font
+pixel beneath the hidden arrow, then checks that the final cursor composite
+cannot alter the surrounding text. It removes no glyph preservation checks.
+
+## Lowercase cohesion, 2026-10-02
+
+The dialogue screenshot exposed short lowercase stems, irregular terminals and
+generic diagonal forms that did not fit the original face. Revision 4 authors
+all 104 lowercase glyphs across the four original fonts as coherent families.
+Shared bowl construction, level stem ends, controlled shoulder joins and serif
+terminals replace those defects. The bold face retains two-unit main stems,
+one-unit bars and its original one-unit middle stem in `m`. Lowercase stencil
+openings remain deliberate. Source ink extents and fixed advances are unchanged.
+
+That pass selected `local-art/pc-outline-fonts-v4/manifest.json`, SHA-256
+`c45b765f6db77f7afb58297de6841106f2a234ef56171bbe1fa34c6a15531833`.
+The shared runtime loader and packaging allowlist select this pack for dialogue,
+briefings, menus and the existing text overlays. Capitals, figures and symbols
+retain their approved v3 contour inventories, including the earlier R correction.
+The original files, recognition checks, text content and game logic are unchanged.
+
+Working if: all lowercase glyphs retain source extents, measured stems remain
+consistent, reported short terminals reach their baseline, and actual TTF pixels
+match the outline interiors at multiple scales. The existing uppercase, symbol,
+alias, counter, stencil-channel and fixed-cell checks must continue to pass.
+
+Completed source proof is under `artifacts/pc-font-cohesion-20261002/`:
+31 focused font/text tests pass, and source-only CI passes 110 tests with seven
+skips. The reported-stem regression rejects the old v3 pack. All four actual TTF
+hashes, the runtime pin, private packaging closure and original source hashes
+match. Raster checks compare every lowercase outline interior with FreeType at
+two scales, using the existing native oracle's 2/255 gray tolerance. This exposed
+overlapping strokes in the bold `w`; a continuous outline removes that defect.
+The tolerance was not widened to conceal it.
+
+`dialogue-original-refined.png` compares original pixels with the selected pack;
+`all-faces-refined.png` renders all four current faces. Both use fixed source
+cells and the real baseline. This correction was authored and visually reviewed
+by the assistant, with an isolated typographic assessment. Native Godot all-face and office checks later passed, but the menu oracle
+failed at the vector cursor and the stopped batch left intro unrun. Those
+receipts are preserved as historical v4 evidence.
+Existing windows and previously built apps retain their loaded v3 assets; they
+are not updated by changing the source pack. Earlier packs are preserved. The
+optional detector does not cover Python or Godot typography.
+
 ## R and cap/baseline correction, 2026-09-28
 
 Nell's enlarged DIRECTOR / DAMON SLYE screenshot exposed two remaining defects:
@@ -23,9 +104,9 @@ channel remains open for the complete height. There is no vertical stretching,
 change to fixed advances, replacement of lower-case/symbol shapes, or per-string
 credit-screen workaround. The shared pack applies to every existing font binding.
 
-The current pack is `local-art/pc-outline-fonts-v3/manifest.json`, SHA-256
+That pass selected `local-art/pc-outline-fonts-v3/manifest.json`, SHA-256
 `a9d68ef60adbca97c3f3917817c272dacf6f81f5e92171a8cb8cab837fe1b099`.
-Build it into a fresh directory with the existing `build_pc_outline_fonts` tool.
+Build each revision into a fresh directory with the existing `build_pc_outline_fonts` tool.
 The v2 pack is preserved. All 380 glyph/face combinations and 203 authored
 alphanumeric shapes remain; 68 uppercase/digit contour records changed.
 
@@ -184,11 +265,11 @@ cell without changing protected pixels or displayed wording.
 
 That pass selected `local-art/pc-outline-fonts-v2/manifest.json`, SHA-256
 `3d87b1ade72efd6f975895e10d16b1082d49f6eec6a6776da85c1d1091d6f574`.
-The current v3 correction above supersedes it. Generate the current shapes with
+The later corrections above supersede it. Generate the current shapes with
 the existing Python FontTools dependency into a fresh directory:
 
 ```sh
-python3 -m tools.build_pc_outline_fonts --output local-art/pc-outline-fonts-v3
+python3 -m tools.build_pc_outline_fonts --output local-art/pc-outline-fonts-v4
 ```
 
 The v1 pack remains available for comparison. Development studies are under

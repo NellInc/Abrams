@@ -149,6 +149,7 @@ func run() -> void:
 	view.typography.status_numbers_enabled = false
 	cache_contracts()
 	if native: await specimen(output)
+	if native: await dialogue_preview(output)
 	if native and "--fixture" in args: await fixtures(args[args.find("--fixture")+1],output)
 	check(not view.typography.load_sources(directory.path_join("artifacts/missing-original-font-directory")),"missing fonts accepted")
 	check(view.typography.fonts.is_empty() and view.typography.font_geometry.is_empty() and view.typography.runs.is_empty() and view.typography._expected_text.is_empty(),"failed font load retained stale typography")
@@ -302,6 +303,43 @@ func verify_geometry() -> void:
 						if rect.has_point(Vector2(x+0.5,y+0.5)): count+=1
 					check(count==int(ink),"glyph geometry differs/overlaps: %s code %d"%[name,code])
 		check(not view.typography.font_geometry[sha].has(127),"unsupported character enters replacement face")
+
+func dialogue_preview(output: String) -> void:
+	# The reported dialogue uses the same verified-run and fixed-cell draw path.
+	var blue := Color8(85,85,255)
+	source.fill(blue)
+	ui.fill(Color.WHITE)
+	var lines := ["\"What can I say...the odds look like",
+		"twenty to one and we aren't the", "favorites.\""]
+	var candidates := []
+	for row in lines.size():
+		candidates.append(words(lines[row],6,6+row*8,1,4,"8X8.FNT"))
+	world = ImageTexture.create_from_image(source)
+	view.typography.fixed_labels_enabled = false
+	check(view.set_frame(source,presentation(candidates),world),"dialogue frame accepted")
+	check(view.typography.runs.size()==3,"all reported dialogue rows restored")
+	var result := await snapshot()
+	if result.is_empty():
+		check(false,"native dialogue renderer returned no image")
+		return
+	var difference := 0
+	for y in 144:
+		for x in 1200:
+			var point := (Vector2(x,y)+Vector2(0.5,0.5))/4
+			var eligible := {}
+			for run in view.typography.runs:
+				if run.rect.has_point(point): eligible=run;break
+			var actual := result.get_pixel(x,y)
+			if eligible.is_empty():
+				check(actual.to_rgba32()==blue.to_rgba32(),"dialogue font escaped its original rows")
+			else:
+				check(outlines.matches(actual,eligible,point,Vector2(4,4)),"reported dialogue native outlines")
+				if actual.to_rgba32()!=source.get_pixel(x/4,y/4).to_rgba32(): difference+=1
+	check(difference>0,"reported dialogue must visibly replace source pixel steps")
+	check(result.get_region(Rect2i(0,0,1200,144)).save_png(output.path_join("dialogue-refined.png"))==OK,"save native dialogue preview")
+	var original := source.get_region(Rect2i(0,0,300,36))
+	original.resize(1200,144,Image.INTERPOLATE_NEAREST)
+	check(original.save_png(output.path_join("dialogue-original.png"))==OK,"save source dialogue comparison")
 
 func specimen(output: String) -> void:
 	# Draw on an empty backdrop so an invisible renderer cannot pass by showing

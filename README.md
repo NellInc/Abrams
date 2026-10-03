@@ -21,6 +21,12 @@ Original game copyright 1988, 1989 Dynamix, Inc. The original intro credits are 
 
 **Fan Remastered by Nell Watson.**
 
+## Trailer
+
+[![Watch the Abrams Battle Tank Fan Remaster trailer](website/dist/assets/images/trailer-poster.jpg)](https://abramsremastered.com/#trailer)
+
+[Watch the captioned trailer](https://abramsremastered.com/#trailer) · [Project website](https://abramsremastered.com/)
+
 ## Artwork and screenshots
 
 <p align="center">

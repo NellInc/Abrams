@@ -5,7 +5,7 @@ var cache := {}
 
 func load_sources(root_path: String) -> void:
 	faces.clear();cache.clear()
-	var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(root_path.path_join("local-art/pc-outline-fonts-v3/manifest.json")))
+	var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(root_path.path_join("local-art/pc-outline-fonts-v5/manifest.json")))
 	for face in data.faces:
 		faces[face.source_sha256]=face
 

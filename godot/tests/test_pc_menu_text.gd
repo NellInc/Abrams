@@ -65,6 +65,9 @@ func run()->void:
 		if entry.label=="name-5":check(runs.any(func(r):return r.text.contains("NELL")),"edited name stays original")
 		for r in runs:check(not art.typography.runs.any(func(old):return old.rect.intersects(r.rect)),"no overlap with existing restored typography")
 		if native:
+			# Test glyphs independently of the restored vector cursor. Its
+			# antialiased footprint differs from the original bitmap mask.
+			art.original_cursor.hide()
 			art.flow_typography.hide()
 			var baseline:=await snap()
 			art.flow_typography.show()
@@ -76,12 +79,30 @@ func run()->void:
 					for r in runs:
 						if r.rect.has_point(Vector2(x+0.5,y+0.5)/4):inside=r;break
 					var same:=result.get_pixel(x,y).to_rgba32()==baseline.get_pixel(x,y).to_rgba32()
-					var cursor:bool=art.original_cursor.mask!=null and art.original_cursor.mask.get_pixel(x/4,y/4).r==1.0
-					if inside.is_empty() or cursor:check(same,"nontext/cursor pixel changed: "+entry.label)
+					if inside.is_empty():check(same,"nontext pixel changed: "+entry.label+("" if same else " at "+str(Vector2i(x,y))))
 					else:
-						check(oracle.matches(result.get_pixel(x,y),inside,Vector2(x+0.5,y+0.5)/4,Vector2(4,4)),"outline glyph/colour differs: "+entry.label)
+						var glyph_matches:bool=oracle.matches(result.get_pixel(x,y),inside,Vector2(x+0.5,y+0.5)/4,Vector2(4,4))
+						check(glyph_matches,"outline glyph/colour differs: "+entry.label+("" if glyph_matches else " at "+str(Vector2i(x,y))))
 						if not same:changed+=1
-			check(result.save_png(output.path_join(entry.label+".png"))==OK,"save menu frame")
+			# Also verify the final composite, without exempting cursor pixels
+			# from font acceptance. The arrow may only affect its verified
+			# allocation plus the existing one-output-pixel antialias stroke.
+			art.original_cursor.show()
+			var composite:=await snap()
+			if art.original_cursor.active.is_empty():
+				check(composite.get_data()==result.get_data(),"absent cursor changes nothing: "+entry.label)
+			else:
+				var origin:Vector2=art.original_cursor.origin*4
+				var cursor_bounds:=Rect2i(Vector2i(origin),Vector2i(64,60)).grow(1)
+				cursor_bounds=cursor_bounds.intersection(Rect2i(Vector2i.ZERO,view.size))
+				var strips:=[Rect2i(0,0,1280,cursor_bounds.position.y),
+					Rect2i(0,cursor_bounds.end.y,1280,800-cursor_bounds.end.y),
+					Rect2i(0,cursor_bounds.position.y,cursor_bounds.position.x,cursor_bounds.size.y),
+					Rect2i(cursor_bounds.end.x,cursor_bounds.position.y,1280-cursor_bounds.end.x,cursor_bounds.size.y)]
+				for strip in strips:
+					if strip.has_area():check(composite.get_region(strip).get_data()==result.get_region(strip).get_data(),"cursor alters surrounding text: "+entry.label)
+			check(composite.save_png(output.path_join(entry.label+".png"))==OK,"save menu frame")
+			if entry.label=="joystick":check(result.save_png(output.path_join("joystick-font-underlay.png"))==OK,"save font-under-cursor proof")
 			samples.append({"label":entry.label,"runs":runs.map(func(r):return r.text),"changed_pixels":changed})
 		# These are source proof checks; a forged hash or changed cell never draws.
 		if entry.label=="joystick":

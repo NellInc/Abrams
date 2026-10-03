@@ -1,7 +1,7 @@
 """Optical shaping for the original fixed-cell Abrams faces.
 
-Authored centre lines replace the first pass's locally simplified pixel stairs.
-Related letters share bowls, shoulders, stroke weights and square terminals.
+Capital centre lines retain the approved regular stroke construction. Lowercase
+uses source-constrained staircase chords, preserving each original skeleton.
 All geometry remains in the original cell; unsupported symbols keep the trace.
 """
 from math import hypot
@@ -88,12 +88,92 @@ def stroke(points,weight=(1,1),closed=False,caps=(0,0)):
     return [poly if area(poly)>0 else poly[::-1]]
 
 
-def shape(font,code,name):
+def normalize(polys,box,height):
+    """Clip once, then put the catalog and TrueType on the same design grid."""
+    scale=1536/height;result=[]
+    for polygon in polys:
+        points=[]
+        for x,y in bounds(polygon,box):
+            point=(round(x*scale)/scale,round(y*scale)/scale)
+            if not points or point!=points[-1]:points.append(point)
+        if points and points[0]==points[-1]:points.pop()
+        if len(points)>2 and abs(area(points))>1e-6:result.append(points)
+    return result
+
+
+def source_classification(p,polys):
+    x,y=p;winding=0;distance=1e6
+    for poly in polys:
+        for a,b in zip(poly,poly[1:]+poly[:1]):
+            dx,dy=b[0]-a[0],b[1]-a[1];dd=dx*dx+dy*dy
+            if not dd:continue
+            t=max(0,min(1,((x-a[0])*dx+(y-a[1])*dy)/dd))
+            distance=min(distance,hypot(x-a[0]-t*dx,y-a[1]-t*dy))
+            if (a[1]>y)!=(b[1]>y) and x<a[0]+(y-a[1])*dx/dy:winding+=1 if b[1]>a[1] else -1
+    return winding!=0,distance
+
+def lowercase(font,code,name,original):
+    """Straighten source stairs without replacing the original letter skeleton.
+
+    Every original ink/blank centre retains its classification. Ink centres keep
+    at least 0.4 source units of clearance, so a touching diagonal cannot collapse
+    into a hairline. Source stems, serif islands, stencil gaps and bounds remain
+    authoritative; each accepted chord reduces the finite vertex inventory.
+    """
+    bits=font['glyphs'][code-font['first']];w,h=font['width'],font['height']
+    points=[(i%w,i//w) for i,b in enumerate(bits) if b];box=(min(x for x,y in points),min(y for x,y in points),max(x for x,y in points)+1-min(x for x,y in points),max(y for x,y in points)+1-min(y for x,y in points))
+    original_bounds=(box[0],box[1],box[0]+box[2],box[1]+box[3]);polys=[[tuple(p) for p in poly] for poly in original]
+    def valid(ps):
+        pts=[p for poly in ps for p in poly]
+        if (min(p[0] for p in pts),min(p[1] for p in pts),max(p[0] for p in pts),max(p[1] for p in pts))!=original_bounds:return False
+        for i,b in enumerate(bits):
+            ink,distance=source_classification((i%w+.5,i//w+.5),ps)
+            if ink!=bool(b) or distance<(.40 if b else .06):return False
+        return True
+    # Stairs have alternating perpendicular unit edges. Slide the straight
+    # replacement to a source-verified side of the pixel-centre boundary; its
+    # endpoints stay on the adjacent original long edges, preserving terminals.
+    for pi in range(len(polys)):
+        changed=True
+        while changed:
+            changed=False;p=polys[pi];n=len(p)
+            for start in range(n):
+                rotated=p[start:]+p[:start]
+                def delta(j):return (rotated[(j+1)%n][0]-rotated[j][0],rotated[(j+1)%n][1]-rotated[j][1])
+                a,b=delta(0),delta(1)
+                if sum(map(abs,a))!=1 or sum(map(abs,b))!=1 or a[0]*b[0]+a[1]*b[1]!=0:continue
+                count=2
+                while count<n-2 and delta(count)==(a if count%2==0 else b):count+=1
+                # A complete island must never collapse to a chord.
+                if n-count<3:continue
+                begin,end=rotated[0],rotated[count];dx,dy=end[0]-begin[0],end[1]-begin[1]
+                if not dx or not dy:continue
+                prev=rotated[-1];nxt=rotated[count+1]
+                if prev[0]!=begin[0] and prev[1]!=begin[1]:continue
+                if nxt[0]!=end[0] and nxt[1]!=end[1]:continue
+                for shift in (.125,-.125,.25,-.25,.5,-.5,.625,-.625):
+                    # Line dx*(y-y0)-dy*(x-x0) = shift*(abs(dx)+abs(dy)).
+                    k=shift*(abs(dx)+abs(dy))
+                    new_begin=(begin[0],begin[1]+k/dx) if prev[0]==begin[0] else (begin[0]-k/dy,begin[1])
+                    new_end=(end[0],end[1]+k/dx) if nxt[0]==end[0] else (end[0]-k/dy,end[1])
+                    if any(not (min(v[axis],q[axis])<=s[axis]<=max(v[axis],q[axis])) for v,q,s,axis in [(prev,begin,new_begin,1 if prev[0]==begin[0] else 0),(end,nxt,new_end,1 if nxt[0]==end[0] else 0)]):continue
+                    candidate=polys.copy();candidate[pi]=[new_begin,new_end]+rotated[count+1:]
+                    if abs(area(candidate[pi]))<1e-6 or area(candidate[pi])*area(p)<=0:continue
+                    if valid(candidate):polys=candidate;changed=True;break
+                if changed:break
+    return normalize(polys,box,h)
+
+
+
+def shape(font,code,name,source_contours=None):
     char=chr(code);bits=font['glyphs'][code-font['first']];w=font['width'];h=font['height']
     if not any(bits) or not char.isascii() or not char.isalnum():return None
     points=[(i%w,i//w) for i,b in enumerate(bits) if b]
     x0,y0=min(x for x,y in points),min(y for x,y in points)
     x1,y1=max(x for x,y in points)+1,max(y for x,y in points)+1
+    if char.islower():
+        if source_contours is None:raise ValueError('lowercase requires original contour topology')
+        return lowercase(font,code,name,source_contours)
     bold=name in ['8X8.FNT','STENCIL.FNT'];stencil=name=='STENCIL.FNT'
     weight=(2.0,1.0) if bold else (1.0,1.0)
     wx,wy=weight;left=x0+wx/2;right=x1-wx/2;top=y0+wy/2;bottom=y1-wy/2
@@ -101,7 +181,7 @@ def shape(font,code,name):
     serif=bold and char in 'BDEFHKLPR'
     if serif or (bold and char in 'bhkr'):left=x0+1+wx/2
     if name=='8X8.FNT' and char in 'adug':right-=1
-    if char in 'IEFTL' or (char.islower() and char in 'filt'):
+    if char in 'IEFTL':
         return None # Already rectilinear: retain distinctive source serifs.
     mid=(top+bottom)/2;cx=(left+right)/2
     bevel=min(0.75,(right-left)/3,(bottom-top)/3)
@@ -190,50 +270,10 @@ def shape(font,code,name):
         if name=='8X6.FNT':return None
         line([(left,top),(right,top),(cx,bottom)])
     elif char=='1':return None
-    elif char.islower():
-        # Keep the original lowercase x-height and ascender/descender allocation.
-        cap_y=2 if h==8 else 1
-        xt=max(top,cap_y+wy/2) if char in "bdhk" else top
-        base=bottom-2 if char in "gpqy" else bottom
-        centre=(xt+base)/2;c=min(bevel,(base-xt)/3)
-        if char in 'abdgopq':
-            l,r=left,right
-            if char=='a':
-                line([(l,xt),(r-c,xt),(r,xt+c),(r,base)]);line([(r,centre),(l+c,centre),(l,centre+c),(l,base-c),(l+c,base),(r,base)])
-            else:
-                line(bowl(l,r,xt,base,c),True)
-                if char=='b':line([(l,top),(l,base)])
-                if char=='d':line([(r,top),(r,base)])
-                if char in 'gpq':
-                    side=l if char=='p' else r
-                    line([(side,xt),(side,bottom)])
-                    if char=='g':line([(r,bottom),(l,bottom)])
-        elif char in 'ce':
-            line([(right,xt),(left+c,xt),(left,xt+c),(left,base-c),(left+c,base),(right,base)])
-            if char=='e':line([(left,centre),(right,centre),(right,xt+c),(right-c,xt)])
-        elif char in 'hmnru':
-            if char=='u':line([(left,xt),(left,base-c),(left+c,base),(right,base),(right,xt)])
-            else:
-                line([(left,top if char=='h' else xt),(left,base)])
-                line([(left,xt+c),(left+c,xt),(right-c,xt),(right,xt+c),(right,base if char!='r' else centre)])
-                if char=='m':line([(cx,xt+c),(cx,base)])
-        elif char=='s':line([(right,xt),(left+c,xt),(left,xt+c),(left,centre-c),(left+c,centre),(right-c,centre),(right,centre+c),(right,base-c),(right-c,base),(left,base)])
-        elif char=='v':line([(left,xt),(cx,base),(right,xt)])
-        elif char=='w':line([(left,xt),(left,base),(cx,centre),(right,base),(right,xt)])
-        elif char=='y':line([(left,xt),(left,base-c),(left+c,base),(right,base),(right,xt)]);line([(right,base),(right,bottom),(left,bottom)])
-        elif char=='k':line([(left,top),(left,base)]);line([(right,xt),(left,centre),(right,base)])
-        elif char=='x':line([(left,xt),(right,base)]);line([(right,xt),(left,base)])
-        elif char=='z':line([(left,xt),(right,xt),(left,base),(right,base)])
-        elif char=='j':return None
-        else:return None
     else:return None
     # Slab serifs use one shared thickness and are kept square-ended.
     if serif:
         out += [rect(x0,y0,3,1),rect(x0,y1-1,3,1)]
-    if bold and char in 'bhk':out += [rect(x0,y0,3,1),rect(x0,y1-1,3,1)]
-    if bold and char=='r':out.append(rect(x0,y1-1,4,1))
-    if name=='8X8.FNT' and char=='d':out.append(rect(x1-4,y0,3,1))
-    if name=='8X8.FNT' and char in 'adu':out.append(rect(x1-3,y1-1,3,1))
     if bold and char=='Y':out.append(rect(cx-1.5,y1-1,3,1))
     if stencil:
         # Deliberate regular-width stencil bridges in the original regions.
@@ -246,16 +286,4 @@ def shape(font,code,name):
             for y in [y0,y1-1] if char in 'BDO0' else [y0,mid-0.5]:out=cut(out,(3.125,y,gap,1))
         elif char in 'CGS6':
             for y in [y0,y1-1]:out=cut(out,(2.125,y,gap,1))
-    out=[bounds(p,(x0,y0,x1-x0,y1-y0)) for p in out]
-    # Quantize once to the exact native TTF design grid; metadata and binary
-    # therefore carry the same points rather than divergent float versions.
-    scale=1536/h
-    normalized=[]
-    for polygon in out:
-        points=[]
-        for x,y in polygon:
-            point=(round(x*scale)/scale,round(y*scale)/scale)
-            if not points or point!=points[-1]:points.append(point)
-        if points and points[0]==points[-1]:points.pop()
-        if len(points)>2 and abs(area(points))>1e-6:normalized.append(points)
-    return normalized
+    return normalize(out,(x0,y0,x1-x0,y1-y0),h)
