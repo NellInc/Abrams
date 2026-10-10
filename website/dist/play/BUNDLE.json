@@ -96,13 +96,33 @@
       "bytes": 2308137,
       "sha256": "dff2085594c4d1fb9dd2483802002bba548f786dde7246dae3190be0170af6d7"
     },
+    "LICENSES/CPython-3.13.2.txt": {
+      "bytes": 13809,
+      "sha256": "78b12c3a81360b357002334f0e70ea0e92eebf7a9b358805c03c48484945f3bb"
+    },
     "LICENSES/GPL-2.0.txt": {
       "bytes": 17994,
       "sha256": "8ecc9e0080e9cc29a21ae65c716c68ff1a309634439f714300282886c22ccd57"
     },
+    "LICENSES/Godot-4.7.2.json": {
+      "bytes": 116082,
+      "sha256": "58e0e89516fd77704c0c14c5d51b86671167f3e5766511ba1d2dc3e9f5fe308a"
+    },
+    "LICENSES/Pillow-11.3.0.txt": {
+      "bytes": 1453,
+      "sha256": "17f240ae101143707e5e7303a5d800450d9ccc7475b463cedb555cefdb3c6ece"
+    },
+    "LICENSES/Pyodide-MPL-2.0.txt": {
+      "bytes": 16725,
+      "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
+    },
     "NOTICE.txt": {
       "bytes": 1645,
       "sha256": "3ad157e302b615974972849a0c52e32e0e2a31ee677aed4e6db23ecf95bbe19a"
+    },
+    "THIRD_PARTY.txt": {
+      "bytes": 1117,
+      "sha256": "763525c102aeb6cb868b49962a3ce744baec97229b04a03245c02a784d62c74d"
     },
     "assets/Barlow-OFL.txt": {
       "bytes": 4377,
@@ -133,8 +153,8 @@
       "sha256": "8d8db41491e12ca8b1bdf21d1799145ed887560c79828dcc4636eec1656004ac"
     },
     "remaster.html": {
-      "bytes": 4523,
-      "sha256": "0afc7ccaa6b1c29699613cdf2c3c3510f7ace6e8c665528f860e65e803f63571"
+      "bytes": 4526,
+      "sha256": "6446f9f7420a6b460210b4eea3ea93101ea52bf476887151339722a5b0d844d0"
     },
     "remaster.mjs": {
       "bytes": 7970,

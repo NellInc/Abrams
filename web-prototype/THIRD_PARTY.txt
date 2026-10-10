@@ -1,0 +1,31 @@
+Abrams Web edition: third-party software notices
+
+DOSBox Pure, pinned upstream commit 73e03aa145e0549ed4d5a20f8e65532714da33f5
+GPL-2.0-or-later. Modified Web core corresponding source:
+.generated/web-core-corresponding-source.tar.gz
+Licence: LICENSES/GPL-2.0.txt
+
+Godot 4.7.2
+MIT licence and component copyrights/licences, extracted from the matching
+Godot editor: LICENSES/Godot-4.7.2.json
+Source: https://github.com/godotengine/godot
+
+Pyodide 0.29.5
+MPL-2.0 licence: LICENSES/Pyodide-MPL-2.0.txt
+Source: https://github.com/pyodide/pyodide/tree/0.29.5
+
+CPython 3.13.2, bundled by Pyodide
+Python Software Foundation and historical licences:
+LICENSES/CPython-3.13.2.txt
+Source: https://github.com/python/cpython/tree/v3.13.2
+
+Pillow 11.3.0, bundled as a Pyodide wheel
+Licence from the exact bundled wheel: LICENSES/Pillow-11.3.0.txt
+Source: https://github.com/python-pillow/Pillow/tree/11.3.0
+
+Barlow Condensed
+SIL Open Font License: assets/Barlow-OFL.txt
+Source: https://github.com/jpt/barlow
+
+The visitor supplies the original PC game and, optionally, the original
+Genesis ROM. Neither is bundled with this website.

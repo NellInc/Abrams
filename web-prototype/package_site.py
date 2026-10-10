@@ -26,6 +26,7 @@ PYODIDE = (
 )
 APP = (
     'remaster.html', 'remaster.mjs', 'remaster.service.worker.js',
+    'THIRD_PARTY.txt',
     'style.css', 'bridge_host.mjs', 'bridge_worker.mjs',
     'browser_observer.mjs', 'checkpoint_core.mjs', 'zip_store.mjs',
     'claim_catalog.mjs', 'remaster_assets.mjs',
@@ -55,6 +56,9 @@ def main() -> None:
     inputs.update({'.generated/pyodide/' + name: generated / 'pyodide' / name
                    for name in PYODIDE})
     inputs['LICENSES/GPL-2.0.txt'] = ROOT / 'LICENSES/GPL-2.0.txt'
+    for name in ('Godot-4.7.2.json', 'Pyodide-MPL-2.0.txt',
+                 'CPython-3.13.2.txt', 'Pillow-11.3.0.txt'):
+        inputs['LICENSES/' + name] = SOURCE / 'LICENSES' / name
     inputs['NOTICE.txt'] = ROOT / 'NOTICE.md'
     for name, path in inputs.items():
         if not path.is_file() or path.is_symlink() or path.stat().st_size >= 100_000_000:
