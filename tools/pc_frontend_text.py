@@ -8,6 +8,7 @@ import ctypes as C
 import hashlib
 import io
 import struct
+from collections import OrderedDict
 from pathlib import Path
 from PIL import Image
 try:
@@ -15,6 +16,7 @@ try:
     from tools.pc_text_trace import TextRuns
     from tools.unpack_pc_executables import unpack
     from tools.pc_bitmaps import decode_bitmaps,read_ega_bitmap
+    from tools.pc_pixel_bytes import bgrx_rect_rgb
     from tools.inspect_scenarios import decode_resource
     from tools.pc_frontend_scene import FrontendScene
 except ModuleNotFoundError as error:
@@ -23,6 +25,7 @@ except ModuleNotFoundError as error:
     from pc_text_trace import TextRuns
     from unpack_pc_executables import unpack
     from pc_bitmaps import decode_bitmaps,read_ega_bitmap
+    from pc_pixel_bytes import bgrx_rect_rgb
     from inspect_scenarios import decode_resource
     from pc_frontend_scene import FrontendScene
 
@@ -50,6 +53,9 @@ def visible_runs(candidates,raw,width,height,palette,cursor=None):
     """
     if (width,height)!=(320,200) or not palette or len(palette)!=16:return []
     found={};covered=cursor_cells(cursor)
+    palette_by_color={}
+    for index,(red,green,blue) in enumerate(palette):
+        palette_by_color.setdefault((red<<16)|(green<<8)|blue,index)
     for item,pixels,ink in candidates:
         x,y,w,h=item['rect'];cell=item['cell_size'][0];groups=[]
         for i,char in enumerate(item['text']):
@@ -58,25 +64,26 @@ def visible_runs(candidates,raw,width,height,palette,cursor=None):
                 for dx in range(cell):
                     if (x+i*cell+dx,y+dy) in covered:continue
                     start=((y+dy)*320+x+i*cell+dx)*4
-                    rgb=bytes((raw[start+2],raw[start+1],raw[start]))
-                    colours[ink[dy*w+i*cell+dx]].add(rgb)
+                    color=struct.unpack_from('<I',raw,start)[0]&0xffffff
+                    colours[ink[dy*w+i*cell+dx]].add(color)
             if len(colours[0])==1 and not colours[1]:
                 bg=next(iter(colours[0]))
-                if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==x+i*cell and groups[-1]['uniform_background_rgb']==list(bg):
+                bg_rgb=[bg>>16,(bg>>8)&255,bg&255]
+                if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==x+i*cell and groups[-1]['uniform_background_rgb']==bg_rgb:
                     groups[-1]['text']+=char;groups[-1]['rect'][2]+=cell
                 continue
             if len(colours[0])!=1 or len(colours[1])!=1:continue
             bg=next(iter(colours[0]));fg=next(iter(colours[1]))
-            if bg==fg or list(fg) not in palette:continue
+            if bg==fg or fg not in palette_by_color:continue
             value=item|{'text':char,'rect':[x+i*cell,y,cell,h],
-                'foreground':palette.index(list(fg)),'uniform_background_rgb':list(bg),
+                'foreground':palette_by_color[fg],
+                'uniform_background_rgb':[bg>>16,(bg>>8)&255,bg&255],
                 'basis':'completed original string and exact full current glyph cell; original highlight colours retained'}
             if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==value['rect'][0] and all(groups[-1][k]==value[k] for k in ('foreground','uniform_background_rgb')):
                 groups[-1]['text']+=char;groups[-1]['rect'][2]+=cell
             else:groups.append(value)
         for value in groups:
-            xx,yy,ww,hh=value['rect']
-            crop=bytes(raw[((yy+dy)*320+xx+dx)*4+c] for dy in range(hh) for dx in range(ww) for c in (2,1,0))
+            crop=bgrx_rect_rgb(raw,width,height,value['rect'])
             value['pixel_sha256']=hashlib.sha256(crop).hexdigest()
             key=(tuple(value['rect']),value['font_sha256'],value['text'])
             if key not in found or value['draw_sequence']>found[key]['draw_sequence']:found[key]=value
@@ -142,10 +149,18 @@ class FrontendText:
         self.callback=CALLBACK(self.observe)
         self.counts=[]
         self.scene=FrontendScene(ROOT/'GAME')
+        self.mask_cache=OrderedDict()
 
     def observe(self,event,registers,data,offset,length):
+        try:raw=C.string_at(data,length)
+        except Exception as error:
+            if self.error is None:self.error=error
+            return
+        self.observe_packet(event,registers[:12],raw,offset)
+
+    def observe_packet(self,event,registers,raw,offset):
+        """Consume the exact original callback bytes from a native or Web trace."""
         try:
-            raw=C.string_at(data,length)
             if 49<=event<=55:
                 regs=dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'),registers[:12]))
                 self.scene.observe(event,regs,raw,offset)
@@ -177,7 +192,7 @@ class FrontendText:
             elif event==12:
                 if offset not in range(3):raise ValueError('invalid frontend framebuffer slot')
                 width,height=registers[0],registers[1]
-                if length!=width*height*4:raise ValueError('invalid frontend framebuffer bytes')
+                if len(raw)!=width*height*4:raise ValueError('invalid frontend framebuffer bytes')
                 frame=self.buffers.get(offset) or {}
                 self.last_frame=frame
                 self.presented={'draw_pass':None,'reason':'original frontend text only',
@@ -196,20 +211,29 @@ class FrontendText:
         # candidates. Fast-forwarded capture frames never need host font meshes.
         cursor=self.sources.visible_cursor(ram,raw,self.last_frame.get('palette_rgb')) if ram is not None else None
         runs=visible_runs(self.last_frame.get('candidates',()),raw,w,h,self.last_frame.get('palette_rgb'),cursor)
-        mask=Image.new('L',(320,200))
         is_start=(self.presented.get('frontend_program') or {}).get('name')=='START'
         drawing=self.scene.paired(raw,self.last_frame.get('palette_rgb'),runs,cursor) if is_start and w==320 and h==200 else None
-        if drawing:
-            mask.paste(255,(0,0,320,200))
-            x,y,ww,hh=drawing['preview_rect']
-            mask.paste(0,(x,y,x+ww,y+hh))
-            for x,y in cursor_cells(cursor):mask.putpixel((x,y),255)
-        for run in runs:
-            x,y,ww,hh=run['rect'];mask.paste(255,(x,y,x+ww,y+hh))
-        stream=io.BytesIO();mask.save(stream,format='PNG')
+        cursor_ink=cursor_cells(cursor) if drawing else set()
+        mask_key=(tuple(drawing['preview_rect']) if drawing else None,
+                  tuple(tuple(run['rect']) for run in runs),tuple(sorted(cursor_ink)))
+        mask_png=self.mask_cache.get(mask_key)
+        if mask_png is None:
+            mask=Image.new('L',(320,200))
+            if drawing:
+                mask.paste(255,(0,0,320,200))
+                x,y,ww,hh=drawing['preview_rect']
+                mask.paste(0,(x,y,x+ww,y+hh))
+                for x,y in cursor_ink:mask.putpixel((x,y),255)
+            for run in runs:
+                x,y,ww,hh=run['rect'];mask.paste(255,(x,y,x+ww,y+hh))
+            stream=io.BytesIO();mask.save(stream,format='PNG')
+            mask_png=base64.b64encode(stream.getvalue()).decode()
+            self.mask_cache[mask_key]=mask_png
+            if len(self.mask_cache)>32:self.mask_cache.popitem(last=False)
+        else:self.mask_cache.move_to_end(mask_key)
         return self.presented|{'draw_pass':drawing,'reason':'pixel-paired START scenery' if drawing else self.presented['reason'],
             'text_runs':runs,'original_cursor':cursor,
-            'ui_overlay':{'width':320,'height':200,'mask_png':base64.b64encode(stream.getvalue()).decode()}}
+            'ui_overlay':{'width':320,'height':200,'mask_png':mask_png}}
 
     def attach(self,core):
         core.pause_at_frame_end()

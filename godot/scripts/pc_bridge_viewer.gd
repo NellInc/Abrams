@@ -2,6 +2,7 @@ extends SceneTree
 ## Research tandem view. Original PC executables own every game flow.
 const PcAudio = preload("res://scripts/pc_audio.gd")
 const Bridge = preload("res://scripts/pc_bridge.gd")
+const WebBridge = preload("res://scripts/pc_bridge_web.gd")
 const Keyboard = preload("res://scripts/pc_keyboard.gd")
 const WorldView = preload("res://scripts/pc_world_view.gd")
 const DrawPass = preload("res://scripts/pc_draw_pass.gd")
@@ -11,6 +12,7 @@ const PlayDisplay = preload("res://scripts/pc_play_display.gd")
 const StartupSplash = preload("res://scripts/pc_startup_splash.gd")
 var startup_splash: Control
 var startup_ready := false
+var web_viewer_ready := false
 var play_mode := false
 var play_display: Control
 var requested_window_size := Vector2i.ZERO
@@ -36,7 +38,7 @@ var world_viewport: SubViewport
 var world_aspect: AspectRatioContainer
 var tandem_frame: TextureRect
 var tandem_viewport: SubViewport
-var bridge = Bridge.new()
+var bridge = WebBridge.new() if OS.has_feature("web") else Bridge.new()
 var camera: Camera3D
 var picture: TextureRect
 var status: Label
@@ -151,7 +153,7 @@ func _initialize() -> void:
 	_configure_window.call_deferred()
 	wire_mode = "--wire" in OS.get_cmdline_user_args()
 	_configure_art_requests(args)
-	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	var directory := "/" if OS.has_feature("web") else ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	output = directory.path_join("artifacts/pc-boot-viewer" if boot_mode else ("artifacts/pc-trace-viewer" if trace_mode else "artifacts/pc-bridge-viewer"))
 	if "--output" in args:
 		var index := args.find("--output")+1
@@ -287,6 +289,8 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		root.add_child(pc_audio)
 	if play_mode:
 		audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+		# A browser has no application menu bar. Always show the controls in canvas.
+		if OS.has_feature("web"): audio_menu.prefer_global_menu=false
 		audio_menu.genesis_available=not pc_only
 		audio_menu.modern_available=tandem_frame.modern_available
 		audio_menu.audio=pc_audio
@@ -338,6 +342,9 @@ func _finish_startup_display() -> void:
 	if not play_mode: return
 	status.hide()
 	startup_splash.finish()
+	if OS.has_feature("web") and not web_viewer_ready and bridge.host != null:
+		bridge.host.presentationReady()
+		web_viewer_ready=true
 
 ## Godot runs from godot/ under --path; relative paths mean the repo root, as in the launchers.
 static func anchor_path(directory: String, path: String) -> String:
@@ -395,7 +402,7 @@ func _build_play_ui() -> void:
 	startup_splash=StartupSplash.new()
 	play_display.add_child(startup_splash)
 	startup_splash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	startup_splash.load_cover(ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir())
+	startup_splash.load_cover("/" if OS.has_feature("web") else ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir())
 	startup_splash.reference_selected.connect(func(name):
 		if audio_menu:audio_menu.open_reference(name)
 		else:preload("res://scripts/pc_interface_theme.gd").show_reference(root,name))
@@ -640,6 +647,30 @@ func _request_state(operation: String, slot: int) -> void:
 	pending_state_command={"op":operation,"slot":slot}
 	if pc_audio: pc_audio.set_transport_muted(true)
 
+func _sync_web_controls(message: String = "") -> void:
+	if not OS.has_feature("web") or audio_menu == null or bridge.host == null: return
+	bridge.host.updateControls(JSON.stringify({"modes":audio_menu.available_graphics_modes(),
+		"graphics":audio_menu.graphics_mode,"slots":audio_menu.state_slots,
+		"speed":audio_menu.speed,"message":message}))
+
+func _poll_web_controls() -> void:
+	if not OS.has_feature("web") or audio_menu == null or bridge.host == null: return
+	var handled := false
+	for index in 8:
+		var raw := str(bridge.host.takeControl())
+		if raw.is_empty(): break
+		var action = JSON.parse_string(raw)
+		if not action is Dictionary: continue
+		handled = true
+		match str(action.get("op", "")):
+			"save_state", "load_state":
+				audio_menu.request_state(str(action.op), int(action.get("slot", -1)))
+			"graphics": audio_menu.choose_graphics(str(action.get("mode", "")))
+			"cycle_graphics": audio_menu.cycle_graphics()
+			"speed": audio_menu.choose_speed(1 if audio_menu.speed == 8 else 8)
+			"help": audio_menu.open_reference("keyboard-controls.html")
+	if handled: _sync_web_controls()
+
 func _send_state_command() -> void:
 	if pending_state_command.is_empty() or bridge.pending or state_control_pending: return
 	if bridge.state_command(pending_state_command.op,int(pending_state_command.slot)):
@@ -655,6 +686,7 @@ func _state_result(message: Dictionary) -> void:
 	state_control_pending=false
 	if audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.get("slots",[]),str(message.get("message","State operation finished")))
+	_sync_web_controls(str(message.get("message", "")))
 	if pc_audio: pc_audio.set_transport_muted(fast_forward>1)
 	elapsed=0.0
 
@@ -664,6 +696,7 @@ func _capture_deadline_msec() -> int:
 func _process(delta: float) -> bool:
 	# The first rendered cover is the only startup yield, with no guest running.
 	if not startup_ready and bridge.failure.is_empty(): return false
+	_poll_web_controls()
 	if is_instance_valid(control_notice) and Time.get_ticks_msec()>=notice_until:control_notice.hide()
 	elapsed += delta
 	for message in bridge.poll():
@@ -732,6 +765,7 @@ func _apply_sample(message: Dictionary) -> void:
 		if pc_audio: pc_audio.reset_timeline()
 	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.slots)
+		_sync_web_controls()
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
 		pc_audio.set_transport_muted(fast_forward>1 or inflight_fast or state_control_pending or not pending_state_command.is_empty())
 	inflight_fast=false
@@ -748,13 +782,22 @@ func _apply_sample(message: Dictionary) -> void:
 	if capture: print("PC_VIEW_SAMPLE %d sequence=%d" % [samples, int(message.sequence)])
 	fps = float(message.fps)
 	var image := _decoded_image
-	var changed: bool = image==null or message.png!=_decoded_png
+	var web_rgb: bool = message.get("rgb") is String
+	var source_encoding: String = message.rgb if web_rgb else str(message.get("png", ""))
+	var changed: bool = image==null or source_encoding!=_decoded_png
 	if changed:
-		image=Image.new()
-		if image.load_png_from_buffer(Marshalls.base64_to_raw(message.png)) != OK:
-			bridge.failure = "invalid original framebuffer"
-			return
-		_decoded_png=message.png
+		if web_rgb:
+			var raw := Marshalls.base64_to_raw(source_encoding)
+			if raw.size() != 320 * 200 * 3:
+				bridge.failure = "invalid original RGB framebuffer"
+				return
+			image = Image.create_from_data(320, 200, false, Image.FORMAT_RGB8, raw)
+		else:
+			image=Image.new()
+			if image.load_png_from_buffer(Marshalls.base64_to_raw(source_encoding)) != OK:
+				bridge.failure = "invalid original framebuffer"
+				return
+		_decoded_png=source_encoding
 		_decoded_image=image
 	if campaign_review_pending:
 		var probe := image.duplicate()

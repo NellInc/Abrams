@@ -28,6 +28,7 @@ class Page(HTMLParser):
         self.errors = []
         self.text = []
         self.downloads = []
+        self.web_options = []
         self.skip = 0
 
     def handle_data(self, data):
@@ -48,6 +49,8 @@ class Page(HTMLParser):
             self.skip += 1
         if tag == "a" and "download-button" in attrs.get("class", "").split():
             self.downloads.append([attrs.get("href", ""), [], True])
+        if "web-option" in attrs.get("class", "").split():
+            self.web_options.append((tag, attrs))
         if "id" in attrs:
             if attrs["id"] in self.ids:
                 self.errors.append(f"Duplicate id: {attrs['id']}")
@@ -104,6 +107,10 @@ def main():
     html = (DIST / "index.html").read_text()
     page.feed(html)
     errors = page.errors
+    if len(page.web_options) != 1 or page.web_options[0][0] != "a" or page.web_options[0][1].get("href") != "play/remaster.html":
+        errors.append("The Web edition must link once to the packaged remaster")
+    if not re.search(r'<a class="web-option"[^>]*>.*?original PC game folder.*?</a>', html, re.S):
+        errors.append("The Web option must state its original-game requirement")
     for ref in page.refs:
         url = urlsplit(ref)
         if url.scheme or url.netloc:
@@ -125,7 +132,8 @@ def main():
     if set(page.briefs) != {s["slug"] for s in scenarios} or len(page.briefs) != 8:
         errors.append("All eight mission briefs must be in the delivered HTML")
     provenance = json.loads((ROOT / "asset-provenance.json").read_text())
-    raster_files = {str(p.relative_to(ROOT)) for p in DIST.rglob("*") if p.suffix in {".webp", ".jpg", ".png"}}
+    browser = DIST / "play"
+    raster_files = {str(p.relative_to(ROOT)) for p in DIST.rglob("*") if p.suffix in {".webp", ".jpg", ".png"} and not p.is_relative_to(browser)}
     if raster_files != {r["file"] for r in provenance["rasters"]}:
         errors.append("Raster provenance does not cover the served inventory")
     for row in provenance["rasters"] + provenance["media"] + provenance["documents"]:
@@ -136,6 +144,8 @@ def main():
             errors.append(f"Missing origin sidecar: {asset.name}")
     permitted = {".html", ".css", ".js", ".json", ".webp", ".jpg", ".png", ".svg", ".ttf", ".woff2", ".txt", ".mp4", ".vtt", ".xml", ".pdf"}
     for path in DIST.rglob("*"):
+        if path.is_relative_to(browser):
+            continue
         if path.is_symlink():
             errors.append(f"Symbolic link in publication artifact: {path.name}")
         elif path.is_file() and path.suffix not in permitted and path.name != "CNAME":
@@ -145,12 +155,37 @@ def main():
             errors.append(f"Unexpected embedded media: {forbidden}")
         elif (DIST / forbidden).exists():
             errors.append(f"Original game must not be bundled: {forbidden}")
+    bundle_path = browser / "BUNDLE.json"
+    if not bundle_path.is_file():
+        errors.append("The linked Web remaster bundle is missing")
+    else:
+        bundle = json.loads(bundle_path.read_text())
+        files = bundle.get("files", {})
+        actual = {p.relative_to(browser).as_posix() for p in browser.rglob("*") if p.is_file()}
+        if bundle.get("schema") != 1 or bundle.get("original_pc_files_included") is not False or actual != set(files) | {"BUNDLE.json"}:
+            errors.append("The browser bundle differs from its publication inventory")
+        for name, record in files.items():
+            path = (browser / name).resolve()
+            if not path.is_relative_to(browser) or not path.is_file() or path.is_symlink() or path.stat().st_size >= 100_000_000:
+                errors.append(f"Unsafe browser bundle file: {name}")
+            elif record != {"bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}:
+                errors.append(f"Browser bundle hash mismatch: {name}")
+            if name.startswith(("GAME/", "GENESIS/")) or Path(name).name.upper() in {"ABRAMS.COM", "SIM.EXE"}:
+                errors.append(f"Original game file in browser bundle: {name}")
+        if any(p.is_symlink() for p in browser.rglob("*")):
+            errors.append("Symbolic link in browser bundle")
+        remaster_page = (browser / "remaster.html").read_text()
+        if 'id="game-folder"' not in remaster_page or 'webkitdirectory' not in remaster_page:
+            errors.append("Browser remaster must require a local PC game folder")
+        source_name = ".generated/web-core-corresponding-source.tar.gz"
+        if source_name not in files or f'href="{source_name}"' not in remaster_page:
+            errors.append("Modified Web core must have linked corresponding source")
     if len(page.videos) != 1:
         errors.append("Expected one requested project trailer")
     else:
         video = page.videos[0]
-        if any(key not in video for key in ("controls", "playsinline")) or "muted" in video or "autoplay" in video or video.get("preload") != "none":
-            errors.append("Trailer must use unmuted, user-controlled, non-preloaded playback")
+        if any(key not in video for key in ("controls", "playsinline")) or "muted" in video or "autoplay" in video or video.get("preload") != "auto":
+            errors.append("Trailer must use unmuted, user-controlled playback with automatic preload")
     if len(page.tracks) != 1 or page.tracks[0].get("kind") != "captions":
         errors.append("The trailer needs its English caption track")
     else:

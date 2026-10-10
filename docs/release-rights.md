@@ -1,9 +1,10 @@
 # Release rights and dependency review
 
-Reviewed 29 September 2026. **Private GitHub alpha distribution.**
+Reviewed 29 September 2026 for the private alpha; the owner's browser-edition
+publication decision was recorded 10 October 2026. The browser package is
+assembled for the project site and includes corresponding Web core source.
 
-The owner has authorised a free alpha release to the existing private repository.
-Repository visibility remains private. The project claims no rights over original
+The owner authorised a free alpha release. The project claims no rights over original
 game content. Our licensing grants cover our own contributions only; they cannot
 clear the underlying game or third-party rights. See [NOTICE.md](../NOTICE.md).
 This inventory records evidenced provenance and missing decisions; it is not
@@ -14,9 +15,9 @@ account and byte-perfect provenance do not establish redistribution rights.
 |---|---|---|
 | Newly written project code | MIT, except the modified emulator and its headers, which are GPL-2.0-or-later. | Full texts and scope in `LICENSE` and `LICENSES/`. |
 | PC game executables, data and native fonts | Supplied original files; exact fingerprints in `tools/package/game-inputs.json`. No redistribution permission found in supplied materials. | Excluded from the standalone app and Git. Players import their own PC files. The legacy private developer kit includes owner-supplied content and is not the tester handoff. |
-| Genesis originals, palette and extracted art/audio | Existing extraction receipts tie outputs to the supplied cartridge. | No ROM or standalone native-audio collection in either kit. Required palette, art donors and music containing derived percussion are private-only. Redistribution permission is unestablished. |
-| Genesis/PC-derived remasters and outline fonts | Existing local source hashes, prompts, recognition catalogues and generated-asset receipts. | Our original remaster contributions are dedicated under CC0. Underlying art/font rights remain unresolved; CC0 does not cover those rights. Kept in the private alpha. |
-| Authored frontend score with Genesis percussion | Local `frontend-music-v1` score/asset manifest; the percussion is derived from original Genesis samples. | Our original score contribution is under CC0; donor sample rights remain unchanged. This exact runtime directory remains in the private alpha. |
+| Genesis originals, palette and extracted art/audio | Existing extraction receipts tie outputs to the supplied cartridge. | No ROM or standalone native-audio collection in either kit. The owner authorised public use of remaster assets for the proposed browser edition on 10 October 2026; redistribution permission from underlying rights holders remains unestablished. |
+| Genesis/PC-derived remasters and outline fonts | Existing local source hashes, prompts, recognition catalogues and generated-asset receipts. | Our original remaster contributions are dedicated under CC0. The owner authorised public browser use, but CC0 does not cover unresolved underlying art/font rights. |
+| Authored frontend score with Genesis percussion | Local `frontend-music-v1` score/asset manifest; the percussion is derived from original Genesis samples. | Our original score contribution is under CC0; donor sample rights remain unchanged. Owner authorisation for browser use does not clear those rights. |
 | Synthesized effects and generated speech | `godot/assets/audio/provenance.json` and provider-specific receipts where present; authored effects builder and voice-generation scripts. | Our original effects and speech contributions are under CC0 to the extent we hold rights. Provider and third-party rights remain applicable. Human listening acceptance remains separate. |
 | DOSBox Pure, pinned commit `73e03aa...` | Upstream README and source headers state GPL version 2 or later; LICENSE is GPLv2. | Bundled with its licence text. The GitHub release includes all 291 tracked/patched source files and added headers, upstream notices and Makefile, plus the exact core build receipt, in a separate corresponding-source archive. |
 | Godot | MIT licence; engine also includes third-party components. | Godot 4.7.2 is bundled in the standalone app. Engine and third-party notices are in `Contents/Resources/notices/Godot.json`. |
@@ -50,8 +51,10 @@ originals.
 
 A disclaimer, an ownership check and a free price do not grant redistribution
 rights over the original or derived third-party material. No blanket clearance
-is claimed. The repository remains private; a later public distribution needs a
-separate disposition of those underlying rights.
+is claimed. The owner chose public use of the browser assets despite the
+unresolved underlying rights. This records her publication decision, not
+rights-holder permission or legal clearance. A rights-holder claim remains a
+material publication risk.
 
 The app is ad-hoc signed, without Developer ID signing or notarization. Modern's
 consistent 60 fps target and whole-mission human acceptance are still open. Those

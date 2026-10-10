@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#181a17">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Abrams Browser Prototype</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wordmark">ABRAMS <span>Battle Tank</span></div>
+    <div class="prototype-label">Local browser prototype</div>
+  </header>
+  <main>
+    <section class="setup" aria-labelledby="title">
+      <h1 id="title">The original PC game, in your browser.</h1>
+      <p>This early experiment runs your unchanged DOS copy inside a local WebAssembly emulator. It currently shows the original EGA picture; the remastered graphics and audio are not connected yet.</p>
+      <label class="choose" for="game-folder">Choose original PC game folder</label>
+      <input id="game-folder" type="file" webkitdirectory multiple aria-describedby="folder-help">
+      <p id="folder-help" class="detail">Choose the extracted folder containing <code>ABRAMS.COM</code> and <code>SIM.EXE</code>. The browser checks all 68 supported files before play. This local test page does not send them to a server.</p>
+      <p id="status" class="status" role="status" aria-live="polite">Waiting for your original PC game.</p>
+    </section>
+    <section class="player" aria-label="Original PC game player">
+      <div class="player-top"><span>PC ORIGINAL · EGA</span><span id="frame-count">FRAME 0</span></div>
+      <canvas id="screen" width="320" height="200" tabindex="0" aria-label="Original Abrams Battle Tank display. Click to use the keyboard."></canvas>
+      <div class="player-bottom">
+        <div class="player-actions">
+          <button id="pause" type="button" disabled>Pause</button>
+          <button id="save" type="button" disabled>Save locally</button>
+          <button id="load" type="button" disabled>Load local save</button>
+        </div>
+        <span>Saves stay in this browser. Rechoose your original files after a reload.</span>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <p>Original game by Dynamix, published by Electronic Arts. Fan remaster by Nell Watson.</p>
+    <p>Development prototype. No original game files are included.</p>
+  </footer>
+</body>
+</html>

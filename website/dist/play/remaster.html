@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,follow">
+  <title>Play Abrams Fan Remaster in your browser</title>
+  <link rel="icon" href=".generated/godot/index.icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script src=".generated/godot/index.js" defer></script>
+  <script type="module" src="remaster.mjs"></script>
+  <style>
+    main { display: block; min-height: 0; max-width: 1400px; padding-top: 32px; padding-bottom: 32px; }
+    .setup { max-width: none; }
+    .setup h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); }
+    .player { margin-top: 24px; }
+    #game-canvas { display: block; width: 100%; aspect-ratio: 4 / 3; background: #050705; }
+    .web-controls { position: fixed; z-index: 10; top: 8px; left: 12px; right: 12px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 7px 10px;
+      width: max-content; max-width: calc(100% - 24px); background: #111713ee;
+      border: 1px solid #666c56; border-radius: 4px; font-size: 14px; }
+    .web-controls[hidden] { display: none; }
+    .web-controls select { color: var(--paper); background: #202820; border: 1px solid var(--line);
+      border-radius: 4px; padding: 7px 5px; font: inherit; }
+    .web-controls button { padding: 7px 10px; }
+    .web-controls output { color: var(--orange); margin-left: 3px; }
+  </style>
+</head>
+<body>
+  <nav id="web-controls" class="web-controls" aria-label="Remaster controls" hidden>
+    <label for="web-graphics">Graphics</label>
+    <select id="web-graphics"><option value="ega">EGA</option><option value="genesis">Genesis</option><option value="upscaled">Upscaled</option><option value="modern">Modern</option></select>
+    <label for="web-save-slot">Save</label><select id="web-save-slot" aria-label="Save slot"><option value="1">Slot 1</option><option value="2">Slot 2</option><option value="3">Slot 3</option><option value="4">Slot 4</option><option value="5">Slot 5</option></select>
+    <button id="web-save" type="button">Save state</button>
+    <label for="web-load-slot">Load</label><select id="web-load-slot" aria-label="Load slot"><option value="1">Slot 1</option><option value="2">Slot 2</option><option value="3">Slot 3</option><option value="4">Slot 4</option><option value="5">Slot 5</option><option value="0">Undo last load</option></select>
+    <button id="web-load" type="button" disabled>Load state</button>
+    <button id="web-speed" type="button">8× speed</button>
+    <button id="web-help" type="button">Controls</button>
+    <output id="web-control-status" aria-live="polite"></output>
+  </nav>
+  <header class="site-header">
+    <div class="wordmark">ABRAMS <span>Battle Tank</span></div>
+    <div class="prototype-label">Web edition</div>
+  </header>
+  <main>
+    <section class="setup" aria-labelledby="title">
+      <h1 id="title">Abrams Fan Remaster, in your browser.</h1>
+      <p>Play the original PC game with the remaster's artwork and controls. Choose your supported original PC game folder. Your game files stay in this browser and are never sent to the site.</p>
+      <p>For Genesis graphics and music, choose your original Genesis ROM before starting. The PC game folder is always required. This edition is designed for a desktop browser.</p>
+      <label class="choose" for="genesis-rom">Choose optional Genesis ROM</label>
+      <input id="genesis-rom" type="file" accept=".md,.bin,.gen,.rom">
+      <label class="choose" for="game-folder">Choose original PC game folder</label>
+      <input id="game-folder" type="file" webkitdirectory multiple>
+      <button id="start-game" type="button" disabled>Start remaster</button>
+      <p id="status" class="status" role="status" aria-live="polite">Waiting for your original PC game.</p>
+    </section>
+    <section class="player" aria-label="Abrams remaster player">
+      <canvas id="game-canvas" width="1280" height="960" tabindex="0" aria-label="Abrams Fan Remaster game display"></canvas>
+    </section>
+  </main>
+  <footer>
+    <p>Original game by Dynamix, published by Electronic Arts. Fan remaster by Nell Watson.</p>
+    <p>Your original PC files remain in this browser. Save states stay on this device. <a href="NOTICE.txt">Notices</a> · <a href="LICENSES/GPL-2.0.txt">Core licence</a> · <a href=".generated/web-core-corresponding-source.tar.gz">Web core source</a> · <a href="https://github.com/NellInc/Abrams">Project source</a></p>
+  </footer>
+</body>
+</html>

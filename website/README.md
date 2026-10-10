@@ -11,7 +11,7 @@ python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
 The page contains the graphics comparison, all eight restored scenario maps,
 direct release/source downloads, installation instructions, a "Before you download" questions band, original creator credits and the dedication.
 
-`dist` is the complete deployable site. Do not serve or upload the parent game
+`dist` is the complete locally assembled deployable site, including the Web remaster bundle in `play/`. Do not serve or upload the parent game
 repository. Asset origins and hashes are recorded in `asset-provenance.json`.
 `robots.txt` points crawlers at the sitemap, `llms.txt` states the project facts
 and credits, and `404.html` is the branded page GitHub Pages serves for unknown
@@ -37,7 +37,8 @@ ROM are excluded from both Git and the download package.
 
 The native trailer player has captions, a descriptive transcript (including on-screen text and the end card) and a poster extracted at 2.70 seconds, between the opening captions, so no caption is burned into it. Poster URLs carry the poster file's own hash as their cache token; the movie and caption track keep the movie's hash.
 The accepted V8 movie is captioned directly; its matching optional English text track is off by default to avoid duplicate captions.
-It does not autoplay or preload the movie, and playback starts with sound after the visitor presses Play. The native player retains its own download option; no separate trailer download link is shown.
+It does not autoplay. The movie preloads automatically, and playback starts with sound after the visitor presses Play. The native player retains its own download option; no separate trailer download link is shown.
+The download block links to the packaged Web remaster at `dist/play/remaster.html`. It requires the visitor’s supported original PC game folder and accepts a matching Genesis ROM optionally. The browser bundle includes neither original game and ships matching Web core source. Confirm live deployment from served bytes; see `docs/release-rights.md` for the owner's public-use decision and unresolved underlying rights.
 Canonical, Open Graph and Twitter metadata use the project URL; the sitemap
 includes the trailer. Structured metadata describes the webpage and video,
 without fabricated reviews or ratings. Search indexing is controlled by the
@@ -56,4 +57,4 @@ promotes the visitor's own desktop platform to the primary style when it can be
 detected, and never on phones or tablets. Neither PDF contains game files. The favicon
 uses the title emblem's white star on a black disc, with SVG and PNG editions.
 
-Run `python3 verify.py`, `node --check dist/app.js` and `node test-maps.cjs` before publishing.
+After `python3 web-prototype/package_site.py` from the repository root, run `python3 verify.py`, `node --check dist/app.js` and `node test-maps.cjs` before publishing. The Web bundle is hash-checked by `verify.py`.

@@ -1,0 +1,70 @@
+@font-face {
+  font-family: "Barlow Condensed";
+  src: url("assets/BarlowCondensed-SemiBold-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+:root {
+  --ink: #181a17;
+  --surface: #232620;
+  --paper: #fff2db;
+  --muted: #c3c7b9;
+  --yellow: #ffd02f;
+  --orange: #ff8a57;
+  --line: #555d4b;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--paper);
+  background: var(--ink);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; line-height: 1.55; }
+::selection { background: var(--yellow); color: var(--ink); }
+a { color: inherit; text-underline-offset: .25em; }
+button, input { font: inherit; accent-color: var(--orange); caret-color: var(--orange); }
+:focus-visible { outline: 3px solid var(--yellow); outline-offset: 4px; }
+.site-header { max-width: 1420px; margin: auto; padding: 22px 40px; display: flex; justify-content: space-between; align-items: baseline; gap: 20px; border-bottom: 1px solid var(--line); }
+.wordmark, h1, .prototype-label, .player-top { font-family: "Barlow Condensed", Arial, sans-serif; text-transform: uppercase; }
+.wordmark { font-size: 1.7rem; letter-spacing: .025em; line-height: 1; }
+.wordmark span { color: var(--orange); }
+.prototype-label { font-size: 1rem; color: var(--muted); letter-spacing: .08em; }
+main { max-width: 1420px; margin: auto; padding: clamp(34px, 5vw, 80px) 40px; display: grid; grid-template-columns: minmax(270px, .72fr) minmax(450px, 1.28fr); align-items: center; gap: clamp(35px, 5vw, 80px); min-height: calc(100vh - 170px); }
+.setup { max-width: 520px; }
+h1 { font-size: clamp(3.2rem, 5vw, 5.9rem); line-height: .96; letter-spacing: -.02em; margin: 0 0 28px; text-wrap: balance; }
+.setup > p { font-size: 1.04rem; margin: 0 0 22px; }
+.choose { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 13px 23px; background: var(--yellow); color: var(--ink); border-radius: 4px; font-weight: 700; cursor: pointer; text-align: center; }
+.choose:hover { background: #ffe477; }
+input[type="file"] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+input[type="file"]:focus-visible + .detail { outline: 3px solid var(--yellow); outline-offset: 4px; }
+.setup .detail { font-size: .87rem; color: var(--muted); margin-top: 17px; max-width: 56ch; }
+code { color: var(--paper); font-size: .92em; }
+.status { border-top: 1px solid var(--line); margin-top: 27px !important; padding-top: 16px; color: var(--orange); font-weight: 700; min-height: 3.5em; }
+.player { background: var(--surface); border: 1px solid var(--line); box-shadow: 0 22px 58px rgba(0, 0, 0, .4); padding: 18px; min-width: 0; }
+.player-top, .player-bottom { display: flex; justify-content: space-between; gap: 15px; align-items: center; }
+.player-top { font-size: 1.1rem; letter-spacing: .04em; padding: 0 2px 14px; color: var(--yellow); }
+.player-top span:last-child { color: var(--muted); }
+#screen { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #050705; image-rendering: pixelated; cursor: crosshair; }
+#screen:focus { outline: 3px solid var(--yellow); outline-offset: -3px; }
+.player-bottom { min-height: 55px; padding: 13px 2px 0; font-size: .86rem; color: var(--muted); }
+.player-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+button { border: 1px solid var(--line); border-radius: 4px; padding: 7px 16px; color: var(--paper); background: transparent; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--paper); background: #31372d; }
+button:disabled { opacity: .5; cursor: default; }
+footer { max-width: 1420px; margin: auto; padding: 24px 40px 34px; display: flex; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); font-size: .82rem; color: var(--muted); }
+footer p { margin: 0; }
+@media (max-width: 900px) {
+  .site-header, main, footer { padding-left: 24px; padding-right: 24px; }
+  main { grid-template-columns: 1fr; min-height: 0; }
+  .setup { max-width: 690px; }
+  .player { max-width: 850px; width: 100%; }
+}
+@media (max-width: 550px) {
+  .site-header { align-items: start; flex-direction: column; gap: 9px; }
+  h1 { font-size: clamp(2.9rem, 12vw, 4rem); }
+  main { padding-top: 40px; padding-bottom: 45px; }
+  .player { padding: 9px; }
+  .player-top { font-size: .92rem; }
+  .player-bottom { align-items: start; flex-direction: column; gap: 10px; }
+  footer { flex-direction: column; gap: 9px; }
+}
