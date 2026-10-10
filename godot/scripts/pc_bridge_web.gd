@@ -75,6 +75,24 @@ func poll() -> Array[Dictionary]:
 		if value.get("type") == "ready" and int(value.get("protocol", 0)) != 4:
 			failure = "Unsupported original PC browser protocol."
 			break
+		# Keep the verified RGB bytes paired with this exact response. Godot's
+		# Web bridge copies the typed array directly, without base64 or JSON.
+		var frame = host.takeFrame()
+		var restored = value.get("restored")
+		var expects_frame: bool = value.get("type") in ["ready", "sample"] or restored is Dictionary
+		if expects_frame:
+			if frame == null or not JavaScriptBridge.is_js_buffer(frame):
+				failure = "Missing original RGB framebuffer."
+				break
+			var rgb := JavaScriptBridge.js_buffer_to_packed_byte_array(frame)
+			if rgb.size() != 320 * 200 * 3:
+				failure = "Invalid original RGB framebuffer."
+				break
+			if restored is Dictionary: restored["rgb_bytes"] = rgb
+			else: value["rgb_bytes"] = rgb
+		elif frame != null:
+			failure = "Unexpected original RGB framebuffer."
+			break
 		pending = false
 		messages.append(value)
 	if failure.is_empty() and pending and Time.get_ticks_msec() - request_started > 30000:

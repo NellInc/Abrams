@@ -120,7 +120,9 @@ function pairedFrame() {
   const before = core._abrams_web_ram_now();
   if (!before || core._abrams_web_paired_ram_size() !== 640 * 1024)
     throw new Error('Original RAM is unavailable to the source observer');
-  const mode = observer.beforeFrame(core.HEAPU8.slice(before, before + 640 * 1024));
+  // The observer synchronously copies this view into its own Pyodide heap.
+  // No core step or memory growth can occur until that copy has completed.
+  const mode = observer.beforeFrame(core.HEAPU8.subarray(before, before + 640 * 1024));
   if (mode.mode === 'frontend' && core._abrams_web_trace_frontend() !== 1)
     throw new Error('Cannot attach the original frontend observer');
   if (mode.mode === 'sim' && core._abrams_web_trace_sim(mode.load_segment) !== 1)
@@ -141,10 +143,10 @@ function pairedFrame() {
   const trace = core._abrams_web_trace_events();
   const claim = core._abrams_web_claim_receipts();
   const sample = observer.afterFrame(
-    core.HEAPU8.slice(trace, trace + core._abrams_web_trace_size()),
-    core.HEAPU8.slice(claim, claim + core._abrams_web_claim_receipts_size()),
-    core.HEAPU8.slice(memory, memory + 640 * 1024),
-    core.HEAPU8.slice(video, video + pitch * height), width, height, pitch);
+    core.HEAPU8.subarray(trace, trace + core._abrams_web_trace_size()),
+    core.HEAPU8.subarray(claim, claim + core._abrams_web_claim_receipts_size()),
+    core.HEAPU8.subarray(memory, memory + 640 * 1024),
+    core.HEAPU8.subarray(video, video + pitch * height), width, height, pitch);
   return sample;
 }
 

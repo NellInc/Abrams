@@ -1,16 +1,11 @@
 // The Godot Web bridge has the same bounded request/response shape as the
 // desktop pipe. Visitor game data stays inside this browser origin.
-function base64(bytes) {
-  let output = '';
-  for (let at = 0; at < bytes.length; at += 0x6000)
-    output += String.fromCharCode(...bytes.subarray(at, at + 0x6000));
-  return btoa(output);
-}
 
 export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
   const worker = new Worker(new URL('./bridge_worker.mjs', import.meta.url), {type: 'module'});
   const queue = [];
   const controls = [];
+  let takenFrame = null;
   let ready = false;
   let failed = false;
   let firstResolve;
@@ -21,7 +16,7 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
   worker.onerror = event => {
     const error = `Original PC worker failed: ${event.message}`;
     failed = true;
-    queue.push({type: 'error', message: error});
+    queue.push({packet: {type: 'error', message: error}, rgb: null});
     firstReject(new Error(error));
   };
   worker.onmessage = event => {
@@ -32,7 +27,7 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
     }
     if (message.type === 'error') {
       failed = true;
-      queue.push({type: 'error', message: message.message});
+      queue.push({packet: {type: 'error', message: message.message}, rgb: null});
       firstReject(new Error(message.message));
       return;
     }
@@ -41,15 +36,12 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
     if (message.rgb) {
       if (message.rgb.byteLength !== 320 * 200 * 3) {
         failed = true;
-        queue.push({type: 'error', message: 'Invalid original RGB frame'});
+        queue.push({packet: {type: 'error', message: 'Invalid original RGB frame'}, rgb: null});
         firstReject(new Error('Invalid original RGB frame'));
         return;
       }
-      const encoded = base64(message.rgb);
-      if (packet.type === 'state_result') packet.restored.rgb = encoded;
-      else packet.rgb = encoded;
     }
-    queue.push(packet);
+    queue.push({packet, rgb: message.rgb || null});
     if (packet.type === 'ready') {
       ready = true;
       firstResolve();
@@ -69,7 +61,17 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
       worker.postMessage(message);
       return true;
     },
-    take() { return queue.length ? JSON.stringify(queue.shift()) : ''; },
+    take() {
+      if (!queue.length) return '';
+      const item = queue.shift();
+      takenFrame = item.rgb;
+      return JSON.stringify(item.packet);
+    },
+    takeFrame() {
+      const frame = takenFrame;
+      takenFrame = null;
+      return frame;
+    },
     queueControl(value) {
       if (!ready || failed || controls.length >= 8) return false;
       controls.push(JSON.stringify(value));
@@ -77,6 +79,6 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
     },
     takeControl() { return controls.shift() || ''; },
     updateControls(json) { onControls?.(JSON.parse(json)); return true; },
-    close() { worker.terminate(); ready = false; queue.length = 0; controls.length = 0; return true; },
+    close() { worker.terminate(); ready = false; takenFrame = null; queue.length = 0; controls.length = 0; return true; },
   };
 }

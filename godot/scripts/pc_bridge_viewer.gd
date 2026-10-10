@@ -74,6 +74,7 @@ var _presentation_key: Dictionary = {}
 var _presentation_pixels := PackedByteArray()
 var _presentation_frontend := false
 var _decoded_png := ""
+var _decoded_rgb := PackedByteArray()
 var _decoded_image: Image
 
 func invalidate_presentation_cache() -> void:
@@ -782,22 +783,23 @@ func _apply_sample(message: Dictionary) -> void:
 	if capture: print("PC_VIEW_SAMPLE %d sequence=%d" % [samples, int(message.sequence)])
 	fps = float(message.fps)
 	var image := _decoded_image
-	var web_rgb: bool = message.get("rgb") is String
-	var source_encoding: String = message.rgb if web_rgb else str(message.get("png", ""))
-	var changed: bool = image==null or source_encoding!=_decoded_png
+	var web_rgb: bool = message.get("rgb_bytes") is PackedByteArray
+	var raw_rgb: PackedByteArray = message.rgb_bytes if web_rgb else PackedByteArray()
+	var source_encoding: String = "" if web_rgb else str(message.get("png", ""))
+	var changed: bool = image==null or (raw_rgb!=_decoded_rgb if web_rgb else source_encoding!=_decoded_png)
 	if changed:
 		if web_rgb:
-			var raw := Marshalls.base64_to_raw(source_encoding)
-			if raw.size() != 320 * 200 * 3:
+			if raw_rgb.size() != 320 * 200 * 3:
 				bridge.failure = "invalid original RGB framebuffer"
 				return
-			image = Image.create_from_data(320, 200, false, Image.FORMAT_RGB8, raw)
+			image = Image.create_from_data(320, 200, false, Image.FORMAT_RGB8, raw_rgb)
 		else:
 			image=Image.new()
 			if image.load_png_from_buffer(Marshalls.base64_to_raw(source_encoding)) != OK:
 				bridge.failure = "invalid original framebuffer"
 				return
 		_decoded_png=source_encoding
+		_decoded_rgb=raw_rgb
 		_decoded_image=image
 	if campaign_review_pending:
 		var probe := image.duplicate()
