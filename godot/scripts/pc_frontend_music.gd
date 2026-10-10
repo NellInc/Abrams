@@ -9,7 +9,7 @@ var failures: Dictionary = {} # context -> reason; one bad track silences only i
 var manifest: Dictionary = {}
 
 func _init() -> void:
-	directory = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/frontend-music-v1")
+	directory = ("/" if OS.has_feature("web") else ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()).path_join("local-audio/frontend-music-v1")
 
 func get_stream(context: String) -> AudioStreamWAV:
 	if context not in CONTEXTS or not failure.is_empty() or failures.has(context): return null

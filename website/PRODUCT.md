@@ -38,6 +38,7 @@ are available; Modern remains experimental.
 The original PC game is required, a Genesis ROM is optional, and neither is
 bundled. Packages target Apple Silicon macOS 14+, Windows x86_64 and Linux
 x86_64. The GitHub repository and its releases are public.
+The packaged Web edition links from the download section and requires the original PC game. The optional Genesis ROM enables donor graphics and music. Representative browser mission, mode and save/reload routes passed; exhaustive cross-browser and audio parity remain unverified. Check served Pages bytes for deployment status.
 Nell selected GitHub Pages, authorizing publication of this webpage, and made the
 repository public with it. That covers a scoped website commit, deployment
 workflow and Pages publication. Game releases and notarization are unchanged by it.

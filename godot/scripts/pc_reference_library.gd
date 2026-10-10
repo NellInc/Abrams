@@ -71,7 +71,7 @@ func _read_json(name: String) -> Dictionary:
 	return value if value is Dictionary else {}
 
 func open_reader(tab: String="Controls") -> void:
-	directory=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("docs/player-reference")
+	directory=("/" if OS.has_feature("web") else ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()).path_join("docs/player-reference")
 	content=_read_json("manual-content.json")
 	visuals=_read_json("visuals.json")
 	credits=_read_json("credits.json")

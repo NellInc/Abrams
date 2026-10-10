@@ -5,7 +5,7 @@ signal quality_selected(msaa_samples: int, anisotropic_samples: int)
 signal speed_selected(multiplier: int)
 signal state_requested(operation: String, slot: int)
 signal control_notice(message: String)
-var shortcut_is_macos := OS.get_name()=="macOS"
+var shortcut_is_macos := _uses_macos_shortcuts()
 var shortcut_keys: Array = []
 const MODES := ["ega","genesis","upscaled","modern"]
 var graphics_mode := "upscaled"
@@ -27,6 +27,12 @@ var load_popup: PopupMenu
 var state_slots: Array = []
 var state_message := "Save states include the campaign disk. Loading rewinds both."
 var help_popup: PopupMenu
+
+static func _uses_macos_shortcuts() -> bool:
+	# Browser Cmd chords are intercepted or stripped before Godot receives them,
+	# even on macOS. Keep the browser's in-game shortcuts on Ctrl+Alt.
+	if OS.has_feature("web"): return false
+	return OS.get_name()=="macOS"
 
 func _ready() -> void:
 	theme=preload("res://scripts/pc_interface_theme.gd").build()

@@ -95,8 +95,15 @@ class Collector:
         self.callback = CALLBACK(self.observe)
 
     def observe(self, event, registers, data, offset, length):
+        try: raw = C.string_at(data, length)
+        except Exception as error:
+            if self.error is None: self.error = error
+            return
+        self.observe_packet(event, registers[:12], raw, offset)
+
+    def observe_packet(self, event, registers, raw, offset):
+        """Consume an exact native callback packet, including its original bytes."""
         try:
-            raw = C.string_at(data, length)
             if event == 25:
                 self.audio.observe(raw, text_sequence=self.text.sequence)
                 return

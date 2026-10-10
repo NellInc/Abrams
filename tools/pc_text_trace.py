@@ -37,6 +37,9 @@ class TextRuns:
         # Expected pixels only. Every presented rectangle is still read and
         # compared in full, including on a warm hit. No event/item is retained.
         self.rgb_proofs = OrderedDict()
+        # A verified font and identical source bytes rasterize identically on
+        # every frame. Retain only the expected glyph mask, not presentation.
+        self.text_rasters = OrderedDict()
 
     def begin(self, ram, regs):
         if len(ram) != 640*1024: raise ValueError('invalid native text entry snapshot')
@@ -64,7 +67,16 @@ class TextRuns:
             end = ram.find(b'\0',ds+pointer,min(ds+65536,ds+pointer+321))
             if end < 0: raise ValueError('unterminated original text')
             text = ram[ds+pointer:end]
-            width,height,ink = text_pixels(font,text)
+            raster_key = (font['sha256'], text)
+            raster = self.text_rasters.get(raster_key)
+            if raster is None:
+                raster = text_pixels(font,text)
+                self.text_rasters[raster_key] = raster
+                if len(self.text_rasters) > MAX_CANDIDATES:
+                    self.text_rasters.popitem(last=False)
+            else:
+                self.text_rasters.move_to_end(raster_key)
+            width,height,ink = raster
             if page not in (0,8192) or x+width>320 or y+height>200:
                 raise ValueError('unsupported text rectangle')
             foreground,background = [struct.unpack_from('<H',ram,ds+fg+0x1316+2*ram[ds+at])[0]&255
