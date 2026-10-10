@@ -3,10 +3,13 @@
 from __future__ import annotations
 import argparse
 import hashlib
+from io import BytesIO
 import json
 from pathlib import Path, PurePosixPath
 import re
+import stat
 import subprocess
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 MAX_BYTES = 50_000_000
@@ -22,11 +25,38 @@ SECRET_PATTERNS = [
     re.compile(rb'\bAKIA[0-9A-Z]{16}\b'),
     re.compile(rb'\bsk-(?:proj-)?[A-Za-z0-9_-]{32,}\b'),
 ]
+WEB_GENERATED = 'website/dist/play/.generated/'
+WEB_ZIPS = {'python-source.zip', 'pyodide/python_stdlib.zip'}
+WEB_ASSET_ZIP = re.compile(r'remaster-assets-[0-9]{2}\.zip\Z')
+WEB_WASM = WEB_GENERATED + 'godot/index.wasm'
+WEB_WASM_SHA256 = 'fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0'
 
 
 def limit_text():
     # Read at call time so the reported limit always matches the enforced one.
     return f'{MAX_BYTES // 1_000_000} MB' if MAX_BYTES % 1_000_000 == 0 else f'{MAX_BYTES:,} bytes'
+
+
+def web_zip_kind(name):
+    if not name.startswith(WEB_GENERATED):
+        return None
+    suffix = name[len(WEB_GENERATED):]
+    if suffix in WEB_ZIPS:
+        return 'source'
+    if WEB_ASSET_ZIP.fullmatch(suffix):
+        return 'assets'
+    return None
+
+
+def public_asset_member(name):
+    path = PurePosixPath(name)
+    if (any(part.startswith('.env') or part.endswith('.env') for part in path.parts) or
+            path.name.lower() in {'credentials', 'id_rsa', 'id_ed25519'} or
+            path.suffix.lower() not in {'.png', '.svg', '.ttf', '.json', '.wav', '.gpl'}):
+        return False
+    return (name.startswith(('branding/', 'docs/player-reference/', 'local-art/',
+                             'local-audio/frontend-music-v1/')) or
+            name == 'reference/genesis/extracted/gunner/palette.gpl')
 
 
 def path_problem(name):
@@ -37,7 +67,7 @@ def path_problem(name):
         return 'unsafe path'
     if any(part in PRIVATE_PARTS or part.startswith('.env') or part.endswith('.env') for part in parts):
         return 'private directory or environment file'
-    if p.suffix.lower() in BINARY_SUFFIXES or p.name.lower() in {'credentials', 'id_rsa', 'id_ed25519'}:
+    if (p.suffix.lower() in BINARY_SUFFIXES and not web_zip_kind(name)) or p.name.lower() in {'credentials', 'id_rsa', 'id_ed25519'}:
         return 'original/runtime/archive/credential format'
     return None
 
@@ -53,11 +83,54 @@ def known_inputs():
     return {r['sha256'] for r in records} | {rom[1], CONTENT_SHA}
 
 
-def inspect_blob(data, known_hashes):
+def inspect_public_web_zip(data, kind, known_hashes):
+    """Inspect published archive members instead of exempting opaque ZIP bytes."""
+    try:
+        with zipfile.ZipFile(BytesIO(data)) as archive:
+            members = archive.infolist()
+            if len(members) != len({item.filename for item in members}):
+                return 'unsafe browser archive member'
+            total = 0
+            for item in members:
+                name = item.filename.rstrip('/')
+                member_problem = path_problem(name) if name else 'unsafe path'
+                if member_problem and not (kind == 'assets' and
+                                           member_problem == 'private directory or environment file' and
+                                           public_asset_member(name)):
+                    return 'unsafe browser archive member'
+                if kind == 'assets' and not public_asset_member(name):
+                    return 'unreviewed browser asset path'
+                if (item.flag_bits & 1 or item.compress_type not in
+                        {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED} or
+                        stat.S_ISLNK(item.external_attr >> 16)):
+                    return 'unsafe browser archive member'
+                if item.is_dir():
+                    continue
+                total += item.file_size
+                if item.file_size > MAX_BYTES or total > 2 * MAX_BYTES:
+                    return 'browser archive expands beyond bound'
+                problem = inspect_blob(archive.read(item), known_hashes)
+                if problem:
+                    return f'browser archive member: {problem}'
+    except (OSError, RuntimeError, ValueError, zipfile.BadZipFile, NotImplementedError):
+        return 'invalid browser archive'
+    return None
+
+
+def inspect_blob(data, known_hashes, name=None):
     if len(data) > MAX_BYTES:
         return f'file exceeds {limit_text()}'
-    if hashlib.sha256(data).hexdigest() in known_hashes:
+    # An original zero-byte marker is indistinguishable from harmless empty
+    # Python package markers; it carries no original game content.
+    if data and hashlib.sha256(data).hexdigest() in known_hashes:
         return 'fingerprinted original game/ROM/content archive'
+    kind = web_zip_kind(name) if name else None
+    if kind:
+        return inspect_public_web_zip(data, kind, known_hashes)
+    # This exact pinned Godot 4.7.2 binary includes a false-positive key
+    # header sequence. New engine bytes must be reviewed rather than bypassed.
+    if name == WEB_WASM and hashlib.sha256(data).hexdigest() == WEB_WASM_SHA256:
+        return None
     if any(pattern.search(data) for pattern in SECRET_PATTERNS):
         return 'credential signature'
     return None
@@ -112,9 +185,11 @@ def check(root, history=False, known_hashes=None):
                     data = process.stdout.read(int(header[2]))
                     if process.stdout.read(1) != b'\n':
                         raise ValueError('Malformed git blob stream')
-                    problem = inspect_blob(data, known_hashes)
-                if problem:
-                    failures.update((name, problem) for name in names)
+                    problem = None
+                for name in names:
+                    result = problem or inspect_blob(data, known_hashes, name)
+                    if result:
+                        failures.add((name, result))
             process.stdin.close()
             if process.wait() != 0:
                 raise ValueError('Git object inspection failed')

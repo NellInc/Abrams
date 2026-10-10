@@ -22,6 +22,9 @@ uniform sampler2D vehicle_panels : filter_linear_mipmap_anisotropic, repeat_disa
 uniform sampler2D vehicle_colours : source_color, filter_nearest, repeat_disable;
 uniform float vehicle_materials;
 uniform bool modern_active = false;
+// Calibration Range-inspired surface treatment. Modern's existing pixels are
+// unchanged when this is false; source geometry and ownership stay identical.
+uniform bool tactical_landscape = false;
 // Diagnostic A/B switch; ordinary Modern rendering keeps this enabled.
 uniform bool modern_surface_variation = true;
 // Static presentation only: no TIME, new draw calls or cache invalidation.
@@ -107,15 +110,30 @@ vec3 crew_head_paint(vec2 p) {
 vec3 daylight_sky(vec3 ray) {
     vec3 direction=normalize(ray);
     float height=max(direction.z,0.0);
-    vec3 horizon=vec3(0.71,0.81,0.83);
-    vec3 overhead=vec3(0.27,0.51,0.78);
+    vec3 horizon=tactical_landscape ? vec3(0.77,0.79,0.72) : vec3(0.71,0.81,0.83);
+    vec3 overhead=tactical_landscape ? vec3(0.75,0.78,0.72) : vec3(0.27,0.51,0.78);
     vec3 colour=mix(horizon,overhead,smoothstep(0.0,0.62,height));
     // Broad, quiet cloud banks in source-world angular coordinates. They turn
     // with the view, survive restores exactly, and never veil ground or actors.
     vec2 p=direction.xy/(height+0.32)*vec2(1.65,3.8);
     float shape=ground_noise(p+vec2(4.7,9.2))*0.76+ground_noise(p*2.1)*0.24;
     float cloud=smoothstep(0.57,0.72,shape)*smoothstep(0.045,0.18,height);
-    colour=mix(colour,vec3(0.87,0.89,0.84),cloud*0.53);
+    colour=mix(colour,tactical_landscape ? vec3(0.88,0.90,0.84) : vec3(0.87,0.89,0.84),cloud*(tactical_landscape ? 0.18 : 0.53));
+    if (tactical_landscape && direction.z >= 0.0) {
+        // An infinitely distant grove is sky underpaint, not an actor or an
+        // obstacle. Later PC terrain and actors always retain painter order.
+        float lane=atan(direction.x,direction.y)*41.0;
+        float cell=floor(lane);
+        float seed=ground_hash(vec2(cell,71.0));
+        float crown_height=mix(0.014,0.037,ground_hash(vec2(cell,151.0)));
+        float center=mix(0.35,0.65,ground_hash(vec2(cell,313.0)));
+        vec2 tree_uv=vec2((fract(lane)-center)/0.78+0.5,1.0-direction.z/crown_height);
+        if (seed>0.27 && tree_uv.x>0.0 && tree_uv.x<1.0 && tree_uv.y>0.0 && tree_uv.y<1.0) {
+            vec4 tree=texture(modern_tree,tree_uv);
+            vec3 far_foliage=mix(tree.rgb,vec3(0.29,0.36,0.25),0.42);
+            colour=mix(colour,far_foliage,smoothstep(0.50,0.88,tree.a)*0.88);
+        }
+    }
     return OUTPUT_IS_SRGB ? colour : pow(colour,vec3(2.2));
 }
 
@@ -155,6 +173,14 @@ void fragment() {
             foliage*=mix(vec3(0.97,1.005,1.045),vec3(1.035,1.02,0.96),UV.x);
             vec3 trunk=tree.rgb*vec3(1.14,1.09,1.035);
             ALBEDO=mix(trunk,foliage,green);
+            if (tactical_landscape) {
+                // Shape the same source-owned cutout like the Range's low-poly
+                // crowns. Neither its alpha nor its painter order changes.
+                vec3 crown_tint=vec3(0.46,0.57,0.34);
+                vec3 bark_tint=vec3(0.60,0.58,0.42);
+                ALBEDO*=OUTPUT_IS_SRGB ? mix(bark_tint,crown_tint,green)
+                                       : pow(mix(bark_tint,crown_tint,green),vec3(2.2));
+            }
         }
     } else if (UV.y > 19.5) {
         ALBEDO = texture(modern_colours,vec2((UV.x+0.5)/modern_colour_count,0.5)).rgb;
@@ -263,7 +289,15 @@ void fragment() {
                 grain_position=hill_uv;
                 if (!modern_active) detail=texture(hill_detail,hill_uv/768.0).r-hill_mean;
             }
-            if (modern_active && !road) detail=modern_surface_variation ? ground_grain(grain_position) : 0.0;
+            if (modern_active && !road) {
+                detail=modern_surface_variation ? ground_grain(grain_position) : 0.0;
+                if (tactical_landscape && modern_surface_variation) {
+                    // The Range's prefiltered field atlas is confined to
+                    // Tactical, leaving Modern's original grain untouched.
+                    float field=texture(field_detail,ground/512.0).r-0.4323640162;
+                    detail=field*0.40+detail*0.60;
+                }
+            }
             float fade = 1.0-smoothstep(2048.0,8192.0,length(local.xy));
             if (UV.y > 6.5) fade = 1.0-smoothstep(8192.0,32768.0,length(local.xy));
             level = clamp(round(16.0+detail*64.0*fade),0.0,32.0);
@@ -315,6 +349,35 @@ void fragment() {
             } else if (grass) {
                 vec3 fresh=vec3(0.88,1.085,0.98);
                 ALBEDO*=OUTPUT_IS_SRGB ? fresh : pow(fresh,vec3(2.2));
+            }
+            if (tactical_landscape && (grass || road)) {
+                // The Range's three scales of field colour and grazing relief
+                // are painted only on original terrain faces. A filtered
+                // height-gradient gives dimensional light without displacement,
+                // added blades or actors hidden behind decorative scenery.
+                vec3 local=camera_to_local*original_view;
+                bool usable=true;
+                if (UV.y > 2.5 && UV.y < 3.5) {
+                    usable=world_origin.z>0.0 && local.z < -0.0001;
+                    if (usable) local *= -world_origin.z/local.z;
+                }
+                if (usable) {
+                    vec2 ground=world_origin.xy+vec2(local.x,-local.y);
+                    float broad=textureLod(field_detail,ground/2048.0,3.0).r;
+                    float middle=texture(field_detail,ground/384.0).r;
+                    float fine=texture(field_detail,ground/96.0).r;
+                    float patch=clamp(broad*0.55+middle*0.30+fine*0.15,0.0,1.0);
+                    float slope_x=texture(field_detail,(ground+vec2(24.0,0.0))/96.0).r-fine;
+                    float slope_y=texture(field_detail,(ground+vec2(0.0,24.0))/96.0).r-fine;
+                    vec3 normal=normalize(vec3(-slope_x*3.0,-slope_y*3.0,1.0));
+                    float sun=0.74+0.26*max(dot(normal,normalize(vec3(-0.58,0.34,0.74))),0.0);
+                    float distance_fade=1.0-smoothstep(1200.0,6000.0,length(local.xy));
+                    vec3 base=grass ? mix(vec3(0.20,0.23,0.16),vec3(0.31,0.34,0.24),patch)
+                                    : mix(vec3(0.29,0.27,0.24),vec3(0.40,0.37,0.33),patch);
+                    base*=mix(1.0,sun,distance_fade);
+                    base=mix(base,vec3(0.38,0.40,0.31),(1.0-distance_fade)*0.35);
+                    ALBEDO=OUTPUT_IS_SRGB ? base : pow(base,vec3(2.2));
+                }
             }
         }
     } else ALBEDO = texture(material_patterns, lookup).rgb;

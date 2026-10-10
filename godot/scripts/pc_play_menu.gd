@@ -1,14 +1,17 @@
 extends "res://scripts/pc_audio_menu.gd"
 ## Remaster controls live outside the source framebuffer; Tab toggles acceleration.
 signal graphics_selected(mode: String)
+signal hud_style_selected(style: String)
 signal quality_selected(msaa_samples: int, anisotropic_samples: int)
 signal speed_selected(multiplier: int)
 signal state_requested(operation: String, slot: int)
 signal control_notice(message: String)
 var shortcut_is_macos := _uses_macos_shortcuts()
 var shortcut_keys: Array = []
-const MODES := ["ega","genesis","upscaled","modern"]
+const MODES := ["ega","genesis","upscaled","modern","tactical"]
 var graphics_mode := "upscaled"
+var hud_style := "restored"
+const HUD_STYLES := ["restored","tactical"]
 const QUALITY_DEFAULTS := {"msaa":4,"anisotropy":16}
 const QUALITY_LEVELS := {"msaa":[0,2,4,8],"anisotropy":[0,2,4,8,16]}
 var quality: Dictionary = QUALITY_DEFAULTS.duplicate()
@@ -20,6 +23,7 @@ var modern_available := false
 var speed := 1
 var busy := false
 var graphics_popup: PopupMenu
+var hud_popup: PopupMenu
 var session_popup: PopupMenu
 var speed_popup: PopupMenu
 var save_popup: PopupMenu
@@ -63,9 +67,15 @@ func _ready() -> void:
 	add_child(graphics_popup)
 	_watch(graphics_popup)
 	for index in MODES.size():
-		graphics_popup.add_radio_check_item(["EGA (original PC)","Genesis (original artwork)","Upscaled (remastered)","Modern (not available yet)"][index],index)
+		graphics_popup.add_radio_check_item(["EGA (original PC)","Genesis (original artwork)","Upscaled (remastered)","Modern (not available yet)","Tactical (not available yet)"][index],index)
 	graphics_popup.set_item_disabled(3,true)
+	graphics_popup.set_item_disabled(4,true)
 	graphics_popup.id_pressed.connect(func(index):choose_graphics(MODES[index]))
+	graphics_popup.add_separator()
+	hud_popup=_submenu(graphics_popup,"HUD Style")
+	for index in HUD_STYLES.size():
+		hud_popup.add_radio_check_item("Restored (original layout)" if index==0 else "Tactical (modern olive)",index)
+	hud_popup.id_pressed.connect(func(index):choose_hud_style(HUD_STYLES[index]))
 	graphics_popup.add_separator()
 	graphics_popup.add_item("Cycle graphics: "+shortcut_prefix()+"G",100)
 	graphics_popup.set_item_disabled(graphics_popup.get_item_index(100),true)
@@ -105,6 +115,7 @@ func _reader_changed(open: bool) -> void:
 
 func load_quality_settings() -> bool:
 	quality=QUALITY_DEFAULTS.duplicate()
+	hud_style="restored"
 	quality_error=""
 	if quality_config_path.is_empty(): return true
 	var file := ConfigFile.new()
@@ -121,6 +132,8 @@ func load_quality_settings() -> bool:
 			return false
 		loaded[key]=value
 	quality=loaded
+	var saved_style=file.get_value("graphics","hud_style","restored")
+	hud_style=saved_style if saved_style is String and saved_style in HUD_STYLES else "restored"
 	return true
 
 func choose_quality(key: String, samples: int) -> bool:
@@ -130,9 +143,24 @@ func choose_quality(key: String, samples: int) -> bool:
 	if not quality_config_path.is_empty():
 		var file := ConfigFile.new()
 		for setting in quality: file.set_value("graphics",setting,quality[setting])
+		file.set_value("graphics","hud_style",hud_style)
 		if file.save(quality_config_path)!=OK: quality_error="Graphics changed, but could not save settings"
 	quality_selected.emit(quality.msaa,quality.anisotropy)
 	refresh_controls()
+	return true
+
+func choose_hud_style(style: String) -> bool:
+	if style not in HUD_STYLES: return false
+	hud_style=style
+	quality_error=""
+	if not quality_config_path.is_empty():
+		var file:=ConfigFile.new()
+		for setting in quality: file.set_value("graphics",setting,quality[setting])
+		file.set_value("graphics","hud_style",hud_style)
+		if file.save(quality_config_path)!=OK: quality_error="HUD changed, but could not save settings"
+	hud_style_selected.emit(style)
+	refresh_controls()
+	control_notice.emit("HUD: " + ("Tactical" if style=="tactical" else "Restored"))
 	return true
 
 func shortcut_prefix() -> String:
@@ -198,7 +226,7 @@ func _submenu(parent: PopupMenu, title: String) -> PopupMenu:
 
 func available_graphics_modes() -> Array:
 	var modes: Array = ["ega","genesis","upscaled"] if genesis_available else ["ega","upscaled"]
-	if modern_available: modes.append("modern")
+	if modern_available: modes.append_array(["modern","tactical"])
 	return modes
 
 func cycle_graphics() -> bool:
@@ -211,7 +239,7 @@ func choose_graphics(mode: String) -> bool:
 	graphics_selected.emit(mode)
 	refresh_controls()
 	# The viewer may reject a mode whose assets failed to load; report what is shown.
-	var names := {"ega":"EGA","genesis":"Genesis","upscaled":"Upscaled","modern":"Modern"}
+	var names := {"ega":"EGA","genesis":"Genesis","upscaled":"Upscaled","modern":"Modern","tactical":"Tactical"}
 	control_notice.emit("Graphics: "+names[graphics_mode] if graphics_mode==mode else names[mode]+" graphics are unavailable")
 	return graphics_mode==mode
 
@@ -250,11 +278,14 @@ func refresh_controls() -> void:
 	graphics_popup.set_item_text(1,"Genesis (original artwork)" if genesis_available else "Genesis (requires optional import)")
 	graphics_popup.set_item_disabled(3,not modern_available)
 	graphics_popup.set_item_text(3,"Modern (refined low-poly)" if modern_available else "Modern (assets unavailable)")
+	graphics_popup.set_item_disabled(4,not modern_available)
+	graphics_popup.set_item_text(4,"Tactical (Range-inspired 3D)" if modern_available else "Tactical (assets unavailable)")
 	for index in MODES.size():graphics_popup.set_item_checked(index,MODES[index]==graphics_mode)
+	for index in HUD_STYLES.size():hud_popup.set_item_checked(index,HUD_STYLES[index]==hud_style)
 	for key in quality_menus:
 		var menu: PopupMenu=quality_menus[key]
 		for index in menu.item_count: menu.set_item_checked(index,menu.get_item_id(index)==quality[key])
-	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else "Antialiasing applies to Upscaled and Modern scenery")
+	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else "Antialiasing applies to Upscaled, Modern and Tactical scenery")
 	for index in speed_popup.item_count:
 		speed_popup.set_item_checked(index,speed_popup.get_item_id(index)==speed)
 		speed_popup.set_item_disabled(index,busy)

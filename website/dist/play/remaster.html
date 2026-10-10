@@ -10,11 +10,16 @@
   <script src=".generated/godot/index.js" defer></script>
   <script type="module" src="remaster.mjs"></script>
   <style>
-    main { display: block; min-height: 0; max-width: 1400px; padding-top: 32px; padding-bottom: 32px; }
+    main { display: block; min-height: 0; max-width: 1600px; padding: 24px clamp(12px, 2vw, 28px); }
     .setup { max-width: none; }
     .setup h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); }
     .player { margin-top: 24px; }
-    #game-canvas { display: block; width: 100%; aspect-ratio: 4 / 3; background: #050705; }
+    #game-canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #050705; }
+    #game-canvas.tactical { aspect-ratio: 16 / 9; }
+    body.playing .setup { position: absolute; width: 1px; height: 1px; padding: 0;
+      overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    body.playing main { max-width: none; padding: 0; }
+    body.playing .player { margin: 0; padding: 0; border: 0; box-shadow: none; }
     .web-controls { position: fixed; z-index: 10; top: 8px; left: 12px; right: 12px;
       display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 7px 10px;
       width: max-content; max-width: calc(100% - 24px); background: #111713ee;
@@ -29,7 +34,9 @@
 <body>
   <nav id="web-controls" class="web-controls" aria-label="Remaster controls" hidden>
     <label for="web-graphics">Graphics</label>
-    <select id="web-graphics"><option value="ega">EGA</option><option value="genesis">Genesis</option><option value="upscaled">Upscaled</option><option value="modern">Modern</option></select>
+    <select id="web-graphics"><option value="ega">EGA</option><option value="genesis">Genesis</option><option value="upscaled">Upscaled</option><option value="modern">Modern</option><option value="tactical">Tactical</option></select>
+    <label for="web-hud-style">HUD Style</label>
+    <select id="web-hud-style"><option value="restored">Restored</option><option value="tactical">Tactical</option></select>
     <label for="web-save-slot">Save</label><select id="web-save-slot" aria-label="Save slot"><option value="1">Slot 1</option><option value="2">Slot 2</option><option value="3">Slot 3</option><option value="4">Slot 4</option><option value="5">Slot 5</option></select>
     <button id="web-save" type="button">Save state</button>
     <label for="web-load-slot">Load</label><select id="web-load-slot" aria-label="Load slot"><option value="1">Slot 1</option><option value="2">Slot 2</option><option value="3">Slot 3</option><option value="4">Slot 4</option><option value="5">Slot 5</option><option value="0">Undo last load</option></select>

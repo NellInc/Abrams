@@ -2,7 +2,7 @@
 
 The ARM64 `.app` bundles Godot and its Python/Pillow bridge runtime. Players
 need no separately installed interpreter or engine. It targets macOS 14 or newer;
-other OS versions and Intel Macs have not been validated. Windows and Linux use the separate [portable setup](standalone-portable.md). Modern is included as an experimental mode; retain the preceding alpha for rollback.
+other OS versions and Intel Macs have not been validated. Windows and Linux use the separate [portable setup](standalone-portable.md). Modern and Tactical graphics are included as experimental modes; retain the preceding alpha for rollback.
 
 ## Install and play
 
@@ -22,12 +22,15 @@ source files unchanged. Genesis alone cannot run the game.
 
 | Available content | Presentation |
 | --- | --- |
-| PC only | EGA, PC-only Upscaled and Modern when included, high-resolution lettering/world rendering, generated speech and synthesized gameplay sounds. PC graphics remain where Genesis assets would be used. |
+| PC only | EGA, PC-only Upscaled, Modern and Tactical when included, high-resolution lettering/world rendering, generated speech and synthesized gameplay sounds. PC graphics remain where Genesis assets would be used. |
 | PC and Genesis | Also enables Genesis mode, Genesis-based remastered artwork and frontend music. |
 
 Use **Cmd+S** to save, **Cmd+L** to load, **Cmd+Shift+L** to undo a load and
 **Cmd+G** to cycle the available graphics modes. The **Session** menu contains all
 five slots and fast-forward speeds; **Audio** controls the mix.
+Choose **Graphics → Tactical** for the Calibration Range-inspired 3D scene, or
+**Modern** for its original refined low-poly palette. Choose **Graphics → HUD Style → Tactical** for the modern olive interface, or **Restored** for the original cockpit treatment. HUD Style is independent of graphics mode.
+On a verified Gunner frame, Tactical HUD enlarges the original optic into a 16:9 field layout and places its five live instruments below it. Other stations retain their complete original framing. Both 3D graphics profiles keep the source camera and gameplay unchanged.
 
 ### If installation stops
 

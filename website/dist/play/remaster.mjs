@@ -9,6 +9,7 @@ const status = document.querySelector('#status');
 const canvas = document.querySelector('#game-canvas');
 const toolbar = document.querySelector('#web-controls');
 const graphics = document.querySelector('#web-graphics');
+const hudStyle = document.querySelector('#web-hud-style');
 const saveSlot = document.querySelector('#web-save-slot');
 const loadSlot = document.querySelector('#web-load-slot');
 const loadButton = document.querySelector('#web-load');
@@ -17,6 +18,20 @@ const controlStatus = document.querySelector('#web-control-status');
 let started = false;
 let host;
 const report = message => { status.textContent = message; };
+// The Web export's default policy fills the entire browser window, leaving
+// empty bands around our player. Own the canvas extent instead, at 1 CSS
+// pixel per render pixel so Tactical does not add a high-DPI GPU penalty.
+const syncCanvasSize = () => {
+  const bounds = canvas.getBoundingClientRect();
+  const width = Math.max(640, Math.round(bounds.width));
+  const height = Math.max(360, Math.round(bounds.height));
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+    window.dispatchEvent(new Event('resize'));
+  }
+};
+new ResizeObserver(syncCanvasSize).observe(canvas);
 let isolationReady = false;
 input.disabled = true;
 genesisInput.disabled = true;
@@ -57,6 +72,10 @@ function updateToolbar(state) {
     const modes = new Set(state.modes);
     for (const option of graphics.options) option.disabled = !modes.has(option.value);
     graphics.value = state.graphics;
+    const hudStyles = new Set(state.hud_styles || ['restored']);
+    for (const option of hudStyle.options) option.disabled = !hudStyles.has(option.value);
+    hudStyle.value = state.hud_style || 'restored';
+    canvas.classList.toggle('tactical', hudStyle.value === 'tactical');
     const available = new Set(state.slots.filter(row => row.exists && row.valid).map(row => String(row.slot)));
     for (const option of loadSlot.options) option.disabled = !available.has(option.value);
     if (!available.has(loadSlot.value)) loadSlot.value = [...available][0] || '1';
@@ -69,6 +88,7 @@ document.querySelector('#web-save').addEventListener('click', () =>
 loadButton.addEventListener('click', () => command({op: 'load_state', slot: Number(loadSlot.value)}));
 loadSlot.addEventListener('change', () => { loadButton.disabled = loadSlot.selectedOptions[0].disabled; });
 graphics.addEventListener('change', () => command({op: 'graphics', mode: graphics.value}));
+hudStyle.addEventListener('change', () => command({op: 'hud_style', style: hudStyle.value}));
 speedButton.addEventListener('click', () => command({op: 'speed'}));
 document.querySelector('#web-help').addEventListener('click', () => command({op: 'help'}));
 window.addEventListener('keydown', event => {
@@ -120,7 +140,8 @@ startButton.addEventListener('click', async () => {
       }
     }, updateToolbar);
     globalThis.AbramsWebHost = host;
-    const engine = new Engine({canvas, executable: 'index', canvasResizePolicy: 2,
+    syncCanvasSize();
+    const engine = new Engine({canvas, executable: 'index', canvasResizePolicy: 0,
       focusCanvas: true, ensureCrossOriginIsolationHeaders: true,
       onPrintError: line => console.error('Godot:', line)});
     await Promise.all([
@@ -139,6 +160,7 @@ startButton.addEventListener('click', async () => {
       setTimeout(() => reject(new Error('The remastered viewer did not present an original game frame')), 30000))]);
     report('Original PC game running in the remastered Godot viewer. Click the game to use its keyboard.');
     toolbar.hidden = false;
+    document.body.classList.add('playing');
     canvas.focus();
   } catch (error) {
     host?.close();
@@ -147,6 +169,7 @@ startButton.addEventListener('click', async () => {
     genesisInput.disabled = false;
     startButton.disabled = !input.files.length;
     toolbar.hidden = true;
+    document.body.classList.remove('playing');
     host = undefined;
     started = false;
   }

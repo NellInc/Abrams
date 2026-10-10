@@ -104,6 +104,10 @@ func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, p
 	invalidate_presentation_cache()
 	presentation_builds+=1
 	tandem_frame.set_frame(image,presentation,world,program)
+	if play_display and play_display.hud_style=="tactical":
+		play_display.set_hud_frame(presentation,program,tandem_frame._current_plate_mask,
+			not tandem_frame.dynamic_map_art.packet.is_empty(),
+			tandem_frame.cockpit_art_ids==[1])
 	var frontend := false
 	if trace_mode and cockpit_art_requested: frontend=tandem_frame.present_frontend(program)
 	# Cache only successful paired compositions. Invalid input always takes the
@@ -303,6 +307,7 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		if pc_audio: pc_audio.set_mix(audio_menu.settings)
 		root.add_child(audio_menu)
 		audio_menu.graphics_selected.connect(_choose_graphics)
+		audio_menu.hud_style_selected.connect(_choose_hud_style)
 		audio_menu.quality_selected.connect(_choose_graphics_quality)
 		audio_menu.speed_selected.connect(_choose_speed)
 		audio_menu.state_requested.connect(_request_state)
@@ -311,6 +316,9 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		_layout_audio_menu.call_deferred()
 	_load_cockpit_presentation(directory)
 	if play_mode:
+		play_display.set_hud_style(audio_menu.hud_style)
+		tandem_frame.typography.set_hud_style(audio_menu.hud_style)
+		tandem_frame.gunner_trim.set_hud_style(audio_menu.hud_style)
 		# Offer Genesis only when its native pack actually loaded (hash-checked).
 		audio_menu.genesis_available=not pc_only and tandem_frame.native_graphics.loaded
 		audio_menu.refresh_controls()
@@ -430,8 +438,8 @@ static func graphics_launch_error(args: Array) -> String:
 	if "--graphics" not in args: return ""
 	var index := args.find("--graphics")+1
 	var mode: String = args[index] if index<args.size() else ""
-	if mode not in ["ega","genesis","upscaled","modern"]:
-		return "--graphics requires ega, genesis, upscaled or modern"
+	if mode not in ["ega","genesis","upscaled","modern","tactical"]:
+		return "--graphics requires ega, genesis, upscaled, modern or tactical"
 	if "--pc-only" in args and mode=="genesis":
 		return "--graphics genesis requires the optional Genesis import; unavailable with --pc-only"
 	return ""
@@ -608,16 +616,23 @@ func _advance_live_frame() -> bool:
 func _choose_graphics(mode: String) -> void:
 	invalidate_presentation_cache()
 	if play_display: play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
-	if mode=="modern" and not tandem_frame.modern_available:
+	if mode in ["modern","tactical"] and not tandem_frame.modern_available:
 		audio_menu.graphics_mode=tandem_frame.graphics_mode
 		audio_menu.refresh_controls()
 		return
 	var was_modern: bool=draw_view.modern_enabled
-	draw_view.modern_enabled=mode=="modern"
+	var was_tactical: bool=draw_view.tactical_landscape
+	draw_view.modern_enabled=mode in ["modern","tactical"]
+	draw_view.tactical_landscape=mode=="tactical"
 	if not tandem_frame.set_graphics_mode(mode):
 		draw_view.modern_enabled=was_modern
+		draw_view.tactical_landscape=was_tactical
 		audio_menu.graphics_mode=tandem_frame.graphics_mode
 		return
+	if play_display and play_display.hud_style=="tactical":
+		play_display.set_hud_frame(previous_presentation,previous_program,tandem_frame._current_plate_mask,
+			not tandem_frame.dynamic_map_art.packet.is_empty(),
+			tandem_frame.cockpit_art_ids==[1])
 	_choose_graphics_quality(audio_menu.quality.msaa,audio_menu.quality.anisotropy)
 	# Replay the already paired drawing only. No guest frame or audio advances.
 	var drawing=previous_presentation.get("draw_pass")
@@ -629,6 +644,20 @@ func _choose_graphics(mode: String) -> void:
 	else:
 		draw_view.apply_pass({"objects":[]})
 	audio_menu.refresh_controls()
+
+func _choose_hud_style(style: String) -> void:
+	if play_display and not play_display.set_hud_style(style):
+		audio_menu.hud_style=play_display.hud_style
+		audio_menu.refresh_controls()
+	elif play_display and style=="tactical":
+		tandem_frame.typography.set_hud_style(style)
+		tandem_frame.gunner_trim.set_hud_style(style)
+		play_display.set_hud_frame(previous_presentation,previous_program,tandem_frame._current_plate_mask,
+			not tandem_frame.dynamic_map_art.packet.is_empty(),
+			tandem_frame.cockpit_art_ids==[1])
+	elif play_display:
+		tandem_frame.typography.set_hud_style(style)
+		tandem_frame.gunner_trim.set_hud_style(style)
 
 func _choose_graphics_quality(samples: int, anisotropy: int) -> void:
 	if play_display:
@@ -651,7 +680,8 @@ func _request_state(operation: String, slot: int) -> void:
 func _sync_web_controls(message: String = "") -> void:
 	if not OS.has_feature("web") or audio_menu == null or bridge.host == null: return
 	bridge.host.updateControls(JSON.stringify({"modes":audio_menu.available_graphics_modes(),
-		"graphics":audio_menu.graphics_mode,"slots":audio_menu.state_slots,
+		"graphics":audio_menu.graphics_mode,"hud_styles":audio_menu.HUD_STYLES,
+		"hud_style":audio_menu.hud_style,"slots":audio_menu.state_slots,
 		"speed":audio_menu.speed,"message":message}))
 
 func _poll_web_controls() -> void:
@@ -667,6 +697,7 @@ func _poll_web_controls() -> void:
 			"save_state", "load_state":
 				audio_menu.request_state(str(action.op), int(action.get("slot", -1)))
 			"graphics": audio_menu.choose_graphics(str(action.get("mode", "")))
+			"hud_style": audio_menu.choose_hud_style(str(action.get("style", "")))
 			"cycle_graphics": audio_menu.cycle_graphics()
 			"speed": audio_menu.choose_speed(1 if audio_menu.speed == 8 else 8)
 			"help": audio_menu.open_reference("keyboard-controls.html")
@@ -935,7 +966,8 @@ func _capture() -> void:
 	picture.texture.get_image().save_png(output.path_join("original-frame.png"))
 	var file := FileAccess.open(output.path_join("capture.json"), FileAccess.WRITE)
 	file.store_string(JSON.stringify({"state": previous, "program": previous_program, "samples": samples, "presentation": previous_presentation,
-		"graphics_mode":tandem_frame.graphics_mode if trace_mode else "reference","fast_forward":fast_forward,
+		"graphics_mode":tandem_frame.graphics_mode if trace_mode else "reference",
+		"hud_style":play_display.hud_style if play_mode and play_display else "restored","fast_forward":fast_forward,
 		"display": play_display.description() if play_mode else {"mode":"comparison"},
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
 		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions} if pc_audio else null,

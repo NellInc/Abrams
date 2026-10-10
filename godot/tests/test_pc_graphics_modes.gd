@@ -119,10 +119,15 @@ func run()->void:
 			samples.append({"label":e.label,"changed_source_pixels":changes,"active":frame.native_graphics.active.duplicate(true)})
 			if changes>0:genesis.save_png(output.path_join(e.label+"-genesis.png"))
 		check(not frame.set_graphics_mode("modern") and frame.graphics_mode=="genesis","Modern remains unavailable")
+		check(not frame.set_graphics_mode("tactical") and frame.graphics_mode=="genesis","Tactical requires the same verified 3D assets")
 		frame.modern_available=true
 		check(frame.set_graphics_mode("modern"),"loaded Modern reuses restored compositor")
+		var modern_image:Image=await snapshot() if native else null
+		check(frame.set_graphics_mode("tactical"),"loaded Tactical reuses restored compositor")
 		if native:
-			check((await snapshot()).get_data()==upscaled.get_data(),"Modern uses identical restored UI with the same supplied world: "+e.label)
+			# Modern has deliberate cockpit-edge variants on Driver and Cupola.
+			# Tactical must inherit those, not silently fall back to Upscaled.
+			check((await snapshot()).get_data()==modern_image.get_data(),"Tactical preserves Modern's restored UI and cockpit-edge variants: "+e.label)
 		frame.modern_available=false
 		check(frame.set_graphics_mode("upscaled"),"Upscaled restores")
 		if native:

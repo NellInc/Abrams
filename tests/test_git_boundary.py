@@ -1,10 +1,12 @@
 """Synthetic index/history violations; no real credentials or owned originals."""
 import hashlib
+from io import BytesIO
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
+from zipfile import ZipFile
 from tools.package import git_boundary as boundary
 
 
@@ -52,6 +54,10 @@ class GitBoundaryTests(unittest.TestCase):
         self.assertIn(('notes.txt', 'fingerprinted original game/ROM/content archive'),
                       boundary.check(self.root, known_hashes={hashlib.sha256(data).hexdigest()}))
 
+    def test_empty_marker_does_not_impersonate_original_content(self):
+        self.add('tools/__init__.py', b'')
+        self.assertEqual(boundary.check(self.root, known_hashes={hashlib.sha256(b'').hexdigest()}), [])
+
     def test_oversized_blob(self):
         self.add('large.txt', b'x' * 33)
         self.assertEqual(boundary.limit_text(), '50 MB')
@@ -82,6 +88,49 @@ class GitBoundaryTests(unittest.TestCase):
 
     def test_canonical_pins_are_available_without_originals(self):
         self.assertGreaterEqual(len(boundary.known_inputs()), 68)
+
+    def test_published_browser_archives_are_inspected_not_blanket_rejected(self):
+        def archive(name, contents):
+            stream = BytesIO()
+            with ZipFile(stream, 'w') as package:
+                package.writestr(name, contents)
+            return stream.getvalue()
+
+        prefix = 'website/dist/play/.generated/'
+        self.add(prefix + 'python-source.zip', archive('tools/bridge.py', b'clean source'))
+        self.add(prefix + 'remaster-assets-00.zip', archive('local-art/pc-modern/tree.png', b'authored art'))
+        wasm = b'\x00asm\x01\x00\x00\x00' + b'ghp_' + b'A' * 36
+        self.add(prefix + 'godot/index.wasm', wasm)
+        with patch.object(boundary, 'WEB_WASM_SHA256', hashlib.sha256(wasm).hexdigest()):
+            self.assertEqual(boundary.check(self.root, known_hashes=set()), [])
+        self.assertIn((prefix + 'godot/index.wasm', 'credential signature'),
+                      boundary.check(self.root, known_hashes=set()))
+        self.add(prefix + 'remaster-assets-01.zip', archive('local-art/../../GAME/SIM.EXE', b'private'))
+        self.assertIn((prefix + 'remaster-assets-01.zip', 'unsafe browser archive member'),
+                      boundary.check(self.root, known_hashes=set()))
+
+    def test_browser_archive_member_secret_and_original_fingerprint_rejected(self):
+        def archive(payload):
+            stream = BytesIO()
+            with ZipFile(stream, 'w') as package:
+                package.writestr('local-art/pc-modern/tree.png', payload)
+            return stream.getvalue()
+
+        name = 'website/dist/play/.generated/remaster-assets-00.zip'
+        original = b'known synthetic original'
+        self.add(name, archive(original))
+        self.assertIn((name, 'browser archive member: fingerprinted original game/ROM/content archive'),
+                      boundary.check(self.root, known_hashes={hashlib.sha256(original).hexdigest()}))
+        self.add(name, archive(b'ghp_' + b'A' * 36))
+        self.assertIn((name, 'browser archive member: credential signature'),
+                      boundary.check(self.root, known_hashes=set()))
+
+    def test_web_exceptions_do_not_extend_to_other_paths(self):
+        self.add('other/remaster-assets-00.zip', b'archive')
+        self.add('website/dist/play/.generated/godot/other.wasm', b'\x00asm\x00ghp_' + b'A' * 36)
+        failures = boundary.check(self.root, known_hashes=set())
+        self.assertIn(('other/remaster-assets-00.zip', 'original/runtime/archive/credential format'), failures)
+        self.assertIn(('website/dist/play/.generated/godot/other.wasm', 'credential signature'), failures)
 
 
 if __name__ == '__main__':
