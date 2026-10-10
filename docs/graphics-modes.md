@@ -23,8 +23,11 @@ source framebuffer, presentation metadata and paired world texture synchronously
   Unsupported sensor palettes retain source rendering. See [renderer boundaries](modern-renderer.md).
 * **Tactical** uses the same source-bound Modern geometry and restored UI with
   Calibration Range-inspired olive terrain, directional surface shading, a
-  pale overcast sky and a distant illustrated treeline. The treeline is sky
-  underpaint: original terrain and actors always appear in front of it.
+  pale overcast sky, clustered hedgerows and a distant illustrated treeline.
+  Horizon vegetation is grounded on the observed PC sky/ground boundary;
+  original terrain and actors always appear in front of this underpaint.
+  Tactical shades a tapered stem within each source tree's trunk plane to
+  prevent filtered texture alpha from erasing it. Original ownership still clips it.
   It requires the same Modern assets. This is a separate
   graphics mode: choosing Modern restores its existing palette exactly. The
   source camera, terrain silhouette, actor visibility and gameplay remain PC-owned.

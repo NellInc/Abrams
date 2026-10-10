@@ -25,6 +25,9 @@ uniform bool modern_active = false;
 // Calibration Range-inspired surface treatment. Modern's existing pixels are
 // unchanged when this is false; source geometry and ownership stay identical.
 uniform bool tactical_landscape = false;
+// Signed distance to the observed PC horizon in original screen pixels.
+uniform vec3 source_horizon_line = vec3(0.0);
+uniform float source_focal_pixels = 192.0;
 // Diagnostic A/B switch; ordinary Modern rendering keeps this enabled.
 uniform bool modern_surface_variation = true;
 // Static presentation only: no TIME, new draw calls or cache invalidation.
@@ -107,7 +110,52 @@ vec3 crew_head_paint(vec2 p) {
     return OUTPUT_IS_SRGB ? c : pow(c,vec3(2.2));
 }
 
-vec3 daylight_sky(vec3 ray) {
+vec3 horizon_vegetation(vec3 colour, vec3 direction, float elevation) {
+    // Wrap a fixed angular field exactly once around the view. These distant
+    // hedges are underpaint, so original terrain and actors still own visibility.
+    float angle=atan(direction.x,direction.y);
+    float lane=angle*(144.0/6.28318530718);
+    float cell=mod(floor(lane),144.0);
+    float seed=ground_hash(vec2(cell,71.0));
+    float center=mix(0.28,0.72,ground_hash(vec2(cell,313.0)));
+    float x=fract(lane)-center;
+    float pixel_y=max(fwidth(elevation),0.00015);
+    float pixel_x=max(fwidth(lane),0.001);
+
+    // Broken, irregular hedgerows rather than a flat green strip. Broad banks
+    // and small leaf clusters give the canopy a lit top and a darker root line.
+    vec2 around=vec2(sin(angle),cos(angle));
+    float bank=ground_noise(around*13.0+vec2(17.0,29.0));
+    float leaves=ground_noise(around*173.0+vec2(5.0,8.0));
+    float hedge_height=(0.007+bank*0.014+leaves*0.009)*smoothstep(0.22,0.42,bank);
+    float hedge=1.0-smoothstep(hedge_height-pixel_y,hedge_height+pixel_y,elevation);
+    hedge*=smoothstep(0.0001,0.0015,hedge_height);
+    float top=clamp(elevation/max(hedge_height,0.001),0.0,1.0);
+    vec3 hedge_colour=mix(vec3(0.22,0.28,0.17),vec3(0.38,0.43,0.28),top);
+    hedge_colour*=0.90+leaves*0.20;
+    colour=mix(colour,hedge_colour,hedge);
+
+    if (seed>0.33) {
+        float crown_height=mix(0.026,0.057,ground_hash(vec2(cell,151.0)));
+        float stem_height=mix(0.008,0.015,ground_hash(vec2(cell,229.0)));
+        // Give distant stems coverage instead of thresholding away a filtered
+        // subpixel alpha. The roots meet the exact source sky/ground boundary.
+        float half_stem=max(0.020,pixel_x*0.55);
+        float stem=(1.0-smoothstep(half_stem-pixel_x*0.35,half_stem+pixel_x*0.35,abs(x)));
+        stem*=1.0-smoothstep(stem_height+crown_height*0.32,stem_height+crown_height*0.34,elevation);
+        vec3 bark=mix(vec3(0.29,0.25,0.18),vec3(0.45,0.37,0.25),smoothstep(-half_stem,half_stem,-x));
+        colour=mix(colour,bark,stem);
+        vec2 tree_uv=vec2(x/0.76+0.5,0.805-(elevation-stem_height)/crown_height*0.80);
+        if (tree_uv.x>0.0 && tree_uv.x<1.0 && tree_uv.y>0.005 && tree_uv.y<0.805) {
+            vec4 tree=texture(modern_tree,tree_uv);
+            vec3 foliage=mix(tree.rgb,vec3(0.29,0.36,0.23),0.35);
+            colour=mix(colour,foliage,smoothstep(0.38,0.76,tree.a));
+        }
+    }
+    return colour;
+}
+
+vec3 daylight_sky(vec3 ray, vec2 source_pixel) {
     vec3 direction=normalize(ray);
     float height=max(direction.z,0.0);
     vec3 horizon=tactical_landscape ? vec3(0.77,0.79,0.72) : vec3(0.71,0.81,0.83);
@@ -119,20 +167,9 @@ vec3 daylight_sky(vec3 ray) {
     float shape=ground_noise(p+vec2(4.7,9.2))*0.76+ground_noise(p*2.1)*0.24;
     float cloud=smoothstep(0.57,0.72,shape)*smoothstep(0.045,0.18,height);
     colour=mix(colour,tactical_landscape ? vec3(0.88,0.90,0.84) : vec3(0.87,0.89,0.84),cloud*(tactical_landscape ? 0.18 : 0.53));
-    if (tactical_landscape && direction.z >= 0.0) {
-        // An infinitely distant grove is sky underpaint, not an actor or an
-        // obstacle. Later PC terrain and actors always retain painter order.
-        float lane=atan(direction.x,direction.y)*41.0;
-        float cell=floor(lane);
-        float seed=ground_hash(vec2(cell,71.0));
-        float crown_height=mix(0.014,0.037,ground_hash(vec2(cell,151.0)));
-        float center=mix(0.35,0.65,ground_hash(vec2(cell,313.0)));
-        vec2 tree_uv=vec2((fract(lane)-center)/0.78+0.5,1.0-direction.z/crown_height);
-        if (seed>0.27 && tree_uv.x>0.0 && tree_uv.x<1.0 && tree_uv.y>0.0 && tree_uv.y<1.0) {
-            vec4 tree=texture(modern_tree,tree_uv);
-            vec3 far_foliage=mix(tree.rgb,vec3(0.29,0.36,0.25),0.42);
-            colour=mix(colour,far_foliage,smoothstep(0.50,0.88,tree.a)*0.88);
-        }
+    if (tactical_landscape && dot(source_horizon_line.xy,source_horizon_line.xy)>0.5) {
+        float elevation=-dot(vec3(source_pixel,1.0),source_horizon_line)/source_focal_pixels;
+        if (elevation>=0.0 && elevation<0.08) colour=horizon_vegetation(colour,direction,elevation);
     }
     return OUTPUT_IS_SRGB ? colour : pow(colour,vec3(2.2));
 }
@@ -161,6 +198,12 @@ void fragment() {
         if (modern_active && UV.y>22.5 && UV.y<23.5) ALBEDO=crew_head_paint(UV2);
     } else if (UV.y > 20.5) {
         vec4 tree = texture(modern_tree,UV2);
+        bool tactical_trunk=tactical_landscape && UV2.y>=0.805;
+        // A tapered stem stays inside the original trunk plane. A bounded
+        // pixel footprint prevents mipmapped alpha from erasing it at distance.
+        float trunk_width=mix(0.07,0.05,clamp((0.995-UV2.y)/0.19,0.0,1.0));
+        trunk_width=max(trunk_width,min(fwidth(UV2.x)*0.65,0.1));
+        if (tactical_trunk) tree.a=abs(UV2.x-0.5)<=trunk_width ? 1.0 : 0.0;
         if (tree.a < 0.85) discard;
         ALBEDO = tree.rgb;
         if (modern_environment_polish) {
@@ -181,6 +224,11 @@ void fragment() {
                 ALBEDO*=OUTPUT_IS_SRGB ? mix(bark_tint,crown_tint,green)
                                        : pow(mix(bark_tint,crown_tint,green),vec3(2.2));
             }
+        }
+        if (tactical_trunk) {
+            float facet=smoothstep(0.5-trunk_width,0.5+trunk_width*0.4,UV2.x);
+            vec3 bark=mix(vec3(0.48,0.39,0.27),vec3(0.28,0.24,0.17),facet);
+            ALBEDO=OUTPUT_IS_SRGB ? bark : pow(bark,vec3(2.2));
         }
     } else if (UV.y > 19.5) {
         ALBEDO = texture(modern_colours,vec2((UV.x+0.5)/modern_colour_count,0.5)).rgb;
@@ -216,7 +264,7 @@ void fragment() {
         } else if (UV.y > 20.1 && UV.y < 20.2 && fract(UV2.x)<0.18) ALBEDO *= 0.78;
     } else if (UV.y > 15.5 && UV.y < 16.5 && modern_active) {
         ALBEDO=texture(material_means,vec2((round(UV.x)+0.5)/(pattern_width*0.5),0.5)).rgb;
-        if (modern_environment_polish) ALBEDO=daylight_sky(camera_to_local*original_view);
+        if (modern_environment_polish) ALBEDO=daylight_sky(camera_to_local*original_view,SCREEN_UV*source_dimensions+source_origin);
     } else if (UV.y > 14.5 && UV.y < 15.5 && modern_active) {
         // The original source-line path keeps its far/painter depth and exact
         // width; only the verified bridge framework's colour is replaced.
