@@ -12,13 +12,15 @@ The portable alpha bundles Godot, Python/Pillow and a native tracing core. No se
 4. Choose **Import PC folder** and select the complete extracted PC game folder containing `ABRAMS.COM`, `SIM.EXE` and its data files.
 5. Optionally choose **Import Genesis ROM**. Then select **Play**.
 
-The importer verifies the supported editions, leaves source files unchanged, and preserves existing profiles. Genesis alone cannot run the game. PC-only play offers EGA, PC-based Upscaled and Modern; importing Genesis enables its artwork and music.
+The importer verifies the supported editions, leaves source files unchanged, and preserves existing profiles. Genesis alone cannot run the game. PC-only play offers EGA, PC-based Upscaled, Modern and Tactical; importing Genesis enables its artwork and music.
 
 Windows builds target x86_64 Windows 10 or newer. Linux builds target x86_64 with glibc 2.35 or newer and a working graphical desktop/OpenGL driver. These are alpha ports. Native build, frozen setup and synthetic core checks are separate from real-game playtesting on each platform. Consult the release notes for the tested boundaries. Intel Macs and ARM Linux are not included.
 
 ## Controls and profiles
 
 **Ctrl+Alt+S** saves, **Ctrl+Alt+L** loads, **Ctrl+Alt+Shift+L** undoes a load, and **Ctrl+Alt+G** cycles graphics. The game's remaster menus provide all five save slots, graphics choices, audio levels and fast forward. Original controls are unchanged.
+The **Graphics → Tactical** mode adds the Calibration Range-inspired 3D palette while **Modern** retains its existing look. The **Graphics → HUD Style** submenu switches between Restored and Tactical independently of the graphics mode.
+Verified Gunner frames use Tactical HUD's enlarged 16:9 optic and reflowed instruments; the other stations keep their complete original framing. Both 3D graphics profiles retain the source camera and geometry.
 
 Profiles live outside the installation:
 

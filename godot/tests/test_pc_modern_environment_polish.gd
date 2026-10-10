@@ -112,6 +112,22 @@ func run() -> void:
 	data.objects[0].polygons[0].colors=[9,9]
 	data.objects[0].polygons[0].camera_vertices=[[-15,160,25],[15,160,25],[15,160,45],[-15,160,45]]
 	await study(data,"sky",true)
+	var modern:Image=await render(data,true)
+	var vertices:PackedVector3Array=draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].duplicate()
+	draw.tactical_landscape=true
+	var tactical:Image=await capture()
+	check(tactical.get_pixel(100,40)!=modern.get_pixel(100,40),"Tactical: Range sky differs from Modern")
+	check(tactical.get_pixel(500,600)!=modern.get_pixel(500,600),"Tactical: Range ground differs from Modern")
+	var grove_pixels:=0
+	for y in range(370,400):
+		for x in range(0,500):
+			if tactical.get_pixel(x,y).g<modern.get_pixel(x,y).g*0.7: grove_pixels+=1
+	check(grove_pixels>100,"Tactical: distant vegetation is visible in source sky")
+	check(tactical.get_pixel(640,220)==modern.get_pixel(640,220),"Tactical: source actor unchanged")
+	check(draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]==vertices,"Tactical: source geometry unchanged")
+	tactical.save_png(output.path_join("tactical-range.png"))
+	draw.tactical_landscape=false
+	check((await capture()).get_data()==modern.get_data(),"Tactical: Modern restores exactly")
 	await study(model_packet(catalog,40),"water",true)
 	await study(model_packet(catalog,103),"tree",true)
 	await study(model_packet(catalog,49),"road",false)

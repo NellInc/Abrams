@@ -331,9 +331,9 @@ func load_graphics_sources(root: String) -> bool:
 	return native_graphics.load_sources(root)
 
 func set_graphics_mode(mode: String) -> bool:
-	if mode not in ["ega","genesis","upscaled","modern"]: return false
+	if mode not in ["ega","genesis","upscaled","modern","tactical"]: return false
 	if mode=="genesis" and not native_graphics.loaded: return false
-	if mode=="modern" and not modern_available: return false
+	if mode in ["modern","tactical"] and not modern_available: return false
 	graphics_mode=mode
 	if _cached_source!=null:
 		set_frame(_cached_source,_cached_presentation,_cached_world,_cached_program)
@@ -343,7 +343,7 @@ func set_graphics_mode(mode: String) -> bool:
 # Callers run set_frame first; it already routes Genesis native graphics.
 func present_frontend(program: Dictionary) -> bool:
 	_cached_program=program
-	if graphics_mode not in ["upscaled","modern"]:
+	if graphics_mode not in ["upscaled","modern","tactical"]:
 		frontend_art.clear()
 		return false
 	return frontend_art.set_frame(_cached_source,program,_cached_presentation,world_enabled)
@@ -357,10 +357,10 @@ func remember_frame(source: Image, presentation: Dictionary, world: Texture2D, p
 func set_frame(source: Image, presentation: Dictionary, world: Texture2D, program: Dictionary={}) -> bool:
 	remember_frame(source,presentation,world,program)
 	material=_upscaled_material
-	material.set_shader_parameter("modern_armour_palette",graphics_mode=="modern")
-	for child in [damage_art,dynamic_map_art,gunner_trim,commander_trim,cockpit_edges,instrument_art,reticle_art,target_box_art,portrait_art,typography]:child.visible=graphics_mode in ["upscaled","modern"]
+	material.set_shader_parameter("modern_armour_palette",graphics_mode in ["modern","tactical"])
+	for child in [damage_art,dynamic_map_art,gunner_trim,commander_trim,cockpit_edges,instrument_art,reticle_art,target_box_art,portrait_art,typography]:child.visible=graphics_mode in ["upscaled","modern","tactical"]
 	native_graphics.visible=graphics_mode=="genesis"
-	if graphics_mode not in ["upscaled","modern"]:
+	if graphics_mode not in ["upscaled","modern","tactical"]:
 		_fallback("Untouched original EGA" if graphics_mode=="ega" else "Native Genesis donors with original PC fallback")
 		material=null
 		texture=ImageTexture.create_from_image(source) if source!=null and not source.is_empty() else null
@@ -414,7 +414,7 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 			material.set_shader_parameter("cupola_rail_verified",cupola_rail.verify(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),3 in cockpit_art_ids))
 			for station in [3,4]:
 				if station in cockpit_art_ids:
-					cockpit_edges.set_frame(mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),cockpit_art_textures[station],_current_driver_mask,station,graphics_mode=="modern",bool(material.get_shader_parameter("cupola_rail_verified")),world)
+					cockpit_edges.set_frame(mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),cockpit_art_textures[station],_current_driver_mask,station,graphics_mode in ["modern","tactical"],bool(material.get_shader_parameter("cupola_rail_verified")),world)
 			if 1 in cockpit_art_ids:
 				gunner_trim.set_frame(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),world)
 			if 2 in cockpit_art_ids:

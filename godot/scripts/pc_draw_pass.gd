@@ -25,6 +25,17 @@ var modern_enabled := false:
 	set(value):
 		if modern_enabled!=value: clear_mesh_cache()
 		modern_enabled=value
+var tactical_landscape := false:
+	set(value):
+		tactical_landscape=value
+		# This profile changes materials only. A retained source-paired mesh
+		# can switch instantly without a guest frame or geometry rebuild.
+		if mesh_node!=null and mesh_node.mesh!=null and mesh_node.mesh.get_surface_count()>0:
+			var active: Material=mesh_node.mesh.surface_get_material(0)
+			if active is ShaderMaterial:
+				active.set_shader_parameter("tactical_landscape",value)
+				if retain_render_target and get_viewport() is SubViewport:
+					get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
 var modern_assets = ModernAssets.new()
 var modern_prewarmed := false
 var modern_status := "Modern assets unavailable"
@@ -349,6 +360,7 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	var material := ShaderMaterial.new()
 	material.shader = _modern_shader if _modern_active else SurfaceShader
 	material.set_shader_parameter("modern_active",_modern_active)
+	material.set_shader_parameter("tactical_landscape",_modern_active and tactical_landscape)
 	if _modern_active:
 		material.set_shader_parameter("source_ownership",ownership.get_texture())
 		material.set_shader_parameter("modern_colours",modern_assets.colour_texture)

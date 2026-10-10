@@ -84,11 +84,11 @@ func run() -> void:
 	draw.apply_pass(data)
 	var off: Image
 	var mask: PackedByteArray
-	for mode in ["ega","genesis","upscaled","modern"]:
+	for mode in ["ega","genesis","upscaled","modern","tactical"]:
 		for samples in Display.MSAA_LEVELS:
 			for anisotropy in Display.ANISOTROPY_LEVELS:
 				check(display.set_graphics_quality(mode,samples,anisotropy),"valid live quality")
-				check(display.world_viewport.msaa_3d==(Display.MSAA_LEVELS[samples] if mode in ["upscaled","modern"] else Viewport.MSAA_DISABLED),"legacy stays crisp, remaster selects AA")
+				check(display.world_viewport.msaa_3d==(Display.MSAA_LEVELS[samples] if mode in ["upscaled","modern","tactical"] else Viewport.MSAA_DISABLED),"legacy stays crisp, remaster selects AA")
 				check(draw.ownership.msaa_3d==Viewport.MSAA_DISABLED and draw.ownership.screen_space_aa==Viewport.SCREEN_SPACE_AA_DISABLED,"visibility ID mask is never smoothed")
 				check(display.description().anisotropic_samples==anisotropy,"quality receipt reports sample count")
 	check(not display.set_graphics_quality("modern",16,16) and not display.set_graphics_quality("modern",4,3),"invalid renderer quality rejected")

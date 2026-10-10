@@ -7,6 +7,7 @@ const SCREWS = [Vector2(91,129),Vector2(224,131),Vector2(6,177),
 	Vector2(98,177),Vector2(6,197),Vector2(98,197),Vector2(221,196),Vector2(314,196)]
 var active := false
 var corners_verified := false
+var hud_style := "restored"
 var scale_xy := Vector2.ONE
 
 func _init() -> void:
@@ -27,6 +28,11 @@ func clear() -> void:
 	corners_verified = false
 	material.set_shader_parameter("corners_verified",false)
 	hide()
+
+func set_hud_style(style: String) -> void:
+	if style not in ["restored","tactical"] or hud_style==style: return
+	hud_style=style
+	queue_redraw()
 
 static func corner_pixels() -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
@@ -94,7 +100,7 @@ func _draw() -> void:
 	# Enclose the old donor's rim; the shader clips all visible world pixels.
 	# The dark inner lip absorbs the PC's coarse grey corner steps.
 	_rounded(Rect2(29.5,11.0,261,101.8),Color("0c101a"),8)
-	_rounded(Rect2(30.2,11.7,259.6,100.4),Color("ff1025"),7.3)
+	_rounded(Rect2(30.2,11.7,259.6,100.4),Color("79916a") if hud_style=="tactical" else Color("ff1025"),7.3)
 	_rounded(Rect2(32,13,256,97),Color("12141b"),7)
 	# Three straight machined panels replace the rubber-sheeted donor margins.
 	# The outline follows the existing outer metal diagonals at row 123.

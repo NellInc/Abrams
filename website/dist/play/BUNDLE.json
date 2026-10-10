@@ -37,8 +37,8 @@
       "sha256": "33c94cb3175f3333b82e2a3be5e8e86f77986f0aa2042b1631f6367a4e5bb6ba"
     },
     ".generated/godot/index.pck": {
-      "bytes": 13322288,
-      "sha256": "9b859ffe0758b6e4ff8931b22a0f79268e050b36769ccdde9cc8c06fa2087bdd"
+      "bytes": 13344284,
+      "sha256": "dd37c5d1e501ee60ee4bcb2122c6a205917d65374f6e43703c9b2519f8de3387"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
@@ -153,12 +153,12 @@
       "sha256": "8d8db41491e12ca8b1bdf21d1799145ed887560c79828dcc4636eec1656004ac"
     },
     "remaster.html": {
-      "bytes": 4526,
-      "sha256": "6446f9f7420a6b460210b4eea3ea93101ea52bf476887151339722a5b0d844d0"
+      "bytes": 5094,
+      "sha256": "15330972c45800f0b13dc8e9414c32b7485755360da03ee405a87dfe8f864425"
     },
     "remaster.mjs": {
-      "bytes": 7970,
-      "sha256": "8b75fbf6fdcd0d40a26d9e36873a3c249329d00ba3f505511d61448a91c348df"
+      "bytes": 9157,
+      "sha256": "70b2a0707dc11910113cb9200fa9577a342ae1af30a4ae825119308e9a081a96"
     },
     "remaster.service.worker.js": {
       "bytes": 802,

@@ -12,6 +12,7 @@ var labels: Array[Control] = []
 var world_ink: Array[Vector2i] = []
 var fixed_labels_enabled := false
 var status_numbers_enabled := false
+var hud_style := "restored"
 var dialogue_glyphs: Dictionary = {}
 var outline_fonts = preload("res://scripts/pc_outline_fonts.gd").new()
 # Bounded expected glyph bytes only. Never cache source/UI validity, pixel
@@ -32,11 +33,20 @@ const FIXED_LABELS = [
 
 class RunLabel extends Control:
 	var run: Dictionary
+	var tactical := false
+	var tactical_font: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 	var mesh: ArrayMesh
 	var mesh_key := ""
 	func _draw() -> void:
 		if run.is_empty(): return
 		if not run.get("transparent_world",false): draw_rect(Rect2(Vector2.ZERO,size),run.background)
+		if tactical and not run.get("transparent_world",false):
+			var point_size:=clampi(roundi(size.y),6,72)
+			while point_size>6 and (tactical_font.get_height(point_size)>size.y or tactical_font.get_string_size(run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size).x>size.x):
+				point_size-=1
+			var baseline: float=(size.y-tactical_font.get_height(point_size))*0.5+tactical_font.get_ascent(point_size)
+			draw_string(tactical_font,Vector2(0,baseline),run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size,run.foreground)
+			return
 		if run.get("outline_font") is Font:
 			var scale: Vector2=size/run.rect.size
 			for segment in segments(run):
@@ -107,6 +117,13 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	resized.connect(_layout)
+
+func set_hud_style(style: String) -> void:
+	hud_style=style
+	var tactical:=style=="tactical"
+	for label in labels:
+		label.tactical=tactical
+		label.queue_redraw()
 
 func load_sources(directory: String) -> bool:
 	fonts.clear()
@@ -450,6 +467,7 @@ func set_frame(source: Image, ui: Image, presentation: Dictionary, cursor_mask: 
 		if run.get("transparent_world",false): world_ink.append_array(run.ink_points)
 		if runs.size()>labels.size():
 			var label := RunLabel.new()
+			label.tactical=hud_style=="tactical"
 			label.clip_contents = true
 			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			add_child(label)

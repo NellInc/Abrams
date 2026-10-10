@@ -51,7 +51,11 @@ metadata, drawing ownership and SIM overlays before Godot receives a packet.
 A normal mission frame can emit more than 16 MiB of source trace, so the Web
 bound is 64 MiB per frame; overflow still stops the game. The Web bridge
 retains the desktop viewer's graphics, sound and menu code. Its HTML controls
-provide browser-accessible mode, slot, speed and help actions.
+provide browser-accessible graphics mode, Restored or Tactical HUD style, slot,
+speed and help actions. Tactical graphics adds the Calibration Range-inspired
+olive and overcast treatment plus a distant treeline without changing Modern, original geometry or
+source visibility. Graphics and HUD Style can be selected independently.
+Tactical uses a wider, source-paired Gunner optic when the original plate and every live instrument cell verify. Any unsupported overlay returns to the complete source layout, including Commander, Cupola, Driver and status screens. The browser canvas follows the chosen layout rather than filling the whole window.
 
 Checkpoint slots 1 to 5 and the before-last-load recovery slot are stored in
 origin-local IndexedDB. Reloading the page requires choosing the original PC
@@ -67,7 +71,7 @@ enables the game picker. No original files are cached by that worker.
   RAM parity pass. The source draw packet replays through the desktop observer.
 * Chromium loaded the visitor PC folder, presented the actual Godot Play
   joystick prompt and intro, entered the original mission and rendered the
-  gunner cockpit and battlefield. EGA, Upscaled, Genesis and Modern modes were
+  gunner cockpit and battlefield. EGA, Upscaled, Genesis, Modern and Tactical modes were
   selected in mission; Genesis required the matching optional ROM.
 * Browser save, page reload, reselect-originals and load succeeded through
   IndexedDB. A source trace overflow discovered during mission Play was fixed,

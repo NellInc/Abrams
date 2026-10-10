@@ -21,10 +21,22 @@ source framebuffer, presentation metadata and paired world texture synchronously
   broad colour variation, and water has subdued, distance-filtered ripples.
   It requires the local Modern asset catalogue and supported PC files.
   Unsupported sensor palettes retain source rendering. See [renderer boundaries](modern-renderer.md).
+* **Tactical** uses the same source-bound Modern geometry and restored UI with
+  Calibration Range-inspired olive terrain, directional surface shading, a
+  pale overcast sky and a distant illustrated treeline. The treeline is sky
+  underpaint: original terrain and actors always appear in front of it.
+  It requires the same Modern assets. This is a separate
+  graphics mode: choosing Modern restores its existing palette exactly. The
+  source camera, terrain silhouette, actor visibility and gameplay remain PC-owned.
+  No decorative Range hills or trees are added to the battlefield geometry.
+
+Graphics mode and **HUD Style** are independent. Choose Tactical in both menus
+for the complete Range-inspired scene and wider Gunner interface, or combine
+either graphics treatment with the Restored HUD.
 
 The dedication to David "Ming" Kenny remains on the final credit card in Genesis
-and Upscaled, and is inherited by Modern. EGA is deliberately untouched, so its framebuffer contains the
-original credits. EGA, Genesis and Upscaled keep their existing vehicle rendering. Modern is the only mode with replacement geometry.
+and Upscaled, and is inherited by Modern and Tactical. EGA is deliberately untouched, so its framebuffer contains the
+original credits. EGA, Genesis and Upscaled keep their existing vehicle rendering. Modern and Tactical share the same replacement geometry.
 
 ## Native donor boundaries
 
@@ -68,7 +80,7 @@ availability does not imply that every variant has a verified live binding.
 * `load_graphics_sources(root)` once at startup.
 * `set_frame(source, presentation, world, program)` for a newly paired frame.
 * `present_frontend(program)` for program-aware frontend routing.
-* `set_graphics_mode("ega" | "genesis" | "upscaled" | "modern")` for immediate switching.
+* `set_graphics_mode("ega" | "genesis" | "upscaled" | "modern" | "tactical")` for immediate switching.
 
 `graphics_mode` reports the selection. `native_graphics.loaded`, `load_count`
 and `active` expose source-pack readiness and actual donor/fallback coverage.

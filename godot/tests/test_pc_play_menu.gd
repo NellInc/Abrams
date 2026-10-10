@@ -31,15 +31,16 @@ func run() -> void:
 		check(menu.quality[key]==0 and choices[-1]==["quality",menu.quality.msaa,menu.quality.anisotropy],"submenu dispatch: "+key)
 	for mode in ["ega","genesis","upscaled"]:
 		check(menu.choose_graphics(mode) and choices[-1]==["graphics",mode],"live graphics signal: "+mode)
-	check(not menu.choose_graphics("modern") and menu.graphics_mode=="upscaled","unavailable Modern never pretends to render")
-	check(menu.graphics_popup.is_item_disabled(3),"Modern menu explicitly disabled")
+	check(not menu.choose_graphics("modern") and not menu.choose_graphics("tactical") and menu.graphics_mode=="upscaled","unavailable Modern and Tactical never pretend to render")
+	check(menu.graphics_popup.is_item_disabled(3) and menu.graphics_popup.is_item_disabled(4),"Modern and Tactical menu items explicitly disabled")
 	menu.modern_available=true
 	menu.refresh_controls()
-	check(not menu.graphics_popup.is_item_disabled(3),"preloaded Modern enables its menu item")
-	check(menu.available_graphics_modes()==["ega","genesis","upscaled","modern"],"four-mode order")
+	check(not menu.graphics_popup.is_item_disabled(3) and not menu.graphics_popup.is_item_disabled(4),"preloaded Modern assets enable both graphics profiles")
+	check(menu.available_graphics_modes()==["ega","genesis","upscaled","modern","tactical"],"five-mode order")
 	check(menu.choose_graphics("modern") and choices[-1]==["graphics","modern"],"Modern dispatches through existing controls")
+	check(menu.choose_graphics("tactical") and choices[-1]==["graphics","tactical"],"Tactical dispatches independently of HUD Style")
 	menu.genesis_available=false
-	check(menu.available_graphics_modes()==["ega","upscaled","modern"],"PC-only cycle includes independent Modern")
+	check(menu.available_graphics_modes()==["ega","upscaled","modern","tactical"],"PC-only cycle includes Modern and Tactical")
 	menu.modern_available=false
 	menu.genesis_available=true
 	menu.choose_graphics("upscaled")

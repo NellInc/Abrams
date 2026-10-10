@@ -32,7 +32,7 @@ func run() -> void:
 	check(not graphics_launch_error(["--pc-only","--graphics","genesis"]).is_empty(),"explicit PC-only Genesis rejected")
 	check(not graphics_launch_error(["--graphics"]).is_empty(),"missing graphics argument rejected")
 	check(not graphics_launch_error(["--graphics","unknown"]).is_empty(),"unknown graphics mode rejected")
-	for mode in ["ega","upscaled","modern"]:
+	for mode in ["ega","upscaled","modern","tactical"]:
 		check(graphics_launch_error(["--pc-only","--graphics",mode]).is_empty(),"PC-only accepts "+mode)
 	_configure_art_requests(["--pc-only","--cockpit-art","--gunner-art","--genesis-colours"])
 	check(pc_only and pc_presentation_requested,"PC-only retains independent PC presentation")
@@ -70,9 +70,13 @@ func run() -> void:
 	audio_menu.config_path=""
 	root.add_child(audio_menu)
 	_choose_graphics("modern")
-	check(tandem_frame.graphics_mode=="modern" and draw_view.modern_enabled,"PC-only Modern enables the refined world")
+	check(tandem_frame.graphics_mode=="modern" and draw_view.modern_enabled and not draw_view.tactical_landscape,"PC-only Modern enables its unchanged refined world")
+	_choose_graphics("tactical")
+	check(tandem_frame.graphics_mode=="tactical" and draw_view.modern_enabled and draw_view.tactical_landscape,"PC-only Tactical enables the Range-inspired world")
+	_choose_graphics("modern")
+	check(tandem_frame.graphics_mode=="modern" and draw_view.modern_enabled and not draw_view.tactical_landscape,"switching back restores Modern's material mode")
 	_choose_graphics("upscaled")
-	check(tandem_frame.graphics_mode=="upscaled" and not draw_view.modern_enabled,"PC-only can return to Upscaled immediately")
+	check(tandem_frame.graphics_mode=="upscaled" and not draw_view.modern_enabled and not draw_view.tactical_landscape,"PC-only can return to Upscaled immediately")
 	audio_menu.free()
 	audio_menu=null
 	check(source.get_data()==source_bytes and presentation==original_presentation,"graphics choices leave source pixels and packet unchanged")
