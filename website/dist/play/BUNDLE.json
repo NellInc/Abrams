@@ -37,8 +37,8 @@
       "sha256": "33c94cb3175f3333b82e2a3be5e8e86f77986f0aa2042b1631f6367a4e5bb6ba"
     },
     ".generated/godot/index.pck": {
-      "bytes": 13321808,
-      "sha256": "1c31f541710aaf5c0e93060f635cb85f9452802c7cbb6ae20d108ca9b28ae24c"
+      "bytes": 13322288,
+      "sha256": "9b859ffe0758b6e4ff8931b22a0f79268e050b36769ccdde9cc8c06fa2087bdd"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
@@ -133,16 +133,16 @@
       "sha256": "a3260b525c579d790fff8f5cbc9058e9fbadf2759dc959dfe2c9051e53708dc4"
     },
     "bridge_host.mjs": {
-      "bytes": 3005,
-      "sha256": "52b3e8032129f8df6fe483ed172423e9d882767a4dab61c8c0fbe080c4406f9c"
+      "bytes": 2988,
+      "sha256": "bdcea689ea2b27a8ea664f175841ec355b697ba25aba2a906955af271e6b7475"
     },
     "bridge_worker.mjs": {
-      "bytes": 12360,
-      "sha256": "301e5598def5293c78ef7dfedc41722208d3acb0d3fc9bb21b80420b73820d58"
+      "bytes": 12527,
+      "sha256": "f2e69b85b214a24a8a4af25793b5e032662b00f15d4efddc562a24dcc0a36e87"
     },
     "browser_observer.mjs": {
-      "bytes": 2417,
-      "sha256": "cfe63022d0a59c7777ada0313e06c0f774a84664ecaf1862e24912058cda2dd0"
+      "bytes": 2345,
+      "sha256": "da2fce1094ef1f647785cc678b6830adbd0d3189ccf0ca4c9940c31c37b2afd8"
     },
     "checkpoint_core.mjs": {
       "bytes": 2753,

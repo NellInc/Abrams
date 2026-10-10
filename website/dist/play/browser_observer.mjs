@@ -29,21 +29,21 @@ from browser_observer import BrowserObserver, install_originals
 install_originals(Path('/original.zip').read_bytes(), json.loads(manifest_json))
 observer = BrowserObserver()
 observer.frame = frame_base
+def observer_before_frame_js(ram):
+    return json.dumps(observer.before_frame(ram.to_bytes()))
+def observer_after_frame_js(packet, receipts, ram, video, width, height, pitch):
+    return json.dumps(observer.after_frame(
+        packet.to_bytes(), receipts.to_bytes(), ram.to_bytes(),
+        video.to_bytes(), width, height, pitch))
 `);
-  const request = expression => JSON.parse(pyodide.runPython(`json.dumps(${expression})`));
+  const before = pyodide.globals.get('observer_before_frame_js');
+  const after = pyodide.globals.get('observer_after_frame_js');
   return {
     beforeFrame(ram) {
-      pyodide.FS.writeFile('/before.bin', ram);
-      return request("observer.before_frame(Path('/before.bin').read_bytes())");
+      return JSON.parse(before(ram));
     },
     afterFrame(packet, receipts, ram, video, width, height, pitch) {
-      pyodide.FS.writeFile('/packet.bin', packet);
-      pyodide.FS.writeFile('/receipts.bin', receipts);
-      pyodide.FS.writeFile('/ram.bin', ram);
-      pyodide.FS.writeFile('/video.bin', video);
-      return request("observer.after_frame(Path('/packet.bin').read_bytes(), " +
-        "Path('/receipts.bin').read_bytes(), Path('/ram.bin').read_bytes(), " +
-        `Path('/video.bin').read_bytes(), ${width}, ${height}, ${pitch})`);
+      return JSON.parse(after(packet, receipts, ram, video, width, height, pitch));
     },
   };
 }
