@@ -388,6 +388,18 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 		material.set_shader_parameter("world_origin",mapping.origin)
 	material.set_shader_parameter("source_origin", Vector2(frame.clip[0], frame.clip[1]))
 	material.set_shader_parameter("source_dimensions", Vector2(frame.clip[2] - frame.clip[0] + 1, frame.clip[3] - frame.clip[1] + 1))
+	material.set_shader_parameter("source_focal_pixels",float(frame.focal_pixels))
+	var background:Dictionary=pass_data.get("background",{})
+	var background_colours:Array=background.get("colors",[])
+	# Browser JSON decodes numbers as floats; Array equality is type-sensitive.
+	if background.get("kind","")=="horizon" and background_colours.size()==2 and int(background_colours[0])==5 and int(background_colours[1])==8:
+		var a:=Vector2(background.line[0][0],background.line[0][1])
+		var b:=Vector2(background.line[1][0],background.line[1][1])
+		if a.x>b.x:
+			var swap:=a;a=b;b=swap
+		var delta:=b-a
+		if delta.length()>0.0:
+			material.set_shader_parameter("source_horizon_line",Vector3(-delta.y,delta.x,delta.y*a.x-delta.x*a.y)/delta.length())
 	mesh.surface_set_material(0, material)
 	mesh_node.mesh = mesh
 	if profile_builds: last_apply_timings_usec.upload=Time.get_ticks_usec()-upload_started

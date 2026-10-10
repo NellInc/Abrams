@@ -53,7 +53,7 @@ bound is 64 MiB per frame; overflow still stops the game. The Web bridge
 retains the desktop viewer's graphics, sound and menu code. Its HTML controls
 provide browser-accessible graphics mode, Restored or Tactical HUD style, slot,
 speed and help actions. Tactical graphics adds the Calibration Range-inspired
-olive and overcast treatment plus a distant treeline without changing Modern, original geometry or
+olive and overcast treatment, clustered hedgerows and rooted trees without changing Modern, original geometry or
 source visibility. Graphics and HUD Style can be selected independently.
 Tactical uses a wider, source-paired Gunner optic when the original plate and every live instrument cell verify. Any unsupported overlay returns to the complete source layout, including Commander, Cupola, Driver and status screens. The browser canvas follows the chosen layout rather than filling the whole window.
 

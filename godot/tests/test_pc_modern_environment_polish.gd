@@ -111,6 +111,8 @@ func run() -> void:
 	data.objects[0].shape_index=-1
 	data.objects[0].polygons[0].colors=[9,9]
 	data.objects[0].polygons[0].camera_vertices=[[-15,160,25],[15,160,25],[15,160,45],[-15,160,45]]
+	# Match the JSON transport, whose numeric arrays differ from GDScript literals.
+	data=JSON.parse_string(JSON.stringify(data))
 	await study(data,"sky",true)
 	var modern:Image=await render(data,true)
 	var vertices:PackedVector3Array=draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].duplicate()
@@ -123,6 +125,16 @@ func run() -> void:
 		for x in range(0,500):
 			if tactical.get_pixel(x,y).g<modern.get_pixel(x,y).g*0.7: grove_pixels+=1
 	check(grove_pixels>100,"Tactical: distant vegetation is visible in source sky")
+	var hedge_pixels:=0;var bark_pixels:=0
+	for x in range(0,500):
+		var colour:=tactical.get_pixel(x,398)
+		if colour.g<0.55 && colour.g>colour.b*1.1: hedge_pixels+=1
+	for y in range(350,400):
+		for x in range(0,500):
+			var colour:=tactical.get_pixel(x,y)
+			if colour.r>colour.g*1.08 && colour.b<colour.g*0.85: bark_pixels+=1
+	check(hedge_pixels>350,"Tactical: hedgerows meet the source horizon across the field")
+	check(bark_pixels>40,"Tactical: distant tree stems retain visible bark")
 	check(tactical.get_pixel(640,220)==modern.get_pixel(640,220),"Tactical: source actor unchanged")
 	check(draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]==vertices,"Tactical: source geometry unchanged")
 	tactical.save_png(output.path_join("tactical-range.png"))
@@ -130,6 +142,25 @@ func run() -> void:
 	check((await capture()).get_data()==modern.get_data(),"Tactical: Modern restores exactly")
 	await study(model_packet(catalog,40),"water",true)
 	await study(model_packet(catalog,103),"tree",true)
+	var tree_data:=model_packet(catalog,103)
+	var modern_tree:=await render(tree_data,true)
+	var tree_vertices:PackedVector3Array=draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].duplicate()
+	draw.tactical_landscape=true
+	var tactical_tree:=await capture()
+	var owners:Image=draw.ownership.get_texture().get_image()
+	var recovered:=0;var escaped:=0
+	for y in tactical_tree.get_height():
+		for x in tactical_tree.get_width():
+			if modern_tree.get_pixel(x,y)==Color.BLACK && tactical_tree.get_pixel(x,y)!=Color.BLACK:
+				recovered+=1
+				var owner:=owners.get_pixel(x,y)
+				if owner.r+owner.g==0.0:escaped+=1
+	check(recovered>100,"Tactical: original trunk coverage survives texture alpha")
+	check(escaped==0,"Tactical: recovered trunks remain inside original ownership")
+	check(draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]==tree_vertices,"Tactical: tree geometry unchanged")
+	tactical_tree.save_png(output.path_join("tactical-tree.png"))
+	draw.tactical_landscape=false
+	check((await capture()).get_data()==modern_tree.get_data(),"Tactical: Modern tree restores exactly")
 	await study(model_packet(catalog,49),"road",false)
 	var variant:=Modern.tree_colour_variant({"world_delta":[1200,2400,0]},{"world_position_raw":[10000,20000,50]})
 	check(variant==Modern.tree_colour_variant({"world_delta":[1100,2450,0]},{"world_position_raw":[10100,20050,50]}),"tree hue stays at source placement under camera movement")
