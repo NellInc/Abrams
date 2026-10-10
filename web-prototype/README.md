@@ -38,7 +38,8 @@ Open `http://127.0.0.1:4174/remaster.html` for the build output, or serve
 `website/dist` and open `/play/remaster.html` to check the actual site bundle.
 The build emits no original game data. The site bundle includes corresponding
 source for its modified GPL Web core, has a manifest of exact file hashes and
-keeps every file below Git's 100 MB object limit.
+keeps every file below Git's 100 MB object limit. Its `THIRD_PARTY.txt` links
+the version-matched Godot, Pyodide, CPython, Pillow and font notices.
 
 ## Browser architecture
 

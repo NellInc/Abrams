@@ -180,6 +180,8 @@ def main():
         source_name = ".generated/web-core-corresponding-source.tar.gz"
         if source_name not in files or f'href="{source_name}"' not in remaster_page:
             errors.append("Modified Web core must have linked corresponding source")
+        if 'THIRD_PARTY.txt' not in files or 'href="THIRD_PARTY.txt"' not in remaster_page:
+            errors.append("Browser engine and Python dependency notices must be linked")
     if len(page.videos) != 1:
         errors.append("Expected one requested project trailer")
     else:
