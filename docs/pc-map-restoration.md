@@ -79,9 +79,9 @@ writes, new simulation, hidden object lists, or checkpoint fields.
 The overview intentionally consists of 3×2 cells. The local player mark consists
 of two horizontal 2-pixel lines. `pc_dynamic_map_art.gd` renders those exact
 source-colour rectangles at the presentation resolution. It preserves the
-original grid style. Local terrain/world geometry continues through the existing
-original draw-pass renderer, unchanged by this module. No inferred additional
-map detail is introduced.
+original grid style. Local terrain and contacts remain the complete original
+map raster: the exported commander draw-pass camera covers the periscope, not
+the local map. No inferred additional map detail is introduced.
 
 The observer reconstructs every overview pixel from the observed clear/cells/dot
 and rejects a mismatch. Local observations verify both mark lines. Both modes
@@ -90,6 +90,22 @@ export. Godot checks the full-region hash and independently rasterizes the
 proposed vector rectangles back onto the original map before drawing. Missing
 entries after a mid-draw attachment fall back until a complete draw is observed.
 The map never selects targets or reveals positions beyond original visible ink.
+
+## Tactical cartographic presentation
+
+`pc_tactical_map.gd` reuses the complete-raster custody gate and adds strict
+cell-row/player-line shape checks before presenting the map after Tactical's
+general HUD shader. It preserves all original map texels and distinct colour
+classes, draws the current source-selected player ink last (including black),
+and clears on invalid or missing evidence. The GPU finish changes palette and
+antialiases existing boundaries only; it performs no contour simplification,
+region deletion, hidden-unit lookup or marker inference. LOCAL and OVERVIEW
+labels come from the verified original mode. A small plotting grid has no
+distance or coordinate claims. Unrecognised RGB receives no palette substitution.
+
+Working if: both modes retain every visible source feature, changing marker
+colours including black stays source-selected, stale evidence removes the new
+map immediately, and Restored/Modernized keeps the existing rendering path.
 
 Root integration: create a `pc_dynamic_map_art.gd` child in the authored tandem
 path, clear it when clearing presentation, and call `set_frame(source,

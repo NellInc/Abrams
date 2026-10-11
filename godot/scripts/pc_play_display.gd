@@ -29,15 +29,15 @@ const TACTICAL_LAYOUTS := {
 	1: {"camera":Vector4(32,13,288,110), "source":[
 		Vector4(32,13,288,110),Vector4(11,139,94,174),Vector4(11,176,94,194),
 		Vector4(124,136,194,197),Vector4(224,139,265,193),Vector4(269,139,310,193),Vector4(0,197,320,200)],
-		"destination":[Vector4(0.055,0.077,0.945,0.742),Vector4(0.055,0.813,0.255,0.916),
-		Vector4(0.277,0.849,0.477,0.932),Vector4(0.499,0.783,0.650,0.950),
-		Vector4(0.690,0.790,0.815,0.950),Vector4(0.835,0.790,0.960,0.950),Vector4(0.055,0.957,0.945,0.965)]},
+		"destination":[Vector4(0.055,0.077,0.945,0.742),Vector4(0.055,0.795,0.255,0.950),
+		Vector4(0.277,0.795,0.477,0.950),Vector4(0.499,0.795,0.665,0.950),
+		Vector4(0.690,0.795,0.815,0.950),Vector4(0.835,0.795,0.960,0.950),Vector4(0.055,0.957,0.945,0.965)]},
 	2: {"camera":Vector4(0,10,320,53), "source":[
 		Vector4(0,10,320,53),Vector4(15,62,161,160),Vector4(14,176,94,194),
 		Vector4(102,176,163,194),Vector4(207,81,289,143),Vector4(207,143,289,187),Vector4(0,197,320,200)],
-		"destination":[Vector4(0.055,0.085,0.945,0.340),Vector4(0.055,0.405,0.390,0.905),
-		Vector4(0.440,0.850,0.665,0.950),Vector4(0.720,0.850,0.890,0.950),
-		Vector4(0.440,0.415,0.660,0.745),Vector4(0.700,0.470,0.940,0.745),Vector4(0.055,0.957,0.945,0.965)]},
+		"destination":[Vector4(0.055,0.085,0.945,0.340),Vector4(0.055,0.405,0.425,0.950),
+		Vector4(0.465,0.837,0.685,0.950),Vector4(0.715,0.837,0.945,0.950),
+		Vector4(0.465,0.405,0.685,0.735),Vector4(0.715,0.405,0.945,0.735),Vector4(0.055,0.957,0.945,0.965)]},
 	3: {"camera":Vector4(0,0,320,117), "source":[Vector4(0,0,320,146),Vector4(0,197,320,200)],
 		"destination":[Vector4(0.055,0.085,0.945,0.950),Vector4(0.055,0.957,0.945,0.965)]},
 	4: {"camera":Vector4(0,0,320,136), "source":[Vector4(0,0,320,136),Vector4(60,187,258,198),Vector4(0,198,320,200)],
@@ -252,6 +252,10 @@ func _update_hud_material() -> void:
 		tactical_chrome.instruments.set_frame(tandem_frame,_wide_station,TACTICAL_LAYOUTS[_wide_station],_panel_mask_texture.get_image(),_hud_mask_data)
 	else:
 		tactical_chrome.instruments.clear()
+	if _wide_station==2 and display.material!=null:
+		tactical_chrome.map_art.set_frame(tandem_frame,TACTICAL_LAYOUTS[2])
+	else:
+		tactical_chrome.map_art.clear()
 	tactical_chrome.queue_redraw()
 	if tandem_viewport.render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
 		tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE

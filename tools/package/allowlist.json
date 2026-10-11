@@ -153,6 +153,8 @@
     "godot/scripts/pc_tactical_hud.gdshader",
     "godot/scripts/pc_tactical_damage_states.gd",
     "godot/scripts/pc_tactical_instruments.gd",
+    "godot/scripts/pc_tactical_map.gd",
+    "godot/scripts/pc_tactical_map.gdshader",
     "godot/scripts/pc_tandem_frame.gd",
     "godot/scripts/pc_tandem_frame.gdshader",
     "godot/scripts/pc_terrain_style.gd",

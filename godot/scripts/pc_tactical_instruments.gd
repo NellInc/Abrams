@@ -222,11 +222,11 @@ func _bar(box: Rect2, gauge: Dictionary) -> void:
 	var labels: Array=["E","F"] if fuel else ["0","30","60","90"]
 	for i in labels.size():
 		var x:=box.position.x+10+(box.size.x-44)*float(i)/(labels.size()-1)
-		_text(labels[i],Rect2(x,box.position.y+2,34,box.size.y*0.45),19,MUTED,i==labels.size()-1)
+		_text(labels[i],Rect2(x,box.position.y+box.size.y*0.24,34,28),19,MUTED,i==labels.size()-1)
 	var pitch: float=(box.size.x-20)/gauge.count
 	for i in gauge.count:
 		var colour: Color=_state_colour(gauge.colors[i]) if i<gauge.lit else Color("263b2d")
-		draw_rect(Rect2(box.position.x+10+i*pitch,box.position.y+box.size.y*0.57,maxf(1,pitch-2),box.size.y*0.30),colour)
+		draw_rect(Rect2(box.position.x+10+i*pitch,box.position.y+box.size.y*0.62,maxf(1,pitch-2),22),colour)
 
 func _navigation(box: Rect2) -> void:
 	var target:=Rect2(box.position+Vector2(12,8),Vector2(box.size.x-24,box.size.y-40))
@@ -303,6 +303,7 @@ func _draw() -> void:
 		var box: Rect2=panel.rect
 		var index: int=panel.index
 		draw_rect(box,FIELD)
+		draw_rect(box,Color("344733"),false,1,true)
 		if station==1:
 			if index==1:
 				var height:=box.size.y/3
