@@ -55,7 +55,7 @@ provide browser-accessible graphics mode, Restored or Tactical HUD style, slot,
 speed and help actions. Tactical graphics adds the Calibration Range-inspired
 olive and overcast treatment, clustered hedgerows and rooted trees without changing Modern, original geometry or
 source visibility. Graphics and HUD Style can be selected independently.
-Tactical uses a wider, source-paired Gunner optic when the original plate and every live instrument cell verify. Any unsupported overlay returns to the complete source layout, including Commander, Cupola, Driver and status screens. The browser canvas follows the chosen layout rather than filling the whole window.
+Tactical provides source-paired widescreen layouts for Gunner, Commander, Cupola, Driver and Systems Status, including PC-only imports. The original plate and every live instrument cell must verify; any unsupported overlay returns to the complete source layout. The browser canvas follows the chosen layout rather than filling the whole window.
 
 Checkpoint slots 1 to 5 and the before-last-load recovery slot are stored in
 origin-local IndexedDB. Reloading the page requires choosing the original PC

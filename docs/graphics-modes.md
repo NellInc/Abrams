@@ -34,8 +34,21 @@ source framebuffer, presentation metadata and paired world texture synchronously
   No decorative Range hills or trees are added to the battlefield geometry.
 
 Graphics mode and **HUD Style** are independent. Choose Tactical in both menus
-for the complete Range-inspired scene and wider Gunner interface, or combine
+for the complete Range-inspired scene and station-specific widescreen interfaces, or combine
 either graphics treatment with the Restored HUD.
+
+Tactical HUD provides expanded Gunner optics, a panoramic Commander sight with
+separate map/navigation/system panels, a larger Cupola view, and a larger Driver
+view with the original instrument strip. Systems Status uses the same olive
+housing and typography, with stores, vehicle schematic and every damage indicator
+retained. Each arrangement copies complete source rectangles from the finished
+paired frame. Source ownership must prove that every discarded pixel belongs to
+static cockpit artwork; an unknown live overlay immediately restores the complete
+4:3 arrangement. Camera projection, zoom, thermal semantics and controls are unchanged.
+All five layouts also work with PC-only imports, without an optional Genesis ROM.
+
+Working if: every verified station uses its own 16:9 layout, all live source cells
+remain visible, unknown overlays return to full 4:3, and Restored removes the reflow.
 
 The dedication to David "Ming" Kenny remains on the final credit card in Genesis
 and Upscaled, and is inherited by Modern and Tactical. EGA is deliberately untouched, so its framebuffer contains the

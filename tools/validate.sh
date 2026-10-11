@@ -171,6 +171,7 @@ run_check pc_world ./tools/godot.sh --headless --script res://tests/test_pc_worl
 run_check pc_keyboard ./tools/godot.sh --headless --script res://tests/test_pc_keyboard.gd
 run_check pc_camera ./tools/godot.sh --headless --script res://tests/test_pc_camera.gd
 run_check pc_play_display ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_play_display.gd
+run_check pc_tactical_hud ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_hud.gd
 run_check pc_frame_pacing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_frame_pacing.gd
 run_check pc_live_scheduling ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_live_scheduling.gd
 run_check pc_presentation_reuse ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_presentation_reuse.gd

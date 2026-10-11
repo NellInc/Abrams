@@ -54,7 +54,7 @@ def main():
                  'index.offline.html', 'index.144x144.png', 'index.180x180.png',
                  'index.512x512.png'):
         (WEB / name).unlink(missing_ok=True)
-    subprocess.run([str(GODOT), '--headless', '--path', str(STAGE),
+    subprocess.run([str(GODOT), '--headless', '--audio-driver', 'Dummy', '--path', str(STAGE),
                     '--export-release', 'Abrams Web local', str(WEB / 'index.html')],
                    check=True, cwd=ROOT)
     # The generated HTML would launch the project's separate development
