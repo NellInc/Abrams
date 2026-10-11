@@ -1,6 +1,7 @@
 extends SceneTree
 const Display=preload("res://scripts/pc_play_display.gd")
 const Menu=preload("res://scripts/pc_play_menu.gd")
+const Map=preload("res://scripts/pc_tactical_map.gd")
 var errors: Array[String]=[]
 var checks:=0
 
@@ -11,6 +12,7 @@ func check(ok: bool, label: String) -> void:
 func _initialize() -> void: run.call_deferred()
 
 func run() -> void:
+	map_surfaces()
 	var display:=Display.new()
 	root.add_child(display)
 	display.size=Vector2i(640,480)
@@ -187,6 +189,29 @@ func station_maps(display: Control, prefix: String) -> void:
 		check(map.crop_texture.get_image().get_data()==source.get_region(Rect2i(16,63,144,96)).get_data(),"initial map texture retains every source feature: "+name)
 		check(JSON.stringify(packet)==before and source.get_data()==PackedByteArray(data.rgb),"map style never mutates source: "+name)
 		var mode:=int(packet.dynamic_map.mode)
+		check(map.ink.get_shader_parameter("local_map")==bool(mode),"raw source stencil is limited to LOCAL player footprint")
+		var terrain:=Map.terrain_image(source,packet.dynamic_map)
+		check(terrain.get_size()==(Vector2i(48,48) if mode==0 else Vector2i(144,96)),"original overview cell grid and full local raster retained")
+		if mode==0:
+			var exact:=true
+			var marker: Array=packet.dynamic_map.lines[-1]
+			for y in 96:
+				for x in 144:
+					if x+16==marker[0] and y+63==marker[1]: continue
+					if terrain.get_pixel(x/3,y/2)!=source.get_pixel(x+16,y+63): exact=false
+			check(exact,"overview terrain reconstruction retains all visible source cells and excludes player dot")
+		else:
+			var styled:=Map.surface_image(terrain,true)
+			var dark:=0;var light:=0;var protected_contact:=0
+			for y in 96:
+				for x in 144:
+					var pixel:=styled.get_pixel(x,y)
+					if pixel==Color8(85,43,0): dark+=1
+					if pixel==Color8(128,85,43): light+=1
+					if source.get_pixel(x+16,y+63)==Color8(85,255,85) and pixel.a==0: protected_contact+=1
+			check(dark>100 and light>20,"real local checker terrain receives continuous derived materials")
+			check(protected_contact==6,"all six source contact pixels remain protected")
+		var stable_surface_hash: String=map.surface_hash
 		for colour in ([0,1,13] if mode==1 else [0,5,6]):
 			var changed:=source.duplicate()
 			var live:=packet.duplicate(true)
@@ -202,6 +227,7 @@ func station_maps(display: Control, prefix: String) -> void:
 			frame._cached_source=changed;frame._cached_presentation=live
 			check(map.set_frame(frame,Display.TACTICAL_LAYOUTS[2]),"source-selected marker colour accepted %d/%d"%[mode,colour])
 			check(map.crop_hash==live.dynamic_map.pixel_sha256,"texture update cache follows current whole-map proof")
+			check(map.surface_hash==stable_surface_hash,"player blinking never rebuilds terrain or pollutes surface classes")
 			var rgb: Array=live.dynamic_map.palette_rgb[colour]
 			check(map.ink.get_shader_parameter("marker_colour_0")==Color8(rgb[0],rgb[1],rgb[2]),"marker colour unchanged, including black")
 		frame._cached_source=source.duplicate();frame._cached_presentation=packet
@@ -212,3 +238,34 @@ func station_maps(display: Control, prefix: String) -> void:
 		display.set_hud_style("restored")
 		check(map.packet.is_empty() and not map.picture.visible,"Restored/Modernized excludes Tactical map")
 		check(frame.dynamic_map_art.packet==packet.dynamic_map,"original map renderer remains untouched")
+
+func map_surfaces() -> void:
+	for alternate in [0,85]:
+		var source:=Image.create(8,8,false,Image.FORMAT_RGBA8)
+		for y in 8:
+			for x in 8:
+				source.set_pixel(x,y,Color8(170,85,0) if (x+y+63)%2==1 else Color8(alternate,alternate,alternate))
+		var before:=source.get_data()
+		var derived:=Map.surface_image(source,true)
+		var expected:=Color8(85,43,0) if alternate==0 else Color8(128,85,43)
+		var exact:=true
+		for y in 8:
+			for x in 8:
+				if derived.get_pixel(x,y)!=expected: exact=false
+		check(exact,"complete source-phased checker is reconstructed, recipe "+str(alternate))
+		check(source.get_data()==before,"surface processing leaves original image immutable")
+		var wrong_phase:=source.duplicate();wrong_phase.flip_x()
+		check(Map.surface_image(wrong_phase,true).get_pixel(3,3)!=expected,"wrong screen phase cannot claim original material recipe")
+		var tiny:=source.get_region(Rect2i(0,0,2,2))
+		check(Map.surface_image(tiny,true).get_pixel(0,0).a==0,"tiny checker mark is protected")
+		check(Map.surface_image(source,false).get_pixel(3,3)!=expected,"overview never dedithers arbitrary cell patterns")
+		var ink:=source.duplicate();ink.set_pixel(3,3,Color8(85,255,85))
+		var protected:=Map.surface_image(ink,true).get_pixel(3,3)
+		check(protected==Color8(85,255,85,0),"unknown ink retains exact RGB and protection mask")
+		ink=source.duplicate();ink.set_pixel(3,3,Color(0,0,0,0))
+		check(Map.surface_image(ink,true).get_pixel(3,3).a==0,"player stencil cannot enter pattern recognition")
+	var joined:=PackedInt32Array([1,1,-1,2,1,-1,2,2,-1,1,1,-1,2,-1,-1,1])
+	var components:=Map._components(joined,4)
+	var total:=0
+	for cells in components: total+=cells.size()
+	check(components.size()==5 and total==10,"unique cardinal components keep diagonally touching classes separate")

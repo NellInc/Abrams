@@ -95,17 +95,46 @@ The map never selects targets or reveals positions beyond original visible ink.
 
 `pc_tactical_map.gd` reuses the complete-raster custody gate and adds strict
 cell-row/player-line shape checks before presenting the map after Tactical's
-general HUD shader. It preserves all original map texels and distinct colour
-classes, draws the current source-selected player ink last (including black),
-and clears on invalid or missing evidence. The GPU finish changes palette and
-antialiases existing boundaries only; it performs no contour simplification,
-region deletion, hidden-unit lookup or marker inference. LOCAL and OVERVIEW
-labels come from the verified original mode. A small plotting grid has no
-distance or coordinate claims. Unrecognised RGB receives no palette substitution.
+general HUD shader. The original map texture and proof remain immutable. The
+presentation reconstructs the original OVERVIEW 48×48 terrain cells from the
+observed background and cell draws, excluding the player dot. LOCAL retains its
+144×96 raster and protects the player footprint plus its recognition stencil.
+The current source-selected player ink is drawn last, including black.
+
+Continuous shared-patch contours replace stair steps along roads, riverbanks
+and terrain boundaries. Only two-class, non-diagonal 2×2 patches are contoured;
+diagonal, multi-class, unknown-ink and small-component patches retain their
+original shape. Every shared edge crosses at the same midpoint. The corner cut
+leaves a finite cell-centre core and cardinal corridors, preserving the original
+region connections, holes and separate junctions. Antialiasing is capped at
+0.06 cell distance so it cannot consume those cores. Roads have fine casings
+and water has a restrained bank highlight. These are surface styling, not new
+features or additional map information.
+
+LOCAL's exact, screen-phased black/brown and gray/brown checker recipes can
+become continuous earth materials. The recipes match original material words
+17 (`1792,7`) and 26 (`1795,775`), with parity defined by
+`tools/pc_materials.py`, including crop origin `(16,63)`. Only complete 2×2
+periods in cardinally connected coverage of at least 16 unique pixels qualify.
+This is an exact-pattern presentation heuristic, not proof that an individual
+region belongs to a hill: local object identity is not exported. It deliberately
+replaces the original stipple texture; unmatched, tiny and protected ink keeps
+its original appearance. No majority filter, hidden-unit lookup or new object
+classification is used. Cached surfaces exclude player blinking from their
+identity. Missing or invalid evidence clears the replacement immediately.
+Protected patches retain their nearest-cell shape and styled palette without
+restoring neighbouring stipple. Only LOCAL's player stencil reads the raw crop,
+at explicit texel centres so shared WebGL sampler filtering cannot blend palette
+indices into unrecognised colours.
+
+LOCAL and OVERVIEW labels come from the verified original mode. The small
+plotting grid has no distance or coordinate claims. Unrecognised RGB receives
+no palette substitution.
 
 Working if: both modes retain every visible source feature, changing marker
-colours including black stays source-selected, stale evidence removes the new
-map immediately, and Restored/Modernized keeps the existing rendering path.
+colours including black stays source-selected, small contacts remain visible,
+stale evidence removes the new map immediately, and Restored/Modernized keeps
+the existing rendering path.
 
 Root integration: create a `pc_dynamic_map_art.gd` child in the authored tandem
 path, clear it when clearing presentation, and call `set_frame(source,
