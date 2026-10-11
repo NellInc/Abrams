@@ -9,7 +9,10 @@ uniform bool panels_verified = false;
 uniform vec4 camera_bounds = vec4(0.0);
 uniform bool camera_verified = false;
 uniform bool map_verified = false;
-uniform bool wide_gunner = false;
+uniform int wide_station = 0;
+uniform int layout_count = 0;
+uniform vec4 source_regions[8];
+uniform vec4 destination_regions[8];
 
 bool inside(vec2 p, vec4 box) {
 	return all(greaterThanEqual(p, box.xy)) && all(lessThan(p, box.zw));
@@ -49,36 +52,34 @@ vec3 neutral_ink(float luma) {
 void fragment() {
 	vec2 source_uv = UV;
 	bool mapped = true;
-	if (wide_gunner) {
-		// Every sampled region is copied from the completed, source-paired
-		// frame. The five lower crops are the proven live Gunner cells.
-		if (inside(UV,vec4(0.055,0.077,0.945,0.742)))
-			source_uv=remap(UV,vec4(0.055,0.077,0.945,0.742),camera_bounds);
-		else if (inside(UV,vec4(0.055,0.813,0.255,0.916)))
-			source_uv=remap(UV,vec4(0.055,0.813,0.255,0.916),vec4(11.0,139.0,94.0,174.0));
-		else if (inside(UV,vec4(0.277,0.849,0.477,0.932)))
-			source_uv=remap(UV,vec4(0.277,0.849,0.477,0.932),vec4(11.0,176.0,94.0,194.0));
-		else if (inside(UV,vec4(0.499,0.783,0.650,0.950)))
-			source_uv=remap(UV,vec4(0.499,0.783,0.650,0.950),vec4(124.0,136.0,194.0,197.0));
-		else if (inside(UV,vec4(0.690,0.790,0.815,0.950)))
-			source_uv=remap(UV,vec4(0.690,0.790,0.815,0.950),vec4(224.0,139.0,265.0,193.0));
-		else if (inside(UV,vec4(0.835,0.790,0.960,0.950)))
-			source_uv=remap(UV,vec4(0.835,0.790,0.960,0.950),vec4(269.0,139.0,310.0,193.0));
-		else if (inside(UV,vec4(0.055,0.957,0.945,0.965)))
-			source_uv=remap(UV,vec4(0.055,0.957,0.945,0.965),vec4(0.0,197.0,320.0,200.0));
-		else mapped=false;
+	if (wide_station != 0) {
+		// These rectangles are also the CPU-side proof that no live source pixel
+		// is lost. Unknown overlays restore the complete source arrangement.
+		mapped=false;
+		for (int i=0; i<8; i++) {
+			if (i>=layout_count) break;
+			if (inside(UV,destination_regions[i])) {
+				source_uv=remap(UV,destination_regions[i],source_regions[i]);
+				mapped=true;
+				break;
+			}
+		}
 	}
 	if (!mapped) {
 		vec3 housing=mix(vec3(0.039,0.061,0.047),vec3(0.080,0.112,0.083),smoothstep(0.74,1.0,UV.y));
-		float hairline=1.0-smoothstep(0.0,0.0015,min(abs(UV.y-0.755),abs(UV.y-0.962)));
+		float hairline=1.0-smoothstep(0.0,0.0015,abs(UV.y-0.962));
 		COLOR=vec4(mix(housing,vec3(0.37,0.49,0.34),hairline*0.55),1.0);
 	} else {
 		vec4 source = texture(TEXTURE, source_uv);
 		vec2 p = source_uv * vec2(320.0, 200.0);
+		int plate = panels_verified ? int(round(texture(panel_mask, source_uv).r * 255.0)) : 0;
 		bool map_area = map_verified && inside(p, vec4(16.0, 63.0, 160.0, 159.0));
 		// Sight ink and bearing against moving scenery keep their original contrast.
 		// A palette transform cannot safely infer the background under that ink.
-		if ((!map_area && texture(hud_mask, source_uv).r < 0.5) ||
+		if (wide_station!=0 && p.y>=197.0 && (plate==wide_station || (wide_station==5 && plate==2))) {
+			// Retain live border writes, without copying decorative hull fragments.
+			COLOR=vec4(0.080,0.112,0.083,1.0);
+		} else if ((!map_area && texture(hud_mask, source_uv).r < 0.5) ||
 			(camera_verified && inside(p, camera_bounds))) {
 			COLOR = source;
 		} else {
@@ -105,7 +106,6 @@ void fragment() {
 			}
 			// The verified static cockpit plates become a purpose-made, quiet field
 			// instrument housing. Every live window is excluded before replacement.
-			int plate = panels_verified ? int(round(texture(panel_mask, source_uv).r * 255.0)) : 0;
 			if ((plate == 1 || plate == 2 || plate == 5) &&
 				(plate == 5 || (camera_verified && !inside(p, camera_bounds))) &&
 				!live_cell(plate, p)) {

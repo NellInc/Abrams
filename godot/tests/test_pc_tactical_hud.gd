@@ -56,18 +56,44 @@ func run() -> void:
 	plate_packet.plate_overlay={"width":320,"height":200,"mask_png":Marshalls.raw_to_base64(plate.save_png_to_buffer()),
 		"plates":{"1":{"source":"GPS.BIN","source_sha256":preload("res://scripts/pc_tandem_frame.gd").GUNNER_SOURCE_SHA256}}}
 	display.set_hud_frame(plate_packet,{"name":"SIM"})
-	check(display.description().display_aspect=="16:9" and display._wide_gunner,"PC-only Gunner expands only with source-proven plate")
+	check(display.description().display_aspect=="16:9" and display._wide_station==1,"PC-only Gunner expands only with source-proven plate")
 	check(display.tandem_viewport.size.x*3==display.tandem_viewport.size.y*4,"wide display keeps 4:3 source composition")
 	plate.set_pixel(312,199,Color.BLACK)
 	plate_packet.plate_overlay.mask_png=Marshalls.raw_to_base64(plate.save_png_to_buffer())
 	display.set_hud_frame(plate_packet,{"name":"SIM"})
-	check(display._wide_gunner,"live source border remains visible in the reflow")
+	check(display._wide_station==1,"live source border remains visible in the reflow")
 	plate.set_pixel(0,0,Color.BLACK)
 	plate_packet.plate_overlay.mask_png=Marshalls.raw_to_base64(plate.save_png_to_buffer())
 	display.set_hud_frame(plate_packet,{"name":"SIM"})
-	check(display.description().display_aspect=="4:3" and not display._wide_gunner,"unmapped live UI restores full layout")
+	check(display.description().display_aspect=="4:3" and display._wide_station==0,"unmapped live UI restores full layout")
+	for station in range(2,6):
+		var original:Array=preload("res://scripts/pc_tandem_frame.gd").COCKPIT_SOURCES[station]
+		plate.fill(Color8(station,station,station))
+		var bounds:Vector4=Display.TACTICAL_LAYOUTS[station].camera
+		var frame:=packet.duplicate(true)
+		frame.draw_pass.camera.clip=[bounds.x,bounds.y,bounds.z-1,bounds.w-1] if station!=5 else [0,10,319,52]
+		frame.plate_overlay={"width":320,"height":200,"mask_png":Marshalls.raw_to_base64(plate.save_png_to_buffer()),
+			"plates":{str(station):{"source":original[0],"source_sha256":original[1]}}}
+		# Real browser packets contain floating-point JSON numbers.
+		frame=JSON.parse_string(JSON.stringify(frame))
+		display.set_hud_frame(frame,{"name":"SIM"})
+		check(display._wide_station==station,"station %d: source-proven wide layout without optional ROM"%station)
+		check(display.description().display_aspect=="16:9","station %d: matching wide canvas"%station)
+		check(display.tactical_chrome.wide_station==station,"station %d: matching frame labels"%station)
+		check(display.tandem_viewport.size.x*3==display.tandem_viewport.size.y*4,"station %d: original source aspect retained"%station)
+		check(display.tactical_material.get_shader_parameter("layout_count")==Display.TACTICAL_LAYOUTS[station].source.size(),"station %d: shader and proof share source regions"%station)
+		if station==5:
+			check(not display.tactical_material.get_shader_parameter("camera_verified"),"STATUS has no stale Commander camera exclusion")
+		# A live pixel beyond every copied region must disable this station's reflow.
+		plate.set_pixel(0,196,Color.BLACK)
+		frame.plate_overlay.mask_png=Marshalls.raw_to_base64(plate.save_png_to_buffer())
+		display.set_hud_frame(frame,{"name":"SIM"})
+		check(display._wide_station==0,"station %d: uncopied live overlay restores complete source"%station)
+		frame.plate_overlay.plates[str(station)].source_sha256="unverified"
+		display.set_hud_frame(frame,{"name":"SIM"})
+		check(display._panel_mask_texture==null and display._wide_station==0,"station %d: unproven source rejected"%station)
 	display.set_hud_frame(plate_packet,{"name":"START"})
-	check(not display._wide_gunner,"program transition clears wide layout")
+	check(display._wide_station==0,"program transition clears wide layout")
 	check(display.set_hud_style("restored") and display.display.material==null,"Restored removes shader")
 	menu.free()
 	display.free()
