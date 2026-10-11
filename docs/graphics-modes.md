@@ -58,7 +58,7 @@ The Tactical commander map has a larger cartographic display, a distinct muted
 palette, a quiet unnumbered plotting grid and an original-state LOCAL/OVERVIEW
 indicator. Its full source raster remains authoritative, including small features
 and the exact current player-marker colour. Roads, rivers and terrain now use
-continuous contours with fine road casings and bank highlights. Ambiguous
+continuous contours with rounded bends, fine road casings and bank highlights. Ambiguous
 junctions and small or unknown ink keep their original shapes. Complete matching
 local checker patterns become clean earth materials, while unmatched detail
 stays intact. No roads, waterways, contacts or terrain features are invented.

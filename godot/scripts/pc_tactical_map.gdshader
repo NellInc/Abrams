@@ -35,6 +35,25 @@ bool inside(vec2 p,vec4 r) { return all(greaterThanEqual(p,r.xy)) && all(lessTha
 vec4 cell(vec2 at) {
 	return texture(surface_pixels,clamp((at+0.5)/grid_size,vec2(0.5)/grid_size,vec2(1.0)-vec2(0.5)/grid_size));
 }
+float corner_field(vec2 f,vec2 at,vec2 corner,vec3 positive) {
+	vec2 away=mix(f,vec2(1.0)-f,corner);
+	vec4 x0=cell(at+vec2(mix(-1.0,2.0,corner.x),0.0));
+	vec4 x1=cell(at+vec2(mix(-1.0,2.0,corner.x),1.0));
+	vec4 y0=cell(at+vec2(0.0,mix(-1.0,2.0,corner.y)));
+	vec4 y1=cell(at+vec2(1.0,mix(-1.0,2.0,corner.y)));
+	// Keep diagonal runs straight. At a bend/cap, join the next source edge
+	// tangentially instead of leaving a 45-degree corner between patches.
+	float bend_x=(min(x0.a,x1.a)>0.99 && same(x0.rgb,positive) && same(x1.rgb,positive))?0.0:1.0;
+	float bend_y=(min(y0.a,y1.a)>0.99 && same(y0.rgb,positive) && same(y1.rgb,positive))?0.0:1.0;
+	float t=clamp(away.x-away.y+0.5,0.0,1.0);
+	float u=1.0-t;
+	// Cubic Hermite arc in diagonal coordinates. Both endpoints stay at the
+	// original shared-edge midpoints. The arc stays inside this corner's
+	// source half-cell, retaining finite cores and open one-cell corridors.
+	float boundary=0.5+bend_x*t*u*u+bend_y*t*t*u;
+	float slope=bend_x*u*(1.0-3.0*t)+bend_y*t*(2.0-3.0*t);
+	return (boundary-away.x-away.y)/sqrt(2.0*(1.0+slope*slope));
+}
 vec3 edged(vec3 raw,float distance_to_edge,float width) {
 	vec3 colour=cartography(raw);
 	ivec3 rgb=ivec3(round(raw*255.0));
@@ -73,10 +92,7 @@ void fragment() {
 					positive=other;negative=a.rgb;
 					corner=!ba?vec2(1,0):(!ca?vec2(0,1):vec2(1,1));
 				}
-				vec2 towards=mix(vec2(1.0)-f,f,corner);
-				// Shared-edge midpoints give continuous straight diagonal runs.
-				// A finite diamond core remains at every source-cell centre.
-				field=(towards.x+towards.y-1.5)*0.70710678;
+				field=corner_field(f,at,corner,positive);
 			} else field=ba?0.5-f.y:0.5-f.x;
 			float aa=clamp(fwidth(field)*0.6,0.001,0.06);
 			float line_width=clamp(fwidth(field),0.006,0.075);
