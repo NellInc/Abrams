@@ -40,7 +40,7 @@ class RunLabel extends Control:
 	func _draw() -> void:
 		if run.is_empty(): return
 		if not run.get("transparent_world",false): draw_rect(Rect2(Vector2.ZERO,size),run.background)
-		if tactical and not run.get("transparent_world",false):
+		if tactical:
 			var point_size:=clampi(roundi(size.y),6,72)
 			while point_size>6 and (tactical_font.get_height(point_size)>size.y or tactical_font.get_string_size(run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size).x>size.x):
 				point_size-=1

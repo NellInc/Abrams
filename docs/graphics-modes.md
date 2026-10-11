@@ -47,6 +47,13 @@ static cockpit artwork; an unknown live overlay immediately restores the complet
 4:3 arrangement. Camera projection, zoom, thermal semantics and controls are unchanged.
 All five layouts also work with PC-only imports, without an optional Genesis ROM.
 
+Tactical instrument faces use output-resolution vector gauges, ammunition and
+status readouts, orientation diagrams, and an authored M1A1 plan-view schematic.
+The original visible lamp colours, bar segments, selected ammunition, quantities,
+and all 32 visible diagram-damage combinations remain authoritative. Unrecognised
+ink keeps its original panel. These faces also work with PC-only imports and do
+not change Modernized graphics or the Restored HUD.
+
 Working if: every verified station uses its own 16:9 layout, all live source cells
 remain visible, unknown overlays return to full 4:3, and Restored removes the reflow.
 

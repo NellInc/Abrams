@@ -102,6 +102,19 @@ func load_sources(root: String, art: Image, commander: Image = null) -> bool:
 			plates[id] = Image.load_from_file(plate_path)
 	return true
 
+func load_pc_sources(root: String) -> bool:
+	# Tactical's geometry needs the original PC guards, never optional donor art.
+	clear()
+	plates.clear()
+	source_plate=null
+	for id in PLATES:
+		var entry: Array=PLATES[id]
+		var path:=root.path_join("local-art/pc-ui-v2/"+entry[0]+".png")
+		if FileAccess.file_exists(path) and FileAccess.get_sha256(path)==entry[1]:
+			plates[id]=Image.load_from_file(path)
+	source_plate=plates.get(1)
+	return source_plate!=null
+
 func clear() -> void:
 	active.clear()
 	gauges.clear()
@@ -110,7 +123,7 @@ func clear() -> void:
 
 func set_frame(source: Image, ui: Image, tags: Image, diagram: Dictionary = {}) -> void:
 	clear()
-	if source_plate==null or donor==null: return
+	if source_plate==null: return
 	for image in [source,ui,tags]:
 		if image==null or image.get_size()!=Vector2i(320,200): return
 	orientation.set_frame(source,ui,tags,plates,diagram)
