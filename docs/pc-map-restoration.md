@@ -104,8 +104,11 @@ The current source-selected player ink is drawn last, including black.
 Continuous shared-patch contours replace stair steps along roads, riverbanks
 and terrain boundaries. Only two-class, non-diagonal 2×2 patches are contoured;
 diagonal, multi-class, unknown-ink and small-component patches retain their
-original shape. Every shared edge crosses at the same midpoint. The corner cut
-leaves a finite cell-centre core and cardinal corridors, preserving the original
+original shape. Every shared edge crosses at the same midpoint. Cubic Hermite
+arcs round bends and endcaps within the original corner's half-cell, meeting
+neighbouring straight edges tangentially. Diagonal continuations remain straight
+rather than acquiring repeated scallops. These bounded curves retain finite
+cell-centre cores and cardinal corridors, preserving the original
 region connections, holes and separate junctions. Antialiasing is capped at
 0.06 cell distance so it cannot consume those cores. Roads have fine casings
 and water has a restrained bank highlight. These are surface styling, not new
