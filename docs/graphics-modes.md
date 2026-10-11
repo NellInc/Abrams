@@ -57,9 +57,12 @@ not change Modernized graphics or the Restored HUD.
 The Tactical commander map has a larger cartographic display, a distinct muted
 palette, a quiet unnumbered plotting grid and an original-state LOCAL/OVERVIEW
 indicator. Its full source raster remains authoritative, including small features
-and the exact current player-marker colour. Only existing boundaries receive a
-subpixel antialias band; roads, shorelines and contacts are never simplified or
-invented. Tactical menus, aligned instrument fields, registration corners and
+and the exact current player-marker colour. Roads, rivers and terrain now use
+continuous contours with fine road casings and bank highlights. Ambiguous
+junctions and small or unknown ink keep their original shapes. Complete matching
+local checker patterns become clean earth materials, while unmatched detail
+stays intact. No roads, waterways, contacts or terrain features are invented.
+Tactical menus, aligned instrument fields, registration corners and
 crew-station keycaps share the same olive/cream presentation. Restored retains
 its original theme and map rendering.
 

@@ -1,20 +1,21 @@
 shader_type canvas_item;
 render_mode unshaded;
 uniform sampler2D map_pixels : filter_nearest, repeat_disable;
+uniform sampler2D surface_pixels : filter_nearest, repeat_disable;
+uniform vec2 grid_size = vec2(144.0,96.0);
+uniform bool local_map = false;
 uniform vec4 marker_0;
 uniform vec4 marker_1;
 uniform vec4 marker_colour_0;
 uniform vec4 marker_colour_1;
 
 vec3 cartography(vec3 c) {
-	// Each distinct source class has a distinct material. This never classifies
-	// units, adds contacts, or discards small regions as alleged background.
 	ivec3 rgb=ivec3(round(c*255.0));
 	if (rgb==ivec3(0)) return vec3(0.035,0.055,0.042);
 	if (rgb==ivec3(255)) return vec3(0.94,0.94,0.81);
-	if (rgb==ivec3(170)) return vec3(0.64,0.66,0.49);
-	if (rgb==ivec3(85)) return vec3(0.43,0.48,0.36);
-	if (rgb==ivec3(85,85,255)) return vec3(0.16,0.33,0.39);
+	if (rgb==ivec3(170)) return vec3(0.76,0.73,0.57);
+	if (rgb==ivec3(85)) return vec3(0.55,0.60,0.46);
+	if (rgb==ivec3(85,85,255)) return vec3(0.17,0.35,0.42);
 	if (rgb==ivec3(85,255,255)) return vec3(0.48,0.82,0.79);
 	if (rgb==ivec3(170,0,0)) return vec3(0.88,0.39,0.28);
 	if (rgb==ivec3(170,85,0)) return vec3(0.49,0.36,0.20);
@@ -23,34 +24,74 @@ vec3 cartography(vec3 c) {
 	if (rgb==ivec3(255,255,85)) return vec3(0.91,0.77,0.40);
 	if (rgb==ivec3(255,85,85)) return vec3(1.0,0.62,0.50);
 	if (rgb==ivec3(0,0,170)) return vec3(0.19,0.28,0.60);
+	// Derived only from complete source-phased black/brown or gray/brown periods.
+	if (rgb==ivec3(85,43,0)) return vec3(0.40,0.34,0.22);
+	if (rgb==ivec3(128,85,43)) return vec3(0.56,0.50,0.36);
 	return c;
 }
 
-vec3 cell(vec2 at) {
-	return cartography(texture(map_pixels,clamp((at+0.5)/vec2(144.0,96.0),vec2(0.5)/vec2(144.0,96.0),vec2(1.0)-vec2(0.5)/vec2(144.0,96.0))).rgb);
-}
-
+bool same(vec3 a,vec3 b) { return distance(a,b)<0.001; }
 bool inside(vec2 p,vec4 r) { return all(greaterThanEqual(p,r.xy)) && all(lessThan(p,r.zw)); }
+vec4 cell(vec2 at) {
+	return texture(surface_pixels,clamp((at+0.5)/grid_size,vec2(0.5)/grid_size,vec2(1.0)-vec2(0.5)/grid_size));
+}
+vec3 edged(vec3 raw,float distance_to_edge,float width) {
+	vec3 colour=cartography(raw);
+	ivec3 rgb=ivec3(round(raw*255.0));
+	float line=1.0-smoothstep(width*0.5,width*1.8,distance_to_edge);
+	if (rgb==ivec3(170) || rgb==ivec3(85)) colour=mix(colour,colour*0.68,line*0.75);
+	if (rgb==ivec3(85,85,255)) colour=mix(colour,vec3(0.39,0.54,0.55),line*0.58);
+	return colour;
+}
 
 void fragment() {
 	vec2 p=UV*vec2(144.0,96.0);
-	vec2 at=floor(p);
-	vec2 f=fract(p);
-	vec2 width=min(fwidth(p)*0.65,vec2(0.22));
-	vec3 colour=cell(at);
-	// Antialias only the existing boundary, within one output pixel. No
-	// smoothing/simplification changes a region, channel or isolated contact.
-	vec2 edge=min(f,1.0-f);
-	vec2 direction=mix(vec2(-1.0),vec2(1.0),step(vec2(0.5),f));
-	vec2 blend=(1.0-smoothstep(vec2(0.0),width,edge))*0.5;
-	colour=mix(colour,cell(at+vec2(direction.x,0)),blend.x);
-	colour=mix(colour,cell(at+vec2(0,direction.y)),blend.y);
-	// A quiet, unnumbered plotting grid is material, not added terrain data.
+	vec2 sample_position=UV*grid_size-0.5;
+	vec2 at=floor(sample_position);
+	vec2 f=fract(sample_position);
+	vec4 a=cell(at), b=cell(at+vec2(1,0)), c=cell(at+vec2(0,1)), d=cell(at+vec2(1,1));
+	// Explicit texel centres also remain exact when WebGL shares this texture
+	// with the TextureRect's differently filtered default sampler.
+	vec3 original=cartography(texture(map_pixels,(floor(p)+0.5)/vec2(144.0,96.0)).rgb);
+	vec3 nearest=cell(floor(UV*grid_size)).rgb;
+	vec3 colour=cartography(nearest);
+	// Protected patches keep their nearest-cell footprint and styled palette.
+	// Falling back to the full raw raster here reintroduced nearby stipple.
+	bool safe=min(min(a.a,b.a),min(c.a,d.a))>0.99;
+	if (safe) {
+		vec3 other=!same(a.rgb,b.rgb)?b.rgb:(!same(a.rgb,c.rgb)?c.rgb:d.rgb);
+		bool two=(same(b.rgb,a.rgb)||same(b.rgb,other)) && (same(c.rgb,a.rgb)||same(c.rgb,other)) && (same(d.rgb,a.rgb)||same(d.rgb,other));
+		bool ba=same(b.rgb,a.rgb), ca=same(c.rgb,a.rgb), da=same(d.rgb,a.rgb);
+		int count=1+int(ba)+int(ca)+int(da);
+		bool diagonal=(count==2 && da);
+		if (two && count<4 && !diagonal) {
+			float field=0.0;
+			vec3 positive=a.rgb, negative=other;
+			if (count==1 || count==3) {
+				vec2 corner=vec2(0);
+				if (count==3) {
+					positive=other;negative=a.rgb;
+					corner=!ba?vec2(1,0):(!ca?vec2(0,1):vec2(1,1));
+				}
+				vec2 towards=mix(vec2(1.0)-f,f,corner);
+				// Shared-edge midpoints give continuous straight diagonal runs.
+				// A finite diamond core remains at every source-cell centre.
+				field=(towards.x+towards.y-1.5)*0.70710678;
+			} else field=ba?0.5-f.y:0.5-f.x;
+			float aa=clamp(fwidth(field)*0.6,0.001,0.06);
+			float line_width=clamp(fwidth(field),0.006,0.075);
+			colour=mix(edged(negative,abs(field),line_width),edged(positive,abs(field),line_width),smoothstep(-aa,aa,field));
+		}
+		// Diagonal/checker and multi-class junctions retain their source shape.
+	}
+	// LOCAL has no terrain evidence beneath the player, so this stencil uses
+	// exact current source texels rather than the cache's transparent sentinel.
+	if (local_map && inside(p,vec4(69.0,45.0,75.0,51.0))) colour=original;
 	vec2 grid=abs(fract(p/24.0+0.5)-0.5)*24.0;
-	float rule=1.0-smoothstep(0.0,max(width.x,width.y),min(grid.x,grid.y));
-	colour=mix(colour,colour*1.075,rule*0.55);
+	float rule=1.0-smoothstep(0.0,max(fwidth(p).x,fwidth(p).y)*0.55,min(grid.x,grid.y));
+	colour=mix(colour,colour*1.075,rule*0.4);
 	COLOR=vec4(colour,1.0);
-	// Source-selected colours include black. Never hide or independently blink it.
+	// Source-selected position, size and colour, including black and blinking.
 	if (inside(p,marker_0)) COLOR=marker_colour_0;
 	if (inside(p,marker_1)) COLOR=marker_colour_1;
 }

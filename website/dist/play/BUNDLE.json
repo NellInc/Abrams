@@ -37,8 +37,8 @@
       "sha256": "33c94cb3175f3333b82e2a3be5e8e86f77986f0aa2042b1631f6367a4e5bb6ba"
     },
     ".generated/godot/index.pck": {
-      "bytes": 13379440,
-      "sha256": "fcde758fba32f908a53dbc60d549ae110e3ea2a0172e390c9913723e6767fbe9"
+      "bytes": 13384832,
+      "sha256": "d925191daeda870bd1c6bb9e0f4a84795e0c25000f301fdb866f9bc36b5a87c1"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
