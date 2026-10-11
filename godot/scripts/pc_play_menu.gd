@@ -31,6 +31,38 @@ var load_popup: PopupMenu
 var state_slots: Array = []
 var state_message := "Save states include the campaign disk. Loading rewinds both."
 var help_popup: PopupMenu
+var _styled_hud := ""
+var _tactical_bar := ColorRect.new()
+
+func _init() -> void:
+	# Off-tree menu instances own this child too, including settings readers.
+	add_child(_tactical_bar)
+
+func _apply_hud_theme() -> void:
+	if _styled_hud==hud_style: return
+	_styled_hud=hud_style
+	theme=preload("res://scripts/pc_interface_theme.gd").build()
+	_tactical_bar.visible=hud_style=="tactical"
+	if hud_style!="tactical": return
+	for type in ["MenuBar","PopupMenu"]:
+		theme.set_font("font",type,preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf"))
+		theme.set_font_size("font_size",type,18)
+		for name in ["font_color","font_hover_color","font_focus_color","font_pressed_color","font_hover_pressed_color"]:
+			theme.set_color(name,type,Color("e3e4cd"))
+	for state in ["normal","hover","pressed","hover_pressed","disabled"]:
+		var style:=StyleBoxFlat.new()
+		style.bg_color=Color("253827") if state in ["hover","pressed","hover_pressed"] else Color("0c1812")
+		style.content_margin_left=12;style.content_margin_right=12
+		style.content_margin_top=5;style.content_margin_bottom=5
+		style.border_width_bottom=1
+		style.border_color=Color("e7b566") if state in ["hover","pressed","hover_pressed"] else Color("344733")
+		theme.set_stylebox(state,"MenuBar",style)
+	var panel:=preload("res://scripts/pc_interface_theme.gd").surface()
+	panel.bg_color=Color("101e16");panel.border_color=Color("61785b")
+	theme.set_stylebox("panel","PopupMenu",panel)
+
+func _place_tactical_bar() -> void:
+	_tactical_bar.size=Vector2(get_viewport_rect().size.x,size.y)
 
 static func _uses_macos_shortcuts() -> bool:
 	# Browser Cmd chords are intercepted or stripped before Godot receives them,
@@ -39,7 +71,12 @@ static func _uses_macos_shortcuts() -> bool:
 	return OS.get_name()=="macOS"
 
 func _ready() -> void:
-	theme=preload("res://scripts/pc_interface_theme.gd").build()
+	_tactical_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	_tactical_bar.show_behind_parent=true
+	_tactical_bar.color=Color("0c1812")
+	resized.connect(_place_tactical_bar)
+	get_viewport().size_changed.connect(_place_tactical_bar)
+	_apply_hud_theme()
 	super._ready()
 	session_popup=PopupMenu.new()
 	session_popup.name="Session"
@@ -274,6 +311,7 @@ func set_state_status(slots: Array, message: String="") -> void:
 
 func refresh_controls() -> void:
 	if graphics_popup==null: return
+	_apply_hud_theme()
 	graphics_popup.set_item_disabled(1,not genesis_available)
 	graphics_popup.set_item_text(1,"Genesis (original artwork)" if genesis_available else "Genesis (requires optional import)")
 	graphics_popup.set_item_disabled(3,not modern_available)

@@ -21,6 +21,9 @@ func run() -> void:
 	check(menu.hud_style=="restored" and display.hud_style=="restored","Restored defaults")
 	check(not menu.choose_hud_style("unknown") and menu.hud_style=="restored","unknown HUD style rejected")
 	check(menu.choose_hud_style("tactical") and menu.hud_style=="tactical","Tactical control accepted")
+	check(menu._tactical_bar.visible and menu.theme.has_stylebox("normal","MenuBar"),"Tactical menu uses matching field theme")
+	menu.choose_hud_style("restored")
+	check(not menu._tactical_bar.visible and not menu.theme.has_stylebox("normal","MenuBar"),"Restored menu keeps original theme")
 	var settings:=OS.get_temp_dir().path_join("abrams-tactical-hud-%d.cfg"%OS.get_process_id())
 	DirAccess.remove_absolute(settings)
 	menu.quality_config_path=settings
@@ -98,6 +101,7 @@ func run() -> void:
 	var args:=OS.get_cmdline_user_args()
 	if "--station-fixtures" in args:
 		station_instruments(display,args[args.find("--station-fixtures")+1])
+		station_maps(display,args[args.find("--station-fixtures")+1])
 	menu.free()
 	display.free()
 	print("PC_TACTICAL_HUD: %d checks, %d errors"%[checks,errors.size()])
@@ -163,3 +167,48 @@ func station_instruments(display: Control, prefix: String) -> void:
 		pc_display.set_hud_frame(packet,{"name":"SIM"})
 		check(pc_display.tactical_chrome.instruments.panels.size()==item[1],"PC-only vector instruments "+item[0])
 	pc_display.free()
+
+func station_maps(display: Control, prefix: String) -> void:
+	var frame: Control=display.tandem_frame
+	var map: Control=display.tactical_chrome.map_art
+	for name in ["commander","commander-map"]:
+		var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(prefix+"-"+name+".json"))
+		var source:=Image.create_from_data(320,200,false,Image.FORMAT_RGB8,PackedByteArray(data.rgb))
+		var packet: Dictionary=data.packet.presentation
+		var before:=JSON.stringify(packet)
+		display.set_hud_style("tactical")
+		# Dummy storage preserves initial images but texture_2d_update is a no-op.
+		# Check byte custody on a fresh texture; GPU updates are exercised by the
+		# browser route switching LOCAL/OVERVIEW on this same live renderer.
+		map.crop_texture=null
+		frame.set_frame(source,packet,ImageTexture.create_from_image(source))
+		display.set_hud_frame(packet,{"name":"SIM"},frame._current_plate_mask)
+		check(not map.packet.is_empty() and map.picture.visible,"Tactical map active: "+name)
+		check(map.crop_texture.get_image().get_data()==source.get_region(Rect2i(16,63,144,96)).get_data(),"initial map texture retains every source feature: "+name)
+		check(JSON.stringify(packet)==before and source.get_data()==PackedByteArray(data.rgb),"map style never mutates source: "+name)
+		var mode:=int(packet.dynamic_map.mode)
+		for colour in ([0,1,13] if mode==1 else [0,5,6]):
+			var changed:=source.duplicate()
+			var live:=packet.duplicate(true)
+			var count:=2 if mode==1 else 1
+			for i in range(live.dynamic_map.lines.size()-count,live.dynamic_map.lines.size()):
+				var row: Array=live.dynamic_map.lines[i]
+				row[4]=colour
+				var rgb: Array=live.dynamic_map.palette_rgb[colour]
+				changed.fill_rect(Rect2i(row[0],row[1],row[2]-row[0]+1,1),Color8(rgb[0],rgb[1],rgb[2]))
+			var hash:=HashingContext.new();hash.start(HashingContext.HASH_SHA256)
+			hash.update(changed.get_region(Rect2i(16,63,144,96)).get_data())
+			live.dynamic_map.pixel_sha256=hash.finish().hex_encode()
+			frame._cached_source=changed;frame._cached_presentation=live
+			check(map.set_frame(frame,Display.TACTICAL_LAYOUTS[2]),"source-selected marker colour accepted %d/%d"%[mode,colour])
+			check(map.crop_hash==live.dynamic_map.pixel_sha256,"texture update cache follows current whole-map proof")
+			var rgb: Array=live.dynamic_map.palette_rgb[colour]
+			check(map.ink.get_shader_parameter("marker_colour_0")==Color8(rgb[0],rgb[1],rgb[2]),"marker colour unchanged, including black")
+		frame._cached_source=source.duplicate();frame._cached_presentation=packet
+		frame._cached_source.set_pixel(20,70,Color.MAGENTA)
+		check(not map.set_frame(frame,Display.TACTICAL_LAYOUTS[2]) and not map.picture.visible,"stale full-map readback clears overlay")
+		frame._cached_source=source
+		check(map.set_frame(frame,Display.TACTICAL_LAYOUTS[2]),"valid map recovers")
+		display.set_hud_style("restored")
+		check(map.packet.is_empty() and not map.picture.visible,"Restored/Modernized excludes Tactical map")
+		check(frame.dynamic_map_art.packet==packet.dynamic_map,"original map renderer remains untouched")

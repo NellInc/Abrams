@@ -54,6 +54,15 @@ and all 32 visible diagram-damage combinations remain authoritative. Unrecognise
 ink keeps its original panel. These faces also work with PC-only imports and do
 not change Modernized graphics or the Restored HUD.
 
+The Tactical commander map has a larger cartographic display, a distinct muted
+palette, a quiet unnumbered plotting grid and an original-state LOCAL/OVERVIEW
+indicator. Its full source raster remains authoritative, including small features
+and the exact current player-marker colour. Only existing boundaries receive a
+subpixel antialias band; roads, shorelines and contacts are never simplified or
+invented. Tactical menus, aligned instrument fields, registration corners and
+crew-station keycaps share the same olive/cream presentation. Restored retains
+its original theme and map rendering.
+
 Working if: every verified station uses its own 16:9 layout, all live source cells
 remain visible, unknown overlays return to full 4:3, and Restored removes the reflow.
 
