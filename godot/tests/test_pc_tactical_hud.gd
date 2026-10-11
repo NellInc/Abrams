@@ -95,8 +95,71 @@ func run() -> void:
 	display.set_hud_frame(plate_packet,{"name":"START"})
 	check(display._wide_station==0,"program transition clears wide layout")
 	check(display.set_hud_style("restored") and display.display.material==null,"Restored removes shader")
+	var args:=OS.get_cmdline_user_args()
+	if "--station-fixtures" in args:
+		station_instruments(display,args[args.find("--station-fixtures")+1])
 	menu.free()
 	display.free()
 	print("PC_TACTICAL_HUD: %d checks, %d errors"%[checks,errors.size()])
 	for error in errors: printerr(error)
 	quit(0 if errors.is_empty() else 1)
+
+func station_instruments(display: Control, prefix: String) -> void:
+	var repo:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	var frame: Control=display.tandem_frame
+	display.tactical_chrome.instruments.load_sources(repo)
+	check(frame.load_genesis_art(repo),"instrument fixture art loaded")
+	check(frame.typography.load_sources(repo.path_join("GAME")),"instrument fixture fonts loaded")
+	display.set_hud_style("tactical")
+	for item in [["gunner",1,5],["commander",2,4],["driver",4,1],["status",5,3]]:
+		var path: String=prefix+"-"+item[0]+".json"
+		check(FileAccess.file_exists(path),"recorded station fixture present "+item[0])
+		if not FileAccess.file_exists(path): continue
+		var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
+		var source:=Image.create_from_data(320,200,false,Image.FORMAT_RGB8,PackedByteArray(data.rgb))
+		var packet: Dictionary=data.packet.presentation
+		var world:=ImageTexture.create_from_image(source)
+		check(frame.set_frame(source,packet,world),"paired station fixture "+item[0])
+		display.set_hud_frame(packet,{"name":"SIM"},frame._current_plate_mask)
+		var renderer: Control=display.tactical_chrome.instruments
+		print("TACTICAL_PANELS ",item[0]," active=",renderer.panels.map(func(p):return p.index)," rejected=",renderer.rejected)
+		check(renderer.panels.size()==item[2],"all source-proven instrument panels "+item[0])
+		if renderer.panels.is_empty(): continue
+		var panel: Dictionary=renderer.panels[0]
+		var at: Vector2i=panel.source.position
+		var tags: Image=frame._current_plate_mask.duplicate()
+		tags.set_pixelv(at,Color.BLACK)
+		frame._cached_source=source.duplicate()
+		frame._cached_source.set_pixelv(at,Color.MAGENTA)
+		renderer.set_frame(frame,item[1],Display.TACTICAL_LAYOUTS[item[1]],tags,display._hud_mask_data)
+		check(not renderer.panels.any(func(p):return p.index==panel.index),"unknown live pixel retains source panel "+item[0])
+		display.set_hud_style("restored")
+		check(renderer.panels.is_empty(),"Restored removes instrument overlay "+item[0])
+		display.set_hud_style("tactical")
+
+	# All 32 visible damage combinations use the same original RGB/tag catalog.
+	var renderer: Control=display.tactical_chrome.instruments
+	var mask:=Image.create_empty(320,200,false,Image.FORMAT_L8)
+	mask.fill(Color.WHITE)
+	for bits in 32:
+		var directory:=repo.path_join("artifacts/finish-20260928/status-damage-oracle-02")
+		var source:=Image.load_from_file(directory.path_join("state-%02d.png"%bits))
+		var tags:=Image.load_from_file(directory.path_join("tags-%02d.png"%bits))
+		if source==null or tags==null: check(false,"damage fixture available"); break
+		check(renderer._damage_state(source,mask,tags)==bits,"Tactical exact visible damage combination %d"%bits)
+		source.set_pixel(125,40,Color.MAGENTA)
+		check(renderer._damage_state(source,mask,tags)==-1,"unknown diagram retains original %d"%bits)
+	# PC-only operation reads no Genesis artwork and uses the same PC evidence.
+	var pc_display:=Display.new()
+	root.add_child(pc_display)
+	pc_display.tactical_chrome.instruments.load_sources(repo)
+	pc_display.tandem_frame.typography.load_sources(repo.path_join("GAME"))
+	pc_display.set_hud_style("tactical")
+	for item in [["gunner",5],["commander",4],["driver",1],["status",3]]:
+		var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(prefix+"-"+item[0]+".json"))
+		var source:=Image.create_from_data(320,200,false,Image.FORMAT_RGB8,PackedByteArray(data.rgb))
+		var packet: Dictionary=data.packet.presentation
+		pc_display.tandem_frame.set_frame(source,packet,ImageTexture.create_from_image(source))
+		pc_display.set_hud_frame(packet,{"name":"SIM"})
+		check(pc_display.tactical_chrome.instruments.panels.size()==item[1],"PC-only vector instruments "+item[0])
+	pc_display.free()

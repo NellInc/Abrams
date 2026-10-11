@@ -248,6 +248,10 @@ func _update_hud_material() -> void:
 	display.material=tactical_material if hud_style=="tactical" and _hud_mask_texture!=null else null
 	if display.material==null: _set_wide_station(0)
 	tactical_chrome.fallback_tactical=hud_style=="tactical" and display.material!=null and _wide_station==0
+	if _wide_station!=0 and display.material!=null:
+		tactical_chrome.instruments.set_frame(tandem_frame,_wide_station,TACTICAL_LAYOUTS[_wide_station],_panel_mask_texture.get_image(),_hud_mask_data)
+	else:
+		tactical_chrome.instruments.clear()
 	tactical_chrome.queue_redraw()
 	if tandem_viewport.render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
 		tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE

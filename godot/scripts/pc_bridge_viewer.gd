@@ -471,6 +471,7 @@ func _load_world_presentation(directory: String, args: Array) -> void:
 
 func _load_cockpit_presentation(directory: String) -> void:
 	invalidate_presentation_cache()
+	if play_display: play_display.tactical_chrome.instruments.load_sources(directory)
 	# A PC-only launch must never inspect or load the optional donor pack,
 	# even when those files happen to exist in a developer's checkout.
 	if pc_only: return

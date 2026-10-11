@@ -2,6 +2,11 @@ extends Control
 ## Range-inspired framing only. All mission values remain source pixels.
 var wide_station := 0
 var station := 0
+var instruments = preload("res://scripts/pc_tactical_instruments.gd").new()
+
+func _init() -> void:
+	add_child(instruments)
+	instruments.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 const STATIONS := {1:"GUNNER",2:"COMMANDER",3:"CUPOLA",4:"DRIVER",5:"SYSTEMS STATUS"}
 const ROLES := {1:"TACTICAL OPTIC",2:"COMMAND & NAVIGATION",3:"CUPOLA VIEW",4:"DRIVER VIEW",5:"VEHICLE SYSTEMS"}
 var fallback_tactical := false
@@ -53,6 +58,7 @@ func _draw() -> void:
 	elif wide_station==4:
 		draw_rect(Rect2(87,75,1426,709),RULE,false,2.0)
 	elif wide_station==5:
+		draw_string(mono,Vector2(1040,108),"STORES",HORIZONTAL_ALIGNMENT_LEFT,-1,16,MUTED)
 		draw_string(mono,Vector2(88,451),"SYSTEMS & DAMAGE",HORIZONTAL_ALIGNMENT_LEFT,-1,16,MUTED)
 	draw_line(Vector2(88,861),Vector2(1512,861),RULE,1.0,true)
 	draw_string(mono,Vector2(90,886),"F1  GUNNER     F2  COMMANDER     F3  CUPOLA     F4  DRIVER",HORIZONTAL_ALIGNMENT_LEFT,-1,14,MUTED)
