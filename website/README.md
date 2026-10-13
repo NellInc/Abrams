@@ -36,7 +36,7 @@ The download block links to the notarized macOS and native Windows/Linux alpha.4
 ROM are excluded from both Git and the download package.
 
 The native trailer player has captions, a descriptive transcript (including on-screen text and the end card) and a poster extracted at 2.70 seconds, between the opening captions, so no caption is burned into it. Poster URLs carry the poster file's own hash as their cache token; the movie and caption track keep the movie's hash.
-The accepted V8 movie is captioned directly; its matching optional English text track is off by default to avoid duplicate captions.
+The accepted V9 movie shows Tactical graphics and HUD, with the explosive impact ending one second earlier. It is captioned directly; its matching optional English text track is off by default to avoid duplicate captions.
 It does not autoplay. The movie preloads automatically, and playback starts with sound after the visitor presses Play. The native player retains its own download option; no separate trailer download link is shown.
 The download block links to the packaged Web remaster at `dist/play/remaster.html`. It requires the visitor’s supported original PC game folder and accepts a matching Genesis ROM optionally. The browser bundle includes neither original game and ships matching Web core source. Confirm live deployment from served bytes; see `docs/release-rights.md` for the owner's public-use decision and unresolved underlying rights.
 Canonical, Open Graph and Twitter metadata use the project URL; the sitemap
