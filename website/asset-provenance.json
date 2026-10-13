@@ -229,19 +229,19 @@
   "media": [
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.mp4",
-      "source": "artifacts/promo-20261002-v8/abrams-promo.mp4",
-      "output_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
-      "origin": "Accepted V8 final trailer, exact bytes. H.264/AAC, 1920x1080, 59.5seconds.",
-      "source_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
-      "duration_seconds": 59.5,
+      "source": "artifacts/promo-20261013-v9/abrams-promo.mp4",
+      "output_sha256": "8f7480d8a71e69dc7d7cf892606d6e1e817531e136e0a97d19092f6bd29afb9a",
+      "origin": "Accepted V9 trailer, exact bytes. Tactical graphics and HUD, shortened explosive impact shot. H.264/AAC,1920x1080,58.5seconds.",
+      "source_sha256": "8f7480d8a71e69dc7d7cf892606d6e1e817531e136e0a97d19092f6bd29afb9a",
+      "duration_seconds": 58.5,
       "captions_burned_in": true
     },
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.vtt",
-      "source": "artifacts/promo-20261002-v8/final-review/abrams-promo.vtt",
-      "output_sha256": "26f49be04cd0fcdd9b41bb75a1a5ca0a3bb0767f4d5047a61dd3119ef6c0961d",
-      "origin": "Actual final-audio captions for V8; optional native track, since the accepted movie already displays captions.",
-      "source_sha256": "26f49be04cd0fcdd9b41bb75a1a5ca0a3bb0767f4d5047a61dd3119ef6c0961d"
+      "source": "artifacts/promo-20261013-v9/abrams-promo.vtt",
+      "output_sha256": "401dddb3c541109af1062e3d1594f40a9559b2fe89f14b07acbe22efdb29fa0c",
+      "origin": "Actual final-audio captions remapped across the one-second speech-free cut; optional native track, since the movie already displays captions.",
+      "source_sha256": "401dddb3c541109af1062e3d1594f40a9559b2fe89f14b07acbe22efdb29fa0c"
     }
   ],
   "documents": [
