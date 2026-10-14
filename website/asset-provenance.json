@@ -163,11 +163,11 @@
     },
     {
       "file": "dist/assets/images/modern-cupola.webp",
-      "source": "artifacts/cupola-material-edges-20260929/scenario-frames-matched/scenario-0-cupola.png",
-      "source_sha256": "01efc2132d6f4c7a5bd59392e4fcbfb752e60aa5e2af0d787c581fa1f5f12cdf",
-      "output_sha256": "b610a7a822a1a07c948246b992dac07961cd451ab5973506264ad56811ca781b",
-      "origin": "Modern production-renderer replay capture; artifacts/cupola-material-edges-20260929/scenario-frames-matched/report.json.",
-      "conversion": "4:3 trim (x 28\u20131252, y 42\u2013960) removing the in-game mode-switch notice; no retouching. 1224x918, WebP quality 92."
+      "source": "artifacts/tactical-optics-20261013/cupola-candidate.png",
+      "source_sha256": "421f42823a85acb16c23b81701cc7d21a6a0bccf06cb1180725d0b31192dbf03",
+      "output_sha256": "21600af9ca264412c2f517127a8e26cf85edc9891a0911c554da97f549d68f0f",
+      "origin": "Tactical production-renderer replay screenshot from the accepted local optics build; artifacts/tactical-optics-20261013/pixel-comparison.json and delivery.json.",
+      "conversion": "Full 1440x811 composition preserved, including Tactical HUD. WebP quality92; existing gallery contain layout preserves its widescreen aspect."
     },
     {
       "file": "dist/assets/images/modern-driver.webp",
