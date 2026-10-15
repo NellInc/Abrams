@@ -7,6 +7,7 @@ var message: Label
 var play: Button
 var pc: Button
 var genesis: Button
+var recheck: Button
 var dialog: FileDialog
 var import_kind := ""
 var runtime := OS.get_environment("ABRAMS_PYTHON")
@@ -20,7 +21,7 @@ func _initialize() -> void:
     root.content_scale_size=Vector2i.ZERO
     root.content_scale_mode=Window.CONTENT_SCALE_MODE_DISABLED
     root.size = Vector2i(820, 700)
-    root.min_size = Vector2i(760, 660)
+    root.min_size = Vector2i(600, 420)
     root.close_requested.connect(_close)
     auto_accept_quit = false
     var background := ColorRect.new()
@@ -46,9 +47,18 @@ func _initialize() -> void:
         margin.add_theme_constant_override("margin_" + side, 28)
     root.add_child(margin)
     margin.theme=InterfaceTheme.build()
+    var shell := VBoxContainer.new()
+    shell.add_theme_constant_override("separation", 12)
+    margin.add_child(shell)
+    var scroll := ScrollContainer.new()
+    scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    scroll.follow_focus = true
+    shell.add_child(scroll)
     var column := VBoxContainer.new()
+    column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     column.add_theme_constant_override("separation", 12)
-    margin.add_child(column)
+    scroll.add_child(column)
     var header := HBoxContainer.new()
     header.add_theme_constant_override("separation",20)
     column.add_child(header)
@@ -78,10 +88,10 @@ func _initialize() -> void:
     _label(genesis_card,"Add an original Genesis ROM for its artwork. Import the PC game first. Neither original game is bundled.",15)
     genesis = _button(genesis_card, "Add Genesis ROM…", func(): _pick("genesis"))
     message = _label(column, "Checking local installation…", 16)
-    message.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    recheck = _button(shell, "Recheck installation", func(): _request(["--status"]))
     var row := HBoxContainer.new()
     row.add_theme_constant_override("separation", 12)
-    column.add_child(row)
+    shell.add_child(row)
     _button(row,"Keyboard controls",func(): _reference("keyboard-controls.html"))
     _button(row,"Field guide",func(): _reference("field-guide.html"))
     _button(row,"About",_about)
@@ -127,43 +137,83 @@ func _button(parent: Node, text: String, callback: Callable) -> Button:
     return button
 
 func _pick(kind: String) -> void:
+    if busy: return
     import_kind = kind
+    dialog.clear_filters()
+    if kind == "genesis":
+        dialog.add_filter("*.md, *.bin, *.gen", "Raw Genesis ROM (verified revision)")
     dialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR if kind == "pc" else FileDialog.FILE_MODE_OPEN_FILE
-    dialog.title = "Choose original PC folder" if kind == "pc" else "Choose original Genesis ROM"
+    dialog.title = "Choose extracted folder containing ABRAMS.COM and SIM.EXE" if kind == "pc" else "Choose original raw Genesis ROM (.md, .bin, .gen)"
     dialog.popup_centered()
+
+func _sync_controls() -> void:
+    play.disabled = busy or not installed
+    pc.disabled = busy
+    genesis.disabled = busy or not installed
+    recheck.disabled = busy
+    pc_state.text="Original PC game · Verified" if installed else "Original PC game · Required"
+    if not busy and root.gui_get_focus_owner() == null:
+        if installed: play.grab_focus.call_deferred()
+        else: pc.grab_focus.call_deferred()
+
+func _failed(text: String) -> void:
+    busy = false
+    installed = false
+    message.text = text
+    genesis_state.text = "Genesis presentation · Optional"
+    _sync_controls()
+    if "--setup-smoke" in OS.get_cmdline_user_args(): quit(1)
+
+func _runtime_available() -> bool:
+    return runtime != "" and FileAccess.file_exists(runtime)
+
+func _start_worker(work: Callable) -> Error:
+    return thread.start(work)
 
 func _request(arguments: Array) -> void:
     if busy: return
+    if not _runtime_available():
+        _failed("The bundled runtime is missing. Restore or reinstall the portable package, then choose Recheck installation. Your originals and saves are unchanged.")
+        return
     busy = true
-    play.disabled = true
-    pc.disabled = true
-    genesis.disabled = true
+    _sync_controls()
     message.text = "Game running. Close the game window to return here." if "--play" in arguments else "Verifying originals and installation…"
     thread = Thread.new()
-    thread.start(func():
+    var error := _start_worker(func():
         var output: Array = []
         var code := OS.execute(runtime, ["--launcher", "--invoke"] + arguments, output, true)
         _completed.call_deferred(code, "\n".join(output), "--play" in arguments))
+    if error != OK:
+        thread = null
+        _failed("Setup could not start verification (error %d). Close unused applications and choose Recheck installation." % error)
+
+func _valid_status(result: Variant) -> bool:
+    return result is Dictionary and typeof(result.get("pc_installed")) == TYPE_BOOL and typeof(result.get("genesis_enabled")) == TYPE_BOOL
 
 func _completed(code: int, output: String, was_play: bool) -> void:
-    thread.wait_to_finish()
+    if thread != null:
+        thread.wait_to_finish()
+        thread = null
     busy = false
-    pc.disabled = false
-    genesis.disabled = false
     if was_play and code == 0:
         _request(["--status"])
         return
     var result = JSON.parse_string(output)
+    installed = false
+    genesis_state.text = "Genesis presentation · Optional"
     if code != 0:
         message.text = str(result.get("error", output)) if result is Dictionary else output
-    elif result is Dictionary:
-        installed = bool(result.get("pc_installed", false))
+        if message.text.strip_edges() == "": message.text = "Setup failed. Choose Recheck installation to try again."
+    elif _valid_status(result):
+        installed = result.pc_installed
         message.text = "Ready. Your original files and saved profiles stay outside this installation." if installed else "Choose the supported original PC game folder to begin."
         if str(result.get("problem", "")) != "": message.text = str(result.problem)
+        genesis_state.text="Genesis presentation · Enabled" if installed and result.genesis_enabled else "Genesis presentation · Optional"
     else:
-        message.text = "Setup returned an unexpected response. Existing saves have been preserved."
+        message.text = "Setup returned an unexpected response. Choose Recheck installation. Existing saves have been preserved."
+    _sync_controls()
     if "--setup-smoke" in OS.get_cmdline_user_args():
-        if code != 0 or installed:
+        if code != 0 or installed or not _valid_status(result):
             quit(1)
         else:
             _about()
@@ -171,11 +221,6 @@ func _completed(code: int, output: String, was_play: bool) -> void:
             create_timer(0.1).timeout.connect(func():
                 print("PORTABLE_SETUP_SMOKE: PASS")
                 quit())
-    play.disabled = not installed
-    genesis.disabled = not installed
-    pc_state.text="Original PC game · Verified" if installed else "Original PC game · Required"
-    if result is Dictionary:
-        genesis_state.text="Genesis presentation · Enabled" if result.get("genesis_enabled",false) else "Genesis presentation · Optional"
 
 func _about() -> void:
     var about := AcceptDialog.new()
@@ -186,6 +231,8 @@ func _about() -> void:
     root.add_child(about)
     about.popup_centered(Vector2i(600, 420))
     about.confirmed.connect(about.queue_free)
+    about.close_requested.connect(about.queue_free)
+    about.canceled.connect(about.queue_free)
     var credits_button := about.add_button("Original game credits",false,"credits")
     credits_button.pressed.connect(func(): InterfaceTheme.show_reference(root,"credits"))
 

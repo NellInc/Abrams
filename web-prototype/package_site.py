@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import tempfile
 from pathlib import Path
 import shutil
+from build_remaster_assets import generated_lock
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'web-prototype'
@@ -42,11 +45,98 @@ def sha(path: Path) -> str:
     return digest.hexdigest()
 
 
-def main() -> None:
+def verify_owned(target: Path) -> bytes | None:
+    if not target.exists():
+        return None
+    if target.is_symlink():
+        raise SystemExit('Refusing to replace a symlinked browser site')
+    manifest_path = target / 'BUNDLE.json'
+    if not manifest_path.is_file():
+        raise SystemExit('Refusing to replace an unowned browser site directory')
+    raw = manifest_path.read_bytes()
+    previous = json.loads(raw)
+    records = previous.get('files', {})
+    actual = {p.relative_to(target).as_posix() for p in target.rglob('*') if p.is_file()}
+    if previous.get('schema') != 1 or not isinstance(records, dict) or set(records) | {'BUNDLE.json'} != actual or any(p.is_symlink() for p in target.rglob('*')):
+        raise SystemExit('Refusing to replace changed browser site files')
+    for name, row in records.items():
+        path = target / name
+        if not isinstance(row, dict) or path.stat().st_size != row.get('bytes') or sha(path) != row.get('sha256'):
+            raise SystemExit(f'Refusing to replace changed browser site file: {name}')
+    return raw
+
+
+def install_bundle(inputs: dict[str, Path], target: Path, expected: dict | None = None) -> dict:
+    # Build in a sibling temporary directory before replacing the accepted bundle.
+    # A copy/space/hash failure leaves it untouched; a failed rename restores it.
+    target.parent.mkdir(parents=True, exist_ok=True)
+    previous_manifest = verify_owned(target)
+    for name in inputs:
+        if not re.fullmatch(r'[A-Za-z0-9_./-]+', name) or any(p in ('', '.', '..') for p in name.split('/')) or name == 'BUNDLE.json':
+            raise SystemExit(f'Unsafe browser bundle path: {name}')
+    temporary = Path(tempfile.mkdtemp(prefix='.abrams-play-', dir=target.parent))
+    retain_backup = False
+    try:
+        staging = temporary / 'candidate'
+        backup = temporary / 'previous'
+        staging.mkdir()
+        records = {}
+        for name, path in sorted(inputs.items()):
+            destination = staging / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            identity = path.stat()
+            shutil.copy2(path, destination)
+            after = path.stat()
+            if (identity.st_ino, identity.st_size, identity.st_mtime_ns) != (after.st_ino, after.st_size, after.st_mtime_ns):
+                raise SystemExit(f'Browser input changed during packaging: {name}')
+            records[name] = {'bytes': destination.stat().st_size, 'sha256': sha(destination)}
+        for name, wanted in (expected or {}).items():
+            if name not in records or not isinstance(wanted, dict) or any(records[name].get(key) != value for key, value in wanted.items()):
+                raise SystemExit(f'Browser input differs from its build manifest: {name}')
+        (staging / 'BUNDLE.json').write_text(json.dumps({
+            'schema': 1, 'original_pc_files_included': False,
+            'files': records}, indent=2, sort_keys=True) + '\n')
+        # Recheck ownership immediately before the swap, including all file hashes.
+        if verify_owned(target) != previous_manifest:
+            raise SystemExit('Browser site changed during packaging; previous build retained')
+        moved = False
+        if previous_manifest is not None:
+            target.replace(backup)
+            moved = True
+        try:
+            staging.replace(target)
+        except BaseException:
+            if moved:
+                try:
+                    backup.replace(target)
+                except BaseException as recovery_error:
+                    retain_backup = True
+                    raise RuntimeError(f'Browser bundle replacement failed; accepted build retained at {backup}') from recovery_error
+            raise
+    finally:
+        if not retain_backup:
+            shutil.rmtree(temporary)
+    return records
+
+
+def _main() -> None:
     generated = SOURCE / '.generated'
     asset_manifest = json.loads((generated / 'remaster-assets.json').read_text())
-    if asset_manifest.get('schema') != 2:
+    if asset_manifest.get('schema') != 2 or not isinstance(asset_manifest.get('parts'), list):
         raise SystemExit('Build the remaster assets before packaging the site')
+    names = [part.get('name') for part in asset_manifest['parts'] if isinstance(part, dict)]
+    if not names or len(names) != len(asset_manifest['parts']) or any(not isinstance(name, str) or not re.fullmatch(r'remaster-assets-\d{2}\.zip', name) for name in names) or len(set(names)) != len(names):
+        raise SystemExit('Unsafe remaster asset part manifest')
+    expected = {}
+    for part in asset_manifest['parts']:
+        if type(part.get('bytes')) is not int or not 22 <= part['bytes'] <= 48_000_000 or not isinstance(part.get('sha256'), str) or not re.fullmatch(r'[0-9a-f]{64}', part['sha256']):
+            raise SystemExit('Invalid remaster asset part identity')
+        expected['.generated/' + part['name']] = {'bytes': part['bytes'], 'sha256': part['sha256']}
+    build_info = json.loads((generated / 'build-info.json').read_text())
+    identity = build_info.get('wasm_sha256')
+    if not isinstance(identity, str) or not re.fullmatch(r'[0-9a-f]{64}', identity):
+        raise SystemExit('Invalid Web core build identity')
+    expected['.generated/core.wasm'] = {'sha256': identity}
     inputs = {name: SOURCE / name for name in APP}
     inputs.update({'.generated/' + name: generated / name for name in RUNTIME})
     inputs.update({'.generated/' + part['name']: generated / part['name']
@@ -63,27 +153,15 @@ def main() -> None:
     for name, path in inputs.items():
         if not path.is_file() or path.is_symlink() or path.stat().st_size >= 100_000_000:
             raise SystemExit(f'Unsafe or missing browser publication file: {name}')
-    if TARGET.exists():
-        manifest_path = TARGET / 'BUNDLE.json'
-        if not manifest_path.is_file():
-            raise SystemExit('Refusing to replace an unowned browser site directory')
-        previous = json.loads(manifest_path.read_text())
-        allowed = set(previous.get('files', {})) | {'BUNDLE.json'}
-        actual = {p.relative_to(TARGET).as_posix() for p in TARGET.rglob('*') if p.is_file()}
-        if previous.get('schema') != 1 or allowed != actual or any(p.is_symlink() for p in TARGET.rglob('*')):
-            raise SystemExit('Refusing to replace changed browser site files')
-        shutil.rmtree(TARGET)
-    TARGET.mkdir(parents=True)
-    records = {}
-    for name, path in sorted(inputs.items()):
-        destination = TARGET / name
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, destination)
-        records[name] = {'bytes': destination.stat().st_size, 'sha256': sha(destination)}
-    (TARGET / 'BUNDLE.json').write_text(json.dumps({
-        'schema': 1, 'original_pc_files_included': False,
-        'files': records}, indent=2, sort_keys=True) + '\n')
+    records = install_bundle(inputs, TARGET, expected)
     print(f'Packaged {len(records)} browser files ({sum(r["bytes"] for r in records.values())} bytes) under website/dist/play')
+
+
+def main() -> None:
+    # Snapshot readers cooperate with export/asset promotion; never package a
+    # partially replaced generated set. The accepted website swap stays intact.
+    with generated_lock(SOURCE / '.generated', exclusive=False):
+        _main()
 
 
 if __name__ == '__main__':

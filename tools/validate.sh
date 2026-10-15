@@ -179,7 +179,10 @@ run_check pc_optional_genesis ./tools/godot.sh --headless --script res://tests/t
 run_check pc_play_menu ./tools/godot.sh --headless --script res://tests/test_pc_play_menu.gd
 run_check pc_render_quality ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_render_quality.gd
 run_check pc_play_shortcuts ./tools/godot.sh --headless --script res://tests/test_pc_play_shortcuts.gd
+run_check pc_bridge_transport ./tools/godot.sh --headless --script res://tests/test_pc_bridge_transport.gd
 run_check pc_interface_reference ./tools/godot.sh --headless --script res://tests/test_pc_interface_reference.gd
+run_check pc_reference_search ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_reference_search.gd
+run_check portable_setup ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_portable_setup.gd
 run_check pc_graphics_modes ./tools/godot.sh --headless --script res://tests/test_pc_graphics_modes.gd
 run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_draw_pass.gd
 run_check pc_modern ./tools/godot.sh --headless --quit-after 3000 --script res://tests/test_pc_modern.gd

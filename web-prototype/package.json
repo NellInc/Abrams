@@ -1,4 +1,7 @@
 {
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "test": "node --test test_checkpoint_lifecycle.mjs test_asset_contracts.mjs test_remaster_shell.mjs test_audio_shutdown.mjs && python3 test_package_site.py -q && python3 test_build_remaster.py -q"
+  }
 }

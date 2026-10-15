@@ -2,6 +2,7 @@ shader_type canvas_item;
 render_mode unshaded;
 
 uniform bool world_enabled = false;
+uniform bool ega_upscaled = false;
 uniform sampler2D world_texture : filter_nearest, repeat_disable;
 uniform sampler2D ui_mask : filter_nearest, repeat_disable;
 uniform vec4 camera_rect; // source-pixel x, y, width, height
@@ -16,6 +17,7 @@ uniform sampler2D driver_assembly_mask : filter_nearest, repeat_disable;
 uniform sampler2D plate_mask : filter_nearest, repeat_disable;
 uniform bool genesis_art = false;
 uniform bool modern_armour_palette = false;
+uniform bool tactical_armour = false;
 uniform float gunner_pixel_aspect = 1.0;
 uniform bool cupola_rail_verified = false;
 uniform bool status_art_enabled = false;
@@ -139,6 +141,12 @@ vec4 armour_paint(vec4 art) {
 	// Monotonic shading retains every illustrated bevel and weathered highlight.
 	vec3 olive = luminance*vec3(0.65,0.70,0.46);
 	art.rgb = mix(art.rgb,olive,paint);
+	if (tactical_armour) {
+		// A smooth matte paint ramp softens black deck seams. Contour-proven
+		// hardware retains its original silver and dark fittings.
+		vec3 finish=vec3(0.065,0.095,0.065)+luminance*vec3(0.63,0.70,0.43);
+		art.rgb=mix(finish,art.rgb,metal);
+	}
 	return art;
 }
 
@@ -251,6 +259,8 @@ vec2 gunner_fastener(vec2 p, vec2 donor) {
 	return donor;
 }
 
+// Palette-preserving Scale3x neighbourhood rules, described at
+// https://www.scale2x.it/algorithm . Select source texels, never blend colours.
 void fragment() {
 	vec2 pixel = UV * vec2(320.0, 200.0);
 	bool inside = all(greaterThanEqual(pixel, camera_rect.xy))

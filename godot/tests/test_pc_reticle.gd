@@ -48,6 +48,18 @@ func capture() -> Image:
 	return viewport.get_texture().get_image()
 func contracts() -> void:
 	var world := ImageTexture.create_from_image(fixture()[0])
+	# This isolated frame test has no asset importer. Mode availability itself
+	# is checked by the play-display suite and the real imported browser run.
+	frame.modern_available=true
+	check(frame.set_graphics_mode("tactical"),"Tactical frame mode accepted")
+	bind(fixture(),world)
+	check(frame.reticle_art.material.get_shader_parameter("tactical"),"Tactical sight skin enabled")
+	check(frame.reticle_art.ink.size()==106,"Tactical sight preserves exact original footprint")
+	check(frame.set_graphics_mode("modern"),"Modernized frame mode accepted")
+	bind(fixture(),world)
+	check(not frame.reticle_art.material.get_shader_parameter("tactical"),"Modernized sight skin unchanged")
+	frame.set_graphics_mode("upscaled")
+	frame.modern_available=false
 	for center in range(-21,131):
 		var data := fixture(center,center&1)
 		check(bind(data,world),"world accepted")

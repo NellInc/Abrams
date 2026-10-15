@@ -33,12 +33,12 @@
       "sha256": "ad3c35ad0facf487c618204bd98db543034fc95224eadc7f08c7a9ff38d5b3b5"
     },
     ".generated/godot/index.js": {
-      "bytes": 279815,
-      "sha256": "33c94cb3175f3333b82e2a3be5e8e86f77986f0aa2042b1631f6367a4e5bb6ba"
+      "bytes": 280010,
+      "sha256": "efb917219f345230545e5fe56ed0df313418e604e1ce42bd5cc3789c4b6bd37f"
     },
     ".generated/godot/index.pck": {
-      "bytes": 13390272,
-      "sha256": "649dd722ed711cc588cdbb2d6347913f3c25011e11e4a4e2a5d37c63f8025bd5"
+      "bytes": 16258400,
+      "sha256": "531f393ce1299b699559fe4090d1e2747288eff56ff8b55e1e8195b1f82d06b8"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
@@ -69,8 +69,8 @@
       "sha256": "831fd1e535084b972f87c6a35275de3d236efd5166f5e77ce89497710635e73c"
     },
     ".generated/python-source.zip": {
-      "bytes": 403287,
-      "sha256": "120be0101616094e50e275b5f2fb22a7d026f685efffe089fbf6372920939e25"
+      "bytes": 403601,
+      "sha256": "ec54d9761df90a761c3d9a88a378fc887b0bf8690ecb0af445c1982368968c3c"
     },
     ".generated/remaster-assets-00.zip": {
       "bytes": 47737278,
@@ -85,12 +85,16 @@
       "sha256": "6a9147a8db28c73de6af9e4dc1fbb8466862c57e7885fec240bcc3c657a81955"
     },
     ".generated/remaster-assets-03.zip": {
-      "bytes": 3841785,
-      "sha256": "67b5fe13e0b27dd0f1482c7e795284c4e416686f4fb01097da0131b2746621c3"
+      "bytes": 47029357,
+      "sha256": "c5c6b11486d44c037d9da6850573b32931573b3924895d189c2566afe4def64f"
+    },
+    ".generated/remaster-assets-04.zip": {
+      "bytes": 6109694,
+      "sha256": "2504b2da84646962e80cd3171fc76c933d2e399a03bf29c61af460632f048d6d"
     },
     ".generated/remaster-assets.json": {
-      "bytes": 43293,
-      "sha256": "bb16b7e35310fbeefe7afb9055a8a3108ad66f7e2e026b098b06efb94644b6b1"
+      "bytes": 45764,
+      "sha256": "9bc5f0ca4da566d437b59d8eb64b2ed308d1e0d5d8f29101aa246ef645be54c4"
     },
     ".generated/web-core-corresponding-source.tar.gz": {
       "bytes": 2308137,
@@ -133,12 +137,12 @@
       "sha256": "a3260b525c579d790fff8f5cbc9058e9fbadf2759dc959dfe2c9051e53708dc4"
     },
     "bridge_host.mjs": {
-      "bytes": 2988,
-      "sha256": "bdcea689ea2b27a8ea664f175841ec355b697ba25aba2a906955af271e6b7475"
+      "bytes": 5562,
+      "sha256": "f7f26aac47341e5d6d341704ffc53a6d5bfa829617bc940c24727d477ac5e9b3"
     },
     "bridge_worker.mjs": {
-      "bytes": 12527,
-      "sha256": "f2e69b85b214a24a8a4af25793b5e032662b00f15d4efddc562a24dcc0a36e87"
+      "bytes": 15316,
+      "sha256": "215f91b10fb9a51624c3a437439f74fd782fa40a741d4793b3d9b76ac04754bd"
     },
     "browser_observer.mjs": {
       "bytes": 2345,
@@ -153,28 +157,28 @@
       "sha256": "8d8db41491e12ca8b1bdf21d1799145ed887560c79828dcc4636eec1656004ac"
     },
     "remaster.html": {
-      "bytes": 5080,
-      "sha256": "991518a8348e91d34aa0287d9594dfd29320223d2b516bdf0993b25de2e261f6"
+      "bytes": 11902,
+      "sha256": "28a30f42ea82dab82f49bcdaa99849caedfa271e482ecd2ab83c4d965243b626"
     },
     "remaster.mjs": {
-      "bytes": 9157,
-      "sha256": "70b2a0707dc11910113cb9200fa9577a342ae1af30a4ae825119308e9a081a96"
+      "bytes": 21194,
+      "sha256": "4a67e8fd61bfcf3774258c640026b19d67bb6bfac78737de22669e800f3c1f94"
     },
     "remaster.service.worker.js": {
       "bytes": 802,
       "sha256": "c83840a3ec426ac8bb0668e04a3f468e423e6e729a60bb358dca5492eefe1682"
     },
     "remaster_assets.mjs": {
-      "bytes": 2984,
-      "sha256": "0fa158d6c96a3dc4b2c5d8a7eed38c630fc3c27616a082d11397ac35219173bf"
+      "bytes": 6607,
+      "sha256": "62f3d0052fe117cd18d8328075ce6279cf30abcf8eca127ce65325383df79171"
     },
     "style.css": {
       "bytes": 4465,
       "sha256": "c62ad92fac30ca4e3bd9ce211edb6565e3c5a883dd866bff1ff2a8dca4f0d9e9"
     },
     "zip_store.mjs": {
-      "bytes": 4601,
-      "sha256": "801ce79b950ffcbb90d2ae15c52d34b26b14ed4c89c5b31d2a7f983538b1912d"
+      "bytes": 6324,
+      "sha256": "864ebb0dfb761758dfa69af8f9fe05cad849eabc655af3a57bc0e43f020b2c01"
     }
   },
   "original_pc_files_included": false,

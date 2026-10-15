@@ -84,12 +84,112 @@ func _run() -> void:
 	color_mask.fill(Color.WHITE)
 	check(not composite.set_frame(source,packet(color_mask,clip),world), "colour mask accepted")
 	var args := OS.get_cmdline_user_args()
+	if native and "--ega-upscale" in args: await _ega_upscale_contract(args)
 	if native and "--fixture" in args:
 		await _fixtures(args[args.find("--fixture")+1], args[args.find("--output")+1] if "--output" in args else "")
 	for failure in failures: printerr("FAIL: " + failure)
 	print("PC_TANDEM_FRAME: %s; %d exact RGB checks; %d live UI pixels; %d composited world pixels; %d original reticle-over-sprite pixels" % [
 		"PASS" if failures.is_empty() else "FAIL", pixels_checked, ui_pixels_checked, world_pixels_checked, reticle_pixels_checked])
 	quit(0 if failures.is_empty() else 1)
+
+func _scale3x_pixel(source: Image, at: Vector2i, part: Vector2i) -> Color:
+	var around: Array[Color]=[]
+	for y in range(-1,2):
+		for x in range(-1,2): around.append(source.get_pixel(clampi(at.x+x,0,source.get_width()-1),clampi(at.y+y,0,source.get_height()-1)))
+	var a:=around[0];var b:=around[1];var c:=around[2]
+	var d:=around[3];var e:=around[4];var f:=around[5]
+	var g:=around[6];var h:=around[7];var i:=around[8]
+	if b==h or d==f or part==Vector2i(1,1): return e
+	match part.y*3+part.x:
+		0: return d if d==b else e
+		1: return b if (d==b and e!=c) or (b==f and e!=a) else e
+		2: return f if b==f else e
+		3: return d if (d==b and e!=g) or (d==h and e!=a) else e
+		5: return f if (b==f and e!=i) or (h==f and e!=c) else e
+		6: return d if d==h else e
+		7: return h if (d==h and e!=i) or (h==f and e!=g) else e
+		8: return f if h==f else e
+	return e
+
+func _ega_upscale_contract(args: Array) -> void:
+	viewport.size=Vector2i(960,600)
+	composite.size=viewport.size
+	var source:=Image.create(320,200,false,Image.FORMAT_RGB8)
+	source.fill(Color8(170,85,0))
+	var colours: Array[Color]=[Color.BLACK,Color.WHITE,Color8(85,85,85),Color8(170,170,170),Color8(170,85,0),Color8(0,170,0)]
+	for y in 16:
+		for x in 16: source.set_pixel(x,y,colours[(x*7+y*3+x*y)%colours.size()])
+	source.set_pixel(319,199,Color.BLACK)
+	var original:=source.get_data()
+	check(composite.set_graphics_mode("ega_upscaled"),"original-palette upscale requires no donor or modern assets")
+	check(composite.set_frame(source,{},null),"EGA upscale works without a paired camera or UI attribution")
+	var scaled:=await snapshot()
+	var changed:=0
+	for y in 48:
+		for x in 48:
+			pixels_checked+=1
+			var at:=Vector2i(x/3,y/3);var part:=Vector2i(x%3,y%3)
+			var actual:=scaled.get_pixel(x,y)
+			check(actual==_scale3x_pixel(source,at,part),"Scale3x neighbourhood oracle")
+			if actual!=source.get_pixelv(at): changed+=1
+	check(changed>50,"edge-aware upscaling must visibly refine pixel corners")
+	check(scaled.get_pixel(500,400)==Color8(170,85,0),"original dark brown colour remains exact")
+	check(scaled.get_pixel(959,599)==Color.BLACK,"source border is clamped rather than repeated")
+	check(not composite.world_enabled and not composite.frontend_art.visible and not composite.instrument_art.visible,"EGA upscale excludes generated art, instruments and world replacement")
+	check(composite.set_graphics_mode("ega"),"plain EGA restores")
+	var ega:=await snapshot()
+	var expected:=source.duplicate();expected.resize(960,600,Image.INTERPOLATE_NEAREST);expected.convert(ega.get_format())
+	check(ega.get_data()==expected.get_data(),"plain EGA retains exact nearest output")
+	check(composite.set_graphics_mode("ega_upscaled"),"EGA upscale returns")
+	check((await snapshot()).get_data()==scaled.get_data(),"EGA upscale returns without stale overlays")
+	check(source.get_data()==original,"upscaling never changes original frame bytes")
+	if "--pc-round-source" not in args: return
+	var pc:=Image.load_from_file(args[args.find("--pc-round-source")+1])
+	check(pc!=null,"PC ammunition source available")
+	if pc==null: return
+	var art=composite.instrument_art
+	art.source_plate=pc
+	art.donor=ImageTexture.create_from_image(Image.create(1586,992,false,Image.FORMAT_RGB8))
+	art._load_pc_rounds()
+	if "--pc-round-white-fallback" in args:
+		# Make a backend's white unbound-sampler fallback deterministic. Each
+		# shader is test-local; the production material must bind its crop.
+		var white:=Image.create(1,1,false,Image.FORMAT_RGB8)
+		white.fill(Color.WHITE)
+		for icon: TextureRect in art.pc_rounds.values():
+			var isolated: Shader=icon.material.shader.duplicate()
+			isolated.set_default_texture_parameter("ega_source",ImageTexture.create_from_image(white))
+			icon.material.shader=isolated
+	var ui:=Image.create(320,200,false,Image.FORMAT_L8);ui.fill(Color.WHITE)
+	var tags:=Image.create(320,200,false,Image.FORMAT_L8);tags.fill(Color8(1,1,1))
+	composite.texture=ImageTexture.create_from_image(pc)
+	composite.material=null
+	art.show();art.set_frame(pc,ui,tags)
+	var rounds:=await snapshot()
+	for item in art.CELLS.slice(0,3):
+		check(art.pc_rounds[item.name].visible,"verified PC round is visible: "+item.name)
+		check(art.pc_rounds[item.name].material.get_shader_parameter("ega_source")==art.pc_rounds[item.name].texture,"round's explicit source sampler matches its crop: "+item.name)
+		var crop:=pc.get_region(item.source)
+		for y in item.source.size.y*3:
+			for x in item.source.size.x*3:
+				pixels_checked+=1
+				check(rounds.get_pixel(item.source.position.x*3+x,item.source.position.y*3+y)==_scale3x_pixel(crop,Vector2i(x/3,y/3),Vector2i(x%3,y%3)),"thin PC round matches source contour and palette")
+	var preceding: Texture2D=art.pc_rounds.heat_icon.texture
+	art._load_pc_rounds()
+	check(art.pc_rounds.heat_icon.texture!=preceding,"reloading creates a fresh original crop")
+	for icon: TextureRect in art.pc_rounds.values():
+		check(icon.material.get_shader_parameter("ega_source")==icon.texture,"reused round control binds its freshly loaded crop")
+	art.set_frame(pc,ui,tags)
+	check(rounds.get_data()==(await snapshot()).get_data(),"reloaded PC rounds render identically")
+	art.pc_rounds_enabled=false;art.set_frame(pc,ui,tags)
+	check(art.pc_rounds.values().all(func(icon):return not icon.visible),"Tactical keeps its previous donor path")
+	art.pc_rounds_enabled=true
+	var damaged:=pc.duplicate();damaged.set_pixel(241,145,Color.MAGENTA)
+	art.set_frame(damaged,ui,tags)
+	check(not art.pc_rounds.heat_icon.visible,"changed original cell cannot authorize a replacement")
+	tags.fill(Color.BLACK);art.set_frame(pc,ui,tags)
+	check(art.pc_rounds.values().all(func(icon):return not icon.visible),"unowned rounds remain original")
+	print("PC_EGA_UPSCALE: palette, contours, borders, switchback and PC ammunition guards "+("passed" if failures.is_empty() else "failed"))
 
 func _fixtures(path: String, output: String) -> void:
 	var report = JSON.parse_string(FileAccess.get_file_as_string(path))

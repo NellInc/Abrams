@@ -22,6 +22,13 @@ class Links(HTMLParser):
 
 
 class PlayerReference(unittest.TestCase):
+    def test_remaster_reference_tracks_current_modes_and_browser_shortcuts(self):
+        source=(ROOT/'tools/build_player_reference.py').read_text()
+        for name in ['EGA Upscaled', 'Genesis Upscaled', 'Modern (Modernized)', 'Tactical', 'HUD Style', 'Restore full-quality defaults']:
+            self.assertIn(name,source)
+        self.assertIn('Windows, Linux and the browser use Control + Alt',source)
+        for row in DATA['remaster_controls'][:4]:self.assertIn('browser use Ctrl+Alt',row['description'])
+
     def test_manual_inventory_and_source_fingerprint(self):
         self.assertEqual(len(DATA['missions']), 8)
         self.assertEqual(len(DATA['vehicles']), 16)

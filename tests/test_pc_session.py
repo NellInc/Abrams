@@ -185,5 +185,26 @@ class SessionTests(unittest.TestCase):
         self.assertIsNotNone(session.sample()['presentation']['draw_pass'])
         session.close()
 
+    def test_opt_in_loop_diagnostic_cannot_replace_paired_state_or_survive_program_exit(self):
+        core,session,_ = self.make_session()
+        session.step(1)
+        paired = session.sample()
+        self.assertNotIn('loop_diagnostic',paired)
+        session.loop_diagnostics = True
+        session.collector.loop_diagnostic = {'state':{'station':'driver'},'sequence':5}
+        sample = session.sample()
+        self.assertEqual(sample['state'],paired['state'])
+        self.assertEqual(sample['presentation'],paired['presentation'])
+        self.assertEqual(sample['loop_diagnostic']['render_epoch'],1)
+        core.ram = program_ram('END')  # displayed SIM buffer still precedes current program
+        self.assertIsNone(session.sample()['loop_diagnostic'])
+        session.step(1)
+        self.assertIsNone(session.sample()['loop_diagnostic'])
+        core.ram = program_ram('SIM'); session.step(1)
+        session.collector.loop_diagnostic = None
+        self.assertIsNone(session.sample()['loop_diagnostic'])
+        self.assertEqual(session.sample()['render_epoch'],2)
+        session.close()
+
 
 if __name__ == '__main__': unittest.main()

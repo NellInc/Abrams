@@ -66,7 +66,7 @@ void fragment() {
 		}
 	}
 	if (!mapped) {
-		vec3 housing=mix(vec3(0.039,0.061,0.047),vec3(0.080,0.112,0.083),smoothstep(0.74,1.0,UV.y));
+		vec3 housing=mix(vec3(0.027,0.050,0.041),vec3(0.063,0.099,0.077),smoothstep(0.74,1.0,UV.y));
 		float hairline=1.0-smoothstep(0.0,0.0015,abs(UV.y-0.962));
 		COLOR=vec4(mix(housing,vec3(0.37,0.49,0.34),hairline*0.55),1.0);
 	} else {

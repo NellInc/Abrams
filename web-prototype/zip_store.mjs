@@ -1,6 +1,7 @@
 // Recreate tools/package_setup.py's exact, uncompressed original-game ZIP.
 // Source files are read by the browser and never sent to a server.
 import { buildClaimCatalog } from './claim_catalog.mjs';
+const MAX_ORIGINAL_BYTES = 1024 * 1024;
 const text = new TextEncoder();
 const DOS_TIME = (22 << 11) | (55 << 5) | (24 >> 1);
 const DOS_DATE = ((2026 - 1980) << 9) | (9 << 5) | 26;
@@ -82,15 +83,38 @@ export function buildStoredZip(entries) {
   return zip;
 }
 
-export async function packOriginals(files, manifest) {
+export async function packOriginals(files, manifest, progress = () => {}) {
+  if (!manifest || manifest.schema !== 1 || !Array.isArray(manifest.files) ||
+      manifest.files.length !== 68)
+    throw new Error('Unsupported original PC manifest');
+  const names = new Set();
+  for (const row of manifest.files) {
+    if (!row || typeof row.name !== 'string' || !/^[A-Z0-9_]{1,8}(\.[A-Z0-9_]{1,3})?$/.test(row.name) || row.name === 'DOSBOX.CONF' ||
+        names.has(row.name) || typeof row.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(row.sha256) ||
+        (row.bytes !== undefined && (!Number.isSafeInteger(row.bytes) || row.bytes < 0 || row.bytes > MAX_ORIGINAL_BYTES)))
+      throw new Error('Invalid original PC manifest entry');
+    names.add(row.name);
+  }
   const selected = new Map();
   for (const file of files) {
     const path = file.webkitRelativePath || file.name;
+    if (typeof path !== 'string' || path.includes('\\')) throw new Error('Invalid original filename');
     const parts = path.split('/');
     if (parts.length > 2 || parts.some(part => !part || part === '.' || part === '..')) continue;
     const name = parts.at(-1).toUpperCase();
+    // Only required DOS basenames participate. Unrelated folder extras are
+    // ignored without reading their contents, as in the desktop importer.
+    if (!names.has(name)) continue;
     if (selected.has(name)) throw new Error(`Ambiguous original filename: ${name}`);
     selected.set(name, file);
+  }
+  // Bound every selected required file before reading even the first one.
+  for (const record of manifest.files) {
+    const file = selected.get(record.name);
+    if (!file) throw new Error(`Missing original PC file: ${record.name}`);
+    if (!Number.isSafeInteger(file.size) || file.size < 0 || file.size > MAX_ORIGINAL_BYTES ||
+        (record.bytes !== undefined && file.size !== record.bytes))
+      throw new Error(`Wrong size for original PC file: ${record.name}`);
   }
   const entries = [];
   const originalBytes = new Map();
@@ -98,14 +122,17 @@ export async function packOriginals(files, manifest) {
     const file = selected.get(record.name.toUpperCase());
     if (!file) throw new Error(`Missing original PC file: ${record.name}`);
     const bytes = new Uint8Array(await file.arrayBuffer());
-    if (await sha256(bytes) !== record.sha256)
+    if (bytes.byteLength !== file.size || await sha256(bytes) !== record.sha256)
       throw new Error(`Unsupported or changed original PC file: ${record.name}`);
     entries.push([record.name, bytes]);
     originalBytes.set(record.name.toUpperCase(), bytes);
+    if (entries.length < manifest.files.length) progress(entries.length, manifest.files.length);
   }
   entries.push(['dosbox.conf', text.encode(CONFIG)]);
   const zip = buildStoredZip(entries);
   if (await sha256(zip) !== CONTENT_SHA)
     throw new Error('Original-game ZIP did not match the pinned content');
-  return { zip, catalog: buildClaimCatalog(originalBytes), originalBytes };
+  const catalog = buildClaimCatalog(originalBytes);
+  progress(manifest.files.length, manifest.files.length);
+  return { zip, catalog, originalBytes };
 }

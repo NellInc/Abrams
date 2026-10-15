@@ -54,6 +54,27 @@ class PcBridgeTests(unittest.TestCase):
         struct.pack_into("<4h", ram, ds + 0x79B4, 80, 10, 6, 18)
         return ram, ds, body, turret
 
+    def test_loop_end_diagnostic_pins_active_program_registers_and_relocated_code(self):
+        if self.reader is None: self.skipTest('local original SIM required')
+        from tests.test_pc_session import program_ram
+        ram, _, _, _ = self.fixture()
+        ram[:0x1ED0] = program_ram()[:0x1ED0]
+        code = bytearray(self.reader.loop_end_instructions)
+        for offset in (0xE6C,0xE80):
+            value = struct.unpack_from('<H',code,offset-0xE54)[0]
+            struct.pack_into('<H',code,offset-0xE54,value+0x1ED)
+        ram[0x1ED0+0xE54:0x1ED0+0xE87] = code
+        registers = [0]*8+[0x1ED,0x1ED+0x19E0,0,0]
+        before = bytes(ram)
+        self.assertEqual(self.reader.read_loop_end(before,registers,0xE85),self.reader.read(before))
+        self.assertEqual(bytes(ram),before)
+        for address in (0xB30,0x1DC8,0x1ED0+0xE54,0x1ED0+0xE6C,0x1ED0+0xE80):
+            bad = bytearray(before); bad[address] ^= 1
+            with self.assertRaises(ValueError): self.reader.read_loop_end(bytes(bad),registers,0xE85)
+        for regs, ip, raw in ((registers,0xE62,before),(registers[:11],0xE85,before),
+                              (registers[:8]+[0,0,0,0],0xE85,before),(registers,0xE85,before[:-1])):
+            with self.assertRaises(ValueError): self.reader.read_loop_end(raw,regs,ip)
+
     def test_only_one_host_can_own_a_save_overlay_and_lock_releases(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'saves'

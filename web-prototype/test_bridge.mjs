@@ -19,6 +19,21 @@ globalThis.fetch = async (resource, init) => {
     return new Response(await readFile(fileURLToPath(url)), {status: 200});
   return realFetch(resource, init);
 };
+// Node has no IndexedDB. This explicit test-only adapter models transaction
+// acknowledgement; persistence across page/process restarts is a browser gate.
+const checkpointRows = new Map();
+globalThis.indexedDB = {open() {
+  const request = {};
+  request.result = {close() {}, transaction() {
+    const tx = {objectStore() { return {
+      get(slot) { const result = {}; queueMicrotask(() => { result.result = checkpointRows.get(slot); result.onsuccess?.(); tx.oncomplete?.(); }); return result; },
+      put(value, slot) { const result = {}; queueMicrotask(() => { checkpointRows.set(slot, structuredClone(value)); result.onsuccess?.(); tx.oncomplete?.(); }); return result; },
+    }; }};
+    return tx;
+  }};
+  queueMicrotask(() => request.onsuccess());
+  return request;
+}};
 const packets = [];
 globalThis.self = globalThis;
 globalThis.postMessage = message => packets.push(message);

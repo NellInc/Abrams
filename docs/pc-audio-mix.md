@@ -1,7 +1,7 @@
 # Presentation audio controls
 
 Play's **Audio** menu has five independent levels: master, sound effects, crew
-voices, engine/turret motors, and frontend music. Each offers Off and 10% steps through 100%.
+voices, engine/turret motors, and frontend music. Each offers Off and 10% steps through 100%. A saved or browser-selected level between those steps appears as one exact checked entry, removed when the level changes.
 Restore default mix returns the original four levels to 100% and music to 70%,
 preserving the authored gains (including the existing 0.65 overall gain).
 Frontend music plays only in source-qualified title, menu, briefing and debrief
@@ -39,6 +39,10 @@ acceptance explicitly selects its own artifact-local config file.
 
 The shared range audio base gains default to 1.0, preserving the separate
 calibration range. Source-dependent motor control remains in `pc_audio.gd`.
+
+## Browser mixer
+
+**More controls: audio and graphics quality** exposes the same five gains and shared **Restore default mix** operation. Saved integer levels between menu steps remain visible exactly. Settings warnings appear independently of checkpoint status. Original F5/pause and fast-forward mute retain priority, and resetting the mix never changes source event identities.
 
 ## Verification
 

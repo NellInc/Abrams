@@ -12,6 +12,32 @@ from tools.pc_bridge_host import lock_saves
 
 
 class PortableContracts(unittest.TestCase):
+    def test_fresh_setup_imports_assets_before_parse_and_blocks_on_failure(self):
+        import contextlib, io, subprocess, sys
+        from tools.standalone import portable_launcher
+        for fail in (False, True):
+            with self.subTest(fail=fail), tempfile.TemporaryDirectory() as temporary:
+                bundle=Path(temporary).resolve()/'portable';home=Path(temporary).resolve()/'profile'
+                calls=[]
+                def preflight(arguments, env, log):
+                    calls.append(arguments)
+                    self.assertEqual(log,home/'logs/setup.log')
+                    self.assertNotIn('PYTHONPATH',env)
+                    if fail:raise subprocess.SubprocessError('SCRIPT ERROR: importer failed')
+                with patch.object(portable_launcher,'verify'), \
+                     patch.object(sys,'argv',['launcher','--bundle',str(bundle)]), \
+                     patch.dict(os.environ,{'ABRAMS_DATA_HOME':str(home),'PYTHONPATH':'untrusted override'}), \
+                     patch.object(portable_launcher,'renderer_preflight',side_effect=preflight), \
+                     patch.object(portable_launcher.subprocess,'call',return_value=0) as launch, \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(portable_launcher.main(),1 if fail else 0)
+                self.assertEqual(calls[0][-2:],['--editor','--import'])
+                self.assertIn('Dummy',calls[0])
+                if fail:launch.assert_not_called()
+                else:
+                    self.assertEqual(calls[1][-1],'--check-only')
+                    self.assertEqual(launch.call_count,1)
+
     def test_native_freezer_pins_utf8_in_bootloader_and_cache(self):
         from tools.standalone.build import freeze
         with tempfile.TemporaryDirectory() as temporary:
@@ -139,7 +165,7 @@ class PortableContracts(unittest.TestCase):
             with self.subTest(code=code,err=err), tempfile.TemporaryDirectory() as temporary:
                 stream=io.StringIO()
                 with patch.object(portable_launcher,'verify'), patch.object(portable_launcher.sys,'platform','linux'), \
-                     patch.object(portable_launcher.subprocess,'run',return_value=subprocess.CompletedProcess([],code,out,err)), \
+                     patch.object(portable_launcher,'invoke_runtime',return_value=subprocess.CompletedProcess([],code,out,err)), \
                      patch.object(sys,'argv',['launcher','--bundle',temporary,'--invoke','--play']), contextlib.redirect_stdout(stream):
                     self.assertEqual(portable_launcher.main(),code)
                 self.assertEqual(stream.getvalue(),expected)
@@ -158,7 +184,7 @@ class PortableContracts(unittest.TestCase):
                 stream=io.StringIO()
                 with self.subTest(code=game.code), patch.object(runtime,'app_resources',return_value=(bundle,{})), \
                      patch.object(runtime,'prepare_install',return_value=root/'install'), patch.object(runtime,'genesis_enabled',return_value=False), \
-                     patch.object(runtime.subprocess,'run'), patch.object(runtime.subprocess,'call',side_effect=game), contextlib.redirect_stderr(stream):
+                     patch.object(runtime.subprocess,'run',return_value=subprocess.CompletedProcess([],0)), patch.object(runtime.subprocess,'call',side_effect=game), contextlib.redirect_stderr(stream):
                     self.assertEqual(runtime.launch(bundle,home,[]),game.code)
                 if game.code:
                     message=json.loads(stream.getvalue())['error']

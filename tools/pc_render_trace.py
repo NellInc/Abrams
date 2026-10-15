@@ -56,8 +56,11 @@ INVALID_PLATE = bytes(int(i > len(PLATE_IDS)) for i in range(256))
 
 
 class Collector:
-    def __init__(self, reader, output=None, *, history_limit=3000):
+    def __init__(self, reader, output=None, *, history_limit=3000, loop_diagnostics=False):
         self.reader, self.output = reader, output
+        self.loop_diagnostics = loop_diagnostics
+        self.loop_diagnostic = None
+        self.loop_sequence = 0
         self.active = None
         self.passes = deque(maxlen=history_limit)
         self.completed_count = 0
@@ -103,6 +106,31 @@ class Collector:
 
     def observe_packet(self, event, registers, raw, offset):
         """Consume an exact native callback packet, including its original bytes."""
+        if event == 56:
+            try:
+                self.loop_diagnostic = None
+                if not self.loop_diagnostics: return
+                state = self.reader.read_loop_end(raw, registers, offset)
+                if self.active is not None: raise ValueError('loop diagnostic overlaps an original draw pass')
+                if state is None: return
+                self.loop_sequence += 1
+                drawing = self.passes[-1] if self.passes else None
+                diagnostic_state = {k:v for k,v in state.items() if k != 'world'}
+                if state.get('camera'):
+                    diagnostic_state['camera'] = dict(state['camera'], sampling=
+                        'observed at original 0000:0e85 loop end; video pairing and universal atomicity unproven')
+                self.loop_diagnostic = {
+                    'schema': 1, 'boundary': '0000:0e85', 'sequence': self.loop_sequence,
+                    'sampling': 'read-only loop end; independent of submitted framebuffer',
+                    'video_paired': False, 'ram_sha256': hashlib.sha256(raw).hexdigest(),
+                    'registers': list(registers),
+                    'state': diagnostic_state,
+                    'world_origin': state['world']['window_origin'],
+                    'last_completed_draw': {k:drawing[k] for k in
+                        ('sequence','page_offset','start_ram_sha256')} if drawing else None}
+            except Exception as error:
+                if self.error is None: self.error = error
+            return
         try:
             if event == 25:
                 self.audio.observe(raw, text_sequence=self.text.sequence)
@@ -537,11 +565,19 @@ class Collector:
         core.core.abrams_trace_configure.argtypes = [C.c_uint16, CALLBACK]
         core.core.abrams_trace_configure.restype = None
         core.core.abrams_trace_configure(load_segment, self.callback)
+        self.loop_diagnostic = None
+        self.loop_sequence = 0
+        if self.loop_diagnostics:
+            configure = core.core.abrams_trace_loop_diagnostics
+            configure.argtypes, configure.restype = [C.c_bool], None
+            configure(True)
 
     def detach(self, core):
         core.pause_at_frame_end()
         # A zero load segment only disables instruction hooks. VGA callbacks
         # must also be removed before this Python callback can be released.
         core.core.abrams_trace_configure(0, CALLBACK())
+        self.loop_diagnostic = None
+        self.loop_sequence = 0
         self.active = None
         self.current = None

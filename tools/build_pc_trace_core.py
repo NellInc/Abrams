@@ -37,7 +37,8 @@ def main():
                ' M dosbox_pure_libretro.cpp', ' M src/hardware/vga_draw.cpp',
                ' M src/hardware/vga_memory.cpp', '?? src/cpu/abrams_vga_ownership.h',
                '?? src/cpu/abrams_plate_ownership.h', '?? src/cpu/abrams_observer_checkpoint.h', ' M src/dos/drives.h',
-               ' M src/dos/drive_union.cpp', '?? src/dos/abrams_state_overlay.h'}
+               ' M src/dos/drive_union.cpp', '?? src/dos/abrams_state_overlay.h',
+               ' M src/dbp_serialize.cpp', ' M src/dos/dos.cpp'}
     if any(line not in allowed for line in status.splitlines()):
         raise ValueError('preserve unrecognized dependency changes; source build is not the reviewed input')
     target = SOURCE / 'src/cpu/core_normal.cpp'
@@ -61,6 +62,29 @@ def main():
     state_overlay = ROOT / 'tools/pc_core/abrams_state_overlay.h'
     shutil.copyfile(state_overlay, SOURCE / 'src/dos/abrams_state_overlay.h')
     patches = {
+        'src/dbp_serialize.cpp': [
+            ('\tar.version = 8;', '\tar.version = 9;'),
+            ('ar.version > 8)', 'ar.version > 9)')],
+        'src/dos/dos.cpp': [
+            ('\t\t.Serialize(dos.internal_output);',
+             '\t\t.Serialize(dos.internal_output);\n\n'
+             '\t// Version 8 omitted the DOS calendar, although START uses it\n'
+             '\t// to seed mission selection. Older states retain the boot date.\n'
+             '\t// MODE_ZERO must preserve the initialized calendar.\n'
+             '\tif (ar.version >= 9 && ar.mode != DBPArchive::MODE_ZERO)\n'
+             '\t{\n'
+             '\t\tBit16u year = dos.date.year;\n'
+             '\t\tBit8u month = dos.date.month, day = dos.date.day;\n'
+             '\t\tar.Serialize(year).Serialize(month).Serialize(day);\n'
+             '\t\tif (ar.mode == DBPArchive::MODE_LOAD)\n'
+             '\t\t{\n'
+             '\t\t\tif (ar.had_error || year < 1980 || month == 0 || month > 12 ||\n'
+             '\t\t\t    day == 0 || (day > DOS_DATE_months[month] &&\n'
+             '\t\t\t    !(month == 2 && year % 4 == 0 && day == 29)))\n'
+             '\t\t\t{ ar.had_error = DBPArchive::ERR_LAYOUT; return; }\n'
+             '\t\t\tdos.date.year = year; dos.date.month = month; dos.date.day = day;\n'
+             '\t\t}\n'
+             '\t}')],
         'src/dos/drives.h': [
             ('class unionDrive : public DOS_Drive {\npublic:',
              'class unionDrive : public DOS_Drive {\npublic:\n\tbool AbramsReloadSave();\n\tbool AbramsFlushSave();')],
@@ -131,6 +155,7 @@ def main():
     shutil.copyfile(SOURCE / ('dosbox_pure_libretro'+suffix), staged)
     staged.replace(output)
     manifest = {'schema': 2, 'round_form_event_schema': 1, 'audio_event_schema': 1, 'text_event_schema': 2, 'message_event_schema': 1, 'strut_event_schema': 1, 'driver_overlay_schema': 1, 'state_overlay_schema': 1, 'observer_checkpoint_schema': 1, 'observer_checkpoint_header_sha256': sha(observer), 'state_overlay_header_sha256': sha(state_overlay), 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
+        'loop_diagnostic_schema': 1, 'native_save_format_version': 9,
         'source_core_normal_sha256': hashlib.sha256(original.encode()).hexdigest(),
         'patched_core_normal_sha256': sha(target), 'trace_header_sha256': sha(header),
         'ownership_header_sha256': sha(ownership), 'motor_pool_plate_schema': 1, 'frontend_text_schema': 1, 'frontend_scene_schema': 1, 'orientation_schema': 1,

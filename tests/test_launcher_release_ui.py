@@ -163,7 +163,8 @@ class LauncherReleaseUI(unittest.TestCase):
 
     def test_portable_setup_smoke_receipt_only_on_success(self):
         setup = (Path(__file__).resolve().parents[1] / 'godot/scripts/portable_setup.gd').read_text()
-        smoke = setup[setup.index('if "--setup-smoke" in OS.get_cmdline_user_args():'):setup.index('play.disabled = not installed')]
+        completed = setup[setup.index('func _completed('):setup.index('func _about(')]
+        smoke = completed[completed.index('if "--setup-smoke" in OS.get_cmdline_user_args():'):]
         self.assertEqual(setup.count('PORTABLE_SETUP_SMOKE: PASS'), 1)
         self.assertLess(smoke.index('quit(1)'), smoke.index('else:'))
         self.assertGreater(smoke.index('PORTABLE_SETUP_SMOKE: PASS'), smoke.index('else:'))

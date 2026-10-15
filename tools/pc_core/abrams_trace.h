@@ -45,6 +45,7 @@ static unsigned abrams_target_page = 0;
 static bool abrams_text_active = false;
 static bool abrams_frontend_text_mode = false;
 static Bit16u abrams_text_rect[6];
+static bool abrams_loop_diagnostics = false;
 
 static bool AbramsKnownTextCaller(Bit16u caller) {
     const Bit16u calls[] = {0x144b,0x3f1d,0x3f58,0x400d,0x4053,0x5345,0x5359,0x5379,0x538d,0x5456,0x546a,0x5483,0x54a0,0x551c,0x55b9,0x55df,0x5764,0x57a2,0x58cd,0x595a,0x59a8,0x59d4,0x62ed,0x6333,0x6347,0x635b,0x63f5,0x6409,0x641d,0x67c4,0x680d,0x6836,0x6dfe,0x6e70,0x6e93,0x6eb6,0x6ed9,0x6efc,0x6f1f,0x7f01,0x7f50,0x7fa7,0x809e,0x80b2,0x831c,0x8330,0x8349,0x88cf,0x88e2};
@@ -55,6 +56,7 @@ static bool AbramsKnownTextCaller(Bit16u caller) {
 
 extern "C" __attribute__((visibility("default")))
 void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
+    abrams_loop_diagnostics = false;
     abrams_frontend_text_mode = false;
     abrams_trace_load = load;
     abrams_trace_callback = callback;
@@ -72,6 +74,12 @@ void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
     abrams_target_active = false;
     abrams_ownership.reset();
     abrams_plates.reset();
+}
+
+// Host option only, deliberately excluded from gameplay/checkpoint state.
+extern "C" __attribute__((visibility("default")))
+void abrams_trace_loop_diagnostics(bool enabled) {
+    abrams_loop_diagnostics = enabled;
 }
 
 // Claim only host provenance, during the verified original bitmap's return.
@@ -307,6 +315,16 @@ static INLINE void AbramsTraceInstruction() {
     if (abrams_trace_callback && abrams_frontend_text_mode) { AbramsTraceFrontendInstruction(); return; }
     if (!abrams_trace_callback || !abrams_trace_load) return;
     Bit32u ip = reg_eip;
+    if (ip == 0x0e85 && abrams_loop_diagnostics &&
+        SegValue(cs) == abrams_trace_load && SegValue(ds) == abrams_trace_load + 0x19e0) {
+        const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
+            reg_bp,reg_sp,SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+        // Copy conventional RAM before the loop jump. No VGA/latch reads,
+        // guest writes, instruction substitution or emulated cycle changes.
+        MEM_BlockRead(0, abrams_trace_snapshot, sizeof(abrams_trace_snapshot));
+        abrams_trace_callback(56, regs, abrams_trace_snapshot, ip, sizeof(abrams_trace_snapshot));
+        return;
+    }
     if (abrams_bitmap_active && ip == abrams_bitmap_return_ip && SegValue(cs) == abrams_bitmap_return_cs) {
         if (abrams_strut_active) {
             // Read backing planes directly, preserving guest VGA latches.
@@ -840,8 +858,17 @@ static INLINE void AbramsTraceInstruction() {
         else if (ip == 0x59e4) { event = 9; start = 0x35a0; length = 10; }
     }
     if (!event) return;
-    if (event == 13) abrams_world_drawing = mem_readw(base + 0x358c) == 0x012c;
-    else if (event == 4) abrams_world_drawing = false;
+    if (event == 13) {
+        // 33fb also draws the destroyed-GPS black panel after the world pass.
+        // Only its two original world-background callers enter world ownership.
+        // The callback marker remains 012c during the damaged-panel call.
+        Bit32u stack = SegPhys(ss) + reg_bp;
+        bool caller_valid = reg_bp <= 65536 - 6 && stack + 6 <= 640 * 1024;
+        Bit16u caller_ip = caller_valid ? mem_readw(stack + 2) : 0;
+        abrams_world_drawing = caller_valid && mem_readw(base + 0x358c) == 0x012c &&
+            mem_readw(stack + 4) == abrams_trace_load + 0x0b4d &&
+            (caller_ip == 0x040e || caller_ip == 0x04ce);
+    } else if (event == 4) abrams_world_drawing = false;
     const Bit16u regs[12] = {reg_ax, reg_bx, reg_cx, reg_dx, reg_si, reg_di,
         reg_bp, reg_sp, SegValue(cs), SegValue(ds), SegValue(es), SegValue(ss)};
     if (event == 1) abrams_trace_callback(14, regs, (const Bit8u*)render.pal.rgb, 0, 16 * 4);

@@ -1,5 +1,125 @@
 # Local work ledger
 
+## Bounded rehearsal and conditional campaign gate, 2026-10-13
+
+Nell authorized one bounded opening rehearsal and one campaign combat attempt
+only if the rehearsal passed. The gate requires an operational main gun and
+mobility, with at least 80 integrity through the pre-bridge staging approach.
+At frame 10933, after 5925 battle frames, integrity falls from 88 to 63. The
+main gun remains partially operational (condition one), mobility conditions are
+all 100, and objective progress is zero. Contact freezes execution at that exact
+frame and cancels the remaining sight-sweep input. The gate fails; no second
+combat is entered, and no victorious-save or winning cold Continue is claimed.
+
+The original abandonment handoff is `01 01 00`. Original END writes an active
+fifty-byte career with zero points. Cleanup then mistakenly selects Continue
+instead of R&R and opens the next original briefing, "THE MOSSEL INTERCEPT",
+"MISSION #2". The native process closes normally in BRIEF before another SIM
+load. The misleading capture label `rehearsal-final-start` is retained as evidence;
+its actual program is explicitly BRIEF. This error was disclosed in the chat.
+
+The observer checks 1609 read-only loop diagnostics, 1679 original draw passes
+and 101674 vertices without error. All 81 protected hashes, including the 68
+original GAME files, remain unchanged; prior career seals are preserved. The
+host-only own-system reporting change and verification were performed here.
+Initialization uses the same pre-career checkpoint with a process-local
+`Etc/GMT+12` October 12 date guard. No machine clock or guest date is edited.
+
+Original Enter cycles eligible targets; L retains a selected target or selects
+the nearest reticle candidate when none is selected, then locks. This distinction
+is verified in the manual and original dispatch at `1edf`, `1f9e`, `35f4` and
+`3646`. Its ability to prevent the observed incoming-fire failure is unverified.
+The attacker was not identified through original TADS; no combat rounds fired.
+
+Evidence: `artifacts/rea-victory-pilot-20261012/rehearsal-conditional-20261013/`.
+Status: local only, rehearsal failed, conditional campaign combat held, victorious
+save and corresponding cold Continue acceptance incomplete. No native job remains.
+Working if: the failed health gate prevents a second battle, actual program
+transitions override intended capture labels, and target-selection hypotheses
+remain separate from demonstrated victory or tactical identification.
+
+## Escape-controller revision and fourth attempt, 2026-10-13
+
+Nell explicitly authorized one additional attempt after the previous three.
+The task-local controller now freezes frame execution and cancels queued routes
+at contact, preserving latched controls. It injects no automatic C, keypad 5
+or settling frames. Ten native contacts demonstrate exact freeze frames and
+zero automatic keys; the first moving escape resumes explicitly with throttle
+preserved. Implementation and verification were performed in this chat.
+
+The fourth attempt takes the static-map covered corridor, but loses its main
+gun before reaching the Bridge. The original own-system condition is two,
+nonoperational. Original "Abandon the M1" produces SIM.OUT `01 01 00` and an
+active fifty-byte career with zero points, count one and status zero. After
+normal closure, a fresh native process without RAM restore accepts that exact
+career and opens "NUREMBURG HIGHWAY", "MISSION #2". This proves cold persistence
+after failure; the requested victorious-save and victorious-Continue gates
+remain unmet. No additional combat was entered during the cold check.
+
+The live observer checks 2148 loop diagnostics, 2214 original draw passes and
+146119 vertices without error. An accidental unfiltered state print exposed
+allocated actor records; it is recorded explicitly. Subsequent routing follows
+the previously selected static corridor, and the sight scan uses the public
+crew hit bearing. Those actor records are not used to select or aim at targets.
+
+Two initial replay pairs finish all 16217 frames but fail their actual-outcome
+gate: they select scenario seven rather than the live scenario two. The native
+serializer omits DOS date, and host local midnight separates live initialization
+from those replays. Process-local UTC reproduces the original October 12 date
+without changing the machine clock or guest state. A menu-only discriminator
+then matches all 31 available live RAM, video-RAM and framebuffer milestones.
+Corrected on/off replay matches all 16217 frames exactly in RAM, video RAM,
+framebuffer, existing presentation, audio and original draw/slot/scanout pairing.
+All 244 actual input milestones and the sealed save contents also match. The
+replay retains 7967 presentations older than the latest completed draw; diagnostic
+state never replaces their attribution. All 81 protected hashes, including the
+68 original game files, remain unchanged. This correction is scoped to the
+recorded initialization recipe; universal cross-day restore remains unproven.
+No original game files or native core were patched.
+
+Evidence: `artifacts/rea-victory-pilot-20261012/escape-revision-attempt-04/`.
+Status: local only, requested victorious campaign acceptance incomplete; the
+one additional authorized combat attempt is used.
+Working if: contact freezes preserve escape controls, cold continuation of a
+failed career is labelled separately from victory, and every replay reproduces
+the actual initialization and original draw/slot/scanout attribution.
+
+## Bounded REA campaign continuation, 2026-10-12
+
+Nell authorized phases 1 to 5 with ordinary controls, read-only `0000:0e85`
+diagnostics, unchanged original files and preserved draw/scanout pairing. After
+the two planned combat attempts failed, she explicitly authorized one further
+revised attempt. All three saves and input records are retained separately in
+`artifacts/rea-victory-pilot-20261012/phases-1-to-5/`.
+
+The third attempt completes the Bridge objective with integrity three, then loses
+the tank during withdrawal. Original SIM.OUT is `02 01 01` followed by its kill
+counters. Original END reports the primary goal achieved and saves 360 points,
+mission count one and career status two. A fresh native process, without RAM
+restore, attempts original Continue from a copied sealed disk overlay and receives
+"NO ACTIVE PLAYERS TO CHOOSE FROM". The fifty-byte career record is unchanged.
+This does not satisfy the surviving victorious campaign-save/Continue gate.
+
+The task-local controller cancels queued batches during actual movement and turn
+contacts. Its hull-mode stop correction is implemented; its terminal-destruction
+correction passes three actual-state predicate checks but has not been freshly
+native-replayed. The third run checks 5604 diagnostics, 5650 original passes and
+626595 vertices without collector errors. The successful-campaign full-frame
+enabled/off replay remains unexecuted because no accepted winning route exists.
+
+All 81 protected hashes, including 68 original GAME files, the reference archive,
+native core and observer headers, match the task baseline. Concurrent changes
+outside this pilot's edit set were observed and preserved. A fresh REA dossier
+refresh fails at Ghidra startup; earlier pinned REA evidence and unchanged
+disassembly remain available. See `docs/pc-executable-research.md` for the exact
+distinctions and evidence paths.
+
+Status: local only, requested acceptance incomplete, three authorized combat
+attempts exhausted. No successful campaign return or cold progression is claimed.
+Working if: the completed objective is distinguished from the destroyed career,
+the original cold rejection remains visible, and a failed run never closes the
+surviving-victory or successful-campaign parity gates.
+
 ## Authorization and goal
 
 2026-09-26: Nell requested a substantial local Godot reconstruction, exact PC
@@ -3131,3 +3251,360 @@ finished" it was attached to the v0.1.0-alpha.4 release (GitHub asset digests
 match), the website switched to it, and the work merged to main as a fast-forward
 with Pages and source CI green and the live index byte-identical to local. The
 website dedication also gained Nell's portrait of her father, David "Ming" Kenny.
+
+## REA setup and SIM pilot, 12 October 2026
+
+Nell requested: "Set up REA and run the SIM.EXE pilot, keeping the original game
+files unchanged." Installed pinned REA 6.4.0 locally with package lifecycle
+scripts disabled; configured Codex only against existing Ghidra 12.1.4/JDK 21.
+The unrelated Codex configuration digest is unchanged. Analysed a read-only
+copy of the independently unpacked SIM, with successful MCP/native load-image
+verification and a fresh 256-input original bearing/bark oracle. Identified
+load-relative `0000:0e5f` as the post-dispatch/pre-station-render boundary; four
+historical-RAM isolated CPU witnesses reach it in the recovered call order.
+Live atomic sampling remains unverified. No core, bridge, simulation, gameplay
+or original source file was changed. Evidence and acceptance checks:
+`artifacts/rea-pilot-20261012/`; interpretation and limitations:
+`docs/pc-executable-research.md` section "REA SIM pilot". Local only.
+
+Working if: all 68 original files retain their fingerprints, unrelated settings
+are preserved, and isolated boundary evidence is kept distinct from live parity.
+
+## REA candidate live tracing, 12 October 2026
+
+Nell authorized read-only live traces at load-relative `0000:0e5f` during
+movement and station changes, with original files unchanged. A task-local
+native probe in a private copy of the pinned source records 1,878 instruction
+samples, including 470 candidate observations, all four stations while moving,
+three world rebases, braking and turret rotation. Probe-on, probe-off and the
+unchanged shipping core replay 1,737 frames each with exact conventional-RAM,
+video-boundary-RAM and framebuffer agreement. All 68 originals and 374 protected
+game/core/source/header files retain their fingerprints.
+
+Rejected the candidate as an atomic whole-scene boundary: cached camera data
+lags movement and station changes, a rebase combines old camera coordinates
+with a new world origin, and dynamic-pool slot 1 refreshes during rendering.
+Forty-four full-RAM witnesses match their recorded decoding. Keep existing
+render-pass/scanout pairing; no production hook, bridge or gameplay change.
+Receipt: `artifacts/rea-live-boundary-20261012/report.json`; details and bounded
+coverage: `docs/pc-executable-research.md`, "Live boundary traces". Local only.
+
+Working if: exact replay parity and unchanged input/core fingerprints hold,
+and the mixed-age counterexamples remain explicit rather than being promoted
+into a whole-scene sampling contract.
+
+## REA later-boundary live tracing, 12 October 2026
+
+Nell authorized read-only live traces at `0000:0e62` and later loop boundaries,
+with original files unchanged. The private native probe and existing original
+render-pass observer recorded 4,254 instruction samples across 531 complete
+iterations. At `0e62`, every sampled camera/origin and every queued/drawn
+object pose agrees with the latest completed original world pass. The selected
+scene and player/control fields stay stable through `0e85`, the recommended
+clean iteration-end diagnostic marker. All four stations were sampled while
+moving, with three world rebases, turret rotation and one original HEAT shot.
+
+Three 1,920-frame native runs, observer-on/off/unchanged shipping core, have
+exact RAM/video-boundary-RAM/framebuffer/diagnostic parity. All 68 originals
+and 374 protected source/core/header/game files retain their fingerprints.
+All 178 saved RAM witnesses were re-read; 43,592 original vertices were checked.
+Full allocated-pool differences in 49 post-render samples involve no queued or
+drawn objects; 1,643 presented frames belong to an older pass. Keep original
+pass participation and framebuffer-slot/scanout attribution. No production
+integration. Receipt: `artifacts/rea-later-boundary-20261012/report.json`;
+scoped recommendation and limits: `docs/pc-executable-research.md`, "Later loop
+boundaries". Local only.
+
+Working if: parity and input/core fingerprints hold, the coherent-field scope
+stays explicit, and the recommendation preserves original pass/display pairing.
+
+
+## Original loop-end diagnostic integration, 12 October 2026
+
+Implemented the approved load-relative `0000:0e85` sample in the native tracing
+observer, guarded decoder, collector and bridge session. `--loop-diagnostics`
+opts into separate nullable `loop_diagnostic` packets. Normal Play stays unchanged.
+The copied conventional RAM is independently pinned to active SIM, CS/DS and the
+relocated loop instructions. Original draw participation, pass/page/scanout and
+native framebuffer-slot custody remain the presentation authority.
+
+A task-private build from the pinned dependency is activated in the local trace
+core/manifest. The previous core/manifest are retained under
+`.runtime/rea-loop-diagnostic-20261012/`; existing player save slots are untouched
+and no cross-core save migration is performed. Shared dependency source and all
+68 original game-file contents and paths are unchanged.
+
+Validation: three 1920-frame runs (enabled, disabled, previous core) exactly match
+conventional RAM, video-boundary RAM, framebuffer, existing session/presentation
+and audio-event packets. There are 532 native loop-end observations, 531 attributed;
+577 original world passes and 43,592 vertex checks per run. All 1643 presentations
+whose pass is older than the latest completed draw retain their original pairing.
+Focused tests: 81 passed; additional current lifecycle/save-state run: 63 passed,
+with overlap. The first run's new fixture identity assertion was corrected;
+the failure and passing rerun are retained. The final camera sampling annotation
+is covered by the current lifecycle tests and actual bridge protocol check.
+All 17 real-bridge checks pass for enabled save/load, held packet clearing,
+reacquisition, and disabled loading of a diagnostic-bearing save. Invalid
+diagnostics do not clear drawing context. Independent read-only Astra review
+accepts the actual contract and recorded evidence; root verifies the receipts.
+
+Evidence: `artifacts/rea-loop-diagnostic-20261012/`. No Godot/frontend edits, uploads,
+publication or deployment. The tested mission/normal-CPU/EGA scope remains bounded;
+universal atomicity, other modes/backends, wall-clock and waveform parity are open.
+
+Working if: the opt-in diagnostic stays separate, exact original frame/presentation
+parity holds, restore/program lifecycle drops stale observations, and all original
+file hashes remain unchanged.
+
+## Mission-victory and campaign-progression pilot, 12 October 2026
+
+REA SIM/END analysis identifies the original twelve-byte objective, hostile-first
+quit gate, 34-byte SIM.OUT handoff and fifty-byte campaign save. Ordinary-control
+Road to Bonn scenario execution proves objective 1/1 complete while alive at
+original frame 26423. Its subsequent withdrawal loses the tank; that objective
+witness alone does not establish a completed exit or career progression.
+
+The longer route exposed a host observer phase error when the original draws a
+destroyed-GPS black panel. The stale callback marker incorrectly began world
+ownership. `tools/pc_core/abrams_trace.h` now reads the original SS:BP return
+CS/IP and admits only the two actual world-background callers. Original draw
+calls and the guard are unchanged. Exact same-state RAM/framebuffer parity
+through the previously failing frame 10331 passes; 43 focused render/session/
+UI/plate tests pass. Current trace pin:
+`bd3877f73c1505bc9d6883fbcbd9d860f71f7d56ee51d50a21887da3b5723191`.
+
+Enabled/disabled replay of all 646 ordinary input steps proves exact per-frame
+RAM, video-boundary RAM, framebuffer, existing session and audio-event parity
+across 26,183 frames per run. Each retains 5,133 original draw passes, 583,388
+vertex checks and 17,245 presentations whose original pass is older than latest.
+The enabled hook observes 5,114 loop ends; disabled observes none. Two loop
+observations decode a null camera while the completed original draw has its
+camera. No diagnostic replaces the original paired pass. The failed overstrong
+camera-match research assertion and passing corrected comparison are both kept.
+
+Campaign combat trials identify separate overall hull/crew integrity at DS:CC2.
+A tank can be destroyed while its three component conditions remain high; the
+task-local control helper initially watched only the components. Its read-only
+smoke trigger was corrected, and routes now engage visibly identified pursuers
+before exposing depleted rear armour. No guest state is changed.
+
+The campaign persistence lane follows original abandonment, not victory. END
+reports primary goal failure, four BRDM-2 kills, one HIND kill, score 55, and
+observed SIM.OUT `01 01 00` plus 31 counters. The original save becomes fifty
+bytes, score 55, mission count one, career status zero, and scenario-two played
+marker one. Original R&R returns to START; normal closure retains that record
+and original loadout/handoff data. No campaign bytes are authored by the pilot.
+Fresh-process Continue, without a RAM restore, loads the exact saved record and
+enters mission two, Siegen Infiltration (scenario seven, objective 0/2), with a
+healthy tank. The original score, count, status and played marker remain unchanged.
+The resumed Siegen attempt destroys a visibly locked T-64 and BRDM-2, then takes
+further original equipment damage while still at objective 0/2. Original
+abandonment and END confirm failure: SIM.OUT `01 02 00`, eighteen mission points,
+saved total score 73, count two, status zero and played markers two and seven.
+Original R&R returns to START; the task-owned core closes normally.
+The victorious campaign return-to-base boundary remains unverified.
+
+Evidence: `artifacts/rea-victory-pilot-20261012/`; detailed contracts and outcome
+limits are recorded in `docs/pc-executable-research.md`. All 68 original inputs
+and the original input ZIP currently match their baseline hashes. Local only.
+
+Working if: genuine objective victory, completed exit, campaign disk save and
+fresh-process Continue are independently evidenced, original files stay unchanged,
+and latest diagnostic observations remain outside displayed draw/scanout pairing.
+
+## Checkpoint calendar and focused native playability repairs, 13 October 2026
+
+Fixed the emulator calendar omission through the reviewed trace-core builder:
+new native save format9 stores explicit DOS year/month/day, validates date fields
+before assignment and preserves reset behavior. Legacy8 research blobs remain
+readable with the boot date; exact-core player slots are preserved without
+migration. The previous core/manifest are retained with the task evidence.
+Activated local core: `b859afb15676cc7fc019154d84983ec40b139c2b813d1b11ce503328f8de28a5`.
+
+Cross-day continuation matches all32 original menu/mission-selection RAM,
+video-RAM and framebuffer milestones; the legacy8 control diverges. Ordinary
+old/new native execution matches. Malformed month/day and truncated date states
+are rejected. The existing native checkpoint gate passes26checks, including
+input continuation, fresh-process restoration, recovery and campaign-disk custody.
+
+The focused pass exposed512-byte pipe backpressure coupled to rendered-frame
+polls. A bounded fragment drain now yields briefly after progress, retains the
+2ms/read/size bounds and keeps the original protocol/sequence checks. Nine
+focused transport regressions pass. Initial timed-out audio runs and the first
+insufficient immediate-empty receiver change are retained; changed host pipe
+capacity prevents a controlled before/after performance claim.
+
+An explicit EGA sampler initially caused white ammunition wells and exceeded
+the dense cockpit's preceding eight-custom-sampler budget. Shared graphics work
+extracts the unchanged Scale3x algorithm to a separate one-sampler shader and
+binds/rebinds PC crops, preserving the non-EGA compositor byte-for-byte. Root
+native verification passes329342exact RGB checks, five frozen full-donor views
+and bit-identical Modern switchback. These are current-source renderer checks,
+separate from the shared chat's WebGL delivery receipt.
+
+Native play visits all four stations and menu save/load succeeds with no bridge
+or audio validation failures. Extra real keyboard input and focus changes reject
+that run as an exact scripted replay or FPS comparison. The separate1712-frame
+CoreAudio48000Hz run passes128events,3426loop checks, three readiness receipts,
+cannon/coax/smoke and loader voices, F5 mute and pause/resume; its child exits0.
+System output settings are unchanged; human listening is not assessed.
+
+All70protected original files, including68GAME files, retain their starting
+hashes. Source allowlist/dependency closure passes508files. All task-native jobs
+exit and the shared resource slot is returned. Unrelated graphics/pack work is
+preserved. This task does not push, deploy or publish.
+
+Evidence: `artifacts/checkpoint-playability-20261013/REPORT.md` and `report.json`.
+Universal CMOS/wall-clock/cross-platform portability, old-slot migration and a
+victorious campaign are outside this bounded acceptance. The optional Impeccable
+CLI was unavailable. Working if: new checkpoints retain their calendar across
+restore, fragmented replies preserve exact payload/sequence limits, donor/PC
+ammunition pixels survive mode switching, source-driven audio and all original
+file hashes remain unchanged.
+
+### 2026-10-13: measured native palette fast path
+
+Retained five production lines in ModernAssets: exact canonical integer/JSON
+palette comparisons use native Array equality, while the existing mixed/malformed
+scalar fallback and identity order remain unchanged. Integrated predicate checks
+pass311. An admitted ordinary-control ABBA completes four1020-sample, fully focused
+four-station routes at unchanged tactical quality with Dummy plus no-audio.
+Decoded packets, frame audits, requests and all four paired capture PNGs match
+exactly. Every run has209mesh builds and811reuses.
+
+Mapping means are9.161/9.205ms baseline versus8.696/8.606ms candidate, a conservative
+5.074percent reduction. Total rebuilt-frame apply improves only1.392percent;
+no overall FPS gain is demonstrated. Host load remains substantial. Source cadence
+and p95 pass the declared no-material-regression gates. The wider17717-check
+Modern suite has material/UV failures reproduced by unchanged baseline; it is not
+reported green or rewritten for this focused optimization.
+
+Native session10964 exits0 at15:27:44UTC, before15:30:30stop; exact owned-process
+census is empty15:28:13. Before retention,2434frozen source/assets/core hashes and
+70original hashes match, and own2source files are restored exactly. Only the
+verified candidate pair is then reapplied. Draw, shaders, diagnostics, original
+simulation and files, PCK/BUNDLE and unrelated dirty work remain untouched.
+Local source only; installed web PCK retains preceding592b2401graphics delivery.
+Evidence: artifacts/mesh-performance-20261013/REPORT.md, native-comparison.json
+and native-handback.json. No additional runtime trial, push or deployment.
+
+## 2026-10-14: HUD performance fix verified and installed locally
+
+Retained only the reviewed PlayDisplay CPU mask optimization. The independent
+320x200 unmipped L8 snapshot follows the existing texture upload and clear
+lifecycle, and consumers receive fresh copies. Unsupported representations retain
+the original GPU readback. Fresh authority, provenance and UI ownership checks
+continue unchanged. Foliage cache, palette web integration and pending material
+grain were excluded from this delivery; their prior failed or unverified receipts
+remain intact.
+
+Final browser session11795 exits0. All1536 paired, focused, silent full-quality
+samples,182 mask lifecycle checks,8 backend fixture proofs,16 live CPU/GPU fast
+path proofs and50 complete PNG comparisons pass, including Modernized and normal
+cold-load controls. Conservative rebuilt-frame elapsed processing reduction is
+7.7738percent; baseline rebuilt spread is0.5932percent. This measures the paired
+renderer replay, not whole-game FPS. An earlier one-red-LSB baseline-self map
+variance remains recorded; an equal unmeasured map primer was the only QA helper
+change, with full pixel equality and all frozen thresholds retained.
+
+Both local browser PCKs are3d3f8d78739660af8fd2a9d2723b0c60fed2f477179da14e7ab7d86935a09693.
+Only PlayDisplay changes among1118 normal payloads;1117 remain exact. All45 BUNDLE
+rows verify,44 non-PCK rows are unchanged, original70 hashes and other frozen
+sources remain exact. Guarded installation updates only both PCKs, their BUNDLE
+record and PlayDisplay source. Pending grain is marked stale/rebase-required.
+Actual browser/server closure03:51:56.458UTC and subsequent empty ownership census
+are recorded. No foreign processes were signalled and nothing was published.
+
+Evidence: artifacts/performance-hud-only-20261014/comparison.json,
+final-pass-handback.json, delivery.json and installed-verification.json.
+Working if: the installed normal builds retain the reviewed HUD snapshot lifecycle,
+all other normal payloads remain exact and Modernized captures are unchanged.
+
+## 2026-10-14: complete local Tactical visual/UI pass
+
+Nell approved the complete 32-item programme, local only. Installed normal Web PCK SHA-256 `4dffebf0862d0d820fe0f8cba3074ff0ee309b9bdb1896e95a6eb62b6acad76e` (15,924,552 bytes, 1,120 entries) into both local playable trees; BUNDLE `733c1fce193ae967163051602744a3a0987d0a2f94c8c3dd34c9f9e899174d2b`, all 45 records independently verified. No publication, original-file mutation, foreign process signal or guest-memory/timing/quality change.
+
+Changes: admitted Tactical finish grain and restrained family-specific chroma; verified straight-road face edge finishing inside the existing road footprint; consistent filtered near/distant crown palette and upper-stem colour; basal shrub colouring, quieter meadow tones and source-seeded canopy variation; colour-only particle volume; larger verified priority instrument readings and source-segment gauge engraving; bounded C2 map corner joins and source marker hierarchy; Tactical tooltips and correct six-mode art descriptions. EGA Upscaled retains original colours; Genesis Upscaled remains the generated-art renderer. Tactical icon tinting duplicates the engine Image so shared Restored theme data cannot be mutated.
+
+Actual acceptance: six WebGL contracts, 2,677 checks, zero errors; 35 paired full playable view controls, 17 protected whole frames pixel-exact; Modernized world with Tactical HUD and thermal world exact; fixed-source repeat frames exact. Native headless HUD (1,303) and menu (290) pass. The headless-only foliage proportion failure reproduced on the unchanged predecessor and passes the real WebGL backend without relaxing the assertion. Initial material whitelist/orientation and particle-study accounting failures remain retained, corrected in private fixtures before acceptance.
+
+Existing matched ABBA profiler: 4 × 384 source-paired full-quality rows; baseline rebuilt drift 4.294%, conservative candidate rebuilt application cost +0.662%, below the frozen 5% no-regression gate. This is CPU application elapsed, not GPU or whole-game FPS. Actual normal original-input cold drive/station/save/load route: 489 source-paired handoffs per arm, gunner/commander/cupola/driver, 61/62 distinct original world XY positions; unchanged source FPS/one-frame requests. A later rAF callback is recorded, not a draw-completion fence. Final owning live browser/server closed 13:34:05.055 UTC; job 96529 terminal 0.
+
+The separate exact texture-mask cache proposal passed fidelity but missed its frozen gain thresholds (1.31% edge, 3.13% rebuilt); excluded. The accepted HUD performance source remains byte-exact. A subsequently assigned Edge geometry optimisation belongs to the REA chat and must rebase on this actually installed epoch.
+
+Canonical item dispositions, source snapshots, failed/partial attempts and receipts: `artifacts/tactical-complete-polish-20261014/plan.json`, `contracts-report.json`, `view-comparison.json`, `performance-report.json`, `live-summary.json`, `delivery.json`, `installed-verification.json`. Optional Impeccable package was unavailable and was not installed. Native GPU/device acceptance is not claimed by this pass.
+
+## 14 October 2026: complete local browser reliability/usability pass
+
+The23-item next-pass programme is installed locally. Visible file selection, prerequisite/error recovery, staged progress, save provenance/busy state, original-key-safe form editing, Game keyboard focus and fullscreen are verified through the real browser entry point. Restores prepare all fallible components before durable undo and commit; unavailable storage permits gameplay with an explicit warning and disabled browser checkpoint controls. Authored/original imports retain their pinned identities and full-resolution content. Local packaging stages a complete replacement and preserves recovery data even if both swap and rollback fail.
+
+Receipts: `artifacts/abrams-next-pass-20261014/`. Node15 plus Python rollback6 checks, focused Python98(1skip), clean-source125(10skips), audio476WAVs/345captions with0errors, Godot viewer parse, actual browser29checks/3458 normal1-frame requests and website72-link/asset verification passed. Both normal PCKs7a14b802..., BUNDLEde7eb915... with45records;1119 unrelated presentation payloads and70 originals exact. Modernized and all art choices remain intact. Existing performance fixes retained, no extra FPS gain claimed. Source/package/resource epoch returned to the separately assigned map/performance owner. Nothing published.
+
+Working if: the local bundle matches its verified hashes, checkpoint and startup recovery remain actionable, all modes preserve source-driven gameplay, and the separate performance experiment cannot silently enter this installed pass.
+
+## 14 October 2026: full-experience36-item local programme
+
+Completed remembered graphics and transient CLI choices, unavailable-import fallback with retained intent, browser5-channel mixer/default reset and MSAA/filter controls, compact keyboard disclosure, real stopped-runtime recovery, portable setup/thread/status/picker/recheck/scroll/About recovery, bounded owned launcher output/lifetime, Tactical guide wrapping/token search/counts/Escape/lazy lifecycle, and manifest-bound local distribution. Original guide data and Modernized visuals remain unchanged. Detailed list/dispositions: `_contprompts/abrams_full_experience_20261014.md` and `artifacts/abrams-full-experience-20261014/completion.json`.
+
+Proof: menu270, quality531, audio116, reference search45, existing reference211 plus portable recovery; Mac native UI-only244checks/29screens; real browser29checks,364 normal1-frame requests, independent mode/HUD/quality/mix reload, actual worker fault/onExit0/error retention and hidden dead canvas. Node 24+bundle9, Python58(1skip), source-only 125(10skips)/515files, reference inventory and site72links/assets pass. A pinned Godot Web audio teardown race was repaired with two fail-closed anchored cleanup functions; all normal startup/mixing/licence bytes reconstruct exactly, seven pending/rejected/absent/normal-buffer regressions and the real early-exit path pass. Prior failed/partial attempts remain recorded.
+
+Both normalPCKs580ce332..., GodotJSefb917..., BUNDLE3175224b.../45records verified after installation. Five logical presentation/setup scripts changed;1115 other PCK payloads exact. Protected Map1e8a..., Edgee663..., HUD/display794... and original inventory exact. Separate map/performance candidates excluded; no additionalFPS claim, Windows/Linux runtime or human acoustic proof. Last own browser/context/server closed16:28:51.979UTC, actual source/package/resource handback sent. No publication or foreign process action.
+
+Nell changed the automation-browser rule to per thread/chat, persistently recorded in globalCodexAGENTS:190. Each thread still owns its isolated browser and cleanup.
+
+Working if: local installed bytes match the confirmed candidate, all36 dispositions have their scoped receipts, original/full-quality/Modernized boundaries hold, and failed runtime recovery never leaves a dead frame presented as running.
+
+## 2026-10-14: local reliability and player-control polish
+
+Completed the23 warranted tasks in `_contprompts/abrams_reliability_polish_20261014.md`. Native audio menus now show exactly one checked entry for irregular saved gains. Native/browser full-quality reset restores 4× MSAA/16× anisotropy together while preserving mode/HUD/audio and reporting failed writes. Inactive browser player frames are hidden; early errors focus retry, stopped initialized runtimes focus Reload and retain the actual error through normal engine exit.
+
+Export and authored-asset builds now use unique staging, diagnostic/file/audio-patch acceptance, source/target identity checks, cooperative writer/packager locking, handled-failure rollback and retained recovery journals. Obsolete managed files are removed only after acceptance, unrelated generated outputs remain intact. Both new builders and regressions are exported in the reviewed source kit. The actual pinned export and299 lossless authored assets passed private staging; all accepted authored payloads remain exact.
+
+Verification: Godot 931 checks, native UI 11, actual browser 13(normal engine exit0), Node 24, builder 18, package 9, clean source-only 125(10skips)/520 files and website 72 links/assets. Scope excludes new 3D geometry/material work;1117 other PCK payloads remain exact. Both local packs 410f723e and 45-row BUNDLE 27851e29 were installed only after the other geometry chat released the finite reservation. Modernized rendering, original simulation, both upscale options and audio loader remain unchanged. Local only; nothing published and no foreign process action. Evidence, rollback backups and per-item completion are in `artifacts/abrams-reliability-polish-20261014/`.
+
+Working if: exact quality/audio/recovery behavior is available locally, failed builds retain the prior managed output, the complete 23-item receipt matches installed bytes, and unrelated work/presentation fidelity stays unchanged.
+
+## 2026-10-14: local import, startup and reference polish
+
+Completed the 17 warranted tasks in `_contprompts/abrams_import_startup_polish_20261014.md`. Browser optional-ROM clearing preserves PC selection and gives clear PC-only retry feedback; unrelated folder extras no longer create false collisions. Required originals retain exact size/hash/collision verification and the pinned reconstructed ZIP. Desktop source rejects renderer preflight diagnostics even with exit0, bounds only preflight to 300 seconds, retains complete logs/current-error context, checks managed log leaves and removes only unfinished invocation-owned version staging. Originals, campaigns and accepted versions remain intact.
+
+Keyboard HTML/PDF and native/browser runtime reference clarify browser modifiers, six graphics options, independent HUD and quality reset. Original manual data/35 controls, maps, model studies and field guide are unchanged. The three-page keyboard PDF and responsive HTML were rendered and reviewed. Browser 17 checks, Python 58 and 22 installed-reference tests, Node 8 (final shell 7), source-only 134 (10 skips)/520 files, website 72 links and actual pinned Godot preflight pass.
+
+Both local browser builds carry the tested shell/import/asset changes, 45-row BUNDLE b1156c29 verified. PCK 410f723e, audio loader efb91721, all rendering sources and 298 other authored asset payloads are exact. Existing packaged desktop binaries were not rebuilt; native changes are source/source-kit behavior. No publication or foreign process action. Evidence, rollback backups and per-item receipts are in `artifacts/abrams-import-startup-polish-20261014/`.
+
+Working if: valid originals tolerate unrelated extras, optional-ROM recovery works immediately, broken desktop preflight reports failure before gameplay, installed guide/bundle bytes match their verified candidates, and protected fidelity/player state stay unchanged.
+
+## 2026-10-14: local build and installation consistency
+
+Completed the 15 warranted items in `_contprompts/abrams_build_consistency_20261014.md`. Reproduced and repaired two integrity defects: native copy verification happened after version promotion and poisoned the build ID on failure; Web export could accept source edited during staging. New native candidates now validate payload, original files and archive before rename using captured hash-verified original expectations. Clean same-build retry works; accepted changed versions remain preserved. Web staging now rejects linked inputs, verifies raw copied bytes/inventory and checks one original source receipt before export, after export and after authored-asset staging. Ignored cache/bytecode activity remains harmless. Existing diagnostic, audio, asset, cooperative lock and handled-failure rollback gates are retained.
+
+Proof: native 40, builder 24, packaging 9 and clean source-only 138 tests (10 skips)/520 files pass. A single real pinned private export passed six runtime-file checks, clean diagnostics and 1,125 source-input consistency checks. Its project and outputs were removed normally after receipt capture; own-process census empty. Independent verification finds all 45 normal BUNDLE rows, both PCKs/audio loader and 1,126 presentation files unchanged. Normal tuple remains BUNDLE b1156c29/PCK 410f723e/JS efb91721.
+
+Delivery is local helper/test/documentation source only. Existing playable packs and packaged desktop binaries were not rebuilt or replaced, Modernized and both upscale options remain unchanged, and the separate geometry experiment remains excluded. These are sampled consistency checks, not an atomic editor snapshot or power-loss guarantee. No publication, cloud use, foreign process action or resource hold. Exact per-item proof and retained failure reproductions: `artifacts/abrams-build-consistency-20261014/`.
+
+Working if: inconsistent copies cannot commit a new version, inconsistent export candidates cannot reach normal replacement, clean retry succeeds and the previously playable/personal data bytes remain intact.
+
+
+## 14 October 2026: performance, controls and platform acceptance follow-through
+
+Nell assigned the three remaining acceptance lanes, locally only. Controls are now verified and installed: real original boot, movement/keypad stop, distinct row/keypad keys, both release orders, NumLock-off Clear, outside-canvas key-up recovery, fresh focus press, held-fire repeat suppression, real Audio-popup closing/release and all four registered original station views pass 41 browser checks. Fixed two observed input defects without changing guest memory, emulated timing, gameplay authority or graphics. Native Keyboard original/physical/focus cases have zero failures, AudioMix 125 and PlayShortcuts 137 pass; source-only 141 tests (10 skips), 521 files pass. Both local PCKs 531f393c and 45-record BUNDLE 9010e27d match the tested candidate. Three input resources changed, 1,117 other runtime payloads exact against starting experimental 75fe6ca8. Modernized, Tactical rendering, audio loader and both upscale options retain their prior bytes. Existing packaged desktop binaries remain unchanged.
+
+Performance remains unqualified. Independently checked 1,536 paired rows and all 60 complete PNG files, exact across all arms and normal cold. The existing loaded-host comparison had 2.6787% conservative rebuilt gain and 22.4703% baseline variation, failing the frozen thresholds and quiet admission. Fresh post-QA samples remained 0% idle. No additional loaded-host timing run, altered thresholds or whole-game FPS claim. The separately authorized experimental Edge/Map sources remain untouched.
+
+Windows/Linux native graphics, acoustic and campaign acceptance remains unavailable without equipped x86_64 graphical targets; only local Apple Silicon and unsupported ARM Docker were discovered. Older platform binaries do not match current source. The current original-free portable input is rebuilt locally after source-closure repairs: bounded escaped/plain resource parsing, the missing actual effect-finish include, and seven exact historical comparison exceptions only in generic resource scanning. Runtime and explicit load/preload checks remain strict. Absent historical comparison modes are not claimed runnable. No originals or compiled trace cores are included in that input.
+
+Exact dispositions and retained failed/incomplete attempts: `_contprompts/abrams_acceptance_20261014.md`, `artifacts/abrams-acceptance-20261014/installed-verification.json`, `performance-diagnostic-verification.json`, `final-admission.json`, `port-input-20261014-local-v2.json` and `output/playwright/abrams-acceptance-20261014/focus-repair-sequential/report.json`. First station captures were mid-transition; final captures wait for original plate registration. All own QA jobs closed; no publication, paid capacity or foreign process control. Remaining gates need quiet capacity and actual native-device access, not another cosmetic pass.
+
+Working if: the current local tuple is exact, controls recover without stale or resumed trigger input, existing menu-close protection remains intact, and timing/native-device limits stay separate from passing browser/source checks.
+
+## 15 October 2026: bounded Google Cloud QA and fresh portable setup repair
+
+Actual Linux L4 testing recovered 1,536 paired sample rows, 52 identical matched screenshots, eight matching normal cold-load views and 48 map images. All 108 PNG hashes were independently checked against the recovered files. Map/source, HUD and isolated backend contracts passed. This does **not** qualify the edge optimization: the ordinary PC-only route intentionally leaves Genesis-donor-dependent edges inactive, and the during-arm host-idle gate also failed. No timing thresholds were changed and no speedup is claimed. The optional Genesis ROM was subsequently approved for private testing, but no valid ROM-enabled hardware timing run completed.
+
+Native Windows Server 2022 x86_64 functional checks passed on a CPU-only replacement after Google rejected L4 capacity in multiple zones. Pinned baseline and trace DLLs built; keyboard, AudioMix 125, shortcuts 137 and 26 checkpoint tests passed. Actual ordinary boot, acceleration, gradual KP5 braking, three stable zero-speed samples across advancing read-only `0000:0e85` diagnostics, exact checkpoint state/sequence restoration and zero restore priming passed. Diagnostics remained separate from scanout-paired presentation. The checkpoint test fixture needed explicit Windows DLL unloading before temporary-directory cleanup; the original failed teardown remains retained.
+
+The original-free Windows portable build, frozen PC/Genesis import and prepare, status, and native launcher invoke-status passed. Fresh-kit setup failed on a missing imported TTF resource and timed out. A later PowerShell retry returned empty logs and remains unverified. Repaired the local portable launcher to run the existing bounded asset-import and parse preflights before setup, retaining diagnostic logs and environment scrubbing. Local proof: 31 focused tests (one opt-in skip), 40 standalone runtime tests, and an actual silent Godot 4.7.2 reproduction that failed before font import and passed afterward. The corrected launcher has **not** been retested on Windows or installed in a new packaged build. Self-review: this launcher repair was produced and verified by this chat; Windows runtime acceptance is explicitly withheld.
+
+All disposable VMs, disks and the private recovery image were removed after hash-verified result recovery; the task's memory-only SSH agent was closed. Conservative creation-to-deletion accounting totals 6,006.27 VM-seconds against 7,200 allowed. The conservative price estimate including a US$1 storage/network reserve is US$2.74, below the US$5 cap; the actual invoice is unverified. No AWS allocation, public game hosting, publication, original-game mutation, simulation/pairing change, or PCK/HUD replacement occurred. All 70 local originals, both installed PCKs `531f393c`, BUNDLE `9010e27d` and HUD `794202ea` were rehashed unchanged. Earlier unrelated dirty changes were preserved.
+
+Remaining acceptance is genuinely incomplete: valid active-edge hardware timing and native Windows graphical/end-to-end frozen playback need available GPU capacity and a newly authorised bounded allocation. No background cloud test or automatic resumption remains active. Full receipts and failures: `artifacts/performance-edge-geometry-map-20261014/cloud-runners-20261015/FINAL-STATUS.json`.

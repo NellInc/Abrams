@@ -53,6 +53,7 @@ class SimStateReader:
         if hashlib.sha256(source).hexdigest() != SIM_SHA256:
             raise ValueError("unsupported PC executable; offsets must be verified per version")
         decoded, _ = unpack(source)
+        self.loop_end_instructions = decoded[0x0E54:0x0E87]
         # These instruction spans have no relocations and no mutable globals.
         self.anchors = [(offset, decoded[offset:offset + length]) for offset, length
                         in ((0x56EA, 62), (0x6790, 24), (0x91F8, 10))]
@@ -85,6 +86,24 @@ class SimStateReader:
         if len(candidates) > 1:
             raise ValueError("ambiguous SIM load image")
         return candidates[0] if candidates else None
+
+    def read_loop_end(self, ram: bytes, registers, ip: int) -> dict | None:
+        """Validate the diagnostic boundary independently of video attribution."""
+        program = active_program(ram)
+        base = self.locate(ram)
+        if (ip != 0x0E85 or len(registers) != 12 or not program or program['name'] != 'SIM'
+                or base != program['load_segment'] * 16
+                or registers[8] != program['load_segment']
+                or registers[9] != program['load_segment'] + 0x19E0):
+            raise ValueError('loop diagnostic requires active fingerprinted SIM at 0000:0e85')
+        relocated = bytearray(self.loop_end_instructions)
+        for offset in (0x0E6C, 0x0E80):
+            value = struct.unpack_from('<H', relocated, offset - 0x0E54)[0]
+            struct.pack_into('<H', relocated, offset - 0x0E54,
+                             (value + program['load_segment']) & 65535)
+        if ram[base + 0x0E54:base + 0x0E87] != relocated:
+            raise ValueError('original SIM loop diagnostic instructions differ')
+        return self.read(ram)
 
     def read(self, ram: bytes) -> dict | None:
         base = self.locate(ram)

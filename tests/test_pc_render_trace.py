@@ -72,6 +72,55 @@ class RenderTraceTests(unittest.TestCase):
         self.collector().detach(core)
         self.assertEqual(calls,[(0,False)])
 
+    def test_loop_diagnostics_remain_separate_from_displayed_pass_and_invalidate_on_rejection(self):
+        c = self.collector()
+        state = {'camera':{'position_raw':[1,2,3]},'station':'driver',
+                 'world':{'window_origin':[4,5],'dynamic':[{'pointer':123}]}}
+        c.reader = SimpleNamespace(read_loop_end=lambda raw,regs,ip: state)
+        c.loop_diagnostics = True
+        self.event(c,56,0xE85,b'snapshot')
+        self.assertIsNone(c.loop_diagnostic['last_completed_draw'])
+        self.assertNotIn('world',c.loop_diagnostic['state'])
+        self.assertFalse(c.loop_diagnostic['video_paired'])
+        self.assertIn('0000:0e85',c.loop_diagnostic['state']['camera']['sampling'])
+        self.assertNotIn('sampling',state['camera'])
+        self.finish_pass(c,1,0)
+        self.event(c,10,0); self.event(c,11,1)
+        displayed = self.present(c,1)
+        self.finish_pass(c,2,8192)
+        c.passes[-1]['start_ram_sha256'] = 'original-pass'
+        self.event(c,56,0xE85,b'snapshot')
+        self.assertEqual(c.loop_diagnostic['last_completed_draw'],
+                         {'sequence':2,'page_offset':8192,'start_ram_sha256':'original-pass'})
+        self.assertEqual(self.present(c,1),displayed)
+        displayed = c.presented
+        # Malformed diagnostics never clear the separate drawing context.
+        active, current = {'sequence':3}, {'pointer':456}
+        c.active, c.current = active, current
+        def reject(*args): raise ValueError('invalid diagnostic')
+        c.reader.read_loop_end = reject
+        c.observe_packet(56,[0]*12,b'bad',0xE85)
+        self.assertIsNone(c.loop_diagnostic)
+        self.assertRegex(str(c.error),'invalid diagnostic')
+        self.assertIs(c.active,active); self.assertIs(c.current,current)
+        self.assertIs(c.presented,displayed)
+
+    def test_disabled_and_unavailable_diagnostics_are_null_and_detach_clears_history(self):
+        c = self.collector()
+        self.event(c,56,0xE85,b'ignored')  # disabled: no reader required
+        self.assertIsNone(c.loop_diagnostic)
+        c.loop_diagnostics = True
+        c.reader = SimpleNamespace(read_loop_end=lambda *args: None)
+        c.loop_diagnostic = {'sequence':9}
+        self.event(c,56,0xE85,b'initializing')
+        self.assertIsNone(c.loop_diagnostic)
+        c.loop_diagnostic, c.loop_sequence = {'sequence':10}, 10
+        core = SimpleNamespace(pause_at_frame_end=lambda: None,
+            core=SimpleNamespace(abrams_trace_configure=lambda *args: None))
+        c.detach(core)
+        self.assertIsNone(c.loop_diagnostic)
+        self.assertEqual(c.loop_sequence,0)
+
     def event(self, c, event, offset=0, raw=b'', regs=None):
         registers = (C.c_uint16 * 12)(*(regs or [0] * 12))
         data = C.create_string_buffer(raw)

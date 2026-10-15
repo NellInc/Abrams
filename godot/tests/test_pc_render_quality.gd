@@ -24,6 +24,11 @@ func snapshot() -> Image:
 	return display.world_viewport.get_texture().get_image()
 
 func settings_contract() -> void:
+	var viewer = load("res://scripts/pc_bridge_viewer.gd")
+	for value in [null,true,"4",-1,1.5,17,NAN,INF]:
+		check(viewer._web_control_integer(value,16)==-1,"invalid browser sample value rejected")
+	for value in [0,4,4.0,16.0]:
+		check(viewer._web_control_integer(value,16)==int(value),"whole JSON sample numbers accepted")
 	var menu := Menu.new()
 	menu.config_path=""
 	# Disposable config outside the documented receipts folder; must start absent.
@@ -37,8 +42,30 @@ func settings_contract() -> void:
 	loaded.config_path=""
 	loaded.quality_config_path=menu.quality_config_path
 	check(loaded.load_quality_settings() and loaded.quality=={"msaa":2,"anisotropy":8},"next launch restores quality")
+	check(loaded.preferred_graphics_mode.is_empty(),"legacy quality file has no saved mode")
+	menu.modern_available=true
+	check(menu.choose_hud_style("tactical") and menu.choose_graphics("modern"),"explicit successful mode saved")
+	check(loaded.load_quality_settings() and loaded.preferred_graphics_mode=="modern" and loaded.hud_style=="tactical" and loaded.quality=={"msaa":2,"anisotropy":8},"mode HUD and both quality fields round-trip")
+	check(menu.choose_graphics("ega",false) and menu.preferred_graphics_mode=="modern","temporary mode preserves preferred mode")
+	menu.choose_quality("msaa",8)
+	menu.choose_hud_style("restored")
+	check(loaded.load_quality_settings() and loaded.preferred_graphics_mode=="modern" and loaded.hud_style=="restored" and loaded.quality=={"msaa":8,"anisotropy":8},"quality and HUD changes preserve saved mode after temporary selection")
+	var reject := func(_mode):menu.graphics_mode="ega"
+	menu.graphics_selected.connect(reject)
+	check(not menu.choose_graphics("genesis") and menu.preferred_graphics_mode=="modern","rejected mode preserves preference")
+	menu.graphics_selected.disconnect(reject)
+	check(loaded.load_quality_settings() and loaded.preferred_graphics_mode=="modern","rejected mode never persists")
+	menu.modern_available=false
+	check(not menu.choose_graphics("tactical") and menu.preferred_graphics_mode=="modern","unavailable choice never persists")
+	check(loaded.preferred_graphics_mode=="modern" and not loaded.modern_available,"saved unavailable mode is retained for startup fallback")
+	check(not menu.choose_graphics("unknown") and menu.graphics_mode=="ega","unknown live mode rejected")
 	var cfg := ConfigFile.new()
 	cfg.load(menu.quality_config_path)
+	for value in ["unknown",1,true,["ega"],""]:
+		cfg.set_value("graphics","graphics_mode",value);cfg.save(menu.quality_config_path)
+		check(not loaded.load_quality_settings() and loaded.preferred_graphics_mode.is_empty() and not loaded.quality_error.is_empty(),"invalid mode type or ID reports launch default")
+		check(loaded.quality=={"msaa":8,"anisotropy":8} and loaded.hud_style=="restored","invalid mode preserves independent valid settings")
+	cfg.set_value("graphics","graphics_mode","genesis")
 	cfg.set_value("graphics","msaa",16)
 	cfg.save(menu.quality_config_path)
 	check(not loaded.load_quality_settings() and loaded.quality==Menu.QUALITY_DEFAULTS,"invalid sample count falls back to complete defaults")
@@ -47,6 +74,16 @@ func settings_contract() -> void:
 		check(not loaded.load_quality_settings(),"wrong preference type rejected")
 	menu.quality_config_path=OS.get_temp_dir().path_join("abrams-render-quality-absent-%d/graphics.cfg"%OS.get_process_id())
 	check(menu.choose_quality("msaa",0) and not menu.quality_error.is_empty(),"save failure retains live choice and reports it")
+	check(menu.choose_graphics("genesis") and menu.graphics_mode=="genesis" and menu.preferred_graphics_mode=="genesis" and not menu.quality_error.is_empty(),"failed mode save retains live selection and reports failure")
+	check(menu.choose_hud_style("tactical") and menu.hud_style=="tactical" and not menu.quality_error.is_empty(),"failed HUD save retains live selection and reports failure")
+	var notifications: Array=[]
+	menu.quality_selected.connect(func(msaa,anisotropy):notifications.append([msaa,anisotropy]))
+	check(menu.reset_quality() and menu.quality==Menu.QUALITY_DEFAULTS and not menu.quality_error.is_empty(),"failed reset save retains full live quality and warning")
+	check(notifications==[[4,16]],"quality reset sends one complete notification")
+	check(menu.preferred_graphics_mode=="genesis" and menu.hud_style=="tactical" and menu.settings==Menu.DEFAULTS,"quality reset preserves mode HUD and mix")
+	menu.quality_config_path=path
+	menu.graphics_popup.id_pressed.emit(102)
+	check(loaded.load_quality_settings() and loaded.quality==Menu.QUALITY_DEFAULTS and loaded.preferred_graphics_mode=="genesis" and loaded.hud_style=="tactical","native reset persists full quality and independent selections")
 	DirAccess.remove_absolute(path)
 	check(not FileAccess.file_exists(path),"scratch quality config removed")
 	loaded.free();menu.free()
@@ -84,7 +121,7 @@ func run() -> void:
 	draw.apply_pass(data)
 	var off: Image
 	var mask: PackedByteArray
-	for mode in ["ega","genesis","upscaled","modern","tactical"]:
+	for mode in ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]:
 		for samples in Display.MSAA_LEVELS:
 			for anisotropy in Display.ANISOTROPY_LEVELS:
 				check(display.set_graphics_quality(mode,samples,anisotropy),"valid live quality")

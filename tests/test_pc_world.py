@@ -82,6 +82,27 @@ class WorldTests(unittest.TestCase):
         self.assertIn("unverified", world["visibility"])
         self.assertEqual(before, bytes(ram))
 
+    def test_presentation_cues_are_snapshot_reads_only(self):
+        ram, ds = bytearray(640 * 1024), 0x1BCD0
+        ram[ds + 0x709E:ds + 0x709E + 2] = bytes([128, 186])
+        struct.pack_into('<h', ram, ds + 0x709E + 36, 250)
+        struct.pack_into('<H', ram, ds + 0x79C2, 115)
+        struct.pack_into('<h', ram, ds + 0x0DAC, 24)
+        ram[ds + 0x0DAE] = 1
+        struct.pack_into('<3h', ram, ds + 0x64F8, -50, 75, 10)
+        before = bytes(ram)
+        world = read_objects(ram, ds)
+        self.assertEqual(world['dynamic'][0]['speed_raw'], 250)
+        cue = world['presentation_effects']
+        self.assertEqual(cue['shape_base'], 115)
+        self.assertEqual(cue['smoke'], {'active': True, 'remaining_raw': 24,
+                                      'world_position_raw': [16334, 16309, 10]})
+        self.assertEqual(bytes(ram), before)
+        for flag, remaining in [(0, 24), (2, 24), (1, 0), (1, -1)]:
+            ram[ds + 0x0DAE] = flag
+            struct.pack_into('<h', ram, ds + 0x0DAC, remaining)
+            self.assertFalse(read_objects(ram, ds)['presentation_effects']['smoke']['active'])
+
     def test_player_schema_corrects_unsigned_local_coordinate_bug(self):
         reader = SimStateReader(ROOT / "GAME/SIM.EXE")
         ram, base = bytearray(640 * 1024), 0x1ED0

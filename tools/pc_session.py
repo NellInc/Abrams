@@ -22,9 +22,11 @@ except ModuleNotFoundError as error:
 
 
 class PresentationSession:
-    def __init__(self, core, reader, shape_bytes, *, trace=True, collector_factory=Collector):
+    def __init__(self, core, reader, shape_bytes, *, trace=True, collector_factory=Collector,
+                 loop_diagnostics=False):
         self.core, self.reader, self.shape_bytes = core, reader, shape_bytes
         self.trace, self.collector_factory = trace, collector_factory
+        self.loop_diagnostics = loop_diagnostics
         self.program = None
         self.collector = None
         self.frontend = None
@@ -54,7 +56,8 @@ class PresentationSession:
             if self.frontend:
                 self.frontend.detach(self.core)
                 self.frontend=None
-            self.collector = self.collector_factory(self.reader, history_limit=2)
+            options = {'loop_diagnostics': True} if self.loop_diagnostics else {}
+            self.collector = self.collector_factory(self.reader, history_limit=2, **options)
             self.collector.attach(self.core, program['load_segment'])
             self.epoch += 1
         elif self.trace and self.collector is None and self.frontend is None and hasattr(self.core,'core'):
@@ -111,8 +114,17 @@ class PresentationSession:
                 # turns a resource mismatch into a hard attribution error.
                 if presentation.get('draw_pass'): raise ValueError('original SHAPE.TBL differs during observed drawing')
                 state = None
-        return {'program': program, 'state': state, 'presentation': presentation,
-                'render_epoch': self.epoch}
+        result = {'program': program, 'state': state, 'presentation': presentation,
+                  'render_epoch': self.epoch}
+        if self.loop_diagnostics:
+            # The diagnostic can be newer than the displayed buffer. Never use
+            # it to replace the VGA-paired state or the original pass geometry.
+            current = active_program(self.core.conventional_memory())
+            diagnostic = self.collector.loop_diagnostic if (self.collector and program
+                and program['name'] == 'SIM'
+                and self.identity(program) == self.identity(self.program) == self.identity(current)) else None
+            result['loop_diagnostic'] = dict(diagnostic, render_epoch=self.epoch) if diagnostic else None
+        return result
 
     def close(self, *, preserve_frontend=False):
         self.readiness.pending = None

@@ -39,3 +39,10 @@ builds/
 # The authored controls PDF belongs beside the authored field guide.
 # Working if: these two website PDFs are trackable; the original manual remains ignored.
 !/website/dist/assets/guides/keyboard-controls.pdf
+
+# Local session output: Playwright captures of original-game pixels, PDF
+# scratch, background job state and an unregistered local hook copy.
+# Working if: git check-ignore output/playwright work succeeds and the local hook copy is ignored.
+/output/
+/work/
+/hooks/

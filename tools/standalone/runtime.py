@@ -77,16 +77,19 @@ def profile_home(bundle, requested=None):
     return home.resolve()
 
 
-def source_records(resources):
-    rows = json.loads((resources/'kit/tools/package/game-inputs.json').read_text())['files']
+def source_records(resources, expected_sha=None):
+    raw = (resources/'kit/tools/package/game-inputs.json').read_bytes()
+    if expected_sha is not None and hashlib.sha256(raw).hexdigest() != expected_sha:
+        raise ValueError('Verified original input manifest changed during installation')
+    rows = json.loads(raw)['files']
     names = [row['name'] for row in rows]
     if not names or len(set(names)) != len(names) or any(not name or name in {'.','..'} or Path(name).name != name or '\\' in name for name in names):
         raise ValueError('Unsafe original input manifest')
     return rows
 
 
-def validate_content(resources, content):
-    for row in source_records(resources):
+def validate_content(resources, content, records=None):
+    for row in source_records(resources) if records is None else records:
         path = content/'GAME'/row['name']
         managed(content, path)
         if not regular(path) or sha(path) != row['sha256']:
@@ -180,8 +183,14 @@ def valid_payload(resources, manifest):
 def prepare_install(bundle, home):
     resources, manifest = app_resources(bundle)
     valid_payload(resources, manifest)
+    expected_sha = next((row['sha256'] for row in manifest['files']
+                         if row['path'] == 'tools/package/game-inputs.json'), None)
+    if expected_sha is None: raise ValueError('Verified original input manifest is missing from the application payload')
+    # Bind the expected original records to reviewed bytes, never a later read
+    # of an application file that can change while copying.
+    records = source_records(resources, expected_sha)
     content = managed(home, home/'content'/CONTENT_SHA)
-    validate_content(resources, content)
+    validate_content(resources, content, records)
     home.mkdir(parents=True, exist_ok=True)
     target = managed(home, home/'versions'/manifest['build_id'])
     if target.is_symlink(): raise ValueError('Versioned installation cannot be a symlink')
@@ -189,21 +198,68 @@ def prepare_install(bundle, home):
         if shutil.disk_usage(home).free < MIN_FREE: raise ValueError('At least 1 GiB of free disk space is required')
         target.parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix='.install-', dir=target.parent))
-        for row in manifest['files']:
-            destination = staging/row['path']; destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(resources/'kit'/row['path'], destination)
-            destination.chmod(row['mode'])
-        shutil.copytree(content/'GAME', staging/'GAME')
-        shutil.copyfile(content/'.runtime/pc-core/abrams-ref.zip', staging/'.runtime/pc-core/abrams-ref.zip')
-        write_json(staging/'INSTALL.json', {'schema':1,'build_id':manifest['build_id']})
-        staging.rename(target)
-    # Refuse changed code/resources rather than repairing over an existing kit.
+        try:
+            for row in manifest['files']:
+                destination = staging/row['path']; destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(resources/'kit'/row['path'], destination)
+                destination.chmod(row['mode'])
+            shutil.copytree(content/'GAME', staging/'GAME')
+            shutil.copyfile(content/'.runtime/pc-core/abrams-ref.zip', staging/'.runtime/pc-core/abrams-ref.zip')
+            write_json(staging/'INSTALL.json', {'schema':1,'build_id':manifest['build_id']})
+            validate_install(resources, home, staging, manifest, records, candidate=True)
+            staging.rename(target)
+        finally:
+            # This unique unfinished directory contains only attempted copies.
+            # Never remove an accepted version, original source or player state.
+            if staging.exists(): shutil.rmtree(staging)
+    validate_install(resources, home, target, manifest, records)
+    return target
+
+
+def validate_install(resources, home, target, manifest, records, candidate=False):
+    # Reuse the same checks on an unfinished candidate and an accepted version.
+    # Working if: a failed copy never poisons the version ID, while existing
+    # changed versions remain untouched for diagnosis.
     for row in manifest['files']:
         path = managed(home, target/row['path'])
         if not regular(path) or sha(path) != row['sha256']:
+            if candidate:
+                raise ValueError('New installation copy failed verification: '+row['path']+'. Existing originals, installations and saves are unchanged; retry from the verified application.')
             raise ValueError('Versioned installation changed: '+row['path']+'. Keep it for recovery and use a fresh data home.')
-    validate_content(resources, target)
-    return target
+    try:
+        validate_content(resources, target, records)
+    except (ValueError, OSError) as error:
+        if candidate:
+            raise ValueError('New installation original-content copy failed verification. Existing originals and saves are unchanged; retry from the verified application.') from error
+        raise
+
+
+def renderer_preflight(arguments, env, log_path):
+    """Accept clean diagnostics as well as exit status, retaining the full log.
+
+    Working if: zero-exit parse errors never launch gameplay, clean commands
+    ignore historical failures, and owned preflight commands have a deadline.
+    """
+    with log_path.open('ab') as log:
+        start = log.tell()
+        try:
+            result = subprocess.run(arguments, env=env, stdout=log,
+                                    stderr=subprocess.STDOUT, timeout=300)
+        except subprocess.TimeoutExpired as error:
+            raise subprocess.SubprocessError(f'Renderer preflight timed out after 300 seconds. Details: {log_path}') from error
+    pattern = re.compile(br'(?:SCRIPT ERROR|Parse Error|SHADER ERROR|ERROR:)', re.I)
+    tail = b''
+    diagnostic = b''
+    with log_path.open('rb') as log:
+        log.seek(start)
+        for chunk in iter(lambda: log.read(8192), b''):
+            text = tail[-128:] + chunk
+            match = pattern.search(text)
+            if match and not diagnostic: diagnostic = text[match.start():].split(b'\n',1)[0][:512]
+            tail = (tail + chunk)[-2048:]
+    if result.returncode or diagnostic:
+        detail = (diagnostic or tail).decode('utf-8', errors='replace').strip()
+        raise subprocess.SubprocessError(f'Renderer preflight failed (exit {result.returncode}). Details: {log_path}'+('\n'+detail if detail else ''))
 
 
 def launch(bundle, home, extra):
@@ -222,18 +278,18 @@ def launch(bundle, home, extra):
     # Ignore developer-machine overrides and package-manager Python search paths.
     for key in ['PYTHONHOME','PYTHONPATH','GODOT_BIN']:
         env.pop(key,None)
-    with (home/'logs/application.log').open('a') as log:
-        for arguments in [
-            [str(godot),'--headless','--path',str(install/'godot'),'--editor','--import'],
-            [str(godot),'--headless','--path',str(install/'godot'),'--script','res://scripts/pc_bridge_viewer.gd','--check-only']]:
-            subprocess.run(arguments,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
+    application_log = managed(home, home/'logs/application.log')
+    for arguments in [
+        [str(godot),'--headless','--path',str(install/'godot'),'--editor','--import'],
+        [str(godot),'--headless','--path',str(install/'godot'),'--script','res://scripts/pc_bridge_viewer.gd','--check-only']]:
+        renderer_preflight(arguments, env, application_log)
     args=[str(godot),'--path',str(install/'godot'),'--script','res://scripts/pc_bridge_viewer.gd','--','--boot','--play','--saves',str(home/'saves'),'--output',str(home/'logs')]
     if not genesis_enabled(home): args.append('--pc-only')
     args.extend(extra)
     if portable:
         # Game console output goes to the profile log, not the bounded setup pipes;
         # a failure reports the exit code and this session's last log lines.
-        game_log = home/'logs/game.log'
+        game_log = managed(home, home/'logs/game.log')
         with game_log.open('ab') as log:
             log.write(b'\n== game session ==\n'); log.flush(); start = log.tell()
             code = subprocess.call(args, env=env, stdout=log, stderr=subprocess.STDOUT)

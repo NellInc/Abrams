@@ -32,7 +32,7 @@ func run() -> void:
 	check(not graphics_launch_error(["--pc-only","--graphics","genesis"]).is_empty(),"explicit PC-only Genesis rejected")
 	check(not graphics_launch_error(["--graphics"]).is_empty(),"missing graphics argument rejected")
 	check(not graphics_launch_error(["--graphics","unknown"]).is_empty(),"unknown graphics mode rejected")
-	for mode in ["ega","upscaled","modern","tactical"]:
+	for mode in ["ega","ega_upscaled","upscaled","modern","tactical"]:
 		check(graphics_launch_error(["--pc-only","--graphics",mode]).is_empty(),"PC-only accepts "+mode)
 	_configure_art_requests(["--pc-only","--cockpit-art","--gunner-art","--genesis-colours"])
 	check(pc_only and pc_presentation_requested,"PC-only retains independent PC presentation")
@@ -95,11 +95,11 @@ func run() -> void:
 		menu.config_path=""
 		menu.genesis_available=available
 		root.add_child(menu)
-		check(menu.graphics_popup.is_item_disabled(1)==not available,"Genesis availability visible in menu")
-		check(menu.graphics_popup.is_item_disabled(3),"Modern remains disabled")
+		check(menu.graphics_popup.is_item_disabled(menu.MODES.find("genesis"))==not available,"Genesis availability visible in menu")
+		check(menu.graphics_popup.is_item_disabled(menu.MODES.find("modern")),"Modern remains disabled")
 		check(menu.choose_graphics("genesis")==available,"Genesis direct selection honors availability")
 		menu.choose_graphics("upscaled")
-		var expected := ["ega","genesis","upscaled"] if available else ["ega","upscaled","ega"]
+		var expected := ["ega","ega_upscaled","genesis","upscaled"] if available else ["ega","ega_upscaled","upscaled"]
 		for mode in expected:
 			var event := InputEventKey.new()
 			event.keycode=KEY_G;event.pressed=true

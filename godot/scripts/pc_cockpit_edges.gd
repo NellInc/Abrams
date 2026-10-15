@@ -7,9 +7,8 @@ var active := false
 var mesh: ArrayMesh
 var profiles: Array = []
 var build_count := 0
-var _tags := PackedByteArray()
-var _assembly := PackedByteArray()
-var _key := ""
+# One exact, validated geometry snapshot per supported station.
+var _geometry_cache: Dictionary = {}
 
 func _init() -> void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -56,7 +55,11 @@ func set_frame(ui:Image,tags:Image,camera:Rect2i,donor:Texture2D,assembly:Image,
 		if bits[p.y*320+p.x]!=station:return
 	var roof:=assembly.get_data() if assembly!=null else PackedByteArray()
 	var key:=str(station)+str(rail)
-	if bits!=_tags or roof!=_assembly or key!=_key:
+	var cached:Dictionary=_geometry_cache.get(station,{})
+	if not cached.is_empty() and bits==cached.tags and roof==cached.assembly and key==cached.key:
+		# Copy profiles so public inspection cannot mutate the cached snapshot.
+		profiles=cached.profiles.duplicate(true);mesh=cached.mesh
+	else:
 		# Do not infer an outline from a mixed station transition.
 		if bits.count(0)+bits.count(station)!=bits.size():return
 		profiles.clear();mesh=null
@@ -73,8 +76,8 @@ func set_frame(ui:Image,tags:Image,camera:Rect2i,donor:Texture2D,assembly:Image,
 				elif y<lower[x]:lower[x]=y
 		if station==4:profiles.append({"upper":true,"points":fit(upper)})
 		profiles.append({"upper":false,"points":fit(lower)})
-		_tags=bits;_assembly=roof;_key=key
 		_build_mesh();build_count+=1
+		_geometry_cache[station]={"tags":bits,"assembly":roof,"key":key,"profiles":profiles.duplicate(true),"mesh":mesh}
 	material.set_shader_parameter("ui_mask",ImageTexture.create_from_image(ui))
 	material.set_shader_parameter("plate_mask",ImageTexture.create_from_image(tags))
 	material.set_shader_parameter("driver_mask",ImageTexture.create_from_image(assembly) if assembly!=null else null)

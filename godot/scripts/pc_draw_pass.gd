@@ -8,6 +8,13 @@ const ModernAssets = preload("res://scripts/pc_modern_assets.gd")
 const SurfaceShader = preload("res://scripts/pc_surface.gdshader")
 const Colour = preload("res://scripts/pc_colour.gd")
 const TerrainStyle = preload("res://scripts/pc_terrain_style.gd")
+const TacticalFoliage = preload("res://scripts/pc_tactical_foliage.gd")
+const TacticalEffects = preload("res://scripts/pc_tactical_effects.gd")
+var tactical_effects = TacticalEffects.new()
+var tactical_foliage = TacticalFoliage.new()
+var _foliage_pass: Dictionary = {}
+var _foliage_mapping: Dictionary = {}
+var _effects_inputs: Dictionary = {}
 var profile_builds := false
 var last_apply_timings_usec: Dictionary = {}
 var mesh_build_count := 0
@@ -28,15 +35,24 @@ var modern_enabled := false:
 var tactical_landscape := false:
 	set(value):
 		tactical_landscape=value
-		# This profile changes materials only. A retained source-paired mesh
-		# can switch instantly without a guest frame or geometry rebuild.
+		if value and _modern_active:
+			tactical_foliage.prepare(_foliage_pass,_foliage_mapping,ownership.get_texture())
+			tactical_effects.prepare(_foliage_pass,_foliage_mapping,ownership.get_texture(),modern_assets,effect_art)
+			_effects_inputs={"rows":TacticalEffects.inputs(_foliage_pass).duplicate(true)}
+		else:
+			tactical_foliage.clear()
+			tactical_effects.clear()
+		# Switching reuses the paired source data, never requests a guest tick.
 		if mesh_node!=null and mesh_node.mesh!=null and mesh_node.mesh.get_surface_count()>0:
 			var active: Material=mesh_node.mesh.surface_get_material(0)
 			if active is ShaderMaterial:
 				active.set_shader_parameter("tactical_landscape",value)
+				refresh_surface_shader(active)
 				if retain_render_target and get_viewport() is SubViewport:
 					get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
 var modern_assets = ModernAssets.new()
+var tactical_material_textures: Dictionary = {}
+var tactical_material_atlas: Texture2D
 var modern_prewarmed := false
 var modern_status := "Modern assets unavailable"
 var modern_polygon_count := 0
@@ -50,6 +66,7 @@ var ownership = ModernOwnership.new()
 var _owner := 0
 var _modern_active := false
 var _modern_shader: Shader
+var _groundlight_shader: Shader
 var presentation_palette: Array = []
 var terrain_style: RefCounted
 var effect_art: RefCounted
@@ -74,14 +91,71 @@ var source_points: Array = []
 func _init() -> void:
 	_modern_shader = Shader.new()
 	_modern_shader.code = SurfaceShader.code.replace("depth_test_disabled, depth_draw_never", "depth_draw_opaque").replace("void fragment() {", "void fragment() {\n    DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n    if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
+	_groundlight_shader=Shader.new()
+	var groundlight_code:=_groundlight_source()
+	if groundlight_code.is_empty():_groundlight_shader=null
+	else:_groundlight_shader.code=groundlight_code.replace("depth_test_disabled, depth_draw_never", "depth_draw_opaque").replace("void fragment() {", "void fragment() {\n    DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n    if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
 	mesh_node = MeshInstance3D.new()
 	add_child(mesh_node)
 	mesh_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(ownership)
+	add_child(tactical_foliage)
+	add_child(tactical_effects)
+
+
+func _groundlight_source() -> String:
+	# Extend the existing source template; no duplicate baseline shader to drift.
+	var code:=SurfaceShader.code
+	var edits:Dictionary={
+		"#include \"res://scripts/pc_tactical_effect_finish.gdshaderinc\"":"#include \"res://scripts/pc_tactical_effect_finish.gdshaderinc\"\n#include \"res://scripts/pc_tactical_polish.gdshaderinc\"",
+		"                    crown=tactical_crown(tree.rgb,UV2,UV.x);":"                    crown=tactical_polish_crown(tactical_crown(tree.rgb,UV2,UV.x),UV2,UV.x,bark_footprint);",
+		"                foliage=mix(tactical_crown(tree.rgb,tree_uv,seed),vec3(0.52,0.60,0.50),0.22);":"                foliage=mix(tactical_polish_crown(tactical_crown(tree.rgb,tree_uv,seed),tree_uv,seed,abs(tree_dx)+abs(tree_dy)),vec3(0.52,0.60,0.50),0.22);",
+		"            ALBEDO=OUTPUT_IS_SRGB ? bark : pow(bark,vec3(2.2));":"            if(modern_environment_polish && modern_surface_variation && tactical_daylight_observed())bark=tactical_polish_collar(bark,UV2,bark_footprint);\n            ALBEDO=OUTPUT_IS_SRGB ? bark : pow(bark,vec3(2.2));",
+		"        ALBEDO*=OUTPUT_IS_SRGB ? tint : pow(tint,vec3(2.2));":"        ALBEDO*=OUTPUT_IS_SRGB ? tint : pow(tint,vec3(2.2));\n        ALBEDO=tactical_polish_finish_colour(ALBEDO,tactical_normal,family,finish_sample.x,realism_dx,realism_dy,tactical_position_dx,tactical_position_dy,length(realism_local),tactical_eye_pixel,tactical_realism_ready && realism_usable && finish_sampled);",
+		"        finish_sample=realism_sample(realism_uv,realism_dx,realism_dy,family,length(realism_local));\n        finish_sampled=true;\n        finish_normal=tactical_relief_normal":"        finish_sample=tactical_finish_grain_sample(realism_uv,realism_dx,realism_dy,family,length(realism_local));\n        finish_sampled=true;\n        finish_normal=tactical_relief_normal",
+		"vec3 tactical_textured_finish_light(vec3 base,vec3 normal,vec3 eye,float legacy_sheen,float family,float distance,float eye_pixel,float texture_gain) {":"#include \"res://scripts/pc_tactical_finishgrain.gdshaderinc\"\n#include \"res://scripts/pc_tactical_diffusion.gdshaderinc\"\n\nvec3 tactical_textured_finish_light(vec3 base,vec3 normal,vec3 eye,float legacy_sheen,float family,float distance,float eye_pixel,float texture_gain) {",
+		"    vec3 result=tactical_daylight(base,normal,eye,0.0);":"    vec3 result=tactical_daylight(base,normal,eye,0.0);\n    float rough_gain=tactical_rough_gain(normal,eye,family,texture_gain,distance,eye_pixel);\n    result*=OUTPUT_IS_SRGB ? vec3(rough_gain) : vec3(pow(rough_gain,2.2));",
+		"vec3 tactical_soil(vec3 base, vec2 surface, vec2 dx, vec2 dy, vec3 face, vec3 eye, float kind, float distance) {":"#include \"res://scripts/pc_tactical_groundlight.gdshaderinc\"\n\nvec3 tactical_soil(vec3 base, vec2 surface, vec2 dx, vec2 dy, vec3 face, vec3 eye, float kind, float distance,vec3 atlas_slope,float atlas_gain,bool brown,vec3 world_point,float eye_pixel) {",
+		"    vec3 normal=tactical_slope_normal(face,vec2(sx,sy)*fine_fade,kind);":"    vec3 normal=tactical_slope_normal(face,vec2(sx,sy)*fine_fade,kind);\n    normal=tactical_terrain_normal(face,normal,atlas_slope,10.0);",
+		"    base*=OUTPUT_IS_SRGB ? tint : pow(tint,vec3(2.2));\n    vec3 lit=tactical_daylight(base,normal,eye,0.0);":"    if(brown) {\n        vec2 colour_filters=vec2(tactical_ground_colour_fade(dx,dy,96.0),tactical_ground_detail(footprint,256.0)/(1.0+pow(distance/24000.0,2.0)));\n        vec3 earth=tactical_hill_earth(face,world_point,vec3(broad,middle,fine),colour_filters,atlas_gain,hill_mean);\n        base=OUTPUT_IS_SRGB ? earth : pow(earth,vec3(2.2));\n    } else base*=OUTPUT_IS_SRGB ? tint : pow(tint,vec3(2.2));\n    vec3 lit=tactical_daylight(base,normal,eye,0.0);\n    float rough_near=tactical_rough_gain(normal,eye,10.0,atlas_gain,distance,eye_pixel);\n    lit*=OUTPUT_IS_SRGB ? vec3(rough_near) : vec3(pow(rough_near,2.2));",
+		"    vec3 distant=tactical_daylight(base,face,eye,0.0);":"    vec3 distant=tactical_daylight(base,face,eye,0.0);\n    float rough_far=tactical_rough_gain(face,eye,10.0,atlas_gain,distance,eye_pixel);\n    distant*=OUTPUT_IS_SRGB ? vec3(rough_far) : vec3(pow(rough_far,2.2));",
+		"    vec3 finish_normal=tactical_normal;":"    vec3 terrain_atlas_slope=vec3(0.0);\n    bool terrain_finish=tactical_landscape && modern_active && modern_environment_polish && modern_surface_variation &&\n        tactical_realism_ready && detail_levels>1.0 && tactical_daylight_observed() && realism_usable && realism_ground(family) &&\n        ((UV.y>0.5 && UV.y<3.5) || (UV.y>6.5 && UV.y<9.5));\n    if(terrain_finish) {\n        finish_sample=realism_sample(realism_uv,realism_dx,realism_dy,family,length(realism_local));\n        finish_sampled=true;\n        vec3 face=UV.y>2.5 && UV.y<3.5 ? vec3(0.0,0.0,1.0) : tactical_normal;\n        terrain_atlas_slope=tactical_terrain_slope(face,finish_sample.yz,realism_uv,UV.y,family);\n    }\n    vec3 finish_normal=tactical_normal;",
+		"                    vec3 normal=tactical_slope_normal(face,vec2(slope_x,slope_y)*fine_fade,UV.y);":"                    vec3 normal=tactical_slope_normal(face,vec2(slope_x,slope_y)*fine_fade,UV.y);\n                    if(terrain_finish)normal=tactical_terrain_normal(face,normal,terrain_atlas_slope,family);",
+		"                    base=mix(base,distant,(1.0-distance_fade)*0.35);":"                    base=mix(base,distant,(1.0-distance_fade)*0.35);\n                    if(terrain_finish)base*=tactical_rough_gain(normal,tactical_to_eye,family,finish_sample.x,length(realism_local),tactical_eye_pixel);\n                    if(road && terrain_finish)base=tactical_asphalt_light(base,normal,tactical_to_eye,finish_sample.x,length(realism_local),tactical_eye_pixel);\n                    if(road && terrain_finish)base=tactical_polish_road_edge(base,UV2,terrain_dx,terrain_dy,length(realism_local));",
+		"                ALBEDO=tactical_soil(ALBEDO,surface,terrain_dx,terrain_dy,tactical_normal,tactical_to_eye,UV.y,length(local.xy));":"                ALBEDO=tactical_soil(ALBEDO,surface,terrain_dx,terrain_dy,tactical_normal,tactical_to_eye,UV.y,length(local.xy),terrain_atlas_slope,finish_sample.x,terrain_finish && (abs(UV.x-17.0)<0.25 || abs(UV.x-26.0)<0.25),position,tactical_eye_pixel);"
+	}
+	for anchor:String in edits:
+		if code.count(anchor)!=1:
+			push_error("Tactical terrain shader anchor is missing or ambiguous")
+			return ""
+		code=code.replace(anchor,str(edits[anchor]))
+	return code
+
+func refresh_surface_shader(active:Material) -> void:
+	if not active is ShaderMaterial:return
+	var material:ShaderMaterial=active
+	# Shader-default controls are explicitly initialized at material creation.
+	# Unknown states retain the exact incumbent program. Call after controls.
+	var eligible:bool=_modern_active and tactical_landscape and _groundlight_shader!=null
+	eligible=eligible and material.get_shader_parameter("modern_active")==true and material.get_shader_parameter("tactical_landscape")==true
+	eligible=eligible and material.get_shader_parameter("tactical_realism_ready")==true and material.get_shader_parameter("tactical_realism_atlas") is Texture2D
+	eligible=eligible and material.get_shader_parameter("modern_surface_variation")==true and material.get_shader_parameter("modern_environment_polish")==true
+	var levels:Variant=material.get_shader_parameter("detail_levels")
+	eligible=eligible and (levels is int or levels is float) and is_finite(float(levels)) and float(levels)>1.0
+	var horizon:Variant=material.get_shader_parameter("source_horizon_line")
+	eligible=eligible and horizon is Vector3 and horizon.is_finite() and Vector2(horizon.x,horizon.y).length_squared()>0.5
+	var selected:Shader=(_groundlight_shader if eligible else _modern_shader) if _modern_active else SurfaceShader
+	if material.shader==selected:return
+	material.shader=selected
+	if retain_render_target and get_viewport() is SubViewport:
+		get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
 
 func load_modern_assets(root: String) -> bool:
 	clear_mesh_cache()
 	var loaded: bool = modern_assets.load_assets(root)
+	tactical_material_textures = modern_assets.material_textures.duplicate()
+	tactical_material_atlas=modern_assets.material_atlas
+	tactical_foliage.set_material_atlas(tactical_material_atlas)
 	modern_status = modern_assets.status
 	modern_prewarmed = false
 	if loaded and DisplayServer.get_name()!="headless":
@@ -103,7 +177,7 @@ func _mesh_config() -> Array:
 	# the small mutable configuration arrays and texture references explicitly.
 	return [solid_enabled,modern_enabled,presentation_palette,
 		get_viewport().get_visible_rect().size,RenderingServer.get_current_rendering_method(),
-		modern_assets,modern_assets.revision,modern_assets.ready,modern_assets.colour_texture,modern_assets.tree_texture,
+		tactical_material_atlas,tactical_material_textures,modern_assets,modern_assets.revision,modern_assets.ready,modern_assets.colour_texture,modern_assets.tree_texture,
 		terrain_style,terrain_style.textures if terrain_style else {},terrain_style.hill_texture if terrain_style else null,
 		effect_art,effect_art.atlas if effect_art else null,effect_art.correction if effect_art else null,
 		effect_art.sources if effect_art else {},effect_art.bounds if effect_art else {},
@@ -128,9 +202,21 @@ func apply_pass(pass_data: Dictionary) -> void:
 			var anchor: float=modern_assets.running_gear_anchor(object,pass_data)
 			motion_inputs.append(anchor if is_finite(anchor) else null)
 	render_input["world"]=motion_inputs
+	var effects_input: Dictionary={"rows":TacticalEffects.inputs(pass_data)} if modern_enabled and tactical_landscape else {}
 	# Full recursive content equality against an independent snapshot, never a
 	# sequence/hash-only identity. In-place edits and restored slot reuse miss.
 	if cacheable and not _cached_pass.is_empty() and mesh_node.mesh!=null and _cached_config==config and _cached_pass.recursive_equal(render_input,64):
+		if _modern_active:
+			_foliage_pass=pass_data
+			# A source smoke-clock or speed change updates only the small
+			# particle batch. Preserve the existing terrain/actor mesh cache.
+			if tactical_landscape and not _effects_inputs.recursive_equal(effects_input,64):
+				tactical_effects.prepare(pass_data,_foliage_mapping,ownership.get_texture(),modern_assets,effect_art)
+				_effects_inputs=effects_input.duplicate(true)
+				if retain_render_target and get_viewport() is SubViewport:
+					get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
+		if mesh_node.mesh!=null and mesh_node.mesh.get_surface_count()>0:
+			refresh_surface_shader(mesh_node.mesh.surface_get_material(0))
 		mesh_reuse_count += 1
 		if profile_builds:
 			last_apply_timings_usec.reused=true
@@ -144,6 +230,12 @@ func apply_pass(pass_data: Dictionary) -> void:
 		get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
 	render_warnings.clear()
 	ownership.clear()
+	tactical_foliage.clear()
+	tactical_effects.clear()
+	# Release borrowed snapshots without clearing the caller's dictionary.
+	_foliage_pass={}
+	_foliage_mapping={}
+	_effects_inputs={}
 	_owner = 0
 	_modern_active = false
 	modern_tree_count = 0
@@ -318,6 +410,7 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 				# mask. Invented thickness or depth ties would corrupt the pose.
 				if int(object.get("shape_index",-1)) in [161,162]:
 					for facet: Dictionary in facets:
+						facet.realism_family=roundi(fmod(float(facet.kind),1.0)*64.0) if float(facet.kind)>=24.0 else 0
 						facet.kind=20.0625
 						facet.flat_source_layer=source_layer
 				object_facets.append_array(facets)
@@ -336,7 +429,8 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 					if not panel.uv.is_empty(): triangles=SurfaceGeometry.textured_triangles(points,panel.uv,frame)
 					kind=panel.kind
 					vehicle_polygon_count+=1
-				_add_triangles(vertices, materials, triangles, int(polygon.colors[1]), pass_data.materials.size(),kind)
+				var road_edges:Array=_road_edge_coordinates(points,triangles) if _modern_active and kind==2 and int(object.get("shape_index",-1)) in [50,51] else []
+				_add_triangles(vertices, materials, triangles, int(polygon.colors[1]), pass_data.materials.size(),kind,road_edges)
 			if (not fill or polygon.colors[0] != polygon.colors[1]) and tree.is_empty() and facets.is_empty():
 				var edges: int = points.size() if points.size() > 2 else 1
 				var bridge_colour:int=modern_assets.bridge_line_colour_index(object,polygon,pass_data.palette_rgb) if _modern_active else -1
@@ -361,11 +455,17 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	material.shader = _modern_shader if _modern_active else SurfaceShader
 	material.set_shader_parameter("modern_active",_modern_active)
 	material.set_shader_parameter("tactical_landscape",_modern_active and tactical_landscape)
+	material.set_shader_parameter("modern_surface_variation",true)
+	material.set_shader_parameter("modern_environment_polish",true)
 	if _modern_active:
 		material.set_shader_parameter("source_ownership",ownership.get_texture())
 		material.set_shader_parameter("modern_colours",modern_assets.colour_texture)
 		material.set_shader_parameter("modern_colour_count",float(modern_assets.colour_indices.size()))
 		if modern_assets.tree_texture!=null: material.set_shader_parameter("modern_tree",modern_assets.tree_texture)
+		material.set_shader_parameter("tactical_realism_ready",tactical_material_atlas!=null)
+		if tactical_material_atlas!=null:material.set_shader_parameter("tactical_realism_atlas",tactical_material_atlas)
+		material.set_shader_parameter("tactical_material_ready",tactical_material_textures.size()==3)
+		for name in tactical_material_textures:material.set_shader_parameter("tactical_"+str(name)+"_detail",tactical_material_textures[name])
 	material.set_shader_parameter("material_patterns",_pattern_texture)
 	material.set_shader_parameter("pattern_width",float(_pattern_texture.get_width()))
 	material.set_shader_parameter("detail_levels",float(levels))
@@ -400,18 +500,71 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 		var delta:=b-a
 		if delta.length()>0.0:
 			material.set_shader_parameter("source_horizon_line",Vector3(-delta.y,delta.x,delta.y*a.x-delta.x*a.y)/delta.length())
+	refresh_surface_shader(material)
 	mesh.surface_set_material(0, material)
 	mesh_node.mesh = mesh
 	if profile_builds: last_apply_timings_usec.upload=Time.get_ticks_usec()-upload_started
+	if _modern_active:
+		_foliage_pass=pass_data
+		_foliage_mapping=mapping
+		if tactical_landscape:
+			tactical_foliage.prepare(pass_data,mapping,ownership.get_texture())
+			tactical_effects.prepare(pass_data,mapping,ownership.get_texture(),modern_assets,effect_art)
+			_effects_inputs={"rows":TacticalEffects.inputs(pass_data).duplicate(true)}
 
-func _add_triangles(vertices: PackedVector3Array, materials: PackedVector2Array, points: Array, material: int, count: int, kind: int = 0) -> void:
+
+static func _road_edge_coordinates(original:Array,triangles:Array) -> Array:
+	# Original unclipped straight-road quad only. Supporting-line distances
+	# are inward-positive in raw source units; no near-plane/endcap seam.
+	# This is road-face edge finish, not a claim about adjoining soil/cover.
+	if original.size()!=4 or triangles.is_empty():return []
+	var p:Array[Vector3]=[]
+	for raw:Variant in original:
+		if not raw is Array or raw.size()!=3:return []
+		for value:Variant in raw:
+			if not (value is int or value is float) or not is_finite(float(value)):return []
+		p.append(Vector3(raw[0],raw[1],raw[2]))
+	var e:Array[Vector3]=[p[1]-p[0],p[2]-p[1],p[3]-p[2],p[0]-p[3]]
+	for edge:Vector3 in e:
+		if edge.length()<8.0:return []
+	# Rounded source-camera transforms permit at most two raw units of error.
+	if (e[0]+e[2]).length()>2.0 or (e[1]+e[3]).length()>2.0:return []
+	var corner:Vector3=e[0].cross(e[1])
+	if corner.length()<1.0:return []
+	var normal:Vector3=corner.normalized()
+	if absf((p[3]-p[0]).dot(normal))>2.0:return []
+	var start:int=0 if e[0].length()>=e[1].length() else 1
+	var axis:Vector3=e[start].normalized()
+	var side:Vector3=normal.cross(axis).normalized()
+	var origin:Vector3=p[start]
+	var opposite:Vector3=p[(start+3)%4]
+	if (opposite-origin).dot(side)<0.0:side=-side
+	var width:float=(opposite-origin).dot(side)
+	if not is_finite(width) or width<8.0 or e[start].length()<width*2.0:return []
+	# Reject skew/trapezoid/self-crossing/ambiguous strips rather than drawing
+	# an invented shoulder. Square junctions and curved primitives never call.
+	if absf(axis.dot(e[(start+1)%4].normalized()))>0.005:return []
+	if absf((p[(start+2)%4]-origin).dot(side)-width)>2.0:return []
+	var result:Array[Vector2]=[]
+	for raw:Variant in triangles:
+		if not raw is Array or raw.size()<3:return []
+		var point:=Vector3(float(raw[0]),float(raw[1]),float(raw[2]))
+		if not point.is_finite():return []
+		var d:float=(point-origin).dot(side)
+		if d < -2.0 or d>width+2.0:return []
+		d=clampf(d,0.0,width)
+		result.append(Vector2(d,width-d))
+	return result
+
+func _add_triangles(vertices: PackedVector3Array, materials: PackedVector2Array, points: Array, material: int, count: int, kind: int = 0, road_edges: Array = []) -> void:
 	if material < 0 or material >= count:
 		render_warnings.append("Unsupported original material %d" % material)
 		return
-	for point: Array in points:
+	for i in points.size():
+		var point:Array=points[i]
 		vertices.append(camera_point(point))
 		materials.append(Vector2(material,kind+_owner*32))
-		_effect_uvs.append(Vector2(point[3],point[4]) if kind>=10 and point.size()==5 else Vector2.ZERO)
+		_effect_uvs.append(road_edges[i] if kind==2 and road_edges.size()==points.size() else (Vector2(point[3],point[4]) if kind>=10 and point.size()==5 else Vector2.ZERO))
 
 func _add_effect(vertices: PackedVector3Array, materials: PackedVector2Array, effect: Dictionary, frame: Dictionary) -> void:
 	var rect: Rect2 = effect.rect
@@ -421,7 +574,7 @@ func _add_effect(vertices: PackedVector3Array, materials: PackedVector2Array, ef
 	for index in [0,1,2,0,2,3]:
 		var point: Vector2 = points[index]
 		vertices.append(camera_point(SurfaceGeometry.unproject(point,1024.0,frame)))
-		materials.append(Vector2(0,4+_owner*32))
+		materials.append(Vector2(float(effect.donor)+1.0,4+_owner*32))
 		_effect_uvs.append(uv.position+(point-target.position)/target.size*uv.size)
 
 func _add_modern(vertices: PackedVector3Array, materials: PackedVector2Array, facet: Dictionary) -> void:
@@ -429,7 +582,10 @@ func _add_modern(vertices: PackedVector3Array, materials: PackedVector2Array, fa
 	for point: Array in facet.points:
 		vertices.append(camera_point(point))
 		materials.append(material_uv)
-		_effect_uvs.append(Vector2(float(facet.flat_source_layer),0) if facet.has("flat_source_layer") else Vector2(point[3],point[4]) if point.size()==5 else Vector2.ZERO)
+		# Verified crew U is -30..45 and V is -90..25. A 512-wide band
+		# carries the family independently of owner-packed kind precision.
+		# The vertex shader restores integer painter depth before interpolation.
+		_effect_uvs.append(Vector2(float(facet.flat_source_layer)+clampf((float(point[3])+512.0)/1024.0,0.001,0.999),float(point[4])+128.0+float(facet.realism_family)*512.0) if facet.has("flat_source_layer") and int(facet.get("realism_family",0))>0 and point.size()==5 else Vector2(float(facet.flat_source_layer),0) if facet.has("flat_source_layer") else Vector2(point[3],point[4]) if point.size()==5 else Vector2.ZERO)
 	modern_triangle_count += facet.points.size()/3
 	if float(facet.get("kind",20))>20.1 and float(facet.get("kind",20))<20.3: modern_running_gear_triangles += facet.points.size()/3
 
@@ -440,6 +596,7 @@ func _add_tree(vertices: PackedVector3Array, materials: PackedVector2Array, poin
 		_effect_uvs.append(Vector2(point[3],point[4]))
 
 func _prewarm_modern() -> bool:
+	if _groundlight_shader==null:return false
 	# SceneTree._initialize invokes this before its nodes enter the tree.
 	# A rendering-server-only target therefore warms production cold startup
 	# as well as deferred tests, without modifying the active source scene.
@@ -458,11 +615,11 @@ func _prewarm_modern() -> bool:
 	arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2(0,20),Vector2(0,20),Vector2(0,20)])
 	arrays[Mesh.ARRAY_TEX_UV2]=PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO])
 	var mesh:=ArrayMesh.new()
-	for shader in [_modern_shader,ModernOwnership.ShaderSource]:
+	for shader in [_modern_shader,_groundlight_shader,ModernOwnership.ShaderSource]:
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 		var material:=ShaderMaterial.new()
 		material.shader=shader
-		if shader==_modern_shader:
+		if shader==_modern_shader or shader==_groundlight_shader:
 			material.set_shader_parameter("modern_colours",modern_assets.colour_texture)
 			material.set_shader_parameter("modern_colour_count",float(modern_assets.colour_indices.size()))
 		mesh.surface_set_material(mesh.get_surface_count()-1,material)

@@ -29,6 +29,7 @@ var _cached_presentation: Dictionary = {}
 var _cached_world: Texture2D
 var _cached_program: Dictionary = {}
 var _upscaled_material: Material
+var _ega_material := ShaderMaterial.new()
 var world_enabled := false
 var fallback_reason := "awaiting original framebuffer"
 const ART_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
@@ -70,6 +71,7 @@ func _init() -> void:
 	shader_material.shader = COMPOSITOR
 	material = shader_material
 	_upscaled_material = shader_material
+	_ega_material.shader = preload("res://scripts/pc_ega_upscale.gdshader")
 	add_child(damage_art)
 	damage_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dynamic_map_art)
@@ -331,7 +333,7 @@ func load_graphics_sources(root: String) -> bool:
 	return native_graphics.load_sources(root)
 
 func set_graphics_mode(mode: String) -> bool:
-	if mode not in ["ega","genesis","upscaled","modern","tactical"]: return false
+	if mode not in ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]: return false
 	if mode=="genesis" and not native_graphics.loaded: return false
 	if mode in ["modern","tactical"] and not modern_available: return false
 	graphics_mode=mode
@@ -357,7 +359,12 @@ func remember_frame(source: Image, presentation: Dictionary, world: Texture2D, p
 func set_frame(source: Image, presentation: Dictionary, world: Texture2D, program: Dictionary={}) -> bool:
 	remember_frame(source,presentation,world,program)
 	material=_upscaled_material
+	material.set_shader_parameter("ega_upscaled",false)
+	instrument_art.pc_rounds_enabled=typography.hud_style!="tactical"
 	material.set_shader_parameter("modern_armour_palette",graphics_mode in ["modern","tactical"])
+	material.set_shader_parameter("tactical_armour",graphics_mode=="tactical")
+	cockpit_edges.material.set_shader_parameter("tactical",graphics_mode=="tactical")
+	reticle_art.material.set_shader_parameter("tactical",graphics_mode=="tactical")
 	for child in [damage_art,dynamic_map_art,gunner_trim,commander_trim,cockpit_edges,instrument_art,reticle_art,target_box_art,portrait_art,typography]:child.visible=graphics_mode in ["upscaled","modern","tactical"]
 	native_graphics.visible=graphics_mode=="genesis"
 	if graphics_mode not in ["upscaled","modern","tactical"]:
@@ -365,6 +372,11 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 		material=null
 		texture=ImageTexture.create_from_image(source) if source!=null and not source.is_empty() else null
 		if graphics_mode=="genesis":native_graphics.set_frame(source,presentation,program)
+		if graphics_mode=="ega_upscaled" and texture!=null and source.get_size()==Vector2i(320,200):
+			material=_ega_material
+			material.set_shader_parameter("ega_source",texture)
+			material.set_shader_parameter("ega_upscaled",true)
+			fallback_reason="Original PC colours with edge-aware EGA upscaling"
 		return texture!=null
 	frontend_art.clear()
 	damage_art.clear()

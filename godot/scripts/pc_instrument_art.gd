@@ -34,6 +34,8 @@ var commander_donor: Texture2D
 var source_plate: Image
 var donor: Texture2D
 var active: Array[Dictionary] = []
+var pc_rounds_enabled := true
+var pc_rounds: Dictionary = {}
 var gauges: Array[Dictionary] = []
 var plates: Dictionary = {}
 var orientation = preload("res://scripts/pc_orientation_art.gd").new()
@@ -78,6 +80,7 @@ func _init() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	resized.connect(queue_redraw)
 	resized.connect(_layout_orientation)
+	resized.connect(_layout_pc_rounds)
 	add_child(orientation)
 	orientation.clear()
 
@@ -91,6 +94,7 @@ func load_sources(root: String, art: Image, commander: Image = null) -> bool:
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=SOURCE_HASH: return false
 	if art==null or art.get_size()!=Vector2i(1586,992): return false
 	source_plate = Image.load_from_file(path)
+	_load_pc_rounds()
 	donor = ImageTexture.create_from_image(art)
 	if commander!=null and commander.get_size()==Vector2i(1586,992):
 		commander_donor=ImageTexture.create_from_image(commander)
@@ -119,7 +123,38 @@ func clear() -> void:
 	active.clear()
 	gauges.clear()
 	orientation.clear()
+	for icon: TextureRect in pc_rounds.values(): icon.hide()
 	queue_redraw()
+
+func _load_pc_rounds() -> void:
+	# Use the exact PC glyph, including its thin body, fins, tip and original
+	# well colours. One shared edge-aware shader adds contour resolution only.
+	for item in CELLS.slice(0,3):
+		var icon: TextureRect=pc_rounds.get(item.name)
+		if icon==null:
+			icon=TextureRect.new()
+			icon.mouse_filter=Control.MOUSE_FILTER_IGNORE
+			icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+			icon.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
+			var effect:=ShaderMaterial.new()
+			effect.shader=preload("res://scripts/pc_ega_upscale.gdshader")
+			effect.set_shader_parameter("ega_upscaled",true)
+			icon.material=effect
+			add_child(icon)
+			pc_rounds[item.name]=icon
+		icon.texture=ImageTexture.create_from_image(source_plate.get_region(item.source))
+		# The shared Scale3x shader reads its explicit sampler, not TEXTURE.
+		# Bind every newly loaded crop, including reused icon controls.
+		icon.material.set_shader_parameter("ega_source",icon.texture)
+		icon.hide()
+	_layout_pc_rounds()
+
+func _layout_pc_rounds() -> void:
+	for item in CELLS.slice(0,3):
+		if not pc_rounds.has(item.name): continue
+		var icon: TextureRect=pc_rounds[item.name]
+		icon.position=Vector2(item.source.position)*size/Vector2(320,200)
+		icon.size=Vector2(item.source.size)*size/Vector2(320,200)
 
 func set_frame(source: Image, ui: Image, tags: Image, diagram: Dictionary = {}) -> void:
 	clear()
@@ -130,7 +165,9 @@ func set_frame(source: Image, ui: Image, tags: Image, diagram: Dictionary = {}) 
 	_layout_orientation()
 	for item in CELLS:
 		var box: Rect2i = item.source
-		if _owned_region(ui,tags,box,1) and _same_region(source,source_plate,box): active.append(item)
+		if _owned_region(ui,tags,box,1) and _same_region(source,source_plate,box):
+			active.append(item)
+			if pc_rounds_enabled and pc_rounds.has(item.name): pc_rounds[item.name].show()
 	if commander_donor!=null and plates.has(2):
 		for item in COMMANDER_CELLS:
 			if _owned_region(ui,tags,item.source,2) and _same_region(source,plates[2],item.source): active.append(item)
@@ -242,6 +279,7 @@ func _draw() -> void:
 	if donor==null: return
 	draw_set_transform(Vector2.ZERO,0,size/Vector2(320,200))
 	for item in active:
+		if pc_rounds_enabled and pc_rounds.has(item.name): continue
 		if item.get("screw",false):
 			_driver_fastener(Rect2(item.source))
 			continue

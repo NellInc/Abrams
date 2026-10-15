@@ -2,6 +2,7 @@
 import ctypes as C
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -56,7 +57,14 @@ extern "C" unsigned guest_value() { return guest[123]; }
         cls.size = cls.lib.abrams_observer_checkpoint_size()
 
     @classmethod
-    def tearDownClass(cls): cls.temp.cleanup()
+    def tearDownClass(cls):
+        if sys.platform == 'win32':
+            # Windows keeps loaded DLLs locked until the final native handle closes.
+            import _ctypes
+            handle = cls.lib._handle
+            cls.lib = None
+            _ctypes.FreeLibrary(handle)
+        cls.temp.cleanup()
 
     def save(self):
         raw = C.create_string_buffer(self.size)

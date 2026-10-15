@@ -8,6 +8,7 @@ uniform sampler2D world_texture : filter_nearest, repeat_disable;
 uniform bool driver_enabled=false;
 uniform bool rail_verified=false;
 uniform bool modern=false;
+uniform bool tactical=false;
 uniform int station=3;
 uniform vec2 frame_size;
 uniform vec2 camera_size;
@@ -35,7 +36,9 @@ float driver_y(float y) {
 vec3 paint(vec4 art) {
 	if(!modern)return art.rgb;
 	float light=dot(art.rgb,vec3(.2126,.7152,.0722));
-	return mix(art.rgb,light*vec3(.65,.70,.46),smoothstep(.10,.30,light)*(1.0-art.a));
+	vec3 colour=mix(art.rgb,light*vec3(.65,.70,.46),smoothstep(.10,.30,light)*(1.0-art.a));
+	if(tactical)colour=mix(vec3(.065,.095,.065)+light*vec3(.63,.70,.43),colour,art.a);
+	return colour;
 }
 void fragment() {
 	vec2 p=point;

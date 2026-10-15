@@ -18,6 +18,8 @@ var modern := false
 var backdrop: Image
 var modern_contour_pixels := 0
 var retained_source_pixels := 0
+var particle_material_polish := false
+var source_material_polish := false
 var frame := {"clip":[32,13,287,109],"center":[159,61],"near_raw":16,"focal_pixels":128,
 	"matrix_q14_columns":[16384,0,0,0,16384,0,0,0,16384],"world_position_raw":[0,0,0]}
 
@@ -109,6 +111,12 @@ func run() -> void:
 	check(not style.loaded and style.atlas==null and style.sources.is_empty(),"failed load retained textures")
 	check(style.load_assets(directory),"pinned source/art unavailable")
 	if not style.loaded: finish(); return
+	if "--tactical-particles" in args:
+		particle_material_polish = "--particle-materials" in args
+		source_material_polish = "--source-materials" in args
+		await tactical_particles(directory)
+		finish()
+		return
 	var packed: Image = style.atlas.get_image()
 	check(not packed.has_mipmaps(),"effect atlas unexpectedly has mipmaps")
 	for donor in Art.ASSETS.size():
@@ -277,3 +285,252 @@ func finish() -> void:
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print("PC_EFFECT_ART: %d checks, %d errors; %d native pixels" % [checks,errors.size(),native_pixels])
 	quit(0 if errors.is_empty() else 1)
+
+# Finite Tactical particle controls reuse the real effects and Modern catalogues.
+var particle_rows: Array=[]
+var particle_material_rows: Array=[]
+var source_material_rows: Array=[]
+
+func particle_shader_capture(code: String) -> Image:
+	var shader := Shader.new()
+	shader.code = code
+	view.tactical_effects.material.shader = shader
+	await process_frame
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
+	return viewport.get_texture().get_image()
+
+func particle_material_pair(name: String, after: Image, kind: int = -1) -> void:
+	# Same production puff mesh and ownership textures, only the finish differs.
+	var material: ShaderMaterial = view.tactical_effects.material
+	var current: Shader = material.shader
+	var before_code := FileAccess.get_file_as_string("res://tests/particle-material-before.gdshader")
+	var after_code := current.code
+	var colour := "ALBEDO=OUTPUT_IS_SRGB ? colour : pow(colour,vec3(2.2));"
+	if kind>=0:
+		var isolate := "if(abs(emitter.y-%s)>0.25) discard;\n" % str(float(kind))
+		before_code=before_code.replace(colour,isolate+colour)
+		after_code=after_code.replace(colour,isolate+colour)
+		after=await particle_shader_capture(after_code)
+	check(not before_code.is_empty(), name+": preceding particle material available")
+	var before := await particle_shader_capture(before_code)
+	var changed := image_difference(before,after)
+	var visible_finish := name != "effect-17"
+	check(changed>10 if visible_finish else changed==0, name+": visible finish or exact hollow-source control")
+	# Rendering both actual shaders in white exposes their composited opacity.
+	# Identity protects density, feathering, overlap, clipping and ownership.
+	check(before_code.contains(colour) and after_code.contains(colour), name+": opacity diagnostic targets production output")
+	var before_mask := await particle_shader_capture(before_code.replace(colour,"ALBEDO=vec3(1.0);"))
+	var after_mask := await particle_shader_capture(after_code.replace(colour,"ALBEDO=vec3(1.0);"))
+	check(before_mask.get_data()==after_mask.get_data(), name+": particle opacity and coverage exact")
+	if not visible_finish:
+		view.tactical_effects.visible=false
+		await process_frame
+		RenderingServer.force_draw(false)
+		RenderingServer.force_sync()
+		check(after_mask.get_data()==viewport.get_texture().get_image().get_data(), name+": hollow source actually hides all puff coverage")
+		view.tactical_effects.visible=true
+	await particle_shader_capture(after_code)
+	check(after.get_data()==viewport.get_texture().get_image().get_data(), name+": finish restoration exact")
+	material.shader=current
+	await process_frame
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
+	particle_material_rows.append({"case":name,"changed_pixels":changed,"visible_finish":visible_finish,"opacity_and_coverage_exact":true})
+	JavaScriptBridge.eval("window.particleMaterialImages=window.particleMaterialImages||{};window.particleMaterialImages["+JSON.stringify(name)+"]="+JSON.stringify([Marshalls.raw_to_base64(before.save_png_to_buffer()),Marshalls.raw_to_base64(after.save_png_to_buffer())]))
+
+func source_material_pair(name: String) -> void:
+	# Both actual Tactical surface shaders, with identical puffs disabled.
+	var material: ShaderMaterial=view.mesh_node.mesh.surface_get_material(0)
+	var current: Shader=material.shader
+	var old_code := FileAccess.get_file_as_string("res://tests/effects-before.gdshader").replace("depth_test_disabled, depth_draw_never","depth_draw_opaque").replace("void fragment() {","void fragment() {\n DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
+	var images: Array[Image]=[]
+	var masks: Array[Image]=[]
+	var puff_visible: bool=view.tactical_effects.visible
+	view.tactical_effects.visible=false
+	var output_line := "ALBEDO=OUTPUT_IS_SRGB ? result : pow(result,vec3(2.2));"
+	for code: String in [old_code,current.code]:
+		check(code.contains(output_line),name+": diagnostic targets source effect output")
+		for white in [false,true]:
+			var shader := Shader.new()
+			shader.code=code.replace(output_line,"ALBEDO=vec3(1.0);") if white else code
+			material.shader=shader
+			await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+			var image:=viewport.get_texture().get_image()
+			if white:masks.append(image)
+			else:images.append(image)
+	check(masks[0].get_data()==masks[1].get_data(),name+": source cutout, owner and outside effect exact")
+	var changed:=image_difference(images[0],images[1])
+	check(changed>10,name+": source material visibly refined")
+	material.shader=current
+	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+	check(images[1].get_data()==viewport.get_texture().get_image().get_data(),name+": source shader restoration exact")
+	view.tactical_effects.visible=puff_visible
+	source_material_rows.append({"case":name,"changed_pixels":changed,"source_cutout_and_outside_exact":true})
+	if name in ["effect-15","effect-17","effect-62"]:
+		JavaScriptBridge.eval("window.sourceMaterialImages=window.sourceMaterialImages||{};window.sourceMaterialImages["+JSON.stringify(name)+"]="+JSON.stringify([Marshalls.raw_to_base64(images[0].save_png_to_buffer()),Marshalls.raw_to_base64(images[1].save_png_to_buffer())]))
+
+func particle_capture(data: Dictionary, tactical: bool) -> Image:
+	view.tactical_landscape=tactical
+	return await snapshot(data,true)
+
+func image_difference(a: Image,b: Image) -> int:
+	var changed:=0
+	for y in a.get_height():
+		for x in a.get_width():
+			if a.get_pixel(x,y)!=b.get_pixel(x,y):changed+=1
+	return changed
+
+func particle_pair(data: Dictionary,name: String,positive: bool) -> void:
+	var source:=JSON.stringify(data)
+	var modern_image:=await particle_capture(data,false)
+	var material: ShaderMaterial=view.mesh_node.mesh.surface_get_material(0)
+	var current: Shader=material.shader
+	var old:=Shader.new()
+	old.code=FileAccess.get_file_as_string("res://tests/effects-before.gdshader").replace("depth_test_disabled, depth_draw_never","depth_draw_opaque").replace("void fragment() {","void fragment() {\n DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
+	material.shader=old
+	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+	check(modern_image.get_data()==viewport.get_texture().get_image().get_data(),name+": Modernized pixel identity")
+	material.shader=current
+	var tactical_image:=await particle_capture(data,true)
+	if source_material_polish and name.begins_with("effect-"):
+		await source_material_pair(name)
+	var queued: Dictionary=view.tactical_effects.counts.duplicate()
+	if particle_material_polish and name in ["smoke-deployment","missile","effect-15","effect-17"]:
+		await particle_material_pair(name,tactical_image)
+	var changed:=image_difference(modern_image,tactical_image)
+	check(changed>20 if positive else changed==0,name+": scoped visible effect")
+	check(tactical_image.get_data()==(await particle_capture(data,true)).get_data(),name+": repeated packet exact")
+	await create_timer(0.10).timeout
+	check(tactical_image.get_data()==(await particle_capture(data,true)).get_data(),name+": paused particle image exact")
+	check((await particle_capture(data,false)).get_data()==modern_image.get_data(),name+": switch back exact")
+	check(JSON.stringify(data)==source,name+": original snapshot immutable")
+	particle_rows.append({"case":name,"changed_pixels":changed,"queued_puffs":queued})
+	# Bounded visual evidence; the test is not an original mission capture.
+	if name in ["smoke-deployment","missile","moving-m113","effect-15","effect-17"]:
+		JavaScriptBridge.eval("window.effectImages=window.effectImages||{};window.effectImages["+JSON.stringify(name)+"]="+JSON.stringify([Marshalls.raw_to_base64(modern_image.save_png_to_buffer()),Marshalls.raw_to_base64(tactical_image.save_png_to_buffer())]))
+
+func tactical_particles(directory: String) -> void:
+	viewport=SubViewport.new();viewport.own_world_3d=true;viewport.size=Vector2i(1024,388)
+	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(viewport)
+	camera=Camera3D.new();viewport.add_child(camera);Camera.apply(camera,frame,Vector3.ZERO);camera.make_current()
+	view=DrawPass.new();view.solid_enabled=true;camera.add_child(view)
+	check(view.modern_assets.load_assets(directory),"Tactical effects catalogue available")
+	if not view.modern_assets.ready:return
+	view.modern_enabled=true
+	var terrain:=preload("res://scripts/pc_terrain_style.gd").new()
+	check(terrain.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")),"Tactical effects terrain available")
+	view.terrain_style=terrain
+	view.effect_art=style
+	for index: int in Art.BASES:
+		await particle_pair(sample(object_for(index)),"effect-%d"%index,true)
+	var missile:=sample(object_for(62,[152,60]))
+	missile.objects[0].pointer=99
+	var missile_box: Rect2=style.mapping(missile.objects[0],frame,Art.PC_PALETTE).target
+	var missile_raw: Array=Geometry.unproject(missile_box.get_center(),600.0,frame)
+	missile.world={"dynamic":[{"pointer":99,"shape_index":186,"shape_header_word":100,"world_position_raw":[missile_raw[0],-missile_raw[1],missile_raw[2]],"orientation_u8":[0,0,64],"speed_raw":250}],"presentation_effects":{"schema":1,"shape_base":115}}
+	await particle_pair(missile,"missile",true)
+	view.tactical_landscape=true;view.apply_pass(missile)
+	check(view.tactical_effects.counts.missile==9,"original guided projectile admits motor trail")
+	check(view.tactical_effects.tail_direction([0,0,64],250.0).distance_to(Vector3(1,0,0))<0.00001,"wake follows original westbound heading")
+	check(view.tactical_effects.tail_direction([64,0,0],250.0).distance_to(Vector3(0,0,-1))<0.00001,"wake follows original pitch")
+	check(view.tactical_effects.tail_direction([0,0,64],-30.0).distance_to(Vector3(-1,0,0))<0.00001,"reverse movement reverses wake")
+	check(view.tactical_effects.world_position_ok([79872,141312,50]),"streamed original positions exceed local model bounds")
+	check(not view.tactical_effects.world_position_ok([INF,0,0]),"nonfinite world position rejected")
+	var motor_image:=await particle_capture(missile,true)
+	view.tactical_effects.visible=false
+	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+	check(image_difference(motor_image,viewport.get_texture().get_image())>10,"guided motor trail actually visible")
+	view.tactical_effects.visible=true
+	var alternate:=missile.duplicate(true)
+	alternate.objects[0]=object_for(63,[152,60]);alternate.objects[0].pointer=99
+	alternate.world.dynamic[0].shape_index=187
+	await particle_pair(alternate,"missile-alternate",true)
+	view.tactical_landscape=true;view.apply_pass(alternate)
+	check(view.tactical_effects.counts.missile==9,"alternate original missile flare retains motor trail")
+	var invalid:=missile.duplicate(true);invalid.world.dynamic[0].pointer=100
+	view.apply_pass(invalid);check(view.tactical_effects.counts.missile==0,"pointer mismatch has no missile trail")
+	invalid=missile.duplicate(true);invalid.world.dynamic.append(invalid.world.dynamic[0].duplicate(true))
+	view.apply_pass(invalid);check(view.tactical_effects.counts.missile==0,"ambiguous actor has no missile trail")
+	invalid=missile.duplicate(true);invalid.world.dynamic[0].shape_header_word=2
+	view.apply_pass(invalid);check(view.tactical_effects.counts.missile==0,"impact starburst cannot become missile")
+	var smoke:=sample(cover(Rect2(32,13,1,1)))
+	smoke.world={"dynamic":[],"presentation_effects":{"schema":1,"shape_base":115,"smoke":{"active":true,"remaining_raw":24,"world_position_raw":[0,-500,-80]}}}
+	await particle_pair(smoke,"smoke-deployment",true)
+	var fresh:=await particle_capture(smoke,true)
+	var smoke_build_count: int=view.mesh_build_count
+	invalid=smoke.duplicate(true);invalid.world.presentation_effects.smoke.remaining_raw=8
+	check(image_difference(fresh,await particle_capture(invalid,true))>20,"source smoke timer drives expansion")
+	check(view.mesh_build_count==smoke_build_count,"smoke timer updates particles without rebuilding terrain/actors")
+	check(fresh.get_data()==(await particle_capture(smoke,true)).get_data(),"restoring smoke snapshot exact")
+	invalid=smoke.duplicate(true);invalid.world.presentation_effects.smoke.active=false
+	await particle_pair(invalid,"smoke-inactive",false)
+	invalid=smoke.duplicate(true);invalid.world.presentation_effects.smoke.remaining_raw=0
+	await particle_pair(invalid,"smoke-expired",false)
+	invalid=smoke.duplicate(true);invalid.objects=[cover(Rect2(32,13,256,97))]
+	await particle_pair(invalid,"smoke-behind-actor",false)
+	invalid=smoke.duplicate(true);invalid.palette_rgb[6]=[1,2,3]
+	await particle_pair(invalid,"unknown-palette",false)
+	invalid=smoke.duplicate(true)
+	invalid.world.presentation_effects.smoke.world_position_raw=[0,0,0]
+	invalid.background={"kind":"horizon","line":[[32,61],[287,61]],"colors":[2,2]}
+	await particle_pair(invalid,"smoke-immersed",true)
+	check(view.tactical_effects.counts.smoke==0,"Modernized switchback clears immersed smoke")
+	# Real catalogued M113 source anchors, repositioned only for GPU inspection.
+	var catalog: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-modern/catalog.json")))
+	var model: Dictionary=catalog.models[129]
+	var vehicle:=sample(cover(Rect2(32,13,1,1)))
+	var object: Dictionary={"shape_index":129,"root":int(model.roots[0].offset),"dynamic_instance":true,"static_path":false,"pointer":99,"polygons":[]}
+	var rotation:=Basis(Vector3.RIGHT,0.65)*Basis(Vector3(0,0,1),0.4)
+	var selected: Dictionary={}
+	for group: Dictionary in model.groups:
+		if group.offset in model.roots[0].group_pointers:
+			for pid in group.primitive_pointers:selected[int(pid)]=true
+	for primitive: Dictionary in model.source_primitives:
+		if primitive.vertices.size()<3 or int(primitive.id) not in selected:continue
+		var points: Array=[]
+		for raw: Array in primitive.vertices:
+			var point: Vector3=rotation*Vector3(raw[0],raw[1],raw[2]);points.append([point.x,point.y+300,point.z])
+		object.polygons.append({"primitive":int(primitive.id),"fill_mode":1,"colors":[int(primitive.prefix_bytes[1]),int(primitive.prefix_bytes[2])],"camera_vertices":points})
+	vehicle.objects=[object]
+	vehicle.world={"dynamic":[{"pointer":99,"shape_index":129,"world_position_raw":[0,-300,0],"orientation_u8":[0,0,0],"speed_raw":30,"shape_header_word":100}],"presentation_effects":{"schema":1,"shape_base":115}}
+	# Compare Tactical with the exact same Tactical surface, particles disabled.
+	view.tactical_landscape=true;view.apply_pass(vehicle)
+	check(view.tactical_effects.counts.exhaust==7 and view.tactical_effects.counts.dust==4,"visible moving vehicle queues anchored exhaust and dust")
+	var with_particles:=await particle_capture(vehicle,true)
+	if particle_material_polish: await particle_material_pair("moving-m113",with_particles)
+	if source_material_polish:
+		await particle_material_pair("diesel-exhaust",with_particles,1)
+		await particle_material_pair("track-dust",with_particles,4)
+	view.tactical_effects.visible=false
+	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+	var without_particles:=viewport.get_texture().get_image()
+	var vehicle_changed:=image_difference(with_particles,without_particles)
+	check(vehicle_changed>20,"moving M113 particles actually visible")
+	particle_rows.append({"case":"moving-m113","changed_pixels":vehicle_changed,"queued_puffs":view.tactical_effects.counts.duplicate()})
+	JavaScriptBridge.eval("window.effectImages=window.effectImages||{};window.effectImages['moving-m113']="+JSON.stringify([Marshalls.raw_to_base64(without_particles.save_png_to_buffer()),Marshalls.raw_to_base64(with_particles.save_png_to_buffer())]))
+	view.tactical_effects.visible=true
+	var count: int=view.mesh_build_count
+	view.apply_pass(vehicle);check(view.mesh_build_count==count,"same source particle mesh reused")
+	invalid=vehicle.duplicate(true);invalid.world.dynamic[0].speed_raw=0
+	view.apply_pass(invalid);check(view.tactical_effects.counts.exhaust==0 and view.tactical_effects.counts.dust==0,"stationary movement cue emits nothing")
+	invalid=vehicle.duplicate(true);invalid.objects.append(cover(Rect2(32,13,256,97)))
+	await particle_capture(invalid,true);view.tactical_effects.visible=false
+	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+	var hidden_baseline:=viewport.get_texture().get_image()
+	view.tactical_effects.visible=true
+	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+	check(hidden_baseline.get_data()==viewport.get_texture().get_image().get_data(),"hidden engine cannot emit through actor")
+	# Both painter orders: later opaque geometry hides all burst embellishment.
+	invalid=sample(object_for(15));invalid.objects.append(cover(Rect2(120,42,70,55)))
+	await particle_pair(invalid,"later-cover",false)
+	invalid.objects.reverse();await particle_pair(invalid,"earlier-cover",true)
+	invalid=sample(object_for(15,[300,120]));await particle_pair(invalid,"outside-clip",false)
+	view.apply_pass({"objects":[]});check(view.tactical_effects.puffs.is_empty() and not view.tactical_effects.visible,"empty frame clears all particles")
+	JavaScriptBridge.eval("window.effectReport="+JSON.stringify(particle_rows))
+	if particle_material_polish:
+		check(particle_material_rows.size()==(7 if source_material_polish else 5),"all particle material studies completed")
+		JavaScriptBridge.eval("window.particleMaterialReport="+JSON.stringify(particle_material_rows))
+	if source_material_polish:
+		check(source_material_rows.size()==Art.BASES.size(),"every source donor material studied")
+		JavaScriptBridge.eval("window.sourceMaterialReport="+JSON.stringify(source_material_rows))

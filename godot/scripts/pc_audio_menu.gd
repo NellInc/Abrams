@@ -1,4 +1,5 @@
 extends MenuBar
+signal mix_changed
 ## Presentation-only gains. No bridge, source state, key binding or pause command.
 const DEFAULTS := {"master":100,"effects":100,"voice":100,"motors":100,"music":70}
 const TITLES := {"master":"Master volume","effects":"Sound effects","voice":"Crew voices","motors":"Engine and turret","music":"Music"}
@@ -9,6 +10,7 @@ var menus: Dictionary = {}
 var popup: PopupMenu
 var open_menus: Dictionary = {}
 var release_keys := false
+var focus_release_keys := false
 var window_focused := true
 var save_error := ""
 
@@ -33,9 +35,7 @@ func _ready() -> void:
 	popup.add_separator()
 	popup.add_item("Restore default mix",1000)
 	popup.id_pressed.connect(func(id):
-		if id==1000:
-			settings=DEFAULTS.duplicate()
-			_commit())
+		if id==1000: reset_mix())
 	popup.add_separator()
 	popup.add_item("Original F5 / pause still control sound",1001)
 	popup.set_item_disabled(popup.get_item_index(1001),true)
@@ -52,7 +52,7 @@ func _watch(menu: PopupMenu) -> void:
 
 func _focus_exited() -> void:
 	window_focused=false
-	release_keys=true
+	focus_release_keys=true
 
 func _focus_entered() -> void:
 	window_focused=true
@@ -61,6 +61,11 @@ func game_keys(held: Array) -> Array:
 	# Menu navigation must not also steer/fire in the original game. Closing
 	# with Enter/Escape waits for release; there is no reserved gameplay hotkey.
 	if not window_focused or not open_menus.is_empty(): return []
+	if focus_release_keys:
+		if preload("res://scripts/pc_keyboard.gd").focus_rearmed(get_window()): focus_release_keys=false
+		else:
+			if held.is_empty(): focus_release_keys=false
+			return []
 	if release_keys:
 		if held.is_empty(): release_keys=false
 		return []
@@ -92,6 +97,11 @@ func choose(channel: String, percent: int) -> bool:
 	_commit()
 	return true
 
+func reset_mix() -> bool:
+	settings=DEFAULTS.duplicate()
+	_commit()
+	return true
+
 func _commit() -> void:
 	if audio: audio.set_mix(settings)
 	save_error=""
@@ -100,11 +110,18 @@ func _commit() -> void:
 		for key in DEFAULTS: file.set_value("audio",key,settings[key])
 		if file.save(config_path)!=OK: save_error="Mix changed, but could not save it"
 	refresh()
+	mix_changed.emit()
 
 func refresh() -> void:
 	if popup==null: return
 	for key: String in menus:
 		var menu: PopupMenu=menus[key]
+		# Preferences support every integer, including gains between menu steps.
+		for index in range(menu.item_count-1,-1,-1):
+			var percent := menu.get_item_id(index)
+			if percent%10!=0 and percent!=settings[key]:menu.remove_item(index)
+		if menu.get_item_index(settings[key])<0:
+			menu.add_radio_check_item("%d%%"%settings[key],settings[key])
 		for index in menu.item_count:
 			menu.set_item_checked(index,menu.get_item_id(index)==settings[key])
 		popup.set_item_text(popup.get_item_index(DEFAULTS.keys().find(key)),"%s (%d%%)"%[TITLES[key],settings[key]])

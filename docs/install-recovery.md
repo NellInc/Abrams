@@ -28,6 +28,12 @@ The original campaign save system remains separate from save-state slots.
 For an independent test profile, use the launcher's `--data-home /absolute/path`
 option. No profile is automatically deleted, migrated or repaired.
 
+### Portable setup recovery
+
+Windows/Linux setup has a **Recheck installation** action. If the bundled runtime is missing or verification cannot start, controls recover immediately and name the repair/recheck route. Only correctly typed verified status enables Play; a failed recheck clears the earlier verification state. The PC picker requests an extracted folder containing ABRAMS.COM and SIM.EXE. The optional Genesis picker accepts supported raw `.md`, `.bin` or `.gen` ROMs; the importer still checks the exact revision.
+
+At small windows, the content scrolls while Recheck, references, About and Play remain reachable. Keyboard focus follows the scroll content. Original files and saves are never automatically deleted or repaired. Setup requests retain their five-minute deadline; gameplay has no launcher timeout. Runtime output retains bounded diagnostic tails. Timeout cleanup targets only the directly created child, never a foreign session or controller.
+
 ## Developer-kit platform boundary
 
 | Task | macOS ARM64 | macOS Intel | Linux | Windows |
@@ -94,3 +100,19 @@ PC files are never uploaded to CI. Actual game playback, graphics/audio and
 campaign outcomes on those operating systems still need equipped target-machine
 tests. Intel Macs and ARM Linux are unsupported. Consult each release's notes
 for the exact acceptance boundary.
+
+## Browser keyboard recovery
+
+Before import and after engine shutdown the inactive player frame is hidden. An early import/download error keeps the retry action focused. After engine initialization or an original-worker failure, Reload page receives keyboard focus. The original failure text remains visible through normal engine exit; checkpoint storage is retained. A dead canvas cannot continue accepting game input.
+
+## Renderer preflight and unfinished installation recovery
+
+Desktop startup checks each current Godot import/check-only log segment as well as its exit code. Parse, script, shader and engine errors stop before the game is launched. Each preflight command has a 300-second deadline; gameplay retains its existing lifetime and shutdown path. The complete output remains in the player profile's `logs/application.log`, and an error identifies that path. Old errors from earlier launches do not invalidate a clean current check. Managed-log leaf checks prevent an unexpected link from redirecting a write.
+
+A new version's copied payload, original PC files and reconstructed archive are checked before its unfinished directory is renamed into an accepted version. Original-file expectations are captured from the hash-verified application manifest, so a later application-file edit cannot redefine valid content during copying. A corrupt successful copy is refused just like an incomplete copy.
+
+A failed version copy, verification or promotion removes only its unique unfinished `.install-*` directory. Accepted versions, imported originals and campaigns remain intact. After correcting the reported cause, retry the same verified application and build ID. An already accepted version that has subsequently changed is preserved for diagnosis and is never repaired in place.
+
+Working if: a failed new copy leaves no accepted version or unfinished directory, a clean same-build retry succeeds, and originals, existing installations and campaign files retain their exact bytes.
+
+In the browser, **Clear Genesis ROM** removes only the optional selection, preserves the PC folder and confirms PC-only retry. The action is disabled while startup/gameplay owns those inputs. Required original basenames still receive strict collision, size and fingerprint checks; unrelated folder extras are ignored without reading their contents.

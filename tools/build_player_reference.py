@@ -33,6 +33,9 @@ SHORTCUTS=[
  ('Cycle graphics','Cmd+G','Ctrl+Alt+G'),
  ('Toggle 8x / normal speed','Tab','Tab'),
 ]
+GRAPHICS_NOTE='Graphics offers EGA, EGA Upscaled (original colours), Genesis (optional ROM), Genesis Upscaled, Modern (Modernized) and Tactical. HUD Style chooses Restored or Tactical independently.'
+SHORTCUT_NOTE='Desktop macOS uses Command. Windows, Linux and the browser use Control + Alt. These remaster shortcuts remain separate from original game commands.'
+QUALITY_NOTE='Restore full-quality defaults returns to 4x MSAA and 16x anisotropic filtering, keeping the selected graphics mode, HUD and audio mix.'
 MODEL_NAMES={'M1A1 Abrams':'M1-A1','M60A3':'M60a3','M2 Bradley':'M2','Mi-24 Hind':'HIND','FST-1':'F-ST','BTR':'BTR-70'}
 SPEC_LABELS={'introduced_year':'Introduced','combat_weight_tons':'Weight (t)','length_m':'Length (m)','width_m':'Width (m)','height_m':'Height (m)','maximum_speed_kmh':'Maximum speed (km/h)','primary_armament':'Primary weapon','secondary_armament':'Secondary weapon','reload_seconds':'Reload (s)','range_m':'Range (m)','armor':'Armour','overall_threat':'Threat'}
 
@@ -169,7 +172,7 @@ def controls_html(data):
     remaining=[r for i,r in enumerate(controls) if i not in covered]
     if remaining:sections.append('<section><h2>Additional context</h2><table>'+''.join(f'<tr><td><kbd>{ESC(r["name"])}</kbd></td><td>{ESC(r["description"])}</td></tr>' for r in remaining)+'</table></section>')
     chords=''.join(f'<tr><td>{ESC(action)}</td><td><kbd>{mac}</kbd></td><td><kbd>{other}</kbd></td></tr>' for action,mac,other in SHORTCUTS)
-    body='<p class="print-link"><a href="keyboard-controls.pdf">Printable keyboard sheet (PDF)</a></p><div id="content"><h2>Remaster shortcuts</h2><table><tr><th>Action</th><th>macOS</th><th>Windows / Linux</th></tr>'+chords+'</table><p>Press Tab to toggle 8x fast forward and normal speed. Session provides five save slots and Undo last load. Graphics switches EGA, Genesis, Upscaled and Modern. Audio is muted during fast forward.</p><p>Pause with Esc before opening a reference if you want the original simulation to wait. Help never sends an extra command to the game. Release held keys after returning from a menu or another window.</p>'+''.join(sections)+'<p class="source">Original controls: manual pp. 4 to 7, with station and menu context on pp. 9 to 20. Remaster shortcuts are taken from the implemented Play controls.</p></div>'
+    body='<p class="print-link"><a href="keyboard-controls.pdf">Printable keyboard sheet (PDF)</a></p><div id="content"><h2>Remaster shortcuts</h2><table><tr><th>Action</th><th>Desktop macOS</th><th>Windows / Linux / Browser</th></tr>'+chords+'</table><p>Press Tab to toggle 8x fast forward and normal speed. Session provides five save slots and Undo last load. Audio is muted during fast forward.</p><p>'+ESC(GRAPHICS_NOTE)+'</p><p>'+ESC(SHORTCUT_NOTE)+'</p><p>'+ESC(QUALITY_NOTE)+'</p><p>Pause with Esc before opening a reference if you want the original simulation to wait. Help never sends an extra command to the game. Release held keys after returning from a menu or another window.</p>'+''.join(sections)+'<p class="source">Original controls: manual pp. 4 to 7, with station and menu context on pp. 9 to 20. Remaster shortcuts are taken from the implemented Play controls.</p></div>'
     return html_page('Keyboard controls',body,'<a href="field-guide.html">Scenarios & vehicles</a>')
 
 
@@ -247,9 +250,9 @@ def keyboard_pdf(data):
             y=key_rows(b,rows,x,y,236)-24
     b.page('Remaster shortcuts & menus')
     y=b.h-126
-    y=b.para('The remaster uses Command on macOS and Control + Alt on Windows and Linux. These shortcuts are separate from the original game commands.',32,y,b.w-64,11)-12
+    y=b.para(SHORTCUT_NOTE,32,y,b.w-64,11)-12
     b.c.setFillColor(HexColor(INK));b.c.setFont('Barlow',20)
-    for x,title in [(32,'macOS'),(276,'Windows / Linux'),(561,'Action')]:b.c.drawString(x,y,title)
+    for x,title in [(32,'Desktop macOS'),(276,'Windows / Linux / Browser'),(561,'Action')]:b.c.drawString(x,y,title)
     y-=18
     for action,mac,other in SHORTCUTS:
         b.c.setFillColor(HexColor('#e5e6db'));b.c.roundRect(27,y-41,787,40,4,fill=1,stroke=0)
@@ -258,12 +261,12 @@ def keyboard_pdf(data):
         b.para(ESC(action),561,y-11,245,11)
         y-=50
     y=b.heading('Session, graphics & help',32,y-23,21)
-    y=b.para('Press Tab to toggle 8x fast forward and normal speed. Session provides five save slots and Undo last load. Graphics switches immediately between EGA, Genesis, Upscaled and Modern. Help opens the offline controls and field guide. Audio is muted during fast forward.',32,y,b.w-64,11)
+    y=b.para('Press Tab to toggle 8x fast forward and normal speed. Session provides five save slots and Undo last load. '+GRAPHICS_NOTE+' Help opens the offline controls and field guide. Audio is muted during fast forward.',32,y,b.w-64,11)
     b.page('Menus, context & original creators')
     y=b.h-126
     y=b.heading('Menus and briefings',32,y,21)
     y=key_rows(b,[('Enter','Choose mission, day/night or skill; submit names or identification; advance credits and briefings.'),('Space','Advance past a mission-title screen.'),('Left / Right','Adjust ammunition in the Motor Pool.')],32,y,365,108)-22
-    for title,text in [('Movement','Arrow keys and keypad control the hull or turret selected by C. Hull forward and reverse move the tank; turret mode raises and lowers the sight.'),('Scan and zoom','Gunner Z changes magnification. Commander Z changes map scale. Commander scan is relative to turret bearing.'),('References and saves','Pause with Esc if you want the simulation to wait while reading. Help sends no extra game command. Release held keys after returning. Save states restore the machine and campaign disk; back up your profile before upgrading.')]:
+    for title,text in [('Movement','Arrow keys and keypad control the hull or turret selected by C. Hull forward and reverse move the tank; turret mode raises and lowers the sight.'),('Scan and zoom','Gunner Z changes magnification. Commander Z changes map scale. Commander scan is relative to turret bearing.'),('References and saves','Pause with Esc if you want the simulation to wait while reading. Help sends no extra game command. Release held keys after returning. Save states restore the machine and campaign disk; back up your profile before upgrading. '+QUALITY_NOTE)]:
         y=b.heading(title,32,y,21);y=b.para(ESC(text),32,y,365,10)-10
     credits_pdf(b,439,b.h-126,365)
     b.finish()

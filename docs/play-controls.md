@@ -21,7 +21,7 @@ from setup. Pause the original game first if you want time to read.
 | Quick save to slot 1 | **Cmd+S** | **Ctrl+Alt+S** |
 | Quick load from slot 1 | **Cmd+L** | **Ctrl+Alt+L** |
 | Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
-| Cycle EGA → Genesis → Upscaled → Modern | **Cmd+G** | **Ctrl+Alt+G** |
+| Cycle available graphics modes | **Cmd+G** | **Ctrl+Alt+G** |
 | Toggle 8x fast forward / normal speed | **Tab** | **Tab** |
 
 Shortcuts work in Play, including fullscreen, menus and briefings. A brief
@@ -71,6 +71,13 @@ The core fingerprint is its pre-signing identity, so re-signing an unchanged
 core keeps checkpoints compatible.
 The original auto-save and Take R+R system remains available independently.
 
+The current local core writes version-9 native checkpoints, including the DOS
+calendar date used by the original game's mission selection. New checkpoints
+retain that date when restored on another day. Version-8 research snapshots
+remain readable, but contain no date to restore. Player slots remain pinned to
+their original core; this update does not migrate old slots or alter campaign
+files. Retain the prior core with any older checkpoints you need to recover.
+
 New checkpoints preserve validated host-side EGA artwork ownership alongside
 native state. Save/load, cross-process continuation and campaign rollback are
 checked against uninterrupted original rendering. Fresh scanlines regenerate
@@ -96,24 +103,16 @@ restored on a fresh launch; fast forward is not a sticky preference.
 
 ## Graphics
 
-Choose **Graphics > EGA, Genesis, Upscaled or Modern** during play, menus or briefings.
-The current frame is recomposed immediately from preloaded artwork, with no
-restart, new game input or extra original frame.
+Choose a mode under **Graphics** during play, menus or briefings. The current frame is recomposed immediately from preloaded artwork, with no restart, new game input or extra original frame.
 
 * **EGA**: the untouched PC framebuffer and source lettering.
-* **Genesis**: authentic extracted, original-resolution Genesis donor artwork
-  wherever a verified counterpart exists. PC geometry, controls, values and
-  unsupported imagery stay original. This does not run the Genesis game.
-* **Upscaled**: the high-resolution remaster, including original-style outlines.
-* **Modern**: refined low-poly scenery, illustrated trees and a muted battlefield
-  palette, with the restored Upscaled interfaces. Available when its source-pinned
-  resources are installed. Source sensor palettes retain conservative original rendering.
+* **EGA Upscaled**: larger, smoother contours using only the original PC colours, including its dark skin tones.
+* **Genesis**: verified original-resolution donor artwork. PC geometry, controls, values and unmatched imagery stay original. This does not run the Genesis game.
+* **Genesis Upscaled** (`upscaled`): the generated high-resolution remaster artwork and restored interfaces.
+* **Modern** (Modernized in browser): refined source-bound low-poly scenery with the existing restored interfaces.
+* **Tactical**: the separate textured, Range-inspired battlefield treatment. **HUD Style** independently selects Restored or Tactical instruments and layouts.
 
-Upscaled is the default. Without an imported Genesis ROM, the standalone app
-offers EGA, PC-only Upscaled and Modern when its assets are installed; the shortcut skips Genesis. In an equipped
-checkout, `./Play.command --graphics ega` (or `genesis`, `upscaled` or `modern`) selects the
-starting mode. Missing or invalid graphics resources leave the current mode
-unchanged. See [graphics coverage](graphics-modes.md).
+The first launch uses Genesis Upscaled. A successful explicit graphics selection is remembered with HUD style and scenery quality. If its required artwork/import is unavailable on a later launch, the viewer shows Genesis Upscaled and retains the saved preference. Restoring the supported import restores that preferred mode on the next launch. An equipped checkout can use `./Play.command --graphics ega` (or another mode ID) for a transient starting choice; this does not overwrite the preference. Explicit unavailable command-line requests report an error. See [graphics coverage](graphics-modes.md).
 
 ## Scenery quality
 
@@ -122,11 +121,11 @@ filtering** selects Off, 2×, 4×, 8× or 16×. Defaults are 4× MSAA and 16× f
 Changes apply immediately and are saved for the next launch, separately from
 campaigns and checkpoints. Lower MSAA if your GPU struggles with it.
 
-Antialiasing affects the Upscaled and Modern 3D scenery, including the opening
-menu preview. EGA and Genesis remain pixel-sharp. The cockpit text, source colour
+Antialiasing affects Genesis Upscaled, Modern and Tactical 3D scenery, including the opening
+menu preview. EGA and Genesis retain their source sampling. The cockpit text, source colour
 tables and original visibility masks retain exact sampling. Filtering improves
 the sampled road, water, building surfaces and illustrated trees; procedural
-grass stays texture-free.
+grass in Modern stays procedural; Tactical uses its own material treatment.
 
 ## Audio
 
@@ -146,3 +145,29 @@ incompatible states and recovery after native rejection. Graphics checks cover
 same-frame switching and identical original RAM/video after fifteen frames at
 normal speed versus seven 1x requests and one 8x request. These are bounded checks, not a claim
 that every mission or campaign has been completed.
+
+## Browser play and recovery
+
+Choose your original PC folder, then Start remaster. The file picker shows your selection before verification. An optional Genesis ROM enables original Genesis art and music. EGA Upscaled preserves the original PC palette and skin colours; Genesis Upscaled retains the generated high-resolution artwork. Graphics and HUD Style remain independent.
+
+Use **Game keyboard** after interacting with browser controls to return keyboard focus to the game. **Fullscreen** keeps the browser controls available; Escape leaves browser fullscreen. Editing a browser selector does not trigger quick-save/load or graphics shortcuts.
+
+Save slots show their saved date and original programme. Empty and incompatible slots cannot be loaded. During saving/loading, the browser disables competing checkpoint and speed actions. Undo last load retains the before-load session.
+
+Checkpoints require browser storage permission and sufficient free space. When storage is unavailable, the original game still starts, a persistent warning explains the problem, and browser checkpoint actions are disabled for that session. No temporary in-memory checkpoint is presented as a durable save. Browser data clearing or changing origin can remove checkpoints; a page reload requires reselecting your original PC files.
+
+Wrong original files can be corrected and retried before engine startup. A partially initialized or closed engine requires **Reload page** for a clean restart. Reloading preserves existing origin-local checkpoints; it does not keep the selected original files. Slow/missing build downloads produce bounded, actionable errors. All imported original files remain local and no original game data is uploaded.
+
+Working if: selection and focus are visible; all six graphics options retain their identities; saved dates and storage warnings are accurate; failed loads preserve the active session until a successful commit; no public deployment occurs.
+
+## Extended browser controls
+
+Open **More controls: audio and graphics quality** for the same five presentation gains, antialiasing and anisotropic filtering as the native menu. The disclosure supports keyboard focus and Enter/Space; its controls wrap on compact windows. **Restore default mix** sets Master, Effects, Crew and Motors to 100%, Music to 70%. Full-quality defaults remain 4× MSAA and 16× filtering. Changes persist separately from checkpoints; a settings-save warning appears in this section, separately from campaign status.
+
+At 8×, audio is muted while your mix is retained. Original F5 and pause remain authoritative. A stopped original worker reveals **Reload page**, preserving its actual failure message and clearing the dead bridge. Reload requires reselecting originals and retains existing origin-local durable checkpoints.
+
+The Tactical reference reader wraps its tabs, stacks narrow rows, matches every search word across displayed text and shows entry counts. Escape closes it without forwarding that key to the original game. Clear search or choose another section to reset its scroll position. Restored retains its original styling and contiguous-query search.
+
+## Reference clarification, 14 October 2026
+
+The keyboard HTML and three-page printable sheet now distinguish desktop macOS Command chords from the browser's Ctrl+Alt chords. All six graphics options remain documented: EGA, EGA Upscaled (original colours), Genesis (optional ROM), Genesis Upscaled, Modern (Modernized) and Tactical. HUD style is independent. Restore full-quality defaults returns to 4× MSAA/16× anisotropic filtering while retaining mode, HUD and mix. The original 35 keyboard controls, station behavior and manual provenance are unchanged.

@@ -10,6 +10,7 @@ var crop_texture: ImageTexture
 var crop_hash := ""
 var surface_texture: ImageTexture
 var surface_hash := ""
+var in_place := false
 # Two exact original material recipes, not inferred hill/object identities.
 # RGB labels with a 43 channel cannot collide with the standard EGA palette.
 const EARTH_DARK := 0x552b00
@@ -117,14 +118,20 @@ func _init() -> void:
 
 func clear() -> void:
 	packet.clear()
+	in_place=false
 	picture.hide()
 	proof.clear()
 	queue_redraw()
 
-func set_frame(frame: Control, layout: Dictionary) -> bool:
+func set_frame(frame: Control, layout: Dictionary, ui: PackedByteArray=PackedByteArray()) -> bool:
 	clear()
 	if not frame.world_enabled or not proof.set_frame(frame._cached_source,frame._cached_presentation): return false
 	proof.hide()
+	if layout.get("in_place",false):
+		if ui.size()!=64000: return false
+		var mask:=Image.create_from_data(320,200,false,Image.FORMAT_L8,ui)
+		if mask.get_region(Proof.MAP_RECT).get_data().count(255)!=144*96: return false
+		in_place=true
 	var item: Dictionary=proof.packet
 	# The source observer distinguishes cell rows from the final player draw.
 	# Enforce that shape here too before treating any line as player ink.
@@ -160,6 +167,7 @@ func set_frame(frame: Control, layout: Dictionary) -> bool:
 	_surface(frame._cached_source,item)
 	var d: Vector4=layout.destination[1]
 	map_box=Rect2(d.x*1600,d.y*900,(d.z-d.x)*1600,(d.w-d.y)*900)
+	if in_place: map_box=Rect2(Vector2(16,63)/Vector2(320,200)*Vector2(1600,900),Vector2(144,96)/Vector2(320,200)*Vector2(1600,900))
 	packet=item.duplicate(true)
 	_place()
 	picture.show()
@@ -169,17 +177,32 @@ func set_frame(frame: Control, layout: Dictionary) -> bool:
 func _place() -> void:
 	# The existing reflow includes a one-source-pixel surround on every side.
 	var factor:=size/Vector2(1600,900)
-	var inset:=map_box.size/Vector2(146,98)
+	var inset:=Vector2.ZERO if in_place else map_box.size/Vector2(146,98)
 	picture.position=(map_box.position+inset)*factor
 	picture.size=(map_box.size-inset*2)*factor
 	queue_redraw()
 
+func _mode_layout(mode: String, scale: float) -> Dictionary:
+	var point:=clampi(ceili(11.0/maxf(scale,0.01)),16,23)
+	var key_point:=maxi(9,point-2)
+	var key_width:=font.get_string_size("Z",HORIZONTAL_ALIGNMENT_LEFT,-1,key_point).x+10
+	var label_width:=font.get_string_size(mode,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x
+	var at:=Vector2(map_box.end.x-key_width-8-label_width,map_box.position.y-16)
+	return {"point":point,"key_point":key_point,"key":Rect2(at.x,at.y-point-1,key_width,point+5),
+		"key_at":at+Vector2(5,0),"label_at":at+Vector2(key_width+8,0),"label_width":label_width}
+
+func _border_stroke(scale: float) -> float:
+	return maxf(1,1.0/maxf(scale,0.01))
+
 func _draw() -> void:
-	if packet.is_empty(): return
+	if packet.is_empty() or in_place: return
 	draw_set_transform(Vector2.ZERO,0,size/Vector2(1600,900))
+	var scale:=maxf(0.01,minf(size.x/1600.0,size.y/900.0))
 	draw_rect(map_box,Color("0c1812"))
-	draw_rect(map_box,Color("61785b"),false,1,true)
+	draw_rect(map_box,Color("61785b"),false,_border_stroke(scale),true)
 	var mode: String="LOCAL" if int(packet.mode)==1 else "OVERVIEW"
-	var label:="[Z]  "+mode
-	var width:=font.get_string_size(label,HORIZONTAL_ALIGNMENT_LEFT,-1,16).x
-	draw_string(font,Vector2(map_box.end.x-width,map_box.position.y-17),label,HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color("e7b566"))
+	var label:=_mode_layout(mode,scale)
+	draw_rect(label.key,Color("101e16"))
+	draw_rect(label.key,Color("61785b"),false,maxf(1,1.0/scale),true)
+	draw_string(font,label.key_at,"Z",HORIZONTAL_ALIGNMENT_LEFT,-1,label.key_point,Color("e7b566"))
+	draw_string(font,label.label_at,mode,HORIZONTAL_ALIGNMENT_LEFT,-1,label.point,Color("c1ccba"))

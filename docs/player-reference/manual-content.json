@@ -1909,28 +1909,28 @@
   "remaster_controls": [
     {
       "name": "Cmd+S / Ctrl+Alt+S",
-      "description": "Quick save, slot 1. macOS uses Command; Windows and Linux use Ctrl+Alt.",
+      "description": "Quick save, slot 1. Desktop macOS uses Command; Windows, Linux and the browser use Ctrl+Alt.",
       "stations": [
         "remaster"
       ]
     },
     {
       "name": "Cmd+L / Ctrl+Alt+L",
-      "description": "Quick load, slot 1. macOS uses Command; Windows and Linux use Ctrl+Alt.",
+      "description": "Quick load, slot 1. Desktop macOS uses Command; Windows, Linux and the browser use Ctrl+Alt.",
       "stations": [
         "remaster"
       ]
     },
     {
       "name": "Cmd+Shift+L / Ctrl+Alt+Shift+L",
-      "description": "Undo last load. macOS uses Command; Windows and Linux use Ctrl+Alt.",
+      "description": "Undo last load. Desktop macOS uses Command; Windows, Linux and the browser use Ctrl+Alt.",
       "stations": [
         "remaster"
       ]
     },
     {
       "name": "Cmd+G / Ctrl+Alt+G",
-      "description": "Cycle graphics. macOS uses Command; Windows and Linux use Ctrl+Alt.",
+      "description": "Cycle graphics. Desktop macOS uses Command; Windows, Linux and the browser use Ctrl+Alt.",
       "stations": [
         "remaster"
       ]

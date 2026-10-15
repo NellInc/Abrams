@@ -71,7 +71,22 @@ func poll() -> Array[Dictionary]:
 	if log_file and not errors.is_empty():
 		log_file.store_buffer(errors)
 		log_file.flush()
-	var bytes: PackedByteArray = process.stdio.get_buffer(1024 * 1024)
+	# A nonblocking pipe read can return only 512 bytes even when a full reply
+	# is ready. Drain available fragments here instead of spending a rendered
+	# frame on each fragment. A full tiny pipe can briefly read empty while its
+	# blocked writer replenishes it. Yield only after progress, within 2 ms.
+	# Bound both work and bytes; an idle host never makes the renderer wait.
+	var bytes := PackedByteArray()
+	var read_started := Time.get_ticks_usec()
+	for _read in 256:
+		var chunk: PackedByteArray = process.stdio.get_buffer(65536)
+		if chunk.is_empty():
+			if bytes.is_empty() or Time.get_ticks_usec()-read_started >= 2000: break
+			OS.delay_usec(50)
+		else:
+			bytes.append_array(chunk)
+			if chunk.has(10): break # A complete JSON line needs no further yield.
+		if bytes.size() >= 2 * 1024 * 1024 or Time.get_ticks_usec()-read_started >= 2000: break
 	buffered += bytes.get_string_from_utf8()
 	if buffered.length() > 2 * 1024 * 1024:
 		failure = "Oversized PC bridge response."

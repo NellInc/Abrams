@@ -39,6 +39,8 @@ func run() -> void:
 	menu.config_path=""
 	check(menu.load_settings() and menu.settings==Menu.DEFAULTS,"diagnostics ignore user preferences")
 	root.add_child(menu)
+	var notifications: Array[Dictionary]=[]
+	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
 	check(menu.get_menu_count()==1 and menu.menus.size()==5,"one external Audio menu, five gain groups")
 	check(menu.get_menu_title(0)=="Audio","menu title")
 	for child in [menu.popup]+menu.menus.values():
@@ -61,6 +63,7 @@ func run() -> void:
 	for choice in [["master",50],["effects",20],["voice",70],["motors",30],["music",60]]:
 		menu.menus[choice[0]].id_pressed.emit(choice[1])
 	check(menu.settings=={"master":50,"effects":20,"voice":70,"motors":30,"music":60},"every callback controls its own channel")
+	check(notifications.size()==5 and notifications[-1]==menu.settings,"native mixer emits the complete current mix for browser synchronization")
 	gain(audio.effects[0],0.65*0.5*0.2*0.6,"existing effect gain updates")
 	gain(audio.voice,0.65*0.5*0.7*0.8,"existing voice gain updates")
 	gain(audio.engine,0.65*0.5*0.3*0.08,"existing engine gain updates")
@@ -70,6 +73,15 @@ func run() -> void:
 	for key in Menu.DEFAULTS:
 		var choices: PopupMenu=menu.menus[key]
 		check(choices.is_item_checked(choices.get_item_index(menu.settings[key])),"current radio selection: "+key)
+	for percent in [67,63,70]:
+		check(menu.choose("voice",percent),"exact integral mix accepted")
+		var choices: PopupMenu=menu.menus.voice
+		var checked := 0
+		for index in choices.item_count:
+			if choices.is_item_checked(index):checked+=1
+		check(checked==1 and choices.is_item_checked(choices.get_item_index(percent)),"one exact checked radio for irregular gain")
+		check(choices.item_count==(11 if percent==70 else 12),"no stale irregular radio entries")
+	menu.choose("voice",70)
 	var before := audio.mix.duplicate()
 	for invalid in [{},{"master":-1,"effects":100,"voice":100,"motors":100},
 		{"master":100,"effects":101,"voice":100,"motors":100},
@@ -87,14 +99,23 @@ func run() -> void:
 	check(audio.apply_audio(packet(11,false)),"original F5/pause mute")
 	menu.popup.id_pressed.emit(1000)
 	check(menu.settings==Menu.DEFAULTS and audio.muted and not audio.engine.playing and not audio.voice.playing,"default reset cannot override source mute")
+	var reset_sequence := [audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed]
+	menu.choose("music",20)
+	check(menu.reset_mix() and menu.settings==Menu.DEFAULTS and audio.mix==Menu.DEFAULTS,"direct reset shares native menu defaults for all five gains")
+	check(audio.muted and not audio.engine.playing and not audio.voice.playing and reset_sequence==[audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed],"direct reset preserves source mute and event sequence")
 	check(audio.apply_audio(packet(12)),"source gate reopens")
 	check(audio.engine.playing and not audio.voice.playing and audio.delivered==1,"source resumes motors without stale one-shots")
+	audio.set_transport_muted(true)
+	menu.choose("music",20)
+	check(menu.reset_mix() and audio.transport_muted and not audio.engine.playing and not audio.voice.playing,"reset preserves fast-forward transport mute")
+	audio.set_transport_muted(false)
 	menu.config_path=output.path_join("preferences.cfg")
 	menu.choose("effects",40)
 	check(menu.save_error.is_empty(),"explicit choice saved")
 	var reload := Menu.new()
 	reload.config_path=menu.config_path
 	check(reload.load_settings() and reload.settings.effects==40,"cold settings load retains preference")
+	check(menu.reset_mix() and reload.load_settings() and reload.settings==Menu.DEFAULTS,"reset persists every default gain")
 	var malformed := ConfigFile.new()
 	malformed.set_value("audio","effects","loud")
 	malformed.save(menu.config_path)
@@ -102,6 +123,7 @@ func run() -> void:
 	menu.config_path=output.path_join("missing-parent/preferences.cfg")
 	menu.choose("effects",60)
 	check(not menu.save_error.is_empty() and audio.effects_volume==0.6,"save failure reported without losing session mix")
+	check(menu.reset_mix() and menu.settings==Menu.DEFAULTS and audio.mix==Menu.DEFAULTS and not menu.save_error.is_empty(),"failed reset save reports failure while retaining live defaults")
 	reload.free()
 	check(await audio.drain_for_shutdown(),"audio drains without residual playback")
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"native_menu":menu.is_native_menu()},"  "))

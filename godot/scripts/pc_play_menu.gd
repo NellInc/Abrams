@@ -8,8 +8,10 @@ signal state_requested(operation: String, slot: int)
 signal control_notice(message: String)
 var shortcut_is_macos := _uses_macos_shortcuts()
 var shortcut_keys: Array = []
-const MODES := ["ega","genesis","upscaled","modern","tactical"]
+const MODES := ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]
 var graphics_mode := "upscaled"
+# Saved intent stays independent of temporary startup overrides and fallback.
+var preferred_graphics_mode := ""
 var hud_style := "restored"
 const HUD_STYLES := ["restored","tactical"]
 const QUALITY_DEFAULTS := {"msaa":4,"anisotropy":16}
@@ -41,6 +43,8 @@ func _init() -> void:
 func _apply_hud_theme() -> void:
 	if _styled_hud==hud_style: return
 	_styled_hud=hud_style
+	var reader := get_tree().root.get_node_or_null("PlayerReference") if is_inside_tree() else null
+	if reader!=null:reader.call("set_hud_style",hud_style)
 	theme=preload("res://scripts/pc_interface_theme.gd").build()
 	_tactical_bar.visible=hud_style=="tactical"
 	if hud_style!="tactical": return
@@ -59,7 +63,61 @@ func _apply_hud_theme() -> void:
 		theme.set_stylebox(state,"MenuBar",style)
 	var panel:=preload("res://scripts/pc_interface_theme.gd").surface()
 	panel.bg_color=Color("101e16");panel.border_color=Color("61785b")
+	panel.content_margin_left=14;panel.content_margin_right=14
+	panel.content_margin_top=12;panel.content_margin_bottom=12
 	theme.set_stylebox("panel","PopupMenu",panel)
+	# One popup theme is inherited by every audio/session/graphics/help submenu.
+	# Preserve the bar's 32px allocation and all original menu IDs/input routing.
+	theme.set_color("font_hover_color","PopupMenu",Color("f3cf8e"))
+	for name in ["font_disabled_color","font_accelerator_color","font_separator_color"]:
+		theme.set_color(name,"PopupMenu",Color("a7b09a"))
+	theme.set_constant("v_separation","PopupMenu",10)
+	theme.set_constant("h_separation","PopupMenu",10)
+	theme.set_constant("item_start_padding","PopupMenu",4)
+	theme.set_constant("item_end_padding","PopupMenu",6)
+	var hover:=StyleBoxFlat.new()
+	hover.bg_color=Color("253827");hover.border_color=Color("65764e")
+	hover.set_border_width_all(1);hover.set_corner_radius_all(4)
+	theme.set_stylebox("hover","PopupMenu",hover)
+	var separator:=StyleBoxLine.new()
+	separator.color=Color("3c4e35");separator.thickness=1
+	separator.content_margin_top=5;separator.content_margin_bottom=5
+	for name in ["separator","labeled_separator_left","labeled_separator_right"]:
+		theme.set_stylebox(name,"PopupMenu",separator)
+	var tooltip_panel:=panel.duplicate() as StyleBoxFlat
+	tooltip_panel.content_margin_left=10;tooltip_panel.content_margin_right=10
+	tooltip_panel.content_margin_top=8;tooltip_panel.content_margin_bottom=8
+	theme.set_stylebox("panel","TooltipPanel",tooltip_panel)
+	theme.set_font("font","TooltipLabel",preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf"))
+	theme.set_font_size("font_size","TooltipLabel",18)
+	theme.set_color("font_color","TooltipLabel",Color("e3e4cd"))
+	for name in ["checked","radio_checked","unchecked","radio_unchecked","checked_disabled","radio_checked_disabled","unchecked_disabled","radio_unchecked_disabled","submenu","submenu_mirrored"]:
+		var tint:=Color("e7b566") if name in ["checked","radio_checked"] else Color("a7b09a")
+		_tint_menu_icon(name,tint)
+
+func _tint_menu_icon(name: String, tint: Color) -> void:
+	# Recolour the engine's existing glyphs once per theme change, retaining their
+	# tonal detail, antialiased alpha and dimensions. No per-frame work.
+	var source:=get_theme_icon(name,"PopupMenu").get_image()
+	if source==null or source.is_empty(): return
+	# Some backends return the engine icon Image itself. Never tint shared
+	# default-theme data; Restored must retain the original icon colours.
+	source=source.duplicate() as Image
+	source.convert(Image.FORMAT_RGBA8)
+	for y in source.get_height():
+		for x in source.get_width():
+			var pixel:=source.get_pixel(x,y)
+			var luminance:=pixel.r*0.2126+pixel.g*0.7152+pixel.b*0.0722
+			source.set_pixel(x,y,Color(tint.r*luminance,tint.g*luminance,tint.b*luminance,pixel.a))
+	theme.set_icon(name,"PopupMenu",ImageTexture.create_from_image(source))
+
+func _watch(menu: PopupMenu) -> void:
+	super._watch(menu)
+	menu.about_to_popup.connect(func():
+		# An empty Load menu otherwise focuses its only enabled item: a divider.
+		# Restored receives the incumbent separator flags when reopened.
+		for index in menu.item_count:
+			if menu.is_item_separator(index):menu.set_item_disabled(index,hud_style=="tactical"))
 
 func _place_tactical_bar() -> void:
 	_tactical_bar.size=Vector2(get_viewport_rect().size.x,size.y)
@@ -104,10 +162,12 @@ func _ready() -> void:
 	add_child(graphics_popup)
 	_watch(graphics_popup)
 	for index in MODES.size():
-		graphics_popup.add_radio_check_item(["EGA (original PC)","Genesis (original artwork)","Upscaled (remastered)","Modern (not available yet)","Tactical (not available yet)"][index],index)
-	graphics_popup.set_item_disabled(3,true)
-	graphics_popup.set_item_disabled(4,true)
-	graphics_popup.id_pressed.connect(func(index):choose_graphics(MODES[index]))
+		graphics_popup.add_radio_check_item(["EGA (original PC)","EGA Upscaled (original colours)","Genesis (original artwork)","Genesis Upscaled (remastered)","Modern (not available yet)","Tactical (not available yet)"][index],index)
+	graphics_popup.set_item_disabled(MODES.find("modern"),true)
+	graphics_popup.set_item_disabled(MODES.find("tactical"),true)
+	graphics_popup.id_pressed.connect(func(index):
+		if index>=0 and index<MODES.size():choose_graphics(MODES[index])
+		elif index==102:reset_quality())
 	graphics_popup.add_separator()
 	hud_popup=_submenu(graphics_popup,"HUD Style")
 	for index in HUD_STYLES.size():
@@ -123,6 +183,7 @@ func _ready() -> void:
 			menu.add_radio_check_item("Off" if samples==0 else "%d× MSAA"%samples if key=="msaa" else "%d×"%samples,samples)
 		menu.id_pressed.connect(func(samples):choose_quality(key,samples))
 		quality_menus[key]=menu
+	graphics_popup.add_item("Restore full-quality defaults (4× / 16×)",102)
 	graphics_popup.add_item("",101)
 	graphics_popup.set_item_disabled(graphics_popup.get_item_index(101),true)
 	help_popup=PopupMenu.new()
@@ -141,7 +202,7 @@ func _ready() -> void:
 	refresh_controls()
 
 func open_reference(name: String) -> void:
-	var reader := preload("res://scripts/pc_interface_theme.gd").show_reference(get_tree().root,name)
+	var reader := preload("res://scripts/pc_interface_theme.gd").show_reference(get_tree().root,name,hud_style)
 	if not reader.is_connected("reader_changed",_reader_changed):reader.connect("reader_changed",_reader_changed)
 	_reader_changed(true)
 
@@ -153,6 +214,7 @@ func _reader_changed(open: bool) -> void:
 func load_quality_settings() -> bool:
 	quality=QUALITY_DEFAULTS.duplicate()
 	hud_style="restored"
+	preferred_graphics_mode=""
 	quality_error=""
 	if quality_config_path.is_empty(): return true
 	var file := ConfigFile.new()
@@ -171,17 +233,28 @@ func load_quality_settings() -> bool:
 	quality=loaded
 	var saved_style=file.get_value("graphics","hud_style","restored")
 	hud_style=saved_style if saved_style is String and saved_style in HUD_STYLES else "restored"
+	if file.has_section_key("graphics","graphics_mode"):
+		var saved_mode=file.get_value("graphics","graphics_mode")
+		if not saved_mode is String or saved_mode not in MODES:
+			quality_error="Invalid saved graphics mode; using the launch default"
+			return false
+		preferred_graphics_mode=saved_mode
 	return true
+
+func _save_graphics_settings(failure_message: String) -> void:
+	quality_error=""
+	if quality_config_path.is_empty(): return
+	var file := ConfigFile.new()
+	for setting in quality: file.set_value("graphics",setting,quality[setting])
+	file.set_value("graphics","hud_style",hud_style)
+	if not preferred_graphics_mode.is_empty():
+		file.set_value("graphics","graphics_mode",preferred_graphics_mode)
+	if file.save(quality_config_path)!=OK: quality_error=failure_message
 
 func choose_quality(key: String, samples: int) -> bool:
 	if not QUALITY_LEVELS.has(key) or samples not in QUALITY_LEVELS[key]: return false
 	quality[key]=samples
-	quality_error=""
-	if not quality_config_path.is_empty():
-		var file := ConfigFile.new()
-		for setting in quality: file.set_value("graphics",setting,quality[setting])
-		file.set_value("graphics","hud_style",hud_style)
-		if file.save(quality_config_path)!=OK: quality_error="Graphics changed, but could not save settings"
+	_save_graphics_settings("Graphics changed, but could not save settings")
 	quality_selected.emit(quality.msaa,quality.anisotropy)
 	refresh_controls()
 	return true
@@ -189,15 +262,18 @@ func choose_quality(key: String, samples: int) -> bool:
 func choose_hud_style(style: String) -> bool:
 	if style not in HUD_STYLES: return false
 	hud_style=style
-	quality_error=""
-	if not quality_config_path.is_empty():
-		var file:=ConfigFile.new()
-		for setting in quality: file.set_value("graphics",setting,quality[setting])
-		file.set_value("graphics","hud_style",hud_style)
-		if file.save(quality_config_path)!=OK: quality_error="HUD changed, but could not save settings"
+	_save_graphics_settings("HUD changed, but could not save settings")
 	hud_style_selected.emit(style)
 	refresh_controls()
 	control_notice.emit("HUD: " + ("Tactical" if style=="tactical" else "Restored"))
+	return true
+
+func reset_quality() -> bool:
+	quality=QUALITY_DEFAULTS.duplicate()
+	_save_graphics_settings("Quality restored, but could not save settings")
+	quality_selected.emit(quality.msaa,quality.anisotropy)
+	refresh_controls()
+	control_notice.emit("Full-quality defaults: 4× MSAA / 16× anisotropic filtering")
 	return true
 
 func shortcut_prefix() -> String:
@@ -262,7 +338,7 @@ func _submenu(parent: PopupMenu, title: String) -> PopupMenu:
 	return menu
 
 func available_graphics_modes() -> Array:
-	var modes: Array = ["ega","genesis","upscaled"] if genesis_available else ["ega","upscaled"]
+	var modes: Array = ["ega","ega_upscaled","genesis","upscaled"] if genesis_available else ["ega","ega_upscaled","upscaled"]
 	if modern_available: modes.append_array(["modern","tactical"])
 	return modes
 
@@ -270,13 +346,17 @@ func cycle_graphics() -> bool:
 	var modes := available_graphics_modes()
 	return choose_graphics(modes[(modes.find(graphics_mode)+1)%modes.size()])
 
-func choose_graphics(mode: String) -> bool:
+func choose_graphics(mode: String, persist: bool=true) -> bool:
 	if mode not in available_graphics_modes(): return false
 	graphics_mode=mode
 	graphics_selected.emit(mode)
+	# Signal handlers synchronously resolve the actual mode or revert on failure.
+	if graphics_mode==mode and persist:
+		preferred_graphics_mode=mode
+		_save_graphics_settings("Graphics changed, but could not save settings")
 	refresh_controls()
 	# The viewer may reject a mode whose assets failed to load; report what is shown.
-	var names := {"ega":"EGA","genesis":"Genesis","upscaled":"Upscaled","modern":"Modern","tactical":"Tactical"}
+	var names := {"ega":"EGA","ega_upscaled":"EGA Upscaled","genesis":"Genesis","upscaled":"Genesis Upscaled","modern":"Modern","tactical":"Tactical"}
 	control_notice.emit("Graphics: "+names[graphics_mode] if graphics_mode==mode else names[mode]+" graphics are unavailable")
 	return graphics_mode==mode
 
@@ -309,21 +389,41 @@ func set_state_status(slots: Array, message: String="") -> void:
 	refresh_controls()
 	if not message.is_empty():control_notice.emit(message)
 
+func _refresh_tactical_tooltips() -> void:
+	# Presentation copy is reversible with the HUD. IDs, modes, accelerators,
+	# original keys and all underlying artwork/colour settings remain unchanged.
+	var descriptions:= [
+		"Exact original PC pixels at 320 x 200.",
+		"High-resolution EGA art with the original PC colours.",
+		"Original Genesis artwork in the PC layout. Requires the ROM.",
+		"Generated high-resolution remaster artwork and rebuilt lettering.",
+		"Refined low-poly scenery. Original view and visibility.",
+		"Range-inspired scenery. Choose HUD Style separately."]
+	for index in MODES.size():
+		graphics_popup.set_item_tooltip(index,descriptions[index] if hud_style=="tactical" else "")
+	for index in HUD_STYLES.size():
+		hud_popup.set_item_tooltip(index,("Original cockpit layout and lettering." if index==0 else "Olive instruments and menus. Original readings and gameplay.") if hud_style=="tactical" else "")
+	for key in quality_menus:
+		var menu: PopupMenu=quality_menus[key]
+		for index in menu.item_count:
+			menu.set_item_tooltip(index,("Smooths 3D scenery edges. Original HUD pixels unchanged." if key=="msaa" else "Keeps angled ground textures clear. Geometry unchanged.") if hud_style=="tactical" else "")
+
 func refresh_controls() -> void:
 	if graphics_popup==null: return
 	_apply_hud_theme()
-	graphics_popup.set_item_disabled(1,not genesis_available)
-	graphics_popup.set_item_text(1,"Genesis (original artwork)" if genesis_available else "Genesis (requires optional import)")
-	graphics_popup.set_item_disabled(3,not modern_available)
-	graphics_popup.set_item_text(3,"Modern (refined low-poly)" if modern_available else "Modern (assets unavailable)")
-	graphics_popup.set_item_disabled(4,not modern_available)
-	graphics_popup.set_item_text(4,"Tactical (Range-inspired 3D)" if modern_available else "Tactical (assets unavailable)")
+	_refresh_tactical_tooltips()
+	graphics_popup.set_item_disabled(MODES.find("genesis"),not genesis_available)
+	graphics_popup.set_item_text(MODES.find("genesis"),"Genesis (original artwork)" if genesis_available else "Genesis (requires optional import)")
+	graphics_popup.set_item_disabled(MODES.find("modern"),not modern_available)
+	graphics_popup.set_item_text(MODES.find("modern"),"Modern (refined low-poly)" if modern_available else "Modern (assets unavailable)")
+	graphics_popup.set_item_disabled(MODES.find("tactical"),not modern_available)
+	graphics_popup.set_item_text(MODES.find("tactical"),"Tactical (Range-inspired 3D)" if modern_available else "Tactical (assets unavailable)")
 	for index in MODES.size():graphics_popup.set_item_checked(index,MODES[index]==graphics_mode)
 	for index in HUD_STYLES.size():hud_popup.set_item_checked(index,HUD_STYLES[index]==hud_style)
 	for key in quality_menus:
 		var menu: PopupMenu=quality_menus[key]
 		for index in menu.item_count: menu.set_item_checked(index,menu.get_item_id(index)==quality[key])
-	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else "Antialiasing applies to Upscaled, Modern and Tactical scenery")
+	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else "Antialiasing applies to Genesis Upscaled, Modern and Tactical scenery")
 	for index in speed_popup.item_count:
 		speed_popup.set_item_checked(index,speed_popup.get_item_id(index)==speed)
 		speed_popup.set_item_disabled(index,busy)

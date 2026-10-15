@@ -124,6 +124,7 @@ func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, p
 	return frontend
 
 func _initialize() -> void:
+	Keyboard.initialize(root)
 	root.title = str(ProjectSettings.get_setting("application/config/name")) + ": bridge research"
 	root.size = Vector2i(1440, 900)
 	root.min_size = Vector2i(1100, 750)
@@ -312,6 +313,7 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		audio_menu.speed_selected.connect(_choose_speed)
 		audio_menu.state_requested.connect(_request_state)
 		audio_menu.control_notice.connect(_show_control_notice)
+		audio_menu.mix_changed.connect(_sync_web_controls)
 		audio_menu.resized.connect(_layout_audio_menu)
 		_layout_audio_menu.call_deferred()
 	_load_cockpit_presentation(directory)
@@ -322,12 +324,22 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		# Offer Genesis only when its native pack actually loaded (hash-checked).
 		audio_menu.genesis_available=not pc_only and tandem_frame.native_graphics.loaded
 		audio_menu.refresh_controls()
-		var initial_mode := "ega" if "--original-art" in args else "upscaled"
+		var explicit_mode: bool="--original-art" in args or "--graphics" in args
+		var initial_mode: String="ega" if "--original-art" in args else audio_menu.preferred_graphics_mode if not audio_menu.preferred_graphics_mode.is_empty() else "upscaled"
 		if "--graphics" in args: initial_mode=args[args.find("--graphics")+1]
-		if not audio_menu.choose_graphics(initial_mode):
-			printerr("Requested graphics assets are unavailable: "+initial_mode)
-			quit(2)
-			return
+		# Saved intent survives missing optional imports. Explicit CLI requests
+		# remain strict and transient; neither startup path writes preferences.
+		var preferred_unavailable: bool=not explicit_mode and initial_mode not in audio_menu.available_graphics_modes()
+		if preferred_unavailable: initial_mode="upscaled"
+		if not audio_menu.choose_graphics(initial_mode,false):
+			if explicit_mode or not audio_menu.choose_graphics("upscaled",false):
+				printerr("Requested graphics assets are unavailable: "+initial_mode)
+				quit(2)
+				return
+			preferred_unavailable=true
+		if preferred_unavailable:
+			audio_menu.quality_error="Saved graphics are unavailable with this import. Showing Genesis Upscaled; preference retained."
+			audio_menu.refresh_controls()
 	var python := Bridge.default_python()
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
 	var startup_state := "" if boot_mode else directory.path_join(state_path)
@@ -438,8 +450,8 @@ static func graphics_launch_error(args: Array) -> String:
 	if "--graphics" not in args: return ""
 	var index := args.find("--graphics")+1
 	var mode: String = args[index] if index<args.size() else ""
-	if mode not in ["ega","genesis","upscaled","modern","tactical"]:
-		return "--graphics requires ega, genesis, upscaled, modern or tactical"
+	if mode not in ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]:
+		return "--graphics requires ega, ega_upscaled, genesis, upscaled, modern or tactical"
 	if "--pc-only" in args and mode=="genesis":
 		return "--graphics genesis requires the optional Genesis import; unavailable with --pc-only"
 	return ""
@@ -683,7 +695,16 @@ func _sync_web_controls(message: String = "") -> void:
 	bridge.host.updateControls(JSON.stringify({"modes":audio_menu.available_graphics_modes(),
 		"graphics":audio_menu.graphics_mode,"hud_styles":audio_menu.HUD_STYLES,
 		"hud_style":audio_menu.hud_style,"slots":audio_menu.state_slots,
-		"speed":audio_menu.speed,"message":message}))
+		"speed":audio_menu.speed,"busy":audio_menu.busy,"message":message,
+		"quality":audio_menu.quality,"quality_levels":audio_menu.QUALITY_LEVELS,
+		"audio":audio_menu.settings,"audio_defaults":audio_menu.DEFAULTS,
+		"quality_error":audio_menu.quality_error,"audio_error":audio_menu.save_error}))
+
+static func _web_control_integer(value, maximum: int) -> int:
+	# Godot JSON numbers may be floats. Booleans, numeric strings, non-finite
+	# and fractional values never become valid presentation-setting requests.
+	if typeof(value) not in [TYPE_INT,TYPE_FLOAT] or value<0 or value>maximum or value!=floor(value):return -1
+	return int(value)
 
 func _poll_web_controls() -> void:
 	if not OS.has_feature("web") or audio_menu == null or bridge.host == null: return
@@ -701,6 +722,14 @@ func _poll_web_controls() -> void:
 			"hud_style": audio_menu.choose_hud_style(str(action.get("style", "")))
 			"cycle_graphics": audio_menu.cycle_graphics()
 			"speed": audio_menu.choose_speed(1 if audio_menu.speed == 8 else 8)
+			"quality":
+				var samples: int=_web_control_integer(action.get("samples"),16)
+				if samples>=0:audio_menu.choose_quality(str(action.get("setting","")),samples)
+			"audio":
+				var percent: int=_web_control_integer(action.get("percent"),100)
+				if percent>=0:audio_menu.choose(str(action.get("channel","")),percent)
+			"reset_audio": audio_menu.reset_mix()
+			"reset_quality": audio_menu.reset_quality()
 			"help": audio_menu.open_reference("keyboard-controls.html")
 	if handled: _sync_web_controls()
 

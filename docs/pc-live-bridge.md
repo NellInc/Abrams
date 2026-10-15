@@ -205,6 +205,68 @@ Standalone-original and historical-machine wall-clock calibration remain open;
 [pacing research](pc-pacing-research.md) records both faster and slower A/B runs,
 unchanged-source evidence and limits.
 
+## Optional original loop-end diagnostics
+
+`--loop-diagnostics` enables read-only sampling immediately before the original
+SIM main loop's jump at load-relative `0000:0e85`. It requires the trace backend
+and a rebuilt native manifest with `loop_diagnostic_schema: 1`. Normal Play leaves
+it disabled. No Godot presentation consumer or gameplay rule changes.
+
+```sh
+python3 -m tools.pc_bridge_host --backend trace --loop-diagnostics \
+  --saves artifacts/loop-diagnostic-saves
+```
+
+The host still accepts the existing JSON commands on stdin. Diagnostics become
+available only while a fingerprinted, initialized original SIM is executing.
+An enabled response adds nullable top-level `loop_diagnostic`, separately from
+`state` and `presentation`. It retains only the latest observation:
+
+* `schema: 1`, `boundary: "0000:0e85"`, attachment-local `sequence`, and
+  `render_epoch`. A worker restart's `timeline_reset` starts a new timeline.
+* Original decoded player/control fields and camera in `state`, plus
+  `world_origin`; the full allocated-object pool is omitted.
+* The copied conventional-RAM hash and registers in ABI order
+  AX/BX/CX/DX/SI/DI/BP/SP/CS/DS/ES/SS.
+* Nullable `last_completed_draw` identity: original pass `sequence`,
+  `page_offset`, and `start_ram_sha256`. Startup can have no completed pass.
+* `video_paired: false`. This observation can be newer than the submitted image.
+  The existing draw-pass/page/scanout/framebuffer-slot attribution remains the
+  sole presentation source. Allocated objects and the latest pass never replace
+  the original participation set or the displayed pass.
+
+Native event 56 uses `offset: 0x0e85`, exactly 655360 copied physical RAM bytes,
+and the existing 12-register callback. Python independently validates the active
+SIM PSP/MCB, executable anchors, CS/DS, and complete main-loop instruction bytes
+(`0e54:0e87`, including both relocated far segments) before accepting a sample.
+Unsupported initialized fields yield null; malformed payloads or source
+mismatches fail explicitly and invalidate the diagnostic without clearing the
+independent original drawing context.
+
+Attachment/detachment resets the native option and latest diagnostic. Program
+identity at both the submitted-video boundary and current fenced RAM must agree
+with the attachment before publication. Save/load's held packet drops the saved
+diagnostic, including when reopening with the option disabled. Fresh execution
+reacquires it. The host option is reapplied at attachment; the existing observer
+checkpoint ABI and guest save state are unchanged.
+
+Bounded evidence on 12 October 2026: enabled, disabled, and previous-core replays
+match all 1920 records for conventional RAM, video-boundary RAM, framebuffer,
+existing session packets and audio-event packets. There are 532 native loop-end
+observations, 531 attributed to completed original world draws, and 43,592 original
+vertex checks per run. The displayed pass is older than the latest completed
+pass in 1643 frames, with unchanged attribution. All 17 actual bridge save/load
+and enabled/disabled restart checks pass, including clearing held diagnostics and
+reacquiring them through fresh execution. Focused and lifecycle tests pass.
+This establishes the diagnostic
+contract for the tested mission/normal-CPU/EGA route; universal atomic gameplay
+state, other modes/backends, wall-clock timing and audible-waveform parity remain
+unproven. Evidence is local under `artifacts/rea-loop-diagnostic-20261012/`.
+
+Working if: enabling the option adds only the separate diagnostic, all original
+RAM/video/presentation records agree, program changes and held restores expose
+no stale diagnostic, and the 68 original game-file hashes remain unchanged.
+
 ## Read-only fields with evidence
 
 `tools/pc_live_state.py` accepts only the fingerprinted supplied SIM.EXE. It

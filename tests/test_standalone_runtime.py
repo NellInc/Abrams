@@ -314,6 +314,115 @@ class StandaloneRuntimeTests(unittest.TestCase):
             runtime.prepare_install(self.bundle, self.home)
         self.assertEqual((external / 'project.godot').read_bytes(), b'config_version=5\n')
 
+    def test_failed_version_copy_removes_only_own_staging(self):
+        self.imported(); save = self.preserved_save()
+        sentinel = self.home / 'versions/unrelated-work'; sentinel.mkdir(parents=True)
+        (sentinel / 'keep').write_text('unrelated')
+        with patch.object(runtime.shutil, 'copyfile', side_effect=OSError('disk full')):
+            with self.assertRaisesRegex(OSError, 'disk full'): runtime.prepare_install(self.bundle, self.home)
+        self.assertEqual(list((self.home / 'versions').glob('.install-*')), [])
+        self.assertEqual((sentinel / 'keep').read_text(), 'unrelated')
+        self.assertEqual(save.read_bytes(), b'important campaign and profile state')
+        self.assertTrue(runtime.status(self.bundle, self.home)['pc_installed'])
+
+    def test_failed_version_promotion_preserves_profile_and_removes_staging(self):
+        self.imported(); save = self.preserved_save(); original = Path.rename
+        def rename(path, target):
+            if path.name.startswith('.install-'): raise OSError('promotion blocked')
+            return original(path, target)
+        with patch.object(Path, 'rename', rename), self.assertRaisesRegex(OSError, 'promotion blocked'):
+            runtime.prepare_install(self.bundle, self.home)
+        self.assertEqual(list((self.home / 'versions').glob('.install-*')), [])
+        self.assertEqual(save.read_bytes(), b'important campaign and profile state')
+
+    def test_corrupt_successful_copy_is_refused_before_promotion_and_retry_works(self):
+        self.imported(); save = self.preserved_save()
+        first = runtime.prepare_install(self.bundle, self.home)
+        self.manifest['build_id'] = digest(b'candidate build'); self.write_manifest()
+        target = self.home / 'versions' / self.manifest['build_id']
+        sentinel = self.home / 'versions/unrelated-work'; sentinel.mkdir()
+        (sentinel / 'keep').write_bytes(b'keep unrelated work')
+        copyfile = runtime.shutil.copyfile
+        for relative in ['godot/project.godot', 'GAME/ABRAMS.COM', '.runtime/pc-core/abrams-ref.zip']:
+            with self.subTest(relative=relative):
+                def corrupt(source, destination, **kwargs):
+                    result = copyfile(source, destination, **kwargs)
+                    if Path(destination).as_posix().endswith('/' + relative):
+                        Path(destination).write_bytes(b'corrupt successful copy')
+                    return result
+                with patch.object(runtime.shutil, 'copyfile', corrupt):
+                    with self.assertRaisesRegex(ValueError, 'copy failed verification'):
+                        runtime.prepare_install(self.bundle, self.home)
+                self.assertFalse(target.exists())
+                self.assertEqual(list(target.parent.glob('.install-*')), [])
+                self.assertEqual((first / 'godot/project.godot').read_bytes(), b'config_version=5\n')
+                self.assertEqual((sentinel / 'keep').read_bytes(), b'keep unrelated work')
+                self.assertEqual(save.read_bytes(), b'important campaign and profile state')
+                for name, data in self.originals.items():
+                    self.assertEqual((self.game / name).read_bytes(), data)
+                    self.assertEqual((self.content() / 'GAME' / name).read_bytes(), data)
+                self.assertEqual((self.content() / '.runtime/pc-core/abrams-ref.zip').read_bytes(), self.archive)
+        self.assertEqual(runtime.prepare_install(self.bundle, self.home), target)
+        self.assertEqual(runtime.prepare_install(self.bundle, self.home), target)
+
+    def test_install_uses_captured_original_hashes_after_application_manifest_edit(self):
+        self.imported(); save = self.preserved_save()
+        records = self.kit / 'tools/package/game-inputs.json'; original = records.read_bytes()
+        copyfile = runtime.shutil.copyfile
+        def corrupt(source, destination, **kwargs):
+            result = copyfile(source, destination, **kwargs)
+            if Path(destination).as_posix().endswith('/GAME/ABRAMS.COM'):
+                Path(destination).write_bytes(b'changed game')
+                changed = [dict(row) for row in self.rows]
+                changed[0]['sha256'] = digest(b'changed game')
+                records.write_text(json.dumps({'files': changed}))
+            return result
+        try:
+            with patch.object(runtime.shutil, 'copyfile', corrupt):
+                with self.assertRaisesRegex(ValueError, 'original-content copy failed verification'):
+                    runtime.prepare_install(self.bundle, self.home)
+            self.assertFalse((self.home / 'versions' / self.manifest['build_id']).exists())
+            self.assertEqual(list((self.home / 'versions').glob('.install-*')), [])
+            self.assertEqual(save.read_bytes(), b'important campaign and profile state')
+        finally:
+            records.write_bytes(original)
+        self.assertTrue(runtime.prepare_install(self.bundle, self.home).is_dir())
+
+    def test_original_expectations_must_match_verified_application_payload(self):
+        self.imported()
+        records = self.kit / 'tools/package/game-inputs.json'
+        original = runtime.valid_payload
+        def edit_after_validation(resources, manifest):
+            original(resources, manifest)
+            records.write_text(json.dumps({'files': []}))
+        with patch.object(runtime, 'valid_payload', edit_after_validation):
+            with self.assertRaisesRegex(ValueError, 'manifest changed during installation'):
+                runtime.prepare_install(self.bundle, self.home)
+        self.assertFalse((self.home / 'versions').exists())
+
+    def test_original_expectations_manifest_is_required_for_install(self):
+        self.imported()
+        self.manifest['files'] = [row for row in self.manifest['files'] if row['path'] != 'tools/package/game-inputs.json']
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, 'manifest is missing'):
+            runtime.prepare_install(self.bundle, self.home)
+        self.assertFalse((self.home / 'versions').exists())
+
+    def test_failed_preflight_never_executes_game_and_log_link_is_refused(self):
+        self.imported(); install = runtime.prepare_install(self.bundle, self.home)
+        renderer = self.bundle / 'Contents/Helpers/AbramsRenderer.app/Contents/MacOS/AbramsRenderer'
+        engine = self.resources / 'runtime/AbramsRuntime/AbramsRuntime'
+        for path in [renderer, engine]: path.parent.mkdir(parents=True, exist_ok=True); path.write_text('synthetic'); path.chmod(0o755)
+        with patch.object(runtime, 'renderer_preflight', side_effect=runtime.subprocess.SubprocessError('SCRIPT ERROR')), patch.object(runtime.os, 'execve') as execute:
+            with self.assertRaisesRegex(runtime.subprocess.SubprocessError, 'SCRIPT ERROR'): runtime.launch(self.bundle, self.home, [])
+            execute.assert_not_called()
+        external = self.root / 'external-log'; external.write_bytes(b'preserve')
+        (self.home / 'logs/application.log').symlink_to(external)
+        with patch.object(runtime.os, 'execve') as execute:
+            with self.assertRaisesRegex(ValueError, 'symlink'): runtime.launch(self.bundle, self.home, [])
+            execute.assert_not_called()
+        self.assertEqual(external.read_bytes(), b'preserve')
+
     def test_reusing_content_does_not_reconstruct_or_change_originals(self):
         self.imported()
         archive = self.content() / '.runtime/pc-core/abrams-ref.zip'
@@ -366,6 +475,40 @@ class StandaloneRuntimeTests(unittest.TestCase):
         install = runtime.prepare_install(self.bundle, self.home)
         self.assertTrue(install.is_relative_to(self.home))
         self.assertFalse(install.is_relative_to(self.bundle))
+
+
+class RendererPreflightTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.log = Path(self.temp.name) / 'application.log'
+        self.log.write_bytes(b'Historical SCRIPT ERROR: previously corrected\n')
+    def invoke(self, output, code=0):
+        def run(args, **kwargs):
+            self.assertEqual(kwargs['timeout'], 300)
+            self.assertEqual(kwargs['stderr'], runtime.subprocess.STDOUT)
+            kwargs['stdout'].write(output)
+            return runtime.subprocess.CompletedProcess(args, code)
+        with patch.object(runtime.subprocess, 'run', run): runtime.renderer_preflight(['owned renderer'], {}, self.log)
+    def test_clean_output_ignores_historical_error_and_preserves_full_log(self):
+        self.invoke(b'Godot ready\n')
+        self.assertEqual(self.log.read_bytes(), b'Historical SCRIPT ERROR: previously corrected\nGodot ready\n')
+    def test_zero_exit_parse_and_shader_errors_refuse(self):
+        for marker in [b'SCRIPT ERROR:', b'Parse Error:', b'SHADER ERROR:', b'ERROR:']:
+            with self.subTest(marker=marker), self.assertRaisesRegex(runtime.subprocess.SubprocessError, 'preflight failed') as caught:
+                self.invoke(marker+b' invalid resource\n')
+            self.assertIn(str(self.log), str(caught.exception)); self.assertIn(marker.decode(), str(caught.exception))
+    def test_diagnostic_across_read_boundary_is_detected(self):
+        with self.assertRaisesRegex(runtime.subprocess.SubprocessError, 'SCRIPT ERROR'):
+            self.invoke(b'x' * 8188 + b'SCRIPT ERROR: boundary\n' + b'x' * 16384)
+    def test_nonzero_exit_reports_tail_even_without_diagnostic_marker(self):
+        with self.assertRaisesRegex(runtime.subprocess.SubprocessError, 'exit 2') as caught:
+            self.invoke(b'export unavailable\n', 2)
+        self.assertIn('export unavailable', str(caught.exception))
+    def test_timeout_is_clear_and_points_to_complete_log(self):
+        with patch.object(runtime.subprocess, 'run', side_effect=runtime.subprocess.TimeoutExpired(['owned renderer'], 300)):
+            with self.assertRaisesRegex(runtime.subprocess.SubprocessError, '300 seconds') as caught:
+                runtime.renderer_preflight(['owned renderer'], {}, self.log)
+        self.assertIn(str(self.log), str(caught.exception))
 
 
 if __name__ == '__main__':

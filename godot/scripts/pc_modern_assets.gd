@@ -13,6 +13,40 @@ const TREE_HASH := "4570dea75ccd1f72c7675fc94773aed0495056d2798753dfdbaa4d9f3d13
 # Between the crew painter-depth tag and running gear. Paint only, no new mesh.
 const HIND_PAINT := 20.09375
 const ARMOUR_PAINT := 20.5
+const GLAZING := 20.0078125
+const GLAZING_SHAPES := [145,147,149,151,153,155,157,159,163,164]
+const EQUIPMENT_VENT := 19.625
+const EQUIPMENT_CANVAS := 19.75
+const EQUIPMENT_RUBBER := 19.875
+const EQUIPMENT_SHAPES := [115,117,119,121,125,127,129,131,133,135,137,139,141,143,159,163,164]
+const ARCHITECTURE_SHAPES := [145,147,149,151,153,155,157]
+# Material tags decode back to their incumbent kind in the surface vertex
+# shader, preserving Modernized and detail-off. No geometric attribute changes.
+const ARCH_DOOR := 20.3125
+const ARCH_TIMBER := 20.34375
+const ARCH_BASE_WALL := 20.359375
+const ARCH_STONE_WALL := 20.390625
+const ARCH_STONE_TOP := 20.4140625
+const ARCH_BASE_TOP := 20.421875
+const TEXTURE_PAINT := 20.01171875
+const TEXTURE_PLASTER := 20.3828125
+const MATERIAL_TEXTURES := {
+	"steel":"1d0be87936fd82a22537c98c2fc9ffa961acc457f04b6394a349fd213309126f",
+	"plaster":"237445c13740992e8791db55b64b7b65b6c8828c536eeeddec85926f25a48fa0",
+	"stone":"3ae3b16291a6f8b0a65402cc3c07676cce8da63378f7a5d4bf78b282be17523a"}
+const REALISM_TEXTURES := {
+ "wood": "48a539de3cc5b0e1784c69c4026fed47ed4e7b88cff32261e1228a0cdcfb35bf",
+ "canvas": "899ab39514689be078d2c34b460f0b6c1fb18aa615f297003a5d125f240125e8",
+ "rubber": "2850adb79bfa937d62f450a9a1d274f68506559a4c0469a12d828172e51320ac",
+ "roofing": "b9eb44580ac5559cd70833d657c7c65091b8125aff3bf7b878543cd2f71f1a94",
+ "foliage": "f8147c2ce15d68c5b0170317490bcd4f1d29138dedf1f63d0e7ecabddef0d587",
+ "grass": "3dd26ad3cea051ea47e7957f8d7546550f538cbac647d5fa92cc7a9a418be243",
+ "soil": "e4fe781ab1f58d03c09aca76cad82f8682a7e8346e15ca3d24ca8a1b11549ad1",
+ "asphalt": "30a2ef37ce02a5a2b232325e97077534a8bc8cea09760ae8fb91cfaf9bc79dee",
+ "water": "1ca80a2bea454a18a86f8e31900b0d1555b79f1ff68dd50531fe37a0d1259d47",
+ "glass": "b6ce024187e0ddf91ceb4a6d4b65c1b27a149adb892ebef5c86e87102696fafa"
+}
+const REALISM_ORDER := ["steel","plaster","stone","wood","canvas","rubber","roofing","grass","foliage","soil","asphalt","water","glass"]
 const TWO_TONE_SHAPES := [129,131,133,135,137,139,141,143,159]
 const BRIDGE_SHAPES := [0,1,45,46,108,114]
 # Pinned original river polygons. Buildings/vehicles sharing blue materials
@@ -34,6 +68,8 @@ const ANCHOR_TOLERANCE := 0.25
 var revision := 0
 var models: Dictionary = {}
 var terrain_shapes: Dictionary = {}
+var material_textures: Dictionary = {}
+var material_atlas: Texture2D
 var tree_texture: Texture2D
 var colour_texture: Texture2D
 var colour_indices: Dictionary = {}
@@ -45,8 +81,14 @@ var max_anchor_error := 0.0
 var last_reason := ""
 var position_cache_hits := 0
 var position_cache_misses := 0
+# Independent canonical copies match JSON float arrays in native code. No
+# observed palette or acceptance result is retained; mixed types use the old gate.
+static var _pc_json_palette: Array = JSON.parse_string(JSON.stringify(PC_PALETTE))
+static var _frontend_json_palette: Array = JSON.parse_string(JSON.stringify(Colour.FRONTEND_PALETTE))
 
 func load_assets(root: String) -> bool:
+	material_textures.clear()
+	material_atlas=null
 	revision += 1
 	models.clear()
 	colour_texture=null
@@ -79,7 +121,85 @@ func load_assets(root: String) -> bool:
 		ready=false
 		status="Modern illustrated tree unavailable or invalid"
 		return false
+	load_material_textures(root) # Optional detail never makes Modernized unavailable.
+	load_realism_atlas(root)
 	return true
+
+func load_material_textures(root: String) -> bool:
+	material_textures.clear()
+	material_atlas=null
+	var loaded: Dictionary = {}
+	for name in MATERIAL_TEXTURES:
+		var path:=root.path_join("local-art/pc-tactical-materials-v1/"+str(name)+".png")
+		if not _file_exists(path) or _sha256(path)!=MATERIAL_TEXTURES[name]:return false
+		disk_io_count+=1
+		var image:=Image.load_from_file(path)
+		if image==null or image.is_empty() or image.get_size()!=Vector2i(1254,1254):return false
+		# Bounded GPU footprint, no work or disk reads while rendering/toggling.
+		image.resize(512,512,Image.INTERPOLATE_LANCZOS)
+		image.convert(Image.FORMAT_R8)
+		image.generate_mipmaps()
+		loaded[name]=ImageTexture.create_from_image(image)
+	material_textures=loaded
+	return true
+
+# One mipmapped, padded R8 atlas uses one extra browser sampler. Optional,
+# all-or-nothing admission leaves the preceding Tactical materials available.
+func load_realism_atlas(root: String) -> bool:
+	material_atlas=null
+	if material_textures.size()!=3:return false
+	var tiles: Dictionary={}
+	for name in REALISM_TEXTURES:
+		var path:=root.path_join("local-art/pc-tactical-materials-v2/"+str(name)+".png")
+		if not _file_exists(path) or _sha256(path)!=REALISM_TEXTURES[name]:return false
+		disk_io_count+=1
+		var image:=Image.load_from_file(path)
+		if image==null or image.is_empty() or image.get_size()!=Vector2i(1254,1254):return false
+		image.resize(256,256,Image.INTERPOLATE_LANCZOS)
+		image.convert(Image.FORMAT_R8)
+		tiles[name]=image
+	for name in MATERIAL_TEXTURES:
+		var image:Image=material_textures[name].get_image()
+		image.clear_mipmaps()
+		image.resize(256,256,Image.INTERPOLATE_LANCZOS)
+		tiles[name]=image
+	var atlas:=Image.create(1152,1152,false,Image.FORMAT_R8)
+	atlas.fill(Color(0.5,0,0))
+	for i in REALISM_ORDER.size():
+		var image:Image=tiles[REALISM_ORDER[i]]
+		var origin:=Vector2i((i%4)*288+16,(i/4)*288+16)
+		atlas.blit_rect(image,Rect2i(0,0,256,256),origin)
+		# Duplicate borders, rather than transparent gutters, at every tile.
+		for y in range(-16,272):
+			for x in range(-16,272):
+				if x<0 or x>=256 or y<0 or y>=256:
+					atlas.set_pixelv(origin+Vector2i(x,y),image.get_pixel(clampi(x,0,255),clampi(y,0,255)))
+	atlas.generate_mipmaps()
+	material_atlas=ImageTexture.create_from_image(atlas)
+	return true
+
+# Extra tags carry a family and the exact pre-existing structural kind. The
+# shader decodes them before incumbent geometry/depth/palette branches.
+static func realism_kind(material: String, legacy: float) -> float:
+	if legacy not in [20.0,20.375,20.4375,20.46875]:return legacy
+	var family:int=0
+	if material in ["olive","olive_edge","hatch","steel","equipment","equipment_edge","wheel","hub","track","track_edge","wreck","wreck_edge","vent","lamp","optic","insignia_gold","insignia_red","insignia_white","signal_red"]:family=1
+	elif material in ["plaster","ruin_plaster","ruin_mortar"]:family=2
+	elif material in ["stone_edge","ruin_brick","ruin_stone","ruin_char"]:family=3
+	elif material in ["door","timber","tree_trunk"]:family=4
+	elif material in ["canvas","canvas_edge","cloth","cloth_light","cloth_shadow","webbing","army_flag","us_flag_blue","us_flag_red","us_flag_white"]:family=5
+	elif material in ["tyre","leather"]:family=6
+	elif material in ["roof","roof_clay","roof_slate","roof_ridge"]:family=7
+	elif material in ["grass","yard_grass"]:family=8
+	elif material=="tree_crown":family=9
+	elif material=="earth":family=10
+	elif material=="road":family=11
+	elif material=="water":family=12
+	elif material in ["glass","cockpit"]:family=13
+	elif material=="skin":family=14
+	if family==0:return legacy # Unknown/void surfaces receive no invented material.
+	var basis:int=[20.0,20.375,20.4375,20.46875].find(legacy)
+	return 24.0+float(basis)+float(family)/64.0
 
 static func vector_ok(value) -> bool:
 	if not value is Array or value.size()!=3: return false
@@ -90,9 +210,45 @@ static func vector_ok(value) -> bool:
 static func vec(value: Array) -> Vector3:
 	return Vector3(value[0],value[1],value[2])
 
+# Authored components only. A barrel bore uses the same dark vent palette,
+# but is deliberately excluded; colour alone never identifies a material.
+static func equipment_kind(shape: int, material: String, component: String) -> float:
+	if shape not in EQUIPMENT_SHAPES: return 20.0
+	if material=="vent" and component in ["engine_louvre_0","engine_louvre_1","engine_louvre_2","engine_louvre_3","truck_grille_0","truck_grille_1","truck_grille_2","engine_side_vent","engine_intake_0","engine_intake_1"]: return EQUIPMENT_VENT
+	if shape==159 and material in ["canvas","canvas_edge"]: return EQUIPMENT_CANVAS
+	if shape in [137,141,143,159] and material=="tyre": return EQUIPMENT_RUBBER
+	return 20.0
+
+static func architecture_kind(shape: int, material: String, component: String, legacy: float) -> float:
+	if shape not in ARCHITECTURE_SHAPES:return legacy
+	if material=="door" and component=="door" and legacy==20.0:return ARCH_DOOR
+	if shape==157 and material=="timber" and component=="panel" and legacy==20.375:return ARCH_TIMBER
+	if material!="stone_edge" or legacy not in [20.375,20.4375]:return legacy
+	if component in ["plinth","plinth_left","plinth_right"]:
+		return ARCH_BASE_TOP if legacy==20.4375 else ARCH_BASE_WALL
+	if component in ["door","window_0","window_1","window_2","window_3"]:
+		return ARCH_STONE_TOP if legacy==20.4375 else ARCH_STONE_WALL
+	return legacy
+
+static func architecture_base_kind(kind: float) -> float:
+	if kind>=24.0 and kind<28.0:return [20.0,20.375,20.4375,20.46875][int(kind-24.0)]
+	if kind==20.25390625:return 20.25
+	if kind in [ARCH_DOOR,TEXTURE_PAINT]:return 20.0
+	if kind in [ARCH_TIMBER,ARCH_STONE_WALL,ARCH_BASE_WALL,TEXTURE_PLASTER]:return 20.375
+	if kind in [ARCH_STONE_TOP,ARCH_BASE_TOP]:return 20.4375
+	return kind
+
+# Exact authored material admission. No texture by colour resemblance alone.
+static func material_detail_kind(shape: int, material: String, component: String, legacy: float) -> float:
+	if legacy==20.0 and shape in EQUIPMENT_SHAPES and material in ["olive","olive_edge","hatch"]:return TEXTURE_PAINT
+	if legacy==20.375 and shape in ARCHITECTURE_SHAPES and material=="plaster" and component=="panel":return TEXTURE_PLASTER
+	return legacy
+
 # Also used by synthetic tests. Production entrypoint verifies source files first.
 func configure(data: Dictionary) -> bool:
 	revision += 1
+	material_textures.clear()
+	material_atlas=null
 	position_cache_hits = 0
 	position_cache_misses = 0
 	models.clear()
@@ -185,9 +341,11 @@ func configure(data: Dictionary) -> bool:
 					source_normal+=(vec(source_face[corner])-vec(source_face[0])).cross(vec(source_face[corner+1])-vec(source_face[0]))
 				var horizontal:=maxf(absf(source_normal.x),absf(source_normal.y))
 				pitched_roof=horizontal>absf(source_normal.z)*0.08 and absf(source_normal.z)>horizontal and height>lerpf(float(model.bounds.min[2]),float(model.bounds.max[2]),0.65)
+			var equipment:=equipment_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")))
+			var legacy_kind: float=equipment if equipment!=20.0 else GLAZING if shape in GLAZING_SHAPES and triangle.get("material","") in ["glass","cockpit"] else HIND_PAINT if shape in [163,164] and triangle.get("material","") in ["olive","olive_edge"] else ARMOUR_PAINT if shape in TWO_TONE_SHAPES and model.get("paint_style","")=="two_tone_olive" and triangle.get("material","") in ["olive","olive_edge"] else 20.03125 if shape==157 and primitive==28751 else 20.46875 if pitched_roof else 20.4375 if structure and roof else 20.375 if structure else 20.0
 			faces[primitive].triangles.append({"vertices":vertices,"color":rgb,"motion":motion,
-				"structure_kind":HIND_PAINT if shape in [163,164] and triangle.get("material","") in ["olive","olive_edge"] else ARMOUR_PAINT if shape in TWO_TONE_SHAPES and model.get("paint_style","")=="two_tone_olive" and triangle.get("material","") in ["olive","olive_edge"] else 20.03125 if shape==157 and primitive==28751 else 20.46875 if pitched_roof else 20.4375 if structure and roof else 20.375 if structure else 20.0,
-				"structure_axis":0 if absf(normal.x)>absf(normal.y) else 1})
+				"structure_kind":realism_kind(str(triangle.get("material","")),material_detail_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")),architecture_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")),legacy_kind))),
+				"structure_axis":2 if roof else 0 if absf(normal.x)>absf(normal.y) else 1})
 		# Catalogue-bounded, face-local positions only. Every camera fit is still
 		# checked and recomputed per mapping; no actor/frame state is retained.
 		for face: Dictionary in faces.values():
@@ -242,6 +400,7 @@ func configure(data: Dictionary) -> bool:
 	return true
 
 static func supported_palette(palette: Array) -> bool:
+	if palette == _pc_json_palette or palette == PC_PALETTE or palette == _frontend_json_palette or palette == Colour.FRONTEND_PALETTE: return true
 	if Colour.is_frontend_palette(palette): return true
 	if palette.size()!=16: return false
 	for i in 16:
@@ -448,10 +607,19 @@ func mapping(object: Dictionary, polygon: Dictionary, frame: Dictionary, palette
 		var kind: float = corner.kind
 		var motion: Dictionary = corner.motion
 		if is_finite(motion_anchor):
-			if motion.get("kind","")=="wheel": kind=20.25
+			if motion.get("kind","")=="wheel": kind=20.25390625 if kind>=24.0 and int(round(fmod(kind,1.0)*64.0))==6 else 20.25
 			elif motion.get("kind","")=="track": kind=20.125
+		var base_kind: float = architecture_base_kind(kind)
 		var vertex: Array=[point.x,point.y,point.z]
-		if kind==HIND_PAINT:
+		if (kind>=24.0 and kind<28.0 and base_kind==20.0) or kind==TEXTURE_PAINT:
+			vertex.append_array([float(raw[1]) if int(corner.axis)==0 else float(raw[0]),float(raw[1]) if int(corner.axis)==2 else float(raw[2])])
+		elif kind==ARCH_DOOR:
+			vertex.append_array([float(raw[1]) if int(corner.axis)==0 else float(raw[0]),float(raw[2])])
+		elif kind in [EQUIPMENT_VENT,EQUIPMENT_CANVAS,EQUIPMENT_RUBBER,GLAZING]:
+			# Dominant face plane in authored object coordinates, including x/y
+			# canvas roofs. No world translation, clock or moving texture phase.
+			vertex.append_array([float(raw[1]) if int(corner.axis)==0 else float(raw[0]),float(raw[1]) if int(corner.axis)==2 else float(raw[2])])
+		elif kind==HIND_PAINT:
 			# Original object-local longitudinal/height coordinates. Both rotor
 			# states share the livery; camera movement and rebases cannot slide it.
 			vertex.append_array([float(raw[1]),float(raw[2])])
@@ -459,10 +627,10 @@ func mapping(object: Dictionary, polygon: Dictionary, frame: Dictionary, palette
 			# Oblique local projection joins roof and side patches without
 			# screen/world-space sliding or seams between owning source faces.
 			vertex.append_array([float(raw[1])+float(raw[0])*.45,float(raw[2])+float(raw[0])*.25])
-		elif kind>20.3:
+		elif base_kind>20.3:
 			# Walls use (horizontal, height); roofs (>=20.4) use both horizontal
 			# object-local axes whatever their facet axis, so grain stays 2-D.
-			vertex.append_array([float(raw[0]) if int(corner.axis)==1 or kind>=20.4 else float(raw[1]),float(raw[2]) if kind<20.4 else float(raw[1])])
+			vertex.append_array([float(raw[0]) if int(corner.axis)==1 or base_kind>=20.4 else float(raw[1]),float(raw[2]) if base_kind<20.4 else float(raw[1])])
 		elif kind>20.2:
 			var center: Vector3=vec(motion.center)
 			var radius: float=float(motion.radius)

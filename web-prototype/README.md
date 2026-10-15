@@ -28,6 +28,7 @@ python3 web-prototype/build_remaster.py
 python3 web-prototype/build_web_source.py
 node web-prototype/test_core.mjs
 node web-prototype/test_mission.mjs
+npm --prefix web-prototype test
 node web-prototype/test_bridge.mjs
 python3 web-prototype/package_site.py
 python3 website/verify.py
@@ -36,6 +37,12 @@ python3 web-prototype/serve.py
 
 Open `http://127.0.0.1:4174/remaster.html` for the build output, or serve
 `website/dist` and open `/play/remaster.html` to check the actual site bundle.
+The Godot export and authored asset archives are prepared in unique private staging. Export status, parse/script diagnostics, six required runtime outputs, audio-patch anchors, asset inventory and archive hashes must pass before replacement. A cooperative generated-output lock prevents the combined builder, assets-only builder and site packager from reading or writing a partial replacement. Concurrent target changes are refused. Handled installation failures restore the prior managed files; if restoration fails, an explicit recovery path retains the journal and old files. Other generated core/Pyodide files are preserved. This is handled-failure recovery, not a claim of multi-file atomic visibility or power-loss durability.
+
+The presentation builder captures `project.godot`, `export_presets.cfg` and files under `scripts`, `assets`, `data` and `scenes`. Selected links are rejected; `.DS_Store`, `__pycache__` and `*.pyc` remain excluded. Raw staged bytes and inventory must match that capture before Web-specific entry-point changes. The root source is checked before export, after export and again after authored-asset staging using the original private source receipt. Edited, added or removed inputs refuse the candidate and leave the prior normal build intact. These are sampled consistency checks, not an atomic filesystem snapshot or an editor lock.
+
+Working if: mixed or stale presentation candidates cannot reach normal replacement, ignored cache activity remains harmless, and export failure preserves the previously playable outputs.
+
 The build emits no original game data. The site bundle includes corresponding
 source for its modified GPL Web core, has a manifest of exact file hashes and
 keeps every file below Git's 100 MB object limit. Its `THIRD_PARTY.txt` links
@@ -84,3 +91,21 @@ for all eight campaigns, every audio path, every browser or human listening.
 This local test does not establish a live deployment. `index.html` in this
 folder is the older EGA diagnostic;
 `remaster.html` is the Godot Web edition.
+
+## Browser reliability pass, 14 October 2026
+
+The web shell provides visible original-file selection, prerequisite checks, staged progress, bounded startup failure and a clean Reload page route after engine initialization. Game keyboard returns focus explicitly; browser-native fullscreen keeps controls accessible. Checkpoints expose programme/date and busy state. EGA Upscaled and Genesis Upscaled remain separate choices.
+
+Restore prepares the new core, observer and presentation before durable undo and active-session commit. Pre-commit failures retain the current session. A post-commit transport failure stops the inconsistent bridge rather than reporting a recoverable failed load. When IndexedDB is unavailable, gameplay remains available with an explicit persistent warning and disabled browser checkpoint controls; no volatile save is advertised as durable.
+
+`npm --prefix web-prototype test` runs dependency-free Node regressions and Python local-bundle rollback checks. Exact original ZIP and full authored-part integration require the existing ignored developer inputs; absent inputs are explicitly reported as skipped. `test_bridge.mjs` uses an explicit Node test-only transaction adapter; actual IndexedDB persistence is a real-browser check.
+
+The site packager stages a complete replacement first, rechecks the accepted bundle hashes before swapping, and restores the previous bundle on rename failure. This pass remains local; publication requires a shipping instruction.
+
+Working if: the real entry point boots through normal original frames, failed startup/restore remains recoverable, durable slot metadata survives page reload, all art modes retain their identity, and the installed BUNDLE hashes match the candidate.
+
+## Full-experience controls
+
+The optional More controls disclosure exposes the native five-channel mixer, shared default reset, MSAA and anisotropic filtering. Saved graphics mode, HUD, quality and gains are independent. A missing optional import falls back without forgetting the saved graphics choice. The Tactical offline guide wraps at narrow widths, searches displayed text by all query words, reports result counts and handles Escape without sending it to the original game. Restored styling is preserved.
+
+A running bridge error exposes clean reload and retains its actual cause through engine exit. The packager checks authored-part identities and core build hash, rejects inputs changed during copying and retains the accepted bundle on failure. This programme remains local only.

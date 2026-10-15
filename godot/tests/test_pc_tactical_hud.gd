@@ -13,9 +13,18 @@ func _initialize() -> void: run.call_deferred()
 
 func run() -> void:
 	map_surfaces()
+	crew_panels()
 	var display:=Display.new()
 	root.add_child(display)
 	display.size=Vector2i(640,480)
+	instrument_legibility(display.tactical_chrome.instruments)
+	instrument_detail(display.tactical_chrome.instruments)
+	schematic_layout(display.tactical_chrome.instruments)
+	diagnostic_detail(display.tactical_chrome.instruments)
+	control_legends(display.tactical_chrome)
+	section_legibility(display.tactical_chrome)
+	for scale in [0.35,0.49,0.56,0.85,1.2]:
+		check(display.tactical_chrome.map_art._border_stroke(scale)*scale>=0.999,"compact map border retains one output pixel without changing map registration")
 	var menu:=Menu.new()
 	menu.config_path=""
 	menu.quality_config_path=""
@@ -104,11 +113,412 @@ func run() -> void:
 	if "--station-fixtures" in args:
 		station_instruments(display,args[args.find("--station-fixtures")+1])
 		station_maps(display,args[args.find("--station-fixtures")+1])
+	if "--fallback-fixtures" in args and "--fixture-root" in args:
+		fallback_instruments(display,args[args.find("--fallback-fixtures")+1],args[args.find("--fixture-root")+1])
+		if "--station-fixtures" not in args:
+			station_maps(display,args[args.find("--fallback-fixtures")+1])
+		await retained_instruments(display,args[args.find("--fallback-fixtures")+1],"--redraw-baseline" not in args)
 	menu.free()
 	display.free()
 	print("PC_TACTICAL_HUD: %d checks, %d errors"%[checks,errors.size()])
 	for error in errors: printerr(error)
 	quit(0 if errors.is_empty() else 1)
+
+func instrument_legibility(renderer: Control) -> void:
+	for fallback in [false,true]:
+		renderer.in_place=fallback
+		for width in [198.0,266.0,320.0]:
+			var box:=Rect2(70,110,width,42)
+			for value in ["0","100","READY","-----"]:
+				var cells: Array[Rect2]=renderer._row_layout(box,value)
+				check(box.encloses(cells[0]) and box.encloses(cells[1]) and cells[0].end.x+9<=cells[1].position.x,"measured readout columns never overlap: "+value)
+			var ordinary: Array[Rect2]=renderer._row_layout(box,"10")
+			var long_value: Array[Rect2]=renderer._row_layout(box,"READY")
+			check(long_value[1].size.x>=ordinary[1].size.x,"long verified reading receives space before font reduction")
+			var selected: Array[Rect2]=renderer._row_layout(box,"10",true)
+			check(selected[0].position.x>=box.position.x+18 and selected[1]==ordinary[1],"selection marker has inset space without shifting value")
+	for box in [Rect2(10,20,200,70),Rect2(10,20,320,139),Rect2(10,20,305,108)]:
+		for count in [2,4]:
+			var layout: Dictionary=renderer._scale_layout(box,count)
+			check(box.encloses(layout.rail) and layout.labels.all(func(r):return box.encloses(r)),"scale labels and rail remain inside panel")
+			check(layout.ticks[0].x==layout.rail.position.x and layout.ticks[-1].x==layout.rail.end.x,"endpoint ticks register to complete rail")
+	check(renderer._lamp_shape(renderer.Ink.GREEN)=="filled","verified green lamp retains fill")
+	check(renderer._lamp_shape(renderer.Ink.RED)=="cross","verified red lamp repeats colour as cross")
+	check(renderer._lamp_shape(renderer.Ink.RED,true)=="target","active original red lock uses target brackets instead of fault cross")
+	check(renderer._lamp_shape(renderer.Ink.YELLOW)=="dash","verified yellow lamp repeats colour as dash")
+	check(renderer._lamp_shape(renderer.Ink.INACTIVE)=="outline","inactive lamp is visibly outlined")
+	check(renderer._lamp_shape(Color.BLACK,true)=="outline","unlocked original black lock remains outlined")
+	renderer.in_place=false
+
+func instrument_detail(renderer: Control) -> void:
+	var original_size: Vector2=renderer.size
+	var original_canvas: Vector2=renderer.canvas_size
+	var original_in_place: bool=renderer.in_place
+	for fallback in [false,true]:
+		renderer.in_place=fallback
+		renderer.canvas_size=Vector2(1600,1200) if fallback else Vector2(1600,900)
+		for factor in [0.49,0.56,0.85,1.2]:
+			renderer.size=renderer.canvas_size*factor
+			for heading in [false,true]:
+				var cell:=Rect2(10,20,500,70)
+				var text: Dictionary=renderer._text_layout("BALLISTIC COMPUTER" if heading else "READY",cell,20,false,heading)
+				var face: Font=renderer.title if heading else renderer.font
+				check(text.point*factor>=(12.0 if heading else 13.0),"roomy compact label/readout retains output-point hierarchy")
+				check(text.width<=cell.size.x and face.get_height(text.point)<=cell.size.y,"responsive text fits both measured cell dimensions")
+			for value in ["100","READY","-----"]:
+				var row:=Rect2(10,20,200,42)
+				var cells: Array[Rect2]=renderer._row_layout(row,value)
+				var text: Dictionary=renderer._text_layout(value,cells[1],23,true)
+				check(row.encloses(cells[0]) and row.encloses(cells[1]) and cells[0].end.x+9<=cells[1].position.x,"larger values retain separated label/value cells")
+				check(text.at.x>=cells[1].position.x and is_equal_approx(text.at.x+text.width,cells[1].end.x),"live readout fits and remains right-aligned")
+			for miniature in [false,true]:
+				var row:=Rect2(10,20,200,42)
+				var layout: Dictionary=renderer._lamp_layout(row,miniature)
+				var lamp: Rect2=layout.lamp
+				var label: Rect2=layout.label
+				check(row.encloses(lamp) and row.encloses(label) and label.end.x+6<=lamp.position.x,"responsive lamps stay clear of complete labels")
+				check(lamp.size.x*factor>=(7.0 if miniature else 9.0)-0.001 and lamp.size.y*factor>=4.999,"compact lamp silhouettes retain readable output dimensions")
+			for count in [28,39]:
+				var rail:=Rect2(10,20,300,14)
+				var segments: Array[Rect2]=renderer._bar_segments(rail,count)
+				check(segments.size()==count and segments.all(func(box):return rail.grow(0.001).encloses(box) and box.size.x>0),"gauge retains every source segment within its rail")
+				check((segments[1].position.x-segments[0].end.x)*factor>=0.999,"compact gauge segments retain at least one output-pixel gap")
+			check(renderer._diagram_stroke(1)*factor>=0.999,"lamp outlines, separators and selection borders retain an output pixel")
+	renderer.in_place=original_in_place
+	renderer.canvas_size=original_canvas
+	renderer.size=original_size
+
+func schematic_layout(renderer: Control) -> void:
+	var original_size: Vector2=renderer.size
+	var original_canvas: Vector2=renderer.canvas_size
+	for box in [Rect2(800,710,276,139),Rect2(744,357,385,363),Rect2(1080,498,310,270)]:
+		var layout: Dictionary=renderer._navigation_layout(box,Vector2(62,44))
+		var fitted: Rect2=layout.rect
+		var target: Rect2=layout.target
+		var scale_xy: Vector2=layout.scale
+		check(target.grow(0.001).encloses(fitted),"complete orientation grid fits its navigation well")
+		check(fitted.get_center().is_equal_approx(target.get_center()),"navigation grid centred above heading")
+		check(is_equal_approx(scale_xy.y/scale_xy.x,1.2),"orientation retains original 4:3 pixel aspect")
+		check(fitted.end.y<=box.end.y-32,"navigation never enters heading row")
+	for canvas in [Vector2(1600,900),Vector2(1600,1200)]:
+		renderer.canvas_size=canvas
+		for extent in [Vector2(1440,810),Vector2(960,540),Vector2(853,509)]:
+			renderer.size=extent
+			var factor:=minf(extent.x/canvas.x,extent.y/canvas.y)
+			for width in [1.0,1.2,1.3,1.4,1.7,2.0]:
+				var stroke: float=renderer._diagram_stroke(width)
+				check(stroke*factor>=0.999 and stroke>=width,"schematic linework retains at least one physical pixel")
+	check(renderer.DAMAGE_ZONES==[Rect2(176,52,70,69),Rect2(211,7,102,28),Rect2(204,124,112,24),Rect2(310,34,60,84),Rect2(33,66,98,24)],"five damage zones retain exact existing registration and bit order")
+	renderer.canvas_size=original_canvas
+	renderer.size=original_size
+
+func diagnostic_detail(renderer: Control) -> void:
+	var old_size: Vector2=renderer.size
+	var old_canvas: Vector2=renderer.canvas_size
+	renderer.canvas_size=Vector2(1600,900)
+	for factor in [0.49,0.56,0.85]:
+		renderer.size=renderer.canvas_size*factor
+		for box in [Rect2(10,40,780,282),Rect2(1140,340,360,96)]:
+			var layout: Dictionary=renderer._tank_layout(box)
+			var fit: float=minf(box.size.x/400.0,box.size.y/155.0)
+			check(layout.at.is_equal_approx(box.get_center()-Vector2(400,155)*fit*0.5) and layout.scale.is_equal_approx(Vector2.ONE*fit),"diagnostic detail retains the complete incumbent schematic fit")
+			check(layout.detail==(400*fit*factor>=300),"miniature schematic omits secondary engraving below 300 output pixels")
+			for pitch in [7,9]:
+				var step: int=renderer._mechanical_pitch(pitch,fit)
+				check(step%pitch==0 and step*fit*factor>=3.999,"mechanical repeats retain authored cadence with at least four output pixels")
+			for zone in renderer.DAMAGE_ZONES:
+				var alert: Dictionary=renderer._damage_layout(zone,layout.at,layout.scale)
+				check(alert.rect==Rect2(layout.at+zone.position*layout.scale,zone.size*layout.scale),"damage frame retains exact source-zone registration")
+				var contained: bool=alert.lines.size()>0
+				for line in alert.lines:
+					for point in line: contained=contained and alert.inner.grow(0.001).has_point(point)
+				check(contained and alert.rect.encloses(alert.inner),"every damage hatch is clipped inside its own zone")
+				check(alert.pitch*factor>=6.999 and alert.corner<=minf(alert.rect.size.x,alert.rect.size.y)*0.24,"warning hatching and corner marks remain separated at compact sizes")
+	renderer.canvas_size=old_canvas
+	renderer.size=old_size
+
+func control_legends(chrome: Control) -> void:
+	var expected: Dictionary={1:[["ENTER","SELECT"],["L","LOCK"],["SPACE","FIRE"]],
+		2:[["Z","MAP"],["F7-F10","SCAN"],["D","STATUS"]],3:[["A","ALIGN TURRET"],["C","HULL/TURRET"]],
+		4:[["KEYPAD","DRIVE"],["KP5","STOP"]],5:[["ANY KEY","RETURN TO COMMANDER"]]}
+	check(chrome.COMMANDS==expected,"Tactical keycaps retain exact incumbent keys and actions")
+	var map: Control=chrome.map_art
+	var old_box: Rect2=map.map_box
+	map.map_box=Rect2(88,364.5,592,490.5)
+	for scale in [0.49,0.56,0.85,1.2]:
+		for id in range(1,6):
+			var footer: Dictionary=chrome._footer_layout(id,scale)
+			check(90+footer.station_width+40<=footer.command_x,"measured command group never overlaps station keys")
+			check(footer.command_x>=90 and is_equal_approx(footer.command_x+footer.command_width-18,1512),"footer command label ends at established right inset")
+			check(footer.station_point<=22 and footer.command_point<=22,"keycaps fit established footer height")
+			check(footer.baseline-maxi(footer.station_point,footer.command_point)-1>=871 and footer.baseline+4<=899,"enlarged keycaps retain antialias clearance below crew strip and stay inside canvas")
+			check(footer.station_point*scale>=10.5 and footer.command_point*scale>=10.5,"compact footer retains readable point sizes")
+			check((footer.station_width==0)==(id==5),"Status has return action without station-switch hints")
+			var header: Dictionary=chrome._header_layout(id,scale)
+			check(header.name=="M1A1  /  "+chrome.STATIONS[id] and header.role==chrome.ROLES[id],"responsive header preserves station identity and role")
+			var role_end: float=header.role_at.x+chrome.mono.get_string_size(header.role,HORIZONTAL_ALIGNMENT_LEFT,-1,header.role_point).x
+			check(role_end<=1170,"header role stays clear of campaign metadata")
+			if scale<0.7:
+				var title_end: float=header.title_at.x+chrome.heading_font.get_string_size(header.name,HORIZONTAL_ALIGNMENT_LEFT,-1,header.title_point).x
+				check(title_end+24<=header.role_at.x and header.title_at.y==header.role_at.y,"compact header shares a baseline with measured separation")
+				check(header.role_point*scale>=10 and header.meta_point*scale>=11,"compact header auxiliary labels retain readable point sizes")
+		for mode in ["LOCAL","OVERVIEW"]:
+			var label: Dictionary=map._mode_layout(mode,scale)
+			var key: Rect2=label.key
+			check(key.end.y<map.map_box.position.y and label.label_at.y<map.map_box.position.y,"map mode keycap remains outside protected map pixels")
+			check(label.label_at.x>=key.end.x+8 and is_equal_approx(label.label_at.x+label.label_width,map.map_box.end.x),"map mode tag has measured spacing and right alignment")
+			check(key.position.x>map.map_box.position.x+200 and label.point*scale>=11,"map mode remains readable and clear of map heading")
+	map.map_box=old_box
+
+func section_legibility(chrome: Control) -> void:
+	var previous_size: Vector2=chrome.size
+	for scale in [0.49,0.56,0.86,1.2]:
+		chrome.size=Vector2(1600,900)*scale
+		for id in [1,2,5]:
+			for item in chrome.SECTIONS[id]:
+				var at: Vector2=item[1]
+				var layout: Dictionary=chrome._section_layout(at,item[0],item[2],scale)
+				check(layout.point*scale>=11.99 and layout.point<=26,"complete section titles retain readable compact point sizes")
+				check(layout.label_width<=item[2],"section title fits its existing column")
+				check(layout.rule_from.x>=at.x+layout.label_width+16 and layout.rule_to.x==at.x+item[2],"section rule measures exact title clearance and column end")
+				check(layout.rule_from.y==layout.rule_to.y and layout.rule_from.y<at.y,"section rule remains above the original baseline and live panel")
+				check(chrome._stroke(1)*scale>=0.999,"section rules retain one output pixel")
+		for mode in ["LOCAL","OVERVIEW"]:
+			# Use the existing map box, without changing any map registration.
+			var old_box: Rect2=chrome.map_art.map_box
+			chrome.map_art.map_box=Rect2(88,364.5,592,490.5)
+			var map_label: Dictionary=chrome.map_art._mode_layout(mode,scale)
+			check(chrome.SECTIONS[2][0][1].x+chrome.SECTIONS[2][0][2]+16<=map_label.key.position.x,"map section rule stays clear of original mode keycap")
+			chrome.map_art.map_box=old_box
+	for width in [56.0,98.0,158.0,236.0]:
+		for id in range(1,6):
+			var role: Dictionary=chrome._gutter_role_layout(id,width)
+			check(role.point>=9 and role.lines.size()<=2 and " ".join(PackedStringArray(role.lines))==chrome.ROLES[id],"fallback role retains all words in at most two fitted lines")
+			for line in role.lines:
+				check(chrome.mono.get_string_size(line,HORIZONTAL_ALIGNMENT_LEFT,-1,role.point).x<=width,"full fallback role stays inside spare gutter")
+			for action in chrome.FALLBACK_ACTIONS[id]:
+				var point: int=chrome._gutter_command_point(action[0],action[1],width)
+				if point>0:
+					check(point>=9 and point<=13 and chrome._key_width(action[0],action[1],point)-18<=width,"fallback action keycap and complete label fit spare gutter")
+				else:
+					check(chrome._key_width(action[0],action[1],9)-18>width,"fallback action suppresses only an unfittable complete hint")
+	var expected: Dictionary=chrome.COMMANDS.duplicate(true)
+	expected[5]=[["ANY KEY","RETURN"]]
+	check(chrome.FALLBACK_ACTIONS==expected,"fallback keycaps retain exact incumbent commands and return label")
+	chrome.size=previous_size
+
+func _present_fixture(display: Control, source: Image, packet: Dictionary) -> void:
+	display.tandem_frame.set_frame(source,packet,ImageTexture.create_from_image(source),{"name":"SIM"})
+	display.set_hud_frame(packet,{"name":"SIM"})
+
+func retained_instruments(display: Control, prefix: String, retained: bool=true) -> void:
+	var renderer: Control=display.tactical_chrome.instruments
+	display.size=Vector2(960,540)
+	display.set_hud_style("tactical")
+	for name in ["gunner","commander","driver","status"]:
+		var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(prefix+"-"+name+".json"))
+		var source:=Image.create_from_data(320,200,false,Image.FORMAT_RGB8,PackedByteArray(data.rgb))
+		var packet: Dictionary=data.packet.presentation
+		_present_fixture(display,source,packet)
+		await process_frame; await process_frame
+		var draws: Array[int]=[0]
+		var painted:=func(): draws[0]+=1
+		var painters: Array[CanvasItem]=[]
+		for i in renderer.panels.size():
+			var painter: CanvasItem=renderer._clips[i].get_child(0)
+			painter.draw.connect(painted);painters.append(painter)
+		var panel_count: int=renderer.panels.size()
+		check(panel_count>0,"retained drawing has accepted panels "+name)
+		for repeat in 6:
+			_present_fixture(display,source,packet)
+			await process_frame; await process_frame
+		print("TACTICAL_REDRAW ",name," panels=",panel_count," repeated_frames=6 draw_calls=",draws[0]," retained=",retained)
+		check(draws[0]==0 if retained else draws[0]==6*panel_count,"unchanged verified panels retain drawing commands "+name)
+		if retained:
+			# Fresh provenance is still verified each frame, but is not painted.
+			draws[0]=0
+			for run in renderer.runs: run.draw_sequence=int(run.get("draw_sequence",0))+1
+			if not renderer.orientation.is_empty(): renderer.orientation.page_offset=8192-int(renderer.orientation.page_offset)
+			renderer._place_panels()
+			await process_frame; await process_frame
+			check(draws[0]==0,"advancing sequence and page metadata does not repaint unchanged ink "+name)
+			# Mutate drawing inputs after proof only in this unit test. Every
+			# nested value must invalidate a detached snapshot, never alias it.
+			draws[0]=0
+			renderer.runs[0].text+=" "
+			renderer._place_panels()
+			await process_frame; await process_frame
+			check(draws[0]>0,"nested reading change invalidates retained drawings "+name)
+			_present_fixture(display,source,packet)
+			await process_frame; await process_frame
+			draws[0]=0
+			if name=="status": renderer.damage=31
+			elif name=="commander": renderer.orientation.grid[0].points[0]+=1
+			else:
+				var gauge: Dictionary=renderer.gauges[0]
+				if gauge.kind=="bar": gauge.lit=0 if gauge.lit>0 else 1
+				else: gauge.color=Color.RED
+			renderer._place_panels()
+			await process_frame; await process_frame
+			check(draws[0]>0,"damage, orientation or gauge change invalidates retained drawings "+name)
+			_present_fixture(display,source,packet)
+			await process_frame; await process_frame
+			draws[0]=0
+			renderer.font.emit_changed()
+			await process_frame; await process_frame
+			check(draws[0]>0,"font resource changes invalidate retained drawing "+name)
+			draws[0]=0
+			renderer.size+=Vector2(1,1)
+			await process_frame; await process_frame
+			check(draws[0]>0,"resize invalidates retained drawing "+name)
+			# Proof still runs before reuse: a changed glyph/tag immediately drops
+			# its complete panel while the other accepted panels stay visible.
+			var rejected_index: int=renderer.panels[0].index
+			var at: Vector2i=renderer.panels[0].source.position+Vector2i.ONE
+			var bad:=source.duplicate();bad.set_pixelv(at,Color.MAGENTA)
+			var bad_packet:=packet.duplicate(true)
+			var tags:=Image.new()
+			tags.load_png_from_buffer(Marshalls.base64_to_raw(packet.plate_overlay.mask_png))
+			tags.set_pixelv(at,Color.BLACK)
+			bad_packet.plate_overlay.mask_png=Marshalls.raw_to_base64(tags.save_png_to_buffer())
+			_present_fixture(display,bad,bad_packet)
+			check(not renderer.panels.any(func(p):return p.index==rejected_index),"fresh source rejection precedes drawing reuse "+name)
+			check(renderer._clips.filter(func(clip):return clip.visible).size()==renderer.panels.size(),"rejected cached panels hidden immediately "+name)
+			_present_fixture(display,source,packet)
+			check(renderer.panels.size()==panel_count,"valid source recovers after retained-panel rejection "+name)
+			renderer.clear()
+			check(renderer._paint_state.is_empty() and not renderer._clips.any(func(clip):return clip.visible),"clear releases sole retained snapshot and hides all panels "+name)
+		for painter in painters: painter.draw.disconnect(painted)
+
+func fallback_instruments(display: Control, prefix: String, repo: String) -> void:
+	var frame: Control=display.tandem_frame
+	var renderer: Control=display.tactical_chrome.instruments
+	var map: Control=display.tactical_chrome.map_art
+	renderer.load_sources(repo)
+	check(frame.typography.load_sources(repo.path_join("GAME")),"fallback fixture original fonts loaded")
+	display.set_hud_style("tactical")
+	for item in [["gunner",1,5],["commander",2,4],["commander-map",2,4],["driver",4,1],["status",5,3]]:
+		var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(prefix+"-"+item[0]+".json"))
+		var source:=Image.create_from_data(320,200,false,Image.FORMAT_RGB8,PackedByteArray(data.rgb))
+		var packet: Dictionary=data.packet.presentation.duplicate(true)
+		_present_fixture(display,source,packet)
+		check(display._wide_station==item[1] and renderer.panels.size()==item[2],"wide station remains eligible "+item[0])
+		# Synthetic negative fixture: one unknown pixel outside every reflowed
+		# region forces 4:3 while the recorded panel/map evidence stays exact.
+		var tags:=Image.new()
+		tags.load_png_from_buffer(Marshalls.base64_to_raw(packet.plate_overlay.mask_png))
+		tags.set_pixel(0,196,Color.BLACK)
+		packet.plate_overlay.mask_png=Marshalls.raw_to_base64(tags.save_png_to_buffer())
+		source.set_pixel(0,196,Color.MAGENTA)
+		_present_fixture(display,source,packet)
+		check(display._wide_station==0 and renderer.in_place and renderer.panels.size()==item[2],"verified fallback panels retained "+item[0])
+		check(display.description().display_aspect=="4:3","fallback never widens source "+item[0])
+		for window in [Vector2(1440,810),Vector2(960,540),Vector2(853,509)]:
+			display.size=window
+			display._resize_targets()
+			var fit: Rect2i=Display.fitted_rect(Vector2i(window))
+			check(renderer.position==Vector2(fit.position) and renderer.size==Vector2(fit.size),"fallback canvas follows fitted frame "+str(window))
+			for i in renderer.panels.size():
+				var panel: Dictionary=renderer.panels[i]
+				var expected:=Rect2(Vector2(panel.source.position)/Vector2(320,200)*renderer.size,Vector2(panel.source.size)/Vector2(320,200)*renderer.size)
+				var clip: Control=renderer._clips[i]
+				check(clip.clip_contents and expected.encloses(Rect2(clip.position,clip.size)),"panel pixels clipped to original footprint "+str(panel.index))
+			if item[1]==2:
+				check(map.position==Vector2(fit.position) and map.size==Vector2(fit.size),"map canvas follows fitted frame")
+				if item[0]=="commander-map":
+					check(map.in_place and map.picture.visible,"UI-owned OVERVIEW fallback map active")
+					check(map.picture.position.is_equal_approx(Vector2(16,63)/Vector2(320,200)*map.size) and map.picture.size.is_equal_approx(Vector2(144,96)/Vector2(320,200)*map.size),"map stays in exact crop without surround/caption")
+				else:
+					check(map.packet.is_empty() and not map.picture.visible,"world-owned LOCAL terrain remains original in fallback")
+		var first: Dictionary=renderer.panels[0]
+		var bad_source:=source.duplicate()
+		var bad_packet:=packet.duplicate(true)
+		var at:=Vector2i(first.source.position)+Vector2i.ONE
+		bad_source.set_pixelv(at,Color.MAGENTA)
+		var bad_tags: Image=tags.duplicate()
+		bad_tags.set_pixelv(at,Color.BLACK)
+		bad_packet.plate_overlay.mask_png=Marshalls.raw_to_base64(bad_tags.save_png_to_buffer())
+		_present_fixture(display,bad_source,bad_packet)
+		check(renderer.panels.size()==item[2]-1 and not renderer.panels.any(func(p):return p.index==first.index),"one unknown panel leaves other verified panels active "+item[0])
+		if item[1]==1:
+			bad_source=source.duplicate()
+			bad_source.set_pixel(52,143,Color.MAGENTA)
+			_present_fixture(display,bad_source,packet)
+			check(not renderer.panels.any(func(p):return p.index==1),"corrupted original glyph retains complete readout panel")
+		_present_fixture(display,source,packet)
+		var stale: Dictionary=packet.duplicate(true)
+		stale.scanout_sequence+=1
+		display.set_hud_frame(stale,{"name":"SIM"})
+		check(renderer.panels.is_empty() and map.packet.is_empty(),"unpaired fallback metadata clears overlay "+item[0])
+		_present_fixture(display,source,packet)
+		display.set_hud_frame(packet,{"name":"SIM"},bad_tags)
+		check(renderer.panels.is_empty(),"unpaired explicit plate mask rejected "+item[0])
+		_present_fixture(display,source,packet)
+		var nonbinary: Dictionary=packet.duplicate(true)
+		var ui:=Image.new()
+		ui.load_png_from_buffer(Marshalls.base64_to_raw(packet.ui_overlay.mask_png))
+		ui.set_pixel(0,0,Color8(128,128,128))
+		nonbinary.ui_overlay.mask_png=Marshalls.raw_to_base64(ui.save_png_to_buffer())
+		display.set_hud_frame(nonbinary,{"name":"SIM"})
+		check(renderer.panels.is_empty() and not map.picture.visible,"nonbinary UI clears all fallback overlays "+item[0])
+		if item[1]==2:
+			var missing_ui: Dictionary=packet.duplicate(true)
+			ui.load_png_from_buffer(Marshalls.base64_to_raw(packet.ui_overlay.mask_png))
+			ui.set_pixel(20,70,Color.BLACK)
+			missing_ui.ui_overlay.mask_png=Marshalls.raw_to_base64(ui.save_png_to_buffer())
+			_present_fixture(display,source,missing_ui)
+			check(map.packet.is_empty() and not map.picture.visible,"one unowned map pixel restores complete original map")
+			var stale_map: Dictionary=packet.duplicate(true)
+			stale_map.dynamic_map.pixel_sha256="unverified"
+			_present_fixture(display,source,stale_map)
+			check(map.packet.is_empty() and not map.picture.visible,"unverified map readback clears fallback cartography")
+		_present_fixture(display,source,packet)
+		display.set_hud_style("restored")
+		check(renderer.panels.is_empty() and not renderer._clips.any(func(c):return c.visible) and not map.picture.visible,"Restored clears retained fallback children "+item[0])
+		display.set_hud_style("tactical")
+		_present_fixture(display,source,packet)
+		display.set_hud_frame(packet,{"name":"START"})
+		check(renderer.panels.is_empty() and not map.picture.visible,"non-SIM clears fallback children "+item[0])
+		for mode in ["ega","genesis"]:
+			frame.set_graphics_mode(mode)
+			_present_fixture(display,source,packet)
+			check(renderer.panels.is_empty() and not map.picture.visible,"native graphics exclude fallback vector overlays "+mode)
+		frame.set_graphics_mode("upscaled")
+		# A wide packet must reset child coordinates after all fallback resizes.
+		_present_fixture(display,Image.create_from_data(320,200,false,Image.FORMAT_RGB8,PackedByteArray(data.rgb)),data.packet.presentation)
+		check(display._wide_station==item[1] and renderer.position==Vector2.ZERO and not renderer.in_place,"wide layout recovers original coordinates "+item[0])
+
+func crew_panels() -> void:
+	const Typography=preload("res://scripts/pc_typography.gd")
+	var source:=Image.create_empty(320,200,false,Image.FORMAT_RGB8)
+	source.fill(Color.BLACK)
+	source.fill_rect(Rect2i(30,2,240,10),Color.WHITE)
+	source.fill_rect(Rect2i(31,3,238,8),Color8(170,170,170))
+	source.set_pixel(36,4,Color.BLACK)
+	source.set_pixel(72,4,Color.BLACK)
+	var ui:=Image.create_empty(320,200,false,Image.FORMAT_L8)
+	ui.fill(Color.WHITE)
+	# This helper consumes only the output of verified_run. Glyph/hash tests
+	# live in the established typography suite; these test the complete panel.
+	var parts: Array=[]
+	for item in [["crew_primary",36,36],["crew_secondary",72,90]]:
+		parts.append({"kind":item[0],"rect":Rect2(item[1],4,item[2],6),"font_sha256":Typography.FONT_SOURCES["6X6.FNT"],
+			"cell_size":Vector2i(6,6),"foreground":Color.BLACK,"background":Color8(170,170,170)})
+	var before:=source.get_data()
+	check(Typography.verified_crew_panel(source,ui,parts)==Rect2i(30,2,240,10),"whole verified crew panel accepted")
+	check(source.get_data()==before,"crew proof never mutates source pixels")
+	source.set_pixel(200,5,Color.BLACK)
+	check(Typography.verified_crew_panel(source,ui,parts).size==Vector2i.ZERO,"unknown crew write retains complete source")
+	source.set_pixel(200,5,Color8(170,170,170))
+	source.set_pixel(30,2,Color.BLACK)
+	check(Typography.verified_crew_panel(source,ui,parts).size==Vector2i.ZERO,"unknown crew border rejected")
+	source.set_pixel(30,2,Color.WHITE)
+	ui.set_pixel(200,5,Color.BLACK)
+	check(Typography.verified_crew_panel(source,ui,parts).size==Vector2i.ZERO,"crew ownership checked every frame")
+	ui.set_pixel(200,5,Color.WHITE)
+	check(Typography.verified_crew_panel(source,ui,[parts[0]]).size==Vector2i.ZERO,"partial crew message cannot theme panel")
+	parts[1].rect.position.x+=1
+	check(Typography.verified_crew_panel(source,ui,parts).size==Vector2i.ZERO,"nonadjacent crew message rejected")
 
 func station_instruments(display: Control, prefix: String) -> void:
 	var repo:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()

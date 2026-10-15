@@ -3,6 +3,7 @@ const Modern = preload("res://scripts/pc_modern_assets.gd")
 const Draw = preload("res://scripts/pc_draw_pass.gd")
 const Geometry = preload("res://scripts/pc_surface_geometry.gd")
 const Camera = preload("res://scripts/pc_camera.gd")
+const ReferenceColour = preload("res://scripts/pc_colour.gd")
 var started := Time.get_ticks_msec()
 
 func _process(_delta: float) -> bool:
@@ -53,10 +54,17 @@ func run() -> void:
 	if "--output" in args: output=args[args.find("--output")+1]
 	native = "--native" in OS.get_cmdline_user_args()
 	DirAccess.make_dir_recursive_absolute(output)
+	palette_contract()
+	if "--palette-only" in args:
+		for failure in failures: printerr("FAIL: "+failure)
+		print("PC_MODERN_PALETTE: %s; %d checks"%["PASS" if failures.is_empty() else "FAIL",checks])
+		quit(0 if failures.is_empty() else 1)
+		return
 	check(not art.load_assets(directory.path_join("missing")),"missing assets accepted")
 	check(art.configure(fixture()),"valid synthetic catalogue rejected")
 	running_gear_contract()
 	hind_livery_contract()
+	glazing_contract()
 	roof_grain_contract()
 	bridge_line_contract()
 	affine_invariant_contract()
@@ -691,7 +699,7 @@ func material_variation_contract() -> void:
 		for face: Dictionary in art.models[shape].faces.values():
 			for triangle: Dictionary in face.triangles:
 				var kind: float=triangle.structure_kind
-				if int(shape)>=115 and int(shape)<=144: check(kind in [20.0,Modern.ARMOUR_PAINT],"vehicle cannot inherit building textures")
+				if int(shape)>=115 and int(shape)<=144: check(kind in [20.0,Modern.ARMOUR_PAINT,Modern.EQUIPMENT_VENT,Modern.EQUIPMENT_RUBBER],"vehicle cannot inherit building textures")
 				if kind==20.375: walls+=1
 				if kind==20.4375: roofs+=1
 				if kind==20.46875: clay_roofs+=1
@@ -718,7 +726,8 @@ func hind_livery_contract() -> void:
 			check(paint.configure(source),"paint fixture accepted")
 			var wanted:bool=(shape in [163,164] or shape in Modern.TWO_TONE_SHAPES) and material in ["olive","olive_edge"]
 			var kind:float=paint.models[shape].faces[10].triangles[0].structure_kind
-			check(kind==(Modern.HIND_PAINT if shape in [163,164] else Modern.ARMOUR_PAINT) if wanted else kind==20.0,"paint scope excludes tanks, glass, intakes, accents and canvas")
+			var unpainted: float=Modern.GLAZING if shape in Modern.GLAZING_SHAPES and material in ["glass","cockpit"] else 20.0
+			check(kind==(Modern.HIND_PAINT if shape in [163,164] else Modern.ARMOUR_PAINT) if wanted else kind==unpainted,"paint scope excludes tanks, glass, intakes, accents and canvas")
 			for depth in [160.0,24.0]:
 				var rotation:=Basis(Vector3.UP,0.4)*Basis(Vector3.FORWARD,0.3)
 				var data:=packet()
@@ -741,6 +750,30 @@ func hind_livery_contract() -> void:
 				data.camera.world_position_raw=[30000,-30000,50]
 				data.epoch=99;data.sequence=0
 				check(JSON.stringify(facets)==JSON.stringify(paint.mapping(actor,polygon,data.camera,data.palette_rgb,false)),"source rebase/restore cannot slide Hind paint")
+
+func glazing_contract() -> void:
+	# Classification depends on authored material and intact model identity,
+	# never a blue colour. Mapping retains source points without extra UV data.
+	for shape in Modern.GLAZING_SHAPES+[115,129,156,161]:
+		for material in ["glass","cockpit","signal_red","steel"]:
+			var source:=fixture()
+			source.models[0].shape_index=shape
+			source.models[0].triangles[0].material=material
+			source.models[0].triangles[0].color=[80,140,180]
+			var before:=JSON.stringify(source)
+			var model:=Modern.new()
+			check(model.configure(source),"glazing material fixture accepted")
+			var wanted: bool=shape in Modern.GLAZING_SHAPES and material in ["glass","cockpit"]
+			check(model.models[shape].faces[10].triangles[0].structure_kind==(Modern.GLAZING if wanted else 20.0),"only intact authored glazing receives tag")
+			var data:=packet()
+			data.objects[0].shape_index=shape
+			var facets:=model.mapping(data.objects[0],data.objects[0].polygons[0],data.camera,data.palette_rgb,false)
+			check(not facets.is_empty(),"glazing mapping remains visible")
+			var unchanged_points:=true
+			for facet:Dictionary in facets:
+				for point:Array in facet.points: unchanged_points=unchanged_points and point.size()==3
+			check(unchanged_points,"glazing adds no coordinates or geometry")
+			check(JSON.stringify(source)==before,"glazing does not mutate source catalogue")
 
 func roof_grain_contract() -> void:
 	# A roof whose normal leans along x (structure_axis 0) and one leaning along y
@@ -828,3 +861,37 @@ func bridge_line_pixels() -> void:
 	check(restored.get_data()==painted.get_data(),"bridge restore is byte-exact")
 	painted.save_png(output.path_join("bridge-line-highlight.png"))
 	art=saved;draw.modern_assets=art;draw.clear_mesh_cache()
+
+# Frozen pre-optimization predicate. The fast path must preserve its admission
+# for JSON floats, integer fixtures, mixed channels and in-place mutations.
+func original_supported_palette(palette: Array) -> bool:
+	if ReferenceColour.is_frontend_palette(palette): return true
+	if palette.size()!=16: return false
+	for i in 16:
+		if not palette[i] is Array or palette[i].size()!=3: return false
+		for channel in 3:
+			if palette[i][channel]!=Modern.PC_PALETTE[i][channel]: return false
+	return true
+
+func palette_contract() -> void:
+	for canonical: Array in [Modern.PC_PALETTE,ReferenceColour.FRONTEND_PALETTE]:
+		var mixed: Array=canonical.duplicate(true)
+		for i in 16:
+			for channel in 3:
+				if (i+channel)%2==0: mixed[i][channel]=float(mixed[i][channel])
+		for observed: Array in [canonical.duplicate(true),JSON.parse_string(JSON.stringify(canonical)),mixed]:
+			var before:=var_to_bytes(observed)
+			check(Modern.supported_palette(observed) and original_supported_palette(observed),"canonical integer/float/mixed palette rejected")
+			check(var_to_bytes(observed)==before,"palette comparison mutated caller data")
+			for i in 16:
+				for channel in 3:
+					observed[i][channel]+=1
+					check(Modern.supported_palette(observed)==original_supported_palette(observed),"altered channel differs from original predicate")
+					observed[i][channel]-=1
+			check(Modern.supported_palette(observed),"restored palette differs after in-place mutation")
+	var missing: Array=Modern.PC_PALETTE.duplicate(true);missing.remove_at(0)
+	var short_channel: Array=Modern.PC_PALETTE.duplicate(true);short_channel[4]=[1,2]
+	var not_array: Array=Modern.PC_PALETTE.duplicate(true);not_array[4]=3
+	var nonfinite: Array=Modern.PC_PALETTE.duplicate(true);nonfinite[4][0]=NAN
+	for malformed: Array in [[],missing,short_channel,not_array,nonfinite]:
+		check(not Modern.supported_palette(malformed) and not original_supported_palette(malformed),"malformed palette accepted")

@@ -34,11 +34,11 @@ let undo;
 let buildId;
 let database;
 
-function slotRows() {
+function slotRows(recovery) {
   return Array.from({length: 6}, (_, slot) => {
-    const saved = storedSlots.get(slot);
+    const saved = slot === 0 && recovery ? recovery : storedSlots.get(slot);
     const row = {slot, exists: !!saved,
-      valid: slot === 0 ? !!undo : slots.has(slot),
+      valid: slot === 0 ? !!(recovery || undo) : slots.has(slot),
       label: slot === 0 ? 'Before last load' : `Slot ${slot}`};
     if (saved?.savedAt) row.saved_at = saved.savedAt;
     if (saved?.sample?.program?.name) row.program = saved.sample.program.name;
@@ -46,33 +46,71 @@ function slotRows() {
   });
 }
 
+const DATABASE_OPEN_TIMEOUT_MS = 8000;
+
+function storageError(detail, cause) {
+  const reason = cause ? ` (${cause.name || 'Error'}: ${cause.message || cause})` : '';
+  return new Error(`Local checkpoint storage ${detail}${reason}. Check browser storage permissions and free space; close other Abrams tabs and retry.`, {cause});
+}
+
 function openDatabase() {
-  if (typeof indexedDB === 'undefined') return Promise.resolve(null);
-  if (!database) database = new Promise((resolve, reject) => {
-    const request = indexedDB.open('abrams-remaster-local', 1);
-    request.onupgradeneeded = () => request.result.createObjectStore('checkpoints');
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+  if (typeof indexedDB === 'undefined')
+    return Promise.reject(storageError('is unavailable'));
+  if (!database) {
+    const opening = new Promise((resolve, reject) => {
+      let settled = false;
+      let blocked = false;
+      const timer = setTimeout(() => finish(storageError(blocked
+        ? 'is blocked by another tab' : 'did not open in time')), DATABASE_OPEN_TIMEOUT_MS);
+      function finish(error, db) {
+        if (settled) { db?.close(); return; }
+        settled = true;
+        clearTimeout(timer);
+        if (error) reject(error);
+        else resolve(db);
+      }
+      let request;
+      try { request = indexedDB.open('abrams-remaster-local', 1); }
+      catch (error) { finish(storageError('could not open', error)); return; }
+      request.onblocked = () => { blocked = true; };
+      request.onupgradeneeded = () => {
+        if (settled) { request.transaction.abort(); return; }
+        request.result.createObjectStore('checkpoints');
+      };
+      request.onsuccess = () => {
+        const db = request.result;
+        db.onversionchange = () => {
+          db.close();
+          if (database === opening) database = undefined;
+        };
+        finish(null, db);
+      };
+      request.onerror = () => finish(storageError('could not open', request.error));
+    });
+    database = opening;
+    opening.catch(() => { if (database === opening) database = undefined; });
+  }
   return database;
 }
 
 async function storedSlot(operation, slot, value) {
   const db = await openDatabase();
-  if (!db) {
-    if (operation === 'get') return storedSlots.get(slot);
-    storedSlots.set(slot, value);
-    return undefined;
-  }
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction('checkpoints', operation === 'get' ? 'readonly' : 'readwrite');
-    const store = transaction.objectStore('checkpoints');
-    const request = operation === 'get' ? store.get(slot) : store.put(value, slot);
+    let transaction;
+    let request;
+    try {
+      transaction = db.transaction('checkpoints', operation === 'get' ? 'readonly' : 'readwrite');
+      const store = transaction.objectStore('checkpoints');
+      request = operation === 'get' ? store.get(slot) : store.put(value, slot);
+    } catch (error) {
+      reject(storageError('transaction could not start', error));
+      return;
+    }
     let result;
     request.onsuccess = () => { result = request.result; };
     transaction.oncomplete = () => resolve(result);
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () => reject(transaction.error || new Error('Local checkpoint transaction aborted'));
+    transaction.onerror = () => reject(storageError('transaction failed', transaction.error));
+    transaction.onabort = () => reject(storageError('transaction aborted', transaction.error));
   });
 }
 
@@ -175,13 +213,23 @@ async function boot(message) {
   if (!/^[0-9a-f]{64}$/.test(message.buildId || ''))
     throw new Error('Browser core build identity is missing');
   buildId = message.buildId;
-  for (let slot = 0; slot <= 5; slot++) {
-    const saved = await storedSlot('get', slot);
-    if (saved) storedSlots.set(slot, saved);
-    if (saved?.buildId === buildId) {
-      if (slot === 0) undo = saved;
-      else slots.set(slot, saved);
+  let storageWarning;
+  try {
+    for (let slot = 0; slot <= 5; slot++) {
+      const saved = await storedSlot('get', slot);
+      if (saved) storedSlots.set(slot, saved);
+      if (saved?.buildId === buildId) {
+        if (slot === 0) undo = saved;
+        else slots.set(slot, saved);
+      }
     }
+  } catch (error) {
+    // Gameplay can start without durable storage; checkpoint actions still
+    // require successful IndexedDB transactions and never fall back to RAM.
+    slots.clear();
+    storedSlots.clear();
+    undo = undefined;
+    storageWarning = String(error?.message || error);
   }
   core = await makeCore();
   for (let i = 0; i < HIDDEN_BOOT_FRAMES; i++) {
@@ -204,7 +252,8 @@ async function boot(message) {
   lastSample = sample;
   lastRgb = rgbFrame();
   sendSample('ready', -1, sample, lastRgb.slice(), {protocol: 4, backend: 'trace',
-    startup: 'original-cold-boot', slots: slotRows()});
+    startup: 'original-cold-boot', slots: slotRows(),
+    ...(storageWarning ? {storage_warning: storageWarning} : {})});
 }
 
 function step(message) {
@@ -251,24 +300,41 @@ async function state(message) {
     if (fresh._abrams_web_step() !== 1) throw new Error('The restore core could not boot');
   }
   const restoredFrames = await restoreCheckpoint(fresh, saved.checkpoint);
-  // A successful load must keep its previous session recoverable after reload,
-  // just like desktop slot 0. Persist before changing the active core.
+  // Prepare every fallible restore component before persisting undo or swapping.
+  const freshObserver = await createObserver(zip, restoredFrames);
+  const restoredSample = structuredClone(saved.sample);
+  const restoredRgb = saved.rgb.slice();
+  if (!(restoredRgb instanceof Uint8Array) || restoredRgb.byteLength !== 320 * 200 * 3 ||
+      !restoredSample || !Number.isSafeInteger(saved.sequence) || saved.sequence < 0)
+    throw new Error('Invalid local checkpoint presentation');
+  restoredSample.audio = {schema: 3, frame: restoredFrames, epoch: 0, last_id: 0,
+    events: [], active: false, enabled: false};
+  const responseRgb = restoredRgb.slice();
+  const freshHeld = new Set();
+  const response = {type: 'packet', packet: {type: 'state_result', id: message.id,
+    sequence: saved.sequence, fps: FPS,
+    restored: {type: 'sample', id: message.id, sequence: saved.sequence, fps: FPS,
+      ...restoredSample, timeline_reset: true, held_frame: true},
+    success: true, slots: slotRows(previous), message: `Loaded slot ${message.slot}`},
+    rgb: responseRgb};
+  // No disposal API is exposed by the pinned core/observer. Release references
+  // through the swap; worker termination remains the explicit runtime cleanup.
   await storedSlot('put', 0, previous);
   storedSlots.set(0, previous);
   core = fresh;
-  observer = await createObserver(zip, restoredFrames);
-  held = new Set();
+  observer = freshObserver;
+  held = freshHeld;
   frames = restoredFrames;
   sequence = saved.sequence;
   undo = previous;
-  lastSample = structuredClone(saved.sample);
-  lastRgb = saved.rgb.slice();
-  lastSample.audio = {schema: 3, frame: frames, epoch: 0, last_id: 0,
-    events: [], active: false, enabled: false};
-  sendSample('state_result', message.id, {}, lastRgb.slice(), {
-    restored: {type: 'sample', id: message.id, sequence, fps: FPS,
-      ...lastSample, timeline_reset: true, held_frame: true},
-    success: true, slots: slotRows(), message: `Loaded slot ${message.slot}`});
+  lastSample = restoredSample;
+  lastRgb = restoredRgb;
+  try { postMessage(response, [responseRgb.buffer]); }
+  catch (cause) {
+    const error = new Error('Checkpoint loaded, but the bridge response could not be delivered', {cause});
+    error.committedTransportFailure = true;
+    throw error;
+  }
 }
 
 self.onmessage = async event => {
@@ -285,6 +351,7 @@ self.onmessage = async event => {
     else if (message.op === 'save_state' || message.op === 'load_state') {
       try { await state(message); }
       catch (error) {
+        if (error.committedTransportFailure) throw error;
         postMessage({type: 'packet', packet: {type: 'state_result', id: message.id,
           success: false, slots: slotRows(),
           message: String(error?.message || error)}});

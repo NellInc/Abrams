@@ -12,6 +12,8 @@ var tactical_material := ShaderMaterial.new()
 var _hud_mask_bytes := ""
 var _hud_mask_texture: Texture2D
 var _panel_mask_texture: Texture2D
+# Independent CPU snapshot paired with the uploaded mask, never authority.
+var _panel_mask_image: Image
 var _panel_mask_bytes := PackedByteArray()
 var _hud_mask_data := PackedByteArray()
 var _wide_station := 0
@@ -19,6 +21,7 @@ var _station := 0
 var _wide_panel_mask_bytes := PackedByteArray()
 var _wide_mask_safe := false
 var _wide_mask_station := 0
+var _fallback_pair_verified := false
 var source_dimensions := Vector2i(256,97)
 var graphics_mode := "upscaled"
 var msaa_samples := 4
@@ -116,6 +119,7 @@ func set_hud_style(style: String) -> bool:
 		_hud_mask_data.clear()
 		_panel_mask_bytes.clear()
 		_panel_mask_texture=null
+		_panel_mask_image=null
 	_set_wide_station(0)
 	_update_hud_material()
 	return true
@@ -123,16 +127,22 @@ func set_hud_style(style: String) -> bool:
 func set_hud_frame(presentation: Dictionary, program: Dictionary, verified_panel_mask: Image=null, verified_map: bool=false, _verified_gunner: bool=false) -> void:
 	# Program identity, paired binary UI mask and the compositor's verified
 	# plate mask gate this treatment. Malformed provenance restores source.
+	_fallback_pair_verified=program.get("name")=="SIM" and tandem_frame._cached_program.get("name")=="SIM" and tandem_frame.world_enabled and tandem_frame._cached_presentation==presentation
 	if verified_panel_mask==null:
 		verified_panel_mask=_source_cockpit_mask(presentation)
 	if verified_panel_mask==null:
 		_panel_mask_bytes.clear()
 		_panel_mask_texture=null
+		_panel_mask_image=null
 	else:
 		var panel_bytes:=verified_panel_mask.get_data()
 		if panel_bytes!=_panel_mask_bytes or _panel_mask_texture==null:
 			_panel_mask_texture=ImageTexture.create_from_image(verified_panel_mask)
+			_panel_mask_image=verified_panel_mask.duplicate() if verified_panel_mask.get_size()==Vector2i(320,200) and verified_panel_mask.get_format()==Image.FORMAT_L8 and not verified_panel_mask.has_mipmaps() else null
 			_panel_mask_bytes=panel_bytes
+	if _fallback_pair_verified:
+		var same_frame_tags:=_source_cockpit_mask(presentation)
+		_fallback_pair_verified=same_frame_tags!=null and same_frame_tags.get_data()==_panel_mask_bytes
 	_station=_source_station() if program.get("name")=="SIM" else 0
 	tactical_chrome.station=_station
 	var bounds:=Vector4.ZERO
@@ -248,20 +258,35 @@ func _update_hud_material() -> void:
 	display.material=tactical_material if hud_style=="tactical" and _hud_mask_texture!=null else null
 	if display.material==null: _set_wide_station(0)
 	tactical_chrome.fallback_tactical=hud_style=="tactical" and display.material!=null and _wide_station==0
-	if _wide_station!=0 and display.material!=null:
-		tactical_chrome.instruments.set_frame(tandem_frame,_wide_station,TACTICAL_LAYOUTS[_wide_station],_panel_mask_texture.get_image(),_hud_mask_data)
+	var station: int=_wide_station
+	var layout: Dictionary=TACTICAL_LAYOUTS.get(station,{})
+	if station==0 and tactical_chrome.fallback_tactical and _fallback_pair_verified and TACTICAL_LAYOUTS.has(_station):
+		station=_station
+		layout=original_tactical_layout(station)
+	if station!=0 and display.material!=null and _panel_mask_texture!=null:
+		tactical_chrome.instruments.set_frame(tandem_frame,station,layout,(_panel_mask_image.duplicate() if _panel_mask_image!=null else _panel_mask_texture.get_image()),_hud_mask_data)
 	else:
 		tactical_chrome.instruments.clear()
-	if _wide_station==2 and display.material!=null:
-		tactical_chrome.map_art.set_frame(tandem_frame,TACTICAL_LAYOUTS[2])
+	if station==2 and display.material!=null:
+		tactical_chrome.map_art.set_frame(tandem_frame,layout,_hud_mask_data)
 	else:
 		tactical_chrome.map_art.clear()
 	tactical_chrome.queue_redraw()
 	if tandem_viewport.render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
 		tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 
+static func original_tactical_layout(station: int) -> Dictionary:
+	# Destinations are the same exclusive source endpoints. This never grants
+	# permission to reflow, crop or discard any part of the original frame.
+	var layout: Dictionary=TACTICAL_LAYOUTS[station].duplicate(true)
+	var destinations: Array=[]
+	for region: Vector4 in layout.source: destinations.append(region/Vector4(320,200,320,200))
+	layout.destination=destinations
+	layout.in_place=true
+	return layout
+
 func set_graphics_quality(mode: String, samples: int, anisotropy: int) -> bool:
-	if mode not in ["ega","genesis","upscaled","modern","tactical"] or not MSAA_LEVELS.has(samples) or not ANISOTROPY_LEVELS.has(anisotropy): return false
+	if mode not in ["ega","ega_upscaled","genesis","upscaled","modern","tactical"] or not MSAA_LEVELS.has(samples) or not ANISOTROPY_LEVELS.has(anisotropy): return false
 	graphics_mode=mode
 	msaa_samples=samples
 	anisotropic_samples=anisotropy
@@ -285,6 +310,10 @@ func _resize_targets() -> void:
 	tactical_chrome.position=rect.position if _wide_station!=0 else Vector2.ZERO
 	tactical_chrome.size=rect.size if _wide_station!=0 else size
 	tactical_chrome.frame_rect=Rect2i(Vector2i.ZERO,rect.size) if _wide_station!=0 else rect
+	for content: Control in [tactical_chrome.instruments,tactical_chrome.map_art]:
+		content.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		content.position=Vector2.ZERO if _wide_station!=0 else Vector2(rect.position)
+		content.size=rect.size
 	tactical_chrome.queue_redraw()
 	# Wide mode only changes presentation. Keep the source composition at its
 	# former width and 4:3 pixel aspect; never widen the camera or ownership pass.

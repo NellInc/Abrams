@@ -10,6 +10,7 @@ var font_geometry: Dictionary = {}
 var runs: Array[Dictionary] = []
 var labels: Array[Control] = []
 var world_ink: Array[Vector2i] = []
+var _crew_rect := Rect2i()
 var fixed_labels_enabled := false
 var status_numbers_enabled := false
 var hud_style := "restored"
@@ -34,18 +35,27 @@ const FIXED_LABELS = [
 class RunLabel extends Control:
 	var run: Dictionary
 	var tactical := false
+	var crew_styled := false
 	var tactical_font: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+	var mono_font: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
 	var mesh: ArrayMesh
 	var mesh_key := ""
 	func _draw() -> void:
 		if run.is_empty(): return
-		if not run.get("transparent_world",false): draw_rect(Rect2(Vector2.ZERO,size),run.background)
+		# A complete, proven notice is drawn as one line by the parent. The
+		# original runs remain intact for proof and immediate Restored recovery.
+		if tactical and crew_styled: return
+		if not run.get("transparent_world",false): draw_rect(Rect2(Vector2.ZERO,size),Color("15251b") if tactical and crew_styled else run.background)
 		if tactical:
+			var bearing: bool=run.kind=="world_bearing"
+			var face: Font=mono_font if bearing and run.text.is_valid_int() else tactical_font
 			var point_size:=clampi(roundi(size.y),6,72)
-			while point_size>6 and (tactical_font.get_height(point_size)>size.y or tactical_font.get_string_size(run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size).x>size.x):
+			while point_size>6 and (face.get_height(point_size)>size.y or face.get_string_size(run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size).x>size.x):
 				point_size-=1
-			var baseline: float=(size.y-tactical_font.get_height(point_size))*0.5+tactical_font.get_ascent(point_size)
-			draw_string(tactical_font,Vector2(0,baseline),run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size,run.foreground)
+			var baseline: float=(size.y-face.get_height(point_size))*0.5+face.get_ascent(point_size)
+			if bearing:
+				draw_string_outline(face,Vector2(0,baseline),run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size,1,Color("e3e4cd") if run.foreground.r<0.5 else Color("15251b"))
+			draw_string(face,Vector2(0,baseline),run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size,Color("e3e4cd") if crew_styled else run.foreground)
 			return
 		if run.get("outline_font") is Font:
 			var scale: Vector2=size/run.rect.size
@@ -124,6 +134,7 @@ func set_hud_style(style: String) -> void:
 	for label in labels:
 		label.tactical=tactical
 		label.queue_redraw()
+	queue_redraw()
 
 func load_sources(directory: String) -> bool:
 	fonts.clear()
@@ -150,7 +161,54 @@ func load_sources(directory: String) -> bool:
 func clear_runs() -> void:
 	runs.clear()
 	world_ink.clear()
+	_crew_rect=Rect2i()
 	for label in labels: label.hide()
+	queue_redraw()
+
+func _draw() -> void:
+	if hud_style!="tactical" or _crew_rect.size==Vector2i.ZERO: return
+	var box:=Rect2(Vector2(_crew_rect.position)*size/Vector2(320,200),Vector2(_crew_rect.size)*size/Vector2(320,200))
+	draw_rect(box,Color("15251b"))
+	# Inset stroke: even its antialias fringe stays inside the original panel.
+	draw_rect(box.grow(-1.0),Color("95ad8b"),false,1.0,true)
+	var words: Dictionary={}
+	for run in runs:
+		if run.kind in ["crew_primary","crew_secondary"]: words[run.kind]=run.text
+	var text: String=words.crew_primary+words.crew_secondary
+	var face: Font=preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+	var inset:=Vector2(6,2)*size/Vector2(320,200)
+	var interior:=Rect2(box.position+inset,box.size-inset*2)
+	var point:=clampi(roundi(interior.size.y),6,72)
+	while point>6 and (face.get_height(point)>interior.size.y or face.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x>interior.size.x): point-=1
+	var baseline: float=interior.position.y+(interior.size.y-face.get_height(point))*0.5+face.get_ascent(point)
+	draw_string(face,Vector2(interior.position.x,baseline),text,HORIZONTAL_ALIGNMENT_LEFT,-1,point,Color("e3e4cd"))
+
+static func verified_crew_panel(source: Image, ui: Image, approved_runs: Array) -> Rect2i:
+	# Input runs have already passed exact original glyph, crop-hash and UI
+	# checks in this frame. The whole banner must also match, including spaces
+	# and its border. Unobserved writes retain the original complete panel.
+	var box:=Rect2i(30,2,240,10)
+	if source==null or source.get_size()!=Vector2i(320,200) or ui==null or ui.get_size()!=Vector2i(320,200) or ui.get_format()!=Image.FORMAT_L8: return Rect2i()
+	if ui.get_region(box).get_data().count(255)!=2400: return Rect2i()
+	var parts: Dictionary={}
+	for run: Dictionary in approved_runs:
+		if not Rect2(box).intersects(run.rect): continue
+		var kind: String=run.get("kind","")
+		if kind not in ["crew_primary","crew_secondary"] or parts.has(kind): return Rect2i()
+		if run.font_sha256!=FONT_SOURCES["6X6.FNT"] or run.cell_size!=Vector2i(6,6) or run.foreground!=Color.BLACK or run.background!=Color8(170,170,170): return Rect2i()
+		if not Rect2(box.grow(-1)).encloses(run.rect): return Rect2i()
+		parts[kind]=run
+	if parts.size()!=2 or parts.crew_primary.rect.position!=Vector2(36,4) or parts.crew_secondary.rect.position!=Vector2(parts.crew_primary.rect.end.x,4): return Rect2i()
+	var expected:=Image.create_empty(240,10,false,Image.FORMAT_RGBA8)
+	expected.fill(Color.WHITE)
+	expected.fill_rect(Rect2i(1,1,238,8),Color8(170,170,170))
+	for run: Dictionary in parts.values():
+		var crop:=source.get_region(Rect2i(run.rect))
+		crop.convert(Image.FORMAT_RGBA8)
+		expected.blit_rect(crop,Rect2i(Vector2i.ZERO,crop.get_size()),Vector2i(run.rect.position)-box.position)
+	var actual:=source.get_region(box)
+	actual.convert(Image.FORMAT_RGBA8)
+	return box if actual.get_data()==expected.get_data() else Rect2i()
 
 func _fixed_candidate(words: String, at: Vector2i, source: Image, font_name: String="6X6.FNT") -> Dictionary:
 	var font: PackedByteArray = fonts[FONT_SOURCES[font_name]]
@@ -472,6 +530,7 @@ func set_frame(source: Image, ui: Image, presentation: Dictionary, cursor_mask: 
 			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			add_child(label)
 			labels.append(label)
+	_crew_rect=verified_crew_panel(source,ui,runs)
 	_layout()
 
 func _layout() -> void:
@@ -479,7 +538,9 @@ func _layout() -> void:
 	for i in runs.size():
 		var label: Control = labels[i]
 		label.run = runs[i]
+		label.crew_styled=_crew_rect.size!=Vector2i.ZERO and runs[i].kind in ["crew_primary","crew_secondary"]
 		label.position = runs[i].rect.position*scale_to_view
 		label.size = runs[i].rect.size*scale_to_view
 		label.show()
 		label.queue_redraw()
+	queue_redraw()

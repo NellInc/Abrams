@@ -121,6 +121,52 @@ class PackagingTests(unittest.TestCase):
                 (root / package.MANIFEST).write_text(json.dumps(manifest))
                 package.check_source_closure(root, package.selected_files(root, 'source'))
 
+    def test_resource_closure_accepts_plain_and_escaped_delimiters_and_checks_each(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            caller = 'godot/scripts/a.gd'
+            dependencies = ['scripts/plain.png', 'scripts/escaped.gdshaderinc',
+                            'scripts/adjacent.gdshaderinc', 'scripts/single.gdshaderinc']
+            source = ('var plain = "res://scripts/plain.png"\n'
+                      'var shader = "#include \\"res://scripts/escaped.gdshaderinc\\" \\"res://scripts/adjacent.gdshaderinc\\""\n'
+                      "var other = '#include \\'res://scripts/single.gdshaderinc\\''\n")
+            for name, data in [(caller, source), *[('godot/' + d, 'fixture') for d in dependencies]]:
+                path = root / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(data)
+            names = [caller] + ['godot/' + d for d in dependencies]
+            package.check_source_closure(root, names, include_assets=True)
+            for dependency in dependencies:
+                with self.subTest(dependency=dependency):
+                    with self.assertRaisesRegex(ValueError, 'Missing resource dependency'):
+                        package.check_source_closure(root, [n for n in names if n != 'godot/' + dependency], include_assets=True)
+
+    def test_historical_comparison_exception_is_exact_and_preserves_code_closure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); caller = 'godot/tests/test_pc_effect_art.gd'
+            path = root / caller; path.parent.mkdir(parents=True)
+            path.write_text('var baseline = FileAccess.get_file_as_string("res://tests/effects-before.gdshader")\n')
+            package.check_source_closure(root, [caller], include_assets=True)
+            production = root / 'godot/scripts/a.gd'; production.parent.mkdir()
+            production.write_text(path.read_text())
+            with self.assertRaisesRegex(ValueError, 'Missing resource dependency'):
+                package.check_source_closure(root, [production.relative_to(root).as_posix()], include_assets=True)
+            for text, error in [
+                ('extends "res://tests/missing.gd"\n', 'Missing resource dependency'),
+                ('var image = "res://tests/unrelated.png"\n', 'Missing resource dependency'),
+                ('var shader = load("res://tests/effects-before.gdshader")\n', 'Missing code dependency'),
+            ]:
+                with self.subTest(text=text):
+                    path.write_text(text)
+                    with self.assertRaisesRegex(ValueError, error):
+                        package.check_source_closure(root, [caller], include_assets=True)
+
+    def test_escaped_resource_scanner_cannot_absorb_adjacent_dynamic_text(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); name = 'godot/scripts/a.gd'; path = root / name
+            path.parent.mkdir(parents=True)
+            path.write_text('var shader = "#include \\"res://scripts/missing.gdshaderinc\\""\nvar dynamic = "%s"\n')
+            with self.assertRaisesRegex(ValueError, 'Missing resource dependency'):
+                package.check_source_closure(root, [name], include_assets=True)
+
     def test_symlink_archive_metadata_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self.fixture(directory)

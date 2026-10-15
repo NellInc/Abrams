@@ -13,9 +13,10 @@
     main { display: block; min-height: 0; max-width: 1600px; padding: 24px clamp(12px, 2vw, 28px); }
     .setup { max-width: none; }
     .setup h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); }
-    .player { margin-top: 24px; }
+    .player { margin-top: 24px; box-shadow: none; }
     #game-canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #050705; }
     #game-canvas.tactical { aspect-ratio: 16 / 9; }
+    #game-canvas[hidden], .player[hidden] { display: none; }
     body.playing .setup { position: absolute; width: 1px; height: 1px; padding: 0;
       overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     body.playing main { max-width: none; padding: 0; }
@@ -25,25 +26,78 @@
       width: max-content; max-width: calc(100% - 24px); background: #111713ee;
       border: 1px solid #666c56; border-radius: 4px; font-size: 14px; }
     .web-controls[hidden] { display: none; }
+    .web-controls .control-group { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; min-width: 0; }
+    .web-controls .control-group + .control-group { padding-inline-start: 12px; border-inline-start: 1px solid var(--line); }
     .web-controls select { color: var(--paper); background: #202820; border: 1px solid var(--line);
       border-radius: 4px; padding: 7px 5px; font: inherit; }
-    .web-controls button { padding: 7px 10px; }
+    .web-controls button { padding: 7px 10px; min-height: 40px; }
+    .web-controls select { max-width: min(100%, 25rem); min-width: 0; min-height: 40px; }
+    .web-controls .control-feedback { flex-basis: 100%; min-width: 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+    #graphics-description { color: var(--muted); }
+    .setup input[type="file"] { position: static; display: block; width: 100%; height: auto; overflow: visible; clip-path: none; margin: 8px 0; padding: 8px; border: 1px solid var(--line); border-radius: 4px; }
+    .setup .file-choice { max-width: 48rem; margin-block: 20px; }
+    .setup .file-choice label { display: block; font-weight: 700; }
+    .setup .file-detail { color: var(--muted); font-size: .9rem; margin: 0; overflow-wrap: anywhere; }
+    .setup > p { max-width: 75ch; }
+    .setup .status { overflow-wrap: anywhere; }
+    .setup button { min-height: 44px; }
+    body.playing .site-header, body.playing footer { display: none; }
+    @media (max-width: 700px) {
+      .web-controls { width: auto; font-size: 16px; }
+      .web-controls .control-group + .control-group { padding-inline-start: 0; border-inline-start: 0; }
+      .web-controls .control-group { flex-basis: 100%; }
+      .web-controls select { max-width: 100%; }
+    }
+    .web-controls .extended-controls { flex-basis: 100%; min-width: 0; border-top: 1px solid var(--line); padding-top: 8px; }
+    .extended-controls summary { cursor: pointer; width: fit-content; padding: 4px 0; color: var(--muted); }
+    .extended-controls[open] summary { color: var(--paper); margin-bottom: 12px; }
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 18px; margin-bottom: 14px; }
+    .settings-grid label { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .settings-grid select { width: 100%; max-width: 100%; }
+    .extended-controls p { margin: 12px 0 0; }
     .web-controls output { color: var(--orange); margin-left: 3px; }
   </style>
 </head>
 <body>
   <nav id="web-controls" class="web-controls" aria-label="Remaster controls" hidden>
+    <div class="control-group">
     <label for="web-graphics">Graphics</label>
-    <select id="web-graphics"><option value="ega">EGA</option><option value="genesis">Genesis</option><option value="upscaled">Upscaled</option><option value="modern">Modern</option><option value="tactical">Tactical</option></select>
+    <select id="web-graphics"><option value="ega">EGA</option><option value="ega_upscaled">EGA Upscaled (original colours)</option><option value="genesis">Genesis</option><option value="upscaled">Genesis Upscaled</option><option value="modern">Modernized</option><option value="tactical">Tactical</option></select>
     <label for="web-hud-style">HUD Style</label>
     <select id="web-hud-style"><option value="restored">Restored</option><option value="tactical">Tactical</option></select>
+    </div>
+    <div class="control-group">
     <label for="web-save-slot">Save</label><select id="web-save-slot" aria-label="Save slot"><option value="1">Slot 1</option><option value="2">Slot 2</option><option value="3">Slot 3</option><option value="4">Slot 4</option><option value="5">Slot 5</option></select>
     <button id="web-save" type="button">Save state</button>
     <label for="web-load-slot">Load</label><select id="web-load-slot" aria-label="Load slot"><option value="1">Slot 1</option><option value="2">Slot 2</option><option value="3">Slot 3</option><option value="4">Slot 4</option><option value="5">Slot 5</option><option value="0">Undo last load</option></select>
     <button id="web-load" type="button" disabled>Load state</button>
     <button id="web-speed" type="button">8× speed</button>
+    </div>
+    <div class="control-group">
     <button id="web-help" type="button">Controls</button>
-    <output id="web-control-status" aria-live="polite"></output>
+    <button id="web-focus" type="button">Game keyboard</button>
+    <button id="web-fullscreen" type="button" aria-pressed="false" hidden>Fullscreen</button>
+    </div>
+    <details id="web-extended" class="extended-controls">
+      <summary>More controls: audio and graphics quality</summary>
+      <div class="settings-grid">
+        <label>Antialiasing <select id="web-msaa" aria-label="Antialiasing"><option value="0">Off</option><option value="2">2× MSAA</option><option value="4">4× MSAA</option><option value="8">8× MSAA</option></select></label>
+        <label>Texture filtering <select id="web-anisotropy" aria-label="Anisotropic texture filtering"><option value="0">Linear mipmaps</option><option value="2">2× anisotropic</option><option value="4">4× anisotropic</option><option value="8">8× anisotropic</option><option value="16">16× anisotropic</option></select></label>
+        <label>Master volume <select id="web-audio-master" aria-label="Master volume"><option value="0">Off</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option><option value="90">90%</option><option value="100">100%</option></select></label>
+        <label>Effects <select id="web-audio-effects" aria-label="Effects"><option value="0">Off</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option><option value="90">90%</option><option value="100">100%</option></select></label>
+        <label>Crew voices <select id="web-audio-voice" aria-label="Crew voices"><option value="0">Off</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option><option value="90">90%</option><option value="100">100%</option></select></label>
+        <label>Engines and turret <select id="web-audio-motors" aria-label="Engines and turret"><option value="0">Off</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option><option value="90">90%</option><option value="100">100%</option></select></label>
+        <label>Music <select id="web-audio-music" aria-label="Music"><option value="0">Off</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option><option value="90">90%</option><option value="100">100%</option></select></label>
+      </div>
+      <button id="web-reset-audio" type="button">Restore default mix</button>
+      <button id="web-reset-quality" type="button">Restore full-quality defaults</button>
+      <p id="web-audio-note" class="control-feedback">Presentation mix. Original F5 and pause still control sound.</p>
+      <p class="control-feedback">Antialiasing smooths scenery edges. Anisotropic filtering keeps angled textures clearer. Quality stays at your chosen level.</p>
+      <output id="web-settings-status" class="control-feedback" aria-live="polite"></output>
+    </details>
+    <span id="graphics-description" class="control-feedback"></span>
+    <span id="web-storage-status" class="control-feedback" role="status"></span>
+    <output id="web-control-status" class="control-feedback" aria-live="polite"></output>
   </nav>
   <header class="site-header">
     <div class="wordmark">ABRAMS <span>Battle Tank</span></div>
@@ -53,21 +107,29 @@
     <section class="setup" aria-labelledby="title">
       <h1 id="title">Abrams Fan Remaster, in your browser.</h1>
       <p>Play the original PC game with the remaster's artwork and controls. Choose your supported original PC game folder. Your game files stay in this browser and are never sent to the site.</p>
-      <p>For Genesis graphics and music, choose your original Genesis ROM before starting. The PC game folder is always required. This edition is designed for a desktop browser.</p>
-      <label class="choose" for="genesis-rom">Choose optional Genesis ROM</label>
-      <input id="genesis-rom" type="file" accept=".md,.bin,.gen,.rom">
-      <label class="choose" for="game-folder">Choose original PC game folder</label>
-      <input id="game-folder" type="file" webkitdirectory multiple>
+      <p>For original-resolution Genesis graphics and Genesis music, choose your original Genesis ROM before starting. The PC game folder is always required. This edition is designed for a desktop browser.</p>
+      <div class="file-choice">
+        <label for="genesis-rom">Optional Genesis ROM</label>
+        <input id="genesis-rom" type="file" accept=".md,.bin,.gen,.rom" aria-describedby="genesis-selection">
+        <button id="clear-genesis" type="button" disabled>Clear Genesis ROM</button>
+        <p id="genesis-selection" class="file-detail" aria-live="polite">Optional. PC-only play is fully supported.</p>
+      </div>
+      <div class="file-choice">
+        <label for="game-folder">Original PC game folder</label>
+        <input id="game-folder" type="file" webkitdirectory multiple aria-describedby="pc-selection">
+        <p id="pc-selection" class="file-detail" aria-live="polite">No PC folder selected.</p>
+      </div>
       <button id="start-game" type="button" disabled>Start remaster</button>
+      <button id="reload-page" type="button" hidden>Reload page</button>
       <p id="status" class="status" role="status" aria-live="polite">Waiting for your original PC game.</p>
     </section>
-    <section class="player" aria-label="Abrams remaster player">
-      <canvas id="game-canvas" width="1280" height="960" tabindex="0" aria-label="Abrams Fan Remaster game display"></canvas>
+    <section class="player" aria-label="Abrams remaster player" hidden>
+      <canvas id="game-canvas" hidden width="1280" height="960" tabindex="0" aria-label="Abrams Fan Remaster game display"></canvas>
     </section>
   </main>
   <footer>
     <p>Original game by Dynamix, published by Electronic Arts. Fan remaster by Nell Watson.</p>
-    <p>Your original PC files remain in this browser. Save states stay on this device. <a href="NOTICE.txt">Notices</a> · <a href="THIRD_PARTY.txt">Third-party licences</a> · <a href=".generated/web-core-corresponding-source.tar.gz">Web core source</a> · <a href="https://github.com/NellInc/Abrams">Project source</a></p>
+    <p>Your original PC files remain in this browser. Checkpoints stay on this device when browser storage is available. <a href="NOTICE.txt">Notices</a> · <a href="THIRD_PARTY.txt">Third-party licences</a> · <a href=".generated/web-core-corresponding-source.tar.gz">Web core source</a> · <a href="https://github.com/NellInc/Abrams">Project source</a></p>
   </footer>
 </body>
 </html>

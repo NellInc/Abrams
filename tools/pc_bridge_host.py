@@ -130,10 +130,12 @@ def main():
     p.add_argument("--backend", choices=["reference", "trace"], default="reference")
     p.add_argument("--content", type=Path, default=ROOT / ".runtime/pc-core/abrams-ref.zip")
     p.add_argument("--frame-audit", action="store_true", help="diagnostic hashes of paired original RAM and framebuffer; no memory dumps")
+    p.add_argument("--loop-diagnostics", action="store_true", help="read-only 0000:0e85 samples, separate from framebuffer-paired presentation")
     p.add_argument("--state-worker", action="store_true", help=argparse.SUPPRESS)
     p.add_argument("--local-resume", type=Path, help=argparse.SUPPRESS)
     args = p.parse_args()
     if args.state is None and args.backend != 'trace': p.error('cold boot requires the trace backend')
+    if args.loop_diagnostics and args.backend != 'trace': p.error('loop diagnostics require the trace backend')
     if not args.state_worker:
         try:
             from tools.pc_state_host import supervise
@@ -160,6 +162,8 @@ def main():
         pin, source_pin = CORE_SHA256, CORE_SHA256
         if args.backend == "trace":
             manifest = json.loads((ROOT / ".runtime/pc-core/abrams-trace.json").read_text())
+            if args.loop_diagnostics and manifest.get('loop_diagnostic_schema') != 1:
+                raise ValueError('Rebuild the local trace core for loop diagnostics')
             if manifest.get("frontend_scene_schema") != 1:
                 raise ValueError("Rebuild the local trace core for the opening scenario preview")
             if manifest.get("schema") != 2:
@@ -184,7 +188,7 @@ def main():
             args.core = ROOT / (".runtime/pc-core/abrams-trace" + core_suffix())
         core = PcReferenceCore(args.core, args.content, args.saves, expected_sha256=pin)
         if args.backend == 'trace':
-            session = PresentationSession(core,reader,shape_bytes)
+            session = PresentationSession(core,reader,shape_bytes, loop_diagnostics=args.loop_diagnostics)
             session.step(240)
         else: core.run(240)
         if args.state and not args.local_resume:
@@ -208,12 +212,12 @@ def main():
             core.local_overlay('reload')
             core.restore_local((args.local_resume / 'state.bin').read_bytes(), resume['keys'], resume['frame'], resume['ram_sha256'])
             if args.backend == 'trace':
-                session = PresentationSession(core, reader, shape_bytes)
+                session = PresentationSession(core, reader, shape_bytes, loop_diagnostics=args.loop_diagnostics)
                 session.before_frame()  # Attach before restoring host-only ownership.
                 observer = args.local_resume / 'observer.bin'
                 if observer.exists(): core.observer_checkpoint(observer.read_bytes())
         elif args.backend == "trace":
-            if session is None:session = PresentationSession(core,reader,shape_bytes)
+            if session is None:session = PresentationSession(core,reader,shape_bytes, loop_diagnostics=args.loop_diagnostics)
             session.step(1)
         else:
             core.run(1)
@@ -238,6 +242,9 @@ def main():
 
         ready = (resume['packet'] | {'type': 'ready', 'id': -1, 'timeline_reset': True,
                  'held_frame': True}) if args.local_resume else packet("ready", -1)
+        if args.local_resume:
+            ready.pop('loop_diagnostic', None)
+            if args.loop_diagnostics: ready['loop_diagnostic'] = None  # reacquire after reset
         # No pending audio is replayed from a checkpoint. Observer counters
         # restart. EGA ownership resumes separately; raster masks and drawing
         # candidates are reacquired from freshly observed original execution.

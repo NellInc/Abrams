@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = 'tools/package/allowlist.json'
 RECEIPT = 'PACKAGE.json'
 BANNED = {'.git', '.godot', '__pycache__', 'artifacts', 'capture', 'saves', 'states', '.ssh', '.aws'}
-SOURCE_SUFFIXES = {'.py', '.sh', '.h', '.c', '.gd', '.gdshader', '.tscn', '.godot', '.md', '.json', '.command', '.txt', '.swift'}
+SOURCE_SUFFIXES = {'.py', '.sh', '.h', '.c', '.gd', '.gdshader', '.gdshaderinc', '.tscn', '.godot', '.md', '.json', '.command', '.txt', '.swift'}
 
 
 def digest(data):
@@ -98,6 +98,22 @@ def build(root, output, kind):
     return verify(output)
 
 
+# Historical comparison inputs are optional to playable/native kits. Their
+# specific diagnostic modes still require private baselines and are not claimed
+# runnable without them. All other test/runtime resources remain checked.
+# Working if: only these seven source-qualified diagnostic references may be
+# absent; production, inherited test code and explicit loads still fail closed.
+OPTIONAL_COMPARISON_INPUTS = {
+    ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/microfinish-before.gdshaderinc'),
+    ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/radiance-before.gdshader'),
+    ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/finishgrain-before-variant.gdshader'),
+    ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/diffusion-before-variant.gdshader'),
+    ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/groundlight-first-failed.gdshader'),
+    ('godot/tests/test_pc_effect_art.gd', 'tests/particle-material-before.gdshader'),
+    ('godot/tests/test_pc_effect_art.gd', 'tests/effects-before.gdshader'),
+}
+
+
 def check_source_closure(root, names, include_assets=False):
     """Reject missing local code imports, including new untracked worker modules."""
     selected = set(names)
@@ -108,7 +124,12 @@ def check_source_closure(root, names, include_assets=False):
                 if dependency.endswith(('.gd', '.gdshader')) and 'godot/' + dependency not in selected:
                     raise ValueError(f'Missing code dependency: {name} -> godot/{dependency}')
         if include_assets and path.suffix in {'.gd', '.tscn'}:
-            for dependency in re.findall(r'["\']res://([^"\']+)["\']', path.read_text()):
+            # GDScript shader templates contain singly escaped quote delimiters.
+            # Match the delimiter pair, preserving bounded path characters.
+            for match in re.finditer(r'''(?<!\\)(\\?)(["'])res://([^"'\\\r\n]+)\1\2''', path.read_text()):
+                dependency = match.group(3)
+                if (name, dependency) in OPTIONAL_COMPARISON_INPUTS:
+                    continue
                 if '%' not in dependency and Path(dependency).suffix and 'godot/' + dependency not in selected:
                     raise ValueError(f'Missing resource dependency: {name} -> godot/{dependency}')
         if path.suffix == '.py':

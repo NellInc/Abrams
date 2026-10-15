@@ -47,8 +47,25 @@ def read_objects(ram: bytes, ds: int) -> dict:
                              "cell": [origin[0] + (cell & 7), origin[1] + (cell >> 3)]})
             else:
                 item["orientation_u8"] = list(ram[at + 24:at + 27])
+                # The original generic mover reads +24h (0000:36dd), also
+                # used by the player speed gauge. It is movement, not proof
+                # that an idle actor's engine is running.
+                item["speed_raw"] = struct.unpack_from('<h', ram, at + 36)[0]
             objects.append(item)
         pools[name] = objects
     return {"window_origin": origin, "cell_size_raw": CELL_SIZE,
             "axes": ["east", "south", "original_height"],
-            "visibility": "unverified; allocated objects only", **pools}
+            "visibility": "unverified; allocated objects only", **pools,
+            "presentation_effects": {
+                "schema": 1,
+                "shape_base": struct.unpack_from('<H', ram, ds + 0x79C2)[0],
+                # 0000:7c0e/7c26/7c2f set the original smoke timer,
+                # activation and position. 7b14 updates it and 7bb4 clears it.
+                "smoke": {
+                    "active": ram[ds + 0x0DAE] == 1 and
+                              struct.unpack_from('<h', ram, ds + 0x0DAC)[0] > 0,
+                    "remaining_raw": struct.unpack_from('<h', ram, ds + 0x0DAC)[0],
+                    "world_position_raw": world_position(
+                        struct.unpack_from('<3h', ram, ds + 0x64F8), origin),
+                },
+            }}
