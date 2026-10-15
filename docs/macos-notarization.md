@@ -2,7 +2,7 @@
 
 Abrams uses a Developer ID Application certificate for distribution outside the Mac App Store. Signing identifies the developer. Notarization submits the signed app to Apple's automated checks. An accepted submission produces a ticket; attaching that ticket to the app lets Gatekeeper verify it offline.
 
-Alpha 4 (signed build 1a61287931510c16adc4) was notarized on 3 October 2026: submission 871599ab-b8f4-45c7-a920-e303cf985360, Accepted with no issues, ticket stapled, Gatekeeper `accepted, source=Notarized Developer ID` from the released ZIP. Earlier alphas were not notarized. Do not describe any future signed app as notarized until Apple has accepted it and its ticket has been verified.
+Alpha 4 (signed build 1a61287931510c16adc4) was notarized on 3 October 2026: submission 871599ab-b8f4-45c7-a920-e303cf985360, Accepted with no issues, ticket stapled, Gatekeeper `accepted, source=Notarized Developer ID` from the released ZIP. Alpha 5 (signed build 0c4842b0d9a008c4f167, unsigned 71fc11aacb155644ad55, 87 targets) was notarized on 15 October 2026: submission eb640586-15a0-4e00-aa90-ab643dd0dc5d, Accepted with no issues, ticket stapled, Gatekeeper `accepted, source=Notarized Developer ID` from the extracted release ZIP. Earlier alphas were not notarized. Do not describe any future signed app as notarized until Apple has accepted it and its ticket has been verified.
 
 ## One-time account setup
 

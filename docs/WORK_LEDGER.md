@@ -4054,3 +4054,107 @@ Nell asked for the title-screen tank to be a 3D 1:1 match of the restored box co
 
 Working if: a `--capture` 01-menu.png overlaid with the cover framing puts the headlights,
 fender tops, turret slab and muzzle within a few pixels of the cover's.
+
+## 15 October 2026: Standalone Alpha 5 built, notarized and published
+
+**Authorisation.** Nell: "FIX EVERYTHING, NO EXCEPTIONS, GET IT ALL FIXED AND BUILT
+AND DEPLOYED" (relayed by the lead), covering the build, notarization, portable
+dispatch, public release and site update. Save-state compatibility was waived for
+the new core.
+
+**Version.** `tools/standalone/build.py` VERSION `0.1.0-alpha.5`, CFBundleVersion
+`31` (alpha 4 was `30`), `godot/project.godot` `config/version` to match (commit
+`6ac9b80`).
+
+**macOS.** Built from the clean `9cb9336` tree with the existing
+`.runtime/app-build-venv` (PyInstaller 6.22.3, Pillow 12.0.0, Python 3.14.8) and a
+fresh `.runtime/app-build-cache-alpha5`. Every older cache predated the
+`python`/`cache_tag` freeze keys. The kit differs from the release commit only in
+`tests/test_standalone_runtime.py`, a test fixture.
+
+* Unsigned build `71fc11aacb155644ad55`, 1,353 files, 84 Mach-O, no originals and
+  no external dylibs. Kit core `37bff087…`, 26 derived rows including
+  `local-art/pc-modern/source-shapes.json`.
+* Developer ID signed build `0c4842b0d9a008c4f167`: 87 targets, hardened runtime,
+  secure timestamps, core text unchanged.
+* Signed-app smoke with a scratch data home:
+  * PC and Genesis import passed and derived `source-shapes.json`
+    `3be92319…`, matching the pin.
+  * Prepare passed.
+  * `--play --no-audio --capture --capture-station cupola` cold-booted into SIM
+    with graphics `tactical` and HUD `tactical`. It reported "Modern geometry
+    preloaded: 57 source shapes" and 73 samples, exited 0 and printed no script
+    errors. The captured frame was inspected.
+* Notary input `Abrams-0.1.0-alpha.5-macOS-arm64-notary-input.zip`
+  `129ec620c09fd0b53850d9f6ad08112b8f30604a320fe1fc2984e450b920590b`.
+  Submission `eb640586-15a0-4e00-aa90-ab643dd0dc5d`: Accepted, "Ready for
+  distribution", no issues in the downloaded log.
+* Stapled and validated. Strict codesign and Gatekeeper `accepted,
+  source=Notarized Developer ID` passed on both the app and the copy extracted
+  from the release ZIP.
+* Release ZIP, built after stapling: 321,901,413 bytes,
+  `cabd9c01743c52d4e14319d33fb148fddddc3b5ea5e10c96c903dd15f111159c`.
+* GPL source `dosbox-pure-abrams-source-macOS-arm64.tar.gz`
+  `a9731b3e12e8313c7d57c26657fc575bf517304c390dc95d48cd9c3a1963f281`. Its
+  `CORE-BUILD.json` names `37bff087…`, and the archive is byte-identical to the
+  audit-day proof archive.
+
+**Windows and Linux.** The original-free input was exported by
+`artifacts/release-20261001-portables/export_input.py`, then checked with a local
+copy of the workflow's guard and by comparing all 1,101 tracked members with their
+commit. It was uploaded to the private alpha.3 draft and never to the public
+release. Three runs failed, and each cause was fixed before the next dispatch:
+
+1. Run 38741813182: upstream schellingb/dosbox-pure rewrote its history, so pinned
+   `73e03aa` shares no ancestor with its `main` and a default clone lacks it
+   ("unable to read tree"). The workflow now fetches the pinned commit by SHA (tree
+   `e8771cbd`, identical to the local checkout). Fixed in `9cb9336`.
+2. Run 38742575255:
+   * Windows: the runtime test fixture wrote `str(relative_to)` payload paths,
+     which have backslashes on Windows, and `prepare_install` now validates names
+     up front. Fixed in `5fc5e37`.
+   * Linux: the frozen setup smoke ran `portable_setup.gd` on a never-imported kit.
+     `pc_interface_theme.gd`'s preloaded TTF failed to compile and `--setup-smoke`
+     never quit. This was reproduced locally (alarm after 45 s). The workflow now
+     runs `--editor --import` on the kit first, as the launcher does, after the
+     ZIP is sealed. Fixed in `f9b7872`.
+3. Run 38744191141: two new corrupt-copy tests patched only `shutil.copyfile`, but
+   on Windows `copytree`'s `copy2` uses CopyFile2. The tests now route `copytree`
+   through the same hook. This was verified by emulating a `copy2` that never calls
+   `copyfile`: 3 failures before the fix, OK after. Fixed in `f9b7872`.
+
+Run 38746120300 used input asset 644014485,
+`e83f9e1f25348c1912c3fb8133ee6a1fde9bd640eb061bfe20d35d3c8e9b257e`, from
+`f9b7872`. It passed on ubuntu-22.04 and windows-2022:
+
+* 147 tests OK;
+* `PC_BRIDGE_TRANSPORT: 12 checks, 0 errors`;
+* `PORTABLE_SETUP_RECOVERY: PASS`;
+* `PORTABLE_SETUP_SMOKE: PASS`.
+
+A local re-audit (alpha 4's `audit_fresh.py`, adapted) checked member safety,
+original and derived hashes, credential signatures, manifest closure against the
+input, build-id, Linux exec bits, and each core against its source archive's
+`CORE-BUILD.json`:
+
+* Windows: `Abrams-0.1.0-alpha.5-Windows-x86_64.zip`, 324,686,096 bytes,
+  `f22bede94b1b54cfa4030c02e5ed9d911df80d739f0ab1bdc80ac9bd3391bab0`. Build
+  `154c3608eaab61679348`, core `df3bb6ce…`, source
+  `c1149bfc8672113a75514c0f476ec88d8d4eb45dc58fc56ea05483a203da4047`.
+* Linux: `Abrams-0.1.0-alpha.5-Linux-x86_64.zip`, 336,625,228 bytes,
+  `53fb1d2f5c3197bc6e08e4ea96f69778b450b44cbc335503e24894ab26338f19`. Build
+  `d1878c0f113a5ba0f752`, core `1589d8d1…`, source
+  `c1f39ad962197a61aec54402c2d670c7bd0d9df7fb00c995d3f255a079bd56ed`.
+
+**Release.** https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.5 is a
+pre-release in the alpha 4 format. It holds the three app ZIPs, three source
+archives and `SHA256SUMS.txt`
+(`3db910a87cb254725d2cdfecaa5b5068b0d71294a684140508782b92b79233b7`). The
+website, `llms.txt`, `verify.py` checks and the version references in these docs
+now name alpha 5. Local evidence (ignored): `builds/alpha5/`.
+
+**Not verified:** full missions on any platform, graphical playback of this
+Windows/Linux build, and the Modern/Tactical frame-rate target.
+
+Working if: `gh release view v0.1.0-alpha.5` lists those seven assets with matching
+digests, and https://abramsremastered.com/ serves alpha 5 download links.

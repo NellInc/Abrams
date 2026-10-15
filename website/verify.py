@@ -256,9 +256,9 @@ def main():
             if mode not in web_modes or mode not in text:
                 errors.append(f"Gallery caption must name a Web edition mode: {text}")
         # Only Genesis mode needs the ROM; the FAQ names the ROM-free modes of each
-        # edition so Web labels and alpha 4 labels are never mixed unqualified.
+        # edition so Web labels and alpha 5 labels are never mixed unqualified.
         faq = re.search(r"<summary>Do I need the Genesis ROM\?</summary><p>(.*?)</p>", html, re.S)
-        if not faq or "Web edition" not in faq[1] or "alpha&nbsp;4" not in faq[1] or any(
+        if not faq or "Web edition" not in faq[1] or "alpha&nbsp;5" not in faq[1] or any(
                 not re.search(rf"\b{re.escape(mode)}\b(?! Upscaled)", faq[1]) for mode in web_modes - {"Genesis"}):
             errors.append("The Genesis ROM FAQ must name each edition's ROM-free modes")
     for stale in ("Four graphics modes", "of the four graphics modes"):
@@ -358,8 +358,8 @@ def main():
         if release and f"alpha {release[1]}" not in re.sub(r"\s+", " ", " ".join(text)):
             errors.append(f"Download label must name its alpha: {href}")
     if any("macOS" in href and "v0.1.0-alpha.2/" in href for href, _, _ in page.downloads):
-        errors.append("The macOS download must be the notarized alpha.4 build, not alpha.2")
-    # The notarized alpha.4 Mac app has Tab fast forward, in-app guides and Gatekeeper approval.
+        errors.append("The macOS download must be a notarized build (alpha.5), not alpha.2")
+    # The notarized alpha.4 and alpha.5 Mac apps have Tab fast forward, in-app guides and Gatekeeper approval.
     for stale in ("the macOS alpha uses the Session menu", "Windows and Linux builds also open them in the app", "not yet notarized"):
         if stale in visible:
             errors.append(f"Stale alpha.2 macOS qualifier still shown: {stale}")

@@ -5,9 +5,9 @@
 Key facts:
 
 - Your own original PC game is required; a Sega Genesis ROM is optional; neither is included.
-- Platforms (0.1.0-alpha.4): macOS 14+ on Apple Silicon (signed and notarized by Apple), Windows 10+ x86_64 and Linux x86_64 with glibc 2.35+. Free.
+- Platforms (0.1.0-alpha.5): macOS 14+ on Apple Silicon (signed and notarized by Apple), Windows 10+ x86_64 and Linux x86_64 with glibc 2.35+. Free.
 - Graphics modes, Web edition: EGA, EGA Upscaled, Genesis, Genesis Upscaled, Modernized and Tactical (default), with HUD Style (Tactical by default, or Restored) chosen separately.
-- Graphics modes, alpha 4 downloads: EGA, Genesis, Upscaled (default) and Modern (experimental).
+- Graphics modes, alpha 5 downloads: EGA, EGA Upscaled, Genesis Upscaled, Modern (experimental) and Tactical (experimental, default), with the same separate HUD Style. Genesis mode is in the Web edition only.
 - Licences: remaster code MIT; emulator modifications GPL-2.0-or-later; original creative contributions CC0. The original game’s rights remain with their holders.
 - Unofficial and unaffiliated: not affiliated with, endorsed by or sponsored by Dynamix, Electronic Arts or the other rights holders.
 

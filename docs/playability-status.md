@@ -5,7 +5,26 @@ Godot renders the supported high-resolution layers and plays event-driven audio.
 The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
-## Current candidate, 30 September 2026
+## Alpha 5 release, 15 October 2026
+
+Public pre-release `v0.1.0-alpha.5` carries a notarized macOS ARM64 app (signed
+build 0c4842b0d9a008c4f167, Apple submission eb640586-15a0-4e00-aa90-ab643dd0dc5d)
+and native Windows/Linux x86_64 portable apps from portable-alpha run
+38746120300, each with its corresponding DOSBox Pure source. It is the first
+release built on the 15 October trace core (`37bff087…`), opens in Tactical
+graphics with the Tactical HUD, and ships no decoded original data: PC- and
+Genesis-derived files, including Modern's shape registry from the player's
+`SHAPE.TBL`, are reproduced at import. Save states from earlier alphas do not
+load. Verified: signed-app PC and Genesis import, prepare and a cold-boot
+Tactical cupola capture (73 samples, exit 0); Gatekeeper from the extracted
+ZIP; Windows/Linux original-free core, frozen setup and About checks. Not
+verified: full missions on any platform, Windows/Linux graphical playback of this
+build, and the Modern/Tactical 60 fps target.
+
+Working if: the release lists the three app ZIPs, three source archives and a
+`SHA256SUMS.txt` whose hashes match GitHub's asset digests.
+
+## Earlier candidate, 30 September 2026
 
 The app is named **M1 Abrams Battle Tank Fan Remaster**. Private alpha.3 is a
 draft with native macOS ARM64, Windows x86_64 and Linux x86_64 candidates.
