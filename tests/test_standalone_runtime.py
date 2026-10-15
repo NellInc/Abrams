@@ -574,7 +574,7 @@ class StandaloneRuntimeTests(unittest.TestCase):
         target = self.home / 'versions' / self.manifest['build_id']
         sentinel = self.home / 'versions/unrelated-work'; sentinel.mkdir()
         (sentinel / 'keep').write_bytes(b'keep unrelated work')
-        copyfile = runtime.shutil.copyfile
+        copyfile, copytree = runtime.shutil.copyfile, runtime.shutil.copytree
         for relative in ['godot/project.godot', 'GAME/ABRAMS.COM', '.runtime/pc-core/abrams-ref.zip']:
             with self.subTest(relative=relative):
                 def corrupt(source, destination, **kwargs):
@@ -582,7 +582,9 @@ class StandaloneRuntimeTests(unittest.TestCase):
                     if Path(destination).as_posix().endswith('/' + relative):
                         Path(destination).write_bytes(b'corrupt successful copy')
                     return result
-                with patch.object(runtime.shutil, 'copyfile', corrupt):
+                # copytree's default copy2 uses CopyFile2 on Windows, bypassing copyfile.
+                tree = lambda source, destination, **kwargs: copytree(source, destination, copy_function=corrupt, **kwargs)
+                with patch.object(runtime.shutil, 'copyfile', corrupt), patch.object(runtime.shutil, 'copytree', tree):
                     with self.assertRaisesRegex(ValueError, 'copy failed verification'):
                         runtime.prepare_install(self.bundle, self.home)
                 self.assertFalse(target.exists())
@@ -600,7 +602,7 @@ class StandaloneRuntimeTests(unittest.TestCase):
     def test_install_uses_captured_original_hashes_after_application_manifest_edit(self):
         self.imported(); save = self.preserved_save()
         records = self.kit / 'tools/package/game-inputs.json'; original = records.read_bytes()
-        copyfile = runtime.shutil.copyfile
+        copyfile, copytree = runtime.shutil.copyfile, runtime.shutil.copytree
         def corrupt(source, destination, **kwargs):
             result = copyfile(source, destination, **kwargs)
             if Path(destination).as_posix().endswith('/GAME/ABRAMS.COM'):
@@ -609,8 +611,9 @@ class StandaloneRuntimeTests(unittest.TestCase):
                 changed[0]['sha256'] = digest(b'changed game')
                 records.write_text(json.dumps({'files': changed}))
             return result
+        tree = lambda source, destination, **kwargs: copytree(source, destination, copy_function=corrupt, **kwargs)
         try:
-            with patch.object(runtime.shutil, 'copyfile', corrupt):
+            with patch.object(runtime.shutil, 'copyfile', corrupt), patch.object(runtime.shutil, 'copytree', tree):
                 with self.assertRaisesRegex(ValueError, 'original-content copy failed verification'):
                     runtime.prepare_install(self.bundle, self.home)
             self.assertFalse((self.home / 'versions' / self.manifest['build_id']).exists())

@@ -242,7 +242,11 @@ jobs:
           manifest = json.loads((bundle / 'RUNTIME.json').read_text())
           assert manifest['derived'] and not (bundle / 'kit/reference').exists() and not (bundle / 'kit/local-art/genesis/source').exists()
           PY
-          CHECK_LOG="$RUNNER_TEMP/portable-setup-check.log" SMOKE_LOG="$RUNNER_TEMP/portable-setup-smoke.log"
+          CHECK_LOG="$RUNNER_TEMP/portable-setup-check.log" SMOKE_LOG="$RUNNER_TEMP/portable-setup-smoke.log" IMPORT_LOG="$RUNNER_TEMP/portable-setup-import.log"
+          # As the launcher does on first setup: a fresh kit has no import cache,
+          # and the setup theme preloads imported fonts. The ZIP is already sealed.
+          "$RENDERER" --headless --audio-driver Dummy --path "$APP/kit/godot" --editor --import 2>&1 | tee "$IMPORT_LOG"
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' "$IMPORT_LOG"; then echo 'Portable kit import reported a script error' >&2; exit 1; fi
           "$RENDERER" --headless --audio-driver Dummy --path "$APP/kit/godot" --script res://scripts/portable_setup.gd --check-only 2>&1 | tee "$CHECK_LOG"
           "$RENDERER" --headless --audio-driver Dummy --path "$APP/kit/godot" --script res://scripts/portable_setup.gd -- --setup-smoke --no-audio 2>&1 | tee "$SMOKE_LOG"
           # Godot exits 0 after script parse errors; apply the validate.sh log check.
