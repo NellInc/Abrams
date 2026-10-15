@@ -1992,3 +1992,16 @@ This pass is verified and installed locally, with the original simulation and ac
 ### Full-quality reset, 14 October 2026
 
 Graphics now offers **Restore full-quality defaults (4× / 16×)**, also available in the browser's extended controls. This explicit action restores 4× MSAA and 16× anisotropic filtering together. The selected graphics mode, HUD style, retained unavailable-mode preference and audio mix remain unchanged. Failed preference writes retain the live full-quality settings and show a settings warning. No automatic quality reduction is introduced.
+
+### Tactical map rebuild stays on the main thread, 15 October 2026
+
+The Tactical LOCAL map surface is rebuilt on the main thread in the same frame as the
+original map step (about 7-9 ms per scroll step; `TACTICAL_MAP_SURFACE usec=8703` in the
+15 October gate). Threading it would free that time but would draw the map one frame behind
+the original on scroll steps. Nell left the call to Claude's judgement on 15 October 2026
+("Fix everything according to your best judgment"), and the frame-paired fidelity rule
+decides it: presentation never lags the original frame it accompanies, so the rebuild stays
+synchronous.
+
+Working if: on a scroll step, the Tactical map and the original map show the same position
+in the same displayed frame, and `test_pc_tactical_hud.gd` reports `TACTICAL_MAP_SURFACE`.

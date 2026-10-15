@@ -190,7 +190,12 @@ artwork, and the source-bound low-poly Modern and Tactical modes under local
 acceptance testing. HUD Style (Restored or Tactical) is independent. Assets are
 preloaded. Genesis is explicitly partial, with original PC pixels in unmatched
 fields, and needs the capture-derived native pack that only an equipped checkout
-carries.
+carries. Native apps built after 15 October 2026 and the Web edition show original
+PC pixels where that pack would supply Genesis graphics mode, the Genesis map frame
+and the motor-pool clipboard. That fallback is accepted (Claude's call on 15 October
+2026, under Nell's "Fix everything according to your best judgment"): the captured
+screens come from the Genesis emulator and cannot be redistributed, and the PC
+pixels are the original game's own presentation.
 See [play controls](play-controls.md) and [mode coverage](graphics-modes.md).
 
 The current tester package is the standalone app described above. Legacy

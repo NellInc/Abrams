@@ -108,8 +108,9 @@ def validate_wav(raw):
             "sha256": hashlib.sha256(raw).hexdigest()}
 
 
-# The Gemini key item both voice tools read; one place to repoint it (e.g. to a project-scoped item).
-KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT = "aiguardians-google-ai", "gemini-api-key"
+# The Gemini key item both voice tools read: Nell's personal Google key, stored under the
+# service named for its variable (15 October 2026), rather than another project's key.
+KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT = "GOOGLE_API_KEY", "nellwatson"
 
 
 def http_error(prefix, error, limit=2000):

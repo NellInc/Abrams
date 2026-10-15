@@ -4144,6 +4144,15 @@ Nell asked for the title-screen tank to be a 3D 1:1 match of the restored box co
     right-handed.
   - **Score:** the crew region's mean 20-pixel block difference fell from about 67 to about
     60; the whole frame is about 45.
+- **Twelfth pass (heads and cloth).** Nell's screenshot showed skull-like heads with ball
+  helmets.
+  - **Heads:** `_head` now builds a CVC helmet: a hemispherical dome down to the brow, a padded
+    nape piece, a brow roll and ear cups at eye height. The commander's goggles are two matte
+    lenses in a rubber frame. Each face has a wider jaw and a nose, and a stand-up shirt collar
+    closes the neck.
+  - **Loader's helmet:** a lumpy, dusty cloth scrim.
+  - **Cloth:** a new cloth shader puts creases with lit ridges on the commander's white shirt
+    and a subtle three-colour desert camouflage on the loader. Sleeves are fuller.
 - **Winding fix.** The faceted hull and turret panels were wound inside-out (Godot front
   faces are clockwise), so their lighting was inverted; `_tri` now emits clockwise faces.
 - **Look.** Linear tonemap with no contrast adjustment; a low key light from the cover's
@@ -4263,3 +4272,22 @@ Windows/Linux build, and the Modern/Tactical frame-rate target.
 
 Working if: `gh release view v0.1.0-alpha.5` lists those seven assets with matching
 digests, and https://abramsremastered.com/ serves alpha 5 download links.
+
+## 15 October 2026: Remaining calls made on Claude's judgement
+
+Nell, 15 October 2026: "Fix everything according to your best judgment please", about the
+items left open (history purge, voice keychain item, Tactical map threading, native Genesis
+captures).
+
+- **Voice keychain item.** Crew-voice generation and transcript checks now read Nell's
+  personal Google key (`GOOGLE_API_KEY` / `nellwatson`) instead of the AI Guardians
+  project's key; see `docs/voice-workflow.md`.
+- **Tactical map threading.** The LOCAL map rebuild stays synchronous, because presentation
+  never lags the original frame it accompanies; see `docs/graphics-modes.md`.
+- **Native Genesis captures.** Native apps and the Web edition fall back to original PC
+  pixels where captured Genesis screens would be used; this is accepted and recorded in
+  `docs/playability-status.md`.
+- **History purge.** Carried out the same day; recorded in the entry that follows.
+
+Working if: these three documents carry the decisions, and `tools/generate_crew_voice.py`
+defaults to `GOOGLE_API_KEY` / `nellwatson`.

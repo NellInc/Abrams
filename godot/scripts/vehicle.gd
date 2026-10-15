@@ -88,6 +88,43 @@ void fragment(){
  RIM_TINT=0.7;
 }"""
 
+# Crew cloth: creased fabric with soft fold shadows, and an optional three-colour desert
+# camouflage. The crew only appear on the title screen, where the tank stands still, so the
+# pattern can live in world space.
+const CLOTH_SHADER := """shader_type spatial;
+uniform vec3 base_color : source_color = vec3(0.9);
+uniform vec3 camo_a : source_color = vec3(0.6,0.5,0.36);
+uniform vec3 camo_b : source_color = vec3(0.46,0.36,0.25);
+uniform float camo = 0.0;
+varying vec3 wp;
+float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+float noise(vec3 p){vec3 i=floor(p);vec3 f=fract(p);f=f*f*(3.0-2.0*f);
+ return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+  mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
+void vertex(){wp=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;}
+void fragment(){
+ vec3 colour=base_color;
+ // Large soft camouflage blotches.
+ float blot=noise(wp*11.0)*0.65+noise(wp*24.0+3.1)*0.35;
+ colour=mix(colour,camo_a,camo*0.8*smoothstep(0.44,0.52,blot));
+ colour=mix(colour,camo_b,camo*0.7*smoothstep(0.64,0.72,blot));
+ // Creases: narrow dark folds with a lit ridge beside each.
+ float fold=noise(wp*vec3(22.0,9.0,22.0)+noise(wp*6.0)*2.0);
+ colour*=1.0-0.38*smoothstep(0.58,0.72,fold)+0.08*smoothstep(0.3,0.45,fold);
+ ALBEDO=colour;
+ ROUGHNESS=0.92;
+ SPECULAR=0.2;
+}"""
+
+func cloth_material(base: Color, camouflage := false) -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = CLOTH_SHADER
+	var m := ShaderMaterial.new()
+	m.shader = shader
+	m.set_shader_parameter("base_color",base)
+	m.set_shader_parameter("camo",1.0 if camouflage else 0.0)
+	return m
+
 func paint_material(base: Color, offset := 0.0, dust_reach := 1.4, dust_amount := 1.0) -> ShaderMaterial:
 	var shader := Shader.new()
 	shader.code = PAINT_SHADER
@@ -483,18 +520,20 @@ func _gun(rubber: Material) -> void:
 
 func _crew() -> void:
 	var c := crew
-	var shirt := material(Color("b9b7b0"),0.9)
+	var shirt := cloth_material(Color("e2e0da"))
 	var vest := material(Color("1a1b18"),0.85)
-	var khaki := material(Color("8c7454"),0.9)
+	var khaki := cloth_material(Color("b09a76"),true)
 	var helmet := material(Color("2a2b27"),0.6)
 	var skin := material(Color("3a281f"),0.85)
-	var lens := material(Color("0b0c0b"),0.08,0.7)
+	var lens := material(Color("2a2d31"),0.22,0.25)
 	var glove := material(Color("121210"),0.7)
+	# The loader's helmet wears a dusty cloth scrim, lighter than the commander's bare shell.
+	var scrim := cloth_material(Color("54534a"))
 	# Commander standing in the weapon station in a white shirt under a black flak vest, left arm
 	# down by his side and both gloved hands on the M2's grips, facing the camera.
 	_man(c,{"hip":Vector3(0.7,0.98,0.48),"sh_l":Vector3(0.87,1.45,0.6),"sh_r":Vector3(0.58,1.4,0.26),
 		"el_l":Vector3(0.96,1.17,0.58),"hand_l":Vector3(0.98,1.34,0.3),"el_r":Vector3(0.52,1.24,0.02),"hand_r":Vector3(0.74,1.36,0.02),
-		"head":Vector3(0.76,1.65,0.4)},Vector3(0.72,-0.05,-0.69),shirt,vest,glove,skin,helmet,lens)
+		"head":Vector3(0.76,1.69,0.4)},Vector3(0.72,-0.05,-0.69),shirt,vest,glove,skin,helmet,lens)
 	# The M2's spade grips and back plate across his chest, between his hands.
 	_limb(c,Vector3(0.98,1.34,0.3),Vector3(0.74,1.36,0.02),0.03,material(Color("121311"),0.5,0.4))
 	box(c,Vector3(0.1,0.14,0.08),Vector3(0.86,1.35,0.16),material(Color("121311"),0.5,0.4),Vector3(0,0.85,0))
@@ -532,7 +571,10 @@ func _crew() -> void:
 	# the main gun, head down, one arm reaching along the roof.
 	_man(c,{"hip":Vector3(-0.72,1.0,0.5),"sh_l":Vector3(-0.47,1.52,0.25),"sh_r":Vector3(-0.84,1.5,0.32),
 		"el_l":Vector3(-0.47,1.26,-0.04),"hand_l":Vector3(-0.52,1.13,-0.27),"el_r":Vector3(-0.86,1.22,0.1),"hand_r":Vector3(-0.8,1.08,-0.14),
-		"head":Vector3(-0.6,1.32,-0.1)},Vector3(0.2,-0.75,-0.65),khaki,null,glove,skin,helmet,lens,false)
+		"head":Vector3(-0.6,1.32,-0.1)},Vector3(0.2,-0.75,-0.65),khaki,null,glove,skin,scrim,lens,false)
+	# Lumpy cloth scrim bunched over the crown of his helmet.
+	sphere(c,0.13,Vector3(1.15,0.7,1.2),Vector3(-0.62,1.44,-0.14),scrim)
+	sphere(c,0.09,Vector3(1.1,0.8,1.0),Vector3(-0.52,1.43,-0.24),scrim)
 
 # Capsule spanning two points.
 func _limb(c: Node3D, a: Vector3, b: Vector3, radius: float, mat: Material) -> void:
@@ -582,6 +624,13 @@ func _man(c: Node3D, j: Dictionary, look: Vector3, shirt: Material, vest: Materi
 		var v := [[0.02,0.76,0.86,0.0],[0.4,0.82,0.95,0.02],[0.72,0.84,1.02,0.04],[0.9,0.7,0.95,0.02]]
 		for r in range(v.size()-1):
 			loft(c,ring.call(v[r][0],half*v[r][1],depth*v[r][2],v[r][3]),ring.call(v[r+1][0],half*v[r+1][1],depth*v[r+1][2],v[r+1][3]),vest)
+		# Shirt collar standing up round the neck, open at the front.
+		var collar := TorusMesh.new()
+		collar.inner_radius = 0.06
+		collar.outer_radius = 0.1
+		collar.rings = 18
+		collar.ring_segments = 8
+		_add(c,collar,Transform3D(Basis(side,up,fwd).scaled(Vector3(1.05,3.2,1.05)),sh_c+up*0.1),shirt)
 		# Open shirt collar either side of the neck.
 		for s in [-1.0,1.0]:
 			_limb(c,sh_c+side*s*0.05+fwd*0.06+up*0.02,sh_c+side*s*0.1+fwd*0.08-up*0.05,0.025,shirt)
@@ -591,12 +640,12 @@ func _man(c: Node3D, j: Dictionary, look: Vector3, shirt: Material, vest: Materi
 		var e_at: Vector3 = j[k[1]]
 		var h_at: Vector3 = j[k[2]]
 		var cap := SphereMesh.new()
-		cap.radius = 0.09
-		cap.height = 0.18
+		cap.radius = 0.098
+		cap.height = 0.196
 		_add(c,cap,Transform3D(Basis(),s_at),shirt)
 		# Loose sleeves: a full upper arm narrowing to the cuff.
-		_limb(c,s_at,e_at,0.085,shirt)
-		_limb(c,e_at,h_at,0.068,shirt)
+		_limb(c,s_at,e_at,0.095,shirt)
+		_limb(c,e_at,h_at,0.075,shirt)
 		# Glove: a fist wrapped around the grip.
 		var dir := (h_at-e_at).normalized()
 		var fist := SphereMesh.new()
@@ -610,62 +659,73 @@ func _man(c: Node3D, j: Dictionary, look: Vector3, shirt: Material, vest: Materi
 	_limb(c,neck_base,head_at-up*0.12,0.06,skin)
 	_head(c,head_at,(head_at-neck_base).normalized(),look,skin,helmet,lens,goggles)
 
-## Head under a CVC helmet: a rounded shell deeper at the back, a brow rim, large ear cups,
-## and goggles with two round lenses on the brow, strapped round the shell.
+## Head under a CVC helmet, as the cover's crewmen wear it: a domed shell low over the brow
+## with a padded back piece over the nape, a brow roll and big round ear cups;
+## the commander adds goggles, two dark lenses in a rubber frame across the eyes.
 func _head(c: Node3D, at: Vector3, up: Vector3, look: Vector3, skin: Material, helmet: Material, lens: Material, goggles := true) -> void:
 	var fwd := (look-up*look.dot(up)).normalized()
 	var right := up.cross(fwd).normalized()
 	# Right-handed (right x up = fwd), so mirrored meshes never turn inside out.
 	var basis := Basis(right,up,fwd)
 	var place := func(v: Vector3) -> Vector3: return at+right*v.x+up*v.y+fwd*v.z
-	# Face: cranium, jaw and nose, in shadow under the helmet.
+	var put := func(mesh: Mesh, scale_by: Vector3, v: Vector3, mat: Material, turn := Basis()) -> void:
+		_add(c,mesh,Transform3D(basis*turn*Basis().scaled(scale_by),place.call(v)),mat)
+	# Face: cranium, cheeks and jaw, and a nose.
 	var skull := SphereMesh.new()
 	skull.radius = 0.1
-	skull.height = 0.22
-	_add(c,skull,Transform3D(basis.scaled(Vector3(0.92,1.0,1.0)),place.call(Vector3(0,-0.02,0))),skin)
+	skull.height = 0.2
+	put.call(skull,Vector3(0.93,1.0,1.0),Vector3(0,0,0),skin)
 	var jaw := SphereMesh.new()
-	jaw.radius = 0.07
-	jaw.height = 0.12
-	_add(c,jaw,Transform3D(basis.scaled(Vector3(0.9,0.7,0.85)),place.call(Vector3(0,-0.075,0.03))),skin)
-	_add(c,_box_mesh(Vector3(0.026,0.04,0.035)),Transform3D(basis,place.call(Vector3(0,-0.035,0.095))),skin)
-	# Shell: a squashed dome sitting low over the ears and back of the neck.
-	var shell := SphereMesh.new()
-	shell.radius = 0.165
-	shell.height = 0.33
-	shell.radial_segments = 20
-	shell.rings = 10
-	_add(c,shell,Transform3D(basis.scaled(Vector3(0.95,0.85,1.08)),place.call(Vector3(0,0.07,-0.015))),helmet)
-	_add(c,_ring_mesh(0.162,0.02),Transform3D(basis.scaled(Vector3(0.95,1,1.08)),place.call(Vector3(0,0.0,-0.015))),helmet)
-	# Big round ear cups.
+	jaw.radius = 0.075
+	jaw.height = 0.15
+	put.call(jaw,Vector3(1.0,0.78,0.92),Vector3(0,-0.07,0.03),skin)
+	put.call(_box_mesh(Vector3(0.024,0.04,0.03)),Vector3.ONE,Vector3(0,-0.035,0.098),skin)
+	# Shell: a dome down to the brow, and the padded back piece over the ears and nape.
+	var dome := SphereMesh.new()
+	dome.radius = 0.15
+	dome.height = 0.15
+	dome.is_hemisphere = true
+	dome.radial_segments = 22
+	dome.rings = 8
+	put.call(dome,Vector3(1.0,1.15,1.08),Vector3(0,0.028,-0.008),helmet)
+	var nape := SphereMesh.new()
+	nape.radius = 0.136
+	nape.height = 0.272
+	put.call(nape,Vector3(1.04,0.95,1.0),Vector3(0,-0.005,-0.045),helmet)
+	var roll := TorusMesh.new()
+	roll.inner_radius = 0.134
+	roll.outer_radius = 0.16
+	roll.rings = 24
+	roll.ring_segments = 8
+	put.call(roll,Vector3(1.0,1.0,1.08),Vector3(0,0.03,-0.008),helmet,Basis(Vector3.RIGHT,-0.08))
+	# Ear cups at eye height.
 	var cup := CylinderMesh.new()
-	cup.top_radius = 0.06
-	cup.bottom_radius = 0.07
-	cup.height = 0.06
-	cup.radial_segments = 14
+	cup.top_radius = 0.052
+	cup.bottom_radius = 0.062
+	cup.height = 0.05
+	cup.radial_segments = 16
 	for s in [-1.0,1.0]:
-		_add(c,cup,Transform3D(basis*Basis(Vector3.FORWARD,PI/2*s),place.call(Vector3(s*0.145,-0.04,-0.01))),helmet)
+		put.call(cup,Vector3.ONE,Vector3(s*0.136,-0.015,-0.008),helmet,Basis(Vector3.FORWARD,-PI/2*s))
 	if not goggles:
 		return
-	# Goggles: a frame with two round lenses, on the brow.
-	_add(c,_box_mesh(Vector3(0.2,0.06,0.04)),Transform3D(basis,place.call(Vector3(0,0.02,0.11))),helmet)
-	var eye := CylinderMesh.new()
-	eye.top_radius = 0.04
-	eye.bottom_radius = 0.045
-	eye.height = 0.035
-	eye.radial_segments = 14
+	# Goggles: a rubber frame across the eyes holding two dark lenses, strapped round the shell.
+	var frame := SphereMesh.new()
+	frame.radius = 0.05
+	frame.height = 0.1
 	for s in [-1.0,1.0]:
-		_add(c,eye,Transform3D(basis*Basis(Vector3.RIGHT,PI/2),place.call(Vector3(s*0.048,0.02,0.125))),lens)
-
-## Flat band (a short open cylinder) used for helmet rims and straps.
-func _ring_mesh(radius: float, width: float) -> CylinderMesh:
-	var m := CylinderMesh.new()
-	m.top_radius = radius
-	m.bottom_radius = radius
-	m.height = width
-	m.radial_segments = 20
-	m.cap_top = false
-	m.cap_bottom = false
-	return m
+		put.call(frame,Vector3(0.95,0.72,0.5),Vector3(s*0.045,0.004,0.088),helmet)
+	var glass := SphereMesh.new()
+	glass.radius = 0.042
+	glass.height = 0.084
+	for s in [-1.0,1.0]:
+		put.call(glass,Vector3(1.0,0.85,0.45),Vector3(s*0.047,0.004,0.11),lens)
+	put.call(_box_mesh(Vector3(0.03,0.022,0.02)),Vector3.ONE,Vector3(0,0.006,0.105),helmet)
+	var band := TorusMesh.new()
+	band.inner_radius = 0.142
+	band.outer_radius = 0.154
+	band.rings = 24
+	band.ring_segments = 6
+	put.call(band,Vector3(1.0,1.0,1.06),Vector3(0,0.004,-0.01),helmet)
 
 # Flat convex polygon facing the given direction (markings and small plates).
 func _flat(frame: Node3D, pts: Array, outward: Vector3, mat: Material) -> void:

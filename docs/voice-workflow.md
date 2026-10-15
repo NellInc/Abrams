@@ -51,9 +51,13 @@ python3 tools/generate_crew_voice.py \
 ```
 
 Use `--dry-run` to save requests without reading credentials or calling the API.
-The Keychain service/account are configurable; defaults select the existing
-Google credential already used by Nell's local voice tooling. No key is copied
-into this project. Existing output directories cannot be overwritten, and failed
+The Keychain service/account are configurable. Since 15 October 2026 the defaults
+select Nell's personal Google key (service `GOOGLE_API_KEY`, account `nellwatson`),
+so crew-voice generation no longer bills to the AI Guardians project's key
+(`aiguardians-google-ai`). No key is copied into this project.
+
+Working if: `security find-generic-password -s GOOGLE_API_KEY -a nellwatson` finds the
+item (without `-w`, so nothing prints the secret) and a `--dry-run` reads no credential. Existing output directories cannot be overwritten, and failed
 HTTP calls stop without automatic paid retries.
 
 ## Verification and integration
