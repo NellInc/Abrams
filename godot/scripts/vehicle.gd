@@ -261,7 +261,10 @@ func _hull(rubber: Material, lamp: Material) -> void:
 	# Upper glacis caked dark with wet earth thrown up by the tracks.
 	extrude_x(self,[Vector2(-2.2,DECK+0.01),Vector2(-3.8,1.35),Vector2(-3.8,1.33),Vector2(-2.2,DECK-0.01)],-1.08,1.08,dark)
 	# Lower glacis: a mud-blackened plate raking back under the nose lip.
-	extrude_x(self,[Vector2(NOSE+0.02,1.2),Vector2(-3.35,0.62),Vector2(-3.0,0.48),Vector2(-3.3,0.95)],-1.1,1.1,dark)
+	extrude_x(self,[Vector2(NOSE+0.02,1.2),Vector2(-3.35,0.62),Vector2(-3.0,0.48),Vector2(-3.3,0.95)],-1.1,1.1,material(Color("2a231e"),0.95))
+	# Rounded, dust-coated nose lip between the headlights, which catches the key light as a
+	# bright band across the cover's hull front.
+	cylinder(self,0.075,2.2,Vector3(0,1.235,NOSE+0.05),fender_paint,Vector3(0,0,PI/2),14)
 	for side in [-1.0,1.0]:
 		# Sponson and front fender over each track: a square-faced fender whose lower band
 		# rakes back below a seam, carried the full length of the hull.
@@ -410,6 +413,12 @@ func _turret(rubber: Material, glass: Material) -> void:
 	# The deep shadowed well under the bustle overhang, which reads as one dark band below the
 	# turret side on the cover rather than showing sky through to the far side.
 	box(t,Vector3(3.1,0.34,1.5),Vector3(0,0.03,0.72),dark)
+	# The bustle's lower skirt flares out below the rear of the side bins in a sloped,
+	# dust-lit plate; ahead of it the side stays in shadow.
+	for side in [-1.0,1.0]:
+		var inner: float = 1.62*side
+		var outer: float = 1.74*side
+		loft(t,[Vector3(inner,0.2,0.7),Vector3(inner,0.2,1.53),Vector3(outer,-0.05,1.53),Vector3(outer,-0.05,0.7)],[Vector3(inner,0.22,0.7),Vector3(inner,0.22,1.53),Vector3(outer,-0.03,1.53),Vector3(outer,-0.03,0.7)],turret_paint)
 	box(t,Vector3(3.26,0.02,1.5),Vector3(0,0.7,0.75),dark)
 	# Tactical marking on the right bin, as on the box cover: two discs and a triangle.
 	var ink := material(Color("b8934a"),0.8)
@@ -486,14 +495,14 @@ func _crew() -> void:
 	box(c,Vector3(0.62,0.3,0.42),Vector3(0.82,1.06,0.0),dark,Vector3(0,-0.5,0))
 	# M2 .50 cal pointed high, with its sight box and ammunition belt.
 	# Swung toward the camera so its receiver side and ammunition belt show, as on the cover.
-	var gun := Transform3D(Basis(Vector3.UP,-0.9)*Basis(Vector3.RIGHT,1.32),Vector3(0.75,1.2,-0.33))
+	var gun := Transform3D(Basis(Vector3.UP,-0.35)*Basis(Vector3.RIGHT,1.38),Vector3(0.75,1.2,-0.33))
 	var receiver := material(Color("121311"),0.5,0.4)
 	# Receiver with its feed cover, the perforated barrel jacket, barrel and flash hider.
-	_add(c,_box_mesh(Vector3(0.17,0.24,0.62)),gun.translated_local(Vector3(0,0,-0.12)),receiver)
+	_add(c,_box_mesh(Vector3(0.2,0.26,0.66)),gun.translated_local(Vector3(0,0,-0.12)),receiver)
 	_add(c,_box_mesh(Vector3(0.17,0.05,0.3)),gun.translated_local(Vector3(0,0.13,-0.05)),receiver)
 	var tube := CylinderMesh.new()
-	tube.top_radius = 0.038
-	tube.bottom_radius = 0.038
+	tube.top_radius = 0.048
+	tube.bottom_radius = 0.048
 	tube.height = 0.32
 	tube.radial_segments = 10
 	_add(c,tube,gun*Transform3D(Basis(Vector3.RIGHT,PI/2),Vector3(0,0,-0.55)),receiver)
@@ -506,9 +515,9 @@ func _crew() -> void:
 	_add(c,_box_mesh(Vector3(0.05,0.05,0.07)),gun.translated_local(Vector3(0,0,-0.9)),receiver)
 	_add(c,_box_mesh(Vector3(0.025,0.04,0.42)),gun.translated_local(Vector3(-0.1,0.02,-0.2)),material(Color("b08a3a"),0.4,0.6))
 	# The sight box turns its glass toward the cover's right, so it reads as a lit side face.
-	var sight := Basis(Vector3.UP,0.5)
-	_add(c,_box_mesh(Vector3(0.3,0.24,0.3)),Transform3D(sight,Vector3(0.64,1.62,-0.66)),material(Color("4c4e4f"),0.5,0.2))
-	_add(c,_box_mesh(Vector3(0.24,0.18,0.02)),Transform3D(sight,Vector3(0.64,1.62,-0.66)+sight*Vector3(0,0,-0.155)),_glow(Color("b8dce6"),0.5))
+	var sight := Basis(Vector3.UP,0.15)
+	_add(c,_box_mesh(Vector3(0.3,0.24,0.3)),Transform3D(sight,Vector3(0.64,1.62,-0.66)),material(Color("2c2e2f"),0.5,0.3))
+	_add(c,_box_mesh(Vector3(0.24,0.18,0.02)),Transform3D(sight,Vector3(0.64,1.62,-0.66)+sight*Vector3(0,0,-0.155)),_glow(Color("9fd0dc"),0.35))
 	# Bracket carrying the sight box off the gun cradle.
 	_limb(c,Vector3(0.74,1.3,-0.4),Vector3(0.66,1.5,-0.62),0.025,metal)
 	_add(c,_box_mesh(Vector3(0.12,0.18,0.28)),Transform3D(Basis(),Vector3(0.93,1.2,-0.3)),material(Color("3d4030")))
@@ -583,11 +592,11 @@ func _helmet(c: Node3D, at: Vector3, turn: float, helmet: Material, lens: Materi
 	dome.height = 0.3
 	_add(c,dome,Transform3D(basis.scaled(Vector3(1,0.95,1.08)),at+Vector3(0,0.06,0.02)),helmet)
 	var cup := CylinderMesh.new()
-	cup.top_radius = 0.07
+	cup.top_radius = 0.05
 	cup.bottom_radius = 0.07
 	cup.height = 0.07
 	for side in [-1.0,1.0]:
-		_add(c,cup,Transform3D(basis*Basis(Vector3.FORWARD,PI/2),at+basis*Vector3(side*0.15,-0.04,0.0)),helmet)
+		_add(c,cup,Transform3D(basis*Basis(Vector3.FORWARD,PI/2),at+basis*Vector3(side*0.13,-0.04,0.0)),helmet)
 	# Goggles: two round lenses in a rubber frame, worn over the eyes.
 	_add(c,_box_mesh(Vector3(0.25,0.075,0.04)),Transform3D(basis,at+basis*Vector3(0,-0.01,-0.125)),helmet)
 	var eye := CylinderMesh.new()

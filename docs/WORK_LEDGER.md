@@ -4105,6 +4105,18 @@ Nell asked for the title-screen tank to be a 3D 1:1 match of the restored box co
   - **Turret front:** the paint's rim term is cut from 0.25 to 0.08, and the cheek front face
     is now vertical, so the face reads dark as on the cover.
   - **Score:** mean block colour difference is about 49 levels.
+- **Ninth pass.** Mean block colour difference, averaged over three renders, is about 47
+  levels, down from about 49. The particles now use fixed seeds, but frame timing still moves
+  single renders by about one level.
+  - **Nose lip:** a brightness profile down the hull front showed the cover's lit, dust-coated
+    nose band (nose-plane height 1.20-1.31 m, peak luminance 135) at about half that brightness
+    in the render. A rounded dusty nose lip now carries that band, and the lower glacis below
+    it is mud-brown rather than black.
+  - **Turret and crew:** the commander's M2 is heavier and more upright. The sight box is a
+    dark frame with teal glass on its right face, as on the cover, and the helmet ear cups are
+    smaller. A sloped, dust-lit skirt plate flares out under the rear of each side bin.
+  - **Rejected:** brighter dust past the far cheek, a bright plume behind the left rear, and
+    two re-posed hunched loaders all scored worse or looked worse.
 - **Winding fix.** The faceted hull and turret panels were wound inside-out (Godot front
   faces are clockwise), so their lighting was inverted; `_tri` now emits clockwise faces.
 - **Look.** Linear tonemap with no contrast adjustment; a low key light from the cover's

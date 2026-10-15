@@ -133,6 +133,10 @@ func _ready() -> void:
 	_mud_spray()
 	_debris()
 	_grains()
+	# Fixed seeds: the title opens on the same arrangement of dust and earth every time.
+	for i in range(_particles.size()):
+		_particles[i].use_fixed_seed = true
+		_particles[i].seed = 1988+i*7919
 
 # Soft amber halo around each headlight, as the cover's lamps bloom in the dust.
 func _lamp_glow() -> void:
