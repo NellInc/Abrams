@@ -4039,6 +4039,63 @@ Nell asked for the title-screen tank to be a 3D 1:1 match of the restored box co
   with amber lamps, an upright triangle in the marking, and face-projected grime. The crew
   now hang from head positions measured on the cover, so the commander holds the M2 at chest
   height and the loader bends forward over the roof toward the gun.
+- **Third pass.** The work was done in an isolated scratch project, so the Alpha 5 build
+  running alongside it was not disturbed. Changes:
+  - **Skirt plates:** the cover shows the right front skirt plate splayed toward the camera,
+    which a straight skirt cannot show from this camera, so both front plates now splay
+    0.3 rad, with a rolled lip and a raked lower edge.
+  - **Gun:** rebuilt to the cover's proportions: a heavy boot at the mantlet, a tapering
+    sleeve with one bore-evacuator bulge, a single joint, and the muzzle reference sensor.
+  - **Turret and hull fittings:** the loader's M240 now points up and out as on the cover,
+    the fender tops fall toward the rear so they stay hidden, the tow eyes are gone, and
+    there is a pack by the commander's hatch and a worn roof edge on the slab sides.
+  - **Armour finish:** pitted shading noise, mud flecks and dust specks.
+  - **Foreground:** dense crumbs where the frame meets the ground, plus mud spray and denser
+    thrown earth at the tracks.
+  - **Sky and smoke:** soot pockets and fire-lit rims on the billows, sparse cinders, and
+    smoke over the far turret cheek. Region colour means now sit within about 30 levels of
+    the cover except the lower glacis, the foreground ground and the title-veiled corner.
+- **Fourth pass.** Steered by a 40-pixel block colour-difference map against the cover; the
+  mean block difference fell from 59 to 55 levels.
+  - **Rack and markings:** the bustle rack rails now sit on the cover's back-projected
+    positions with a slight sag toward the back. The triangle in the marking
+    is now a real flat triangle, and the ink is dimmer.
+  - **M2:** slimmer receiver with a feed cover, a barrel jacket and a flash hider.
+  - **Dust:** bright fire-lit dust moved down into the foreground band, with smaller dark dust
+    under the nose.
+  - **Crew and sight:** dimmer shirt and sight box, so they no longer outshine the cover's.
+- **Fifth pass.** Mean block colour difference against the cover is about 51 levels, down
+  from 55; particle randomness moves it by about one level between renders.
+  - **Dust:** placed by projecting every plume onto the cover framing. The dark, shadowed
+    dust now rolls along the right flank under the turret overhang, the bright fire-lit dust
+    is kept to a low band in the foreground, and low plumes roll along the ground.
+  - **Thrown earth:** finer and denser.
+  - **Headlights:** soft amber halo sprites around the lamps, on the title scene only.
+  - **Commander:** goggles with round lenses on both crew helmets, and arms lowered toward
+    the grips. The M2 is swung so its receiver side and ammunition belt face the camera, and
+    the sight box shows a lit glass face toward the cover's right.
+  - **Loader:** dark CVC helmet.
+- **Sixth pass.** Mean block colour difference against the cover is about 50 levels.
+  - **Dark band under the turret:** a dark well under the bustle overhang now fills the band
+    below the turret side, where red sky used to show through.
+  - **Smoke and dust:** fire-lit dust billows high behind the rear of the tank, the flame
+    cores are hotter, the low left plumes are dimmer, and the headlight halos are smaller.
+  - **Crew:** both figures have tapered, faceted torsos (waist, chest, shoulders) in place of
+    capsules. The commander's arms are no longer mirrored: both gloved hands come together on
+    the gun at chest height, as on the cover. The sight box hangs from a bracket on the gun
+    cradle.
+  - **Capture note:** in one `--capture` still the first menu button was not highlighted; a
+    repeat capture had it highlighted. [Inference] The focus highlight sometimes lands after
+    the first frame is captured.
+- **Seventh pass.** Mean block colour difference against the cover is about 49-50 levels.
+  - **Tracks:** the fronts are now visible under the fenders, as on the cover: mud-caked shoes
+    carry grey-violet rubber pads.
+  - **Armour and skirts:** the armour grit and specks are toned down, so the plates read as
+    worn metal rather than render. The splayed front skirt plates take the hull paint rather
+    than the paler fender dust.
+  - **Thrown earth:** now coarse, angular clumps instead of round beads.
+  - **Rejected:** a camera-side bounce light flattened the fenders to plaster and worsened the
+    match.
 - **Winding fix.** The faceted hull and turret panels were wound inside-out (Godot front
   faces are clockwise), so their lighting was inverted; `_tri` now emits clockwise faces.
 - **Look.** Linear tonemap with no contrast adjustment; a low key light from the cover's

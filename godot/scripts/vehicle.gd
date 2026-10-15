@@ -24,6 +24,8 @@ const RING_Z := -0.1
 const GUN_ROOT := Vector3(0,0.74,-1.67)
 # Front plane of the fenders and nose.
 const NOSE := -3.86
+# Outward splay of the front skirt plates.
+const FLARE := 0.3
 
 # Box-cover finish: a single coat of worn olive drab under heavy field dust, grime and
 # rain streaks. Weathering lives in the hull (or turret) frame through to_local, so it rides
@@ -54,11 +56,16 @@ void fragment(){
  float mott=(fbm(lp.zy*1.8+3.0)*w.x+fbm(lp.xy*1.8+7.0)*w.z+fbm(lp.xz*1.8)*w.y)/(w.x+w.y+w.z);
  colour*=0.72+0.5*mott;
  float grit=(noise(lp.zy*55.0)*w.x+noise(lp.xy*55.0+3.0)*w.z+noise(lp.xz*55.0)*w.y)/(w.x+w.y+w.z);
- colour*=0.88+0.24*grit;
+ colour*=0.95+0.1*grit;
+ // Spattered mud flecks and dried dust specks, as on the cover's armour.
+ float fleck=(noise(lp.zy*90.0)*w.x+noise(lp.xy*90.0+7.0)*w.z+noise(lp.xz*90.0+1.0)*w.y)/(w.x+w.y+w.z);
+ float speck=(noise(lp.zy*70.0+3.0)*w.x+noise(lp.xy*70.0+9.0)*w.z+noise(lp.xz*70.0+5.0)*w.y)/(w.x+w.y+w.z);
+ colour=mix(colour,mud*0.6,smoothstep(0.92,0.97,fleck)*0.45);
+ colour=mix(colour,dust*1.3,smoothstep(0.95,0.99,speck)*0.35);
  colour*=0.95+0.05*noise(lp.xy*26.0)+0.05*noise(lp.zy*26.0+5.0)-0.05*noise(lp.xz*26.0);
  // Oily grime and rain streaks running down the flanks.
  float streak=smoothstep(0.55,0.95,noise(vec2(lp.x*6.0+lp.z*4.5,lp.y*0.7)));
- colour=mix(colour,grime,streak*0.35*(1.0-abs(ln.y)));
+ colour=mix(colour,grime,streak*0.15*(1.0-abs(ln.y)));
  colour=mix(colour,grime,smoothstep(0.62,0.8,fbm(lp.xz*3.1-lp.y*1.4))*0.3);
  // Faces turned to the ground sit in the hull's own shadow.
  colour*=mix(0.55,1.0,smoothstep(-0.6,0.2,ln.y));
@@ -71,6 +78,10 @@ void fragment(){
  colour=mix(colour,mud,clamp(caked*dust_amount,0.0,0.85));
  colour=mix(colour,dust,clamp((settled+film)*dust_amount,0.0,0.6));
  ALBEDO=colour;
+ // Hammered, pitted armour: jitter the shading normal with fine noise in the vehicle's frame.
+ vec3 bump=vec3(noise(lp.zy*24.0)-0.5,noise(lp.xz*24.0+2.0)-0.5,noise(lp.xy*24.0+4.0)-0.5);
+ // to_local is rigid, so its transposed rotation carries vehicle-frame directions to world.
+ NORMAL=normalize(NORMAL+mat3(VIEW_MATRIX)*(transpose(mat3(to_local))*(bump*0.35)));
  ROUGHNESS=0.8+0.16*caked;
  SPECULAR=0.3;
  RIM=0.25;
@@ -215,7 +226,7 @@ func _ready() -> void:
 	paint = paint_material(Color("4a483c"),0.0,1.2,0.4)
 	# Fenders and front skirts wear the thickest coat of pale road dust.
 	fender_paint = paint_material(Color("6b6352"),0.0,1.5,0.7)
-	turret_paint = paint_material(Color("4a483c"),RING_Y,1.2,0.3)
+	turret_paint = paint_material(Color("4a483c"),RING_Y,1.2,0.15)
 	# Running gear: dark rubber and steel under the heaviest coat of road dust.
 	dark = paint_material(Color("1f1e1a"),0.0,1.5,0.55)
 	metal = material(Color("1d1e1b"),0.55,0.5)
@@ -254,18 +265,19 @@ func _hull(rubber: Material, lamp: Material) -> void:
 	for side in [-1.0,1.0]:
 		# Sponson and front fender over each track: a square-faced fender whose lower band
 		# rakes back below a seam, carried the full length of the hull.
+		# The fender top falls slightly toward the rear, so from the low cover camera only its
+		# rolled front edge catches the light.
 		var fender := [Vector2(NOSE+0.09,1.36),Vector2(NOSE,1.28),Vector2(NOSE,1.13),Vector2(NOSE+0.07,0.97),
-			Vector2(3.92,0.97),Vector2(3.92,1.3),Vector2(3.8,1.36)]
+			Vector2(3.92,0.97),Vector2(3.92,1.14),Vector2(3.8,1.18),Vector2(-2.6,1.33)]
 		extrude_x(self,fender,minf(1.1*side,1.76*side),maxf(1.1*side,1.76*side),fender_paint)
 		box(self,Vector3(0.66,0.012,0.012),Vector3(1.43*side,1.13,NOSE-0.004),dark)
 		_running_gear(side,rubber)
 		_skirts(side)
 		_headlight(side,lamp)
-		# Tow eyes on the lower glacis and a rear grille louvre per side.
-		cylinder(self,0.06,0.12,Vector3(0.7*side,0.78,-3.5),dark,Vector3(PI/2,0,0),10)
+		# Rear grille louvre per side.
 		box(self,Vector3(0.95,0.6,0.05),Vector3(0.62*side,0.92,3.95),dark)
 		# Fender stowage boxes behind the turret.
-		box(self,Vector3(0.5,0.3,1.1),Vector3(1.45*side,1.49,2.7),paint)
+		box(self,Vector3(0.5,0.2,1.1),Vector3(1.45*side,1.2,2.7),paint)
 	# Driver's hatch and periscopes at the front centre of the deck.
 	cylinder(self,0.34,0.06,Vector3(0,DECK+0.02,-2.45),paint,Vector3.ZERO,16)
 	for px in [-0.22,0.0,0.22]:
@@ -288,6 +300,10 @@ func _headlight(side: float, lamp: Material) -> void:
 	box(self,Vector3(0.4,0.022,0.022),Vector3(lx,1.16,NOSE-0.04),metal)
 
 func _running_gear(side: float, rubber: Material) -> void:
+	# Mud-caked steel shoes and grey-violet rubber pads, which the cover shows catching the
+	# dust light under the fenders.
+	var track := material(Color("3a3431"),0.95)
+	var pad := material(Color("4b4450"),0.85)
 	var x: float = 1.45*side
 	# Seven dual road wheels, front idler, rear drive sprocket and two return rollers.
 	for i in range(7):
@@ -316,7 +332,10 @@ func _running_gear(side: float, rubber: Material) -> void:
 		var pitch: float = shoe.pitch
 		var p: Vector2 = shoe.p
 		var n: Vector2 = shoe.n
-		box(self,Vector3(0.64,0.07,0.36),Vector3(x,p.y,p.x),rubber,Vector3(pitch,0,0))
+		box(self,Vector3(0.64,0.07,0.36),Vector3(x,p.y,p.x),track,Vector3(pitch,0,0))
+		# Rubber pads, two per shoe, standing proud of the mud-caked shoe.
+		for px in [-0.17,0.17]:
+			box(self,Vector3(0.24,0.06,0.26),Vector3(x+px,p.y+n.y*0.055,p.x+n.x*0.055),pad,Vector3(pitch,0,0))
 		# Steel grouser on the outer face of every shoe.
 		box(self,Vector3(0.66,0.035,0.06),Vector3(x,p.y+n.y*0.045,p.x+n.x*0.045),metal,Vector3(pitch,0,0))
 
@@ -345,17 +364,24 @@ func _track_arc(centre: Vector2, radius: float, from: float, to: float, count: i
 
 func _skirts(side: float) -> void:
 	var x: float = 1.8*side
-	# Heavy front skirt section behind the fender, then ballistic panels butted with dark
-	# seams and bolted along the top.
-	var front := [Vector2(NOSE,1.34),Vector2(NOSE,0.97),Vector2(-3.6,0.62),Vector2(-2.55,0.62),Vector2(-2.55,1.34)]
-	extrude_x(self,front,x-0.06,x+0.06,fender_paint)
+	# Heavy front skirt plate hinged at the fender's outer edge and splayed out, as on the box
+	# cover, with a rolled top lip and a raked lower edge; then ballistic panels butted with
+	# dark seams and bolted along the top.
+	var flare := Node3D.new()
+	add_child(flare)
+	flare.transform = Transform3D(Basis(Vector3.UP,FLARE*side),Vector3(1.83*side,0,NOSE))
+	var plate := [Vector2(0,1.34),Vector2(0,1.12),Vector2(0.08,0.72),Vector2(1.35,0.5),Vector2(1.35,1.27)]
+	extrude_x(flare,plate,minf(0.0,-0.06*side),maxf(0.0,-0.06*side),paint)
+	cylinder(flare,0.035,1.35,Vector3(-0.02*side,1.3,0.675),fender_paint,Vector3(PI/2,0,0),8)
+	var flare_end := 1.83+1.35*sin(FLARE)
+	box(self,Vector3(flare_end-1.78,0.62,0.05),Vector3((flare_end+1.78)*0.5*side,0.97,NOSE+1.35*cos(FLARE)),fender_paint)
 	for i in range(6):
 		var z0 := -2.55+i*1.05
-		box(self,Vector3(0.05,0.7,1.03),Vector3(x,0.97,z0+0.52),paint)
-		box(self,Vector3(0.055,0.7,0.02),Vector3(x,0.97,z0+1.04),dark)
+		box(self,Vector3(0.05,0.64,1.03),Vector3(x,0.92,z0+0.52),paint)
+		box(self,Vector3(0.055,0.64,0.02),Vector3(x,0.92,z0+1.04),dark)
 		for bz in [0.15,0.5,0.85]:
-			cylinder(self,0.022,0.03,Vector3(x+0.03*side,1.26,z0+bz),metal,Vector3(0,0,PI/2),6)
-	box(self,Vector3(0.08,0.06,6.3),Vector3(x,1.32,0.6),paint)
+			cylinder(self,0.022,0.03,Vector3(x+0.03*side,1.18,z0+bz),metal,Vector3(0,0,PI/2),6)
+	box(self,Vector3(0.08,0.05,6.3),Vector3(x,1.25,0.6),paint)
 
 func _turret(rubber: Material, glass: Material) -> void:
 	var t := turret_root
@@ -367,6 +393,10 @@ func _turret(rubber: Material, glass: Material) -> void:
 		Vector2(0.3,0.17),Vector2(0.3,0.3),Vector2(-0.02,0.78)]
 	extrude_x(t,cheek,0.55,1.7,turret_paint)
 	extrude_x(t,cheek,-1.7,-0.55,turret_paint)
+	# Worn, dust-polished roof edge along each slab side, which catches the light on the cover.
+	var edge_paint := material(Color("625b4a"),0.7)
+	for side in [-1.0,1.0]:
+		box(t,Vector3(0.05,0.04,2.21),Vector3(side*1.69,0.765,-1.12),edge_paint,Vector3(0.0136,0,0))
 	# Centre section, recessed behind the cheeks so the mantlet sits in a slot.
 	var centre := [Vector2(-1.55,0.76),Vector2(-1.55,0.2),Vector2(-0.3,0.13),Vector2(0.3,0.17),Vector2(0.3,0.78)]
 	extrude_x(t,centre,-0.55,0.55,turret_paint)
@@ -377,19 +407,24 @@ func _turret(rubber: Material, glass: Material) -> void:
 	cylinder(t,1.15,0.34,Vector3(0,-0.02,-0.1),dark,Vector3.ZERO,24)
 	# Bustle: the stowage box behind the slab sides, its side bins flush with the armour.
 	box(t,Vector3(3.24,0.66,1.62),Vector3(0,0.53,0.72),bustle_paint)
+	# The deep shadowed well under the bustle overhang, which reads as one dark band below the
+	# turret side on the cover rather than showing sky through to the far side.
+	box(t,Vector3(3.1,0.34,1.5),Vector3(0,0.03,0.72),dark)
 	box(t,Vector3(3.26,0.02,1.5),Vector3(0,0.7,0.75),dark)
 	# Tactical marking on the right bin, as on the box cover: two discs and a triangle.
-	var ink := material(Color("d9b25c"),0.8)
-	for i in range(3):
-		cylinder(t,0.06,0.012,Vector3(1.626,0.59,1.36-i*0.135),ink,Vector3(-PI/2,0,PI/2),3 if i == 2 else 14)
-	# Bustle rack: three rails down each side and across the back, with posts at the rear.
-	for y in [0.26,0.53,0.8]:
+	var ink := material(Color("b8934a"),0.8)
+	for i in range(2):
+		cylinder(t,0.06,0.012,Vector3(1.626,0.59,1.36-i*0.135),ink,Vector3(0,0,PI/2),14)
+	_flat(t,[Vector3(1.627,0.54,1.15),Vector3(1.627,0.54,1.03),Vector3(1.627,0.645,1.09)],Vector3.RIGHT,ink)
+	# Bustle rack: three rails down each side, sagging slightly toward the back as on the
+	# cover, across the back, with posts at the rear.
+	for y in [0.23,0.48,0.765]:
 		for side in [-1.0,1.0]:
-			box(t,Vector3(0.035,0.035,2.45),Vector3(side*1.78,y,1.0),metal)
-		box(t,Vector3(3.56,0.035,0.035),Vector3(0,y,2.22),metal)
+			box(t,Vector3(0.035,0.035,2.36),Vector3(side*1.78,y,0.93),metal,Vector3(0.035,0,0))
+		box(t,Vector3(3.56,0.035,0.035),Vector3(0,y-0.04,2.1),metal)
 	for side in [-1.0,1.0]:
-		for z in [1.92,2.22]:
-			box(t,Vector3(0.05,0.7,0.05),Vector3(side*1.78,0.52,z),metal)
+		for z in [1.83,2.1]:
+			box(t,Vector3(0.05,0.66,0.05),Vector3(side*1.78,0.46,z),metal)
 	# Kit stowed in the rack: bedrolls and boxes.
 	cylinder(t,0.17,1.3,Vector3(-0.7,0.4,1.95),material(Color("4f4a36")),Vector3(0,0,PI/2),10)
 	box(t,Vector3(0.9,0.36,0.4),Vector3(0.75,0.4,1.95),material(Color("2f2e25")))
@@ -401,14 +436,17 @@ func _turret(rubber: Material, glass: Material) -> void:
 	# Raised weapon-station ring around the commander and his open hatch lid standing behind.
 	cylinder(t,0.4,0.22,Vector3(0.75,1.08,0.45),dark,Vector3.ZERO,18)
 	cylinder(t,0.36,0.06,Vector3(0.82,1.4,0.98),dark,Vector3(-1.25,0,0.25),18)
+	# Bedroll and pack strapped against the lid.
+	sphere(t,0.26,Vector3(1.0,1.05,0.75),Vector3(0.84,1.36,0.9),material(Color("1c1d19"),0.95))
 	for i in range(6):
 		var a := TAU*i/6.0+0.3
 		box(t,Vector3(0.13,0.09,0.05),Vector3(0.75+cos(a)*0.43,0.91,0.45+sin(a)*0.43),glass,Vector3(0,-a+PI/2,0))
 	cylinder(t,0.4,0.08,Vector3(-0.7,0.81,0.1),turret_paint,Vector3.ZERO,16)
 	box(t,Vector3(0.74,0.05,0.5),Vector3(-0.7,1.02,0.52),turret_paint,Vector3(1.0,0,0))
 	# Loader's M240 on its skate mount, raised.
-	box(t,Vector3(0.08,0.1,0.42),Vector3(-0.95,0.99,-0.6),metal,Vector3(0.5,0,0))
-	cylinder(t,0.022,0.55,Vector3(-0.95,1.15,-0.95),metal,Vector3(PI/2-0.5,0,0),6)
+	box(t,Vector3(0.09,0.12,0.42),Vector3(-0.95,1.06,-0.62),metal,Vector3(0.5,0,0))
+	cylinder(t,0.04,0.42,Vector3(-0.95,1.19,-0.89),metal,Vector3(-1.08,0,0),8)
+	cylinder(t,0.055,0.08,Vector3(-0.95,1.27,-1.04),metal,Vector3(-1.08,0,0),8)
 	cylinder(t,0.028,0.26,Vector3(-0.95,0.9,-0.45),metal,Vector3.ZERO,6)
 	# Antenna mount and crosswind sensor mast.
 	cylinder(t,0.03,0.5,Vector3(1.0,1.02,1.42),metal,Vector3.ZERO,6)
@@ -417,89 +455,110 @@ func _turret(rubber: Material, glass: Material) -> void:
 
 func _gun(rubber: Material) -> void:
 	var b := barrel
-	# M256 120 mm in its dark thermal sleeve: root collar, banded sections and the bore
-	# evacuator, ending in the muzzle reference sensor.
+	# M256 120 mm as the box cover shows it: a heavy boot at the mantlet, a long tapering
+	# thermal sleeve with one bore-evacuator bulge a third of the way out, a single sleeve
+	# joint, and the muzzle reference sensor on top at the end. (Cylinder tops face the root.)
 	var sleeve := material(Color("23241f"),0.75,0.2)
-	cylinder(b,0.17,0.45,Vector3(0,0,-0.2),sleeve,Vector3(PI/2,0,0),18)
-	cylinder(b,0.125,1.35,Vector3(0,0,-1.1),sleeve,Vector3(PI/2,0,0),18)
-	cylinder(b,0.165,0.6,Vector3(0,0,-2.05),sleeve,Vector3(PI/2,0,0),18)
-	cylinder(b,0.115,1.3,Vector3(0,0,-3.0),sleeve,Vector3(PI/2,0,0),18)
-	for z in [-0.9,-1.5,-2.65,-3.3]:
-		cylinder(b,0.132,0.04,Vector3(0,0,z),dark,Vector3(PI/2,0,0),18)
-	cylinder(b,0.125,0.14,Vector3(0,0,-3.66),sleeve,Vector3(PI/2,0,0),18)
-	cylinder(b,0.065,0.02,Vector3(0,0,-3.74),rubber,Vector3(PI/2,0,0),16)
-	box(b,Vector3(0.07,0.08,0.14),Vector3(0,0.14,-3.6),metal)
+	var along := Vector3(PI/2,0,0)
+	cylinder(b,0.17,0.36,Vector3(0,0,-0.18),dark,along,18,0.19)
+	cylinder(b,0.115,1.04,Vector3(0,0,-0.88),sleeve,along,18,0.125)
+	cylinder(b,0.15,0.06,Vector3(0,0,-1.43),sleeve,along,18,0.115)
+	cylinder(b,0.15,0.36,Vector3(0,0,-1.64),sleeve,along,18)
+	cylinder(b,0.105,0.08,Vector3(0,0,-1.86),sleeve,along,18,0.15)
+	cylinder(b,0.086,1.73,Vector3(0,0,-2.765),sleeve,along,18,0.105)
+	cylinder(b,0.098,0.03,Vector3(0,0,-2.7),dark,along,18)
+	cylinder(b,0.095,0.1,Vector3(0,0,-3.67),sleeve,along,18)
+	cylinder(b,0.055,0.02,Vector3(0,0,-3.72),rubber,along,14)
+	box(b,Vector3(0.06,0.07,0.12),Vector3(0,0.13,-3.6),metal)
 
 func _crew() -> void:
 	var c := crew
-	var shirt := material(Color("dcdcd6"),0.85)
-	var khaki := material(Color("a08e68"),0.9)
+	var shirt := material(Color("a9a79f"),0.9)
+	var khaki := material(Color("8c7454"),0.9)
 	var helmet := material(Color("1b1c19"),0.55)
-	var cap := material(Color("4a4834"),0.9)
 	var skin := material(Color("7a5844"),0.8)
 	var lens := material(Color("0d0e0c"),0.12,0.6)
 	var glove := material(Color("151512"),0.7)
 	# Commander standing in the weapon station, hands up on the M2's grips, as on the box cover.
-	_figure(c,Vector3(0.75,1.72,0.42),shirt,glove,-0.3,-0.04,Vector3(0.34,0.64,-0.14),Vector3(0.12,0.8,-0.46))
+	_figure(c,Vector3(0.75,1.72,0.42),shirt,glove,-0.3,-0.04,Vector3(0.3,0.6,-0.12),Vector3(0.08,0.68,-0.42),Vector3(-0.32,0.62,-0.16),Vector3(-0.12,0.74,-0.46))
 	_helmet(c,Vector3(0.75,1.72,0.42),-0.75,helmet,lens,skin)
 	# Weapon-station housing at chest height ahead of him, under the gun.
-	box(c,Vector3(0.62,0.3,0.42),Vector3(0.82,1.13,0.0),dark,Vector3(0,-0.5,0))
+	box(c,Vector3(0.62,0.3,0.42),Vector3(0.82,1.06,0.0),dark,Vector3(0,-0.5,0))
 	# M2 .50 cal pointed high, with its sight box and ammunition belt.
-	var gun := Transform3D(Basis(Vector3.RIGHT,1.32),Vector3(0.75,1.2,-0.33))
+	# Swung toward the camera so its receiver side and ammunition belt show, as on the cover.
+	var gun := Transform3D(Basis(Vector3.UP,-0.9)*Basis(Vector3.RIGHT,1.32),Vector3(0.75,1.2,-0.33))
 	var receiver := material(Color("121311"),0.5,0.4)
-	_add(c,_box_mesh(Vector3(0.17,0.24,0.75)),gun.translated_local(Vector3(0,0,-0.25)),receiver)
+	# Receiver with its feed cover, the perforated barrel jacket, barrel and flash hider.
+	_add(c,_box_mesh(Vector3(0.17,0.24,0.62)),gun.translated_local(Vector3(0,0,-0.12)),receiver)
+	_add(c,_box_mesh(Vector3(0.17,0.05,0.3)),gun.translated_local(Vector3(0,0.13,-0.05)),receiver)
 	var tube := CylinderMesh.new()
-	tube.top_radius = 0.035
-	tube.bottom_radius = 0.035
-	tube.height = 0.2
-	tube.radial_segments = 8
-	_add(c,tube,gun*Transform3D(Basis(Vector3.RIGHT,PI/2),Vector3(0,0,-0.72)),metal)
-	_add(c,_box_mesh(Vector3(0.06,0.06,0.1)),gun.translated_local(Vector3(0,0,-0.84)),metal)
-	_add(c,_box_mesh(Vector3(0.025,0.03,0.42)),gun.translated_local(Vector3(-0.1,0.05,-0.2)),material(Color("b08a3a"),0.4,0.6))
-	var sight := Basis(Vector3.UP,-0.87)
-	_add(c,_box_mesh(Vector3(0.3,0.24,0.3)),Transform3D(sight,Vector3(0.64,1.62,-0.66)),material(Color("aeb8bb"),0.45,0.2))
-	_add(c,_box_mesh(Vector3(0.24,0.18,0.02)),Transform3D(sight,Vector3(0.64,1.62,-0.66)+sight*Vector3(0,0,-0.155)),_glow(Color("9cc0d4"),0.15))
+	tube.top_radius = 0.038
+	tube.bottom_radius = 0.038
+	tube.height = 0.32
+	tube.radial_segments = 10
+	_add(c,tube,gun*Transform3D(Basis(Vector3.RIGHT,PI/2),Vector3(0,0,-0.55)),receiver)
+	var muzzle := CylinderMesh.new()
+	muzzle.top_radius = 0.022
+	muzzle.bottom_radius = 0.022
+	muzzle.height = 0.18
+	muzzle.radial_segments = 8
+	_add(c,muzzle,gun*Transform3D(Basis(Vector3.RIGHT,PI/2),Vector3(0,0,-0.8)),receiver)
+	_add(c,_box_mesh(Vector3(0.05,0.05,0.07)),gun.translated_local(Vector3(0,0,-0.9)),receiver)
+	_add(c,_box_mesh(Vector3(0.025,0.04,0.42)),gun.translated_local(Vector3(-0.1,0.02,-0.2)),material(Color("b08a3a"),0.4,0.6))
+	# The sight box turns its glass toward the cover's right, so it reads as a lit side face.
+	var sight := Basis(Vector3.UP,0.5)
+	_add(c,_box_mesh(Vector3(0.3,0.24,0.3)),Transform3D(sight,Vector3(0.64,1.62,-0.66)),material(Color("4c4e4f"),0.5,0.2))
+	_add(c,_box_mesh(Vector3(0.24,0.18,0.02)),Transform3D(sight,Vector3(0.64,1.62,-0.66)+sight*Vector3(0,0,-0.155)),_glow(Color("b8dce6"),0.5))
+	# Bracket carrying the sight box off the gun cradle.
+	_limb(c,Vector3(0.74,1.3,-0.4),Vector3(0.66,1.5,-0.62),0.025,metal)
 	_add(c,_box_mesh(Vector3(0.12,0.18,0.28)),Transform3D(Basis(),Vector3(0.93,1.2,-0.3)),material(Color("3d4030")))
 	# Loader standing in the left hatch, bent forward over the roof toward the main gun.
 	_figure(c,Vector3(-0.62,1.26,-0.38),khaki,skin,0.87,1.9,Vector3(0.34,0.62,-0.2),Vector3(0.26,0.72,-0.52))
-	_helmet(c,Vector3(-0.62,1.26,-0.38),0.87,cap,lens,skin)
+	_helmet(c,Vector3(-0.62,1.26,-0.38),0.87,helmet,lens,skin)
 
-# A seated-high crew figure from the waist up: torso, shoulders, upper arms and forearms
-# reaching forward and down to a weapon, and a neck. Heads are added separately.
-# A crew figure from the waist up below a given head position: torso, shoulders, and arms
-# jointed shoulder-elbow-hand (right-side positions given; the left mirrors them). Heads are
-# added separately.
-func _figure(c: Node3D, head: Vector3, cloth: Material, skin: Material, turn: float, lean: float, elbow: Vector3, hand_at: Vector3) -> void:
+# A crew figure from the waist up below a given head position: a tapered torso (waist, chest,
+# shoulders), and arms jointed shoulder-elbow-hand. Positions are for the figure's +x side;
+# the other side mirrors them unless given its own elbow and hand. Heads are added separately.
+func _figure(c: Node3D, head: Vector3, cloth: Material, skin: Material, turn: float, lean: float, elbow: Vector3, hand_at: Vector3, other_elbow := Vector3.INF, other_hand := Vector3.INF) -> void:
 	var basis := Basis(Vector3.UP,turn)*Basis(Vector3.RIGHT,-lean)
 	# The body hangs from the head position, so leaning swings the waist, not the head.
 	var base := head - basis*Vector3(0,1.08,0)
 	var at := func(v: Vector3) -> Vector3: return base + basis*v
-	var torso := CapsuleMesh.new()
-	torso.radius = 0.18
-	torso.height = 0.66
-	torso.radial_segments = 14
-	torso.rings = 4
-	_add(c,torso,Transform3D(basis.scaled(Vector3(1.08,1,0.78)),at.call(Vector3(0,0.58,0))),cloth)
+	# [height, half width, half depth] rings from the waist to the shoulder line.
+	var rings := [[0.28,0.15,0.11],[0.66,0.2,0.13],[0.86,0.16,0.1]]
+	for r in range(rings.size()-1):
+		var lower: Array = []
+		var upper: Array = []
+		for i in range(12):
+			var a := TAU*i/12.0
+			lower.append(at.call(Vector3(cos(a)*rings[r][1],rings[r][0],sin(a)*rings[r][2])))
+			upper.append(at.call(Vector3(cos(a)*rings[r+1][1],rings[r+1][0],sin(a)*rings[r+1][2])))
+		loft(c,lower,upper,cloth)
 	var shoulder := SphereMesh.new()
-	shoulder.radius = 0.095
-	shoulder.height = 0.19
+	shoulder.radius = 0.08
+	shoulder.height = 0.16
 	var hand := SphereMesh.new()
-	hand.radius = 0.05
-	hand.height = 0.1
+	hand.radius = 0.062
+	hand.height = 0.12
 	for side in [-1.0,1.0]:
 		var mirror := Vector3(side,1,1)
-		var s_at: Vector3 = at.call(Vector3(side*0.23,0.84,0))
-		var e_at: Vector3 = at.call(elbow*mirror)
-		var h_at: Vector3 = at.call(hand_at*mirror)
+		var e_local: Vector3 = elbow*mirror
+		var h_local: Vector3 = hand_at*mirror
+		if side < 0.0 and other_elbow != Vector3.INF:
+			e_local = other_elbow
+			h_local = other_hand
+		var s_at: Vector3 = at.call(Vector3(side*0.2,0.84,0))
+		var e_at: Vector3 = at.call(e_local)
+		var h_at: Vector3 = at.call(h_local)
 		_add(c,shoulder,Transform3D(basis,s_at),cloth)
-		_limb(c,s_at,e_at,0.07,cloth)
-		_limb(c,e_at,h_at,0.055,cloth)
+		_limb(c,s_at,e_at,0.065,cloth)
+		_limb(c,e_at,h_at,0.05,cloth)
 		_add(c,hand,Transform3D(basis,h_at),skin)
 	var neck := CylinderMesh.new()
-	neck.top_radius = 0.06
-	neck.bottom_radius = 0.075
-	neck.height = 0.12
-	_add(c,neck,Transform3D(basis,at.call(Vector3(0,0.96,0))),skin)
+	neck.top_radius = 0.055
+	neck.bottom_radius = 0.07
+	neck.height = 0.14
+	_add(c,neck,Transform3D(basis,at.call(Vector3(0,0.93,0))),skin)
 
 # Capsule spanning two points.
 func _limb(c: Node3D, a: Vector3, b: Vector3, radius: float, mat: Material) -> void:
@@ -520,16 +579,34 @@ func _helmet(c: Node3D, at: Vector3, turn: float, helmet: Material, lens: Materi
 	_add(c,head,Transform3D(basis,at+Vector3(0,-0.07,0)),skin)
 	# CVC helmet: deep dome, ear cups, and goggles across the brow.
 	var dome := SphereMesh.new()
-	dome.radius = 0.165
+	dome.radius = 0.15
 	dome.height = 0.3
-	_add(c,dome,Transform3D(basis.scaled(Vector3(1,0.85,1.05)),at+Vector3(0,0.08,0.02)),helmet)
+	_add(c,dome,Transform3D(basis.scaled(Vector3(1,0.95,1.08)),at+Vector3(0,0.06,0.02)),helmet)
 	var cup := CylinderMesh.new()
 	cup.top_radius = 0.07
 	cup.bottom_radius = 0.07
 	cup.height = 0.07
 	for side in [-1.0,1.0]:
 		_add(c,cup,Transform3D(basis*Basis(Vector3.FORWARD,PI/2),at+basis*Vector3(side*0.15,-0.04,0.0)),helmet)
-	_add(c,_box_mesh(Vector3(0.24,0.05,0.05)),Transform3D(basis,at+basis*Vector3(0,0.01,-0.13)),lens)
+	# Goggles: two round lenses in a rubber frame, worn over the eyes.
+	_add(c,_box_mesh(Vector3(0.25,0.075,0.04)),Transform3D(basis,at+basis*Vector3(0,-0.01,-0.125)),helmet)
+	var eye := CylinderMesh.new()
+	eye.top_radius = 0.034
+	eye.bottom_radius = 0.034
+	eye.height = 0.02
+	eye.radial_segments = 12
+	for side in [-1.0,1.0]:
+		_add(c,eye,Transform3D(basis*Basis(Vector3.RIGHT,PI/2),at+basis*Vector3(side*0.055,-0.01,-0.148)),lens)
+
+# Flat convex polygon facing the given direction (markings and small plates).
+func _flat(frame: Node3D, pts: Array, outward: Vector3, mat: Material) -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_smooth_group(-1)
+	for i in range(1,pts.size()-1):
+		_tri(st,pts[0],pts[i],pts[i+1],outward)
+	st.generate_normals()
+	_add(frame,st.commit(),Transform3D(),mat,"facet")
 
 func _glow(color: Color, energy: float) -> StandardMaterial3D:
 	var m := material(color,0.2)

@@ -32,6 +32,7 @@ const GROUND_LAYER := 2
 
 var environment: Environment
 var _particles: Array[CPUParticles3D] = []
+var puff_material: StandardMaterial3D
 
 const SKY_SHADER := """shader_type sky;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -52,12 +53,21 @@ void sky(){
  vec3 soot=vec3(0.12,0.05,0.045);
  vec3 pall=vec3(0.24,0.085,0.07);
  vec3 ember=vec3(0.62,0.15,0.07);
- vec3 flame=vec3(1.1,0.27,0.09);
- vec3 core=vec3(1.25,0.48,0.15);
+ vec3 flame=vec3(1.25,0.3,0.1);
+ vec3 core=vec3(1.4,0.62,0.18);
  vec3 c=mix(soot,pall,smoothstep(0.3,0.6,smoke));
  c=mix(c,ember,smoothstep(0.42,0.75,lit)*smoothstep(0.35,0.7,smoke)*(0.25+0.75*heat));
  c=mix(c,flame,smoothstep(0.22,0.55,smoke)*heat);
- c=mix(c,core,smoothstep(0.55,0.85,lit)*smoothstep(0.5,0.8,smoke)*flank*flank);
+ c=mix(c,core,smoothstep(0.55,0.85,lit)*smoothstep(0.5,0.8,smoke)*max(flank*flank,band*flank*0.8));
+ // Billow structure: dark soot pockets inside the pall and fire-lit rims on each billow.
+ float pocket=fbm(uv*3.6+warp*2.6+11.0);
+ c*=mix(mix(0.5,1.0,smoothstep(0.28,0.5,pocket)),1.0,heat*0.6);
+ float rim=smoothstep(0.42,0.52,smoke)*(1.0-smoothstep(0.52,0.62,smoke));
+ c+=flame*rim*0.3*(0.25+0.75*heat);
+ // Sparks and cinders glowing in the darker folds of smoke.
+ vec2 suv=vec2(atan(d.x,d.z),d.y)*420.0;
+ float spark=smoothstep(0.975,0.995,noise(suv+warp*6.0))*(1.0-smoothstep(0.42,0.62,smoke))*(1.0-flank);
+ c+=vec3(1.1,0.22,0.05)*spark*0.8;
  c=mix(vec3(0.3,0.1,0.06),c,smoothstep(-0.08,0.06,d.y));
  COLOR=c;
 }"""
@@ -69,10 +79,10 @@ float noise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);f=f*f*(3.0-2.0*f);return mix
 void vertex(){world=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;}
 void fragment(){
  // Churned, track-torn earth: dark wet loam broken by dry, dusty crumbs.
- float clods=noise(world.xz*2.3)*0.45+noise(world.xz*7.0+3.0)*0.3+noise(world.xz*23.0)*0.25;
+ float clods=noise(world.xz*4.0)*0.3+noise(world.xz*11.0+3.0)*0.35+noise(world.xz*31.0)*0.35;
  float wet=smoothstep(0.35,0.7,noise(world.xz*0.6+9.0));
- vec3 loam=vec3(0.3,0.2,0.13);
- vec3 dry=vec3(0.8,0.57,0.38);
+ vec3 loam=vec3(0.2,0.135,0.09);
+ vec3 dry=vec3(0.75,0.53,0.35);
  ALBEDO=mix(loam,dry,smoothstep(0.5,0.8,clods)*(1.0-0.6*wet));
  NORMAL_MAP=normalize(vec3(noise(world.xz*9.0)-0.5,noise(world.xz*9.0+7.0)-0.5,0.35))*0.5+0.5;
  ROUGHNESS=1.0;
@@ -95,8 +105,8 @@ func _ready() -> void:
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	environment.tonemap_exposure = 1.0
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.6
-	environment.glow_bloom = 0.04
+	environment.glow_intensity = 1.1
+	environment.glow_bloom = 0.0
 	environment.glow_hdr_threshold = 1.0
 	# Low key light from the cover's left, over the photographer's shoulder: it rakes across
 	# the turret slab and fender faces and leaves the glacis, roof and turret front dark.
@@ -118,8 +128,35 @@ func _ready() -> void:
 	rim.light_cull_mask = 1
 	add_child(rim)
 	_ground()
+	_lamp_glow()
 	_dust()
+	_mud_spray()
 	_debris()
+
+# Soft amber halo around each headlight, as the cover's lamps bloom in the dust.
+func _lamp_glow() -> void:
+	var glow := GradientTexture2D.new()
+	glow.fill = GradientTexture2D.FILL_RADIAL
+	glow.fill_from = Vector2(0.5,0.5)
+	glow.fill_to = Vector2(1.0,0.5)
+	glow.gradient = Gradient.new()
+	glow.gradient.colors = PackedColorArray([Color(1.0,0.75,0.35,0.9),Color(1.0,0.45,0.1,0.35),Color(1.0,0.35,0.05,0.0)])
+	glow.gradient.offsets = PackedFloat32Array([0.0,0.25,1.0])
+	var halo := StandardMaterial3D.new()
+	halo.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	halo.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	halo.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	halo.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	halo.albedo_texture = glow
+	halo.no_depth_test = false
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.26,0.26)
+	quad.material = halo
+	for side in [-1.0,1.0]:
+		var lamp := MeshInstance3D.new()
+		lamp.mesh = quad
+		lamp.position = Basis.from_euler(Vector3(HULL_PITCH,0,0))*Vector3(0.865*side,1.26,-3.93)
+		add_child(lamp)
 
 func set_active(active: bool) -> void:
 	visible = active
@@ -141,31 +178,37 @@ func _ground() -> void:
 	ground.position = Vector3(0,0.03,0)
 	ground.layers = GROUND_LAYER
 	add_child(ground)
-	# Churned clods, densest in the foreground before the camera and around the tracks.
+	# Churned clods: big lumps across the visible foreground (the frame's lower edge meets
+	# the ground about 5 m from the camera), smaller crumbs out to and around the tracks.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1988
 	var clod := SphereMesh.new()
-	clod.radius = 0.09
-	clod.height = 0.1
-	clod.radial_segments = 4
-	clod.rings = 2
+	clod.radius = 0.1
+	clod.height = 0.16
+	clod.radial_segments = 6
+	clod.rings = 3
 	var earth := StandardMaterial3D.new()
-	earth.albedo_color = Color("4a3626")
+	earth.albedo_color = Color("3a2a1e")
 	earth.roughness = 1.0
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = clod
-	mm.instance_count = 3200
-	for i in range(mm.instance_count):
-		var p := Vector3(rng.randf_range(-9,12),0.0,rng.randf_range(-12.2,6))
-		var s := rng.randf_range(0.2,0.9)*(2.0 if rng.randf() < 0.05 else 1.0)
-		var basis := Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3(s,s*rng.randf_range(0.45,0.8),s))
-		mm.set_instance_transform(i,Transform3D(basis,p+Vector3(0,0.02,0)))
-	var node := MultiMeshInstance3D.new()
-	node.multimesh = mm
-	node.material_override = earth
-	node.layers = GROUND_LAYER
-	add_child(node)
+	# [count, x range, z range, size range]
+	var fields := [[7000,Vector2(-2.5,7.5),Vector2(-7.8,-3.8),Vector2(0.18,0.75)],
+		[2600,Vector2(-6.0,10.0),Vector2(-4.2,4.0),Vector2(0.25,0.9)]]
+	for field in fields:
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = clod
+		mm.instance_count = field[0]
+		for i in range(mm.instance_count):
+			var p := Vector3(rng.randf_range(field[1].x,field[1].y),0.0,rng.randf_range(field[2].x,field[2].y))
+			var s := rng.randf_range(field[3].x,field[3].y)*(1.6 if rng.randf() < 0.08 else 1.0)
+			var tilt := Basis(Vector3(rng.randf_range(-1,1),0,rng.randf_range(-1,1)).normalized(),rng.randf_range(0.0,0.6))
+			var basis := tilt*Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3(s*rng.randf_range(0.7,1.3),s*rng.randf_range(0.4,0.75),s))
+			mm.set_instance_transform(i,Transform3D(basis,p+Vector3(0,0.01,0)))
+		var node := MultiMeshInstance3D.new()
+		node.multimesh = mm
+		node.material_override = earth
+		node.layers = GROUND_LAYER
+		add_child(node)
 
 # Billowing cloud sprite: fractal noise under a soft round falloff, so overlapping puffs
 # read as lumpy dust rather than smooth fog.
@@ -190,7 +233,7 @@ func _cloud_texture() -> ImageTexture:
 func _dust() -> void:
 	# Plumes thrown off the tracks, as on the cover: bright and fire-lit off the right flank,
 	# dark brown under the nose, an orange haze behind the far side reaching turret height.
-	var puff_material := StandardMaterial3D.new()
+	puff_material = StandardMaterial3D.new()
 	puff_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	puff_material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	puff_material.vertex_color_use_as_albedo = true
@@ -202,14 +245,20 @@ func _dust() -> void:
 		[Vector3(1.9,0.2,-1.0),Vector3(0.3,0.15,2.4),80,2.6,1.1,Color(0.28,0.18,0.12,0.75)],
 		[Vector3(-1.9,0.2,-1.5),Vector3(0.3,0.15,2.2),70,2.6,1.1,Color(0.26,0.17,0.11,0.75)],
 		[Vector3(-3.0,1.75,-1.2),Vector3(0.6,0.45,0.9),50,4.0,2.6,Color(0.38,0.14,0.08,0.65)],
-		[Vector3(3.4,0.45,-0.5),Vector3(0.9,0.35,3.0),140,3.6,2.1,Color(0.85,0.56,0.37,0.8)],
-		[Vector3(2.8,0.4,-4.3),Vector3(0.6,0.3,0.5),90,2.8,1.5,Color(0.82,0.54,0.35,0.8)],
-		[Vector3(0.0,0.18,-4.3),Vector3(2.0,0.1,0.3),110,2.4,0.9,Color(0.3,0.19,0.12,0.85)],
-		[Vector3(0.3,0.12,-5.2),Vector3(3.0,0.08,0.8),90,3.0,0.8,Color(0.45,0.28,0.18,0.5)],
-		[Vector3(-2.0,0.25,-3.9),Vector3(0.4,0.2,0.4),90,2.4,1.1,Color(0.6,0.37,0.24,0.8)],
-		[Vector3(-2.7,0.3,-3.0),Vector3(0.6,0.25,1.0),70,3.0,1.4,Color(0.8,0.5,0.32,0.7)],
+		[Vector3(-2.3,1.62,-2.2),Vector3(0.35,0.2,0.3),70,3.0,1.4,Color(0.45,0.25,0.15,0.8)],
+		[Vector3(3.4,0.45,-0.5),Vector3(0.9,0.35,3.0),140,3.6,2.1,Color(0.66,0.43,0.29,0.8)],
+		# Fire-lit dust billowing high behind the rear of the tank, left of the bustle.
+		[Vector3(2.8,2.2,3.6),Vector3(0.4,0.35,0.7),70,4.0,2.2,Color(1.0,0.56,0.26,0.6)],
+		# Dark, shadowed dust rolling along the right flank under the turret overhang.
+		[Vector3(2.4,1.3,1.4),Vector3(0.35,0.2,1.6),130,3.6,1.5,Color(0.24,0.15,0.1,0.9)],
+		[Vector3(2.8,0.3,-4.3),Vector3(0.6,0.2,0.5),90,2.8,1.1,Color(0.7,0.46,0.3,0.75)],
+		[Vector3(0.0,0.1,-4.3),Vector3(2.0,0.06,0.3),60,2.4,0.6,Color(0.2,0.13,0.08,0.6)],
+		[Vector3(-0.5,0.04,-5.9),Vector3(1.4,0.02,0.4),200,3.0,0.42,Color(0.88,0.58,0.38,0.75)],
+		[Vector3(0.6,0.04,-6.3),Vector3(2.4,0.02,0.5),160,3.0,0.4,Color(0.8,0.52,0.34,0.65)],
+		[Vector3(-2.35,0.25,-3.9),Vector3(0.35,0.2,0.4),90,2.4,0.9,Color(0.6,0.37,0.24,0.8)],
+		[Vector3(-3.0,0.3,-3.0),Vector3(0.5,0.25,1.0),70,3.0,1.2,Color(0.8,0.5,0.32,0.7)],
 		[Vector3(-3.6,1.0,0.0),Vector3(1.0,0.9,2.6),60,4.0,2.6,Color(0.6,0.28,0.14,0.4)],
-		[Vector3(1.0,0.15,-7.0),Vector3(4.5,0.06,2.2),70,4.0,1.2,Color(0.55,0.37,0.24,0.45)]]
+		[Vector3(1.0,0.06,-7.0),Vector3(4.5,0.03,1.2),160,4.0,0.55,Color(0.75,0.5,0.33,0.6)]]
 	for spec in plumes:
 		var dust := CPUParticles3D.new()
 		var puff := QuadMesh.new()
@@ -223,12 +272,12 @@ func _dust() -> void:
 		dust.emission_box_extents = spec[1]
 		dust.position = spec[0]
 		# Low plumes roll along the ground; only the tall ones billow upward.
-		var low: bool = spec[0].y < 0.5
-		dust.direction = Vector3(0.3,0.25 if low else 1.0,0.6)
+		var low: bool = spec[0].y < 0.5 or spec[1].y < 0.25
+		dust.direction = Vector3(0.6,0.08,-0.3) if low else Vector3(0.3,1.0,0.6)
 		dust.spread = 45.0
-		dust.gravity = Vector3(0,-0.05 if low else -0.2,0)
-		dust.initial_velocity_min = 0.1 if low else 0.3
-		dust.initial_velocity_max = 0.3 if low else 0.8
+		dust.gravity = Vector3(0,0.0 if low else -0.2,0)
+		dust.initial_velocity_min = 0.05 if low else 0.3
+		dust.initial_velocity_max = 0.2 if low else 0.8
 		dust.angle_min = -180.0
 		dust.angle_max = 180.0
 		dust.angular_velocity_min = -12.0
@@ -247,13 +296,49 @@ func _dust() -> void:
 		add_child(dust)
 		_particles.append(dust)
 
+func _mud_spray() -> void:
+	# Wet earth sprayed off the front of each track as clumpy dark mist, as on the cover.
+	# [centre, extents, direction]
+	var sprays := [
+		[Vector3(1.45,0.25,-3.95),Vector3(0.35,0.15,0.15),Vector3(0.35,0.35,-1.0)],
+		[Vector3(-1.45,0.25,-3.95),Vector3(0.35,0.15,0.15),Vector3(-0.35,0.35,-1.0)],
+		[Vector3(2.0,0.3,-2.6),Vector3(0.15,0.25,1.0),Vector3(1.0,0.6,-0.4)]]
+	for spec in sprays:
+		var spray := CPUParticles3D.new()
+		var clump := QuadMesh.new()
+		clump.size = Vector2(0.42,0.42)
+		clump.material = puff_material
+		spray.mesh = clump
+		spray.amount = 260
+		spray.lifetime = 1.0
+		spray.preprocess = 1.0
+		spray.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		spray.emission_box_extents = spec[1]
+		spray.position = spec[0]
+		spray.direction = spec[2]
+		spray.spread = 30.0
+		spray.gravity = Vector3(0,-4.0,0)
+		spray.initial_velocity_min = 1.0
+		spray.initial_velocity_max = 2.6
+		spray.angle_min = -180.0
+		spray.angle_max = 180.0
+		spray.scale_amount_min = 0.5
+		spray.scale_amount_max = 1.6
+		var ramp := Gradient.new()
+		ramp.colors = PackedColorArray([Color(0.16,0.1,0.07,0.0),Color(0.14,0.09,0.06,1.0),Color(0.26,0.17,0.11,0.0)])
+		ramp.offsets = PackedFloat32Array([0.0,0.12,1.0])
+		spray.color_ramp = ramp
+		add_child(spray)
+		_particles.append(spray)
+
 func _debris() -> void:
 	# Earth flung up by the tracks: small dark clods arcing out and falling back.
 	var chunk := SphereMesh.new()
 	chunk.radius = 0.016
 	chunk.height = 0.026
+	# Coarse, angular clumps rather than smooth beads.
 	chunk.radial_segments = 4
-	chunk.rings = 2
+	chunk.rings = 1
 	var earth := StandardMaterial3D.new()
 	earth.albedo_color = Color("140e0a")
 	chunk.material = earth
@@ -263,11 +348,13 @@ func _debris() -> void:
 		[Vector3(1.6,0.3,0.4),Vector3(0.3,0.2,2.8),Vector3(0.6,1.0,0.7)],
 		[Vector3(-1.6,0.3,0.4),Vector3(0.3,0.2,2.8),Vector3(-0.6,1.0,0.7)],
 		[Vector3(1.5,0.4,-3.6),Vector3(0.35,0.2,0.3),Vector3(0.3,1.0,-0.8)],
-		[Vector3(-1.5,0.4,-3.6),Vector3(0.35,0.2,0.3),Vector3(-0.3,1.0,-0.8)]]
+		[Vector3(-1.5,0.4,-3.6),Vector3(0.35,0.2,0.3),Vector3(-0.3,1.0,-0.8)],
+		[Vector3(0.0,0.15,-4.2),Vector3(2.2,0.1,0.3),Vector3(0.0,0.7,-1.0)],
+		[Vector3(2.8,0.2,-2.5),Vector3(0.5,0.15,1.5),Vector3(0.8,0.8,-0.4)]]
 	for spec in throws:
 		var debris := CPUParticles3D.new()
 		debris.mesh = chunk
-		debris.amount = 300
+		debris.amount = 1400
 		debris.lifetime = 1.4
 		debris.preprocess = 1.4
 		debris.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
@@ -280,7 +367,7 @@ func _debris() -> void:
 		debris.initial_velocity_max = 3.8
 		debris.angular_velocity_min = -400.0
 		debris.angular_velocity_max = 400.0
-		debris.scale_amount_min = 0.3
-		debris.scale_amount_max = 1.1
+		debris.scale_amount_min = 0.25
+		debris.scale_amount_max = 1.2
 		add_child(debris)
 		_particles.append(debris)
