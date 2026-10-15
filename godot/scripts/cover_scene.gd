@@ -49,7 +49,8 @@ void sky(){
  // band low behind the tank; overhead and to the right the smoke is a dark brown-red pall.
  float flank=smoothstep(-0.2,0.12,d.x);
  float band=1.0-smoothstep(0.09,0.22,d.y);
- float heat=clamp(max(flank*(0.5+0.5*smoothstep(0.05,0.25,d.y)),band*0.9),0.0,1.0);
+ // The low glow fades out toward the cover's right, where the smoke behind the gun is dark.
+ float heat=clamp(max(flank*(0.5+0.5*smoothstep(0.05,0.25,d.y)),band*0.9*smoothstep(-0.5,-0.05,d.x)),0.0,1.0);
  vec3 soot=vec3(0.12,0.05,0.045);
  vec3 pall=vec3(0.24,0.085,0.07);
  vec3 ember=vec3(0.62,0.15,0.07);
@@ -160,7 +161,7 @@ func _lamp_glow() -> void:
 	for side in [-1.0,1.0]:
 		var lamp := MeshInstance3D.new()
 		lamp.mesh = quad
-		lamp.position = Basis.from_euler(Vector3(HULL_PITCH,0,0))*Vector3(0.865*side,1.26,-3.93)
+		lamp.position = Basis.from_euler(Vector3(HULL_PITCH,0,0))*Vector3(0.865*side+(0.07 if side > 0.0 else 0.0),1.26,-3.93)
 		add_child(lamp)
 
 func set_active(active: bool) -> void:
@@ -261,6 +262,8 @@ func _dust() -> void:
 		[Vector3(-1.9,0.2,-1.5),Vector3(0.3,0.15,2.2),70,2.6,1.1,Color(0.26,0.17,0.11,0.75)],
 		[Vector3(-3.0,1.75,-1.2),Vector3(0.6,0.45,0.9),50,4.0,2.6,Color(0.38,0.14,0.08,0.65)],
 		[Vector3(-2.3,1.62,-2.2),Vector3(0.35,0.2,0.3),70,3.0,1.4,Color(0.45,0.25,0.15,0.8)],
+		# Fire-lit dust rising across the far cheek, right of the gun root.
+		[Vector3(-1.45,1.75,-2.75),Vector3(0.15,0.15,0.15),40,3.0,0.65,Color(0.72,0.48,0.33,0.6)],
 		[Vector3(3.4,0.45,-0.5),Vector3(0.9,0.35,3.0),140,3.6,2.1,Color(0.66,0.43,0.29,0.8)],
 		# Fire-lit dust billowing high behind the rear of the tank, left of the bustle.
 		[Vector3(2.8,2.2,3.6),Vector3(0.4,0.35,0.7),70,4.0,2.2,Color(1.0,0.56,0.26,0.6)],
@@ -272,7 +275,7 @@ func _dust() -> void:
 		[Vector3(0.6,0.04,-6.3),Vector3(2.4,0.02,0.5),160,3.0,0.4,Color(0.8,0.52,0.34,0.65)],
 		[Vector3(-2.35,0.25,-3.9),Vector3(0.35,0.2,0.4),90,2.4,0.9,Color(0.6,0.37,0.24,0.8)],
 		[Vector3(-3.0,0.3,-3.0),Vector3(0.5,0.25,1.0),70,3.0,1.2,Color(0.8,0.5,0.32,0.7)],
-		[Vector3(-3.6,1.0,0.0),Vector3(1.0,0.9,2.6),60,4.0,2.6,Color(0.6,0.28,0.14,0.4)],
+		[Vector3(-3.6,1.0,0.0),Vector3(1.0,0.9,2.6),60,4.0,2.6,Color(0.3,0.12,0.07,0.4)],
 		[Vector3(1.0,0.06,-7.0),Vector3(4.5,0.03,1.2),160,4.0,0.55,Color(0.75,0.5,0.33,0.6)]]
 	for spec in plumes:
 		var dust := CPUParticles3D.new()

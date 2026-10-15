@@ -293,7 +293,8 @@ func _hull(rubber: Material, lamp: Material) -> void:
 func _headlight(side: float, lamp: Material) -> void:
 	# Armoured headlight cluster on the glacis, tucked against the inside of each fender:
 	# a dark housing, one amber lamp, a sloped hood and a bar guard.
-	var lx: float = 0.885*side
+	# The cover shows the right-hand cluster set further outboard than the left one.
+	var lx: float = 0.885*side+(0.07 if side > 0.0 else 0.0)
 	box(self,Vector3(0.35,0.15,0.3),Vector3(lx,1.24,-3.72),dark)
 	sphere(self,0.048,Vector3(1,1,0.5),Vector3(lx-0.02*side,1.26,NOSE-0.01),lamp)
 	box(self,Vector3(0.17,0.1,0.22),Vector3(lx+0.06*side,1.37,-3.74),dark,Vector3(-0.35,0,0))
@@ -446,7 +447,7 @@ func _turret(rubber: Material, glass: Material) -> void:
 	cylinder(t,0.4,0.22,Vector3(0.75,1.08,0.45),dark,Vector3.ZERO,18)
 	cylinder(t,0.36,0.06,Vector3(0.82,1.4,0.98),dark,Vector3(-1.25,0,0.25),18)
 	# Bedroll and pack strapped against the lid.
-	sphere(t,0.26,Vector3(1.0,1.05,0.75),Vector3(0.84,1.36,0.9),material(Color("1c1d19"),0.95))
+	sphere(t,0.3,Vector3(1.0,1.15,0.8),Vector3(0.98,1.38,0.86),material(Color("1c1d19"),0.95))
 	for i in range(6):
 		var a := TAU*i/6.0+0.3
 		box(t,Vector3(0.13,0.09,0.05),Vector3(0.75+cos(a)*0.43,0.91,0.45+sin(a)*0.43),glass,Vector3(0,-a+PI/2,0))
@@ -524,6 +525,9 @@ func _crew() -> void:
 	# Loader standing in the left hatch, bent forward over the roof toward the main gun.
 	_figure(c,Vector3(-0.62,1.26,-0.38),khaki,skin,0.87,1.9,Vector3(0.34,0.62,-0.2),Vector3(0.26,0.72,-0.52))
 	_helmet(c,Vector3(-0.62,1.26,-0.38),0.87,helmet,lens,skin)
+	# His far arm reaching forward along the roof to the gun, as on the cover.
+	_limb(c,Vector3(-0.5,1.36,0.28),Vector3(-0.52,1.18,-0.16),0.075,khaki)
+	_limb(c,Vector3(-0.52,1.18,-0.16),Vector3(-0.58,1.22,-0.36),0.06,khaki)
 
 # A crew figure from the waist up below a given head position: a tapered torso (waist, chest,
 # shoulders), and arms jointed shoulder-elbow-hand. Positions are for the figure's +x side;

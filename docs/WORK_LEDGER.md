@@ -4117,6 +4117,17 @@ Nell asked for the title-screen tank to be a 3D 1:1 match of the restored box co
     smaller. A sloped, dust-lit skirt plate flares out under the rear of each side bin.
   - **Rejected:** brighter dust past the far cheek, a bright plume behind the left rear, and
     two re-posed hunched loaders all scored worse or looked worse.
+- **Tenth pass.** Mean block colour difference, averaged over three renders, is about 45
+  levels, down from about 47.5. Each change was checked against the blocks it targeted:
+  - **Pack:** the commander's dark pack is enlarged to the size the cover's back-projected
+    outline gives. Its blocks fell from about 126 to 34.
+  - **Loader:** a reaching arm now runs along the roof where the cover shows his sleeve
+    (about 132 to 55).
+  - **Far cheek:** a small fire-lit dust puff sits right of the gun root, where the cover shows
+    lit haze over the far cheek (about 160 to 35, without spilling onto the dark mantlet).
+  - **Sky:** the low glow fades toward the cover's right, where its smoke is dark.
+  - **Headlights:** the right-hand cluster sits 0.07 m further outboard, as on the cover, so
+    both lamps now land within 3 px of the cover's.
 - **Winding fix.** The faceted hull and turret panels were wound inside-out (Godot front
   faces are clockwise), so their lighting was inverted; `_tri` now emits clockwise faces.
 - **Look.** Linear tonemap with no contrast adjustment; a low key light from the cover's
