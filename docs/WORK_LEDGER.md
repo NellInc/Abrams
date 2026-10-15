@@ -4128,6 +4128,22 @@ Nell asked for the title-screen tank to be a 3D 1:1 match of the restored box co
   - **Sky:** the low glow fades toward the cover's right, where its smoke is dark.
   - **Headlights:** the right-hand cluster sits 0.07 m further outboard, as on the cover, so
     both lamps now land within 3 px of the cover's.
+- **Eleventh pass (the crew).** Both crewmen were rebuilt from joints back-projected off the
+  cover's figures, using camera-facing planes, with hands and elbows pulled toward the camera
+  to reach the grips. The commander's joints now land within 3 px of the cover's, except the
+  helmet, which sits about 15 px low.
+  - **Commander:** a white shirt with loose sleeves under a black flak vest, with the open
+    collar showing. His left arm is down by his side, both gloved fists are on the M2's spade
+    grips and back plate, and his face is shadowed under the goggles.
+  - **Loader:** in desert khaki, risen out of his hatch and bent forward over the roof toward
+    the gun, head down, without goggles.
+  - **Helmets:** a CVC shell with rim and large ear cups.
+  - **Builder:** `_man` builds each figure: a loft torso from hip to shoulder line, optional
+    vest, jointed sleeves and fists. `_head` builds the face, shell, cups and goggles.
+  - **Fix:** the first head basis was mirrored, so the shells rendered inside out; it is now
+    right-handed.
+  - **Score:** the crew region's mean 20-pixel block difference fell from about 67 to about
+    60; the whole frame is about 45.
 - **Winding fix.** The faceted hull and turret panels were wound inside-out (Godot front
   faces are clockwise), so their lighting was inverted; `_tri` now emits clockwise faces.
 - **Look.** Linear tonemap with no contrast adjustment; a low key light from the cover's
