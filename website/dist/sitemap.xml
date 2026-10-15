@@ -2,14 +2,14 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://abramsremastered.com/</loc>
-    <lastmod>2026-10-03</lastmod>
+    <lastmod>2026-10-14</lastmod>
     <video:video>
       <video:thumbnail_loc>https://abramsremastered.com/assets/images/trailer-poster.jpg?v=23882e13ac7d</video:thumbnail_loc>
       <video:title>M1 Abrams Battle Tank Fan Remaster trailer</video:title>
       <video:description>A one-minute project trailer showing restored artwork, crew voices, graphics modes and the original PC simulation running in tandem with Godot.</video:description>
-      <video:content_loc>https://abramsremastered.com/assets/video/abrams-fan-remaster-trailer.mp4?v=0e7827a20d6c</video:content_loc>
-      <video:duration>60</video:duration>
-      <video:publication_date>2026-10-02</video:publication_date>
+      <video:content_loc>https://abramsremastered.com/assets/video/abrams-fan-remaster-trailer.mp4?v=90ff3e95abd4</video:content_loc>
+      <video:duration>59</video:duration>
+      <video:publication_date>2026-10-14</video:publication_date>
     </video:video>
     <image:image><image:loc>https://abramsremastered.com/assets/images/abrams-cover-remastered.webp?v=centred-1</image:loc></image:image>
     <image:image><image:loc>https://abramsremastered.com/assets/maps/manual-map-the-mossel-defense.webp</image:loc></image:image>
@@ -24,7 +24,7 @@
     <image:image><image:loc>https://abramsremastered.com/assets/images/colonel-genesis.webp</image:loc></image:image>
     <image:image><image:loc>https://abramsremastered.com/assets/images/colonel-upscaled.webp</image:loc></image:image>
     <image:image><image:loc>https://abramsremastered.com/assets/images/gunner-upscaled.webp</image:loc></image:image>
-    <image:image><image:loc>https://abramsremastered.com/assets/images/modern-cupola.webp</image:loc></image:image>
+    <image:image><image:loc>https://abramsremastered.com/assets/images/modern-cupola.webp?v=21600af9ca26</image:loc></image:image>
     <image:image><image:loc>https://abramsremastered.com/assets/images/modern-driver.webp</image:loc></image:image>
   </url>
   <url>

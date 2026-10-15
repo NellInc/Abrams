@@ -163,11 +163,11 @@
     },
     {
       "file": "dist/assets/images/modern-cupola.webp",
-      "source": "artifacts/cupola-material-edges-20260929/scenario-frames-matched/scenario-0-cupola.png",
-      "source_sha256": "01efc2132d6f4c7a5bd59392e4fcbfb752e60aa5e2af0d787c581fa1f5f12cdf",
-      "output_sha256": "b610a7a822a1a07c948246b992dac07961cd451ab5973506264ad56811ca781b",
-      "origin": "Modern production-renderer replay capture; artifacts/cupola-material-edges-20260929/scenario-frames-matched/report.json.",
-      "conversion": "4:3 trim (x 28\u20131252, y 42\u2013960) removing the in-game mode-switch notice; no retouching. 1224x918, WebP quality 92."
+      "source": "artifacts/tactical-optics-20261013/cupola-candidate.png",
+      "source_sha256": "421f42823a85acb16c23b81701cc7d21a6a0bccf06cb1180725d0b31192dbf03",
+      "output_sha256": "21600af9ca264412c2f517127a8e26cf85edc9891a0911c554da97f549d68f0f",
+      "origin": "Tactical production-renderer replay screenshot from the accepted local optics build; artifacts/tactical-optics-20261013/pixel-comparison.json and delivery.json.",
+      "conversion": "Full 1440x811 composition preserved, including Tactical HUD. WebP quality92; existing gallery contain layout preserves its widescreen aspect."
     },
     {
       "file": "dist/assets/images/modern-driver.webp",
@@ -229,19 +229,19 @@
   "media": [
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.mp4",
-      "source": "artifacts/promo-20261002-v8/abrams-promo.mp4",
-      "output_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
-      "origin": "Accepted V8 final trailer, exact bytes. H.264/AAC, 1920x1080, 59.5seconds.",
-      "source_sha256": "0e7827a20d6ce4f905497a847ab9a602c82bbe045bd6dc035180870c77937217",
-      "duration_seconds": 59.5,
+      "source": "artifacts/promo-20261014-v10/abrams-promo.mp4",
+      "output_sha256": "90ff3e95abd4c8a153c79cb993f48f2ceceb4c2d9e4af4acf3d0f6be4fc5f631",
+      "origin": "Accepted V10 trailer, exact bytes. Reshot Tactical graphics and HUD, matched original/Tactical model views with the complete Sagger head and helmet. H.264/AAC,1920x1080,58.5seconds.",
+      "source_sha256": "90ff3e95abd4c8a153c79cb993f48f2ceceb4c2d9e4af4acf3d0f6be4fc5f631",
+      "duration_seconds": 58.5,
       "captions_burned_in": true
     },
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.vtt",
-      "source": "artifacts/promo-20261002-v8/final-review/abrams-promo.vtt",
-      "output_sha256": "26f49be04cd0fcdd9b41bb75a1a5ca0a3bb0767f4d5047a61dd3119ef6c0961d",
-      "origin": "Actual final-audio captions for V8; optional native track, since the accepted movie already displays captions.",
-      "source_sha256": "26f49be04cd0fcdd9b41bb75a1a5ca0a3bb0767f4d5047a61dd3119ef6c0961d"
+      "source": "artifacts/promo-20261014-v10/abrams-promo.vtt",
+      "output_sha256": "401dddb3c541109af1062e3d1594f40a9559b2fe89f14b07acbe22efdb29fa0c",
+      "origin": "Matching actual-audio captions retained byte-for-byte from the accepted V9soundtrack; optional native track, since the movie displays captions.",
+      "source_sha256": "401dddb3c541109af1062e3d1594f40a9559b2fe89f14b07acbe22efdb29fa0c"
     }
   ],
   "documents": [
