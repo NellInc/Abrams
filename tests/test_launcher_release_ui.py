@@ -41,8 +41,14 @@ class LauncherReleaseUI(unittest.TestCase):
         if not path.is_file():
             self.skipTest('Repository workflow is outside the isolated player source kit')
         workflow = path.read_text(encoding='utf-8')
-        self.assertIn('git clone --config core.autocrlf=false --config core.eol=lf', workflow)
-        self.assertNotIn('git -c core.autocrlf=false clone', workflow)
+        # Line-ending settings live in the checkout's own config before the
+        # pinned commit is fetched by SHA (upstream rewrote its history).
+        checkout = '"$RUNNER_TEMP/dosbox-pure"'
+        self.assertIn('git -C '+checkout+' config core.autocrlf false', workflow)
+        self.assertIn('git -C '+checkout+' config core.eol lf', workflow)
+        self.assertIn('fetch --depth 1 https://github.com/schellingb/dosbox-pure.git 73e03aa145e0549ed4d5a20f8e65532714da33f5', workflow)
+        self.assertLess(workflow.index('config core.eol lf'), workflow.index('fetch --depth 1'))
+        self.assertNotIn('git -c core.autocrlf=false', workflow)
 
     def test_portable_alpha_gates_original_bytes_and_setup_parse_errors(self):
         path = Path(__file__).resolve().parents[1] / '.github/workflows/portable-alpha.yml'

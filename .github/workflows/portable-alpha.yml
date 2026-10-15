@@ -152,7 +152,12 @@ jobs:
           PY
       - name: Build pinned upstream baseline and reviewed trace core
         run: |
-          git clone --config core.autocrlf=false --config core.eol=lf https://github.com/schellingb/dosbox-pure.git "$RUNNER_TEMP/dosbox-pure"
+          # Upstream rewrote its history after the pin, so a default clone no
+          # longer contains this commit; fetch the pinned commit by SHA.
+          git init "$RUNNER_TEMP/dosbox-pure"
+          git -C "$RUNNER_TEMP/dosbox-pure" config core.autocrlf false
+          git -C "$RUNNER_TEMP/dosbox-pure" config core.eol lf
+          git -C "$RUNNER_TEMP/dosbox-pure" fetch --depth 1 https://github.com/schellingb/dosbox-pure.git 73e03aa145e0549ed4d5a20f8e65532714da33f5
           git -C "$RUNNER_TEMP/dosbox-pure" checkout --detach 73e03aa145e0549ed4d5a20f8e65532714da33f5
           mkdir -p .runtime/pc-core
           if [[ "$RUNNER_OS" == Windows ]]; then
