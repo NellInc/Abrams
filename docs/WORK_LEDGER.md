@@ -4096,6 +4096,15 @@ Nell asked for the title-screen tank to be a 3D 1:1 match of the restored box co
   - **Thrown earth:** now coarse, angular clumps instead of round beads.
   - **Rejected:** a camera-side bounce light flattened the fenders to plaster and worsened the
     match.
+- **Eighth pass.** This pass was steered by a fine-detail measure as well as colour, because
+  the render's dust and ground were smoother than the cover's (detail energy about 4.5 against
+  the cover's 7 in the lower half).
+  - **Dust and ground:** the dust puffs now carry fine grit, and sand grains (dark, with some
+    glinting orange) hang low around the tracks. The ground crumbs vary between wet loam and
+    dry, dusty earth.
+  - **Turret front:** the paint's rim term is cut from 0.25 to 0.08, and the cheek front face
+    is now vertical, so the face reads dark as on the cover.
+  - **Score:** mean block colour difference is about 49 levels.
 - **Winding fix.** The faceted hull and turret panels were wound inside-out (Godot front
   faces are clockwise), so their lighting was inverted; `_tri` now emits clockwise faces.
 - **Look.** Linear tonemap with no contrast adjustment; a low key light from the cover's

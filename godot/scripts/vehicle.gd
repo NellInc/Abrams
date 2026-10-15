@@ -84,7 +84,7 @@ void fragment(){
  NORMAL=normalize(NORMAL+mat3(VIEW_MATRIX)*(transpose(mat3(to_local))*(bump*0.35)));
  ROUGHNESS=0.8+0.16*caked;
  SPECULAR=0.3;
- RIM=0.25;
+ RIM=0.08;
  RIM_TINT=0.7;
 }"""
 
@@ -389,7 +389,7 @@ func _turret(rubber: Material, glass: Material) -> void:
 	# Side profile (z, y) of the M1 cheeks and slab sides: the roof edge, the armour nose
 	# jutting ahead of it, the deep undercut, the flat skirt line and the raked rear edge
 	# where the bustle box begins.
-	var cheek := [Vector2(-2.22,0.75),Vector2(-2.4,0.37),Vector2(-1.92,0.15),Vector2(-0.3,0.13),
+	var cheek := [Vector2(-2.36,0.75),Vector2(-2.4,0.37),Vector2(-1.92,0.15),Vector2(-0.3,0.13),
 		Vector2(0.3,0.17),Vector2(0.3,0.3),Vector2(-0.02,0.78)]
 	extrude_x(t,cheek,0.55,1.7,turret_paint)
 	extrude_x(t,cheek,-1.7,-0.55,turret_paint)

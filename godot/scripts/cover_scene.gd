@@ -132,6 +132,7 @@ func _ready() -> void:
 	_dust()
 	_mud_spray()
 	_debris()
+	_grains()
 
 # Soft amber halo around each headlight, as the cover's lamps bloom in the dust.
 func _lamp_glow() -> void:
@@ -188,7 +189,8 @@ func _ground() -> void:
 	clod.radial_segments = 6
 	clod.rings = 3
 	var earth := StandardMaterial3D.new()
-	earth.albedo_color = Color("3a2a1e")
+	earth.albedo_color = Color("6a5240")
+	earth.vertex_color_use_as_albedo = true
 	earth.roughness = 1.0
 	# [count, x range, z range, size range]
 	var fields := [[7000,Vector2(-2.5,7.5),Vector2(-7.8,-3.8),Vector2(0.18,0.75)],
@@ -196,6 +198,7 @@ func _ground() -> void:
 	for field in fields:
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
 		mm.mesh = clod
 		mm.instance_count = field[0]
 		for i in range(mm.instance_count):
@@ -204,6 +207,9 @@ func _ground() -> void:
 			var tilt := Basis(Vector3(rng.randf_range(-1,1),0,rng.randf_range(-1,1)).normalized(),rng.randf_range(0.0,0.6))
 			var basis := tilt*Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3(s*rng.randf_range(0.7,1.3),s*rng.randf_range(0.4,0.75),s))
 			mm.set_instance_transform(i,Transform3D(basis,p+Vector3(0,0.01,0)))
+			# Wet dark loam, with every few crumbs dry and dusty.
+			var dry := rng.randf() < 0.12
+			mm.set_instance_color(i,Color(0.85,0.68,0.52) if dry else Color(0.28,0.24,0.22).lerp(Color(0.5,0.43,0.37),rng.randf()))
 		var node := MultiMeshInstance3D.new()
 		node.multimesh = mm
 		node.material_override = earth
@@ -217,6 +223,9 @@ func _cloud_texture() -> ImageTexture:
 	noise.seed = 88
 	noise.frequency = 0.045
 	noise.fractal_octaves = 5
+	var grit := FastNoiseLite.new()
+	grit.seed = 7
+	grit.frequency = 0.45
 	var size := 128
 	var image := Image.create(size,size,false,Image.FORMAT_RGBA8)
 	for y in range(size):
@@ -224,9 +233,11 @@ func _cloud_texture() -> ImageTexture:
 			var d := Vector2(x-size*0.5+0.5,y-size*0.5+0.5).length()/(size*0.5)
 			var falloff := clampf(1.0-d,0.0,1.0)
 			var n := noise.get_noise_2d(x,y)*0.5+0.5
-			var a := clampf((n-0.42)*4.0,0.0,1.0)*pow(falloff,0.7)
+			# Fine grit through each puff, as the cover's dust is full of sand and crumbs.
+			var grain := grit.get_noise_2d(x,y)*0.5+0.5
+			var a := clampf((n-0.42)*4.0,0.0,1.0)*pow(falloff,0.7)*(0.75+0.5*grain)
 			# Brighter, sunlit tops on each lump; darker undersides.
-			var shade := 0.75+0.35*clampf(n*1.4-0.2,0.0,1.0)-0.2*float(y)/size
+			var shade := (0.75+0.35*clampf(n*1.4-0.2,0.0,1.0)-0.2*float(y)/size)*(0.8+0.4*grain)
 			image.set_pixel(x,y,Color(shade,shade,shade,a))
 	return ImageTexture.create_from_image(image)
 
@@ -295,6 +306,42 @@ func _dust() -> void:
 		dust.color_initial_ramp = tint
 		add_child(dust)
 		_particles.append(dust)
+
+func _grains() -> void:
+	# Countless sand grains hanging in the dust: most dark, some glinting in the firelight, as
+	# the cover's dust is peppered with tiny orange sparks of sand.
+	var grain := QuadMesh.new()
+	grain.size = Vector2(0.009,0.009)
+	var lit := StandardMaterial3D.new()
+	lit.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	lit.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	lit.vertex_color_use_as_albedo = true
+	grain.material = lit
+	# [centre, extents, amount, colour]
+	var clouds := [
+		[Vector3(2.4,0.35,-3.2),Vector3(0.7,0.35,1.0),500,Color(1.0,0.55,0.2)],
+		[Vector3(-2.4,0.35,-3.4),Vector3(0.7,0.35,1.0),400,Color(1.0,0.55,0.2)],
+		[Vector3(2.8,0.6,-0.5),Vector3(0.7,0.6,3.0),500,Color(1.0,0.6,0.25)],
+		[Vector3(0.0,0.25,-4.6),Vector3(3.2,0.25,0.8),1600,Color(0.12,0.08,0.06)]]
+	for spec in clouds:
+		var grains := CPUParticles3D.new()
+		grains.mesh = grain
+		grains.amount = spec[2]
+		grains.lifetime = 2.0
+		grains.preprocess = 2.0
+		grains.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		grains.emission_box_extents = spec[1]
+		grains.position = spec[0]
+		grains.direction = Vector3(0.2,0.6,-0.4)
+		grains.spread = 60.0
+		grains.gravity = Vector3(0,-1.5,0)
+		grains.initial_velocity_min = 0.2
+		grains.initial_velocity_max = 1.2
+		grains.scale_amount_min = 0.5
+		grains.scale_amount_max = 1.6
+		grains.color = spec[3]
+		add_child(grains)
+		_particles.append(grains)
 
 func _mud_spray() -> void:
 	# Wet earth sprayed off the front of each track as clumpy dark mist, as on the cover.
