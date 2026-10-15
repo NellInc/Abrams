@@ -30,8 +30,11 @@ Present the actual project, its art, original scenarios and original creators.
 ## Positioning
 
 The original PC game supplies gameplay and mission logic, with Godot presentation
-running in tandem. Genesis supplies optional donor graphics. Four graphics modes
-are available; Modern remains experimental.
+running in tandem. Genesis supplies optional donor graphics. The Web edition
+offers six graphics modes (EGA, EGA Upscaled, Genesis, Genesis Upscaled,
+Modernized and Tactical) with a separate HUD Style; the alpha 4 downloads offer
+four (EGA, Genesis, Upscaled and the experimental Modern). Homepage mode names
+come from the Web edition's Graphics menu, and `verify.py` checks them against it.
 
 ## Capabilities and Constraints
 
@@ -54,8 +57,8 @@ and prominent creator credits.
 
 The parent README.md and NOTICE.md establish product facts and rights. Approved
 art and matched briefing screenshots are in ../docs/images/. Scenario content
-and maps are in ../docs/player-reference/. Modern production-renderer captures
-exist in the parent's ignored artifacts directory.
+and maps are in ../docs/player-reference/. Modernized and Tactical
+production-renderer captures exist in the parent's ignored artifacts directory.
 
 ## Accessibility & Inclusion
 

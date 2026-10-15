@@ -151,8 +151,11 @@ niner as one digit and still rejects compound numbers, omissions or wrong digits
 
 `tools/install_pc_bearings.py` verifies the four generation receipts, selected
 repair receipts, unchanged WAV bytes and matching transcripts before installing
-anything. It refuses differing existing voices. `pc_bearing_provenance.json`
-records each selected source, script, model, voice, hash and QA result. Dry
+anything. It refuses a differing installed voice unless that cue is in the
+selected repair set and the installed bytes match the current
+`pc_bearing_provenance.json` hash; such a custody-checked repair replaces the
+take and records `previous_take_sha256`. The install line reports new, repaired
+and unchanged counts. `pc_bearing_provenance.json` records each selected source, script, model, voice, hash and QA result. Dry
 masters and batch scripts remain in `local-audio/pc-bearings-gemini-3.8-v2/`.
 
 The existing original message identity, visible two-part text, speaker, source IP,
@@ -281,7 +284,10 @@ warnings first appear at route indices 631, 759 and 944, with sound gates true,
 false and true and identities 1, 2 and 3.
 
 `artifacts/pc-warning-native-02/report.json` passes 7,549 checks through the actual
-production viewer and source host. All source RAM/video boundaries and audio
+production viewer and source host. [15 October 2026 note: that total counted one
+constant-true `vehicle_art` check per frame; tests now count it once per run, so
+a rerun reports fewer. Re-quote from the next `VALIDATE_LIVE=1 ./tools/validate.sh`
+run.] All source RAM/video boundaries and audio
 events match the parity-tested trace. Every warning's current RGB crop matches
 its original hash; high-resolution type, portrait and Genesis cockpit are active.
 Two generated sample starts and one silent consumption are observed. The 98
@@ -305,6 +311,17 @@ python3 tools/verify_pc_dialogue.py \
   --capture --trace --play --frame-audit
 ```
 
+Since 15 October 2026 `verify_pc_dialogue` (like `verify_pc_audio_trace`; see
+[PC audio research](pc-audio-research.md)) accepts only a `mode: trace` report
+against a `mode: baseline` report from a distinct core, with both core hashes
+matching `.runtime/pc-core/abrams-trace.json` (`--manifest` overrides it). A
+recorded `trace_header_sha256` must match that receipt; dialogue traces captured
+before the header was recorded are exempt. After a trace-core rebuild only the
+trace halves need recapture; a baseline stays valid while `baseline_sha256` is
+unchanged.
+
+Working if: verifying a dialogue report against itself fails
+`core_pins_distinct_and_match_receipt`.
 
 ## Original radio reports, 28 September 2026
 
@@ -372,7 +389,9 @@ Only the attention sample fires at index 2614. R produces complete displayed
 radio assignments at 2868, 3145 and 3482, with enabled states true/false/true.
 
 `pc-radio-native-01/report.json` passes 26,142 checks through the production Godot
-viewer and original-PC host. All 3,716 full RAM/video boundaries and source audio
+viewer and original-PC host. [15 October 2026 note: that total counted one
+constant-true `vehicle_art` check per frame; re-quote from the next
+`VALIDATE_LIVE=1 ./tools/validate.sh` run.] All 3,716 full RAM/video boundaries and source audio
 events match the parity-tested trace. Genesis cockpit and high-resolution radio
 type are active. Each original message crop matches its current pixel digest.
 One attention sample and two generated voice streams start; the muted retrieval

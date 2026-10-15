@@ -34,8 +34,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    if inside_source(args.output):
-        parser.error("output must be outside original GAME")
+    if inside_source(args.output, ROOT):
+        parser.error("output must be outside original sources")
     args.output.mkdir(parents=True, exist_ok=False)
     reader = SimStateReader(ROOT / "GAME/SIM.EXE")
     state_path = ROOT / "reference/pc-live/mission-entry/reference.state"

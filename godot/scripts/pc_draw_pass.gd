@@ -15,6 +15,9 @@ var tactical_foliage = TacticalFoliage.new()
 var _foliage_pass: Dictionary = {}
 var _foliage_mapping: Dictionary = {}
 var _effects_inputs: Dictionary = {}
+# Per-object running-gear anchors of the current pass (null where none), built
+# once from one pass-wide actor index and shared by the mesh key and mapping.
+var _motion_anchors: Array = []
 var profile_builds := false
 var last_apply_timings_usec: Dictionary = {}
 var mesh_build_count := 0
@@ -24,6 +27,13 @@ var mesh_reuse_count := 0
 var retain_render_target := false
 var _cached_pass: Dictionary = {}
 var _cached_config: Array = []
+# Sustained camera motion misses every frame, so its full deep snapshot is never
+# consulted. After this many consecutive camera-changing misses only the cheap
+# camera/object-count pre-key is kept; the first unchanged camera snapshots
+# again. A hit still always requires full equality with an independent copy.
+const MOTION_SNAPSHOT_SKIP := 4
+var _previous_prekey: Array = []
+var _motion_misses := 0
 var solid_enabled := false:
 	set(value):
 		if solid_enabled!=value: clear_mesh_cache()
@@ -75,6 +85,7 @@ var vehicle_polygon_count := 0
 var effect_art_ids: Array[int] = []
 var _effect_uvs := PackedVector2Array()
 var terrain_active := false
+var camera_basis_ready := false
 var terrain_polygon_count := 0
 var hill_polygon_count := 0
 var _pattern_key := ""
@@ -186,7 +197,7 @@ func _mesh_config() -> Array:
 
 func apply_pass(pass_data: Dictionary) -> void:
 	var started: int=Time.get_ticks_usec() if profile_builds else 0
-	last_apply_timings_usec={"reused":false,"ownership":0,"mapping":0,"upload":0} if profile_builds else {}
+	last_apply_timings_usec={"reused":false,"ownership":0,"mapping":0,"tree_mapping":0,"upload":0,"foliage":0,"effects":0} if profile_builds else {}
 	var cacheable: bool = solid_enabled and pass_data.get("camera") is Dictionary and pass_data.get("materials") is Array and pass_data.get("palette_rgb") is Array and pass_data.get("objects") is Array and not pass_data.objects.is_empty()
 	if modern_enabled and not modern_assets.ready: cacheable=false
 	var config: Array = _mesh_config() if cacheable else []
@@ -198,9 +209,11 @@ func apply_pass(pass_data: Dictionary) -> void:
 	# Off-screen actors must still simulate, but cannot dirty this visible mesh.
 	var motion_inputs: Array = []
 	if modern_enabled and pass_data.get("objects") is Array:
+		var actors: Dictionary=ModernAssets.dynamic_index(pass_data)
 		for object: Dictionary in pass_data.objects:
-			var anchor: float=modern_assets.running_gear_anchor(object,pass_data)
+			var anchor: float=modern_assets.running_gear_anchor(object,pass_data,actors)
 			motion_inputs.append(anchor if is_finite(anchor) else null)
+	_motion_anchors=motion_inputs
 	render_input["world"]=motion_inputs
 	var effects_input: Dictionary={"rows":TacticalEffects.inputs(pass_data)} if modern_enabled and tactical_landscape else {}
 	# Full recursive content equality against an independent snapshot, never a
@@ -208,16 +221,21 @@ func apply_pass(pass_data: Dictionary) -> void:
 	if cacheable and not _cached_pass.is_empty() and mesh_node.mesh!=null and _cached_config==config and _cached_pass.recursive_equal(render_input,64):
 		if _modern_active:
 			_foliage_pass=pass_data
-			# A source smoke-clock or speed change updates only the small
-			# particle batch. Preserve the existing terrain/actor mesh cache.
+			# A source smoke-clock or actor-identity change updates only the small
+			# particle batch; actor speed, heading and position never dirty it.
+			# Preserve the existing terrain/actor mesh cache.
 			if tactical_landscape and not _effects_inputs.recursive_equal(effects_input,64):
+				var effects_started: int=Time.get_ticks_usec() if profile_builds else 0
 				tactical_effects.prepare(pass_data,_foliage_mapping,ownership.get_texture(),modern_assets,effect_art)
+				if profile_builds: last_apply_timings_usec.effects=Time.get_ticks_usec()-effects_started
 				_effects_inputs=effects_input.duplicate(true)
 				if retain_render_target and get_viewport() is SubViewport:
 					get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
 		if mesh_node.mesh!=null and mesh_node.mesh.get_surface_count()>0:
 			refresh_surface_shader(mesh_node.mesh.surface_get_material(0))
 		mesh_reuse_count += 1
+		_motion_misses=0
+		_previous_prekey=[pass_data.camera.duplicate(true),pass_data.objects.size()]
 		if profile_builds:
 			last_apply_timings_usec.reused=true
 			last_apply_timings_usec.total=Time.get_ticks_usec()-started
@@ -225,6 +243,10 @@ func apply_pass(pass_data: Dictionary) -> void:
 		return
 	if profile_builds: last_apply_timings_usec.cache_check=Time.get_ticks_usec()-started
 	clear_mesh_cache()
+	if cacheable:
+		var prekey: Array=[pass_data.camera.duplicate(true),pass_data.objects.size()]
+		_motion_misses=0 if prekey==_previous_prekey else _motion_misses+1
+		_previous_prekey=prekey
 	mesh_build_count += 1
 	if retain_render_target and get_viewport() is SubViewport:
 		get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
@@ -249,16 +271,17 @@ func apply_pass(pass_data: Dictionary) -> void:
 	sprite_count = 0
 	effect_art_ids.clear()
 	terrain_active = false
+	camera_basis_ready = false
 	terrain_polygon_count = 0
 	hill_polygon_count = 0
 	vehicle_polygon_count = 0
 	if solid_enabled:
-		_apply_surfaces(pass_data)
+		_apply_surfaces(pass_data,effects_input)
 		if _modern_active:
 			modern_frame_status="%d refined faces, %d tree planes, %d source fallbacks, %d observed round forms"%[modern_polygon_count,modern_tree_count,modern_fallback_polygon_count,source_round_count]
 		elif modern_enabled and pass_data.get("camera") is Dictionary:
 			modern_frame_status="Source fallback: Modern assets unavailable" if not modern_assets.ready else "Source fallback: unsupported palette or ownership"
-		if cacheable and mesh_node.mesh!=null and (not modern_enabled or _modern_active):
+		if cacheable and mesh_node.mesh!=null and (not modern_enabled or _modern_active) and _motion_misses<MOTION_SNAPSHOT_SKIP:
 			_cached_pass=render_input.duplicate(true)
 			_cached_config=config.duplicate(true)
 		if profile_builds: last_apply_timings_usec.total=Time.get_ticks_usec()-started
@@ -294,7 +317,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 	mesh.surface_set_material(0, material)
 	mesh_node.mesh = mesh
 
-func _apply_surfaces(pass_data: Dictionary) -> void:
+func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 	mesh_node.mesh = null
 	polygon_count = 0
 	dynamic_polygon_count = 0
@@ -307,7 +330,7 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	_modern_active = modern_enabled and modern_assets.ready and modern_assets.supported_palette(pass_data.palette_rgb)
 	if _modern_active:
 		var owner_started: int=Time.get_ticks_usec() if profile_builds else 0
-		_modern_active = ownership.prepare(pass_data,Vector2i(get_viewport().get_visible_rect().size),effect_art)
+		_modern_active = ownership.prepare(pass_data,Vector2i(get_viewport().get_visible_rect().size))
 		if profile_builds: last_apply_timings_usec.ownership=Time.get_ticks_usec()-owner_started
 	var palette: Array = presentation_palette if presentation_palette.size() == 16 else pass_data.palette_rgb
 	if modern_enabled: palette = ModernAssets.DAY_PALETTE if _modern_active else pass_data.palette_rgb
@@ -354,6 +377,10 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	# Original terrain is the underpaint. Every actor, including a fallback,
 	# subsequently obeys the final same-frame original ownership texture.
 	var ordered_objects: Array = []
+	# Per-object effect-art results, reused by the Tactical effect batch.
+	var effect_mappings: Array = []
+	effect_mappings.resize(pass_data.objects.size())
+	effect_mappings.fill({})
 	for index in pass_data.objects.size():
 		if _modern_active and modern_assets.is_terrain(pass_data.objects[index]): ordered_objects.append(index)
 	for index in pass_data.objects.size():
@@ -364,6 +391,7 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 		if object.get("sprite") is Dictionary:
 			sprite_count += 1
 			var effect: Dictionary = effect_art.mapping(object,frame,pass_data.palette_rgb) if effect_art else {}
+			effect_mappings[index]=effect
 			if not effect.is_empty():
 				effect_art_ids.append(effect.index)
 				_add_effect(vertices,materials,effect,frame)
@@ -374,7 +402,7 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 					_add_triangles(vertices, materials, SurfaceGeometry.triangle_vertices(points, frame), material_count + int(run.color), material_count + 16)
 		var object_facets: Array = []
 		var source_layer := 0
-		var gear_anchor: float = modern_assets.running_gear_anchor(object,pass_data) if _modern_active else NAN
+		var gear_anchor: float = float(_motion_anchors[index]) if _modern_active and index<_motion_anchors.size() and _motion_anchors[index]!=null else NAN
 		for item: Dictionary in SourceCommands.ordered(object):
 			source_layer += 1
 			if item.kind=="round_form":
@@ -400,9 +428,14 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 			source_points.append_array(points)
 			var fill := int(polygon.get("fill_mode", 0)) != 0 and points.size() >= 3
 			var mapping_started: int=Time.get_ticks_usec() if profile_builds else 0
-			var facets: Array = modern_assets.mapping(object,polygon,frame,pass_data.palette_rgb,false,gear_anchor) if fill and _modern_active else []
+			# The object sort below breaks depth ties by painter_order, so the
+			# per-face presort would be redundant work.
+			var facets: Array = modern_assets.mapping(object,polygon,frame,pass_data.palette_rgb,false,gear_anchor,false) if fill and _modern_active else []
+			if profile_builds:
+				last_apply_timings_usec.mapping+=Time.get_ticks_usec()-mapping_started
+				mapping_started=Time.get_ticks_usec()
 			var tree: Array = modern_assets.tree_mapping(object,polygon,frame,pass_data.palette_rgb) if fill and _modern_active else []
-			if profile_builds: last_apply_timings_usec.mapping+=Time.get_ticks_usec()-mapping_started
+			if profile_builds: last_apply_timings_usec.tree_mapping+=Time.get_ticks_usec()-mapping_started
 			if not facets.is_empty():
 				modern_polygon_count += 1
 				# Weapon crews are overlapping, coplanar two-sided source sheets.
@@ -413,7 +446,9 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 						facet.realism_family=roundi(fmod(float(facet.kind),1.0)*64.0) if float(facet.kind)>=24.0 else 0
 						facet.kind=20.0625
 						facet.flat_source_layer=source_layer
-				object_facets.append_array(facets)
+				for facet: Dictionary in facets:
+					facet.painter_order=object_facets.size()
+					object_facets.append(facet)
 			if not tree.is_empty():
 				modern_tree_count += 1
 				_add_tree(vertices,materials,tree,modern_assets.tree_colour_variant(object,frame))
@@ -440,7 +475,9 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 					else:_add_triangles(vertices,materials,line_points,int(polygon.colors[0]),pass_data.materials.size())
 		# Sort the refined geometry across the whole original object rather than
 		# keeping bevels/wheels trapped in separate source primitive slots.
-		object_facets.sort_custom(func(a,b): return a.depth>b.depth)
+		# sort_custom is unstable: equal depths keep source face order, then
+		# catalogue triangle order, explicitly.
+		object_facets.sort_custom(func(a,b): return a.depth>b.depth or (a.depth==b.depth and a.painter_order<b.painter_order))
 		for facet: Dictionary in object_facets: _add_modern(vertices,materials,facet)
 	if vertices.is_empty(): return
 	var upload_started: int=Time.get_ticks_usec() if profile_builds else 0
@@ -484,13 +521,21 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 	if terrain_active:
 		material.set_shader_parameter("field_detail",terrain_style.textures.field)
 		material.set_shader_parameter("road_detail",terrain_style.textures.road)
-		material.set_shader_parameter("camera_to_local",mapping.inverse)
-		material.set_shader_parameter("world_origin",mapping.origin)
+	# The camera basis is a property of the observed frame, not of terrain art.
+	# Without it every world-anchored normal would be a zero vector (NaN).
+	var basis: Dictionary=mapping if terrain_active else TerrainStyle.camera_basis(frame)
+	camera_basis_ready=not basis.is_empty()
+	material.set_shader_parameter("camera_basis_ready",camera_basis_ready)
+	if camera_basis_ready:
+		material.set_shader_parameter("camera_to_local",basis.inverse)
+		material.set_shader_parameter("world_origin",basis.origin)
 	material.set_shader_parameter("source_origin", Vector2(frame.clip[0], frame.clip[1]))
 	material.set_shader_parameter("source_dimensions", Vector2(frame.clip[2] - frame.clip[0] + 1, frame.clip[3] - frame.clip[1] + 1))
 	material.set_shader_parameter("source_focal_pixels",float(frame.focal_pixels))
-	var background:Dictionary=pass_data.get("background",{})
-	var background_colours:Array=background.get("colors",[])
+	# The host sends background null for a page whose background event has not
+	# arrived; that pass is warned above and has no horizon to classify.
+	var background:Dictionary=pass_data.background if pass_data.get("background") is Dictionary else {}
+	var background_colours:Array=background.colors if background.get("colors") is Array else []
 	# Browser JSON decodes numbers as floats; Array equality is type-sensitive.
 	if background.get("kind","")=="horizon" and background_colours.size()==2 and int(background_colours[0])==5 and int(background_colours[1])==8:
 		var a:=Vector2(background.line[0][0],background.line[0][1])
@@ -508,9 +553,15 @@ func _apply_surfaces(pass_data: Dictionary) -> void:
 		_foliage_pass=pass_data
 		_foliage_mapping=mapping
 		if tactical_landscape:
+			var prepare_started: int=Time.get_ticks_usec() if profile_builds else 0
 			tactical_foliage.prepare(pass_data,mapping,ownership.get_texture())
-			tactical_effects.prepare(pass_data,mapping,ownership.get_texture(),modern_assets,effect_art)
-			_effects_inputs={"rows":TacticalEffects.inputs(pass_data).duplicate(true)}
+			if profile_builds:
+				last_apply_timings_usec.foliage=Time.get_ticks_usec()-prepare_started
+				prepare_started=Time.get_ticks_usec()
+			tactical_effects.prepare(pass_data,mapping,ownership.get_texture(),modern_assets,effect_art,effect_mappings)
+			if profile_builds: last_apply_timings_usec.effects=Time.get_ticks_usec()-prepare_started
+			# apply_pass already walked these inputs for its cache check.
+			_effects_inputs=effects_input.duplicate(true)
 
 
 static func _road_edge_coordinates(original:Array,triangles:Array) -> Array:

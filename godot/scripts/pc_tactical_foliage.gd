@@ -3,23 +3,39 @@ extends Node3D
 const Surface = preload("res://scripts/pc_surface_geometry.gd")
 const Terrain = preload("res://scripts/pc_terrain_style.gd")
 const ShaderSource = preload("res://scripts/pc_tactical_foliage.gdshader")
+# Shrub and grass planting: grid spacing and radius in source units.
+const LAYERS := [[220.0,3200.0],[48.0,850.0]]
+# 12 transform floats (3x4 row-major) plus 4 custom floats per instance.
+const STRIDE := 16
 var plants: Array[MultiMeshInstance3D] = []
 var material: ShaderMaterial
 var instance_count := 0
 var _grid_centers: Array[Vector2i] = [Vector2i.ZERO,Vector2i.ZERO]
 var _grid_cache: Array = [[],[]]
 var _grid_build_count := 0
+var _buffers: Array[PackedFloat32Array] = []
+var _allowed_bytes := PackedByteArray()
+var _allowed_texture: ImageTexture
 
 func _init() -> void:
 	material = ShaderMaterial.new()
 	material.shader = ShaderSource
 	material.render_priority = 1
-	for mesh in [_shrub(),_grass()]:
+	var meshes := [_shrub(),_grass()]
+	for layer in 2:
 		var node := MultiMeshInstance3D.new()
 		node.multimesh = MultiMesh.new()
 		node.multimesh.transform_format = MultiMesh.TRANSFORM_3D
 		node.multimesh.use_custom_data = true
-		node.multimesh.mesh = mesh
+		node.multimesh.mesh = meshes[layer]
+		# Allocate the whole planting grid once. Each rebuild uploads one buffer
+		# and draws its leading visible_instance_count, never reallocating.
+		var cells: int = 2*ceili(LAYERS[layer][1]/LAYERS[layer][0])+1
+		node.multimesh.instance_count = cells*cells
+		node.multimesh.visible_instance_count = 0
+		var buffer := PackedFloat32Array()
+		buffer.resize(cells*cells*STRIDE)
+		_buffers.append(buffer)
 		node.material_override = material
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(node)
@@ -112,6 +128,7 @@ static func seed_at(cell: Vector2i, salt: int) -> float:
 func clear() -> void:
 	visible = false
 	instance_count = 0
+	for node in plants: node.multimesh.visible_instance_count = 0
 
 func _planting_grid(layer: int, center: Vector2i, spacing: float, reach: int) -> Array:
 	# Two bounded grids contain only deterministic world placement. Camera
@@ -134,8 +151,8 @@ func _planting_grid(layer: int, center: Vector2i, spacing: float, reach: int) ->
 func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D) -> void:
 	clear()
 	if mapping.is_empty() or ownership==null: return
-	var background: Dictionary = data.get("background",{})
-	var colors: Array = background.get("colors",[])
+	var background: Dictionary = data.background if data.get("background") is Dictionary else {}
+	var colors: Array = background.colors if background.get("colors") is Array else []
 	if background.get("kind","")!="horizon" or colors.size()!=2 or int(colors[0])!=5 or int(colors[1])!=8: return
 	var frame: Dictionary = data.camera
 	var origin: Vector3 = mapping.origin
@@ -164,7 +181,12 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D) -> voi
 	var delta := b-a
 	if absf(delta.x)<0.001: return
 	material.set_shader_parameter("source_ownership",ownership)
-	material.set_shader_parameter("allowed_ground",ImageTexture.create_from_image(allowed))
+	# The whitelist only changes with the object list; identical bytes keep the
+	# uploaded texture, and a changed list gets a fresh exact one.
+	if _allowed_texture==null or allowed.get_data()!=_allowed_bytes:
+		_allowed_bytes=allowed.get_data()
+		_allowed_texture=ImageTexture.create_from_image(allowed)
+		material.set_shader_parameter("allowed_ground",_allowed_texture)
 	material.set_shader_parameter("owner_count",float(allowed.get_width()))
 	material.set_shader_parameter("source_origin",clip.position)
 	material.set_shader_parameter("source_dimensions",clip.size)
@@ -174,8 +196,8 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D) -> voi
 	material.set_shader_parameter("source_eye_height",origin.z)
 	material.set_shader_parameter("horizon",Vector3(-delta.y,delta.x,delta.y*a.x-delta.x*a.y)/delta.length())
 	for layer in 2:
-		var spacing: float = 220.0 if layer==0 else 48.0
-		var radius: float = 3200.0 if layer==0 else 850.0
+		var spacing: float = LAYERS[layer][0]
+		var radius: float = LAYERS[layer][1]
 		var center := Vector2i(floori(origin.x/spacing),floori(origin.y/spacing))
 		var reach := ceili(radius/spacing)
 		var instances: Array = []
@@ -197,9 +219,16 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D) -> voi
 		# Transparent draw order is far to near; convex lobes have backface culling.
 		instances.sort_custom(func(left,right): return left[0]>right[0])
 		var mm: MultiMesh = plants[layer].multimesh
-		mm.instance_count = instances.size()
+		var buffer: PackedFloat32Array = _buffers[layer]
 		for i in instances.size():
-			mm.set_instance_transform(i,instances[i][1])
-			mm.set_instance_custom_data(i,Color(instances[i][2].x,instances[i][2].y,instances[i][3],float(layer)))
+			var t: Transform3D = instances[i][1]
+			var at: int = i*STRIDE
+			buffer[at]=t.basis.x.x;buffer[at+1]=t.basis.y.x;buffer[at+2]=t.basis.z.x;buffer[at+3]=t.origin.x
+			buffer[at+4]=t.basis.x.y;buffer[at+5]=t.basis.y.y;buffer[at+6]=t.basis.z.y;buffer[at+7]=t.origin.y
+			buffer[at+8]=t.basis.x.z;buffer[at+9]=t.basis.y.z;buffer[at+10]=t.basis.z.z;buffer[at+11]=t.origin.z
+			buffer[at+12]=instances[i][2].x;buffer[at+13]=instances[i][2].y;buffer[at+14]=instances[i][3];buffer[at+15]=float(layer)
+		# Instances past visible_instance_count keep stale data and are not drawn.
+		mm.buffer = buffer
+		mm.visible_instance_count = instances.size()
 		instance_count += instances.size()
 	visible = instance_count>0

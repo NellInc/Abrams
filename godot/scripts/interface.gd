@@ -10,6 +10,9 @@ var green := Color("c5e1ac")
 var panel := Color(0.055,0.076,0.062,0.94)
 var buttons: Array[Dictionary] = []
 var gradient_texture: GradientTexture2D
+var top_veil: GradientTexture2D
+var bottom_veil: GradientTexture2D
+var vignette: GradientTexture2D
 var reload_seen := 0
 var reload_span := 0
 const STATIONS := ["GUNNER", "COMMANDER", "CUPOLA", "DRIVER"]
@@ -27,12 +30,24 @@ const MISSIONS := [
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	gradient_texture = GradientTexture2D.new()
-	gradient_texture.gradient = Gradient.new()
-	gradient_texture.gradient.colors = PackedColorArray([Color(0.018,0.032,0.023,0.90),Color(0.018,0.032,0.023,0)])
-	gradient_texture.fill_from = Vector2(0,0)
-	gradient_texture.fill_to = Vector2(1,0)
+	var shade := Color(0.014,0.024,0.017)
+	gradient_texture = veil([Color(shade,0.92),Color(shade,0.84),Color(shade,0)],[0.0,0.75,1.0],Vector2(0,0),Vector2(1,0))
+	top_veil = veil([Color(shade,0.3),Color(shade,0)],[0.0,1.0],Vector2(0,0),Vector2(0,1))
+	bottom_veil = veil([Color(shade,0),Color(shade,0.35)],[0.0,1.0],Vector2(0,0),Vector2(0,1))
+	vignette = veil([Color(shade,0),Color(shade,0),Color(shade,0.3)],[0.0,0.6,1.0],Vector2(0.5,0.5),Vector2(1.08,1.08))
+	vignette.fill = GradientTexture2D.FILL_RADIAL
 	resized.connect(_layout_buttons)
+
+func veil(colors: Array, offsets: Array, from: Vector2, to: Vector2) -> GradientTexture2D:
+	var texture := GradientTexture2D.new()
+	texture.gradient = Gradient.new()
+	texture.gradient.colors = PackedColorArray(colors)
+	texture.gradient.offsets = PackedFloat32Array(offsets)
+	texture.fill_from = from
+	texture.fill_to = to
+	texture.width = 256
+	texture.height = 256
+	return texture
 
 func text(at: Vector2, value: String, font_size := 18, color := Color("e3e4cd"), condensed := false) -> void:
 	draw_string(heading_font if condensed else mono,at,value,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size,color)
@@ -81,20 +96,33 @@ func button(label: String, area: Rect2, action: Callable) -> void:
 	b.add_theme_font_override("font",mono)
 	b.add_theme_font_size_override("font_size",18)
 	b.add_theme_color_override("font_color",cream)
-	b.add_theme_color_override("font_hover_color",Color("0c160e"))
+	b.add_theme_color_override("font_hover_color",amber)
+	b.add_theme_color_override("font_pressed_color",Color("0c160e"))
 	b.add_theme_color_override("font_focus_color",amber)
+	b.add_theme_color_override("font_hover_pressed_color",Color("0c160e"))
 	for state in ["normal","hover","pressed","focus"]:
+		# A quiet glass row; the amber spine marks hover and keyboard focus without shouting.
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.045,0.064,0.05,0.78)
-		style.border_color = Color("65745a")
+		style.bg_color = Color(0.03,0.045,0.035,0.58)
+		style.border_color = Color(0.54,0.6,0.47,0.32)
 		style.border_width_bottom = 1
-		style.content_margin_left = 18
-		if state in ["hover","pressed"]:
+		style.border_width_left = 2
+		style.content_margin_left = 20
+		style.corner_radius_top_right = 2
+		style.corner_radius_bottom_right = 2
+		if state == "hover":
+			style.bg_color = Color(amber,0.12)
+			style.border_color = amber
+			style.border_width_left = 4
+		elif state == "pressed":
 			style.bg_color = amber
+			style.border_color = amber
+			style.border_width_left = 4
 		elif state == "focus":
-			style.bg_color = Color(0,0,0,0)
+			style.bg_color = Color(amber,0.10)
 			style.border_color = amber
 			style.set_border_width_all(1)
+			style.border_width_left = 4
 		b.add_theme_stylebox_override(state,style)
 	b.pressed.connect(action)
 	b.mouse_entered.connect(func(): main.sound.play("switch"))
@@ -127,26 +155,23 @@ func _page_header(kicker: String, title: String, description: String) -> void:
 	text(Vector2(90,213),description,16,muted)
 
 func _menu() -> void:
-	# A graduated legibility veil leaves the vehicle and sky as the cover artwork.
-	draw_texture_rect(gradient_texture,Rect2(0,0,1150,900),false)
-	rect(Rect2(0,810,1600,90),Color(0.025,0.045,0.03,0.78))
-	rect(Rect2(0,0,1600,90),Color(0.025,0.045,0.03,0.65))
-	text(Vector2(90,55),"DYNAMIX'S 1988 CLASSIC  /  RECONSTRUCTION PROJECT",15,cream)
-	text(Vector2(1290,55),"LOCAL BUILD  001",14,amber)
-	line(Vector2(90,90),Vector2(1510,90),Color(0.8,0.8,0.6,0.3))
-	text(Vector2(90,212),"M1A1  /  MAIN BATTLE TANK",18,amber)
+	# Graduated legibility veils darken the title column only and leave the tank, smoke and
+	# dust to the right as the cover photograph has them; no hard bands.
+	draw_texture_rect(vignette,Rect2(0,0,1600,900),false)
+	draw_texture_rect(gradient_texture,Rect2(0,0,610,900),false)
+	draw_texture_rect(top_veil,Rect2(0,0,1600,120),false)
+	draw_texture_rect(bottom_veil,Rect2(0,760,1600,140),false)
+	rect(Rect2(90,198,8,8),amber)
+	text(Vector2(108,212),"M1A1  /  MAIN BATTLE TANK",18,amber)
+	# Soft drop shadow lifts the title off the bright meadow.
+	text(Vector2(85,355),"ABRAMS",154,Color(0,0,0,0.38),true)
 	text(Vector2(81,350),"ABRAMS",154,cream,true)
+	text(Vector2(92,412),"B A T T L E   T A N K",32,Color(0,0,0,0.35),true)
 	text(Vector2(91,410),"B A T T L E   T A N K",32,cream,true)
-	line(Vector2(92,441),Vector2(160,441),amber,3)
-	text(Vector2(90,479),"BACK IN THE COMMANDER'S SEAT.",18,muted)
-	text(Vector2(90,786),"PC gameplay. Genesis-inspired artwork.",14,muted)
-	line(Vector2(90,822),Vector2(1510,822))
-	text(Vector2(90,858),"GODOT 4  /  HIGH-RESOLUTION PRESENTATION",13,cream)
-	text(Vector2(822,858),"CALIBRATION RANGE AVAILABLE  /  CAMPAIGN IN RECONSTRUCTION",13,amber)
-	text(Vector2(1196,727),"120 MM",44,cream,true)
-	text(Vector2(1347,727),"4 CREW",44,cream,true)
-	text(Vector2(1197,754),"MAIN GUN",12,muted)
-	text(Vector2(1348,754),"STATIONS",12,muted)
+	text(Vector2(91,452),"F A N   R E M A S T E R",22,Color(0,0,0,0.35),true)
+	text(Vector2(90,450),"F A N   R E M A S T E R",22,amber,true)
+	line(Vector2(356,443),Vector2(510,443),Color(amber,0.35),1)
+	text(Vector2(90,488),"BACK IN THE COMMANDER'S SEAT.",18,muted)
 
 func _manual() -> void:
 	_page_header("FIELD MANUAL","KNOW YOUR STATION","Original DOS key layout. The current exercise is an authored calibration range.")
@@ -220,9 +245,10 @@ func _instruments() -> void:
 		if not main.camera.is_position_behind(at):
 			var p: Vector2 = main.camera.unproject_position(at)*Vector2(1600,900)/size
 			if Rect2(72,100,1456,605).has_point(p):
+				draw_rect(Rect2(p-Vector2(26,21),Vector2(52,42)),halo_for(tint),false,3.0)
 				rect(Rect2(p-Vector2(26,21),Vector2(52,42)),tint,true)
-				text(p+Vector2(34,-15),"LOCK" if sim.locked else "SELECT",13,tint)
-				text(p+Vector2(34,8),"%04d M" % int(sim.pos.distance_to(target.pos)),13,tint)
+				optic_text(p+Vector2(34,-15),"LOCK" if sim.locked else "SELECT",13,tint)
+				optic_text(p+Vector2(34,8),"%04d M" % int(sim.pos.distance_to(target.pos)),13,tint)
 	# Bottom instrument strip.
 	for x in [334,642,1000,1288]:
 		line(Vector2(x,752),Vector2(x,837))
@@ -295,21 +321,34 @@ func _compass() -> void:
 func _reticle(tint: Color) -> void:
 	var center := Vector2(800,450)
 	# Horizontal stadia leave the target center unobstructed.
-	line(center+Vector2(-230,0),center+Vector2(-28,0),tint)
-	line(center+Vector2(28,0),center+Vector2(230,0),tint)
-	line(center+Vector2(0,-110),center+Vector2(0,-26),tint)
-	line(center+Vector2(0,24),center+Vector2(0,120),tint)
+	optic_line(center+Vector2(-230,0),center+Vector2(-28,0),tint)
+	optic_line(center+Vector2(28,0),center+Vector2(230,0),tint)
+	optic_line(center+Vector2(0,-110),center+Vector2(0,-26),tint)
+	optic_line(center+Vector2(0,24),center+Vector2(0,120),tint)
 	for i in [-4,-3,-2,-1,1,2,3,4]:
 		var x := float(i)*48
-		line(center+Vector2(x,-7),center+Vector2(x,7),tint)
-		text(center+Vector2(x-5,26),str(absi(i)*5),11,tint)
+		optic_line(center+Vector2(x,-7),center+Vector2(x,7),tint)
+		optic_text(center+Vector2(x-5,26),str(absi(i)*5),11,tint)
 	for i in range(1,5):
-		line(center+Vector2(-7,i*24),center+Vector2(7,i*24),tint)
+		optic_line(center+Vector2(-7,i*24),center+Vector2(7,i*24),tint)
+	draw_circle(center,3,halo_for(tint))
 	draw_circle(center,2,tint)
-	text(Vector2(87,125),"GPS   /   " + ("THERMAL" if main.sim.thermal else "DAY OPTIC"),15,tint)
-	text(Vector2(1390,125),["1X","3X","10X"][main.sim.zoom_level] if main.sim.station == 0 else "WIDE",15,tint)
-	text(Vector2(88,637),"TADS  " + ("LOCKED" if main.sim.locked else "SEARCH"),15,tint)
-	text(Vector2(1240,637),"%s  %02d" % [WEAPONS[main.sim.weapon], main.sim.ammo[main.sim.weapon]],18,tint)
+	optic_text(Vector2(87,125),"GPS   /   " + ("THERMAL" if main.sim.thermal else "DAY OPTIC"),15,tint)
+	optic_text(Vector2(1390,125),["1X","3X","10X"][main.sim.zoom_level] if main.sim.station == 0 else "WIDE",15,tint)
+	optic_text(Vector2(88,637),"TADS  " + ("LOCKED" if main.sim.locked else "SEARCH"),15,tint)
+	optic_text(Vector2(1240,637),"%s  %02d" % [WEAPONS[main.sim.weapon], main.sim.ammo[main.sim.weapon]],18,tint)
+
+# A faint contrasting halo keeps optic ink legible over both bright sky and dark meadow.
+func halo_for(tint: Color) -> Color:
+	return Color(0.94,0.93,0.84,0.42) if tint.get_luminance() < 0.5 else Color(0.02,0.04,0.02,0.5)
+
+func optic_line(a: Vector2, b: Vector2, tint: Color) -> void:
+	line(a,b,halo_for(tint),3.0)
+	line(a,b,tint)
+
+func optic_text(at: Vector2, value: String, font_size: int, tint: Color) -> void:
+	draw_string_outline(mono,at,value,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size,3,halo_for(tint))
+	text(at,value,font_size,tint)
 
 func _commander_map() -> void:
 	var area := Rect2(88,138,440,430) if not main.map_overview else Rect2(410,115,780,590)

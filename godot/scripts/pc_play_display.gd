@@ -22,6 +22,9 @@ var _wide_panel_mask_bytes := PackedByteArray()
 var _wide_mask_safe := false
 var _wide_mask_station := 0
 var _fallback_pair_verified := false
+# Last plate overlay verdict, keyed by the exact encoded mask and plate sources.
+var _source_mask_key: Array = []
+var _source_mask_bytes := PackedByteArray()
 var source_dimensions := Vector2i(256,97)
 var graphics_mode := "upscaled"
 var msaa_samples := 4
@@ -112,7 +115,6 @@ func set_camera_dimensions(dimensions: Vector2i) -> void:
 func set_hud_style(style: String) -> bool:
 	if style not in ["restored","tactical"]: return false
 	hud_style=style
-	background.color=Color("101a13") if style=="tactical" else Color.BLACK
 	if style=="restored":
 		_hud_mask_bytes=""
 		_hud_mask_texture=null
@@ -195,6 +197,12 @@ func _source_cockpit_mask(presentation: Dictionary) -> Image:
 	var overlay=presentation.get("plate_overlay")
 	if not overlay is Dictionary or overlay.get("width")!=320 or overlay.get("height")!=200: return null
 	if not overlay.get("plates") is Dictionary or not overlay.get("mask_png") is String: return null
+	# The verdict depends only on the exact encoded mask and its plate sources.
+	var key:=[overlay.mask_png,overlay.plates]
+	if key==_source_mask_key:
+		return Image.create_from_data(320,200,false,Image.FORMAT_L8,_source_mask_bytes) if not _source_mask_bytes.is_empty() else null
+	_source_mask_key=key.duplicate(true)
+	_source_mask_bytes=PackedByteArray()
 	var mask:=Image.new()
 	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK or mask.get_size()!=Vector2i(320,200) or mask.get_format()!=Image.FORMAT_L8: return null
 	var bits:=mask.get_data()
@@ -207,6 +215,7 @@ func _source_cockpit_mask(presentation: Dictionary) -> Image:
 		if not plate is Dictionary or plate.get("source")!=expected[0] or plate.get("source_sha256")!=expected[1]: return null
 		recognised+=count
 	if recognised!=64000 or bits.count(0)==64000: return null
+	_source_mask_bytes=bits
 	return mask
 
 func _source_station() -> int:
@@ -218,7 +227,7 @@ func _source_station() -> int:
 	return 0
 
 func _safe_wide_station(bounds: Vector4, panel_mask: Image) -> int:
-	if not TACTICAL_LAYOUTS.has(_station): return 0
+	if not TACTICAL_LAYOUTS.has(_station) or not _tactical_graphics(): return 0
 	var layout:Dictionary=TACTICAL_LAYOUTS[_station]
 	if _station!=5 and bounds!=layout.camera: return 0
 	if _hud_mask_data.size()!=64000 or _panel_mask_bytes.size()!=64000 or panel_mask==null: return 0
@@ -255,7 +264,10 @@ func _update_hud_material() -> void:
 	tactical_material.set_shader_parameter("hud_mask",_hud_mask_texture)
 	tactical_material.set_shader_parameter("panel_mask",_panel_mask_texture)
 	tactical_material.set_shader_parameter("panels_verified",_panel_mask_texture!=null)
-	display.material=tactical_material if hud_style=="tactical" and _hud_mask_texture!=null else null
+	# EGA, upscaled EGA and Genesis are original-pixel modes: no HUD restyle,
+	# plate replacement or 16:9 reflow may alter their framebuffer.
+	background.color=Color("101a13") if hud_style=="tactical" and _tactical_graphics() else Color.BLACK
+	display.material=tactical_material if hud_style=="tactical" and _hud_mask_texture!=null and _tactical_graphics() else null
 	if display.material==null: _set_wide_station(0)
 	tactical_chrome.fallback_tactical=hud_style=="tactical" and display.material!=null and _wide_station==0
 	var station: int=_wide_station
@@ -267,13 +279,22 @@ func _update_hud_material() -> void:
 		tactical_chrome.instruments.set_frame(tandem_frame,station,layout,(_panel_mask_image.duplicate() if _panel_mask_image!=null else _panel_mask_texture.get_image()),_hud_mask_data)
 	else:
 		tactical_chrome.instruments.clear()
+	var map_covered:=false
 	if station==2 and display.material!=null:
-		tactical_chrome.map_art.set_frame(tandem_frame,layout,_hud_mask_data)
+		map_covered=tactical_chrome.map_art.set_frame(tandem_frame,layout,_hud_mask_data)
 	else:
 		tactical_chrome.map_art.clear()
+	# The opaque Tactical map picture covers the restored map layer beneath it.
+	# Skip that layer's per-cell redraw only while covered; a failed proof, a
+	# non-map station or leaving Tactical restores it at once. Hidden before the
+	# deferred redraw runs, the covered layer issues no draw calls this frame.
+	tandem_frame.dynamic_map_art.visible=not map_covered and _tactical_graphics() and not tandem_frame.dynamic_map_art.packet.is_empty()
 	tactical_chrome.queue_redraw()
 	if tandem_viewport.render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
 		tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+
+func _tactical_graphics() -> bool:
+	return tandem_frame.graphics_mode in ["upscaled","modern","tactical"]
 
 static func original_tactical_layout(station: int) -> Dictionary:
 	# Destinations are the same exclusive source endpoints. This never grants

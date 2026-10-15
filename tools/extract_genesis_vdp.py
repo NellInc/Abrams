@@ -12,6 +12,13 @@ import json
 from pathlib import Path
 import struct
 from PIL import Image, ImageChops, ImageDraw
+try:
+    from tools.source_guard import inside_source, recorded
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source, recorded
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def word(data: bytes, offset: int, endian: str) -> int:
@@ -114,12 +121,14 @@ class VDP:
         height = [32, 64, 0, 128][self.reg[16] >> 4 & 3]
         if not width or not height:
             raise ValueError("Unsupported nametable dimensions")
+        # The window nametable is 64 cells wide in H40 (WD11 ignored) and 32 in H32.
+        h40 = self.reg[12] & 0x81 == 0x81
         bases = {"plane-a": (self.reg[2] & 0x38) << 10,
                  "plane-b": (self.reg[4] & 7) << 13,
-                 "window": (self.reg[3] & 0x3C) << 10}
+                 "window": (self.reg[3] & (0x3C if h40 else 0x3E)) << 10}
         planes = {}
         for name, base in bases.items():
-            w, h = (64, 32) if name == "window" else (width, height)
+            w, h = ((64 if h40 else 32), 32) if name == "window" else (width, height)
             planes[name] = self.plane(base, w, h)
             planes[name].save(output / f"{name}.png")
         for palette in range(4):
@@ -137,13 +146,14 @@ class VDP:
         (output / "sprites").mkdir()
         for sprite, meta in sprites:
             sprite.save(output / "sprites" / f"sprite-{meta['index']:02}.png")
-        manifest = {"capture": str(self.capture), "rom_sha256": self.receipt["rom_sha256"],
+        manifest = {"capture": recorded(self.capture), "rom_sha256": self.receipt["rom_sha256"],
+                    "display_mode": "H40" if h40 else "H32 (window decoded 32 cells wide; compositor unsupported)",
                     "planes": bases, "palette_rgb": self.palette,
                     "sprites": [m for _, m in sprites], "compositor": "unsupported"}
         # For the sampled static artwork: H40, no interlace/shadow, no scrolling,
         # full-screen window. Refuse to extrapolate this into a general emulator.
         scroll = (self.reg[13] & 63) << 10
-        compatible = (self.reg[12] & 15) == 1 and self.reg[17] == 0x80 and self.reg[16] == 1
+        compatible = h40 and (self.reg[12] & 15) == 1 and self.reg[17] == 0x80 and self.reg[16] == 1
         compatible = compatible and not any(self.vsram[:80]) and not any(self.vram[scroll:scroll + 896])
         if compatible:
             source = Image.open(self.capture / "screen.png").convert("RGB")
@@ -181,6 +191,8 @@ def main():
     parser.add_argument("capture", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
+    if inside_source(args.output, ROOT):
+        parser.error("output must be outside original sources")
     VDP(args.capture).export(args.output)
 
 

@@ -12,10 +12,12 @@ from pathlib import Path
 import struct
 
 try:
+    from tools.source_guard import inside_source
     from tools.inspect_scenarios import decode_resource
     from tools.pc_live_state import SimStateReader, SIM_SHA256
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from inspect_scenarios import decode_resource
     from pc_live_state import SimStateReader, SIM_SHA256
 
@@ -150,7 +152,7 @@ def verify(ram):
                 cases.append({'plate': name, 'page_offset': page, 'rows_per_chunk': chunk_rows,
                               'source_sha256': hashlib.sha256(raw).hexdigest(),
                               'decoded_sha256': hashlib.sha256(data).hexdigest()})
-    return {'engine': 'unicorn-2.1.4/x86-16', 'driver': '1388:2217',
+    return {'engine': f'unicorn-{unicorn.__version__}/x86-16', 'driver': '1388:2217',
             'driver_and_helper_sha256': DRIVER_SHA256, 'cases': cases, 'plate_count': len(PLATES),
             'case_count': len(cases), 'rendered_pixels_checked': len(cases) * 64000,
             'planar_bytes_checked_including_untouched': len(cases) * 4 * 65536}
@@ -161,6 +163,7 @@ def main():
     parser.add_argument('--capture', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    if inside_source(args.output,ROOT): parser.error('output must be outside original sources')
     ram = args.capture.read_bytes()
     result = verify(ram) | {'sim_sha256': SIM_SHA256, 'capture_sha256': hashlib.sha256(ram).hexdigest(),
         'scope': 'unmodified packed-plate driver; bounded mode-0 VGA observer; no file I/O or live UI attribution'}

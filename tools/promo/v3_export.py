@@ -4,6 +4,7 @@ import argparse,json,re,subprocess
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageOps
 from v3_audio import sha,write,run,audio_hash
+from output_guard import guarded_output
 
 def encode(out):
     roster=json.loads((out/'capture-roster.json').read_text());receipt=json.loads((out/'modern-capture/modern-capture-receipt.json').read_text())
@@ -55,4 +56,4 @@ def bind(out):
     write(out/'audio-picture-binding.json',{'master_sha256':sha(master),'clean_video_sha256':sha(video),'actual_decoded_pcm_sha256':pcm,'aac_copied_without_reencoding':True,'caption_asr_source_sha256':transcript['source_sha256'],'asr_source_matches_final_audio':True});print('FINAL_AUDIO_CAPTION_BINDING_PASS')
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['encode','animatic','bind']);p.add_argument('--output',type=Path,required=True);a=p.parse_args();globals()[a.action](a.output.resolve())
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['encode','animatic','bind']);p.add_argument('--output',type=Path,required=True);a=p.parse_args();globals()[a.action](guarded_output(p,a.output))

@@ -13,6 +13,8 @@ from pathlib import Path
 
 import requests
 
+from output_guard import guarded_output
+
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "https://openrouter.ai/api/v1"
 
@@ -46,12 +48,14 @@ def budget(out, action, reserve):
 
 
 def reserve_budget(out, action, reserve):
-    state_path = out / 'production-state.json'
-    if state_path.exists() and json.loads(state_path.read_text()).get('script_status') != 'approved':
-        raise RuntimeError('Third-party generation is on hold until Nell approves the narration script')
     auth = json.loads((out / "authorization.json").read_text())
     if not auth.get("paid_generation_approved"):
         raise RuntimeError("Paid generation has not been authorized")
+    # Fail closed: an absent state file is not an approved script.
+    state_path = out / 'production-state.json'
+    state = json.loads(state_path.read_text()) if state_path.exists() else {}
+    if state.get('script_status') != 'approved':
+        raise RuntimeError(f'Third-party generation is on hold until Nell approves the narration script; {state_path} must record script_status "approved"')
     ledger_path = out / "paid-ledger.json"
     ledger = json.loads(ledger_path.read_text()) if ledger_path.exists() else []
     if any(item["action"] == action for item in ledger):
@@ -98,16 +102,27 @@ def complete(out, action):
 
 
 def image(brief, out):
+    # Paid results land here; create it before spending, never after.
+    (out/'motion/media').mkdir(parents=True,exist_ok=True)
     budget(out,"keyframe",1.5)
     prompt = "Create a 16:9 cinematic promotional illustration for Abrams Battle Tank Fan Remaster, grounded in the supplied restored game cover. Preserve this same olive-drab early M1 Abrams tank, angular turret, single main gun, dark running gear and the established painterly realism. Tank in three-quarter front view, moving across a European training landscape at late afternoon, restrained dust, red-gold light breaking through cloud. Keep the tank fully inside the frame and keep room for an editorial title in the lower left. No text, no logos, no UI, no giant explosions, no extra barrels, no later-generation reactive armour. This is an illustrated promo sequence, not a gameplay screenshot. Reference image is identity and art-direction guidance."
-    j=request("POST","/images",json={"model":brief['image_model'],"prompt":prompt,"aspect_ratio":"16:9","quality":"medium","n":1,"input_references":[{"type":"image_url","image_url":{"url":data_url(ROOT/'branding/abrams-cover-remastered.png')}}]}).json()
+    r=request("POST","/images",json={"model":brief['image_model'],"prompt":prompt,"aspect_ratio":"16:9","quality":"medium","n":1,"input_references":[{"type":"image_url","image_url":{"url":data_url(ROOT/'branding/abrams-cover-remastered.png')}}]})
+    # Keep the paid body and a receipt before parsing; a surprise shape must not lose it.
+    raw=out/'motion/media/tank-keyframe-response.json';raw.write_bytes(r.content)
+    metadata={'model':brief['image_model'],'prompt':prompt,'content_type':r.headers.get('content-type',''),'generation_id':r.headers.get('x-generation-id')}
+    receipt(out,'keyframe',{**metadata,'status':'response_unparsed'},raw)
+    try:
+        j=r.json();picture=base64.b64decode(j['data'][0]['b64_json'],validate=True)
+    except (ValueError,KeyError,IndexError,TypeError) as error:
+        raise RuntimeError(f'Unexpected image response; raw body retained at {raw}. Inspect without resubmitting.') from error
     target=out/'motion/media/tank-keyframe.png'
-    target.write_bytes(base64.b64decode(j['data'][0]['b64_json']))
-    receipt(out,'keyframe',{'model':brief['image_model'],'prompt':prompt,'usage':j.get('usage'),'created':j.get('created')},target)
+    target.write_bytes(picture)
+    receipt(out,'keyframe',{**metadata,'usage':j.get('usage'),'created':j.get('created'),'raw_response_sha256':hashlib.sha256(r.content).hexdigest()},target)
     print('KEYFRAME_COMPLETE',target)
 
 
 def speech(brief,out,action='narration'):
+    (out/'motion/media').mkdir(parents=True,exist_ok=True)
     budget(out,action,1 if action=='narration' else .3)
     payload={'model':brief['speech_model'],'input':brief['narration'],'voice':brief['voice'],'response_format':'pcm','provider':{'only':['google-ai-studio'],'allow_fallbacks':False,'options':{'google-ai-studio':{'speech_metadata':{'style':brief['narration_direction']}}}}}
     r=request('POST','/audio/speech',json=payload)
@@ -125,6 +140,7 @@ def speech(brief,out,action='narration'):
 
 def video(brief,out,action):
     model=brief['atmosphere_model'] if action=='veo-opening' else brief['motion_model']
+    (out/'motion/media').mkdir(parents=True,exist_ok=True)
     budget(out,action,1.6 if action=='veo-opening' else 4)
     direction = ('A slow restrained dolly toward the tank, painterly red-gold clouds shifting gently, almost still commemorative opening. The tank rolls forward very slowly; atmospheric dust stays subtle.' if action=='veo-opening' else 'Smooth low side-tracking camera as the olive-drab early M1 Abrams tank moves steadily forward. Treads roll coherently, hull gently responds to the ground, a restrained dust wake trails behind. Preserve the tank proportions and single gun throughout.')
     prompt=direction+' Match the first-frame illustration and tank identity exactly. Cinematic documentary promo illustration for a retro simulation remaster, warm late-afternoon light, European terrain. No text, no UI, no added weaponry, no explosions, no cuts. This footage is an illustrative exterior sequence and must not resemble fabricated game footage.'
@@ -146,7 +162,7 @@ def finish_video(out,action,model,prompt,j):
         receipt(out,action,{'model':model,'prompt':prompt,'job_id':job_id,'status':j.get('status'),'usage':j.get('usage')})
     if j.get('status') not in ('completed','succeeded'):
         raise RuntimeError('Video generation ended with '+str(j.get('status')))
-    target=out/'motion/media'/(action+'.mp4')
+    target=out/'motion/media'/(action+'.mp4');target.parent.mkdir(parents=True,exist_ok=True)
     response=free_get('/videos/'+job_id+'/content?index=0',time.monotonic()+600)
     if response.headers.get('content-type','').startswith('video/'):
         target.write_bytes(response.content)
@@ -170,6 +186,7 @@ def music(brief,out):
         raise RuntimeError('Suno is selected for the score. The ElevenLabs adapter is disabled; use approved Suno access after script approval.')
     # Separate ElevenLabs credential, not the OpenRouter bearer token.
     key=secret('elevenlabs','api-key')
+    (out/'motion/media').mkdir(parents=True,exist_ok=True)
     budget(out,'elevenlabs-music',2)
     r=requests.post('https://api.elevenlabs.io/v1/music',headers={'xi-api-key':key},json={'prompt':brief['music_direction'],'music_length_ms':60000,'model_id':'music_v2_5','force_instrumental':True},timeout=600,allow_redirects=False)
     if r.status_code!=200:
@@ -179,11 +196,27 @@ def music(brief,out):
     print('MUSIC_COMPLETE',target)
 
 
+def production_narration(out):
+    """(path, narration) of this production's own approved script, or None."""
+    for name in ('approved-script.json','production-brief.json'):
+        path=out/name
+        if path.exists():return path,json.loads(path.read_text()).get('narration')
+    return None
+
+
 def main():
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['keyframe','narration','narration-name-fix','narration-pronunciation-v2','narration-pronunciation-v2-phonetic','veo-opening','seedance-exterior','recover-veo-opening','recover-seedance-exterior','music']);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
-    out=args.output.resolve();brief=json.loads((ROOT/'tools/promo/brief.json').read_text())
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['keyframe','narration','narration-name-fix','narration-pronunciation-v2','narration-pronunciation-v2-phonetic','narration-pronunciation-v2-syllables','veo-opening','seedance-exterior','recover-veo-opening','recover-seedance-exterior','music']);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
+    out=guarded_output(p,args.output);brief=json.loads((ROOT/'tools/promo/brief.json').read_text())
     if args.action=='keyframe':image(brief,out)
-    elif args.action=='narration':speech(brief,out)
+    elif args.action=='narration':
+        approved=production_narration(out)
+        if approved is None and brief.get('narration_status')=='superseded':
+            raise RuntimeError(f"tools/promo/brief.json narration is the superseded v1 template and {out/'approved-script.json'} does not exist; put this production's approved script there first. Nothing was submitted.")
+        if approved and not isinstance(approved[1],str):
+            raise RuntimeError(f"{approved[0]} has no narration string; this production's approved script must carry one. Nothing was submitted.")
+        if approved and approved[1]!=brief['narration']:
+            raise RuntimeError(f"tools/promo/brief.json narration is the superseded v1 template; {approved[0]} holds this production's approved script. Nothing was submitted.")
+        speech(brief,out)
     elif args.action=='narration-name-fix':
         brief['narration']='Abrams Battle Tank by Dynamix was a revolution in its time.'
         brief['narration_direction']='Same firm, clear, energetic Orus military-command promo delivery, mid-low warm register, steady brisk rhythm, approximately 180 words per minute. Important pronunciation: Dynamix is DYE-nuh-micks, ending with the short i vowel in mix and kicks. Never pronounce it Dynamax or macks. Read only the supplied sentence, no acting directions. This is an assured enthusiastic historical reference to the PC game.'
@@ -191,6 +224,11 @@ def main():
     elif args.action in ['narration-pronunciation-v2','narration-pronunciation-v2-phonetic']:
         brief['narration']='Abrams Battle Tank by Dynamix was a revolution in its time.' if args.action=='narration-pronunciation-v2' else 'Abrams Battle Tank by Dye-Nahh-Mix was a revolution in its time.'
         brief['narration_direction']='Same firm, clear, energetic Orus military-command promo delivery, mid-low warm register, steady brisk rhythm, approximately 180 words per minute. Nell specifies this pronunciation of the studio name: DYE-NAHH-MIX. First syllable DYE rhymes with eye. Middle syllable NAHH has the broad ah vowel of father, deliberately audible, not the weak uh sound. Final MIX has the short i vowel of mix and kicks, never max. Say the three syllables naturally as one name, DYE-NAHH-MIX. Read only the supplied sentence, no directions or phonetic spelling aloud.'
+        speech(brief,out,args.action)
+    elif args.action=='narration-pronunciation-v2-syllables':
+        # Pickup take for revise.py --build-ah-only; request text from its v2 receipt.
+        brief['narration']='Dye. Nah. Mix.'
+        brief['narration_direction']='Orus. Confident warm mid-low promo narration voice. This is a phoneme pickup, say three separate English words with small pauses. Dye rhymes with eye. Nah is the casual refusal word nah, the broad open AH sound as in father and spa, lightly stressed. Mix rhymes with kicks. Keep the same mid-low voice and pace for all three words. Speak exactly these three words, no introduction, no explanation, no extra words. Each word spoken naturally.'
         speech(brief,out,args.action)
     elif args.action=='music':music(brief,out)
     elif args.action.startswith('recover-'):recover_video(out,args.action.removeprefix('recover-'))

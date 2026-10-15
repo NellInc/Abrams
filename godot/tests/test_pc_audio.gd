@@ -131,6 +131,22 @@ func run() -> void:
 	check(await audio.drain_for_shutdown(),"real playback drain")
 	audio.queue_free()
 	await process_frame
+	# A full pool steals the player nearest its end, never a long cannon tail.
+	var pool := PcAudio.new()
+	root.add_child(pool)
+	pool.play("cannon")
+	check(pool.effects[0].playing and pool.cursor==1,"first cue takes the first idle player")
+	for i in 7: pool.play("machinegun")
+	check(pool.effects.all(func(p): return p.playing),"seven bursts fill idle players first")
+	for i in 4: pool.play("machinegun")
+	check(pool.effects[0].playing and pool.effects[0].stream.resource_path.ends_with("cannon.wav"),"machine-gun burst cannot cut the cannon tail")
+	check(pool.effects[(pool.cursor-1)%pool.effects.size()].stream.resource_path.ends_with("machinegun.wav"),"cursor names the stolen short cue")
+	pool.effects[3].stop()
+	pool.play("impact")
+	check(pool.cursor==4 and pool.effects[3].stream.resource_path.ends_with("impact.wav"),"a freed player is reused before stealing")
+	check(await pool.drain_for_shutdown(),"pool drains")
+	pool.queue_free()
+	await process_frame
 	for mode in ["gap","missing","future","fraction","voice","backwards","overflow"]:
 		var bad := PcAudio.new()
 		root.add_child(bad)

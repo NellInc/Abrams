@@ -2464,7 +2464,7 @@ each run has its own fresh disk overlay.
 
 `godot/tests/test_pc_combat_outcome.gd` extends the actual production viewer and
 host. `pc-combat-loss-native-03` passes 1,841 checks over 271 received packets and
-all 187 original boundaries, terminal exit 0. Every received packet's complete
+all 187 original boundaries, terminal exit 0. [15 October 2026 note: this total counted one constant-true `vehicle_art` check per frame; tests now count it once per run, so re-quote from the next `VALIDATE_LIVE=1 ./tools/validate.sh` run.] Every received packet's complete
 paired RAM/video agrees with the baseline-compared fixture. All original frames
 execute, but diagnostic transport batches mean this is not 15,122 individually
 rendered Godot frames or a sustained-speed claim. Default audio and flat vehicle
@@ -2747,7 +2747,7 @@ three source assignments and their exact visible frame/identity/sound gates.
 The comparator also requires the committed input sequence, and mutation tests
 reject altered RAM, video, keys, wording, identity, timing, gate or provenance.
 
-`pc-warning-native-02` passes 7,549 checks, terminal exit 0. Actual production
+`pc-warning-native-02` passes 7,549 checks, terminal exit 0. [15 October 2026 note: this total counted one constant-true `vehicle_art` check per frame; tests now count it once per run, so re-quote from the next `VALIDATE_LIVE=1 ./tools/validate.sh` run.] Actual production
 viewer and original child reproduce all 1,060 RAM/video boundaries and every
 source audio event. All three warning RGB crops match their original hashes.
 Genesis cockpit, high-resolution portrait and type are active on every warning.
@@ -2826,7 +2826,7 @@ pass. Notification fires at index 2614 without speech; unopened queue identity
 identity, wording, pointers, gate, notification speech and premature disclosure.
 This restored in-mission route does not establish disk-dependent outcomes.
 
-Native `pc-radio-native-01` passes 26,142 checks, terminal exit 0 with child 0.
+Native `pc-radio-native-01` passes 26,142 checks, terminal exit 0 with child 0. [15 October 2026 note: this total counted one constant-true `vehicle_art` check per frame; tests now count it once per run, so re-quote from the next `VALIDATE_LIVE=1 ./tools/validate.sh` run.]
 Every original RAM/video boundary and audio event equals the trace. Current
 message pixel hashes, Genesis cockpit and high-resolution radio type are checked.
 One notification sample and two generated voice streams start; one muted report
@@ -2883,7 +2883,7 @@ vertical-plane, clipping, palette-fallback and occlusion regression cases.
 
 `pc-radio-native-02` reruns the entire production viewer route with the new
 terrain mapping: 26,142 checks, 3,716 original frames, zero errors, native/child
-exit 0. All full original RAM/video boundaries and audio events remain exact.
+exit 0. [15 October 2026 note: this total counted one constant-true `vehicle_art` check per frame; tests now count it once per run, so re-quote from the next `VALIDATE_LIVE=1 ./tools/validate.sh` run.] All full original RAM/video boundaries and audio events remain exact.
 The final complete presentation, original state and audio metadata match native-01
 except terrain/hill counters; selected hill faces rise from 1 to 11. No vehicle
 receives a texture. The implementer visually reviewed their own full new cockpit
@@ -3252,6 +3252,58 @@ match), the website switched to it, and the work merged to main as a fast-forwar
 with Pages and source CI green and the live index byte-identical to local. The
 website dedication also gained Nell's portrait of her father, David "Ming" Kenny.
 
+## Browser edition publication and Tactical mode, 10 to 11 October 2026
+
+Recorded retrospectively on 15 October 2026 from Git history (audit finding #85);
+this period previously had no ledger entry.
+
+Browser edition (10 October 2026): `88d1bc9` "Ship browser Play remaster and site
+entry", followed by `48aeb3a` (Web runtime dependency licences) and `7f5a815`
+(browser frame and observer transfers). `88d1bc9` committed
+`website/dist/play/.generated/`: 217,489,816 bytes in total, including the four
+remaster asset parts `remaster-assets-00..03.zip` (283 files, 145,522,643 bytes per
+`git ls-tree -l 88d1bc9`; sha256
+prefixes `715afab15a4b5227`, `b85088ba09795ccb`, `6a9147a8db28c73d`,
+`67b5fe13e0b27dd0`), the Godot `index.pck`/`index.wasm`, the Pyodide runtime, the
+Web core `core.wasm` (sha256 `0d7e1b9b…`, DOSBox Pure `73e03aa…`) and its
+corresponding source. Those parts contained Genesis-derived and other remaster
+assets and, as the 15 October audit found, decoded original PC recognition data
+and raw Genesis extracts (see `release-rights.md`).
+
+Owner instructions, quoted from the Codex session transcript
+`~/.codex/sessions/2026/10/10/rollout-2026-10-10T14-39-55-01…` (UTC): 13:40 "Could
+we, should we craft a web version of the Abrams Fan Remaster, still requiring
+upload of the game?"; 13:49 "Proceed please."; 14:24 "Not much good without the
+remaster! Get it all 1:1 with desktop please. Also update the site with the new
+option."; 15:05 "Get it completed please."; 15:28 "Do it yourself please.";
+17:15 "Get it all fixed perfectly please."; 17:29 "GET IT FINISHED please." At
+15:29 the agent said it would not treat "do it yourself" as permission to
+publish assets with unresolved redistribution rights. At 18:57, before pushing,
+it cited "your authorization to publish the remaster assets". The specific
+message was not among that session's retained user messages; on 15 October 2026
+Nell confirmed it directly: "Public use of my remaster assets is fine."
+
+Tactical mode and HUD Style (11 October 2026): Tactical first appears in
+`de06c50` "Polish Tactical web graphics and reconcile source-only safeguards"
+(`pc_play_display.gd`, `pc_tactical_hud.gdshader`, `pc_tactical_chrome.gd`,
+`test_pc_tactical_hud.gd`), then `44e55fc` (hedgerows and tree trunks), `53ce654`
+(Tactical layouts across every crew station), `8881d39` (instruments and vehicle
+schematics), `7a6e790` (Tactical map and unified HUD presentation), `60c20e8` (map
+contours and terrain materials) and `6d6d749` (rounded map roads and riverbanks).
+Origin, quoted from `~/.codex/sessions/2026/10/10/rollout-2026-10-10T20-48-08-01…`
+and the browser session above (10 October, UTC): 19:42 "No, that's normal, I mean
+there was like a green HUD and such at one point?"; 19:48 "I didn't know we had
+this! This looks cool as shit. Can we offer this as a graphics option in the
+game?"; 20:28 "Proceed please, and also remake all of the Hud elements in a
+modern style please." These requests created Tactical mode and the independent
+HUD Style. [Inference] They approved the mode and the HUD restyle, not any
+information departure: Tactical effects and HUD remain bound by the
+`docs/GOAL.md` fidelity clause. The 14 October entries record approval of
+refinements only.
+
+Working if: `release-rights.md` links here, and Nell's confirmation of the
+browser-asset public-use wording is recorded here, quoted.
+
 ## REA setup and SIM pilot, 12 October 2026
 
 Nell requested: "Set up REA and run the SIM.EXE pilot, keeping the original game
@@ -3608,3 +3660,397 @@ The original-free Windows portable build, frozen PC/Genesis import and prepare, 
 All disposable VMs, disks and the private recovery image were removed after hash-verified result recovery; the task's memory-only SSH agent was closed. Conservative creation-to-deletion accounting totals 6,006.27 VM-seconds against 7,200 allowed. The conservative price estimate including a US$1 storage/network reserve is US$2.74, below the US$5 cap; the actual invoice is unverified. No AWS allocation, public game hosting, publication, original-game mutation, simulation/pairing change, or PCK/HUD replacement occurred. All 70 local originals, both installed PCKs `531f393c`, BUNDLE `9010e27d` and HUD `794202ea` were rehashed unchanged. Earlier unrelated dirty changes were preserved.
 
 Remaining acceptance is genuinely incomplete: valid active-edge hardware timing and native Windows graphical/end-to-end frozen playback need available GPU capacity and a newly authorised bounded allocation. No background cloud test or automatic resumption remains active. Full receipts and failures: `artifacts/performance-edge-geometry-map-20261014/cloud-runners-20261015/FINAL-STATUS.json`.
+
+### 15 October 2026: Native Windows graphics and fresh portable first-start verified
+
+The isolated Google Cloud L4 WindowsServer2022 test completed eight current sealed-source station/mode captures plus campaign New/coldContinue on NVIDIA596.86 OpenGL. Actual uncached C-launcher setup and packaged InvokePlay driver/new/coldContinue pass. A real muted-launch fault was repaired: explicit --no-audio now also selects Godot's Dummy backend before its argument separator, eliminating WASAPI initialization errors while leaving normal audio selection unchanged. The unchanged game-side mute flag remains forwarded.62focused tests pass with one native opt-in skip; actual Windows rebuilt runtime passes with clean logs and source/original copy bookends. These are this chat's own build/test outputs, verified directly, not an independent review.
+
+Private local Windows build62a744645007be1c27f1 is recovered at artifacts/performance-edge-geometry-map-20261014/cloud-finish-20261015/Abrams-Windows-muted-current.zip, SHA2ff8f6a858bcd1b473c5ae26479009e0021d3ca6973bb496905c6681f59f3d11; all RUNTIME payload hashes verified, no original game files included. Final Windows evidence tarSHA98217c32574d3495e6a230add38c58d2ec4d2f7897e7c59ecdbc237c4c5b8e49. Earlier fixture compiler failure and muted WASAPI failure are retained. The result covers frozen sourceZIP7b0201a7 plus the isolated mute delta, and excludes78 concurrent unrelated live-tree changes of unverified ownership. Installed web531f/9010/HUD7942 remain held. No publication or installation replacement.
+
+WindowsVM and owned RDP/tunnel/credential are closed after verified recovery. Sequential LinuxL4g2-standard-16 bootstrap is active under the newly approved total5USD/7200VMsecond limit and fixed04:35UTC automatic deletion. Matched active-Edge performance remains unverified until its actual frozen gates finish. No whole-gameFPS claim.
+
+### 15 October 2026: Matched active-Edge GPU qualification complete
+
+The actual quiet Google Cloud g2-standard-16 L4 run7ce406d7-0c32-426a-9b8f-8981e5dd9e51 passes the unchanged strict ABBA gates:1,536rows with32positive driver/cupola Edge calls per arm; conservative rebuilt-renderer elapsed-cost reduction5.3698865%, conservative edge-cost reduction98.5567948%, baseline rebuild variation2.3896956% and mapping variation4.4121320%. During-arm host idle minimum89.8623%, with zero throttling and pressure/steal limits passed. This is renderer-work evidence, with no whole-gameFPS claim. Original fresh mask-texture uploads remain, candidate geometry builds stay at2 and baseline rebuild counters advance.
+
+Root re-ran the frozen comparator against recovered raw rows, verified all108actualPNGhashes,60full matched/normal-cold exact images and48Mapimages, and re-ran the unchanged Map pixel/source/registration checks with only local path translation. Actual backend CPU/GPU mask, vertex/UV/colour/index, lifecycle, HUD338, Edge1643 and bounded-cache checks pass on the same NVIDIA ANGLE/Vulkan backend. Actual desktop OVERVIEW/compact LOCAL and cold-driver frames were opened for visual review. Existing metadata records canvas backing extent; full CSS-element PNGs include the edge row, and all full bytes remain exact without cropping or tolerance. The initial missing per-unit cgroup quota was caught before timing, retained and corrected in launch setup only, with all capacity/gain/fidelity gates unchanged.
+
+Both installed531fPCKs,9010BUNDLE, HUD/Edge/Map sources and all70originals were independently rehashed exact. The already installed experimental geometry reuse is now qualified for this frozen tested tuple; no new install or publication was performed. Windows proof remains scoped to the recovered62a74464 build and exact isolated mute delta; unrelated live-tree source changes stay excluded. Final status/evidence: artifacts/performance-edge-geometry-map-20261014/cloud-finish-20261015/FINAL-STATUS.json and root-review/FINAL-VERIFICATION.json.
+
+Every new task VM/disk/custom image is deleted, provider confirmed empty. Task SSH agent and Windows RDP/tunnel/temporary credential are closed. Conservative aggregate3,525.41VMseconds, below7,200; price upperUS$2.92 includingUS$1reserve, belowUS$5; invoice unverified. No active job or automatic continuation remains. Assigned frozen-candidate Windows/first-start/GPU qualification complete, local only.
+
+## 15 October 2026: Whole-project audit and fix pass
+
+**Audit.** A read-only, whole-project audit of `codex/modern-lowpoly`, including
+the uncommitted multi-session WIP (snapshot base `1d039e0`), ran as a 292-agent
+workflow (count reported by the workflow). 29 finder slices produced 275 raw
+findings, 246 unique after deduplication. 223 survived adversarial verification
+(three skeptics each for high/critical) and 23 were refuted. Report:
+`abrams-audit-20261015.md` in the session scratchpad (not in the repository).
+
+**Authorisation.** Nell: "Commit and push everything. Then, FIX EVERYTHING, NO
+EXCEPTIONS, GET IT ALL FIXED AND BUILT AND DELPOYED END OF." The fix pass treats
+this as her authorisation to remove decoded original PC content and raw Genesis
+extracts from public (Web) and native distribution, deriving them at runtime or
+import from the player's own verified files instead. It does not cover a
+Git-history purge of the parts already published, which remains her decision.
+Her standing rule sets the Git file limit at 100 MB: files up to 100,000,000 bytes
+are ordinary Git objects.
+
+**Fix pass.** About 15 fix agents ran concurrently with disjoint file ownership,
+then two documentation agents. The subsections below record what each cluster
+reported. Numbers come from those agents' own runs and were not re-measured by the
+documentation pass unless stated. Everything is local only and not live. No build,
+bundle, PCK, core rebuild or deploy ran in the fix agents. The lead runs those.
+
+### Web publication boundary (rights-web)
+
+Decoded PC recognition data (the five station plates, `expected.png`,
+`faces.json`, ATBASE.BIN and CLIP.BMP indices, the arming panel) is now derived in
+the browser by `web-prototype/derived_art.mjs` and no longer published. Raw
+Genesis capture donors and the captured palette are withdrawn from the Web. The
+browser derives the 64 effects from the visitor's verified ROM. Fallbacks are
+recorded in `release-rights.md`. The publication list is
+`tools/package/web-publication.json`: 166 files in two sets, 179 denylisted
+decode hashes, 7 historical publications, and no exceptions (checked here). The
+earlier open `pc-modern` catalogue exception was removed by splitting its decoded
+`source_primitives` into a player-derived `source-shapes.json`. As of this entry
+no browser or import step derives that file (grep of `web-prototype/`,
+`tools/standalone/` and `web-publication.json`); the lead has the derivation on
+the post-workflow integration list.
+
+`tools.package.git_boundary` now has a 100 MB limit, rejects LFS, applies the
+decode denylist, requires exact index membership for asset-part members, and
+applies decode rules to superseded parts. The service worker is a streaming,
+content-addressed cache. The frontend-music manifest text changed. Godot pins for
+the five plates and `expected.png` now cover decoded RGB8 pixels. Asset parts
+published from 10 to 15 October 2026 remain in Git history, pending Nell's purge
+decision. The bundle under `website/dist/play/.generated/` has not been rebuilt.
+
+### Native apps (native-standalone)
+
+Native apps no longer bundle raw or decoded original data or the ROM-derived
+frontend score. An import-time derivation table
+(`tools/standalone/import-derived.json`) pins 25 files, 18 PC and 7 Genesis
+(counts checked here), all reported byte-identical locally. They include 5 Genesis
+plates decoded by a pure-Python port of ROM routine 9AFE/9B20
+(`tools/standalone/runtime.py`), reported as 11 receipts and 105 chain entries
+identical to unicorn. A schema-2 Genesis receipt cannot be satisfied by a
+hand-written receipt. Other changes:
+
+* junction guards are scoped to reparse tags;
+* the portable workflow is split into a write-scoped fetch job and a read-only
+  build job, with hash-locked dependencies installed before extraction, and
+  native build files must byte-match the ref;
+* setup requests go through `execute_with_pipe`;
+* the portable launcher honours `--data-home`.
+
+`NATIVE_RAW_WHITELIST` is empty (checked here). Losses that remain because they
+depend on captures: Genesis mode, the map frame and the clipboard. The frontend
+score is excluded.
+
+### Trace core and GPL source (core-gpl)
+
+The source bundle is restored for the 7-file patch set. It now imports
+`tools.build_pc_trace_core.PATCHED_SOURCES` and defaults to the receipt's build
+tree. The reported proof archive has sha256
+`03ae42df0b4a0d78fb03dc1a5a27ccc49a60b382f7f7b0517c5b9a07e0928510`, 294 members,
+core `b859afb1…`. The builder receipt now records a relative source path and the
+resolved compiler, is written before the swap, and retains the previous core
+under `.runtime/pc-core/previous/<sha256>/`.
+
+Pending a core rebuild (source landed; pinned core `b859afb1…` unchanged; see
+`pc-live-bridge.md`) [15 October 2026 note: all four are in core `37bff087…`,
+installed later that day; see "Trace core rebuilt with RAM window bundles"
+below]:
+
+* the event-12 frame fence;
+* frontend mask gating and the empty driver mask;
+* strut-page arming and checkpoint-save validation, including the strut behaviour
+  change;
+* event 57 for non-world background calls.
+
+Still open: Nell's decision on existing save slots after the rebuild, and the new
+`trace_sha256`. Neither is recorded yet. [15 October 2026 note: both are now
+recorded under "Trace core rebuilt with RAM window bundles" below: core
+`37bff087…`, save compatibility waived.]
+
+### Bridge host (py-host)
+
+`--slim-samples` is used by desktop Play, and the Web edition always slims.
+Snapshot runs get a fresh `.snapshot-overlay-*`. A `receipt.json` is required
+for every restore. Capture-death recovery and quiet EPIPE/EINVAL shutdown are
+added. There is a fifth host operation, `load_previous`. All are documented in
+`pc-live-bridge.md`. `python3 -m unittest tests.test_pc_save_states` was run
+here: 39 tests pass.
+
+### Web runtime (web-runtime)
+
+Each core runs in its own `core_worker.mjs`, which is terminated when a load
+replaces it. RSS across loads went from 309 to 494 MiB (base plus 4 loads) to flat
+(about 279 MiB over 8 loads, or 384 to 390 MiB over 4 loads on a busier machine).
+Load time went from about 5 to 7 s to about 1 to 2 s. The desktop VGA RAM pairing
+is ported, with frontend identity and SHAPE.TBL checks. The first post-restore
+frame is held. JSON is serialised once. The state timeout is 300 s. These results
+are verified in Node only; the browser smoke test is still pending.
+
+### Frame and draw pass (godot-frame)
+
+Fixes 19, 20, 21, 24, 102, 103, 104, 119, 200 and 222:
+
+* The Tactical HUD is gated on graphics mode only, not `world_enabled`, so that
+  fallback frames do not flicker between HUD styles.
+* Every unsupported kind without trace evidence now fails closed: a pass with a
+  non-empty `draw_pass.unsupported` list or a replay warning shows the exact
+  original framebuffer.
+* #104: the deep copy measured about 1.05 ms per pass.
+* #21 rework: stable outline 17 to 23 us (was 15 to 16 ms after the first
+  column-scan fix); traverse miss 0.52 to 0.71 ms (was 11.4 to 14.0 ms); driver
+  validation 0.63 to 0.83 ms (was 16.3 to 21.0 ms).
+* A null-background SCRIPT ERROR was found in `pc_draw_pass.gd:513` and fixed.
+  The same error in `pc_tactical_foliage.gd:154` and `pc_tactical_effects.gd:123`
+  was handed on as shared edits.
+* Portraits are no longer gated on cockpit donors. Damage art remains inherently
+  coupled to them.
+
+### Modern effect ownership (modern)
+
+The Modern effect ownership union is removed. Ownership is now exactly the
+original opaque sprite runs. Under the fidelity boundary, the union could hide an
+actor that EGA/Upscaled shows through transparent original pixels. The visible
+consequence is that authored outer effect contours return to source-pixel steps
+in Modern. Evidence is the headless `effect_ownership_contract` and
+`test_pc_effect_inventory`; the native re-capture is pending. Restoring the union
+needs Nell's agreement.
+
+### Tactical particles (tactical; fidelity clause, `docs/GOAL.md`)
+
+Cues derived from RAM speed, heading and position are removed: speed-gated
+exhaust, heading drift, low dust and the missile travel-axis wake. The guided
+flare keeps a motor glow confined to its own sprite rectangle. Vehicle fumes are
+now identical idle plumes on every visible admitted vehicle, confined to that
+vehicle's own painted pixels inside its drawn rectangle. A vent outside the
+on-screen hull emits nothing.
+
+This retracts the earlier rule that stationary engines are not assumed to be
+running. The original never draws fumes, so **idle fumes on parked vehicles await
+Nell's one-time confirmation**. If she declines, no vehicle fumes are emitted at
+all; a motion-gated version is not an option. Re-enabling any motion cue needs
+her explicit agreement. No earlier sign-off for the removed cues exists in this
+ledger.
+
+### Art and audio performance (art-audio; headless evidence)
+
+Changes to findings 26, 105, 118, 120 and 122 to 127, as reported by the cluster:
+
+* Motor-pool frontend:
+  * mask decodes are cached by exact base64 key;
+  * plate-8 and clipboard proofs are reduced to native byte-slice compares over
+    mask-derived runs;
+  * the arming fixture went from 33.94 to 1.91 ms per frame, with 1320 + 1320
+    differential fuzz trials against `1d039e0` showing 0 differences.
+* The STATUS plate-5 pristine proof is native.
+* The cupola/driver donor alpha check and clear are native, with byte-identical
+  output: 57.8 to 11.0 ms and 81.2 to 34.0 ms.
+* Typography has a per-run cursor fast path, exact by construction.
+* The Tactical fitted point size is memoised.
+* Trims and the frontend keep persistent mask and source textures. The gunner
+  trim skips the upload when its mask bytes are unchanged.
+* The effects pool takes idle players first, then the one with the shortest
+  remaining tail.
+* START skips the full-frame hash when there are no intro fingerprints.
+
+Frontend music is prewarmed at startup. Tracks are re-hashed once per session.
+Later reloads in that session trust the manifest sha, file size and mtime (1 s
+resolution). A same-size replacement within the same second therefore decodes
+unverified until the next session.
+
+Crew, information and Wilson portraits are now mipmapped (Wilson premultiplied).
+The frontend shader samples the portrait in uniform control flow. Native
+`--native` captures have not been rerun, so shader compilation and pixels are not
+yet verified.
+
+### Gates and evidence notes (gates-tests)
+
+* The 2026-10-14 41-check browser acceptance had four flaws:
+  * it used `.some` exactKeys semantics;
+  * it set status before checking protected bytes;
+  * it read speed from `window.__controls`;
+  * it could not tell a latched key from a fresh one on immediate focus return.
+
+  The harness is now strict and needs a rerun before that acceptance is cited.
+* The 2026-09-28 soak evidence predates the 8x-only menu, so `test_pc_soak` needs
+  a native rerun.
+* The quoted native check totals in the 28 September entries count one
+  constant-true `vehicle_art` check per frame. The tests now count it once per
+  run, so a rerun reports smaller totals for the same evidence:
+  * `pc-combat-loss-native-03`, 1,841 checks (Actual combat-loss flow entry);
+  * `pc-warning-native-02`, 7,549 (Original warning voices entry);
+  * `pc-radio-native-01` and `-02`, 26,142 (Original radio speech and Raised
+    plateau entries).
+
+  Those entries are left unchanged as history. Re-quote all of them from the next
+  `VALIDATE_LIVE=1 ./tools/validate.sh` run.
+
+### Documentation
+
+Docs were brought into line with the changed behaviour. This covers protocol and
+restore contracts, native and Web rights boundaries, the six graphics modes, the
+HUD Style gates, quick-save confirmation, the AltGr limit, fast forward and Tab,
+verifier acceptance rules and stale core pins. The 10 to 11 October 2026 gap
+(browser publication and Tactical origin) now has a retrospective entry above.
+The Tactical request is quoted from the Codex transcript. Nell confirmed the browser
+public-use grant on 15 October 2026: "Public use of my remaster assets is fine."
+
+### Other clusters (reported by their fix agents; not re-measured here)
+
+* py-trace: round-form `colors` are published as [DS:359E, DS:359D], the same
+  order as polygon colours. Alternating dithers use a compact
+  `{y,left,right,colors:[even x, odd x]}` span that `round_runs()` expands per
+  pixel (`modern-asset-register.md`). Native event 57 is described under core-gpl.
+* tools-guards: `install_pc_bearings` admits custody-checked repairs and records
+  `previous_take_sha256`. `verify_pc_audio_trace`, `verify_pc_readiness`,
+  `verify_pc_dialogue`, `verify_pc_driver_overlay` and `verify_pc_text_trace`
+  require a trace report against a distinct, pinned baseline core. Only trace
+  halves need recapture after a core rebuild. Player-reference PDFs build with
+  ReportLab invariant mode.
+* play-shell: a quick save onto an occupied slot 1 needs a second press within
+  four seconds. Load state offers the overwritten slot archive
+  (`load_previous`). A load mutes presentation audio from the request; a save
+  keeps it. Windows AltGr chords are reported as Ctrl+Alt, so those shortcuts are
+  unavailable on layouts where AltGr+S/L/G types a character.
+* packaging: the private kit re-imports Godot resources when its receipt, the
+  Godot executable or `godot/.godot/` changes, and applies a 300 s preflight
+  deadline. Build and verify inspect every member with the Git boundary rules.
+* website: the Pages build job runs `python3 -m tools.package.git_boundary`
+  before `website/verify.py` and the upload.
+* promo: `tools/promo/brief.json` narration is the superseded v1 script. Each
+  production's approved script lives with that production.
+* source bundle: the corresponding-source README now names the bundle's own
+  platform, toolchain and `dosbox_pure_libretro`/`abrams-trace` suffix, and
+  repeats the receipt's recorded `make` arguments, including the Windows
+  `LDFLAGS` (`tools.build_pc_trace_core.WINDOWS_LDFLAGS`). Any Windows or Linux
+  source archive built before 15 October 2026 still carries the macOS-only
+  build text until `portable-alpha.yml` regenerates it.
+
+Working if: after the lead rebuilds the Web bundle, the trace core and the
+native apps, `python3 -m tools.package.git_boundary --history` passes, the Web
+and native editions derive every `runtime_derived` / `import-derived.json` path
+from the player's files, and the pending items above have recorded receipts or
+decisions.
+
+## 15 October 2026: Trace core rebuilt with RAM window bundles and installed
+
+**Authorisation.** Covered by the audit fix-pass instruction above. Nell waived
+save-state compatibility for this rebuild: "No need for compatibility, it's not
+proliferated yet." (relayed by the lead). Slots and checkpoints saved with the
+previous core are not migrated.
+
+**Native core.** `python3 tools/build_pc_trace_core.py --source
+.runtime/checkpoint-date-20261013/source` built and installed the uncommitted
+`tools/pc_core/` header set: AWB1 RAM window bundles for SIM events 26/28/29,
+the driver-seen reset on checkpoint load, strut display-page arming, frontend
+mask gating, event 57 and checkpoint-save validation (`pc-live-bridge.md`,
+"Observer events changed in the 15 October 2026 core"). Receipt
+`.runtime/pc-core/abrams-trace.json`:
+
+* `trace_sha256` `37bff08762031c40fe5843e2be8dc98e6d5d777497284797590f7e6ec4fdc55e`
+  (byte-identical to an earlier scratch build of the same headers);
+* `trace_header_sha256` `ae4ab78203c2bb9b0ef619c52a0d3bd0c254012acd379b945dd1ec4cf58657f9`;
+* `observer_checkpoint_header_sha256` `57b419c7dc3c964ae5cd5130306c73a9be6c115b0572246120c5116b72cbac2d`;
+* `text_event_schema` 3, `message_event_schema` 2, `strut_event_schema` 2; save
+  format 9; ownership, plate, state-overlay and baseline hashes unchanged.
+
+The previous core `b859afb1…` and its receipt are retained under
+`.runtime/pc-core/previous/b859afb15676cc7fc019154d84983ec40b139c2b813d1b11ce503328f8de28a5/`.
+No Python, Godot or gate fixture pins the core hash; every consumer reads the
+receipt, and `tests/gate_fixtures.json` pins captures only, so it was not re-pinned.
+
+**Live check (installed core, read-only observer).** For every SIM 26/28/29
+packet, the packet was compared with the reference bundle cut from full guest RAM
+at that instant, and a bundle-fed `Collector` was compared with a full-RAM-fed one
+frame by frame:
+
+| Start state | Frames | Events 26 / 28 / 29 | Bundle / full bytes | Mismatches | Presentation diffs |
+|---|---|---|---|---|---|
+| `pc-source-bootstrap-02/mission-entry` | 720 | 529 / 0 / 192 | 47,682,686 / 472,514,560 (10.1%) | 0 | 0 |
+| `pc-radio-scout-01/entry` | 720 | 648 / 0 / 208 | 56,607,718 / 560,988,160 (10.1%) | 0 | 0 |
+| `pc-radio-scout-01/entry`, radio route | 7,316 | 13,323 / 7 / 0 | 881,802,072 / 8,735,948,800 (10.1%) | 0 | 0 |
+
+400 native START frames delivered only events 10/11/12/26/27, with no 19, 24 or
+31, and every frontend event 26 was the full 655,360 bytes. The destroyed-GPS
+event-57 frame was not exercised.
+
+**Web core.** `web-prototype/build_core.py` gained `--source` so it can build from
+the receipt's tree. `.runtime/dosbox-pure-source` still holds the 12 October
+patch set: a consent hook (`policy-gate-edit`) denied the copy of the 13 pinned
+files into it, pending Nell's approval. Until it is synced, `build_core.py`
+without `--source` refuses with "The local DOSBox Pure source differs from the
+native pin: src/cpu/abrams_trace.h". The pins still require byte-identical
+reviewed sources. Emscripten 6.0.10 built `core.wasm`
+`c84edcbc036b09e510fda60df020c522d529bcf044f260e4ddc28d0f7cc06c2f`, and two builds
+gave the same bytes. `build-info.json` records schemas 3/2/2. `build_observer.py`
+and `build_web_source.py` ran (299 source files; the archive's headers match the
+receipt). `test_core.mjs` passed (frontend kinds 10/11/12/26/27). `test_mission.mjs`
+passed: scenario 6 gunner, fresh-core checkpoint restore, SIM draw observer and
+desktop replay. `npm --prefix web-prototype test` passed 46 Node tests and 40
+Python tests. Its asset-contract test printed "local generated assets predate
+schema 3; rebuild with build_remaster_assets.py". `test_bridge.mjs` passed four
+save/load cycles. `build_remaster.py` (Godot Web export) and `package_site.py`
+were not run, so `website/dist/play/` still carries the previous Web core.
+The GPL proof archive `python3 -m tools.standalone.source_bundle --output <scratch>`
+(gzip tar, 294 members, core `37bff087…`) has sha256
+`a9731b3e12e8313c7d57c26657fc575bf517304c390dc95d48cd9c3a1963f281`.
+
+**Tests.** The ten targeted modules (`test_pc_trace_windows`, `test_pc_text_trace`,
+`test_pc_message_events`, `test_pc_strut_trace`, `test_pc_render_trace`,
+`test_pc_observer_checkpoint`, `test_packaging`, `test_pc_bridge`,
+`test_pc_session`, `test_pc_ui_ownership`) ran 157 tests: 157 passed, 0 skipped.
+That includes `test_private_runtime_asset_provenance`, which had errored against
+the stale core.
+
+Local only, not live.
+
+Working if: `.runtime/pc-core/abrams-trace.json` pins `37bff087…` with schemas
+3/2/2, `web-prototype/.generated/build-info.json` pins `c84edcbc…` with the same
+schemas, and trace-half evidence captured with `b859afb1…` is recaptured before
+anyone cites it as current-core evidence.
+
+## 15 October 2026: Calibration Range title tank matched to the box cover
+
+Nell asked for the title-screen tank to be a 3D 1:1 match of the restored box cover
+(`branding/abrams-cover-remastered.png`), with no photo plate.
+
+- **Camera.** Fitted to the cover in pixels of an 880-pixel-tall framing of the cover
+  (cover rows 560-1440): focal 2000 px, camera at (2.195, 0.9, -12.721) in the hull
+  frame, looking up 9.2 degrees with a 3.9-degree roll, hull pitched 2.9 degrees nose
+  down. The six fender and headlight landmarks reproject within 1-7 px. `CoverScene.frame()`
+  draws that framing right-aligned at full screen height with an off-axis frustum, so the
+  tank keeps the cover's perspective beside the title column.
+- **Model.** Hull front, fenders, headlight clusters, turret slab sides, cheeks, mantlet
+  slot, bustle box with the two-disc-and-triangle marking, rack, cupola, open hatch lid,
+  M2 with sight box, and both crew were placed by back-projecting the cover's outlines onto
+  the fitted camera (turret traverse 0.7 rad). [Inference] The cover's gun cannot share one
+  rigid pose with its turret, so the gun carries its own yaw (-0.54 rad) inside the mantlet
+  to land on the cover's muzzle; only the title pose uses it.
+- **Second pass.** The hull roof now sits at 1.3 m under a turret ring at 1.4 m, so the
+  roof stays hidden behind the nose line and only the dark ring gap shows, as on the cover.
+  Other changes: rounded fender tops with the seam below them, slimmer headlight housings
+  with amber lamps, an upright triangle in the marking, and face-projected grime. The crew
+  now hang from head positions measured on the cover, so the commander holds the M2 at chest
+  height and the loader bends forward over the roof toward the gun.
+- **Winding fix.** The faceted hull and turret panels were wound inside-out (Godot front
+  faces are clockwise), so their lighting was inverted; `_tri` now emits clockwise faces.
+- **Look.** Linear tonemap with no contrast adjustment; a low key light from the cover's
+  left; fire rim light that skips the ground layer; textured dust plumes and thrown earth
+  at the tracks; sky smoke with fire on the cover's upper left and a red band behind the tank.
+  Title veils now darken only the title column, and the range landscape is hidden on the
+  title screen. Mean colours over 14 cover regions (sky, turret side, fenders, lower plate,
+  turret front, barrel, dust) are within about 30 levels of the cover except the upper-left
+  sky under the title veil and the dusty foreground ground, which stay darker.
+- **Checks.** `GEOMETRY: 60000 upward normals and complete range bounds verified`;
+  `RUNTIME_SMOKE_PASS`; `SIMULATION: 1162 checks passed`; `--capture` stills of the title,
+  gunner and cupola views inspected.
+
+Working if: a `--capture` 01-menu.png overlaid with the cover framing puts the headlights,
+fender tops, turret slab and muzzle within a few pixels of the cover's.

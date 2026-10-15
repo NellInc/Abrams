@@ -125,6 +125,7 @@ def main():
                 'audio_events':audio,'final_state':final['state'],'final_program':final['program'],
                 'state_sha256':hashlib.sha256(a.state.read_bytes()).hexdigest(),
                 'state_core_sha256':manifest['baseline_sha256'],
+                'trace_header_sha256':manifest['trace_header_sha256'],
                 'capture_window':a.capture_window,
                 'text_epochs':[c.text.report() for c in collectors],
                 'message_epochs':[{'counts':dict(c.text.messages.counts),'assignments':list(c.text.messages.history)} for c in collectors],

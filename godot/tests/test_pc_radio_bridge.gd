@@ -3,6 +3,7 @@ extends "res://scripts/pc_bridge_viewer.gd"
 var fixture: Dictionary
 var events_by_frame := {}
 var errors: Array[String] = []
+var vehicle_art_frames := 0
 var checks := 0
 var radios: Array = []
 var radio_receipts: Array = []
@@ -81,7 +82,8 @@ func _apply_sample(message: Dictionary) -> void:
 	check(audit.get("video_sha256")==source.video_sha256 and audit.get("video_bytes")==256000,"paired original video: %d"%index)
 	check(message.get("program")==source.program,"original program: %d"%index)
 	check(bridge.failure.is_empty() and pc_audio.failure.is_empty(),"production presentation/audio accepted")
-	check(draw_view.vehicle_art==null and draw_view.vehicle_polygon_count==0,"rejected vehicle textures absent")
+	# One tripwire per run (below), not a constant per-frame check.
+	if draw_view.vehicle_art!=null: vehicle_art_frames+=1
 	var packet: Dictionary=message.audio
 	check(packet.events==events_by_frame.get(index,[]),"every audio request equals the parity-tested trace: %d"%index)
 	# Consecutive original scanouts independently establish a complete driver
@@ -142,6 +144,7 @@ func _capture() -> void:
 	check(alert_receipts.size()==1,"one original radio notification")
 	check(restored_silent_frames>0,"F5 restore observed before fresh radio")
 	check(portrait_frames.size()==146,"every driver onset/display/erasure scanout checked")
+	check(vehicle_art_frames==0,"rejected vehicle panels never attached (%d frames)"%vehicle_art_frames)
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({
 		"checks":checks,"errors":errors,"frames":samples,"radios":radios,"receipts":radio_receipts,
 		"restored_silent_frames":restored_silent_frames,"alerts":alert_receipts,

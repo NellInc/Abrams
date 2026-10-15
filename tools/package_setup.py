@@ -10,6 +10,11 @@ import io
 import json
 from pathlib import Path
 import zipfile
+try:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTENT_SHA = 'c1821239d91a23883a44c4484ca13091479bf0c75347f01b8cb7b3a089565d05'
@@ -17,6 +22,8 @@ CONFIG = '[dosbox]\nmachine=ega\nmemsize=16\n[cpu]\ncore=normal\ncputype=386\ncy
 
 
 def prepare(source, destination, records):
+    if inside_source(destination, ROOT):
+        raise ValueError('Kit destination must be outside original source directories')
     if source.resolve() == (destination / 'GAME').resolve():
         raise ValueError('Use a separate original source directory')
     target = destination / 'GAME'

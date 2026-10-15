@@ -11,20 +11,25 @@ from PIL import Image
 try:
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.unpack_pc_executables import unpack
+    from tools.verify_pc_audio_trace import CORE_MANIFEST, check_core_pins, inside_source, load_manifest
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from pc_live_state import SimStateReader, SIM_SHA256
     from unpack_pc_executables import unpack
+    from verify_pc_audio_trace import CORE_MANIFEST, check_core_pins, inside_source, load_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def verify(trace_path, baseline_path):
+def verify(trace_path, baseline_path, manifest=None):
     trace = json.loads(trace_path.read_text())
     baseline = json.loads(baseline_path.read_text())
     checks = {key: trace[key] == baseline[key]
               for key in ('frames', 'stages', 'state_sha256', 'state_core_sha256')}
     if not all(checks.values()): raise ValueError('original replay differs: ' + str(checks))
+    pins = check_core_pins(trace, baseline, load_manifest() if manifest is None else manifest)
+    if not all(pins.values()): raise ValueError('not a trace run against the distinct pinned baseline core: ' + str(pins))
+    checks.update(pins)
     ram = (trace_path.parent / 'first-render.bin').read_bytes()
     load = SimStateReader(ROOT / 'GAME/SIM.EXE').read(ram)['load_segment']
     decoded, metadata = unpack((ROOT / 'GAME/SIM.EXE').read_bytes())
@@ -69,6 +74,7 @@ def verify(trace_path, baseline_path):
         raise ValueError('route lacks centred and both-direction original assembly samples')
     return {'trace':str(trace_path), 'baseline':str(baseline_path), 'checks':checks,
             'frames':len(trace['frames']), 'stages':len(trace['stages']), 'core_sha256':trace['core_sha256'],
+            'baseline_core_sha256':baseline['core_sha256'],
             'original_routine_bytes':len(code), 'loaded_code_sha256':hashlib.sha256(code).hexdigest(),
             'relocation_offsets':relocations, 'assembly_pixels_checked':total,
             'offsets':sorted(offsets), 'samples':samples,
@@ -80,7 +86,9 @@ if __name__ == '__main__':
     parser.add_argument('--trace', type=Path, required=True)
     parser.add_argument('--baseline', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--manifest', type=Path, default=CORE_MANIFEST)
     args = parser.parse_args()
-    result = verify(args.trace, args.baseline)
+    if inside_source(args.output, ROOT): parser.error('output must be outside original sources')
+    result = verify(args.trace, args.baseline, load_manifest(args.manifest))
     args.output.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({k:v for k,v in result.items() if k != 'samples'}, indent=2))

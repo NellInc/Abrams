@@ -10,6 +10,12 @@ import subprocess
 import sys
 import zipfile
 
+try:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source
+
 ROOT = Path(__file__).resolve().parents[1]
 
 def sha(raw): return hashlib.sha256(raw).hexdigest()
@@ -32,7 +38,8 @@ class Client:
         self.process.stdin.write(json.dumps({'op':op,'id':self.counter,**kwargs})+'\n')
         self.process.stdin.flush()
         value = self.read()
-        assert value['id'] == self.counter
+        if value['id'] != self.counter:
+            raise RuntimeError(f"host answered request {value['id']}, expected {self.counter}")
         return value
     def step(self, frames, keys=()): return self.request('step',frames=frames,keys=list(keys))
     def close(self):
@@ -63,6 +70,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True)
     args = parser.parse_args()
+    if inside_source(args.output, ROOT): parser.error('output must be outside original sources')
     args.output.mkdir(parents=True,exist_ok=False)
     saves = args.output/'saves'; saves.mkdir()
     sources = {str(p.relative_to(ROOT)):sha(p.read_bytes()) for d in ('GAME','GENESIS') for p in (ROOT/d).rglob('*') if p.is_file()}
@@ -93,7 +101,7 @@ def main():
         finally:
             baseline.close()
         result = client.request('save_state',slot=1)
-        assert result['success'], result
+        if not result['success']: raise RuntimeError(f'host request failed: {result}')
         saved_audit = held['frame_audit']
         checks['save_has_no_display_advance'] = result['restored']['frame_audit'] == saved_audit and result['restored']['sequence'] == held['sequence']
         held_transition = client.step(1,['kp6'])
@@ -112,7 +120,7 @@ def main():
         checks['save_provenance_not_stale_packet'] = all(not p.get('held_frame') for p in observed)
         changed = client.step(30)
         result = client.request('load_state',slot=1)
-        assert result['success'],result
+        if not result['success']: raise RuntimeError(f'host request failed: {result}')
         checks['load_has_no_display_advance'] = result['restored']['frame_audit'] == saved_audit
         recovery_bytes = (saves/'states/slot-0.zip').read_bytes()
         checks['recovery_saved_current_timeline'] = json.loads(zipfile.ZipFile(io.BytesIO(recovery_bytes)).read('resume.json'))['packet']['frame_audit'] == changed['frame_audit']
@@ -130,14 +138,14 @@ def main():
             files['manifest.json']=json.dumps(manifest).encode()
         rewrite(saves/'states/slot-3.zip', legacy_observer)
         result=client.request('load_state',slot=3)
-        assert result['success'],result
+        if not result['success']: raise RuntimeError(f'host request failed: {result}')
         client.step(1,['kp6'])
         no_observer=[client.step(1,['kp6'] if i<3 else [])['frame_audit'] for i in range(12)]
         checks['observer_restore_native_parity'] = no_observer == expected
         # A whole new supervisor proves persistence across application restarts.
         client.close(); client = Client(saves,log)
         result = client.request('load_state',slot=1)
-        assert result['success'],result
+        if not result['success']: raise RuntimeError(f'host request failed: {result}')
         checks['cross_process_reload'] = result['restored']['frame_audit'] == saved_audit
         client.step(1,['kp6'])
         replay = [client.step(1,['kp6'] if i < 3 else []) for i in range(12)]
@@ -173,7 +181,7 @@ def main():
         client=Client(campaign,log)
         for frames,keys in json.loads((ROOT/'godot/tests/fixtures/pc_campaign_steps.json').read_text())['new']: last=client.step(frames,keys)
         result=client.request('save_state',slot=1)
-        assert result['success'],result
+        if not result['success']: raise RuntimeError(f'host request failed: {result}')
         with zipfile.ZipFile(campaign/'states/slot-1.zip') as z: disk=z.read('campaign.zip')
         with zipfile.ZipFile(io.BytesIO(disk)) as z:
             disk_members={name:sha(z.read(name)) for name in z.namelist()}
@@ -184,7 +192,7 @@ def main():
         with zipfile.ZipFile(campaign/'abrams-ref.pure.zip','w') as z: z.writestr('SENTINEL.TXT',b'newer overlay')
         client=Client(campaign,log)
         result=client.request('load_state',slot=1)
-        assert result['success'],result
+        if not result['success']: raise RuntimeError(f'host request failed: {result}')
         checks['campaign_overlay_restored_exactly']=(campaign/'abrams-ref.pure.zip').read_bytes()==disk
         checks['other_user_saves_untouched']=(campaign/'other-game.pure.zip').read_bytes()==b'other-user-save'
         with zipfile.ZipFile(campaign/'states/slot-0.zip') as z:

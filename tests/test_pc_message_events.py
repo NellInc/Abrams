@@ -1,7 +1,9 @@
 import copy
+import random
 import struct
 import unittest
 from tools.pc_message_events import MessageAssignments,visible_messages
+from tools.pc_trace_windows import expand_window_bundle,pack_window_bundle,sim_event_windows
 
 
 class MessageTests(unittest.TestCase):
@@ -92,6 +94,25 @@ class MessageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'assignment'):self.events.observe(bytes(ram),self.regs,123)
         with self.assertRaisesRegex(ValueError,'snapshot'):self.events.observe(b'',self.regs,0x3D6A)
         with self.assertRaisesRegex(ValueError,'snapshot'):self.events.observe(bytes(ram),{'cs':0,'ds':1},0x3D6A)
+
+    def test_window_bundle_gives_the_full_snapshot_result(self):
+        # The native assignment event may send only DS and the stack; every
+        # other byte is noise in the full snapshot and zero in the bundle.
+        bundled=MessageAssignments();regs=dict(self.regs,ss=0x9000,sp=0x100)
+        cases=[{},{'secondary':None,'ip':0x3D8E},{'ip':0x3F73},{'primary':b'','secondary':None}]
+        for args in cases:
+            ram=self.assign(**args)
+            windows=sim_event_windows(28,ram,regs)
+            noisy=bytearray(random.Random(28).randbytes(640*1024))
+            for base,length in windows:noisy[base:base+length]=ram[base:base+length]
+            ip=args.get('ip',0x3D6A)
+            full=MessageAssignments();full.__dict__.update(copy.deepcopy(bundled.__dict__))
+            full.observe(bytes(noisy),regs,ip)
+            bundled.observe(expand_window_bundle(pack_window_bundle(bytes(ram),windows)),regs,ip)
+            for field in ('sequence','current','counts','history'):
+                self.assertEqual(getattr(full,field),getattr(bundled,field),field)
+        self.assertEqual(bundled.counts['unsupported'],1)
+        self.assertEqual(bundled.history[-1]['parts'][0]['text'],'Hold position.')
 
 
 if __name__=='__main__':unittest.main()

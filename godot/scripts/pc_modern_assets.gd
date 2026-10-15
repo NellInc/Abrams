@@ -1,5 +1,6 @@
 extends RefCounted
-## Immutable, preloaded presentation geometry. No actor or timeline state.
+## Preloaded presentation geometry, immutable between catalogue loads, plus a
+## bounded exact-keyed cache of transformed face positions. No actor or timeline state.
 const Colour = preload("res://scripts/pc_colour.gd")
 const Geometry = preload("res://scripts/pc_surface_geometry.gd")
 const PC_PALETTE = preload("res://scripts/pc_tandem_frame.gd").ART_PALETTE
@@ -9,6 +10,9 @@ const DAY_PALETTE = [[0,0,0],[236,236,220],[155,163,152],[68,76,66],[97,126,158]
 const SOURCE_HASHES = {"SHAPE.TBL":SHAPE_HASH,
 	"SHAPE.GI":"107fc411632ad9754ccc6d82678d7f9de501dad397c3e47a16cdece3dae73faf",
 	"SIM.EXE":"9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099"}
+# Player-derived SHAPE.TBL structure beside catalog.json; see load_catalogue().
+const SOURCE_REGISTRY := "source-shapes.json"
+const REGISTRY_FIELDS := ["selectors","roots","groups","source_primitives","opaque_commands","visual_commands"]
 const TREE_HASH := "4570dea75ccd1f72c7675fc94773aed0495056d2798753dfdbaa4d9f3d131ed7"
 # Between the crew painter-depth tag and running gear. Paint only, no new mesh.
 const HIND_PAINT := 20.09375
@@ -65,6 +69,9 @@ const WATER = {
 	44: [4306, [4320]],
 	113: [12367, [12411, 12419, 12427, 12435, 12443, 12451, 12459, 12467, 12475, 12483, 12491, 12499, 12507, 12515, 12523, 12531]]}
 const ANCHOR_TOLERANCE := 0.25
+# Entries per cache generation. Comfortably above one pass's mapped faces, so
+# every face of the previous pass survives one generation turnover.
+const POSITION_CACHE_LIMIT := 8192
 var revision := 0
 var models: Dictionary = {}
 var terrain_shapes: Dictionary = {}
@@ -81,6 +88,13 @@ var max_anchor_error := 0.0
 var last_reason := ""
 var position_cache_hits := 0
 var position_cache_misses := 0
+# Exact-keyed transformed positions, two bounded generations. Same-shape
+# instances hold separate entries; nothing is shared with the face catalogue.
+var _positions: Dictionary = {}
+var _retired_positions: Dictionary = {}
+# 256x256 R8 copies of the v1 material images, taken before mipmapping, so
+# the realism atlas never reads the uploaded textures back from the GPU.
+var _material_tiles: Dictionary = {}
 # Independent canonical copies match JSON float arrays in native code. No
 # observed palette or acceptance result is retained; mixed types use the old gate.
 static var _pc_json_palette: Array = JSON.parse_string(JSON.stringify(PC_PALETTE))
@@ -88,9 +102,11 @@ static var _frontend_json_palette: Array = JSON.parse_string(JSON.stringify(Colo
 
 func load_assets(root: String) -> bool:
 	material_textures.clear()
+	_material_tiles.clear()
 	material_atlas=null
 	revision += 1
 	models.clear()
+	clear_position_cache()
 	colour_texture=null
 	colour_indices.clear()
 	terrain_shapes.clear()
@@ -102,14 +118,8 @@ func load_assets(root: String) -> bool:
 	if RenderingServer.get_current_rendering_method()!="gl_compatibility":
 		status="Modern requires the verified Compatibility renderer"
 		return false
-	var path := root.path_join("local-art/pc-modern/catalog.json")
-	if not _file_exists(path): return false
-	disk_io_count += 1
-	var file := FileAccess.open(path,FileAccess.READ)
-	if file == null or file.get_length()>32*1024*1024: return false
-	var data = JSON.parse_string(file.get_as_text())
-	if not data is Dictionary or not data.get("sources") is Dictionary: return false
-	if data.sources.get("SHAPE.TBL","") != SHAPE_HASH: return false
+	var data := load_catalogue(root)
+	if data.is_empty(): return false
 	for name in ["SIM.EXE","SHAPE.GI","SHAPE.TBL"]:
 		if data.sources.get(name,"")!=SOURCE_HASHES[name]: return false
 		var source := root.path_join("GAME/"+str(name))
@@ -125,10 +135,69 @@ func load_assets(root: String) -> bool:
 	load_realism_atlas(root)
 	return true
 
+## The authored catalogue joined to the source shape registry, which is decoded
+## from the player's own SHAPE.TBL (web: derived_art.mjs; desktop: the asset
+## builder) and never published. A missing or unpinned registry returns {}.
+func load_catalogue(root: String) -> Dictionary:
+	var directory := root.path_join("local-art/pc-modern")
+	var raw := _read_bounded(directory.path_join("catalog.json"))
+	var data = JSON.parse_string(raw.get_string_from_utf8()) if not raw.is_empty() else null
+	if not data is Dictionary or not data.get("sources") is Dictionary: return {}
+	if data.sources.get("SHAPE.TBL","") != SHAPE_HASH: return {}
+	var pin = data.get("source_registry")
+	if not pin is Dictionary or pin.get("file","")!=SOURCE_REGISTRY: return {}
+	raw = _read_bounded(directory.path_join(SOURCE_REGISTRY))
+	if raw.is_empty(): return {}
+	var hashing := HashingContext.new()
+	hashing.start(HashingContext.HASH_SHA256)
+	hashing.update(raw)
+	if hashing.finish().hex_encode()!=str(pin.get("sha256","")): return {}
+	var registry = JSON.parse_string(raw.get_string_from_utf8())
+	if not registry is Dictionary: return {}
+	return merge_registry(data,registry)
+
+## Reattaches registry fields by shape_index, in place. Source lines take their
+## vertices and prefix bytes from the registry primitive they name.
+static func merge_registry(data: Dictionary, registry: Dictionary) -> Dictionary:
+	if int(registry.get("schema",-1))!=1 or registry.get("source","")!="SHAPE.TBL" or registry.get("source_sha256","")!=SHAPE_HASH: return {}
+	if not registry.get("shapes") is Array or not data.get("models") is Array or registry.shapes.size()!=data.models.size(): return {}
+	var shapes: Dictionary = {}
+	for entry in registry.shapes:
+		if not entry is Dictionary: return {}
+		shapes[int(entry.get("shape_index",-1))] = entry
+	for model in data.models:
+		if not model is Dictionary or int(model.get("shape_index",-1)) not in shapes: return {}
+		var entry: Dictionary = shapes[int(model.shape_index)]
+		for field in REGISTRY_FIELDS:
+			# A published catalogue never carries source structure itself.
+			if model.has(field) or not entry.has(field): return {}
+			model[field] = entry[field]
+		if not model.source_primitives is Array or not model.get("source_lines",[]) is Array: return {}
+		var primitives: Dictionary = {}
+		for primitive in model.source_primitives:
+			if not primitive is Dictionary or not primitive.get("vertices") is Array or not primitive.get("prefix_bytes") is Array: return {}
+			primitives[int(primitive.get("id",-1))] = primitive
+		for line in model.get("source_lines",[]):
+			if not line is Dictionary or int(line.get("source_primitive",-1)) not in primitives: return {}
+			var primitive: Dictionary = primitives[int(line.source_primitive)]
+			line.vertices = clean_polygon(primitive.vertices)
+			line.prefix_bytes = primitive.prefix_bytes.duplicate()
+	return data
+
+# tools/build_pc_modern_assets.clean_polygon: drop repeats and a closing copy.
+static func clean_polygon(points: Array) -> Array:
+	var result: Array = []
+	for point in points:
+		if result.is_empty() or point!=result.back(): result.append(point)
+	if result.size()>1 and result.front()==result.back(): result.pop_back()
+	return result
+
 func load_material_textures(root: String) -> bool:
 	material_textures.clear()
+	_material_tiles.clear()
 	material_atlas=null
 	var loaded: Dictionary = {}
+	var tiles: Dictionary = {}
 	for name in MATERIAL_TEXTURES:
 		var path:=root.path_join("local-art/pc-tactical-materials-v1/"+str(name)+".png")
 		if not _file_exists(path) or _sha256(path)!=MATERIAL_TEXTURES[name]:return false
@@ -138,16 +207,22 @@ func load_material_textures(root: String) -> bool:
 		# Bounded GPU footprint, no work or disk reads while rendering/toggling.
 		image.resize(512,512,Image.INTERPOLATE_LANCZOS)
 		image.convert(Image.FORMAT_R8)
+		# Mip level 0 is unchanged by generate_mipmaps; this copy equals the
+		# uploaded level the atlas formerly fetched back with get_image().
+		var tile:=image.duplicate() as Image
+		tile.resize(256,256,Image.INTERPOLATE_LANCZOS)
+		tiles[name]=tile
 		image.generate_mipmaps()
 		loaded[name]=ImageTexture.create_from_image(image)
 	material_textures=loaded
+	_material_tiles=tiles
 	return true
 
 # One mipmapped, padded R8 atlas uses one extra browser sampler. Optional,
 # all-or-nothing admission leaves the preceding Tactical materials available.
 func load_realism_atlas(root: String) -> bool:
 	material_atlas=null
-	if material_textures.size()!=3:return false
+	if material_textures.size()!=3 or _material_tiles.size()!=3:return false
 	var tiles: Dictionary={}
 	for name in REALISM_TEXTURES:
 		var path:=root.path_join("local-art/pc-tactical-materials-v2/"+str(name)+".png")
@@ -158,25 +233,27 @@ func load_realism_atlas(root: String) -> bool:
 		image.resize(256,256,Image.INTERPOLATE_LANCZOS)
 		image.convert(Image.FORMAT_R8)
 		tiles[name]=image
-	for name in MATERIAL_TEXTURES:
-		var image:Image=material_textures[name].get_image()
-		image.clear_mipmaps()
-		image.resize(256,256,Image.INTERPOLATE_LANCZOS)
-		tiles[name]=image
+	for name in MATERIAL_TEXTURES: tiles[name]=_material_tiles[name]
 	var atlas:=Image.create(1152,1152,false,Image.FORMAT_R8)
 	atlas.fill(Color(0.5,0,0))
 	for i in REALISM_ORDER.size():
-		var image:Image=tiles[REALISM_ORDER[i]]
-		var origin:=Vector2i((i%4)*288+16,(i/4)*288+16)
-		atlas.blit_rect(image,Rect2i(0,0,256,256),origin)
-		# Duplicate borders, rather than transparent gutters, at every tile.
-		for y in range(-16,272):
-			for x in range(-16,272):
-				if x<0 or x>=256 or y<0 or y>=256:
-					atlas.set_pixelv(origin+Vector2i(x,y),image.get_pixel(clampi(x,0,255),clampi(y,0,255)))
+		pad_realism_tile(atlas,tiles[REALISM_ORDER[i]],Vector2i((i%4)*288+16,(i/4)*288+16))
 	atlas.generate_mipmaps()
 	material_atlas=ImageTexture.create_from_image(atlas)
 	return true
+
+# Place one 256x256 R8 tile and duplicate its borders, rather than transparent
+# gutters, 16 pixels outward: each band repeats the nearest edge row/column and
+# each corner block its corner pixel. Native strip blits, no per-pixel loop.
+static func pad_realism_tile(atlas: Image, image: Image, origin: Vector2i) -> void:
+	atlas.blit_rect(image,Rect2i(0,0,256,256),origin)
+	for edge in [[Rect2i(0,0,256,1),Vector2i(256,16),Vector2i(0,-16)],[Rect2i(0,255,256,1),Vector2i(256,16),Vector2i(0,256)],
+			[Rect2i(0,0,1,256),Vector2i(16,256),Vector2i(-16,0)],[Rect2i(255,0,1,256),Vector2i(16,256),Vector2i(256,0)]]:
+		var band:=image.get_region(edge[0])
+		band.resize(edge[1].x,edge[1].y,Image.INTERPOLATE_NEAREST)
+		atlas.blit_rect(band,Rect2i(Vector2i.ZERO,edge[1]),origin+edge[2])
+	for corner in [Vector2i(0,0),Vector2i(255,0),Vector2i(0,255),Vector2i(255,255)]:
+		atlas.fill_rect(Rect2i(origin+Vector2i(-16 if corner.x==0 else 256,-16 if corner.y==0 else 256),Vector2i(16,16)),image.get_pixelv(corner))
 
 # Extra tags carry a family and the exact pre-existing structural kind. The
 # shader decodes them before incumbent geometry/depth/palette branches.
@@ -248,7 +325,9 @@ static func material_detail_kind(shape: int, material: String, component: String
 func configure(data: Dictionary) -> bool:
 	revision += 1
 	material_textures.clear()
+	_material_tiles.clear()
 	material_atlas=null
+	clear_position_cache()
 	position_cache_hits = 0
 	position_cache_misses = 0
 	models.clear()
@@ -343,11 +422,13 @@ func configure(data: Dictionary) -> bool:
 				pitched_roof=horizontal>absf(source_normal.z)*0.08 and absf(source_normal.z)>horizontal and height>lerpf(float(model.bounds.min[2]),float(model.bounds.max[2]),0.65)
 			var equipment:=equipment_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")))
 			var legacy_kind: float=equipment if equipment!=20.0 else GLAZING if shape in GLAZING_SHAPES and triangle.get("material","") in ["glass","cockpit"] else HIND_PAINT if shape in [163,164] and triangle.get("material","") in ["olive","olive_edge"] else ARMOUR_PAINT if shape in TWO_TONE_SHAPES and model.get("paint_style","")=="two_tone_olive" and triangle.get("material","") in ["olive","olive_edge"] else 20.03125 if shape==157 and primitive==28751 else 20.46875 if pitched_roof else 20.4375 if structure and roof else 20.375 if structure else 20.0
+			var structure_kind:=realism_kind(str(triangle.get("material","")),material_detail_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")),architecture_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")),legacy_kind)))
 			faces[primitive].triangles.append({"vertices":vertices,"color":rgb,"motion":motion,
-				"structure_kind":realism_kind(str(triangle.get("material","")),material_detail_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")),architecture_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")),legacy_kind))),
+				"structure_kind":structure_kind,"moving_kind":moving_kind(structure_kind,motion),
 				"structure_axis":2 if roof else 0 if absf(normal.x)>absf(normal.y) else 1})
-		# Catalogue-bounded, face-local positions only. Every camera fit is still
-		# checked and recomputed per mapping; no actor/frame state is retained.
+		# Catalogue-bounded, face-local positions only. A camera fit is computed
+		# unless mapping's exact-keyed position cache already holds its inputs;
+		# no actor state is retained here.
 		for face: Dictionary in faces.values():
 			var unique: Dictionary = {}
 			var unique_corners: Dictionary = {}
@@ -367,8 +448,15 @@ func configure(data: Dictionary) -> bool:
 					var key := var_to_bytes([raw,triangle.structure_kind,triangle.structure_axis,triangle.motion])
 					if key not in unique_corners:
 						unique_corners[key] = corners.size()
+						# Static surface coordinates are catalogue invariants. Only
+						# wheel/track marks depend on the paired motion anchor.
+						var motion_kind := str(triangle.motion.get("kind",""))
 						corners.append({"raw":raw,"position":unique[point],"kind":triangle.structure_kind,
-							"axis":triangle.structure_axis,"motion":triangle.motion})
+							"axis":triangle.structure_axis,"motion":triangle.motion,
+							"extras":surface_extras(triangle.structure_kind,raw,triangle.structure_axis,triangle.motion,NAN),
+							"motion_mark":1 if motion_kind=="wheel" else 2 if motion_kind=="track" else 0,
+							"wheel_center":vec(triangle.motion.center) if motion_kind=="wheel" else Vector3.ZERO,
+							"wheel_radius":float(triangle.motion.radius) if motion_kind=="wheel" else 1.0})
 					corner_indices.append(unique_corners[key])
 				triangle.position_indices = indices
 				triangle.corner_indices = corner_indices
@@ -553,7 +641,66 @@ static func clip_to_source(triangle: Array, source: Array, frame: Dictionary) ->
 			output.append(Geometry.unproject(intersection[index],1024.0,frame))
 	return output
 
-func mapping(object: Dictionary, polygon: Dictionary, frame: Dictionary, palette: Array, primitive_gate: bool = true, motion_anchor: float = NAN) -> Array:
+# Running-gear marks replace the static tag while a paired motion anchor
+# exists. Rubber tyres keep realism family 6 (shader-decoded back to 20.25).
+static func wheel_kind(kind: float) -> float:
+	if kind==EQUIPMENT_RUBBER or (kind>=24.0 and kind<28.0 and int(round(fmod(kind,1.0)*64.0))==6): return 20.25390625
+	return 20.25
+
+static func moving_kind(kind: float, motion: Dictionary) -> float:
+	if motion.get("kind","")=="wheel": return wheel_kind(kind)
+	if motion.get("kind","")=="track": return 20.125
+	return kind
+
+# Per-corner surface coordinates appended after the camera position. Every
+# static branch reads catalogue values only; the caller evaluates it once.
+static func surface_extras(kind: float, raw: Array, axis: int, motion: Dictionary, motion_anchor: float) -> Array:
+	var base_kind: float = architecture_base_kind(kind)
+	if (kind>=24.0 and kind<28.0 and base_kind==20.0) or kind==TEXTURE_PAINT:
+		return [float(raw[1]) if axis==0 else float(raw[0]),float(raw[1]) if axis==2 else float(raw[2])]
+	elif kind==ARCH_DOOR:
+		return [float(raw[1]) if axis==0 else float(raw[0]),float(raw[2])]
+	elif kind in [EQUIPMENT_VENT,EQUIPMENT_CANVAS,EQUIPMENT_RUBBER,GLAZING]:
+		# Dominant face plane in authored object coordinates, including x/y
+		# canvas roofs. No world translation, clock or moving texture phase.
+		return [float(raw[1]) if axis==0 else float(raw[0]),float(raw[1]) if axis==2 else float(raw[2])]
+	elif kind==HIND_PAINT:
+		# Original object-local longitudinal/height coordinates. Both rotor
+		# states share the livery; camera movement and rebases cannot slide it.
+		return [float(raw[1]),float(raw[2])]
+	elif kind==ARMOUR_PAINT:
+		# Oblique local projection joins roof and side patches without
+		# screen/world-space sliding or seams between owning source faces.
+		return [float(raw[1])+float(raw[0])*.45,float(raw[2])+float(raw[0])*.25]
+	elif base_kind>20.3:
+		# Walls use (horizontal, height); roofs (>=20.4) use both horizontal
+		# object-local axes whatever their facet axis, so grain stays 2-D.
+		return [float(raw[0]) if axis==1 or base_kind>=20.4 else float(raw[1]),float(raw[2]) if base_kind<20.4 else float(raw[1])]
+	elif kind>20.2:
+		return wheel_mark(raw,vec(motion.center),float(motion.radius),motion_anchor)
+	elif kind>20.1:
+		return [(float(raw[1])+motion_anchor)/12.0,0.0]
+	return []
+
+static func wheel_mark(raw: Array, center: Vector3, radius: float, motion_anchor: float) -> Array:
+	var mark:=Vector2((float(raw[1])-center.y)/radius,(float(raw[2])-center.z)/radius).rotated(-fposmod(motion_anchor/radius,TAU))
+	return [mark.x,mark.y]
+
+func clear_position_cache() -> void:
+	_positions.clear()
+	_retired_positions.clear()
+
+func _remember_positions(key: PackedByteArray, entry: Array) -> void:
+	if _positions.size()>=POSITION_CACHE_LIMIT:
+		_retired_positions=_positions
+		_positions={}
+	_positions[key]=entry
+
+# By default facets keep the shipped per-face far-to-near order, because the
+# draw pass's object-level sort_custom is unstable and resolves equal depths by
+# input order. A caller whose object sort breaks ties explicitly passes
+# depth_presort=false and receives catalogue triangle order instead.
+func mapping(object: Dictionary, polygon: Dictionary, frame: Dictionary, palette: Array, primitive_gate: bool = true, motion_anchor: float = NAN, depth_presort: bool = true) -> Array:
 	last_reason = "unsupported source face"
 	if not ready or not supported_palette(palette): return []
 	var shape := int(object.get("shape_index",-1))
@@ -565,15 +712,20 @@ func mapping(object: Dictionary, polygon: Dictionary, frame: Dictionary, palette
 	var face: Dictionary = model.faces[primitive]
 	var points = polygon.get("camera_vertices",[])
 	if not points is Array: return []
-	var positions := PackedVector3Array()
-	# One catalogue-bounded slot per face. Exact serialized anchor/camera bytes
-	# permit reuse only of immutable transformed positions, never clipping, UVs,
-	# motion, palette acceptance, identity, ownership or a previous frame result.
-	# Packed arrays have value/copy-on-write semantics; callers cannot poison it.
-	var position_key := var_to_bytes([points,frame])
-	if face.get("position_key",PackedByteArray()) == position_key:
-		positions = face.cached_positions
-		max_anchor_error = maxf(max_anchor_error,float(face.cached_anchor_error))
+	var positions: PackedVector3Array
+	# Exact serialized face identity, camera anchors and every frame scalar that
+	# anchor_frame reads (projection centre, focal length, near plane) permit
+	# reuse only of transformed positions, never clipping, UVs, motion, palette
+	# acceptance, ownership or a previous frame result. Packed arrays have
+	# value/copy-on-write semantics; callers cannot poison an entry.
+	var position_key := var_to_bytes([shape,primitive,points,frame.get("center"),frame.get("focal_pixels"),frame.get("near_raw")])
+	var cached = _positions.get(position_key)
+	if cached==null:
+		cached = _retired_positions.get(position_key)
+		if cached!=null: _remember_positions(position_key,cached)
+	if cached!=null:
+		positions = cached[0]
+		max_anchor_error = maxf(max_anchor_error,float(cached[1]))
 		position_cache_hits += 1
 	else:
 		position_cache_misses += 1
@@ -593,84 +745,58 @@ func mapping(object: Dictionary, polygon: Dictionary, frame: Dictionary, palette
 			# Source-rounding interpolation keeps the complete original path.
 			for i in face.positions.size():
 				positions[i] = transform_point(face.positions[i],fit)
-		face.position_key = position_key
-		face.cached_positions = positions
-		face.cached_anchor_error = float(fit.error)
+		_remember_positions(position_key,[positions,float(fit.error)])
 	# Complete attributed corners are face-local too. Clipping only reads them;
 	# all returned arrays are newly allocated for this mapping invocation.
+	var moving := is_finite(motion_anchor)
 	var mapped_corners: Array = []
 	var projected_corners := PackedVector2Array()
 	var near_y := float(frame.near_raw)
 	for corner: Dictionary in face.corners:
-		var raw: Array = corner.raw
 		var point: Vector3 = positions[corner.position]
-		var kind: float = corner.kind
-		var motion: Dictionary = corner.motion
-		if is_finite(motion_anchor):
-			if motion.get("kind","")=="wheel": kind=20.25390625 if kind>=24.0 and int(round(fmod(kind,1.0)*64.0))==6 else 20.25
-			elif motion.get("kind","")=="track": kind=20.125
-		var base_kind: float = architecture_base_kind(kind)
 		var vertex: Array=[point.x,point.y,point.z]
-		if (kind>=24.0 and kind<28.0 and base_kind==20.0) or kind==TEXTURE_PAINT:
-			vertex.append_array([float(raw[1]) if int(corner.axis)==0 else float(raw[0]),float(raw[1]) if int(corner.axis)==2 else float(raw[2])])
-		elif kind==ARCH_DOOR:
-			vertex.append_array([float(raw[1]) if int(corner.axis)==0 else float(raw[0]),float(raw[2])])
-		elif kind in [EQUIPMENT_VENT,EQUIPMENT_CANVAS,EQUIPMENT_RUBBER,GLAZING]:
-			# Dominant face plane in authored object coordinates, including x/y
-			# canvas roofs. No world translation, clock or moving texture phase.
-			vertex.append_array([float(raw[1]) if int(corner.axis)==0 else float(raw[0]),float(raw[1]) if int(corner.axis)==2 else float(raw[2])])
-		elif kind==HIND_PAINT:
-			# Original object-local longitudinal/height coordinates. Both rotor
-			# states share the livery; camera movement and rebases cannot slide it.
-			vertex.append_array([float(raw[1]),float(raw[2])])
-		elif kind==ARMOUR_PAINT:
-			# Oblique local projection joins roof and side patches without
-			# screen/world-space sliding or seams between owning source faces.
-			vertex.append_array([float(raw[1])+float(raw[0])*.45,float(raw[2])+float(raw[0])*.25])
-		elif base_kind>20.3:
-			# Walls use (horizontal, height); roofs (>=20.4) use both horizontal
-			# object-local axes whatever their facet axis, so grain stays 2-D.
-			vertex.append_array([float(raw[0]) if int(corner.axis)==1 or base_kind>=20.4 else float(raw[1]),float(raw[2]) if base_kind<20.4 else float(raw[1])])
-		elif kind>20.2:
-			var center: Vector3=vec(motion.center)
-			var radius: float=float(motion.radius)
-			var mark:=Vector2((float(raw[1])-center.y)/radius,(float(raw[2])-center.z)/radius).rotated(-fposmod(motion_anchor/radius,TAU))
-			vertex.append_array([mark.x,mark.y])
-		elif kind>20.1:
-			vertex.append_array([(float(raw[1])+motion_anchor)/12.0,0.0])
+		var mark: int = corner.motion_mark if moving else 0
+		if mark==1: vertex.append_array(wheel_mark(corner.raw,corner.wheel_center,corner.wheel_radius,motion_anchor))
+		elif mark==2: vertex.append_array([(float(corner.raw[1])+motion_anchor)/12.0,0.0])
+		else: vertex.append_array(corner.extras)
 		mapped_corners.append(vertex)
 		if not primitive_gate:
 			projected_corners.append(Geometry.project(vertex,frame) if point.y>=near_y else Vector2.ZERO)
-	var ordered: Array = []
-	for triangle: Dictionary in face.triangles:
-		var transformed: Array = []
+	var triangles: Array = face.triangles
+	var depths := PackedFloat64Array()
+	depths.resize(triangles.size())
+	for i in triangles.size():
+		var corners: PackedInt32Array = triangles[i].corner_indices
 		var depth := 0.0
-		var kind: float = triangle.structure_kind
-		var motion: Dictionary = triangle.motion
-		if is_finite(motion_anchor):
-			if motion.get("kind","")=="wheel": kind=20.25
-			elif motion.get("kind","")=="track": kind=20.125
-		for i in triangle.corner_indices:
-			var vertex: Array = mapped_corners[i]
-			transformed.append(vertex)
-			depth += float(vertex[1])
-		ordered.append({"points":transformed,"color":triangle.color,"depth":depth,"kind":kind,"corners":triangle.corner_indices})
-	ordered.sort_custom(func(a,b): return a.depth>b.depth)
+		depth += float(mapped_corners[corners[0]][1]); depth += float(mapped_corners[corners[1]][1]); depth += float(mapped_corners[corners[2]][1])
+		depths[i] = depth
+	var order: Array = range(triangles.size())
+	# Same comparator over the same catalogue-order sequence as the shipped
+	# sort of triangle records, so the permutation (ties included) is identical.
+	if depth_presort: order.sort_custom(func(x,y): return depths[x]>depths[y])
 	var result: Array = []
-	for triangle: Dictionary in ordered:
+	var screen := PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO])
+	for slot in order:
+		var triangle: Dictionary = triangles[slot]
+		var corners: PackedInt32Array = triangle.corner_indices
+		var a: Array = mapped_corners[corners[0]]
+		var b: Array = mapped_corners[corners[1]]
+		var c: Array = mapped_corners[corners[2]]
+		var depth: float = depths[slot]
 		var clipped: Array
 		if primitive_gate:
-			clipped = clip_to_source(triangle.points,points,frame)
-		elif triangle.points[0][1]>=near_y and triangle.points[1][1]>=near_y and triangle.points[2][1]>=near_y:
+			clipped = clip_to_source([a,b,c],points,frame)
+		elif float(a[1])>=near_y and float(b[1])>=near_y and float(c[1])>=near_y:
 			# Same native triangulator, including winding and tiny/degenerate
 			# rejection. Only redundant near clipping and projection are skipped.
-			var screen := PackedVector2Array()
-			for corner_index in triangle.corners: screen.append(projected_corners[corner_index])
+			screen[0]=projected_corners[corners[0]]
+			screen[1]=projected_corners[corners[1]]
+			screen[2]=projected_corners[corners[2]]
 			clipped = []
-			for index in Geometry2D.triangulate_polygon(screen): clipped.append(triangle.points[index])
+			for index in Geometry2D.triangulate_polygon(screen): clipped.append(mapped_corners[corners[index]])
 		else:
-			clipped = Geometry.triangle_vertices(triangle.points,frame)
-		if not clipped.is_empty(): result.append({"points":clipped,"color":triangle.color,"depth":triangle.depth,"kind":triangle.kind})
+			clipped = Geometry.triangle_vertices([a,b,c],frame)
+		if not clipped.is_empty(): result.append({"points":clipped,"color":triangle.color,"depth":depth,"kind":triangle.moving_kind if moving else triangle.structure_kind})
 	last_reason = "" if not result.is_empty() else "fully clipped source face"
 	return result
 
@@ -762,20 +888,49 @@ func _read_text(path: String) -> String:
 func _read_image(path: String) -> Image:
 	disk_io_count += 1
 	return Image.load_from_file(path)
+func _read_bounded(path: String) -> PackedByteArray:
+	if not _file_exists(path): return PackedByteArray()
+	disk_io_count += 1
+	var file := FileAccess.open(path,FileAccess.READ)
+	if file == null or file.get_length()>32*1024*1024: return PackedByteArray()
+	return file.get_buffer(file.get_length())
 
-static func running_gear_anchor(object: Dictionary, pass_data: Dictionary) -> float:
-	if not bool(object.get("dynamic_instance",false)): return NAN
+# One pass-wide {[pointer, shape]: [first actor, match count]} index over the
+# paired world snapshot. Build it once per pass and hand it to every lookup.
+static func dynamic_index(pass_data: Dictionary) -> Dictionary:
+	var index: Dictionary = {}
 	var world = pass_data.get("world")
-	if not world is Dictionary or not world.get("dynamic") is Array: return NAN
+	if not world is Dictionary or not world.get("dynamic") is Array: return index
+	for actor in world.dynamic:
+		if not actor is Dictionary: continue
+		var key := [int(actor.get("pointer",-2)),int(actor.get("shape_index",-2))]
+		if key in index: index[key][1]+=1
+		else: index[key]=[actor,1]
+	return index
+
+# Without a caller index, an allocation-free early-exit scan; building an
+# index per call would cost more than the scan it replaces.
+static func running_gear_anchor(object: Dictionary, pass_data: Dictionary, actors = null) -> float:
+	if not bool(object.get("dynamic_instance",false)): return NAN
 	var pointer := int(object.get("pointer",-1))
 	var shape := int(object.get("shape_index",-1))
-	for actor in world.dynamic:
-		if not actor is Dictionary or int(actor.get("pointer",-2))!=pointer or int(actor.get("shape_index",-2))!=shape: continue
-		var position=actor.get("world_position_raw",[])
-		if not position is Array or position.size()!=3: return NAN
-		for value in position:
-			if not (value is int or value is float) or not is_finite(float(value)): return NAN
-		# A deterministic world-position marking phase, not an odometer or
-		# physical tangential-travel reconstruction. No camera/yaw/time input.
-		return float(position[0])+sqrt(2.0)*float(position[1])
-	return NAN
+	# The first matching actor decides in both paths.
+	var actor = null
+	if actors is Dictionary:
+		var entry = actors.get([pointer,shape])
+		if entry!=null: actor=entry[0]
+	else:
+		var world = pass_data.get("world")
+		if not world is Dictionary or not world.get("dynamic") is Array: return NAN
+		for candidate in world.dynamic:
+			if candidate is Dictionary and int(candidate.get("pointer",-2))==pointer and int(candidate.get("shape_index",-2))==shape:
+				actor=candidate
+				break
+	if actor==null: return NAN
+	var position=actor.get("world_position_raw",[])
+	if not position is Array or position.size()!=3: return NAN
+	for value in position:
+		if not (value is int or value is float) or not is_finite(float(value)): return NAN
+	# A deterministic world-position marking phase, not an odometer or
+	# physical tangential-travel reconstruction. No camera/yaw/time input.
+	return float(position[0])+sqrt(2.0)*float(position[1])

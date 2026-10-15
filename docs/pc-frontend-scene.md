@@ -52,6 +52,13 @@ python3 -m tools.capture_pc_menu_text --mode trace --output artifacts/scene-trac
   --native --fixture "$PWD/artifacts/scene-trace/report.json"
 ```
 
-The native test checks all four graphics modes, pixel-exact EGA, unchanged
+The test checks all six graphics modes (EGA, EGA Upscaled, Genesis, Upscaled,
+Modern and Tactical), pixel-exact EGA, unchanged
 high-resolution menu panels, scene clearing, first-frame ownership dimensions
 and the existing quarter-source-pixel Modern anchor tolerance.
+`tools/validate.sh` runs this replay headless by default and natively with
+`VALIDATE_NATIVE=1`, both with
+`--fixture artifacts/intro-menu-20260930/trace/report.json`.
+
+Working if: the run prints `PC_FRONTEND_SCENE: N checks, 0 errors, N selectors,
+8 missions` for all six modes.

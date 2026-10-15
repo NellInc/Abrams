@@ -4,10 +4,12 @@ from pathlib import Path
 import unittest
 from PIL import Image
 from tools.build_pc_intro_catalog import build, FRAMES
+from tests._inputs import requires
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@requires('GAME', 'artifacts/pc-intro-baseline-02')
 class IntroCatalogTests(unittest.TestCase):
     def test_source_composition_and_reproducible_catalog(self):
         data = build(ROOT,ROOT/'artifacts/pc-intro-trace-01')

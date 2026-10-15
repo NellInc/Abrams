@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT))
 from tools.pc_reference_core import PcReferenceCore
 from tools.pc_live_state import active_program
 from tools.verify_pc_save_states import Client, rewrite
+from tools.source_guard import inside_source
 import zipfile
 
 CASES = {
@@ -52,7 +53,7 @@ def phase(args):
             core.local_overlay('flush')
             raw = core.serialize_local()
             (directory/'state.bin').write_bytes(raw)
-            assert active_program(core.conventional_memory())['name']=='SIM', 'original SIM not reached'
+            if active_program(core.conventional_memory())['name']!='SIM': raise RuntimeError('original SIM not reached')
             metadata = {'keys': CASES[args.case][0][-1][1], 'frame': core.frame,
                         'ram_sha256': sha(core.conventional_memory()), 'core': manifest['trace_sha256']}
             (directory/'resume.json').write_text(json.dumps(metadata))
@@ -77,7 +78,7 @@ def supervisor_matrix(output):
     checks={}
     def record(name, value):
         checks[name]=bool(value)
-        assert value, name
+        if not value: raise AssertionError(name)
     def metadata(slot):
         with zipfile.ZipFile(directory/'saves/states'/f'slot-{slot}.zip') as archive:
             return json.loads(archive.read('resume.json'))
@@ -146,10 +147,12 @@ def main():
     parser.add_argument('--phase', choices=['capture','restore'])
     parser.add_argument('--case', choices=CASES)
     args=parser.parse_args()
+    if inside_source(args.output,ROOT): parser.error('output must be outside original sources')
     if args.phase: phase(args); return 0
     args.output.mkdir(parents=True,exist_ok=False)
     checks={}
     supervisor={}
+    passed=False
     try:
         for name in CASES:
             directory=args.output/name;directory.mkdir()
@@ -169,10 +172,12 @@ def main():
         supervisor=supervisor_matrix(args.output)
         print('supervisor',json.dumps(supervisor),flush=True)
     finally:
+        # The exit status is this same verdict, so the receipt and the process never disagree.
+        passed=bool(supervisor) and all(supervisor.values()) and len(checks)==len(CASES) and all(c['ram'] and c['keys'] and c['fresh_video'] for c in checks.values())
         (args.output/'report.json').write_text(json.dumps({'checks':checks,
             'supervisor':supervisor,
-            'passed':bool(supervisor) and all(supervisor.values()) and len(checks)==len(CASES) and all(c['ram'] and c['keys'] and c['fresh_video'] for c in checks.values()),
+            'passed':passed,
             'scope':'Same serialized boundary, uninterrupted versus fresh-process native continuation. Physical key sets change through production host callback. No guest memory mutation.'},indent=2)+'\n')
-    return 0 if all(c['ram'] and c['keys'] and c['fresh_video'] for c in checks.values()) else 1
+    return 0 if passed else 1
 
 if __name__=='__main__':raise SystemExit(main())

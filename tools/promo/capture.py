@@ -6,12 +6,13 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from output_guard import guarded_output
 
 ROOT=Path(__file__).resolve().parents[2]
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--drive-checkpoint',action='store_true');p.add_argument('--showcase',action='store_true');a=p.parse_args()
-    out=a.output.resolve();out.mkdir(parents=True,exist_ok=False)
+    out=guarded_output(p,a.output);out.mkdir(parents=True,exist_ok=False)
     source=ROOT/'artifacts/pc-source-boot-01/mission-entry/reference.state'
     fingerprints={str(f.relative_to(ROOT)):hashlib.sha256(f.read_bytes()).hexdigest() for f in [source,ROOT/'godot/scripts/pc_bridge_viewer.gd',ROOT/'.runtime/pc-core/abrams-trace.dylib']}
     with (out/'host.log').open('w') as log:

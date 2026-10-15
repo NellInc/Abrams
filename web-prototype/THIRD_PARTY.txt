@@ -23,9 +23,15 @@ Pillow 11.3.0, bundled as a Pyodide wheel
 Licence from the exact bundled wheel: LICENSES/Pillow-11.3.0.txt
 Source: https://github.com/python-pillow/Pillow/tree/11.3.0
 
-Barlow Condensed
-SIL Open Font License: assets/Barlow-OFL.txt
+Barlow Condensed (page WOFF2, and the SemiBold TTF embedded in the Godot PCK)
+Copyright 2017 The Barlow Project Authors
+SIL Open Font License 1.1: assets/Barlow-OFL.txt
 Source: https://github.com/jpt/barlow
+
+IBM Plex Mono (Regular TTF embedded in the Godot PCK)
+Copyright 2017 IBM Corp., with Reserved Font Name "Plex"
+SIL Open Font License 1.1: LICENSES/IBM-Plex-OFL.txt
+Source: https://github.com/IBM/plex
 
 The visitor supplies the original PC game and, optionally, the original
 Genesis ROM. Neither is bundled with this website.

@@ -11,6 +11,8 @@ var runs: Array[Dictionary] = []
 var labels: Array[Control] = []
 var world_ink: Array[Vector2i] = []
 var _crew_rect := Rect2i()
+var fit_key := []
+var fit_point := 6
 var fixed_labels_enabled := false
 var status_numbers_enabled := false
 var hud_style := "restored"
@@ -40,6 +42,8 @@ class RunLabel extends Control:
 	var mono_font: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
 	var mesh: ArrayMesh
 	var mesh_key := ""
+	var fit_key := []
+	var fit_point := 6
 	func _draw() -> void:
 		if run.is_empty(): return
 		# A complete, proven notice is drawn as one line by the parent. The
@@ -49,9 +53,7 @@ class RunLabel extends Control:
 		if tactical:
 			var bearing: bool=run.kind=="world_bearing"
 			var face: Font=mono_font if bearing and run.text.is_valid_int() else tactical_font
-			var point_size:=clampi(roundi(size.y),6,72)
-			while point_size>6 and (face.get_height(point_size)>size.y or face.get_string_size(run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size).x>size.x):
-				point_size-=1
+			var point_size:=fitted_point(face,run.text,size,self)
 			var baseline: float=(size.y-face.get_height(point_size))*0.5+face.get_ascent(point_size)
 			if bearing:
 				draw_string_outline(face,Vector2(0,baseline),run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size,1,Color("e3e4cd") if run.foreground.r<0.5 else Color("15251b"))
@@ -72,6 +74,17 @@ class RunLabel extends Control:
 		draw_set_transform(Vector2.ZERO,0,size/run.rect.size)
 		draw_mesh(mesh,null,Transform2D.IDENTITY,run.foreground)
 		draw_set_transform(Vector2.ZERO)
+
+	# Largest point size whose height and advance fit the box. The search is the
+	# same linear descent; owner remembers it for an unchanged (face, text, box).
+	static func fitted_point(face: Font, text: String, box: Vector2, owner: Object) -> int:
+		var key := [face,text,box]
+		if owner.fit_key==key: return owner.fit_point
+		var point:=clampi(roundi(box.y),6,72)
+		while point>6 and (face.get_height(point)>box.y or face.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x>box.x): point-=1
+		owner.fit_key=key
+		owner.fit_point=point
+		return point
 
 	static func segments(value: Dictionary) -> Array:
 		if value.has("word_space"):
@@ -178,8 +191,7 @@ func _draw() -> void:
 	var face: Font=preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 	var inset:=Vector2(6,2)*size/Vector2(320,200)
 	var interior:=Rect2(box.position+inset,box.size-inset*2)
-	var point:=clampi(roundi(interior.size.y),6,72)
-	while point>6 and (face.get_height(point)>interior.size.y or face.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x>interior.size.x): point-=1
+	var point:=RunLabel.fitted_point(face,text,interior.size,self)
 	var baseline: float=interior.position.y+(interior.size.y-face.get_height(point))*0.5+face.get_ascent(point)
 	draw_string(face,Vector2(interior.position.x,baseline),text,HORIZONTAL_ALIGNMENT_LEFT,-1,point,Color("e3e4cd"))
 
@@ -410,7 +422,11 @@ func verified_run(item: Variant, source: Image, ui: Image, palette: Array, curso
 	if foreground==background: return {}
 	var stride := (cell.x+7)/8
 	var visible_ink := false
-	if cursor_mask==null and ui.get_format()==Image.FORMAT_L8 and source.get_format() in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8]:
+	# A cursor proof that exempts no pixel of this box (no L8 255 inside it) makes
+	# the masked predicate identical to the region compare, so only runs under
+	# the visible cursor take the per-pixel path.
+	var exempt := cursor_mask!=null and (cursor_mask.get_format()!=Image.FORMAT_L8 or cursor_mask.get_size()!=Vector2i(320,200) or cursor_mask.get_region(box).get_data().count(255)!=0)
+	if not exempt and ui.get_format()==Image.FORMAT_L8 and source.get_format() in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8]:
 		if ui.get_region(box).get_data().count(255)!=box.size.x*box.size.y: return {}
 		var expected := _expected_pixels(words,bytes,foreground,background,item.font_sha256)
 		if expected.is_empty() or not expected.visible_ink: return {}

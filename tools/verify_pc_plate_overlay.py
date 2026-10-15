@@ -7,9 +7,11 @@ from pathlib import Path
 from PIL import Image
 try:
     from tools.pc_plate_trace import PlateLoads, PLATE_IDS
+    from tools.source_guard import inside_source
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from pc_plate_trace import PlateLoads, PLATE_IDS
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -62,6 +64,7 @@ if __name__ == '__main__':
     parser.add_argument('--report',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)
     args = parser.parse_args()
+    if inside_source(args.output,ROOT): parser.error('output must be outside original sources')
     result = verify(args.report)
     args.output.write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps({'frames':len(result['frames']),'pixels_checked':result['pixels_checked']}))

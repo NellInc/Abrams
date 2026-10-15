@@ -70,4 +70,6 @@ class DynamicMapTests(unittest.TestCase):
    stage=copy.deepcopy(trace);stage['stages']['driver']={'station':2};self.assertEqual(compare(stage),1)
    self.assertEqual(compare(dict(trace,core_sha256='x'*64)),1)
    self.assertEqual(compare(dict(trace,packets=[{'mode':0}])),1)
+   self.assertEqual(compare(dict(trace,trace_header_sha256='o'*64)),1)
+   self.assertEqual(compare(trace,dict(base,trace_header_sha256='o'*64)),0)
 if __name__=='__main__':unittest.main()

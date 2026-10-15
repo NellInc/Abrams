@@ -372,7 +372,8 @@ loop ends, including one startup observation with null completed-pass identity.
 The other 531 have matching original draw camera and world origin at observation.
 The camera diagnostic's metadata explicitly names the loop boundary.
 
-Native core SHA-256:
+Native core SHA-256 for that pass (since superseded; the active pin is in
+`.runtime/pc-core/abrams-trace.json`):
 `ef889734270d4106aa13ef28a8234a20dd1381c15067521f5776a53413761d88`.
 The original 68 game inputs and shared dependency source stay unchanged;
 only the local trace library/manifest and the approved observer source change.
@@ -433,7 +434,7 @@ UI work. No original instructions, rendering calls or validation guards change.
 The exact neutral-START input replay through the formerly failing frame has
 identical full conventional RAM and framebuffer bytes across the old/new observer,
 with the corrected guard passing. Existing render/session/UI/plate tests: 43 pass.
-`panel-fix-parity.json` records the comparison. The current local trace core pin is
+`panel-fix-parity.json` records the comparison. The trace core pin at the time of this pass was
 `bd3877f73c1505bc9d6883fbcbd9d860f71f7d56ee51d50a21887da3b5723191`;
 the previous core/header/manifest are retained task-locally.
 
@@ -599,7 +600,7 @@ the incident. Subsequent movement retains the already chosen static-map corridor
 and the sight scan follows the original visible hit bearing. Those actor records
 are not used for tactical routing, target selection or aiming.
 
-A concrete replay portability defect is discovered: the pinned native
+A concrete replay portability defect is discovered: the then-pinned native (save format 8)
 `DBPSerialize_DOS` omits `dos.date` (`.runtime/dosbox-pure-source/src/dos/dos.cpp`,
 1379 to 1421), while BIOS initializes it from host local date (`src/ints/bios.cpp`,
 520 to 549). Original START calls date/time, seeds its PRNG, then selects modulo
@@ -622,7 +623,9 @@ All 244 actual live milestones and sealed saved-file contents match. The 81
 protected hashes, including 68 original GAME files, remain unchanged. Complete
 native runs and the comparison exit zero. Failed-recorder logs remain retained.
 Successful-campaign parity remains unavailable because no accepted winning route
-exists. Cross-day checkpoint fidelity is still a separate limit.
+exists. Cross-day checkpoint fidelity was then a separate limit. The 13 October 2026
+calendar repair (save format 9, core `b859afb1…`; see WORK_LEDGER) stores the DOS
+date in new checkpoints. Legacy format-8 states still restore with the boot date.
 
 Working if: execution freezes preserve chosen escape controls, actual initialization
 is reproduced before replay claims, original draw/scanout pairing remains intact,

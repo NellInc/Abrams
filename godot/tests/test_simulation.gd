@@ -17,6 +17,7 @@ func _run() -> void:
 	_test_targeting()
 	_test_snapshots()
 	_test_completion()
+	_test_contract_clauses()
 	_test_range_presentation()
 	if failures.is_empty():
 		print("SIMULATION: %d checks passed" % checks)
@@ -153,9 +154,14 @@ func _test_snapshots() -> void:
 		var bad: Dictionary = saved.duplicate(true)
 		bad.erase(key)
 		bad_variants.append(bad)
-	for pair in [["ammo", [-1, 1, 1, 1]], ["ammo", [1]], ["pos", [NAN, 0]], ["pos", [9000, 0]], ["heading", INF], ["station", 2.5], ["locked", true], ["fuel", -1], ["status", "won"], ["version", 99], ["targets", []], ["elevation", INF], ["elevation", -1], ["elevation", 1], ["zoom_level", 3], ["zoom_level", 1.5], ["zoom_level", 0], ["zoom", false]]:
+	for pair in [["ammo", [-1, 1, 1, 1]], ["ammo", [1]], ["pos", [NAN, 0]], ["pos", [9000, 0]], ["heading", INF], ["station", 2.5], ["locked", true], ["fuel", -1], ["status", "won"], ["version", 99], ["targets", []], ["elevation", INF], ["elevation", -1], ["elevation", 1], ["zoom_level", 3], ["zoom_level", 1.5], ["zoom_level", 0], ["zoom", false],
+			["version", "2"], ["range_id", 5], ["zoom", "yes"], ["seed", "1"], ["status", 1], ["control_hull", 1], ["targets", "t01"]]:
 		var bad: Dictionary = saved.duplicate(true)
 		bad[pair[0]] = pair[1]
+		bad_variants.append(bad)
+	for pair in [["id", 1], ["name", 5], ["kind", null], ["alive", 1]]:
+		var bad: Dictionary = saved.duplicate(true)
+		bad.targets[0][pair[0]] = pair[1]
 		bad_variants.append(bad)
 	for bad in bad_variants:
 		var before: Dictionary = restored.snapshot()
@@ -244,8 +250,60 @@ func _test_corrected_controls() -> void:
 	sim.tick({"toggle_control": true, "sight_axis": 1})
 	check(not sim.locked, "manual sight elevation releases lock")
 
+func _test_contract_clauses() -> void:
+	var sim = Sim.new()
+	var fired: Array = []
+	for event in sim.tick({"fire": true, "machinegun": true}):
+		if event.type == "fire":
+			fired.append(event.weapon)
+	check(fired == [0, 3], "fire and machinegun both fire in one tick")
+	var main_reload: int = int(sim.rules.reload_ticks[0])
+	var reloads: int = 0
+	var reload_tick: int = -1
+	for tick in main_reload + 30:
+		if _has_event(sim.tick({}), "reload"):
+			reloads += 1
+			reload_tick = tick
+	check(reloads == 1 and reload_tick == main_reload - 1, "reload event once when main reload completes")
+	sim.reset()
+	sim.turret = 0.3
+	for i in 30:
+		sim.tick({"steer": 1.0})
+	check(sim.heading > 0.0 and is_equal_approx(angle_difference(sim.heading, sim.turret), 0.3), "hull turning carries unlocked turret")
+	sim.reset()
+	sim.turret = sim.bearing_to(sim.targets[0].pos)
+	sim.tick({"select_target": true, "lock_target": true})
+	for i in 30:
+		sim.tick({"steer": 1.0})
+	check(sim.locked and sim.heading > 0.0 and is_equal_approx(sim.turret, sim.bearing_to(sim.targets[sim.selected_target].pos)), "lock holds target bearing while hull turns")
+	sim.tick({"align_turret": true})
+	check(not sim.locked and sim.turret == sim.heading, "align_turret releases lock")
+	var plain = Sim.new()
+	var scanned = Sim.new()
+	var same: bool = true
+	for i in 120:
+		var commands: Dictionary = {"throttle": 1.0, "steer": 0.3, "fire": i == 0}
+		var plain_events: Array = plain.tick(commands)
+		commands.scan_bearing = [0.0, PI / 2, PI, -PI / 2][i % 4]
+		same = same and plain_events == scanned.tick(commands)
+	check(same and plain.snapshot() == scanned.snapshot(), "scan_bearing ignored by simulation")
+	for station in 4:
+		sim = Sim.new()
+		var events: Array = sim.tick({"station": station, "radio": true, "toggle_thermal": true})
+		check(_has_event(events, "voice") == (station <= 1) and sim.thermal == (station <= 1), "radio and thermal station %d" % station)
+	# The cone is vertical too: at the upper elevation clamp every target's center pitch is outside it.
+	sim.reset()
+	var pitch: float = sim.elevation_to(sim.targets[0].pos)
+	var half: float = float(sim.rules.selection_half_angle)
+	for case in [[0.0, 0], [pitch + half * 0.9, 0], [float(sim.rules.max_elevation), -1]]:
+		sim.reset()
+		sim.turret = sim.bearing_to(sim.targets[0].pos)
+		sim.elevation = case[0]
+		sim.tick({"select_target": true})
+		check(sim.selected_target == case[1], "vertical selection cone elevation %s" % case[0])
+
 func _test_range_presentation() -> void:
-	# Presentation helpers only: none of these feed the simulation or its recorded commands.
+	# Presentation helpers only: none of these feed the simulation.
 	var main = load("res://scripts/main.gd").new()
 	main.sim.turret = 0.4
 	main.sim.heading = -0.3
@@ -255,6 +313,31 @@ func _test_range_presentation() -> void:
 		var expected: float = -0.3 if station == 3 else 0.4 + (PI if station == 1 else 0.0)
 		check(is_equal_approx(main.view_bearing(), expected), "scan offset commander-only, station %d" % station)
 	main.free()
+	# Capture outputs anchor to the repo root and never land in res:// or the original sources.
+	var main_script = load("res://scripts/main.gd")
+	var repo: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	check(main_script.capture_directory("artifacts/art-pass") == repo.path_join("artifacts/art-pass"), "relative capture anchored to repo root")
+	check(main_script.capture_directory("/tmp/art review") == "/tmp/art review", "absolute capture kept")
+	check(not main_script.capture_directory("user://captures").is_empty(), "user capture default allowed")
+	for refused in ["godot/artifacts/x", "res://artifacts/x", "artifacts/../godot/x", "GAME/x", "game", "Genesis/art", repo.path_join("GAME"), "", "  ", ".", repo, "artifacts/.."]:
+		check(main_script.capture_directory(refused).is_empty(), "capture refused inside project or sources: '%s'" % refused)
+	# A symlink outside the repo that points into res:// is refused through its resolved target.
+	var link_home := OS.get_cache_dir().path_join("abrams-capture-link-%d" % OS.get_process_id())
+	DirAccess.make_dir_recursive_absolute(link_home)
+	var link := link_home.path_join("into-project")
+	var linked := DirAccess.open(link_home).create_link(ProjectSettings.globalize_path("res://").trim_suffix("/"), link) == OK
+	var dangling := link_home.path_join("dangling")
+	var dangled := DirAccess.open(link_home).create_link(repo.path_join("zz-missing-capture-target"), dangling) == OK
+	if linked:
+		check(main_script.capture_directory(link).is_empty(), "capture refused through a symlink into res://")
+		check(main_script.capture_directory(link.path_join("new/out")).is_empty(), "capture refused below a symlink into res://")
+	if dangled:
+		check(main_script.capture_directory(dangling.path_join("out")).is_empty(), "capture refused through a dangling symlink")
+	check(main_script.capture_directory(link_home.path_join("plain")) == link_home.path_join("plain"), "capture beside the links allowed")
+	for name in ["into-project", "dangling"]:
+		DirAccess.remove_absolute(link_home.path_join(name))
+	DirAccess.remove_absolute(link_home)
+	check(not DirAccess.dir_exists_absolute(link_home), "capture link probe cleaned up")
 	var ui_script = load("res://scripts/interface.gd")
 	var inner := Rect2(100, 200, 400, 300)
 	var b: Array = Sim.new().range_data.bounds

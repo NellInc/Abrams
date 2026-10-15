@@ -171,11 +171,14 @@ func segment(mode: String, multiplier: int, duration: float, station_index: int)
 	audio_menu.choose_graphics(mode)
 	check(tandem_frame.graphics_mode==mode and samples==old_samples and JSON.stringify(previous)==old_state,"immediate same-frame graphics switch "+mode)
 	audio_menu.speed_popup.id_pressed.emit(multiplier)
+	# The production menu offers only its own speeds; a rejected request must
+	# fail here, not later as a misleading transport-integrity error.
+	check(audio_menu.speed==multiplier,"production speed accepted: "+str(multiplier))
 	current_bucket=mode+("/normal" if multiplier==1 else "/fast")
 	if not metrics.has(current_bucket):metrics[current_bucket]={"replies":0,"interval_count":0,"interval_sum_ms":0.0,"interval_max_ms":0.0,"over_100ms":0,"memory_max_bytes":0,"wall_seconds":0.0}
 	last_interval=0
 	last_source_sequence=-1
-	segment_multiplier=multiplier
+	segment_multiplier=audio_menu.speed
 	segment_sim_seconds=0.0
 	var begin := Time.get_ticks_usec()
 	latest_reply=begin
@@ -233,7 +236,7 @@ func _capture() -> void:
 			var duration := maxf(2.0,seconds/(cycles*soak_modes.size()))
 			if modern_soak:duration=maxf(2.0,seconds/cycles) if mode=="modern" else 2.0
 			await segment(mode,1,duration,cycle+mode_index)
-			if errors.is_empty():await segment(mode,2,2.0,cycle+mode_index)
+			if errors.is_empty():await segment(mode,8,2.0,cycle+mode_index)
 			if not errors.is_empty() or not bridge.failure.is_empty():break
 			await checkpoint("load_state")
 	check(measured_normal>=seconds,"requested real normal-speed duration completed")

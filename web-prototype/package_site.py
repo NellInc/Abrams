@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import re
 import tempfile
 from pathlib import Path
 import shutil
+import zipfile
 from build_remaster_assets import generated_lock
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,11 +32,22 @@ PYODIDE = (
 APP = (
     'remaster.html', 'remaster.mjs', 'remaster.service.worker.js',
     'THIRD_PARTY.txt',
-    'style.css', 'bridge_host.mjs', 'bridge_worker.mjs',
+    'style.css', 'bridge_host.mjs', 'bridge_worker.mjs', 'core_worker.mjs',
     'browser_observer.mjs', 'checkpoint_core.mjs', 'zip_store.mjs',
-    'claim_catalog.mjs', 'remaster_assets.mjs',
+    'claim_catalog.mjs', 'remaster_assets.mjs', 'derived_art.mjs',
     'assets/Barlow-OFL.txt', 'assets/BarlowCondensed-SemiBold-latin.woff2',
 )
+
+# Licence and notice texts published beside the app. Each font the Godot PCK
+# embeds needs its OFL text here or in APP (test_package_site checks this).
+LICENSES = {
+    'LICENSES/GPL-2.0.txt': ROOT / 'LICENSES/GPL-2.0.txt',
+    **{'LICENSES/' + name: SOURCE / 'LICENSES' / name
+       for name in ('Godot-4.7.2.json', 'Pyodide-MPL-2.0.txt',
+                    'CPython-3.13.2.txt', 'Pillow-11.3.0.txt')},
+    'LICENSES/IBM-Plex-OFL.txt': ROOT / 'godot/assets/fonts/Plex-OFL.txt',
+    'NOTICE.txt': ROOT / 'NOTICE.md',
+}
 
 
 def sha(path: Path) -> str:
@@ -43,6 +56,23 @@ def sha(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b''):
             digest.update(block)
     return digest.hexdigest()
+
+
+def observer_drift(archive_path: Path) -> list[str]:
+    """Observer members whose packaged bytes differ from the working tree.
+
+    python-source.zip carries the Python observer that produces every packet
+    Godot consumes; it must be built from the same sources as index.pck.
+    """
+    from build_observer import write_source_archive
+    expected = io.BytesIO()
+    write_source_archive(expected)
+    def members(source):
+        with zipfile.ZipFile(source) as archive:
+            # Later duplicate names win, exactly as zipfile and Pyodide read them.
+            return {item.filename: archive.read(item) for item in archive.infolist()}
+    wanted, packaged = members(expected), members(archive_path)
+    return sorted(name for name in wanted.keys() | packaged.keys() if wanted.get(name) != packaged.get(name))
 
 
 def verify_owned(target: Path) -> bytes | None:
@@ -122,8 +152,12 @@ def install_bundle(inputs: dict[str, Path], target: Path, expected: dict | None 
 def _main() -> None:
     generated = SOURCE / '.generated'
     asset_manifest = json.loads((generated / 'remaster-assets.json').read_text())
-    if asset_manifest.get('schema') != 2 or not isinstance(asset_manifest.get('parts'), list):
+    if asset_manifest.get('schema') != 3 or not isinstance(asset_manifest.get('parts'), list):
         raise SystemExit('Build the remaster assets before packaging the site')
+    drift = observer_drift(generated / 'python-source.zip')
+    if drift:
+        raise SystemExit('python-source.zip differs from the working-tree observer (' + ', '.join(drift[:5]) +
+                         (', …' if len(drift) > 5 else '') + '); rebuild it with web-prototype/build_observer.py')
     names = [part.get('name') for part in asset_manifest['parts'] if isinstance(part, dict)]
     if not names or len(names) != len(asset_manifest['parts']) or any(not isinstance(name, str) or not re.fullmatch(r'remaster-assets-\d{2}\.zip', name) for name in names) or len(set(names)) != len(names):
         raise SystemExit('Unsafe remaster asset part manifest')
@@ -145,11 +179,7 @@ def _main() -> None:
                    for name in GODOT})
     inputs.update({'.generated/pyodide/' + name: generated / 'pyodide' / name
                    for name in PYODIDE})
-    inputs['LICENSES/GPL-2.0.txt'] = ROOT / 'LICENSES/GPL-2.0.txt'
-    for name in ('Godot-4.7.2.json', 'Pyodide-MPL-2.0.txt',
-                 'CPython-3.13.2.txt', 'Pillow-11.3.0.txt'):
-        inputs['LICENSES/' + name] = SOURCE / 'LICENSES' / name
-    inputs['NOTICE.txt'] = ROOT / 'NOTICE.md'
+    inputs.update(LICENSES)
     for name, path in inputs.items():
         if not path.is_file() or path.is_symlink() or path.stat().st_size >= 100_000_000:
             raise SystemExit(f'Unsafe or missing browser publication file: {name}')

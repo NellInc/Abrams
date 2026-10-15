@@ -48,17 +48,21 @@ function step() {
         throw new Error('The original source observer rejected this frame');
       const trace = core._abrams_web_trace_events(), traceSize = core._abrams_web_trace_size();
       const claim = core._abrams_web_claim_receipts(), claimSize = core._abrams_web_claim_receipts_size();
+      // The step copied RAM just before retro_run submitted this framebuffer
+      // (desktop last_video_ram). Copy it before ram_now() reuses the buffer.
+      const pairedPointer = core._abrams_web_paired_ram();
+      const paired = pairedPointer && core.HEAPU8.slice(pairedPointer, pairedPointer + 640 * 1024);
       const memory = core._abrams_web_ram_now();
       const video = core._abrams_web_video();
       const width = core._abrams_web_video_width(), height = core._abrams_web_video_height();
       const pitch = core._abrams_web_video_pitch();
-      if (!memory || !video || !width || !height)
+      if (!paired || !memory || !video || !width || !height)
         throw new Error('The original game has no paired source frame');
-      const presentation = observer.afterFrame(
+      const presentation = JSON.parse(observer.afterFrame(
         core.HEAPU8.slice(trace, trace + traceSize),
-        core.HEAPU8.slice(claim, claim + claimSize),
+        core.HEAPU8.slice(claim, claim + claimSize), paired,
         core.HEAPU8.slice(memory, memory + 640 * 1024),
-        core.HEAPU8.slice(video, video + pitch * height), width, height, pitch);
+        core.HEAPU8.slice(video, video + pitch * height), width, height, pitch));
       postMessage({type: 'presentation', presentation, frames});
     }
     sample();

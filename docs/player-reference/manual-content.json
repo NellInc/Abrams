@@ -1909,7 +1909,7 @@
   "remaster_controls": [
     {
       "name": "Cmd+S / Ctrl+Alt+S",
-      "description": "Quick save, slot 1. Desktop macOS uses Command; Windows, Linux and the browser use Ctrl+Alt.",
+      "description": "Quick save, slot 1. Press again within four seconds to overwrite an existing save. Desktop macOS uses Command; Windows, Linux and the browser use Ctrl+Alt. On Windows layouts where AltGr+S types a character, use the Session menu.",
       "stations": [
         "remaster"
       ]

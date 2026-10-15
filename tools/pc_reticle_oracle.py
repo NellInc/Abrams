@@ -133,7 +133,7 @@ def verify(ram):
             if planes!=expected: raise ValueError(f'clipped line raster mismatch center={center} color={color}')
             raster_cases.append({'center':center,'color':color,'ink_pixels':ink_pixels(center)})
     return {'sim_sha256':SIM_SHA256,'capture_sha256':hashlib.sha256(ram).hexdigest(),
-        'engine':'unicorn-2.1.4/x86-16','case_count':len(cases),'instruction_locations':len(checked),
+        'engine':f'unicorn-{unicorn.__version__}/x86-16','case_count':len(cases),'instruction_locations':len(checked),
         'vga_writes':writes,'plane_bytes_compared':(len(cases)+len(raster_cases))*4*65536,'cases':cases,
         'clipping_raster_cases':len(raster_cases),'raster_cases':raster_cases,'observer':observer.report(),
         'scope':'unchanged 65e4 reticle, 21ea projection and original clipped line rasterizer; isolated input data, no live reachability or whole-game timing claim'}

@@ -47,7 +47,7 @@ def main():
     parser.add_argument('--capture-ui', action='store_true', help='save paired source/UI masks at end-of-stage samples')
     args = parser.parse_args()
     if not 1 <= args.frames <= 3000: parser.error('frames must be 1..3000')
-    if inside_source(args.output, ROOT, ('GAME',)): parser.error('output must be outside original GAME')
+    if inside_source(args.output, ROOT): parser.error('output must be outside original sources')
     args.output.mkdir(parents=True, exist_ok=False)
     manifest = json.loads((ROOT / '.runtime/pc-core/abrams-trace.json').read_text())
     if args.mode == 'reference':

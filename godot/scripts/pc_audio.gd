@@ -37,6 +37,8 @@ var transport_muted := false
 var mix := {"master":100,"effects":100,"voice":100,"motors":100}
 var motor_volume := 1.0
 var current_loops: Dictionary = {}
+# Set by continue_timeline() until the resumed worker reports active again.
+var continuing_timeline := false
 const LIMITER_CEILING_DB := -1.0
 var presentation_bus := ""
 
@@ -110,6 +112,8 @@ func _ready() -> void:
 	add_child(music)
 	_create_presentation_bus()
 	set_mix(mix)
+	# Verify and decode local frontend music before the first frontend frame.
+	music_bank.prewarm()
 
 func _stop_source_audio() -> void:
 	super.stop_all()
@@ -191,7 +195,22 @@ func reset_timeline() -> void:
 	music_context=""
 	music_allowed=false
 	music_resume_position=0.0
+	continuing_timeline=false
 	# A protocol failure remains latched. Restore is not a validation bypass.
+
+func continue_timeline() -> void:
+	# A save restarts the original worker without rewinding the guest. Its
+	# audio observer restarts at epoch 0 / id 0, so the bookkeeping resets,
+	# but sounds already started present frames already played and keep
+	# playing. Loops, mute, music and counters stay as the source left them.
+	last_event_id=0
+	last_frame=-1
+	epoch=0
+	last_crew_message=0
+	last_radio_message=0
+	receipts.clear()
+	loop_transitions.clear()
+	continuing_timeline=true
 
 func play(cue: String) -> void:
 	if not transport_muted: super.play(cue)
@@ -384,7 +403,17 @@ func apply_audio(packet: Dictionary) -> bool:
 		return true
 	if int(packet.epoch) < epoch or int(packet.last_id) < last_event_id:
 		return _reject("Original audio timeline moved backwards")
-	if int(packet.epoch) != epoch or not packet.active or not packet.enabled: _stop_source_audio()
+	if continuing_timeline and not packet.active and packet.events.is_empty():
+		# The resumed worker's primer (and any eventless frame before its
+		# observer reattaches) carries no source change: nothing stops.
+		epoch = int(packet.epoch)
+		last_frame = int(packet.frame)
+		last_event_id = next_id
+		return true
+	# Adopting the resumed worker's epoch is not a program change. Its source
+	# gates (inactive with events, or sound disabled) still stop everything.
+	if (int(packet.epoch) != epoch and not continuing_timeline) or not packet.active or not packet.enabled: _stop_source_audio()
+	if packet.active: continuing_timeline = false
 	if packet.active: apply_music_context("",false) # gameplay remains musically quiet
 	epoch = int(packet.epoch)
 	last_frame = int(packet.frame)

@@ -8,9 +8,11 @@ import json,struct
 from pathlib import Path
 from unicorn.x86_const import UC_X86_REG_CS,UC_X86_REG_DS,UC_X86_REG_ES,UC_X86_REG_SS,UC_X86_REG_SP,UC_X86_REG_EFLAGS
 try:
+ from tools.source_guard import inside_source
  from tools.pc_bearing_oracle import ROOT,LOAD,DATA_SEGMENT,SIM_SHA256,cpu,original_unpack,set_registers,run_until,sha256
 except ModuleNotFoundError as error:
  if error.name != 'tools': raise
+ from source_guard import inside_source
  from pc_bearing_oracle import ROOT,LOAD,DATA_SEGMENT,SIM_SHA256,cpu,original_unpack,set_registers,run_until,sha256
 CASES=((0x19ca,7,0x19d1),(0x520,9,0x527),(0x96d,10,0x974),(0x7789,10,0x7790),(0x348,15,0x34f),(0x8212,16,0x8219),(0x824f,16,0x8256))
 def run():
@@ -27,4 +29,6 @@ def run():
  return {'source_sha256':SIM_SHA256,'unpack':unpack,'scope':__doc__,'rows':rows}
 if __name__=='__main__':
  import argparse
- p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args();r=run();a.output.write_text(json.dumps(r,indent=2)+'\n');print('PC_REQUEST_SOUNDS: 7 original call blocks verified')
+ p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+ if inside_source(a.output,ROOT):p.error('output must be outside original sources')
+ r=run();a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(r,indent=2)+'\n');print('PC_REQUEST_SOUNDS: 7 original call blocks verified')

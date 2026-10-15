@@ -15,16 +15,32 @@ except ModuleNotFoundError as error:
     from inspect_scenarios import decode_resource
 
 PLATE_IDS = ('GPS.BIN', 'TC.BIN', 'AA.BIN', 'DRIVER.BIN', 'STATUS.BIN', 'IDENTIFY', 'FRAME', 'ATBASE.BIN')
+# Decoded plates keyed by name and exact source bytes. Entries are immutable
+# tuples, shared read-only; each PlateLoads still owns its own run state.
+DECODED = {}
+
+
+def decoded_plate(name, source):
+    key = (name, hashlib.sha256(source).hexdigest())
+    if key not in DECODED:
+        data = decode_resource(source)
+        if len(data) != 32000: raise ValueError('unsupported catalog plate dimensions')
+        DECODED[key] = (data, key[1])
+    return DECODED[key]
+
+
+def plate_indices(resource):
+    """Decoded plate expanded to one EGA colour index per pixel, cached."""
+    key = ('indices', resource[1])
+    if key not in DECODED: DECODED[key] = bytes(n for b in resource[0] for n in (b >> 4, b & 15))
+    return DECODED[key]
 
 
 class PlateLoads:
     def __init__(self, game, history_limit=32):
         self.resources = {}
         for name in PLATES + ('ATBASE.BIN', 'SCENE1.BIN', 'SCENE2.BIN'):
-            source = (game / name).read_bytes()
-            data = decode_resource(source)
-            if len(data) != 32000: raise ValueError('unsupported catalog plate dimensions')
-            self.resources[name] = (data, hashlib.sha256(source).hexdigest())
+            self.resources[name] = decoded_plate(name, (game / name).read_bytes())
         self.active = None
         self.loads = deque(maxlen=history_limit)
         self.completed = 0
@@ -34,8 +50,8 @@ class PlateLoads:
     def verify_motor_pool(self, pixels, page):
         if page not in (0,8192) or len(pixels)!=64000:
             raise ValueError('unsupported motor-pool readback')
-        data,pin=self.resources['ATBASE.BIN']
-        expected=bytes(n for b in data for n in (b>>4,b&15))
+        pin=self.resources['ATBASE.BIN'][1]
+        expected=plate_indices(self.resources['ATBASE.BIN'])
         equal=pixels==expected
         self.motor_pool_readbacks.append({'page_offset':page,'verified':equal,
             'pixels':len(pixels),'source_sha256':pin,'indices_sha256':hashlib.sha256(pixels).hexdigest()})

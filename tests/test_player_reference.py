@@ -208,11 +208,13 @@ class PlayerReference(unittest.TestCase):
         branch=source.split('if args.field_guide_only:',1)[1].split('else:',1)[0]
         self.assertIn("get('catalog_sha256')",branch)
         self.assertIn('SystemExit',branch)
-        # Preflight fails before any reference file is rewritten.
+        # Preflight fails before any renderer runs; every renderer stages, and only stage_commit writes REF.
         main=source.split('def main():',1)[1]
-        for write in ["(REF/'keyboard-controls.html').write_text","(REF/'field-guide.html').write_text",'illustrations(data)','keyboard_pdf(data)','field_pdf(data']:
-            self.assertLess(main.index('Native terrain map PNG missing'),main.index(write),write)
-            self.assertLess(main.index('if args.render_maps:native_maps()'),main.index(write),write)
+        for render in ["staged[REF/'keyboard-controls.html']","staged[REF/'field-guide.html']",'illustrations(data,staged)','keyboard_pdf(data)','field_pdf(data']:
+            self.assertLess(main.index('Native terrain map PNG missing'),main.index(render),render)
+            self.assertLess(main.index('if args.render_maps:native_maps(staged)'),main.index(render),render)
+            self.assertLess(main.index(render),main.index('stage_commit(staged)'),render)
+        for write in ('.write_text(','.write_bytes(','copyfile('):self.assertNotIn(write,main.split('stage_commit(staged)')[0])
 
     @unittest.skipUnless((ROOT/'local-art/pc-modern/catalog.json').exists() and (REF/'illustrations.json').exists(), 'Private Modern catalogue is outside the source-only kit')
     def test_model_studies_match_the_current_modern_catalogue(self):
@@ -355,6 +357,48 @@ class PlayerReference(unittest.TestCase):
             self.assertGreater(row['triangles'],0)
             self.assertEqual(len(row['model_sha256']),64)
             self.assertNotIn('script', (REF/row['svg']).read_text())
+
+
+@unittest.skipUnless(__import__('importlib').util.find_spec('reportlab'), 'ReportLab is an authoring-only dependency')
+class PlayerReferenceBuild(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        from tools import build_player_reference as builder
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        pdfmetrics.registerFont(TTFont('Barlow', str(ROOT/'godot/assets/fonts/BarlowCondensed-SemiBold.ttf')))
+        self.builder, tmp = builder, tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+
+    def test_unchanged_content_rebuilds_byte_identical_pdf(self):
+        from unittest import mock
+        digests = []
+        for run in ('a', 'b'):
+            (self.tmp/run).mkdir()
+            with mock.patch.object(self.builder, 'PDF', self.tmp/run):
+                self.builder.keyboard_pdf(DATA)
+            raw = (self.tmp/run/'keyboard-controls.pdf').read_bytes()
+            digests.append(hashlib.sha256(raw).hexdigest())
+        self.assertEqual(digests[0], digests[1])
+        self.assertIn(b"/CreationDate (D:20000101000000+00'00')", raw)
+
+    def test_failed_render_leaves_the_tracked_set_untouched(self):
+        import shutil, sys
+        from unittest import mock
+        ref = self.tmp/'player-reference'
+        ref.mkdir()
+        for name in ('manual-content.json', 'visuals.json', 'credits.json', 'keyboard-controls.html', 'field-guide.html'):
+            shutil.copyfile(REF/name, ref/name)
+        before = {p.name: p.read_bytes() for p in ref.iterdir()}
+        staged_svg = lambda data, staged: (staged.update({ref/'vehicle-m113.svg': '<svg/>'}), ({}, {}))[1]
+        with mock.patch.object(self.builder, 'REF', ref), mock.patch.object(self.builder, 'PDF', self.tmp/'pdf'), \
+                mock.patch.object(self.builder, 'illustrations', staged_svg), \
+                mock.patch.object(self.builder, 'field_pdf', side_effect=ValueError('Page overflow')), \
+                mock.patch.object(Path, 'is_file', return_value=True), mock.patch.object(sys, 'argv', ['build']), \
+                self.assertRaisesRegex(ValueError, 'Page overflow'):
+            self.builder.main()
+        self.assertEqual({p.name: p.read_bytes() for p in ref.iterdir()}, before)
 
 
 if __name__ == '__main__':unittest.main()

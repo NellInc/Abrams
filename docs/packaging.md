@@ -34,7 +34,18 @@ python3 tools/package_build.py --verify builds/abrams-private-local.zip
 python3 -m unittest tests.test_packaging
 ```
 
-Outputs must be new files. The explicit allowlist is
+Outputs must be new files. Output paths inside `GAME/` or `GENESIS/` (any case)
+are refused. Allowlist entries must match the on-disk spelling exactly. Build and
+verify inspect every member with the Git boundary rules
+(`git_boundary.inspect_blob`: fingerprinted originals, LFS pointers, credential
+signatures); only an original at its pinned private path with its pinned hash is
+exempt. Closure covers `load`/`preload`, `extends "res://…"` and shader
+`#include` in both kinds; formatted (`%`) template paths are resolved at runtime
+and skipped.
+Working if: a working-tree credential or a renamed original fails the build
+before its member is written.
+
+The explicit allowlist is
 `tools/package/allowlist.json`. Adding a runtime dependency requires reviewing
 and adding its path there. A new file elsewhere is never included automatically.
 `PACKAGE.json` records every member's SHA-256, byte count and normalized mode.
@@ -60,9 +71,16 @@ API versions are not separately certified. Set `ABRAMS_PYTHON` and `GODOT_BIN` t
 existing executables when necessary. No dependency installer or download runs.
 This is a playable source kit with prerequisites, not a signed standalone app.
 The private archive replaces only its Play launcher with the managed template,
-leaving the checkout and source-kit Play unchanged. The launcher imports Godot
-resources, checks script compilation, then invokes the existing PC Bridge with
-`--play`. The nested `tools/package/Launch.command` is an equivalent entry point. Missing dependencies and altered core/content hashes fail
+leaving the checkout and source-kit Play unchanged. On first launch, and again
+whenever the kit's `PACKAGE.json` receipt changes, the Godot version or executable
+changes, or `godot/.godot/` is cleared, the launcher imports Godot resources
+(marker `godot/.godot/abrams-kit-import.json`). A symlinked `godot/.godot/` or
+marker is refused. It checks script compilation on every launch. Each step has a
+300-second deadline and refuses zero-exit `SCRIPT ERROR`, `Parse Error` or
+`SHADER ERROR` output; preflight output is appended to the profile's
+`logs/application.log`. It then invokes the existing PC Bridge with `--play`.
+Launch checks presence and pinned hashes; the full dependency-closure walk runs at
+build/verify and under `--check`. The nested `tools/package/Launch.command` is an equivalent entry point. Missing dependencies and altered core/content hashes fail
 before gameplay. `--check` does not start gameplay or modify saves.
 
 Player profiles live under `~/Library/Application Support/Abrams/`:
@@ -107,6 +125,21 @@ python3 -m tools.build_pc_trace_core
 
 The existing builder checks the commit and recognized edits, retains baseline
 identity, applies the local headers and records compiler/input/output hashes.
+It writes the receipt before swapping the core in and retains the outgoing core
+and receipt under `.runtime/pc-core/previous/<sha256>/`.
+
+The GPL corresponding-source archive for a distributed core is built with
+`python3 -m tools.standalone.source_bundle --output <new archive>` (run as a
+module; `--core-suffix .dll|.so` for the portable cores). It derives its patched
+file set from `tools.build_pc_trace_core.PATCHED_SOURCES`. Without `--source` it
+uses the tree recorded in the active receipt's `make -C` build field when that
+tree lies inside the repository, otherwise `.runtime/dosbox-pure-source`.
+The archive README's build section follows the suffix (macOS ARM64, Windows
+x86_64 through MSYS2 MINGW64, or Linux x86_64) and repeats the receipt's recorded
+`make` arguments, including the Windows `LDFLAGS`, run inside `source/`.
+Working if: the archive builds only when the core matches the receipt's
+`trace_sha256`, every patched file matches its recorded original and patched
+hashes, and every other tracked file matches the pinned upstream commit.
 The native binary can vary across toolchains. Runtime parity must be rerun for a
 new build; a successful compile is insufficient. The private kit intentionally
 omits the separate reference backend and historical mission snapshots.

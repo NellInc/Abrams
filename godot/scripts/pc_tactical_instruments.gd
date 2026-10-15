@@ -126,31 +126,21 @@ func set_frame(frame: Control, id: int, layout: Dictionary, tags: Image, ui: Pac
 				if value.is_empty(): continue
 				var box:=Rect2i(x-1,y-3,13,11)
 				var valid:=true
+				# One native count per margin strip: every RGBA word must equal the
+				# glyph's own background, exactly as Color.to_rgba32() packs it.
+				var background: int=value.background.to_rgba32()
+				var word:=PackedByteArray([(background>>24)&255,(background>>16)&255,(background>>8)&255,background&255]).to_int32_array()[0]
 				for region in Ink._outside(box,Rect2i(value.rect)):
-					for py in range(region.position.y,region.end.y):
-						for px in range(region.position.x,region.end.x):
-							if source.get_pixel(px,py).to_rgba32()!=value.background.to_rgba32(): valid=false
+					if not region.has_area(): continue
+					var strip:=source.get_region(region);strip.convert(Image.FORMAT_RGBA8)
+					if strip.get_data().to_int32_array().count(word)!=region.get_area(): valid=false;break
 				if valid: covered.fill_rect(box,Color8(id,id,id))
 	var indices: Array={1:[1,2,3,4,5],2:[2,3,4,5],4:[1],5:[0,1,2]}[id]
 	for index in indices:
 		var r: Vector4=layout.source[index]
 		var box:=Rect2i(int(r.x),int(r.y),int(r.z-r.x),int(r.w-r.y))
 		var safe:=_required(index) and mask.get_region(box).get_data().count(255)==box.size.x*box.size.y
-		var uncovered:=covered.get_region(box).get_data()
-		if uncovered.count(id)!=uncovered.size():
-			# Work in packed bytes only for uncovered pixels; fully proven panels
-			# avoid tens of thousands of per-pixel script calls each frame.
-			var crop:=source.get_region(box)
-			crop.convert(Image.FORMAT_RGB8)
-			var rgb:=crop.get_data()
-			for offset in uncovered.size():
-				if uncovered[offset]==id: continue
-				var at:=offset*3
-				if rgb[at]==0 and rgb[at+1]==0 and rgb[at+2]==0: continue
-				var p:=box.position+Vector2i(offset%box.size.x,offset/box.size.x)
-				if id==4 and rgb[at]==85 and rgb[at+1]==85 and rgb[at+2]==255 and _driver_border(p): continue
-				safe=false
-
+		if safe: safe=_uncovered_black(source,covered.get_region(box),box,id)
 		if safe:
 			var d: Vector4=layout.destination[index]
 			panels.append({"index":index,"source":box,"rect":Rect2(Vector2(d.x,d.y)*canvas_size,Vector2(d.z-d.x,d.w-d.y)*canvas_size)})
@@ -208,10 +198,46 @@ func _place_panels() -> void:
 		painter.queue_redraw()
 		_clips[i].show()
 
-static func _driver_border(p: Vector2i) -> bool:
+# Every pixel not covered by this station's plate tag or a proven reading must
+# be source black (driver border blue excepted). Native image operations do the
+# per-pixel work; the packed-byte loop remains only for unexpected tag values.
+static func _uncovered_black(source: Image, tags: Image, box: Rect2i, id: int) -> bool:
+	var uncovered:=tags.get_data()
+	var count:=uncovered.size()
+	var covered:=uncovered.count(id)
+	if covered==count: return true
+	var crop:=source.get_region(box)
+	crop.convert(Image.FORMAT_RGB8)
+	if id==4:
+		for p in _driver_border_points(box):
+			if crop.get_pixelv(p-box.position)==Color8(85,85,255): crop.set_pixelv(p-box.position,Color.BLACK)
+	if covered+uncovered.count(0)==count:
+		# Tags are exactly {0,id}. Offsetting L8->LA8 bytes by one makes each
+		# tag the alpha of its own pixel, so the blit blackens covered pixels.
+		var pairs:=tags.duplicate();pairs.convert(Image.FORMAT_LA8)
+		var shifted:=PackedByteArray([0])
+		shifted.append_array(pairs.get_data().slice(0,count*2-1))
+		var alpha:=Image.create_from_data(box.size.x,box.size.y,false,Image.FORMAT_LA8,shifted)
+		var black:=Image.create(box.size.x,box.size.y,false,Image.FORMAT_RGB8)
+		crop.blit_rect_mask(black,alpha,Rect2i(Vector2i.ZERO,box.size),Vector2i.ZERO)
+		return crop.get_data().count(0)==count*3
+	var rgb:=crop.get_data()
+	for offset in count:
+		if uncovered[offset]==id: continue
+		var at:=offset*3
+		if rgb[at]!=0 or rgb[at+1]!=0 or rgb[at+2]!=0: return false
+	return true
+
+static func _driver_border_points(box: Rect2i) -> Array[Vector2i]:
+	var points: Array[Vector2i]=[]
 	for rect in [Rect2i(64,189,45,9),Rect2i(112,189,39,9),Rect2i(154,189,51,9),Rect2i(208,189,45,9)]:
-		if rect.has_point(p) and (p.x==rect.position.x or p.x==rect.end.x-1 or p.y==rect.position.y or p.y==rect.end.y-1): return true
-	return false
+		for x in range(rect.position.x,rect.end.x):
+			for y in [rect.position.y,rect.end.y-1]:
+				if box.has_point(Vector2i(x,y)): points.append(Vector2i(x,y))
+		for y in range(rect.position.y+1,rect.end.y-1):
+			for x in [rect.position.x,rect.end.x-1]:
+				if box.has_point(Vector2i(x,y)): points.append(Vector2i(x,y))
+	return points
 
 func _represented(run: Dictionary) -> bool:
 	# A verified string is still unsafe to erase unless this renderer displays

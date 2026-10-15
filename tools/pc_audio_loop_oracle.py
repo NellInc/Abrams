@@ -12,10 +12,12 @@ from pathlib import Path
 import unicorn
 from unicorn.x86_const import UC_X86_REG_CS, UC_X86_REG_DS, UC_X86_REG_ES, UC_X86_REG_SS, UC_X86_REG_SP, UC_X86_REG_SI, UC_X86_REG_EFLAGS
 try:
+    from tools.source_guard import inside_source
     from tools.pc_bearing_oracle import ROOT, LOAD, DATA_SEGMENT, RETURN_IP, SIM_SHA256, cpu, original_unpack, set_registers, run_until, sha256
     from tools.pc_audio_loops import read_loops, LAYOUTS
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from pc_bearing_oracle import ROOT, LOAD, DATA_SEGMENT, RETURN_IP, SIM_SHA256, cpu, original_unpack, set_registers, run_until, sha256
     from pc_audio_loops import read_loops, LAYOUTS
 
@@ -77,13 +79,14 @@ def run():
                 for r in rows if r['stage'].startswith('other-') for x in [r['loops']]),
         }
         cases.append({'backend':backend,'checks':checks,'rows':rows})
-    return {'source_sha256':SIM_SHA256,'engine':'unicorn-2.1.4/x86-16','unpack':unpack_receipt,
+    return {'source_sha256':SIM_SHA256,'engine':f'unicorn-{unicorn.__version__}/x86-16','unpack':unpack_receipt,
             'cases':cases,'scope':'original sound routines, isolated supplied channel context; no live writes, chip recording or timing claim'}
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
-    result=run();args.output.write_text(json.dumps(result,indent=2)+'\n')
+    if inside_source(args.output,ROOT): p.error('output must be outside original sources')
+    result=run();args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps({'cases':[{'backend':c['backend'],'ticks':len(c['rows']),'checks':c['checks']} for c in result['cases']]},indent=2))
     if not all(v for c in result['cases'] for v in c['checks'].values()): raise SystemExit(1)
 

@@ -7,10 +7,12 @@ from pathlib import Path
 
 from PIL import Image
 try:
+    from tools.source_guard import inside_source
     from tools.unpack_pc_executables import unpack
     from tools.pc_live_state import SIM_SHA256
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from unpack_pc_executables import unpack
     from pc_live_state import SIM_SHA256
 
@@ -78,6 +80,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
+    if inside_source(args.output,ROOT): p.error('output must be outside original sources')
     result = audit()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + '\n')

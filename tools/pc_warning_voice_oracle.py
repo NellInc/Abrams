@@ -60,7 +60,7 @@ def run():
             raw=bytes(m.mem_read(ds+pointer,128));parts.append(raw[:raw.index(0)].decode('cp437'))
         rows.append({'name':name,'entry_ip':start,'return_ip':end,'assignment_ip':assignment,
             'speaker':speaker,'pointers':pointers,'parts':parts,'caption':''.join(parts)})
-    return {'source_sha256':SIM_SHA256,'engine':'unicorn-2.1.4/x86-16','unpack':unpacked,'scope':__doc__,'rows':rows}
+    return {'source_sha256':SIM_SHA256,'engine':f'unicorn-{unicorn.__version__}/x86-16','unpack':unpacked,'scope':__doc__,'rows':rows}
 
 
 def main():

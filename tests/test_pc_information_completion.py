@@ -5,7 +5,9 @@ from pathlib import Path
 import unittest
 from PIL import Image
 from tools.build_pc_information_completion import build, ROOT
+from tests._inputs import requires
 
+@requires('GAME')
 class InformationCompletionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

@@ -7,11 +7,13 @@ from pathlib import Path
 import struct
 import time
 try:
+    from tools.source_guard import inside_source
     from tools.pc_plate_oracle import PlateVga, ROOT
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.pc_bearing_oracle import cpu, set_registers
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from pc_plate_oracle import PlateVga, ROOT
     from pc_live_state import SimStateReader, SIM_SHA256
     from pc_bearing_oracle import cpu, set_registers
@@ -110,6 +112,7 @@ if __name__ == '__main__':
     parser.add_argument('--capture',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)
     args = parser.parse_args()
+    if inside_source(args.output,ROOT): parser.error('output must be outside original sources')
     result = verify(args.capture.read_bytes())
     args.output.write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result,indent=2))

@@ -3,9 +3,24 @@
 This is the desktop Godot Play viewer running in a browser with the pinned,
 patched DOSBox Pure core. The original PC game remains the gameplay authority.
 The visitor must choose the supported 68-file PC game folder before Play starts.
-A supported Genesis ROM is optional and enables the donor graphics and frontend
-music. The browser verifies both inputs locally. Original PC files and the ROM
-are absent from the site bundle and are never sent to the server.
+A supported Genesis ROM is optional. It is an ownership check that unlocks the
+Genesis remaster artwork and frontend score, which the site hosts, and the
+browser decodes the Genesis effect graphics from it. The browser verifies both
+inputs locally. Original PC files and the ROM are absent from the site bundle
+and are never sent to the server.
+
+The site never serves decodes of original data. `derived_art.mjs` decodes the
+station plates, portrait pixels, clipboard/motor-pool indices and Modern's
+SHAPE.TBL registry (`source-shapes.json`) from the visitor's verified PC files,
+and the effects from a verified ROM, and copies
+them to the same paths the desktop build reads. Asset parts hold only the exact
+reviewed paths and bytes in `tools/package/web-publication.json`; after
+reviewing a changed authored file, re-pin it with
+`python3 web-prototype/build_remaster_assets.py --update-publication`. Genesis
+screen-capture donors cannot be derived in the browser, so Genesis-native mode
+and the capture-based Genesis restorations fall back to original PC pixels on
+the Web. PC-only sessions download only the `common` parts; `genesis` parts
+load after the ROM verifies.
 
 The Web edition is packaged under `website/dist/play/` and linked from the
 project site. GitHub Pages deployment status must be confirmed from served
@@ -22,7 +37,7 @@ Web entry point.
 
 ```sh
 source .runtime/emsdk/emsdk_env.sh
-python3 web-prototype/build_core.py
+python3 web-prototype/build_core.py   # --source <tree>: the receipt's `make -C` tree when it is not .runtime/dosbox-pure-source
 python3 web-prototype/build_observer.py
 python3 web-prototype/build_remaster.py
 python3 web-prototype/build_web_source.py
@@ -43,10 +58,17 @@ The presentation builder captures `project.godot`, `export_presets.cfg` and file
 
 Working if: mixed or stale presentation candidates cannot reach normal replacement, ignored cache activity remains harmless, and export failure preserves the previously playable outputs.
 
-The build emits no original game data. The site bundle includes corresponding
-source for its modified GPL Web core, has a manifest of exact file hashes and
-keeps every file below Git's 100 MB object limit. Its `THIRD_PARTY.txt` links
-the version-matched Godot, Pyodide, CPython, Pillow and font notices.
+The build emits no original game data and no decodes of it. The site bundle
+includes corresponding source for its modified GPL Web core and has a manifest
+of exact file hashes. Every file stays below Git's 100 MB object limit, and
+asset parts stay near 48 MB so the browser holds a bounded archive in memory.
+Parts group by asset family with fixed ZIP metadata, so an unchanged family
+rebuilds to identical bytes. Text members are deflated. The service worker
+serves each file at the bytes `BUNDLE.json` names and keeps verified files by
+SHA-256, so a deploy re-downloads only what changed. The packager refuses a
+`python-source.zip` whose observer differs from the working tree. Its
+`THIRD_PARTY.txt` links the version-matched Godot, Pyodide, CPython, Pillow and
+font notices.
 
 ## Browser architecture
 

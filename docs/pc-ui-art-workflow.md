@@ -342,7 +342,11 @@ open. No optional Impeccable linter is configured or installed.
 * Plate header: `486b9e5f21fd587c0ce47d17ae072fbc8860d36e29bc5f29ff926e1895453e76`
 * Untouched baseline: `57edbd309eb2ab6264b70188c3a85408fbcfa8c62e83b8c7b9c39b7309f61ac6`
 
-The live host requires `strut_event_schema: 1` from the local build manifest.
+The live host then required `strut_event_schema: 1` from the local build
+manifest. It now accepts 1 (event 29 carries the full 640 KiB RAM) or 2 (an AWB1
+bundle of the DS window, stack, strut descriptor and the strut's four planes plus
+mask), as part of the 2/1/1 or 3/2/2 text/message/strut set; the core installed on
+15 October 2026 (`37bff087…`) declares 2.
 Original VGA ownership and upstream source pins remain unchanged. Earlier pins
 above identify historical receipts. The following correction supersedes this build.
 
@@ -358,7 +362,7 @@ python3 tools/verify_pc_plate_overlay.py \
   --native --fixture "$PWD/artifacts/pc-cockpit-new/report.json" \
   --art-dir "$PWD/local-art/pc-ui-remastered/cockpit-set-v1" \
   --output "$PWD/artifacts/pc-cockpit-native-new"
-./PC\ Bridge.command --cockpit-art --audio
+./PC\ Bridge.command --cockpit-art
 ```
 
 ## Alignment and Genesis colour correction after user review
@@ -490,6 +494,14 @@ python3 tools/verify_pc_driver_overlay.py \
   --baseline artifacts/pc-driver-baseline-new/report.json \
   --output artifacts/pc-driver-proof-new.json
 ```
+
+Since 15 October 2026 `verify_pc_driver_overlay` applies the same core rules as
+`verify_pc_audio_trace` (see [PC audio research](pc-audio-research.md)): a
+`mode: trace` report against a `mode: baseline` report from a distinct core,
+both hashes matching `.runtime/pc-core/abrams-trace.json` (`--manifest`
+overrides it), and the trace run's `trace_header_sha256` matching that receipt.
+After a trace-core rebuild only the trace capture needs repeating; the baseline
+stays valid while `baseline_sha256` is unchanged.
 
 The later [live typography pass](pc-text-research.md#scalable-live-typography-2026-09-27)
 expands source string observation and adds independently pixel-verified scalable

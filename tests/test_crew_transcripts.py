@@ -58,5 +58,18 @@ class TranscriptTests(unittest.TestCase):
             self.assertFalse(evaluate(response(value|change),inputs,number_delivery=True)['hit']['match'])
         with self.assertRaises(ValueError):evaluate(response('043'),inputs,number_delivery=True)
 
+    def test_http_failure_keeps_api_error_body_and_chain_without_the_key(self):
+        import io,urllib.error
+        from tools.generate_crew_voice import http_error
+        error=urllib.error.HTTPError('https://example.invalid',400,'Bad Request',{'x-goog-api-key':'never-logged'},
+                                     io.BytesIO(b'{"error":{"message":"response_format rejected"}}'))
+        try:
+            try:raise error
+            except urllib.error.HTTPError as caught:raise http_error('Gemini QA returned',caught) from caught
+        except RuntimeError as failure:
+            self.assertIn('HTTP 400: {"error":{"message":"response_format rejected"}}',str(failure))
+            self.assertIs(failure.__cause__,error)
+            self.assertNotIn('never-logged',str(failure))
+
 
 if __name__=='__main__':unittest.main()

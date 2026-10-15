@@ -62,12 +62,18 @@ checkpoints without that data retain a conservative PC-art fallback. See
 | Radio arrival and retrieval | `artifacts/pc-radio-trace-01/comparison.json`: 3,716 original frames equal the baseline; `pc-radio-native-01/report.json`: 26,142 checks, zero errors | One attention sample, two generated voice starts and one muted retrieval; no F5 catch-up. All seven source captions have dry Gemini takes and wording QA; six lack live occurrence proof |
 | Shift+3 | `artifacts/pc-modifiers-trace-01/report.json`: all 530 RAM/video/input records equal the unmodified core | Original speed index cycles 0, 1, 2. Original scancode polling also selects AX. This side effect is preserved |
 | Plain vehicles | `artifacts/pc-vehicle-flat-play-01/verification.json`: original 1,679-frame close approach, zero textured vehicle polygons | Historical non-Modern capture; optional low-poly Modern geometry is now implemented locally |
-| Adjustable audio mix | `artifacts/pc-audio-menu-native-04/menu-report.json`: all 15 checks pass using real macOS menu clicks; `pc-audio-mix-native-02/mix-report.json`: 1,020 original input/RAM/video records unchanged during nine mix changes; current five-channel mix unit gate: 110 checks | Native macOS verified; non-native menu layout rendered on macOS, other OS acceptance remains open |
+| Adjustable audio mix | `artifacts/pc-audio-menu-native-04/menu-report.json`: all 15 checks pass using real macOS menu clicks (a four-channel run that predates the Music channel and Restore default mix; the current `test_pc_audio_menu_native.gd` expects `music:70` and has no recorded receipt yet); `pc-audio-mix-native-02/mix-report.json`: 1,020 original input/RAM/video records unchanged during nine mix changes; current five-channel mix unit gate: 110 checks | Native macOS menu verified for the four earlier channels only; the five-channel native menu needs a `pc-audio-menu-native-05` rerun. The -04 fallback half built the bare `pc_audio_menu.gd`; the current test builds the production `pc_play_menu.gd` in-canvas menu (`prefer_global_menu=false`, configured as `pc_bridge_viewer.gd` does), so its layout checks will cover the shipped fallback once -05 is recorded. Other OS acceptance remains open |
 | Full checkpoints | `artifacts/finish-20260928/root-checkpoint-final/report.json`: 26/26 root checks pass, including uninterrupted-video/ownership comparison, observer-on/off native parity, cross-process continuation, campaign restoration and failed-load rollback | Validated host ownership persists; fresh scanlines rebuild masks. The first restored video transition is held. States remain pinned to core/game/platform |
 | Live graphics and fast forward | `artifacts/pc-conveniences-native-02/conveniences-report.json`: 113 checks, zero errors; production menu callbacks, save/load and identical source RAM/video after 15 normal frames versus 1+2+4+8-frame requests | Bounded input route; no mission victory claim. Modern was unavailable in that earlier capture |
 | Graphics transition regression | `artifacts/finish-20260928/root-graphics-modes-report.json`: 10,253,369 root checks across 158 native frames, zero errors; authentic donor exclusions independently tested | All three live modes preserve their source boundaries. Both lower gunner consoles conservatively retain PC pixels in Genesis mode |
 | New checkpoint core ordinary-run parity | `artifacts/pc-conveniences-parity-01/comparison.json`: 13 checks, all 3,716 paired original RAM/video/input records match the unmodified core | Ordinary radio route; checkpoint-specific continuation is covered separately |
 | Additional speech, effects and frontend music | Native root gates: 165 remaining-audio checks and 47 music/transport checks, zero errors; original CPU oracles: 54 crew assignments and seven sound-request blocks | Source assignment and native player proof; every new cue has not occurred in a live mission, and independent listening acceptance remains open |
+
+The combat-loss (1,841), smoke-warning (7,549) and radio (26,142) native check
+totals above counted one constant-true `vehicle_art` check per frame. Since
+15 October 2026 those tests count it once per run (`rejected vehicle panels never
+attached (N frames)`), so a rerun reports smaller totals for the same evidence.
+Re-quote all three from the next `VALIDATE_LIVE=1 ./tools/validate.sh` run.
 
 ## Presentation repairs
 
@@ -126,8 +132,12 @@ do not touch original campaign saves. See `pc-audio-mix.md`.
 ## Controls and saves
 
 Original arrows, keypad, alphabetic keys, digits, F1–F12, Enter, Escape, Space,
-Tab, Backspace and Shift/Ctrl/Alt are forwarded. Top-row digits and keypad keys
-remain distinct. Shift+3 reaches the original system-speed control.
+Backspace and Shift/Ctrl/Alt are forwarded. Top-row digits and keypad keys
+remain distinct. Shift+3 reaches the original system-speed control. Tab is
+reserved for the remaster's 8x fast-forward toggle in Play (see
+[play controls](play-controls.md)), so the original never sees it there, including
+at its any-key prompts; only non-Play diagnostic runs (`PC Bridge.command` without
+`--play`) forward Tab.
 
 Normal `Play.command` retains its disk overlay in
 `artifacts/pc-boot-viewer/saves`. Preserve this folder when clearing diagnostic
@@ -142,18 +152,26 @@ Diagnostic captures still exit nonzero on failures.
 The new Session menu provides five numbered checkpoints and Undo last load.
 Checkpoints restore the native machine and campaign overlay together. Atomic
 archives retain overwritten versions; invalid/incompatible states are rejected
-before replacing the live session. Fast forward requests 2, 4 or 8 original
-frames at a time, with presentation sound muted and no stale speech catch-up.
+before replacing the live session. Fast forward (Tab or Session > Fast forward)
+toggles between normal speed and 8 original frames per request, with presentation
+sound muted and no stale speech catch-up.
 The original CPU/game-speed settings remain untouched.
 
-Play also accepts Cmd+S / Cmd+L for quick save/load in slot 1, Cmd+Shift+L for
-Undo last load, and Cmd+G to cycle graphics. Other platforms use Ctrl+Alt in
-place of Cmd. Shortcut chords are withheld from the source game, including
+Play also accepts Cmd+S / Cmd+L for quick save/load in slot 1 (a quick save onto
+an occupied slot 1 asks for a second press within four seconds), Cmd+Shift+L for
+Undo last load, and Cmd+G to cycle graphics. Other platforms, and the browser on
+every platform, use Ctrl+Alt in place of Cmd. On Windows layouts where AltGr types
+a character for S, L or G, those chords are ignored; the Session menu remains
+available. Shortcut chords are withheld from the source game, including
 trailing key releases, and show brief feedback without reserving a function key.
 
-Graphics switches the cached current frame among exact PC EGA, verified native
-Genesis donors and Upscaled artwork. Assets are preloaded. Genesis is explicitly
-partial, with original PC pixels in unmatched fields. Modern is an optional source-bound low-poly mode under local acceptance testing.
+Graphics switches the cached current frame among six modes: exact PC EGA,
+palette-preserving EGA Upscaled, verified native Genesis donors, Genesis Upscaled
+artwork, and the source-bound low-poly Modern and Tactical modes under local
+acceptance testing. HUD Style (Restored or Tactical) is independent. Assets are
+preloaded. Genesis is explicitly partial, with original PC pixels in unmatched
+fields, and needs the capture-derived native pack that only an equipped checkout
+carries.
 See [play controls](play-controls.md) and [mode coverage](graphics-modes.md).
 
 The current tester package is the standalone app described above. Legacy
@@ -182,8 +200,8 @@ See [packaging](packaging.md) and [rights review](release-rights.md).
 * Unrecognized transition fallbacks, preserving
   Genesis precedence and original PC visibility. The finite non-Modern register
   is in `graphics-coverage.md`. Modern geometry and its separate validation are documented in `modern-renderer.md` and `modern-asset-register.md`.
-* Intel Mac support, target-platform gameplay checks, Apple notarization and
-  public community-release clearance. The Apple Silicon alpha and gallery are
+* Intel Mac support, target-platform gameplay checks, notarization of future
+  macOS builds and public community-release clearance. The Apple Silicon alpha and gallery are
   distributed through the public [GitHub repository](https://github.com/NellInc/Abrams/releases).
 
 Each additional parity claim requires its own source comparison and runtime evidence.

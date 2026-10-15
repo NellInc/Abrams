@@ -120,6 +120,9 @@ def main() -> None:
         manifest["effects"][kind] = {"sha256":hashlib.sha256(path.read_bytes()).hexdigest(), "source":"original mathematical synthesis, tools/build_audio.py"}
     if args.scratch_voices:
         manifest["voice_status"] = "development synthetic radio takes"
+        # script_sha256 pins the generative crew script; these takes come from LINES
+        # above (each records its own text), so a stale pin must not survive.
+        manifest.pop("script_sha256", None)
         for cmd in ["espeak-ng", "ffmpeg"]:
             if not shutil.which(cmd):
                 raise SystemExit(f"Missing {cmd}; effects created. Use --effects-only or install local voice tools.")

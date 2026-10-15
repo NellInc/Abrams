@@ -11,6 +11,8 @@ except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from source_guard import inside_source
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def inventory(root: Path) -> dict:
     if not root.is_dir():
@@ -67,8 +69,8 @@ def main() -> int:
             print("\n".join(changes) if changes else "Reference inventory verified unchanged")
             return int(bool(changes))
         source = args.root.resolve()
-        if inside_source(args.manifest, source.parent, (source.name,)):
-            raise ValueError("manifest must be outside reference directory")
+        if inside_source(args.manifest, ROOT) or inside_source(args.manifest, source.parent, (source.name,)):
+            raise ValueError("manifest must be outside original sources and --root")
         if args.manifest.exists():
             raise ValueError("baseline already exists; use --verify, or choose a new manifest path")
         manifest = inventory(args.root)

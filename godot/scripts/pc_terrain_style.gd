@@ -79,6 +79,11 @@ func mapping(frame: Dictionary, palette: Array) -> Dictionary:
 		if not palette[i] is Array or palette[i].size() != 3: return {}
 		for c in 3:
 			if palette[i][c] != PC_PALETTE[i][c] and not frontend: return {}
+	return camera_basis(frame)
+
+# The observed source camera basis alone. It needs no terrain texture or palette,
+# so world-anchored shading can use it whenever detail art is unavailable.
+static func camera_basis(frame: Dictionary) -> Dictionary:
 	var matrix = frame.get("matrix_q14_columns")
 	var position = frame.get("world_position_raw")
 	if not matrix is Array or matrix.size() != 9 or not position is Array or position.size() != 3: return {}

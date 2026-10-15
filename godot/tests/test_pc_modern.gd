@@ -4,6 +4,7 @@ const Draw = preload("res://scripts/pc_draw_pass.gd")
 const Geometry = preload("res://scripts/pc_surface_geometry.gd")
 const Camera = preload("res://scripts/pc_camera.gd")
 const ReferenceColour = preload("res://scripts/pc_colour.gd")
+const ModernOwnership = preload("res://scripts/pc_modern_ownership.gd")
 var started := Time.get_ticks_msec()
 
 func _process(_delta: float) -> bool:
@@ -35,6 +36,49 @@ func fixture() -> Dictionary:
 		"roots":[{"offset":1,"group_pointers":[2]}],"groups":[{"offset":2,"primitive_pointers":[10]}],
 		"triangles":[{"source_primitive":10,"vertices":[[-100,-4,-50],[100,-4,-50],[0,-4,80]],"color":[90,110,70]}]}]}
 
+func source_registry_contract() -> void:
+	# The published catalogue carries no SHAPE.TBL structure; the player-derived
+	# registry is joined only under its exact pin, and never on any mismatch.
+	var full := fixture()
+	var registry := {"schema":1,"source":"SHAPE.TBL","source_sha256":Modern.SHAPE_HASH,"shapes":[{"shape_index":115}]}
+	var published := full.duplicate(true)
+	for field in Modern.REGISTRY_FIELDS:
+		registry.shapes[0][field] = full.models[0].get(field,[])
+		published.models[0].erase(field)
+	registry.shapes[0].source_primitives = [{"id":10,"prefix_bytes":[3,3,3],"vertices":full.models[0].source_primitives["10"]},
+		{"id":20,"prefix_bytes":[255,0,2],"vertices":[[-40,0,40],[-40,0,40],[40,0,40],[-40,0,40]]}]
+	published.models[0].source_lines = [{"source_primitive":20,"source_groups":[2],"color":[133,157,171]}]
+	var merged := Modern.merge_registry(published.duplicate(true),registry.duplicate(true))
+	check(not merged.is_empty() and art.configure(merged),"registry merge restores a configurable catalogue")
+	check(not merged.is_empty() and merged.models[0].source_lines[0].vertices==[[-40,0,40],[40,0,40]] and merged.models[0].source_lines[0].prefix_bytes==[255,0,2],"source lines rebuilt from their registry primitive")
+	var carrying := published.duplicate(true)
+	carrying.models[0].roots = full.models[0].roots
+	check(Modern.merge_registry(carrying,registry.duplicate(true)).is_empty(),"published catalogue carrying source structure accepted")
+	var foreign := registry.duplicate(true)
+	foreign.source_sha256 = "0".repeat(64)
+	check(Modern.merge_registry(published.duplicate(true),foreign).is_empty(),"registry from another SHAPE.TBL accepted")
+	var missing := registry.duplicate(true)
+	missing.shapes[0].erase("groups")
+	check(Modern.merge_registry(published.duplicate(true),missing).is_empty(),"incomplete registry accepted")
+	# On disk: catalog.json pins the registry bytes it was built with.
+	var root_dir := output.path_join("registry-contract")
+	var folder := root_dir.path_join("local-art/pc-modern")
+	DirAccess.make_dir_recursive_absolute(folder)
+	var bytes := (JSON.stringify(registry)+"\n").to_utf8_buffer()
+	var hashing := HashingContext.new()
+	hashing.start(HashingContext.HASH_SHA256)
+	hashing.update(bytes)
+	published.sources = {"SHAPE.TBL":Modern.SHAPE_HASH}
+	published.source_registry = {"file":Modern.SOURCE_REGISTRY,"sha256":hashing.finish().hex_encode()}
+	FileAccess.open(folder.path_join("catalog.json"),FileAccess.WRITE).store_string(JSON.stringify(published))
+	FileAccess.open(folder.path_join(Modern.SOURCE_REGISTRY),FileAccess.WRITE).store_buffer(bytes)
+	check(not art.load_catalogue(root_dir).is_empty(),"pinned registry joins the published catalogue")
+	bytes[bytes.size()-2] = 32 # Any byte change breaks the pin.
+	FileAccess.open(folder.path_join(Modern.SOURCE_REGISTRY),FileAccess.WRITE).store_buffer(bytes)
+	check(art.load_catalogue(root_dir).is_empty(),"registry differing from the catalogue pin accepted")
+	DirAccess.remove_absolute(folder.path_join(Modern.SOURCE_REGISTRY))
+	check(art.load_catalogue(root_dir).is_empty(),"catalogue without its player-derived registry accepted")
+
 func packet(depth: float=160.0, slope: float=0.0) -> Dictionary:
 	var data := {"camera":frame.duplicate(true),"palette_rgb":Modern.PC_PALETTE.duplicate(true),
 		"materials":[],"background":{"kind":"solid","color":0},"objects":[]}
@@ -63,11 +107,14 @@ func run() -> void:
 	check(not art.load_assets(directory.path_join("missing")),"missing assets accepted")
 	check(art.configure(fixture()),"valid synthetic catalogue rejected")
 	running_gear_contract()
+	realism_padding_contract()
+	effect_ownership_contract()
 	hind_livery_contract()
 	glazing_contract()
 	roof_grain_contract()
 	bridge_line_contract()
 	affine_invariant_contract()
+	source_registry_contract()
 	var malformed := fixture()
 	malformed.models[0].triangles[0].vertices[0] = [NAN,0,0]
 	check(not art.configure(malformed) and art.models.is_empty(),"malformed catalogue retained geometry")
@@ -270,7 +317,7 @@ func ownership_ids(data: Dictionary) -> void:
 func tree_cutouts() -> void:
 	check(art.tree_texture!=null,"illustrated tree failed preload")
 	if art.tree_texture==null: return
-	var catalog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-modern/catalog.json")))
+	var catalog: Dictionary = art.load_catalogue(directory)
 	var model: Dictionary = catalog.models.filter(func(m):return int(m.shape_index)==103)[0]
 	var sample := packet()
 	sample.objects.clear()
@@ -336,6 +383,16 @@ func round_forms(data: Dictionary) -> void:
 	var image := await render(sample,true)
 	check(draw.source_round_count==1,"observed round-form counter missing")
 	check(image.get_pixel(160*4+2,100*4+2)==Color8(205,111,70),"observed round span hidden by refined geometry")
+	# Compact dithered span: [even x, odd x] by absolute screen x, clipped at 158.
+	var Commands := preload("res://scripts/pc_modern_source_commands.gd")
+	var dithered := {"status":"observed","spans":[{"y":100,"left":157,"right":163,"colors":[12,13]}]}
+	var runs: Array = Commands.round_runs(dithered,{"clip":[158,0,319,199]})
+	var parity_ok := runs.size()==5
+	for i in runs.size():
+		var x := 158+i
+		parity_ok = parity_ok and runs[i].color==(12 if (x&1)==0 else 13) and runs[i].points[0]==Vector2(x,100) and runs[i].points[2]==Vector2(x+1,101)
+	check(parity_ok,"dithered round span expands per pixel by absolute parity after clipping")
+	check(Commands.round_runs({"status":"observed","spans":[{"y":100,"left":157,"right":163,"colors":[16,1]}]},{"clip":[0,0,319,199]}).is_empty(),"dithered round span outside palette yields no run")
 	sample.objects[0].draw_order.reverse()
 	image = await render(sample,true)
 	check(image.get_pixel(160*4+2,100*4+2)==Color8(90,110,70),"earlier round span overrode later original polygon ownership")
@@ -412,6 +469,20 @@ func running_gear_contract() -> void:
 	check(is_nan(Modern.running_gear_anchor(object,sample)),"static object acquired running-gear motion")
 	object.dynamic_instance=true; object.shape_index=-1
 	check(is_nan(Modern.running_gear_anchor(object,sample)),"unmatched reused slot acquired gear motion")
+	# A pass-wide index gives the linear scan's answer, including first match.
+	object.shape_index=115
+	sample.world.dynamic.append({"pointer":99,"shape_index":115,"world_position_raw":[900,900,5]})
+	sample.world.dynamic.append("malformed actor")
+	var actors:=Modern.dynamic_index(sample)
+	check(Modern.running_gear_anchor(object,sample,actors)==a and Modern.running_gear_anchor(object,sample)==a,"indexed running gear differs from first matching actor")
+	check(actors[[99,115]][1]==2,"dynamic index lost a duplicate identity count")
+	object.pointer=7
+	check(is_nan(Modern.running_gear_anchor(object,sample,actors)),"indexed lookup matched another pointer")
+	object.pointer=99
+	check(Modern.dynamic_index({"world":{"dynamic":"none"}}).is_empty() and Modern.dynamic_index({}).is_empty(),"malformed world produced an actor index")
+	check(is_nan(Modern.running_gear_anchor(object,{"world":{"dynamic":"none"}})) and is_nan(Modern.running_gear_anchor(object,{})),"unindexed scan accepted a malformed world")
+	sample.world.dynamic.push_front("malformed leading actor")
+	check(Modern.running_gear_anchor(object,sample)==a and Modern.running_gear_anchor(object,sample,Modern.dynamic_index(sample))==a,"malformed actor broke first-match lookup")
 	var gear := fixture()
 	gear.models[0].triangles[0].motion={"kind":"wheel","center":[0,0,0],"radius":40}
 	var wheel = Modern.new()
@@ -427,6 +498,53 @@ func running_gear_contract() -> void:
 	for i in base.size():
 		for j in base[i].points.size():
 			check(base[i].points[j].slice(0,3)==moved[i].points[j].slice(0,3),"running gear moved source-aligned geometry")
+
+# Strip-blit atlas padding must equal the former per-pixel clamp loop.
+func realism_padding_contract() -> void:
+	var noise := RandomNumberGenerator.new()
+	noise.seed=137
+	var bytes := PackedByteArray()
+	bytes.resize(256*256)
+	for i in bytes.size(): bytes[i]=noise.randi()%256
+	var tile := Image.create_from_data(256,256,false,Image.FORMAT_R8,bytes)
+	var fast := Image.create(1152,1152,false,Image.FORMAT_R8)
+	fast.fill(Color(0.5,0,0))
+	var reference := fast.duplicate() as Image
+	for origin in [Vector2i(16,16),Vector2i(880,592)]:
+		Modern.pad_realism_tile(fast,tile,origin)
+		reference.blit_rect(tile,Rect2i(0,0,256,256),origin)
+		for y in range(-16,272):
+			for x in range(-16,272):
+				if x<0 or x>=256 or y<0 or y>=256:
+					reference.set_pixelv(origin+Vector2i(x,y),tile.get_pixel(clampi(x,0,255),clampi(y,0,255)))
+	check(fast.get_data()==reference.get_data(),"strip-padded realism atlas differs from per-pixel border duplication")
+
+class EffectStub extends RefCounted:
+	var atlas: Texture2D = null
+	var calls := 0
+	func mapping(_object: Dictionary, _camera: Dictionary, _palette: Array) -> Dictionary:
+		calls += 1
+		return {"rect":Rect2(150,90,20,20),"target":Rect2(150,90,20,20),"source_uv":Rect2(0,0,1,1),"index":51,"donor":0}
+
+# A validated effect binding owns exactly the original opaque runs; authored
+# alpha never claims transparent source pixels an earlier actor shows through.
+func effect_ownership_contract() -> void:
+	var data := packet()
+	var sprite := {"width":4,"height":2,"pixels":[6,6,0,6,6,6,6,6],"opaque":[true,true,false,true,true,true,true,true],
+		"origin":[159,99],"clip":[0,0,319,199]}
+	data.objects.append({"kind":"sprite","sprite_status":"observed","polygons":[],"sprite":sprite})
+	var expected := 0
+	for run: Dictionary in Geometry.sprite_runs(sprite,data.camera):
+		var points: Array = []
+		for point: Vector2 in run.points: points.append(Geometry.unproject(point,1024.0,data.camera))
+		expected += Geometry.triangle_vertices(points,data.camera).size()/3
+	for polygon: Dictionary in data.objects[0].polygons:
+		expected += Geometry.triangle_vertices(polygon.camera_vertices,data.camera).size()/3
+	var owner := ModernOwnership.new()
+	var stub := EffectStub.new()
+	check(owner.prepare(data,Vector2i(320,200),stub),"effect ownership fixture prepared")
+	check(owner.triangle_count==expected and stub.calls==0,"effect ownership extended past original opaque sprite pixels")
+	owner.free()
 
 func observed_round_fixture() -> void:
 	var path:=directory.path_join("local-art/pc-modern/round-form-fixture.json")
@@ -455,7 +573,7 @@ func crew_head_commands() -> void:
 	check(FileAccess.file_exists(path),"original CPU crew-head proof exists")
 	if not FileAccess.file_exists(path):return
 	var proof:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
-	var catalog:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-modern/catalog.json")))
+	var catalog:Dictionary=art.load_catalogue(directory)
 	var exercised:=0
 	for witness:Dictionary in proof.cases:
 		if int(witness.shape_index) not in [161,162] or witness.center[0]!=160:continue
@@ -698,7 +816,9 @@ func material_variation_contract() -> void:
 	for shape in art.models:
 		for face: Dictionary in art.models[shape].faces.values():
 			for triangle: Dictionary in face.triangles:
-				var kind: float=triangle.structure_kind
+				# Realism, texture and architecture tags decode to the incumbent kind
+				# the shader restores; building classification is judged on that.
+				var kind: float=Modern.architecture_base_kind(triangle.structure_kind)
 				if int(shape)>=115 and int(shape)<=144: check(kind in [20.0,Modern.ARMOUR_PAINT,Modern.EQUIPMENT_VENT,Modern.EQUIPMENT_RUBBER],"vehicle cannot inherit building textures")
 				if kind==20.375: walls+=1
 				if kind==20.4375: roofs+=1
@@ -726,7 +846,9 @@ func hind_livery_contract() -> void:
 			check(paint.configure(source),"paint fixture accepted")
 			var wanted:bool=(shape in [163,164] or shape in Modern.TWO_TONE_SHAPES) and material in ["olive","olive_edge"]
 			var kind:float=paint.models[shape].faces[10].triangles[0].structure_kind
-			var unpainted: float=Modern.GLAZING if shape in Modern.GLAZING_SHAPES and material in ["glass","cockpit"] else 20.0
+			# Unpainted facets keep their own authored material tag: glazing, Hummer
+			# canvas, equipment olive texture, or the realism family over kind 20.
+			var unpainted: float=Modern.GLAZING if shape in Modern.GLAZING_SHAPES and material in ["glass","cockpit"] else Modern.EQUIPMENT_CANVAS if shape==159 and material in ["canvas","canvas_edge"] else Modern.TEXTURE_PAINT if material in ["olive","olive_edge"] else Modern.realism_kind(material,20.0)
 			check(kind==(Modern.HIND_PAINT if shape in [163,164] else Modern.ARMOUR_PAINT) if wanted else kind==unpainted,"paint scope excludes tanks, glass, intakes, accents and canvas")
 			for depth in [160.0,24.0]:
 				var rotation:=Basis(Vector3.UP,0.4)*Basis(Vector3.FORWARD,0.3)
@@ -742,8 +864,10 @@ func hind_livery_contract() -> void:
 				check(not facets.is_empty(),"rotated/near-clipped paint remains visible")
 				for facet:Dictionary in facets:
 					for point:Array in facet.points:
-						check(point.size()==(5 if wanted else 3),"paint adds UVs only to tagged Hind facets")
-						if wanted:
+						# Other material tags carry their own plane coordinates; only the
+						# livery's object-local projection is asserted here.
+						if wanted: check(point.size()==5,"tagged paint facets carry livery coordinates")
+						if wanted and point.size()==5:
 							var raw:=rotation.inverse()*(Modern.vec(point)-Vector3(0,depth,0))
 							var expected:=Vector2(raw.y,raw.z) if shape in [163,164] else Vector2(raw.y+raw.x*.45,raw.z+raw.x*.25)
 							check(Vector2(point[3],point[4]).distance_to(expected)<0.001,"local paint coordinates survive source transform and near clipping")
@@ -764,20 +888,32 @@ func glazing_contract() -> void:
 			var model:=Modern.new()
 			check(model.configure(source),"glazing material fixture accepted")
 			var wanted: bool=shape in Modern.GLAZING_SHAPES and material in ["glass","cockpit"]
-			check(model.models[shape].faces[10].triangles[0].structure_kind==(Modern.GLAZING if wanted else 20.0),"only intact authored glazing receives tag")
+			# Untagged facets may still carry a realism family over incumbent kind 20.
+			check(model.models[shape].faces[10].triangles[0].structure_kind==(Modern.GLAZING if wanted else Modern.realism_kind(material,20.0)),"only intact authored glazing receives tag")
 			var data:=packet()
 			data.objects[0].shape_index=shape
 			var facets:=model.mapping(data.objects[0],data.objects[0].polygons[0],data.camera,data.palette_rgb,false)
 			check(not facets.is_empty(),"glazing mapping remains visible")
-			var unchanged_points:=true
-			for facet:Dictionary in facets:
-				for point:Array in facet.points: unchanged_points=unchanged_points and point.size()==3
-			check(unchanged_points,"glazing adds no coordinates or geometry")
+			# The tag adds only plane coordinates: same facets and source positions
+			# as an unknown material, which receives no material tag at all.
+			var plain_source:=fixture()
+			plain_source.models[0].shape_index=shape
+			plain_source.models[0].triangles[0].material="unclassified"
+			plain_source.models[0].triangles[0].color=[80,140,180]
+			var plain:=Modern.new()
+			check(plain.configure(plain_source) and plain.models[shape].faces[10].triangles[0].structure_kind==20.0,"unclassified material stays untagged")
+			var reference:=plain.mapping(data.objects[0],data.objects[0].polygons[0],data.camera,data.palette_rgb,false)
+			var unchanged_points:=reference.size()==facets.size()
+			for i in mini(reference.size(),facets.size()):
+				unchanged_points=unchanged_points and reference[i].points.size()==facets[i].points.size()
+				for j in mini(reference[i].points.size(),facets[i].points.size()):
+					unchanged_points=unchanged_points and reference[i].points[j].size()==3 and facets[i].points[j].slice(0,3)==reference[i].points[j]
+			check(unchanged_points,"glazing adds no geometry")
 			check(JSON.stringify(source)==before,"glazing does not mutate source catalogue")
 
 func roof_grain_contract() -> void:
-	# A roof whose normal leans along x (structure_axis 0) and one leaning along y
-	# (axis 1) both carry (x,y) object-local grain, never a 1-D (y,y) line.
+	# A roof whose normal leans along x and one leaning along y both carry
+	# (x,y) object-local grain, never a 1-D (y,y) line.
 	for lean in [Vector2(0.2,0.0),Vector2(0.0,0.2)]:
 		var source:=fixture()
 		var model:Dictionary=source.models[0]
@@ -790,7 +926,9 @@ func roof_grain_contract() -> void:
 		check(roof.configure(source),"roof grain fixture accepted")
 		if not roof.ready: continue
 		var triangle:Dictionary=roof.models[47].faces[10].triangles[0]
-		check(triangle.structure_kind==20.4375 and triangle.structure_axis==(0 if lean.x>0 else 1),"roof fixture covers structure axis %d"%(0 if lean.x>0 else 1))
+		# Roofs carry plane axis 2 whichever way the normal leans; their grain
+		# must still use both horizontal axes, never the x/y lean direction.
+		check(Modern.architecture_base_kind(triangle.structure_kind)==20.4375 and triangle.structure_axis==2,"roof fixture leaning along %s is a roof plane"%("x" if lean.x>0 else "y"))
 		var data:=packet()
 		var actor:Dictionary=data.objects[0]
 		actor.shape_index=47

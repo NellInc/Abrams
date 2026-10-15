@@ -3,10 +3,12 @@ import struct
 import unittest
 from tools.pc_reticle import ReticleRuns,lines,ink_pixels
 from tools.unpack_pc_executables import unpack
+from tests._inputs import requires
 
 ROOT=Path(__file__).resolve().parents[1]
 
 
+@requires('GAME')
 class ReticleTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

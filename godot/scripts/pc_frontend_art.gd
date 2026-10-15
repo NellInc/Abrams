@@ -14,6 +14,19 @@ const MOTOR_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255
 	[170,0,0],[170,85,0],[0,170,0],[85,255,85],[255,255,85],[0,0,0],[255,85,85],[0,0,170],[85,255,255],[255,255,255]]
 var motor_catalog: Dictionary = {}
 var motor_indices := PackedByteArray()
+# Plate-8 RGB implied by MOTOR_PALETTE, which the live palette must equal.
+var motor_expected_rgb := PackedByteArray()
+# Facts derived only from an exact (plate mask, UI mask) string pair: whether
+# every tag is a known plate on an owned pixel, and the plate-8 pixel runs.
+# Source pixels are still compared against those runs on every frame.
+var _motor_masks := {"plate":"","ui":"","valid":false,"runs":PackedInt32Array(),"count":0}
+# Last decoded L8 masks by role, keyed on their exact base64 PNG text.
+var _decoded := {}
+var mask_decode_count := 0
+var _motor_mask_texture: ImageTexture
+var _motor_mask_key := ""
+var _scene_mask_texture: ImageTexture
+var _scene_mask_key := ""
 var portraits: Array[Texture2D] = []
 var active: Dictionary = {}
 var text_enabled := true
@@ -74,6 +87,9 @@ func load_sources(root_path: String) -> bool:
 	clear()
 	catalog.clear()
 	portraits.clear()
+	_decoded.clear()
+	_motor_masks={"plate":"","ui":"","valid":false,"runs":PackedInt32Array(),"count":0}
+	_motor_mask_key="";_scene_mask_key=""
 	flow_typography.load_sources(root_path.path_join("GAME"))
 	# Text restoration needs only its own pinned GAME fonts, never the office art.
 	typography.load_sources(root_path.path_join("GAME"))
@@ -97,6 +113,7 @@ func load_sources(root_path: String) -> bool:
 		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=entry[1]: return false
 		var image := Image.load_from_file(path)
 		if image==null or image.get_size()!=entry[2]: return false
+		if not textures.is_empty(): prepare_portrait(image)
 		textures.append(ImageTexture.create_from_image(image))
 	material.set_shader_parameter("office",textures[0])
 	portraits.assign(textures.slice(1))
@@ -118,10 +135,19 @@ func _load_wilson_completion(root_path:String,data:Dictionary) -> bool:
 		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=entry.art.sha256:return false
 		var image:=Image.load_from_file(path)
 		if image==null or image.get_size()!=Vector2i(entry.art.size[0],entry.art.size[1]):return false
+		prepare_portrait(image)
 		extra.append(ImageTexture.create_from_image(image))
 	portraits.append_array(extra)
 	data.templates.append_array(supplement.templates)
 	return true
+
+# Wilson (~1300px) fills a ~131px source cell. Premultiplied alpha lets the
+# mip chain average his silhouette without darkening it toward the black
+# transparent texels; the shader composites premultiplied colour.
+static func prepare_portrait(image: Image) -> void:
+	image.convert(Image.FORMAT_RGBA8)
+	image.premultiply_alpha()
+	image.generate_mipmaps()
 
 func panel_border(source: Image, y: int) -> bool:
 	if y==200: return true
@@ -135,6 +161,7 @@ func panel_border(source: Image, y: int) -> bool:
 func _load_motor_pool(root_path: String) -> void:
 	motor_catalog.clear()
 	motor_indices.clear()
+	motor_expected_rgb.clear()
 	var path := root_path.path_join("local-art/pc-motor-pool-v1/motor-pool.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=MOTOR_CATALOG_SHA: return
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -150,6 +177,10 @@ func _load_motor_pool(root_path: String) -> void:
 	for byte in packed:
 		motor_indices.append(byte>>4)
 		motor_indices.append(byte&15)
+	motor_expected_rgb.resize(64000*3)
+	for at in 64000:
+		var colour: Array=MOTOR_PALETTE[motor_indices[at]]
+		for c in 3: motor_expected_rgb[at*3+c]=colour[c]
 	motor_catalog=data
 
 func _set_motor_pool(source: Image, presentation: Dictionary) -> bool:
@@ -172,28 +203,24 @@ func _set_motor_pool(source: Image, presentation: Dictionary) -> bool:
 	# PNG masks and scanning 64,000 pixels when the background is absent.
 	var claimed = donor.get("pixels")
 	if not (claimed is int or claimed is float) or claimed<=0 or claimed>64000: return false
-	var mask := Image.new()
-	var original_ui := Image.new()
 	if not overlay.get("mask_png") is String or not ui.get("mask_png") is String: return false
-	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK: return false
-	if original_ui.load_png_from_buffer(Marshalls.base64_to_raw(ui.mask_png))!=OK: return false
-	if mask.get_size()!=Vector2i(320,200) or original_ui.get_size()!=mask.get_size(): return false
-	if mask.get_format()!=Image.FORMAT_L8 or original_ui.get_format()!=Image.FORMAT_L8: return false
-	var tags := mask.get_data()
-	var bits := original_ui.get_data()
+	var mask := _decode_l8("plate",overlay.mask_png)
+	var original_ui := _decode_l8("ui",ui.mask_png)
+	if mask==null or original_ui==null: return false
+	if overlay.mask_png!=_motor_masks.plate or ui.mask_png!=_motor_masks.ui: _analyse_motor_masks(overlay.mask_png,ui.mask_png,mask,original_ui)
+	if not _motor_masks.valid: return false
+	# Every plate-8 pixel must carry its exact ATBASE colour in this frame.
 	var rgb := source.get_data()
-	var count := 0
-	for at in 64000:
-		if tags[at]>8 or (tags[at]!=0 and bits[at]!=255): return false
-		if tags[at]!=8: continue
-		var colour = palette[motor_indices[at]]
-		if not colour is Array or colour.size()!=3: return false
-		for c in 3:
-			if rgb[at*3+c]!=colour[c]: return false
-		count+=1
+	var runs: PackedInt32Array=_motor_masks.runs
+	for i in range(0,runs.size(),2):
+		if rgb.slice(runs[i]*3,runs[i+1]*3)!=motor_expected_rgb.slice(runs[i]*3,runs[i+1]*3): return false
+	var count: int=_motor_masks.count
 	if count==0 or donor.get("pixels")!=count: return false
-	texture=ImageTexture.create_from_image(source)
-	material.set_shader_parameter("motor_mask",ImageTexture.create_from_image(mask))
+	_show(source)
+	if _motor_mask_texture==null or overlay.mask_png!=_motor_mask_key:
+		_motor_mask_texture=_upload(_motor_mask_texture,mask)
+		_motor_mask_key=overlay.mask_png
+	material.set_shader_parameter("motor_mask",_motor_mask_texture)
 	material.set_shader_parameter("motor_enabled",true)
 	active={"scene":"motor_pool","name":"Genesis motor pool","pixels":count}
 	if text_enabled: typography.set_motor_pool_menu(source,original_ui,mask)
@@ -202,6 +229,64 @@ func _set_motor_pool(source: Image, presentation: Dictionary) -> bool:
 		active.arming_panel="PC clipboard"
 	visible=true
 	return true
+
+# Exact base64 text is the cache key; callers only read the returned image.
+func _decode_l8(role: String, png: String) -> Image:
+	var cached: Array=_decoded.get(role,[])
+	if not cached.is_empty() and cached[0]==png: return cached[1]
+	mask_decode_count+=1
+	var image := Image.new()
+	if image.load_png_from_buffer(Marshalls.base64_to_raw(png))!=OK or image.get_size()!=Vector2i(320,200) or image.get_format()!=Image.FORMAT_L8: image=null
+	_decoded[role]=[png,image]
+	return image
+
+func _analyse_motor_masks(plate_png: String, ui_png: String, mask: Image, original_ui: Image) -> void:
+	# Same predicate as the former per-pixel scan, row by row: every tag is a
+	# known plate (0..8) and any plate pixel is UI-owned. Records plate-8 runs.
+	_motor_masks={"plate":plate_png,"ui":ui_png,"valid":false,"runs":PackedInt32Array(),"count":0}
+	var tags := mask.get_data()
+	var bits := original_ui.get_data()
+	var known := 0
+	for id in 9: known+=tags.count(id)
+	if known!=tags.size(): return
+	var runs := PackedInt32Array()
+	for y in 200:
+		var lo := y*320
+		var row := tags.slice(lo,lo+320)
+		if row.count(0)==320: continue
+		if bits.slice(lo,lo+320).count(255)!=320:
+			for x in 320:
+				if row[x]!=0 and bits[lo+x]!=255: return
+		var plate := row.count(8)
+		if plate==0: continue
+		if plate==320:
+			_append_run(runs,lo,lo+320)
+			continue
+		var start := -1
+		for x in 321:
+			var inside := x<320 and row[x]==8
+			if inside and start<0: start=x
+			elif not inside and start>=0:
+				_append_run(runs,lo+start,lo+x)
+				start=-1
+	_motor_masks.runs=runs
+	_motor_masks.count=tags.count(8)
+	_motor_masks.valid=true
+
+static func _append_run(runs: PackedInt32Array, start: int, end: int) -> void:
+	# Contiguous pixel indices (including across rows) share one [start,end) run.
+	if not runs.is_empty() and runs[runs.size()-1]==start: runs[runs.size()-1]=end
+	else: runs.append_array(PackedInt32Array([start,end]))
+
+static func _upload(current: ImageTexture, image: Image) -> ImageTexture:
+	# Same-size/format images refresh the existing texture resource in place.
+	if current!=null and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format() and not current.has_mipmaps():
+		current.update(image)
+		return current
+	return ImageTexture.create_from_image(image)
+
+func _show(source: Image) -> void:
+	texture=_upload(texture as ImageTexture,source)
 
 func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}, paired_world: bool=false) -> bool:
 	var restored := _set_art_frame(source,program,presentation)
@@ -215,13 +300,16 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}, 
 	else: return restored
 	var overlay= presentation.get("ui_overlay")
 	if not overlay is Dictionary or overlay.get("width")!=320 or overlay.get("height")!=200 or not overlay.get("mask_png") is String: return restored
-	var mask:=Image.new()
-	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK or mask.get_size()!=Vector2i(320,200) or mask.get_format()!=Image.FORMAT_L8: return restored
+	var mask:=_decode_l8("ui",overlay.mask_png)
+	if mask==null: return restored
 	var bits:=mask.get_data()
 	if bits.count(0)+bits.count(255)!=bits.size(): return restored
 	var replay:=false
 	if paired_world and program.get("name")=="START" and presentation.get("draw_pass") is Dictionary and presentation.draw_pass.get("frontend_scene")=="START/ANIM":
-		material.set_shader_parameter("scene_mask",ImageTexture.create_from_image(mask))
+		if _scene_mask_texture==null or overlay.mask_png!=_scene_mask_key:
+			_scene_mask_texture=_upload(_scene_mask_texture,mask)
+			_scene_mask_key=overlay.mask_png
+		material.set_shader_parameter("scene_mask",_scene_mask_texture)
 		material.set_shader_parameter("scene_enabled",true)
 		replay=true
 		active.preview="Original START/ANIM draw, high-resolution replay"
@@ -235,7 +323,7 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}, 
 	flow_typography._layout()
 	if flow_typography.runs.is_empty(): return restored
 	if not restored:
-		texture=ImageTexture.create_from_image(source)
+		_show(source)
 		active={"scene":"text","name":"Original "+name+" typography"}
 		if replay: active.preview="Original START/ANIM draw, high-resolution replay"
 	visible=true
@@ -246,19 +334,19 @@ func _set_art_frame(source: Image, program: Dictionary, presentation: Dictionary
 	if source==null or source.get_size()!=Vector2i(320,200): return false
 	if source.get_format()!=Image.FORMAT_RGB8: return false
 	if splash_aftermath_art.set_frame(source,program):
-		texture=ImageTexture.create_from_image(source)
+		_show(source)
 		active={"scene":"splash_aftermath","name":splash_aftermath_art.active.name}
 		visible=true
 		return true
 	if newspaper_art.set_frame(source,program):
-		texture=ImageTexture.create_from_image(source)
+		_show(source)
 		active={"scene":"newspaper","name":newspaper_art.active.name,"height":newspaper_art.active.height}
 		visible=true
 		return true
 	if program.get("name")=="START":
 		intro_art.outline_text_enabled=text_enabled
 		if intro_art.set_frame(source,program):
-			texture = ImageTexture.create_from_image(source)
+			_show(source)
 			active = {"scene":"intro","name":intro_art.active.name}
 			if intro_art.active.dedication: active.dedication="David \"Ming\" Kenny"
 			visible = true
@@ -267,13 +355,13 @@ func _set_art_frame(source: Image, program: Dictionary, presentation: Dictionary
 		# Information pages share FRAME's border. Their full-frame binding must
 		# precede the generic border-only restoration.
 		if information_art.set_frame(source,program):
-			texture = ImageTexture.create_from_image(source)
+			_show(source)
 			active = {"scene":"information","name":information_art.active.name}
 			if text_enabled: typography.set_information_page(source,information_art.active.text_runs)
 			visible = true
 			return true
 	if map_art.set_frame(source,program,presentation):
-		texture=ImageTexture.create_from_image(source)
+		_show(source)
 		active={"scene":"map_frame","name":"Mission summary frame"}
 		visible=true
 		return true
@@ -291,7 +379,7 @@ func _set_art_frame(source: Image, program: Dictionary, presentation: Dictionary
 		if matches.size()!=1: continue
 		var item: Dictionary = matches[0]
 		active = {"scene":"office","pose":int(item.pose),"name":item.name,"height":h}
-		texture = ImageTexture.create_from_image(source)
+		_show(source)
 		material.set_shader_parameter("portrait",portraits[int(item.pose)])
 		var r: Array = item.portrait_rect
 		material.set_shader_parameter("portrait_rect",Vector4(r[0],r[1],r[2],r[3]))

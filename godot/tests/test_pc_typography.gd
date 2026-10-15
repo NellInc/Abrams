@@ -220,6 +220,23 @@ func cache_contracts() -> void:
 	ui.set_pixelv(box.position,Color.BLACK)
 	check(same_predicate(oracle,label,cursor).is_empty(),"cursor never excuses missing UI ownership")
 	ui.fill(Color.WHITE)
+	# A visible cursor elsewhere leaves this run on the exact region compare.
+	cursor.fill(Color.BLACK)
+	cursor.fill_rect(Rect2i(box.end.x,box.position.y-8,16,15),Color.WHITE)
+	check(same_predicate(oracle,label,cursor).is_empty(),"distant cursor never excuses a changed glyph pixel")
+	label=words("HEAT READY",12,165)
+	check(not same_predicate(oracle,label,cursor).is_empty(),"distant cursor keeps the uncovered run")
+	for y in range(box.position.y,box.end.y):
+		for x in range(box.position.x,box.end.x,7):
+			var old := source.get_pixel(x,y)
+			source.set_pixel(x,y,Color.MAGENTA)
+			label.pixel_sha256=digest(source.get_region(box))
+			check(same_predicate(oracle,label,cursor).is_empty(),"distant cursor: every changed pixel rejects")
+			source.set_pixel(x,y,old)
+	label.pixel_sha256=digest(source.get_region(box))
+	ui.set_pixelv(box.end-Vector2i.ONE,Color.BLACK)
+	check(same_predicate(oracle,label,cursor).is_empty(),"distant cursor: missing ownership rejects")
+	ui.fill(Color.WHITE)
 	label=words("HEAT READY",12,165)
 	var sha: String=label.font_sha256
 	var original: PackedByteArray=view.typography.fonts[sha].duplicate()

@@ -1,7 +1,10 @@
 from collections import Counter,deque
+import copy
+import random
 import struct
 import unittest
 from tools.pc_strut_trace import StrutDraws
+from tools.pc_trace_windows import expand_window_bundle,pack_window_bundle,sim_event_windows
 
 
 class StrutTests(unittest.TestCase):
@@ -64,6 +67,26 @@ class StrutTests(unittest.TestCase):
         draw.begin(bytes(ram),regs,0);self.assertIsNone(draw.finish(bytes(64000),0))
         draw,ram,regs=self.setup_draw();draw.begin(bytes(ram),regs,0)
         with self.assertRaisesRegex(ValueError,'page'):draw.finish(bytes(64000),8192)
+
+    def test_window_bundle_gives_the_full_snapshot_result(self):
+        # The native strut event may send only DS, the stack and the bitmap's
+        # planes plus mask; every other byte is noise here and zero in the bundle.
+        def clipped(ram,ds):ram[ds+0x359B]=1;struct.pack_into('<4h',ram,ds+0x3593,11,12,20,20)
+        def partial(ram,ds):ram[ds+0x359F]=7
+        def mutated(ram,ds):ram[0x70004]^=1
+        for change in (None,clipped,partial,mutated):
+            full,ram,regs=self.setup_draw()
+            if change:change(ram,regs['ds']*16)
+            bundled=copy.deepcopy(full);windows=sim_event_windows(29,ram,regs)
+            noisy=bytearray(random.Random(29).randbytes(640*1024))
+            for base,length in windows:noisy[base:base+length]=ram[base:base+length]
+            results=[]
+            for draw,snapshot in ((full,bytes(noisy)),(bundled,expand_window_bundle(pack_window_bundle(bytes(ram),windows)))):
+                try:draw.begin(snapshot,regs,0);results.append((draw.pending,draw.counts))
+                except ValueError as error:results.append(str(error))
+            self.assertEqual(results[0],results[1],change)
+            if change in (None,clipped):self.assertEqual(results[0][0]['plate'],4)
+        self.assertEqual(results[0],'original strut differs from supplied source')
 
 
 if __name__=='__main__':unittest.main()

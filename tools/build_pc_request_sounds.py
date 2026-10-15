@@ -31,9 +31,12 @@ def samples(request):
 
 def main():
     output=ROOT/'godot/assets/audio';receipt={'scope':__doc__,'builder_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'samples':{}}
+    paths={request:output/f'pc_request_{request:02}.wav' for request in REQUESTS}
+    # Refuse the whole batch up front: never leave new samples without their provenance receipt.
+    if existing:=[str(p.relative_to(ROOT)) for p in [*paths.values(),output/'pc_request_provenance.json'] if p.exists()]:
+        raise FileExistsError(f'Refusing to overwrite existing request outputs: {existing}')
     for request,(_,description) in REQUESTS.items():
-        path=output/f'pc_request_{request:02}.wav'
-        if path.exists():raise FileExistsError('Refusing to overwrite existing request sample')
+        path=paths[request]
         pcm(path,samples(request));receipt['samples'][path.stem]={'request':request,'description':description,'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'source':'Original mathematical synthesis'}
     (output/'pc_request_provenance.json').write_text(json.dumps(receipt,indent=2)+'\n')
 if __name__=='__main__':main()

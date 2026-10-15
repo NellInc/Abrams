@@ -3,6 +3,7 @@ extends SceneTree
 const Portraits=preload("res://scripts/pc_portrait_art.gd")
 const Information=preload("res://scripts/pc_information_art.gd")
 const ROLES=["commander","gunner","driver","loader"]
+const MipReference=preload("res://tests/pc_mip_reference.gd")
 var errors:Array[String]=[]
 var checks:=0
 var native:=false
@@ -23,13 +24,9 @@ func _initialize()->void:
 	create_timer(60.0).timeout.connect(func():check(false,"portrait test 60s deadline");finish())
 	run.call_deferred()
 
-func bilinear(im:Image,uv:Vector2)->Color:
-	var p:=uv*Vector2(im.get_size())-Vector2(0.5,0.5)
-	var at:=Vector2i(floori(p.x),floori(p.y));var f:=p-Vector2(at);var limit:=im.get_size()-Vector2i.ONE
-	return im.get_pixelv(at.clamp(Vector2i.ZERO,limit)).lerp(im.get_pixelv((at+Vector2i.RIGHT).clamp(Vector2i.ZERO,limit)),f.x).lerp(im.get_pixelv((at+Vector2i.DOWN).clamp(Vector2i.ZERO,limit)).lerp(im.get_pixelv((at+Vector2i.ONE).clamp(Vector2i.ZERO,limit)),f.x),f.y)
-
-func near(a:Color,b:Color)->bool:
-	return absf(a.r-b.r)<=3.0/255 and absf(a.g-b.g)<=3.0/255 and absf(a.b-b.b)<=3.0/255
+# Mipmapped linear donors: the output lies between adjacent-level samples.
+func near_mip(actual:Color,donor:Image,uv:Vector2,minified:float,levels:Dictionary)->bool:
+	return MipReference.inside(actual,MipReference.samples(donor,uv,minified,levels),3.0/255)
 
 func snapshot(source:Image)->Image:
 	background.texture=ImageTexture.create_from_image(source)
@@ -46,6 +43,9 @@ func render_portrait(source:Image,label:String)->void:
 	if not portraits.active.is_empty():
 		var item:Dictionary=portraits.templates[int(portraits.active.id)]
 		var donor:Image=item.texture.get_image()
+		# 640x400 view: one source pixel is two output pixels.
+		var minified:float=maxf(donor.get_width()/(item.size.x*2.0),donor.get_height()/(item.size.y*2.0))
+		var levels:={}
 		for point in item.points:
 			var base:Vector2i=(Vector2i(37,59)+point.at)*2
 			# Exclude only the proven opaque source footprint from a whole-output
@@ -56,8 +56,7 @@ func render_portrait(source:Image,label:String)->void:
 					for channel in 3:protected[at+channel]=actual[at+channel]
 		for i in range(0,item.points.size(),37):
 			var point:Vector2i=item.points[i].at
-			var expected:=bilinear(donor,(Vector2(point)+Vector2(0.75,0.75))/Vector2(item.size))
-			check(near(image.get_pixelv((Vector2i(37,59)+point)*2+Vector2i.ONE),expected),"actual selected portrait donor/filter "+label)
+			check(near_mip(image.get_pixelv((Vector2i(37,59)+point)*2+Vector2i.ONE),donor,(Vector2(point)+Vector2(0.75,0.75))/Vector2(item.size),minified,levels),"actual selected portrait donor/filter "+label)
 			probes+=1
 	check(protected==actual,"every pixel outside original opaque coverage preserved "+label)
 	check(image.save_png(output.path_join(label+".png"))==OK,"save native "+label)
@@ -84,6 +83,7 @@ func run()->void:
 		var item:Dictionary=portraits.templates[id]
 		check(item.name==ROLES[id],"source role mapping "+str(id))
 		check(information.textures["crew-"+ROLES[id]].get_image().get_data()==item.texture.get_image().get_data(),"same authored role donor in crew and popup "+ROLES[id])
+		check(item.texture.get_image().has_mipmaps() and information.textures["crew-"+ROLES[id]].get_image().has_mipmaps(),"both role donors carry the same mip chain "+ROLES[id])
 		source.fill(Color8(85,85,85))
 		for point in item.points:source.set_pixelv(Vector2i(37,59)+point.at,Color.hex(point.rgb))
 		portraits.set_frame(source,mask,{})
@@ -121,10 +121,12 @@ func run()->void:
 		for layer in layers:
 			var donor:Image=information.textures[layer.name].get_image()
 			var r:Array=layer.rect
+			var minified:float=maxf(donor.get_width()/(float(r[2])*2.0),donor.get_height()/(float(r[3])*2.0))
+			var levels:={}
 			for y in range(3,int(r[3]),9):
 				for x in range(3,int(r[2]),9):
 					var p:=Vector2i((int(r[0])+x)*2+1,(int(r[1])+y)*2+1)
-					check(near(image.get_pixelv(p),bilinear(donor,Vector2(x+0.75,y+0.75)/Vector2(r[2],r[3]))),"actual crew role donor/filter "+layer.name)
+					check(near_mip(image.get_pixelv(p),donor,Vector2(x+0.75,y+0.75)/Vector2(r[2],r[3]),minified,levels),"actual crew role donor/filter "+layer.name)
 		check(image.save_png(output.path_join("crew-all-four.png"))==OK,"save crew native")
 		information.clear()
 	check(not information.set_frame(crew,{"name":"SIM"}),"crew page wrong program fails closed")

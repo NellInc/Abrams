@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageOps, ImageStat
+from output_guard import guarded_output
 
 ROOT=Path(__file__).resolve().parents[2]
 
@@ -30,6 +31,13 @@ def normalized(text):
 def audio_hash(media):
     pcm=subprocess.check_output(['ffmpeg','-v','error','-threads','1','-filter_threads','1','-i',str(media),'-vn','-ar','48000','-ac','2','-f','s16le','-'])
     return hashlib.sha256(pcm).hexdigest()
+
+
+def production_brief(out):
+    """The production's own brief (beside or above this review folder), else the v1 template."""
+    for path in (out/'production-brief.json',out.parent/'production-brief.json'):
+        if path.exists():return json.loads(path.read_text())
+    return json.loads((ROOT/'tools/promo/brief.json').read_text())
 
 
 def transcribe(media,out,model):
@@ -54,7 +62,7 @@ def transcribe(media,out,model):
         segments=list(segments)
         words=[{'word':w.word.strip(),'start':w.start,'end':w.end,'probability':w.probability} for s in segments for w in s.words]
         heard=' '.join(s.text.strip() for s in segments);language=info.language
-    expected=json.loads((ROOT/'tools/promo/brief.json').read_text())['narration']
+    expected=production_brief(out)['narration']
     diff=list(difflib.ndiff(normalized(expected),normalized(heard)))
     mismatches=[x for x in diff if not x.startswith('  ')]
     data={'source':str(media.resolve()),'source_sha256':hashlib.sha256(media.read_bytes()).hexdigest(),'audio_pcm_sha256':audio_hash(media),'model':model,'language':language,'text':heard,'words':words,'script_word_differences':mismatches}
@@ -101,8 +109,7 @@ def loudness_checks(returncode,stderr):
 
 
 def critique(media,out):
-    actual=out.parent/'production-brief.json'
-    brief=json.loads((actual if actual.exists() else ROOT/'tools/promo/brief.json').read_text());probe=ffprobe(media)
+    brief=production_brief(out);probe=ffprobe(media)
     serial=['-threads','1'] if brief.get('revision')=='v5' else []
     videos=[s for s in probe['streams'] if s['codec_type']=='video'];audios=[s for s in probe['streams'] if s['codec_type']=='audio']
     duration=float(probe['format']['duration'])
@@ -166,7 +173,7 @@ def polish(out):
     """Use approved typography while retaining measured, unchanged ASR timing."""
     data=json.loads((out/'transcription.json').read_text())
     assert not data['script_word_differences'],'Resolve actual speech differences before caption polishing'
-    approved=json.loads((ROOT/'tools/promo/brief.json').read_text())['narration']
+    approved=production_brief(out)['narration']
     raw=data['words'];words=[];index=0
     for token in approved.split():
         count=len(normalized(token));measured=raw[index:index+count]
@@ -237,7 +244,8 @@ def polish(out):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['captions','polish','critic']);p.add_argument('--video',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--asr-model',default='small.en');a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['captions','polish','critic']);p.add_argument('--video',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--asr-model',default='small.en');a=p.parse_args()
+    a.output=guarded_output(p,a.output);a.output.mkdir(parents=True,exist_ok=True)
     if a.action=='captions':transcribe(a.video,a.output,a.asr_model)
     elif a.action=='polish':polish(a.output)
     else:critique(a.video,a.output)

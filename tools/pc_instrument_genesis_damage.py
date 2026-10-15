@@ -14,7 +14,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
 from tools.extract_genesis_aftermath import record
-from tools.extract_genesis_newspapers import ROM_SHA
+from tools.extract_genesis_newspapers import ROM_SHA, pinned_unicorn
 from tools.source_guard import inside_source
 DESCRIPTORS=[0x9AD4,0x9AC4,0x9ACC,0x9ADC,0x9ABC]
 PC_ORIGINS=[(188,54),(206,38),(203,83),(251,50),(146,65)]
@@ -25,6 +25,7 @@ def decode(rom):
     from unicorn.m68k_const import (UC_CPU_M68K_M68000,UC_M68K_REG_SR,UC_M68K_REG_A0,
         UC_M68K_REG_A1,UC_M68K_REG_A7,UC_M68K_REG_PC)
     if hashlib.sha256(rom).hexdigest()!=ROM_SHA:raise ValueError('unsupported Genesis source')
+    pinned_unicorn()
     m=Uc(UC_ARCH_M68K,UC_MODE_BIG_ENDIAN);m.ctl_set_cpu_model(UC_CPU_M68K_M68000)
     m.mem_map(0,0x80000);m.mem_write(0,rom);m.mem_protect(0,0x80000,UC_PROT_READ|UC_PROT_EXEC)
     m.mem_map(0xFFFF0000,0x10000)
@@ -73,7 +74,7 @@ def main():
         for e in entries:
             data=e.pop('data');f=a.output/f"damage-{e['index']}-map.bin";f.write_bytes(data)
             e['map_file']=f.name;e['map_sha256']=hashlib.sha256(data).hexdigest()
-        report={'rom_sha256':ROM_SHA,'source_routine':'98ce..992a; five conditional map draws; original map decoder9afe',
+        report={'rom_sha256':ROM_SHA,'unicorn':pinned_unicorn(),'source_routine':'98ce..992a; five conditional map draws; original map decoder9afe',
             'images':entries,'scope':__doc__}
     (a.output/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
     print('GENESIS_STATUS_DAMAGE:',len(report['images']),'rendered' if a.render else 'decoded')

@@ -13,6 +13,12 @@ from pathlib import Path
 import struct
 import wave
 
+try:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source
+
 ROOT = Path(__file__).resolve().parents[1]
 ROM_HASH = "ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea"
 SFX_TABLE, SFX_COUNT = 0x5DE20, 19
@@ -165,6 +171,8 @@ def main():
     parser.add_argument("--rom", type=Path, default=ROOT / "GENESIS/M-1 Abrams Battle Tank (USA, Europe).md")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if inside_source(args.output, ROOT):
+        parser.error("output must be outside original sources")
     extract(args.rom, args.output)
 
 

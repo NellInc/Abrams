@@ -93,12 +93,18 @@ void fragment() {
 			// channels remain different. Their meaning is never inferred or moved.
 			float weight = clamp((chroma - 0.19) * 2.2, 0.0, 1.0);
 			vec3 accent;
+			// Light red (b ~0.33) has its own salmon ramp: on the red/brown ramp
+			// it lands within ~0.08 RGB of brown and the pair becomes unreadable.
+			// Blue-dominant ink keeps a lifted blue ramp instead of near-black teal.
 			if (source.r > source.g * 1.30 && source.r > source.b * 1.23) {
-				accent = mix(vec3(0.31, 0.09, 0.07), vec3(0.96, 0.58, 0.36), luma);
+				if (source.b > 0.2) accent = mix(vec3(0.62, 0.30, 0.24), vec3(1.0, 0.62, 0.50), luma);
+				else accent = mix(vec3(0.31, 0.09, 0.07), vec3(0.96, 0.58, 0.36), luma);
 			} else if (source.r > source.b * 1.35 && source.g > source.b * 1.25) {
 				accent = mix(vec3(0.34, 0.24, 0.09), vec3(0.97, 0.78, 0.39), luma);
 			} else if (source.g > source.r * 1.22 && source.g > source.b * 1.14) {
 				accent = mix(vec3(0.06, 0.23, 0.12), vec3(0.70, 0.92, 0.62), luma);
+			} else if (source.b > source.g * 1.5 && source.b > source.r * 1.5) {
+				accent = mix(vec3(0.13, 0.22, 0.42), vec3(0.60, 0.74, 0.95), luma);
 			} else {
 				accent = mix(vec3(0.06, 0.20, 0.22), vec3(0.58, 0.83, 0.82), luma);
 			}

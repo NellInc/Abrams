@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
+import errno
 import hashlib
 import os
 if os.name == "nt":
@@ -27,8 +29,10 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.inspect_shapes import inspect_shapes, primitive_vertices
     from tools.pc_render_state import static_faces_for_state
-    from tools.pc_session import PresentationSession
+    from tools.pc_session import PresentationSession, slim_sample
+    from tools.pc_render_trace import prewarm
     from tools.source_guard import inside_source
+    from tools.pc_trace_windows import window_bundle_schemas
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from pc_reference_core import PcReferenceCore, CORE_SHA256, KEYS, core_suffix
@@ -36,10 +40,21 @@ except ModuleNotFoundError as error:
     from inspect_scenarios import decode_resource
     from inspect_shapes import inspect_shapes, primitive_vertices
     from pc_render_state import static_faces_for_state
-    from pc_session import PresentationSession
+    from pc_session import PresentationSession, slim_sample
+    from pc_render_trace import prewarm
     from source_guard import inside_source
+    from pc_trace_windows import window_bundle_schemas
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _closed_pipe(error):
+    # Windows reports a write to a departed reader's pipe as EINVAL.
+    return isinstance(error, BrokenPipeError) or (isinstance(error, OSError) and error.errno == errno.EINVAL)
+
+
+class _ParentGone(Exception):
+    """The supervisor closed this worker's output pipe."""
 
 
 class FramePng:
@@ -52,7 +67,8 @@ class FramePng:
         if core.last_video is not None and core.last_video == self.video:
             return self.encoded
         image = io.BytesIO()
-        core.screenshot().save(image, format='PNG')
+        # Level 1: the host's per-frame critical path is CPU, not a local pipe's bytes.
+        core.screenshot().save(image, format='PNG', compress_level=1)
         self.encoded = base64.b64encode(image.getvalue()).decode('ascii')
         self.video = core.last_video
         return self.encoded
@@ -94,13 +110,14 @@ def frame_audit(core):
 
 
 def validate_command(command):
-    if not isinstance(command, dict) or command.get("op") not in ("step", "quit", "save_state", "load_state"):
-        raise ValueError("expected step, save_state, load_state or quit")
+    if not isinstance(command, dict) or command.get("op") not in ("step", "quit", "save_state", "load_state", "load_previous"):
+        raise ValueError("expected step, save_state, load_state, load_previous or quit")
     if command["op"] == "quit":
         if set(command) != {"op"}:
             raise ValueError("unexpected quit fields")
         return
-    if command["op"] in ("save_state", "load_state"):
+    # load_previous reads a numbered slot's overwritten archive (slots 1-5).
+    if command["op"] in ("save_state", "load_state", "load_previous"):
         if set(command) != {"op", "id", "slot"}:
             raise ValueError("unexpected checkpoint fields")
         if type(command["id"]) is not int or command["id"] < 0:
@@ -131,11 +148,13 @@ def main():
     p.add_argument("--content", type=Path, default=ROOT / ".runtime/pc-core/abrams-ref.zip")
     p.add_argument("--frame-audit", action="store_true", help="diagnostic hashes of paired original RAM and framebuffer; no memory dumps")
     p.add_argument("--loop-diagnostics", action="store_true", help="read-only 0000:0e85 samples, separate from framebuffer-paired presentation")
+    p.add_argument("--slim-samples", action="store_true", help="Play: omit allocated-object pools the presentation never draws")
     p.add_argument("--state-worker", action="store_true", help=argparse.SUPPRESS)
     p.add_argument("--local-resume", type=Path, help=argparse.SUPPRESS)
     args = p.parse_args()
     if args.state is None and args.backend != 'trace': p.error('cold boot requires the trace backend')
     if args.loop_diagnostics and args.backend != 'trace': p.error('loop diagnostics require the trace backend')
+    if args.slim_samples and args.backend != 'trace': p.error('slim samples require the trace backend')
     if not args.state_worker:
         try:
             from tools.pc_state_host import supervise
@@ -146,18 +165,32 @@ def main():
     # Core printf/log output must never corrupt the JSON channel.
     output = os.fdopen(os.dup(sys.stdout.fileno()), "w", buffering=1)
     os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
-    reader = SimStateReader(ROOT / "GAME/SIM.EXE")
-    shape_bytes = decode_resource((ROOT / "GAME/SHAPE.TBL").read_bytes())
-    shapes = inspect_shapes(shape_bytes)["shapes"]
     core = None
     session = None
     save_lock = None
 
     def send(message):
-        output.write(json.dumps(message, separators=(",", ":")) + "\n")
+        # Slimmed only on the wire: checkpoints keep the complete packet.
+        if args.slim_samples: message = slim_sample(message)
+        try:
+            output.write(json.dumps(message, separators=(",", ":")) + "\n")
+        except OSError as error:
+            if _closed_pipe(error): raise _ParentGone from error
+            raise
 
     try:
-        # The supervisor retains the inherited exclusive save lock.
+        # The supervisor retains the inherited exclusive save lock. Original-file
+        # faults are inside this try so their real cause reaches the player.
+        try:
+            reader = SimStateReader(ROOT / "GAME/SIM.EXE")
+            shape_bytes = decode_resource((ROOT / "GAME/SHAPE.TBL").read_bytes())
+            # Decode the pinned SIM sources now, before the core starts, so the
+            # first SIM bridge step never pays it. Reads files only, never the guest.
+            if args.backend == "trace": prewarm()
+        except FileNotFoundError as error:
+            name = Path(error.filename).name if error.filename else "file"
+            raise ValueError(f"Original game {name} is missing; import the original PC game again") from error
+        shapes = inspect_shapes(shape_bytes)["shapes"]
 
         pin, source_pin = CORE_SHA256, CORE_SHA256
         if args.backend == "trace":
@@ -170,14 +203,12 @@ def main():
                 raise ValueError("trace backend requires the scanout-aware source build")
             if manifest.get("audio_event_schema") != 1:
                 raise ValueError("Rebuild the local trace core for original audio-event support")
-            if manifest.get("text_event_schema") != 2:
-                raise ValueError("Rebuild the local trace core for original visible-text support")
+            # Visible-text, message identity and strut events: full-RAM (2/1/1)
+            # or AWB1 window-bundle (3/2/2) schemas, never a mixed build. The
+            # attached collector reads the same receipt by core hash.
+            window_bundle_schemas(manifest)
             if manifest.get("frontend_text_schema") != 1:
                 raise ValueError("Rebuild the local trace core for original menu-text support")
-            if manifest.get("message_event_schema") != 1:
-                raise ValueError("Rebuild the local trace core for original message identity support")
-            if manifest.get("strut_event_schema") != 1:
-                raise ValueError("Rebuild the local trace core for original strut attribution")
             if manifest.get("driver_overlay_schema") != 1:
                 raise ValueError("Rebuild the local trace core for original moving-driver overlay")
             if manifest.get("state_overlay_schema") != 1:
@@ -204,9 +235,12 @@ def main():
                 if error.name != 'tools': raise
                 from pc_state_store import atomic_write
             disk_path = args.saves / (args.content.stem + '.pure.zip')
-            disk = (args.local_resume / 'campaign.zip').read_bytes()
-            if disk: atomic_write(disk_path, disk)
-            elif disk_path.exists(): disk_path.unlink()
+            # A rollback whose overlay copy could not be written keeps the
+            # untouched overlay the previous worker flushed.
+            if (args.local_resume / 'campaign.zip').exists():
+                disk = (args.local_resume / 'campaign.zip').read_bytes()
+                if disk: atomic_write(disk_path, disk)
+                elif disk_path.exists(): disk_path.unlink()
             # Cold initialization can delete SIM.OUT. Reload the full selected
             # overlay into native memory before unserialize recreates handles.
             core.local_overlay('reload')
@@ -293,9 +327,11 @@ def main():
                 except Exception as error:
                     send({'type': 'capture_error', 'message': str(error)})
                     continue
+                # The capture is durable: a shutdown fault after this reply takes
+                # the supervisor's close-fault recovery instead of losing it.
+                send({'type': 'captured'})
                 if session: session.close(); session = None
                 core.close(); core = None
-                send({'type': 'captured'})
                 break
             validate_command(command)
             if command["op"] == "quit":
@@ -310,17 +346,20 @@ def main():
             else:
                 last_packet = packet("sample", command["id"])
             send(last_packet)
-    except BrokenPipeError:
+    except _ParentGone:
         pass  # parent closed its pipe; shut down only our own core
     except Exception as error:
-        send({"type": "error", "message": str(error)})
+        with contextlib.suppress(_ParentGone):
+            send({"type": "error", "message": str(error)})
         raise
     finally:
         if core:
             if session: session.close()
             core.close()
         if save_lock: save_lock.close()
-        output.close()
+        try: output.close()
+        except OSError as error:
+            if not _closed_pipe(error): raise
 
 
 if __name__ == "__main__":

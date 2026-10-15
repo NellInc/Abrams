@@ -4,7 +4,12 @@ The current app icon is based on the original PC box artwork, as requested.
 The local cover scan is `reference/manual-pages/scan-000.jpg`. Its composition,
 red sky, dark tank, crew and ivory/gold title treatment guide the restoration.
 The full restored cover is `abrams-cover-remastered.png`; the app uses the
-square adaptation `abrams-icon.png`. Both remain private derived assets.
+square adaptation `abrams-icon.png`. Both derive from Dynamix/Electronic Arts
+box art. The owner approved their public use for the README and project page
+(1 October 2026) and the browser edition (10 October 2026). The tracked,
+published copies live in `docs/images/`; this folder's PNGs are local working
+copies, ignored by Git and rejected by `tools.package.git_boundary`. The
+rights position is recorded in `docs/release-rights.md`.
 
 Built-in image generation restored the scan, removing paper damage and the
 obsolete blue specifications label. A second generative pass recomposed it

@@ -1,6 +1,7 @@
 """Mechanical asset checks, independent geometry fixtures plus local source audit."""
 from collections import Counter
 import copy
+import hashlib
 import json
 from pathlib import Path
 import struct
@@ -13,7 +14,9 @@ from tools.build_pc_modern_assets import (
     inset_patch, track_patch, triangulate, validate_model, wheel, octagonal_barrel,
     face_outline, surface_relief, rectangle, inset_outline, BRIDGE_DECKS, cross, sub, dot,
     VEHICLE_PAINT, TWO_TONE_SHAPES, DOOR_PAINT, BUILDING_RUINS, finish_colours, inside_source,
+    REGISTRY, REGISTRY_FIELDS, load_catalog, merge_catalog, registry_bytes, source_registry, split_catalog,
 )
+from tools.package.git_boundary import decoded_payload
 
 
 def edge_counts(triangles):
@@ -131,6 +134,23 @@ class GeometryTests(unittest.TestCase):
                 with mock.patch.object(Path,'mkdir',side_effect=AssertionError('wrote')),self.assertRaises(ValueError):
                     export(root/'game'/'pc-modern',{'models':[]})
         if (ROOT/'GAME').exists():self.assertTrue(inside_source(ROOT/'game'/'pc-modern'))
+
+    def test_split_catalogue_round_trips_without_source_structure(self):
+        primitive={'id':4,'prefix_bytes':[255,0,2],'vertices':[[0,0,0],[0,0,0],[1,0,0],[0,0,0]]}
+        model={'shape_index':0,'triangles':[],'selectors':[],'roots':[],'groups':[],'source_primitives':[primitive],
+               'opaque_commands':[],'visual_commands':[],'source_lines':[{'source_primitive':4,'source_groups':[2],
+               'vertices':[[0,0,0],[1,0,0]],'prefix_bytes':[255,0,2],'color':[1,2,3]}]}
+        result={'schema':1,'sources':{'SHAPE.TBL':'x'},'classes':[{'name':'A','raw_hex':'00'}],'models':[model]}
+        public,registry=split_catalog(copy.deepcopy(result))
+        self.assertIsNone(decoded_payload(json.dumps(public).encode()))
+        self.assertEqual(public['models'][0]['source_lines'],[{'source_primitive':4,'source_groups':[2],'color':[1,2,3]}])
+        self.assertEqual(public['classes'],[{'name':'A'}])
+        expected=copy.deepcopy(result);del expected['classes'][0]['raw_hex']
+        self.assertEqual(merge_catalog(public,registry),expected)
+        for field in REGISTRY_FIELDS:
+            bad=copy.deepcopy(public);bad['models'][0][field]=[]
+            with self.subTest(field=field),self.assertRaises(ValueError):merge_catalog(bad,registry)
+        with self.assertRaises(ValueError):merge_catalog(public,dict(registry,source_sha256='y'))
 
     def test_glb_is_valid_flat_shaded_raw_coordinate_container(self):
         triangles=[];add_face(triangles,[[0,0,0],[1,0,0],[0,1,2]],'olive',4,[2],'test')
@@ -485,5 +505,25 @@ class LocalSourceIntegrationTests(unittest.TestCase):
                 if m['triangles']:
                     p=f"models/{m['shape_index']:03d}.glb"
                     self.assertEqual((Path(tmp)/'a'/p).read_bytes(),(Path(tmp)/'b'/p).read_bytes())
+
+    def test_published_catalogue_omits_the_player_derived_source_registry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out=Path(tmp)/'a';expected=copy.deepcopy(self.result);export(out,expected)
+            raw=(out/'catalog.json').read_bytes();public=json.loads(raw)
+            self.assertIsNone(decoded_payload(raw))
+            self.assertFalse(any('raw_hex' in row for row in public['classes']))
+            for model in public['models']:
+                self.assertFalse(set(REGISTRY_FIELDS)&set(model))
+                for line in model['source_lines']:self.assertFalse({'vertices','prefix_bytes'}&set(line))
+            # The registry is a pure decode of the player's SHAPE.TBL, pinned by the catalogue.
+            registry=(out/REGISTRY).read_bytes()
+            self.assertEqual(registry,registry_bytes(source_registry((ROOT/'GAME/SHAPE.TBL').read_bytes())))
+            self.assertEqual(public['source_registry']['sha256'],hashlib.sha256(registry).hexdigest())
+            merged=load_catalog(out);del merged['source_registry']
+            for row in expected['classes']:del row['raw_hex']
+            self.assertEqual(merged,json.loads(json.dumps(expected)))
+            (out/REGISTRY).write_bytes(registry.replace(b'"schema":1',b'"schema":2',1))
+            with self.assertRaises(ValueError):load_catalog(out)
+        with self.assertRaises(ValueError):source_registry(b'\x02'+bytes(8))
 
 if __name__=='__main__':unittest.main()

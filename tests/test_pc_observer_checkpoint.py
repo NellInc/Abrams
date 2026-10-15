@@ -45,6 +45,9 @@ extern "C" void change_guest() { guest[123]^=1; }
 extern "C" void change_context() { abrams_trace_load^=1; }
 extern "C" void change_latch() { vga.latch.d^=1; }
 extern "C" unsigned guest_value() { return guest[123]; }
+extern "C" void strut_page(unsigned page) { abrams_strut_page = page; }
+extern "C" void mark_driver_seen() { abrams_driver_seen = true; }
+extern "C" bool driver_seen() { return abrams_driver_seen; }
 ''')
         binary = directory/'test.dylib'
         subprocess.run(['c++','-std=c++11','-shared','-fPIC','-I',str(ROOT/'tools/pc_core'),
@@ -54,6 +57,7 @@ extern "C" unsigned guest_value() { return guest[123]; }
         for name in ('save','load'):
             fn = getattr(cls.lib,'abrams_observer_checkpoint_'+name)
             fn.argtypes, fn.restype = [C.c_void_p,C.c_size_t],C.c_bool
+        cls.lib.driver_seen.restype = C.c_bool
         cls.size = cls.lib.abrams_observer_checkpoint_size()
 
     @classmethod
@@ -110,6 +114,20 @@ extern "C" unsigned guest_value() { return guest[123]; }
         self.lib.seed(0); before=self.save()
         self.assertFalse(self.load(corrupt))
         self.assertEqual(before,self.save())
+
+    def test_save_refuses_state_that_load_would_reject(self):
+        # A checkpoint that saves must restore; an unloadable page fails at capture.
+        self.lib.seed(0xffffffff); self.lib.strut_page(4096)
+        raw = C.create_string_buffer(self.size)
+        self.assertFalse(self.lib.abrams_observer_checkpoint_save(raw,self.size))
+        self.lib.strut_page(8192)
+        self.assertTrue(self.load(self.save()))
+
+    def test_load_clears_per_frame_driver_flag(self):
+        self.lib.seed(0xffffffff); original=self.save()
+        self.lib.mark_driver_seen()
+        self.assertTrue(self.load(original))
+        self.assertFalse(self.lib.driver_seen())
 
 
 if __name__=='__main__': unittest.main()

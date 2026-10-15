@@ -13,6 +13,8 @@ import json
 from pathlib import Path
 import struct
 
+ROOT = Path(__file__).resolve().parents[1]
+
 STUB_SHA256 = "a146eddf8f6523a9b05e070f126a755e5b5c4444181258faa3939010fd2d61b3"
 RELOC_OFFSET = 0x125
 NAMES = ("START", "BRIEF", "SIM", "END")
@@ -154,8 +156,8 @@ def main() -> int:
         from source_guard import inside_source
     try:
         source = args.root.resolve()  # Case, symlink and ".." aliases of the source directory count as inside it.
-        if inside_source(args.out, source.parent, (source.name,)):
-            raise ValueError("outputs must be outside original reference directory")
+        if inside_source(args.out, ROOT) or inside_source(args.out, source.parent, (source.name,)):
+            raise ValueError("outputs must be outside original sources and --root")
         # Validate the entire batch before writing any output.
         batch = []
         for name in NAMES:

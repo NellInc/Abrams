@@ -18,12 +18,6 @@ vec3 tactical_plume_finish(vec2 q, float coarse, float detail, float density, fl
         colour*=1.0-core*(0.13+0.12*(1.0-crown));
         colour+=vec3(0.024,0.014,0.004)*(coarse-0.5)*core;
         colour=mix(colour,vec3(0.49,0.49,0.47),rim*0.18);
-    } else if(kind>3.5) {
-        // Loamy low folds, sandy lifted crowns and thin warm scattering edges.
-        colour=mix(vec3(0.315,0.275,0.215),vec3(0.70,0.635,0.50),light);
-        colour*=1.0-core*(0.065+0.09*(1.0-crown));
-        colour+=vec3(0.027,0.019,0.008)*(coarse-0.5)*core;
-        colour=mix(colour,vec3(0.76,0.685,0.54),rim*0.20);
     }
     return clamp(colour,vec3(0.045),vec3(0.88));
 }

@@ -17,7 +17,9 @@ var active: Dictionary = {}
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	# The 1254px faces fill a 49x48 source cell, several times minified at
+	# usual window sizes; mipmaps give a filtered downscale instead of aliasing.
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	var shader_material := ShaderMaterial.new()
 	shader_material.shader = preload("res://scripts/pc_portrait_art.gdshader")
 	material = shader_material
@@ -41,6 +43,7 @@ func load_sources(root_path: String) -> bool:
 		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=definition[2]: return false
 		var art := Image.load_from_file(path)
 		if art==null or art.get_size()!=Vector2i(1254,1254): return false
+		art.generate_mipmaps()
 		var original: Dictionary = data.images[id]
 		var pixels: Array = original.pixels
 		var points: Array[Dictionary] = []

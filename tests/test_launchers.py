@@ -59,6 +59,25 @@ class LauncherTests(unittest.TestCase):
                                             check=True, text=True, capture_output=True)
                     self.assertEqual(json.loads(result.stdout), ['--path', str(root / 'godot'), *expected])
 
+    def test_relative_launch_ignores_cdpath(self):
+        # An inherited CDPATH must not redirect `cd "$(dirname "$0")"` to a
+        # same-named checkout elsewhere, nor print that path to stdout.
+        with tempfile.TemporaryDirectory(prefix='abrams cdpath ') as temp:
+            temp = Path(temp)
+            for side, word in [('work', 'REAL'), ('decoy', 'DECOY')]:
+                root = temp / side / 'Abrams'
+                (root / 'tools').mkdir(parents=True)
+                for name in ['PC Bridge.command', 'tools/godot.sh']:
+                    (root / name).write_text(f'#!/bin/sh\necho {word}\n')
+                    (root / name).chmod(0o755)
+            for launcher in ['Play.command', 'Art Review.command', 'Calibration Range.command']:
+                shutil.copy2(ROOT / launcher, temp / 'work/Abrams' / launcher)
+                with self.subTest(launcher=launcher):
+                    result = subprocess.run(['sh', 'Abrams/' + launcher], cwd=temp / 'work',
+                                            env=dict(os.environ, CDPATH=str(temp / 'decoy')),
+                                            check=True, text=True, capture_output=True)
+                    self.assertEqual(result.stdout, 'REAL\n')
+
     def test_missing_python_is_reported(self):
         with tempfile.TemporaryDirectory(prefix='abrams launch ') as temp:
             root = Path(temp)

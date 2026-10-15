@@ -29,7 +29,12 @@ generated firing/smoke calls. `--no-audio` explicitly disables this presentation
 [PC audio research](pc-audio-research.md) records coverage and remaining sounds.
 
 Arrows, numeric keypad, alphabetic keys, digits, F1 through F12, Enter, Escape,
-Space, Tab, Backspace and Shift/Ctrl/Alt retain their original key identities. In particular,
+Space, Backspace and Shift/Ctrl/Alt retain their original key identities. Tab is
+reserved for the remaster's 8x fast-forward toggle in Play, together with the
+Cmd (macOS) or Ctrl+Alt S/L/G checkpoint chords (`pc_play_menu.gd`
+`game_keys()`; see [play controls](play-controls.md)). Only non-Play diagnostic
+runs (`PC Bridge.command` without `--play`, or with `--compare`), which create no
+Play menu, forward Tab to the original. In particular,
 top-row 5 is distinct from keypad 5, so name entry does not become tank braking.
 Use keypad 5 to stop/brake, C for control mode, Space to fire, F1 through F4 for
 stations, Q for the original mission-quit dialog and Enter to select. Original
@@ -100,6 +105,70 @@ framebuffer fallback. Loaded SHAPE.TBL bytes must match the source before a SIM
 state can be reported; a mismatch during an observed draw is an error. Original
 modal writes remain protected by the scanline UI mask, including the fully
 opaque 64,000-pixel Q dialog.
+
+`--slim-samples` (trace backend only) is set by desktop Play
+(`pc_bridge_viewer.gd`: Play and not `--capture`). Captures and diagnostics keep
+the default, complete packet. A slim sample omits `state.world`, and reduces
+`draw_pass.world` to `window_origin`, `presentation_effects` and the `dynamic`
+actors whose pointers appear in `draw_pass.objects` with `dynamic_instance`
+true (`tools/pc_session.py` `slim_sample()`). Only the wire copy is slimmed:
+the checkpoint `resume.json` keeps the complete packet. The Web edition always
+sends slim samples (`web-prototype/browser_observer.py`).
+
+Working if: a Play or Web sample carries no `state.world`, and every
+`draw_pass.world.dynamic` pointer appears in `draw_pass.objects` with
+`dynamic_instance` true.
+
+### Observer events changed in the 15 October 2026 core
+
+The following source changed on 15 October 2026 in `tools/pc_core/` and
+`tools/build_pc_trace_core.py`. The core rebuilt and installed that day carries
+all of it: `trace_sha256`
+`37bff08762031c40fe5843e2be8dc98e6d5d777497284797590f7e6ec4fdc55e`,
+`trace_header_sha256` `ae4ab78203c2bb9b…`, `observer_checkpoint_header_sha256`
+`57b419c7dc3c964a…`, save format 9, text/message/strut event schemas 3/2/2. It
+replaces `b859afb1…`, which is retained under
+`.runtime/pc-core/previous/b859afb1…/` (see WORK_LEDGER, 15 October 2026):
+
+* SIM events 26 (text entry), 28 (message assignment) and 29 (strut draw) carry
+  AWB1 RAM window bundles (`tools/pc_trace_windows.py`) instead of a full
+  640 KiB snapshot: the 64 KiB DS window and the stack always, plus the loaded
+  font glyphs for 26 and the strut descriptor and planes for 29. Measured live,
+  the bundles are 10.1% of the full-snapshot bytes. Frontend event 26 keeps the
+  full 640 KiB, because frontend program identity reads outside DS. The host
+  expands each bundle to a zero-filled 640 KiB image, so a reader that strays
+  outside the sent windows fails closed and the original pixels show through.
+
+* Event 12 (VideoPresent) is delivered at the `retro_run` frame fence, before
+  the emulation thread is woken. Before this change it ran beside `video_cb`,
+  after the worker had been woken.
+* In frontend text mode (START/BRIEF/END) the core emits no 19, 24 or 31 masks,
+  only 10/11/12 plus 26/27/49-55. SIM event 31 is
+  empty (length 0) when no driver pixel was rasterised that frame; hosts already
+  treat an empty mask as all-zero.
+* Event 57: the original `0b4d:340b` background routine was called by a
+  non-world caller, for example the destroyed-GPS black panel at `0000:0c75`.
+  It carries no payload. The host (`tools/pc_render_trace.py`) leaves completed
+  passes, drawing pages and world backgrounds untouched. Events 15/16 are sent
+  only while world drawing is active.
+* Strut-table bitmap draws are armed only on display pages 0 and 8192. Off-page
+  draws used to reach `StrutDraws.finish` and raise `invalid completed strut
+  pixels`. They now emit no 29/30, keep ordinary bitmap ownership, and are not
+  counted in `source_draws` or `unsupported_layout`.
+* Observer checkpoint capture refuses a state that load would reject, and a
+  checkpoint load clears the driver-seen flag.
+
+[Inference] Changing these event contracts changed `trace_header_sha256`, so
+trace-half evidence captured with `b859afb1…` must be recaptured. Nell waived
+save-state compatibility for this rebuild ("No need for compatibility, it's not
+proliferated yet.", relayed by the lead on 15 October 2026), so slots saved with
+the previous core are not migrated.
+
+Working if: the manifest pins `37bff087…` with schemas 3/2/2; every live SIM
+26/28/29 packet equals the bundle cut from full guest RAM at that instant, and a
+collector fed bundles presents exactly what one fed full snapshots presents; a
+START frame carries no 19/24/31 payloads; and a destroyed-GPS frame keeps its
+completed world pass (not yet observed on this core).
 
 ## Filesystem finding and comparison boundary
 
@@ -181,12 +250,52 @@ restore; the replay test primes once before collecting its first sample.
 Keyboard callbacks and keyboard polling must both reflect held keys. The first
 probe incorrectly returned zero for every polled key; that was repaired and a
 120-poll hold regression test was added. Neutral-key snapshots are the current
-restore contract. Restoring a recorded held-key snapshot is rejected.
+restore contract. A `receipt.json` beside the state is required; a state without
+one is refused (`tools/pc_reference_core.py`). Restoring a recorded held-key
+snapshot is rejected.
 
-`tools/pc_bridge_host.py` accepts only bounded `step` commands and `quit` over
-inherited stdin/stdout pipes. It exposes no network listener, memory-write
-operation, arbitrary file operation or replacement simulation. Core logs use
-stderr. Godot uses [nonblocking process pipes](https://docs.godotengine.org/en/stable/classes/class_os.html#class-os-method-execute-with-pipe)
+A `--state` (snapshot) run pairs the RAM image with a fresh temporary overlay,
+`.snapshot-overlay-*`, created inside the locked saves directory and removed on
+exit. A snapshot pins RAM, not disk, so it never inherits disk writes from
+earlier runs. Checkpoint slots still persist in `saves/states`.
+
+Working if: two consecutive `--trace` runs start from identical disk state,
+whatever earlier runs wrote.
+
+`tools/pc_bridge_host.py` accepts five operations over inherited stdin/stdout
+pipes, each checked by `validate_command()` before the supervisor in
+`tools/pc_state_host.py` acts on it:
+
+* `step` (`id`, 1 to 600 `frames`, at most 16 distinct known `keys`), answered
+  by `sample` or `error`;
+* `save_state` (slot 1 to 5);
+* `load_state` (slot 0 to 5; slot 0 is the recovery slot and load-only);
+* `load_previous` (slot 1 to 5), which loads that slot's overwritten archive;
+* `quit` (no other fields).
+
+The checkpoint operations need the trace backend. Each is answered by one
+`state_result` with `id`, `success`, `message`, `slots`, and on success (or
+after a rollback) `restored`, the new worker's first sample with
+`timeline_reset: true`. `ready` also carries `slots` and `save_states`.
+The external pipe exposes no network listener, memory-write operation,
+arbitrary file operation or replacement simulation. The internal `_capture`
+operation passes only between the supervisor and its own `--state-worker`; the
+supervisor picks the capture directory under its slot store, and the external
+validator rejects `_capture`.
+
+All size, integrity and compatibility checks, including validation of the overlay
+as last flushed, precede a capture. A worker that dies during capture stops the
+session with a visible error unless its capture is complete (`resume.json`
+parses and `state.bin` is non-empty); a complete capture is recovered. An overlay
+rejected after the capture flush is still recovered by the rollback, which never
+revalidates it. A worker whose supervisor has gone (EPIPE, or EINVAL on Windows)
+shuts down quietly; any other output fault is reported.
+
+Working if: `python3 -m unittest tests.test_pc_save_states -v` passes, a `_capture`
+or out-of-range slot from the client is rejected, and a failed load leaves the
+session running from the recovery capture.
+
+Core logs use stderr. Godot uses [nonblocking process pipes](https://docs.godotengine.org/en/stable/classes/class_os.html#class-os-method-execute-with-pipe)
 with one request outstanding. If Godot exits or closes the pipe while a reply
 is outstanding, the supervisor waits five seconds, then kills only its own
 worker so the save lock is released. A `quit` or EOF with no reply outstanding

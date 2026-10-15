@@ -7,9 +7,11 @@ from unittest.mock import patch
 import wave
 
 from tools import audit_pc_audio as audit
+from tests._inputs import requires
 
 
 class AudioAuditTests(unittest.TestCase):
+    @requires('GAME')
     def test_entire_finite_source_denominator_is_covered(self):
         result=audit.source_inventory()
         self.assertEqual(len(result['sound_calls']),30)
@@ -20,6 +22,7 @@ class AudioAuditTests(unittest.TestCase):
         self.assertEqual(result['supplemental_bearing_takes'],104)
         self.assertEqual(result['missing_source_captions'],[])
 
+    @requires('GAME')
     def test_missing_sound_callsite_fails_denominator(self):
         with patch.dict(audit.SAMPLES,{},clear=True):
             with self.assertRaisesRegex(ValueError,'Unclassified'):

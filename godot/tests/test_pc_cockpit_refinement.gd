@@ -86,7 +86,7 @@ func run()->void:
 		var cost:float=(Time.get_ticks_usec()-start)/30000.0
 		timings.append({"station":station,"cached_ms":cost,"profiles":edge.profiles.duplicate(true)})
 		check(edge.build_count==builds,"station mesh reused on stable frames")
-		check(cost<30,"bounded cached outline CPU time")
+		check(cost<2,"bounded cached outline CPU time")
 		if native:
 			var result:=await snap();edge.hide();var before:=await snap();edge.show()
 			before.save_png(output.path_join(entry.stage+"-before.png"))

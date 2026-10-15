@@ -1,18 +1,31 @@
 from pathlib import Path
+import random
 import struct
 import unittest
 from tools.pc_fonts import decode_font,text_pixels
 from tools.pc_text_trace import TextRuns,TEXT_CALLS,MAX_CANDIDATES
+from tools.pc_trace_windows import expand_window_bundle,pack_window_bundle,sim_event_windows
+from tests._inputs import requires
 
 ROOT=Path(__file__).resolve().parents[1]
+CAPTURE=ROOT/'artifacts/pc-scanout-trace-02/first-render.bin'
 
 
+def windowed(event,ram,regs,windows=None):
+    """(full RAM with noise outside the native windows, expanded bundle)."""
+    windows=sim_event_windows(event,ram,regs) if windows is None else windows
+    noisy=bytearray(random.Random(event).randbytes(640*1024))
+    for base,length in windows:noisy[base:base+length]=ram[base:base+length]
+    return bytes(noisy),expand_window_bundle(pack_window_bundle(bytes(ram),windows))
+
+
+@requires('GAME')
 class TextTests(unittest.TestCase):
     def setUp(self):
         self.observer=TextRuns(ROOT/'GAME')
         self.palette=[[i*7,i*11,i*13] for i in range(16)]
 
-    def draw(self,text=b'READY ',caller=0x55DF,page=0,x=52,y=165,mode=0):
+    def draw(self,text=b'READY ',caller=0x55DF,page=0,x=52,y=165,mode=0,begin=None):
         ram=bytearray(640*1024);load=0x100;ds=(load+0x19E0)*16
         font=(ROOT/'GAME/6X6.FNT').read_bytes()
         for at,v in zip((0x364E,0x3662,0x3676,0x368A),font[:4]): ram[ds+at]=v
@@ -25,7 +38,7 @@ class TextTests(unittest.TestCase):
         pointer=0x6472;ram[ds+pointer:ds+pointer+len(text)+1]=text+b'\0'
         regs={'cs':load+0xF8D,'ds':ds//16,'ss':ds//16,'sp':0xF000}
         struct.pack_into('<5H',ram,ds+regs['sp'],caller,load,pointer,x,y)
-        self.observer.begin(bytes(ram),regs)
+        (begin or self.observer.begin)(bytes(ram),regs)
         w,h,ink=text_pixels(decode_font(font),text)
         pixels=bytes(14 if p else (3 if mode else 0) for p in ink)
         raw=struct.pack('<6H',x,y,w,h,page,caller)+pixels
@@ -142,6 +155,52 @@ class TextTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'entry/return differ'): self.observer.finish(bytes(bad))
         raw,_=self.draw()
         with self.assertRaisesRegex(ValueError,'pixels'): self.observer.finish(raw[:-1])
+
+    def test_window_bundle_gives_the_full_snapshot_result(self):
+        # The native SIM text entry may send only DS, the stack and the loaded
+        # glyph window; every other byte is noise here and zero in the bundle.
+        bundled=TextRuns(ROOT/'GAME')
+        def both(ram,regs):
+            noisy,expanded=windowed(26,ram,regs)
+            self.observer.begin(noisy,regs);bundled.begin(expanded,regs)
+            self.assertEqual(self.observer.pending,bundled.pending)
+        videos=[]
+        for args in ({},{'text':b'280','caller':0x3F58,'x':184,'y':112,'mode':1},{'x':319},{'text':b'LOAD  ','page':8192}):
+            raw,video=self.draw(begin=both,**args);videos.append(video)
+            self.observer.finish(raw);bundled.finish(raw)
+        self.assertEqual(self.observer.counts,bundled.counts)
+        self.assertEqual(self.observer.counts['unsupported_entries'],1)
+        for page in (0,8192):
+            full,windows=self.observer.scanout(page),bundled.scanout(page)
+            self.assertEqual(full,windows)
+            for video in videos:
+                self.assertEqual(self.present(full,video),
+                                 bundled.present(windows,video,320,200,self.palette))
+        self.assertEqual(self.present(self.observer.scanout(0),videos[0])[0]['text'],'READY ')
+
+    def test_window_bundle_without_the_glyph_window_stays_original_only(self):
+        def ds_and_stack(ram,regs):
+            _,expanded=windowed(26,ram,regs,sim_event_windows(26,ram,regs)[:2])
+            self.observer.begin(expanded,regs)
+        raw,_=self.draw(begin=ds_and_stack);self.observer.finish(raw)
+        self.assertEqual(self.observer.scanout(0),())
+        self.assertEqual(self.observer.counts['unsupported: loaded font differs from supplied native resources'],1)
+
+    @unittest.skipUnless(CAPTURE.exists(),'Requires the local SIM scanout capture')
+    def test_recorded_sim_ram_text_entry_matches_its_window_bundle(self):
+        from tools.pc_live_state import SimStateReader
+        ram=bytearray(CAPTURE.read_bytes())
+        load=SimStateReader(ROOT/'GAME/SIM.EXE').locate(bytes(ram))//16;ds=(load+0x19E0)*16
+        regs={'cs':load+0xF8D,'ds':load+0x19E0,'ss':load+0x19E0,'sp':0xFF00}
+        # The recorded DS supplies the real loaded font, driver, page and colours;
+        # only the call frame and its string are planted.
+        ram[ds+0x6472:ds+0x6479]=b'READY \0'
+        struct.pack_into('<5H',ram,ds+0xFF00,0x55DF,load,0x6472,52,165)
+        bundled=TextRuns(ROOT/'GAME');noisy,expanded=windowed(26,ram,regs)
+        self.observer.begin(noisy,regs);bundled.begin(expanded,regs)
+        self.assertIsNotNone(self.observer.pending[1])
+        self.assertEqual(self.observer.pending,bundled.pending)
+        self.assertEqual(self.observer.counts,bundled.counts)
 
 
 if __name__=='__main__': unittest.main()

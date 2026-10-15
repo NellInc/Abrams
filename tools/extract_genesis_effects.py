@@ -12,6 +12,12 @@ import json
 from pathlib import Path
 import struct
 
+try:
+    from tools.source_guard import recorded
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import recorded
+
 ROOT = Path(__file__).resolve().parents[1]
 ROM_HASH = "ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea"
 TABLE = 0x431BE
@@ -94,17 +100,17 @@ def export_effects(rom_path: Path, capture: Path, output: Path, palette_bank: in
         preview = im.resize((width * scale, height * scale), Image.Resampling.NEAREST)
         sheet.paste(preview, (x + 3, y + 18), preview)
     sheet.save(output / "contact-sheet.png")
-    manifest = {"source": str(rom_path), "rom_sha256": ROM_HASH,
+    manifest = {"source": recorded(rom_path, ROOT), "rom_sha256": ROM_HASH,
                 "directory_offset": TABLE, "data_offset": DATA_START,
                 "data_bytes": TABLE - DATA_START,
                 "format": "BE u16 width, u16 height, u32 pointer; row-major color/preserve u16 pairs; high nibble left",
-                "palette_capture": str(capture),
+                "palette_capture": recorded(capture, ROOT),
                 "palette_receipt_sha256": hashlib.sha256((capture / "receipt.json").read_bytes()).hexdigest(),
                 "palette_bank": palette_bank, "palette_rgb": palette,
                 "scope": "Native ROM pixels and explicit masks. Palette bank is an explicit extraction choice; native appearance requires separate visible-frame verification. No animation-timing or distribution claim.",
                 "images": images,
                 "files": {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-                          for p in sorted(output.iterdir()) if p.is_file()}}
+                          for p in sorted(output.iterdir()) if p.is_file() and p.name != "effects.json"}}
     (output / "effects.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
 
@@ -121,8 +127,8 @@ def main():
     except ModuleNotFoundError as error:
         if error.name != 'tools': raise
         from source_guard import inside_source
-    if inside_source(args.output, ROOT, ("GENESIS",)):
-        parser.error("output must be outside GENESIS")
+    if inside_source(args.output, ROOT):
+        parser.error("output must be outside original sources")
     manifest = export_effects(args.rom, args.capture, args.output, args.palette_bank)
     print(f"Extracted {len(manifest['images'])} original Genesis effects: {args.output}")
 

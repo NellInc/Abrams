@@ -3,6 +3,7 @@ import struct
 import unittest
 
 from tools.unpack_pc_executables import decode_runs, unpack, compare_independent
+from tests._inputs import requires
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = {
@@ -14,6 +15,7 @@ EXPECTED = {
 
 
 class PcExecutableTests(unittest.TestCase):
+    @requires('GAME')
     def test_original_corpus_matches_independent_decoded_hashes(self):
         for name, (size, count, digest) in EXPECTED.items():
             with self.subTest(name=name):
@@ -46,6 +48,7 @@ class PcExecutableTests(unittest.TestCase):
             with self.subTest(packed=packed, size=size), self.assertRaises(ValueError):
                 decode_runs(packed, size)
 
+    @requires('GAME')
     def test_truncated_and_unsupported_executable(self):
         original = (ROOT / "GAME/SIM.EXE").read_bytes()
         for size in (0, 2, 27, 512, len(original) - 1):
@@ -57,6 +60,7 @@ class PcExecutableTests(unittest.TestCase):
             with self.subTest(offset=offset), self.assertRaises(ValueError):
                 unpack(bytes(bad))
 
+    @requires('GAME')
     def test_bad_relocations_and_metadata(self):
         original = (ROOT / "GAME/BRIEF.EXE").read_bytes()
         for offset, value in ((0xDBE0 + 14, 0), (0xDBE0 + 6, 100),
@@ -67,6 +71,7 @@ class PcExecutableTests(unittest.TestCase):
             with self.subTest(offset=offset), self.assertRaises(ValueError):
                 unpack(bytes(bad))
 
+    @requires('GAME')
     def test_independent_comparison_checks_all_claims(self):
         decoded, report = unpack((ROOT / "GAME/BRIEF.EXE").read_bytes())
         relocs = b"".join(struct.pack("<HH", r["offset"], r["segment"])

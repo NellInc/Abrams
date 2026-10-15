@@ -7,7 +7,9 @@ from tools.pc_crew_voice import CrewBarks,SCRIPT,BEARINGS,DAMAGE,WARNINGS
 from tools.install_pc_crew_voice import check_take
 from tools.generate_crew_voice import validate_wav
 from tools.verify_pc_dialogue import verify
+PINS={'trace_sha256':'trace-core','baseline_sha256':'baseline'}  # distinct pinned cores for verify_pc_dialogue
 from tests import test_pc_session
+from tests._inputs import requires
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -26,6 +28,7 @@ class CrewTests(unittest.TestCase):
     def step(self,messages,status=None):
         return self.gate.advance({'messages':messages},status or self.status)
 
+    @requires('GAME')
     def test_warning_blocks_and_every_pointer_variant_match_visible_gate(self):
         fixture=json.loads((ROOT/'godot/tests/fixtures/pc_warning_voice_oracle.json').read_text())
         self.assertEqual(fixture['source_sha256'],hashlib.sha256((ROOT/'GAME/SIM.EXE').read_bytes()).hexdigest())
@@ -77,11 +80,11 @@ class CrewTests(unittest.TestCase):
         trace={'profile':'smoke-warnings','changes':changes,'audio_events':barks,
             'state_sha256':'same-state','state_core_sha256':'baseline',
             'frames':[{'index':i,'keys':keys[i],'ram_sha256':str(i),'video_sha256':str(i)} for i in range(1060)],
-            'final_state':{},'final_program':{'name':'SIM'},'text_epochs':[],
+            'final_state':{},'final_program':{'name':'SIM'},'text_epochs':[],'mode':'trace','core_sha256':'trace-core',
             'message_epochs':[{'assignments':[{'id':i} for i in [1,2,3]]}]}
-        baseline=copy.deepcopy(trace)|{'core_sha256':'baseline'}
-        self.assertTrue(all(verify(trace,baseline)['checks'].values()))
-        for fault in ('ram','video','keys','frame','mute','duplicate','missing','pointer','speaker','caption','snapshot','epoch'):
+        baseline=copy.deepcopy(trace)|{'mode':'baseline','core_sha256':'baseline'}
+        self.assertTrue(all(verify(trace,baseline,PINS)['checks'].values()))
+        for fault in ('ram','video','keys','frame','mute','duplicate','missing','pointer','speaker','caption','snapshot','epoch','self-comparison','mode'):
             bad=copy.deepcopy(trace)
             if fault in ('ram','video'):bad['frames'][700][fault+'_sha256']='changed'
             elif fault=='keys':bad['frames'][700]['keys']=['escape']
@@ -94,7 +97,9 @@ class CrewTests(unittest.TestCase):
             elif fault=='caption':bad['audio_events'][0]['text']='Invented warning'
             elif fault=='snapshot':bad['state_sha256']='changed'
             elif fault=='epoch':bad['message_epochs']=[]
-            self.assertFalse(all(verify(bad,baseline)['checks'].values()),fault)
+            elif fault=='self-comparison':bad['core_sha256']='baseline'
+            elif fault=='mode':bad['mode']='baseline'
+            self.assertFalse(all(verify(bad,baseline,PINS)['checks'].values()),fault)
 
     def test_damage_gate_reports_missing_or_short_epochs_instead_of_crashing(self):
         base={'changes':[],'audio_events':[],'state_sha256':'s','state_core_sha256':'c','frames':[],
@@ -143,6 +148,7 @@ class CrewTests(unittest.TestCase):
             for key,value in actual.items():self.assertEqual(entry[key],value)
             check_take(entry,entry['transcript_qa'],entry['number_delivery_qa'])
 
+    @requires('GAME')
     def test_all_damage_paths_match_original_oracle_and_once_only_visible_gate(self):
         fixture=json.loads((ROOT/'godot/tests/fixtures/pc_damage_voice_oracle.json').read_text())
         self.assertEqual(fixture['source_sha256'],hashlib.sha256((ROOT/'GAME/SIM.EXE').read_bytes()).hexdigest())

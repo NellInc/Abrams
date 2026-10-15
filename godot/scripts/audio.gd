@@ -44,12 +44,33 @@ func play(cue: String) -> void:
 	var stream := get_stream(cue)
 	if stream == null:
 		return
-	var p := effects[cursor % effects.size()]
-	cursor += 1
+	var p := effects[_effect_slot()]
 	p.stream = stream
 	p.volume_db = linear_to_db(volume * effects_volume * 0.6)
 	p.play()
 	_remember_playback(p)
+
+func _effect_slot() -> int:
+	# Prefer an idle player. When all are sounding, end the one closest to its
+	# natural end, so a burst of short cues cannot cut a long cannon/impact tail.
+	# The rotating cursor only breaks ties; cursor-1 is always the chosen slot.
+	var count := effects.size()
+	var chosen := -1
+	var least := INF
+	for i in count:
+		if not effects[i].playing:
+			chosen = i
+			break
+	if chosen<0:
+		for offset in count:
+			var i := (cursor+offset) % count
+			var p := effects[i]
+			var left := 0.0 if p.stream==null else p.stream.get_length()-p.get_playback_position()
+			if left<least:
+				least = left
+				chosen = i
+	cursor = chosen+1
+	return chosen
 
 func speak(cue: String) -> void:
 	last_voice = cue

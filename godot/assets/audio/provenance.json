@@ -38,6 +38,7 @@
     }
   },
   "voice_status": "Generative crew takes: eight Gemini 3.8, one authorized 3.1 fallback; transcription matched; listening review pending",
+  "script_sha256": "80b6f1b8259d3f6570873b1ea8169231a114f99aa89e16a2a7d7de960a0f6864",
   "voices": {
     "ready": {
       "role": "Commander",

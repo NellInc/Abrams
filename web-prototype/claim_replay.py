@@ -11,9 +11,14 @@ sys.path.insert(0, str(ROOT))
 
 from tools.pc_strut_trace import StrutDraws
 from tools.pc_plate_trace import PlateLoads
+from tools.pc_trace_windows import build_window_bundles, event_ram
 
 
-def check(frames):
+def check(frames, window_bundles=None):
+    if window_bundles is None:
+        # The packet format the generated Web core under test declares.
+        window_bundles = build_window_bundles(
+            json.loads((ROOT / 'web-prototype/.generated/build-info.json').read_text()))
     plates = PlateLoads(ROOT / 'GAME')
     struts = StrutDraws(ROOT / 'GAME', plates)
     matched = 0
@@ -61,7 +66,7 @@ def check(frames):
             cursor += length
             if event == 29:
                 names = ('ax', 'bx', 'cx', 'dx', 'si', 'di', 'bp', 'sp', 'cs', 'ds', 'es', 'ss')
-                struts.begin(raw, dict(zip(names, registers)), offset)
+                struts.begin(event_ram(raw, window_bundles), dict(zip(names, registers)), offset)
             elif event == 30:
                 result = struts.finish(raw, offset)
                 if result: claim((offset, result[0], result[1]))

@@ -64,7 +64,11 @@ func game_keys(held: Array) -> Array:
 	if focus_release_keys:
 		if preload("res://scripts/pc_keyboard.gd").focus_rearmed(get_window()): focus_release_keys=false
 		else:
-			if held.is_empty(): focus_release_keys=false
+			# One neutral sample satisfies every quarantine: a reader that took
+			# window focus must not need a second all-keys-up frame.
+			if held.is_empty():
+				focus_release_keys=false
+				release_keys=false
 			return []
 	if release_keys:
 		if held.is_empty(): release_keys=false

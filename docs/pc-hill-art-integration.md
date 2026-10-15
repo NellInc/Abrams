@@ -231,6 +231,11 @@ presentation, state and audio metadata equal the earlier native capture. Only
 the terrain counters differ, with 11 rather than one selected hill/plateau faces.
 Vehicles still have zero textured polygons.
 
+[15 October 2026 note: the `pc-radio-native-02` 26,142-check total counted one
+constant-true `vehicle_art` check per frame. The tests now count it once per run (`rejected vehicle panels
+never attached (N frames)`), so a rerun reports fewer checks. Re-quote from the
+next `VALIDATE_LIVE=1 ./tools/validate.sh` run.]
+
 The before/after composite comparison changes 234,616 pixels in the first radio
 view, all inside the gunner viewport. The other two radio views and final frame
 also change only within that viewport. An initial check incorrectly required

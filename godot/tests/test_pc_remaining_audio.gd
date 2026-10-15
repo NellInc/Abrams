@@ -28,8 +28,14 @@ func run()->void:
 		id+=1
 		var event:Dictionary={"id":id,"frame":id,"epoch":1,"ip":0x9107,"return_ip":source.return_ip,"value":source.request,"backend":0,"enabled":true,
 			"kind":"sound","sample":source.sample,"voice":null}
+		# Silence earlier rows first, so a still-sounding previous sample cannot
+		# stand in for a request whose own sample failed to load or play.
+		for player in audio.effects:player.stop()
+		var expected=audio.get_stream(source.sample)
+		check(expected!=null,"isolated sample stream loads: "+source.sample)
 		check(audio.apply_audio(packet(id,event)),"original additional request accepted")
-		check(audio.effects[(audio.cursor-1)%audio.effects.size()].playing,"isolated sample starts: "+source.sample)
+		var started:Array=audio.effects.filter(func(player):return player.playing)
+		check(started.size()==1 and expected!=null and started[0].stream==expected and audio.effects[(audio.cursor-1)%audio.effects.size()]==started[0],"isolated sample starts: "+source.sample)
 	check(await audio.drain_for_shutdown(),"new samples drain")
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_REMAINING_AUDIO: %d checks, %d errors"%[checks,errors.size()])

@@ -4,13 +4,21 @@ import argparse,html,json,re,wave
 from pathlib import Path
 import opentimelineio as otio
 from v3_audio import sha,write
+from output_guard import guarded_output
 
 ROOT=Path(__file__).resolve().parents[2]
 def duration(p):
     with wave.open(str(p)) as w:return w.getnframes()/w.getframerate()
 def frame(t):return round(t*30)/30
 
-def make(out):
+V2_BASE=ROOT/'artifacts/promo-20260930-v2/motion/index.html'
+def make(out,base_html=V2_BASE):
+    # Resolve the base composition before anything is read or written.
+    if not base_html.exists():raise SystemExit(f'Base composition {base_html} is missing; pass --base-html <v2 motion/index.html>.')
+    if base_html.resolve()==(out/'motion/index.html').resolve():raise SystemExit('--base-html must be the v2 composition, not this revision output (its v3 CSS would be appended twice).')
+    base_styles=re.search(r'<style>(.*?)</style>',base_html.read_text(),re.S)
+    if not base_styles or '.logo-bug{' not in base_styles.group(1):raise SystemExit(f'{base_html} does not carry the v2 styles; pass the v2 composition.')
+    if '.speed-options{' in base_styles.group(1):raise SystemExit(f'{base_html} already carries the v3 styles; pass the v2 composition.')
     media=out/'motion/media';b=json.loads((out/'approved-script.json').read_text())
     v5=b.get('revision')=='v5';v4=b.get('revision') in ['v4','v5']
     files=b.get('narration_files',[f'narration-v3-part-{i}-dry.wav' for i in range(3)])
@@ -99,7 +107,7 @@ def make(out):
     add('closing',54,60,body,'endcard',['cover.png'] if v4 else ['cover.png','game-logo.png'],'Six-second endcard with one cover logo, Nell Watson credit, game requirement, URL and memorial.')
     assert len(shots)==(20 if v5 else (21 if v4 else 24))
     assert all(abs(a['start']+a['duration']-z['start'])<1e-7 for a,z in zip(shots,shots[1:]))
-    styles=re.search(r'<style>(.*?)</style>',(ROOT/'artifacts/promo-20260930-v2/motion/index.html').read_text(),re.S).group(1)
+    styles=base_styles.group(1)
     styles+='''.end-copy{top:55px}.end-logo{height:270px}.end-copy h2{margin:10px 0 20px}.end-copy p{margin:13px 0}.end-copy .credit{font:35px Barlow;color:#c4ab76;margin:18px 0 25px}.end-copy .dedication{font-size:29px}.crew-copy h1{font-size:75px}.crew-copy p{font-size:47px}.speed-options{position:absolute;left:95px;top:210px;display:flex;gap:35px;font:60px Plex;color:#eee8d7}.speed-options span{padding:15px 28px;background:#141915e8;border:2px solid #c4ab76}.source-label{max-width:360px}'''
     styles+='.speed-options{left:100px;top:250px;flex-direction:column;gap:15px;font-size:45px}.speed-options span{padding:12px 22px}'
     if v4:
@@ -115,4 +123,4 @@ def make(out):
     print('V3_COMPOSITION_READY',len(shots),'shots',segments[-1]['end'],'last-source-end')
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args();make(a.output.resolve())
+    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--base-html',type=Path,default=V2_BASE);a=p.parse_args();make(guarded_output(p,a.output),a.base_html)

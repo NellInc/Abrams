@@ -166,6 +166,7 @@ func elevation_to(point: Vector2) -> float:
 
 func _select_target() -> void:
 	var candidates: Array[int] = []
+	# Provisional sight cone: selection_half_angle both horizontally around turret and vertically around elevation.
 	for i in targets.size():
 		if targets[i].alive and pos.distance_to(targets[i].pos) <= float(rules.lock_range) and absf(angle_difference(turret, bearing_to(targets[i].pos))) <= float(rules.selection_half_angle) and absf(elevation - elevation_to(targets[i].pos)) <= float(rules.selection_half_angle):
 			candidates.append(i)
@@ -273,7 +274,8 @@ func _valid_snapshot(saved: Dictionary) -> bool:
 	for key in required:
 		if not saved.has(key):
 			return false
-	if saved.version != SNAPSHOT_VERSION or saved.range_id != range_data.id or not (saved.seed is int or _integer_between(saved.seed, -9007199254740991, 9007199254740991)):
+	# Types are checked before any comparison; JSON round trips turn integers into floats, so numbers stay numeric checks.
+	if not _integer_between(saved.version, SNAPSHOT_VERSION, SNAPSHOT_VERSION) or not saved.range_id is String or saved.range_id != range_data.id or not (saved.seed is int or _integer_between(saved.seed, -9007199254740991, 9007199254740991)):
 		return false
 	if not _valid_position(saved.pos) or not _number_between(saved.heading, -PI, PI) or not _number_between(saved.turret, -PI, PI) or not _number_between(saved.speed, -float(rules.max_reverse_speed), float(rules.max_forward_speed)):
 		return false
@@ -281,11 +283,11 @@ func _valid_snapshot(saved: Dictionary) -> bool:
 		return false
 	if not _number_between(saved.elevation, float(rules.min_elevation), float(rules.max_elevation)) or not _integer_between(saved.zoom_level, 0, 2):
 		return false
-	if saved.zoom != (saved.zoom_level > 0):
-		return false
 	for key in ["control_hull", "thermal", "zoom", "locked"]:
 		if not saved[key] is bool:
 			return false
+	if saved.zoom != (saved.zoom_level > 0):
+		return false
 	if not _number_between(saved.fuel, 0, 100) or not _number_between(saved.hull, 0, 100) or not _integer_between(saved.smoke_count, 0, int(rules.smoke_count)):
 		return false
 	if not saved.ammo is Array or saved.ammo.size() != 4:
@@ -305,7 +307,7 @@ func _valid_snapshot(saved: Dictionary) -> bool:
 			if not target.has(key):
 				return false
 		for key in ["id", "name", "kind", "team"]:
-			if target[key] != source[key]:
+			if typeof(target[key]) != typeof(source[key]) or target[key] != source[key]:
 				return false
 		if not _valid_position(target.pos) or target.pos != source.pos or not _number_between(target.hp, 0, float(source.hp)) or not target.alive is bool or target.alive != (target.hp > 0):
 			return false

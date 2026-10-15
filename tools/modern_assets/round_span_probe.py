@@ -21,6 +21,7 @@ from tools.modern_assets.native_round_hook import NativeRoundHook
 from tools.pc_vehicle_catalog import ROOT,source_catalog
 from tools.inspect_shapes import primitive_vertices
 from tools.inspect_scenarios import decode_resource
+from tools.source_guard import inside_source
 
 SITES={0x1446:20,0x1495:20,0x14c4:16,0x1573:18,0x15c2:18,0x15f1:14,0x125f:14}
 
@@ -97,7 +98,8 @@ def run():
         run_until(m,cs*16+0x31a6,cs*16+0xff00,1000000)
         form=c.current['round_forms'][0];expected={}
         for span in form['spans']:
-            for px in range(span['left'],span['right']):expected[span['y']*320+px]=span['color']
+            # A dithered span records 'colors' as [even x, odd x] by absolute screen x.
+            for px in range(span['left'],span['right']):expected[span['y']*320+px]=span['colors'][px&1] if 'colors' in span else span['color']
         if pixels!=expected:
             mismatches=[(k,pixels.get(k),expected.get(k)) for k in sorted(set(pixels)|set(expected)) if pixels.get(k)!=expected.get(k)]
             raise ValueError(f'round spans differ shape{index}/depth{depth}/fill{fill}: {mismatches[:12]}, actualrange{(min(pixels),max(pixels)) if pixels else None}, expectedrange{(min(expected),max(expected)) if expected else None}, spans{form["spans"][:5]}')
@@ -114,6 +116,7 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output-dir',type=Path,default=ROOT/'local-art/pc-modern')
     args=parser.parse_args()
+    if inside_source(args.output_dir,ROOT,('GAME','GENESIS','reference')):parser.error('--output-dir must be outside original GAME, GENESIS and reference')
     report,fixture=run();directory=args.output_dir
     directory.mkdir(parents=True,exist_ok=True)
     (directory/'round-span-proof.json').write_text(json.dumps(report,indent=2)+'\n')

@@ -89,8 +89,13 @@ Consequently a key press alone never triggers remastered firing audio.
 Protocol 4 carries an `audio` envelope, now schema 3 for visible-readiness, crew and radio message events.
 The native sound-event layout is unchanged. The tracing build manifest
 advertises `audio_event_schema: 1`; the live host refuses an older local tracing
-build with a rebuild instruction and also requires `text_event_schema: 2` and
-`message_event_schema: 1`.
+build with a rebuild instruction. It also requires the text, message and strut
+event schemas to be either 2/1/1 (each SIM event 26/28/29 carries the full
+640 KiB conventional RAM) or 3/2/2 (each carries an AWB1 RAM window bundle,
+`tools/pc_trace_windows.py`). The core installed on 15 October 2026
+(`trace_sha256` `37bff087…`) declares 3/2/2; in two 720-frame live runs its
+bundles were 10.1% of the full-snapshot bytes. Frontend event 26 still sends the
+full 640 KiB.
 Protocol 2 remains the silent historical
 static-view backend.
 
@@ -141,6 +146,19 @@ python3 tools/verify_pc_audio_trace.py \
 ./tools/godot.sh --script res://tests/test_pc_audio_bridge.gd -- \
   --output "$PWD/artifacts/pc-audio-native-01"
 ```
+
+Since 15 October 2026 the verifiers accept only a `mode: trace` report against a
+`mode: baseline` report from a distinct core, with both core hashes matching
+`.runtime/pc-core/abrams-trace.json` (`--manifest` overrides it). The trace run's
+`trace_header_sha256` must match that receipt; dialogue traces captured before
+the header was recorded are exempt. After a trace-core rebuild only the trace
+halves need recapture: a baseline stays valid while `baseline_sha256` is
+unchanged. Audio reports must carry `audio_states` unless `verify_pc_audio_trace`
+is run with `--legacy-no-loop-states`; `verify_pc_readiness` has no legacy flag
+and refuses reports without `audio_states`.
+
+Working if: verifying a report against itself, or two trace runs, fails
+`core_pins_distinct_and_match_receipt`.
 
 Capture output directories are fresh per run. The snapshot is a bounded mission
 probe, not a campaign/save package. Disk-dependent lifecycle comparison uses the
@@ -370,13 +388,20 @@ python3 tools/verify_pc_readiness.py \
   --output "$PWD/artifacts/pc-readiness-native-03"
 ```
 
+`verify_pc_readiness` applies the same core and header rules as
+`verify_pc_audio_trace` (see above) and refuses reports without `audio_states`.
+
 
 ## Fully displayed original crew messages, 2026-09-27
 
 Original message assignment and visible text drawing are separate boundaries.
 A read-only native event 28 observes the completed setters at main CS:3d0c,
 3d6a, 3d8e, 3db0 and 3dd2. Its payload is the same twelve-register snapshot and
-640 KiB conventional RAM used by the existing text observer. Original near-call
+conventional-RAM image used by the existing text observer. Until 15 October 2026
+that image was the full 640 KiB (`message_event_schema: 1`). The core installed
+that day (`message_event_schema: 2`) sends an AWB1 bundle of the 64 KiB DS window
+and the 10-byte stack window instead, which the host expands to a zero-filled
+640 KiB image (`tools/pc_trace_windows.py`). Original near-call
 code, registers, RAM and timing remain unchanged. Local disassembly is retained
 as `artifacts/pc-message-original-disassembly-01.txt`.
 
@@ -484,6 +509,11 @@ message RGB hashes match and the Genesis cockpit, portrait and scalable type
 are active. Receipt `pc-warning-native-02/report.json` records 7,549 checks;
 native process and original child exit 0. No gameplay mix was recorded.
 
+[15 October 2026 note: the `pc-warning-native-02` 7,549-check total counted one
+constant-true `vehicle_art` check per frame. The tests now count it once per run (`rejected vehicle panels
+never attached (N frames)`), so a rerun reports fewer checks. Re-quote from the
+next `VALIDATE_LIVE=1 ./tools/validate.sh` run.]
+
 Generation uses Gemini 3.8 Flash TTS. The source catalogue now totals 392
 message performances. The warning masters, blind wording comparison, narrow
 M1/M one recognition-format correction and reproducible source/native checks
@@ -542,6 +572,11 @@ is consumed and the 98 post-restore/pre-retrieval frames stay silent. The native
 process and its source child exit 0. Full validation
 `validation-20260928T115653Z` passes all 42 stages. Per-cue synthetic playback adds
 229 checks without claiming seven independent live radio occurrences.
+
+[15 October 2026 note: the `pc-radio-native-01` 26,142-check total counted one
+constant-true `vehicle_art` check per frame. The tests now count it once per run (`rejected vehicle panels
+never attached (N frames)`), so a rerun reports fewer checks. Re-quote from the
+next `VALIDATE_LIVE=1 ./tools/validate.sh` run.]
 
 ## Remaining source requests and presentation transport
 

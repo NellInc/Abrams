@@ -203,26 +203,31 @@ def information_text(game, capture, name):
     pairs=[(colour,(0,0,0)) for colour in colours]
     if name=='crew': pairs += [((0,0,0),colour) for colour in colours]
     source=Image.open(capture/(name+'.png')).convert('RGB');rgb=source.tobytes()
-    runs=[];covered=set()
+    # Accepted rects lie in rows 0..174, so a needle row never ends past this.
+    limit=320*175*3
+    runs=[];occupied=bytearray(320*175)
     for word in words:
         for face,font in fonts.items():
             w,h,bits=text_pixels(font,word)
             if w>320: continue
             row=max(range(h),key=lambda y:sum(bits[y*w:(y+1)*w]))
             for fg,bg in pairs:
-                pattern=bytes(c for bit in bits for c in (fg if bit else bg))
-                needle=pattern[row*w*3:(row+1)*w*3];at=rgb.find(needle)
+                fgb,bgb=bytes(fg),bytes(bg)
+                needle=b''.join(fgb if bit else bgb for bit in bits[row*w:(row+1)*w])
+                at=rgb.find(needle,0,limit)
+                if at<0: continue
+                pattern=[b''.join(fgb if bit else bgb for bit in bits[r*w:(r+1)*w]) for r in range(h)]
                 while at>=0:
                     pixel=at//3;x=pixel%320;y=pixel//320-row
-                    if at%3==0 and 0<=y and y+h<=175 and x+w<=320 and source.crop((x,y,x+w,y+h)).tobytes()==pattern:
-                        coords={(sx,sy) for sy in range(y,y+h) for sx in range(x,x+w)}
-                        if not covered.intersection(coords):
-                            covered |= coords
+                    if (at%3==0 and 0<=y and y+h<=175 and x+w<=320 and
+                            all(rgb[((y+r)*320+x)*3:((y+r)*320+x+w)*3]==pattern[r] for r in range(h))):
+                        if not any(b'\1' in occupied[(y+r)*320+x:(y+r)*320+x+w] for r in range(h)):
+                            for r in range(h): occupied[(y+r)*320+x:(y+r)*320+x+w]=b'\1'*w
                             runs.append({'text':word.decode('ascii'),'font':face,'font_sha256':font['sha256'],
                                          'rect':[x,y,w,h],'cell':[font['width'],h],
                                          'source_foreground':list(fg),'source_background':list(bg),
                                          'foreground':list(fg),'background':list(bg)})
-                    at=rgb.find(needle,at+1)
+                    at=rgb.find(needle,at+1,limit)
     if name=='crew':
         palette={(0,170,0):(238,238,238),(255,255,85):(238,238,65),
                  (85,255,255):(65,238,238),(255,85,85):(238,0,0),(170,85,0):(205,101,32)}

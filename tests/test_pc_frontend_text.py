@@ -8,8 +8,10 @@ from tools.pc_fonts import decode_font,text_pixels
 from tools.pc_text_trace import TextRuns
 from tools.unpack_pc_executables import unpack
 from tests.test_pc_session import program_ram
+from tests._inputs import requires
 ROOT=Path(__file__).resolve().parents[1]
 
+@requires('GAME')
 class FrontendTextTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.sources=FrontendSources()
@@ -129,5 +131,86 @@ class FrontendTextTests(unittest.TestCase):
         self.assertIsNone(self.sources.visible_cursor(ram,changed,palette))
         changed=bytearray(ram);changed[0x60100]^=1
         self.assertIsNone(self.sources.visible_cursor(changed,video,palette))
+
+def reference_runs(candidates,raw,palette,cursor=None):
+    """The former per-pixel classifier, kept as an exact oracle."""
+    from tools.pc_frontend_text import cursor_cells
+    from tools.pc_pixel_bytes import bgrx_rect_rgb
+    found={};covered=cursor_cells(cursor);palette_by_color={}
+    for index,(red,green,blue) in enumerate(palette):palette_by_color.setdefault((red<<16)|(green<<8)|blue,index)
+    for item,pixels,ink in candidates:
+        x,y,w,h=item['rect'];cell=item['cell_size'][0];groups=[]
+        for i,char in enumerate(item['text']):
+            colours=[set(),set()]
+            for dy in range(h):
+                for dx in range(cell):
+                    if (x+i*cell+dx,y+dy) in covered:continue
+                    colours[ink[dy*w+i*cell+dx]].add(struct.unpack_from('<I',raw,((y+dy)*320+x+i*cell+dx)*4)[0]&0xffffff)
+            if len(colours[0])==1 and not colours[1]:
+                bg=next(iter(colours[0]));bg_rgb=[bg>>16,(bg>>8)&255,bg&255]
+                if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==x+i*cell and groups[-1]['uniform_background_rgb']==bg_rgb:
+                    groups[-1]['text']+=char;groups[-1]['rect'][2]+=cell
+                continue
+            if len(colours[0])!=1 or len(colours[1])!=1:continue
+            bg=next(iter(colours[0]));fg=next(iter(colours[1]))
+            if bg==fg or fg not in palette_by_color:continue
+            value=item|{'text':char,'rect':[x+i*cell,y,cell,h],'foreground':palette_by_color[fg],
+                'uniform_background_rgb':[bg>>16,(bg>>8)&255,bg&255],
+                'basis':'completed original string and exact full current glyph cell; original highlight colours retained'}
+            if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==value['rect'][0] and all(groups[-1][k]==value[k] for k in ('foreground','uniform_background_rgb')):
+                groups[-1]['text']+=char;groups[-1]['rect'][2]+=cell
+            else:groups.append(value)
+        for value in groups:
+            value['pixel_sha256']=hashlib.sha256(bgrx_rect_rgb(raw,320,200,value['rect'])).hexdigest()
+            key=(tuple(value['rect']),value['font_sha256'],value['text'])
+            if key not in found or value['draw_sequence']>found[key]['draw_sequence']:found[key]=value
+    return sorted(found.values(),key=lambda r:r['draw_sequence'])
+
+class VisibleRunEquivalenceTests(unittest.TestCase):
+    def frame(self,rng):
+        import base64
+        from collections import OrderedDict
+        palette=[[i*13,i*11,i*7] for i in range(16)]
+        video=bytearray(320*200*4);candidates=[]
+        for sequence in range(1,9):
+            cell,h,n=rng.choice([(8,8,5),(6,6,4),(8,6,3)]);w=cell*n
+            x,y=rng.randrange(0,320-w),rng.randrange(0,200-h)
+            ink=bytes(rng.random()<0.4 if rng.random()<0.9 else 0 for _ in range(w*h))
+            item={'text':''.join(rng.choice('AB C') for _ in range(n)),'rect':[x,y,w,h],'cell_size':[cell,h],
+                  'draw_sequence':sequence,'font_sha256':'f','kind':'frontend'}
+            for i in range(n):
+                fg,bg=rng.sample(range(16),2) if rng.random()<0.8 else (3,3)
+                for dy in range(h):
+                    for dx in range(cell):
+                        c=fg if ink[dy*w+i*cell+dx] else bg
+                        if rng.random()<0.01:c=rng.randrange(16)
+                        at=((y+dy)*320+x+i*cell+dx)*4
+                        video[at:at+4]=bytes(palette[c][::-1]+[255])
+            candidates.append((item,bytes(len(ink)),ink))
+        item=rng.choice(candidates)[0]
+        cx=min(max(item['rect'][0]+rng.randrange(-8,8),0),304)
+        cy=min(max(item['rect'][1]+rng.randrange(-8,8),0),185)
+        cursor={'rect':[cx,cy,16,15],'indices':base64.b64encode(bytes(rng.random()<0.5 for _ in range(240))).decode()}
+        return tuple(candidates),video,palette,cursor,OrderedDict()
+
+    def test_row_classifier_and_memo_equal_per_pixel_reference(self):
+        import random
+        rng=random.Random(20261015)
+        for trial in range(40):
+            candidates,video,palette,cursor,memo=self.frame(rng)
+            for pointer in (None,cursor):
+                expected=reference_runs(candidates,bytes(video),palette,pointer)
+                self.assertEqual(visible_runs(candidates,bytes(video),320,200,palette,pointer),expected)
+                self.assertEqual(visible_runs(candidates,bytes(video),320,200,palette,pointer,memo),expected)
+                hit=visible_runs(candidates,bytes(video),320,200,palette,pointer,memo)
+                self.assertEqual(hit,expected)
+                # Memo results are copies; mutating published runs never leaks back.
+                for run in hit:run['rect'][0]=-1;run['text']='?'
+                self.assertEqual(visible_runs(candidates,bytes(video),320,200,palette,pointer,memo),expected)
+            # Any changed pixel inside a candidate invalidates its memo entry.
+            item=candidates[trial%len(candidates)][0];x,y=item['rect'][:2]
+            video[(y*320+x)*4]^=0x5a
+            self.assertEqual(visible_runs(candidates,bytes(video),320,200,palette,cursor,memo),
+                             reference_runs(candidates,bytes(video),palette,cursor))
 
 if __name__=='__main__':unittest.main()

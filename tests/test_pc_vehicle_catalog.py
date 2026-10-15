@@ -2,7 +2,9 @@ from pathlib import Path
 import tempfile
 import unittest
 from tools.pc_vehicle_catalog import source_catalog, mesh_reference, obj_reference, export
+from tests._inputs import requires
 
+@requires('GAME')
 class VehicleCatalogTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.catalog,cls.shapes=source_catalog()

@@ -115,7 +115,7 @@ class MiscasedOutputTests(unittest.TestCase):
                 with self.subTest(out=out):
                     code, stderr = run_main('pc_bearing_oracle', ['--root', str(root), '--out', str(out)])
                     self.assertEqual(code, 2, stderr)
-                    self.assertIn('output must be outside original reference directory', stderr)
+                    self.assertIn('output must be outside original sources and --root', stderr)
                     self.assertFalse(out.parent.exists())
 
     def test_reference_inventory_refuses_miscased_root(self):
@@ -126,7 +126,7 @@ class MiscasedOutputTests(unittest.TestCase):
             manifest = source.parent / 'ref' / 'm.json'
             code, stderr = run_main('reference_inventory', ['--root', str(source), '--manifest', str(manifest)])
             self.assertEqual(code, 2, stderr)
-            self.assertIn('manifest must be outside reference directory', stderr)
+            self.assertIn('manifest must be outside original sources and --root', stderr)
             self.assertEqual(sorted(p.name for p in source.iterdir()), ['a.bin'])
             # A neighbour is not over-blocked.
             neighbour = source.parent / 'Ref-reports' / 'm.json'

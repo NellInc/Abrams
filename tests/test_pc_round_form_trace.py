@@ -5,6 +5,7 @@ import struct
 import unittest
 from types import SimpleNamespace
 from tools.pc_render_trace import Collector
+from tests._inputs import requires
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -23,13 +24,14 @@ class RoundFormTraceTests(unittest.TestCase):
         if c.error:raise c.error
     def begin(self,c,radius=15):
         self.event(c,8,bytes.fromhex('1c1e001d'))
-        fields=[1,25372,100,radius,160,100,32,13,287,109,0,0,0x101,0x1e1c,0x1d00]
+        fields=[1,25372,100,radius,160,100,32,13,287,109,0,0x0302,0x101,0x1e1c,0x1d00]
         self.event(c,46,struct.pack('<15H',*fields))
     def span(self,c,y=100,left=150,width=20,patterns=(2,2),**overrides):
         v=[1,25372,100,y,left,width,0,*patterns]
         for i,value in overrides.items():v[int(i)]=value
         self.event(c,48,struct.pack('<9H',*(x&65535 for x in v)))
 
+    @requires('GAME')
     def test_order_clipping_solid_color_and_return(self):
         c=self.collector();c.current['draw_order']=[{'kind':'polygon','index':0}]
         self.begin(c);self.span(c,left=280,width=20)
@@ -42,13 +44,37 @@ class RoundFormTraceTests(unittest.TestCase):
         self.assertEqual(c.passes[-1]['objects'][0]['round_forms'][0]['status'],'observed')
         self.assertEqual(c.passes[-1]['unsupported'],[])
 
+    @requires('GAME')
     def test_actual_call_pattern_words_become_exact_palette_runs(self):
         c=self.collector();self.begin(c)
         self.span(c,y=99,left=40,width=4,patterns=(0x0304,0x0506))
         self.span(c,y=100,left=40,width=4,patterns=(0x0304,0x0506))
-        self.assertEqual([s['color'] for s in c.current['round_forms'][0]['spans']],[3,4,3,4,5,6,5,6])
-        self.assertTrue(all(s['right']==s['left']+1 for s in c.current['round_forms'][0]['spans']))
+        spans=c.current['round_forms'][0]['spans']
+        # One record per dithered span, colours indexed by absolute x parity.
+        self.assertEqual(spans,[{'y':99,'left':40,'right':44,'colors':[3,4]},
+                                {'y':100,'left':40,'right':44,'colors':[5,6]}])
+        self.assertEqual([s['colors'][x&1] for s in spans for x in range(s['left'],s['right'])],
+                         [3,4,3,4,5,6,5,6])
+        # An odd left edge keeps the absolute phase rather than restarting it.
+        self.span(c,y=101,left=41,width=3,patterns=(0x0304,0x0506))
+        self.assertEqual(spans[-1],{'y':101,'left':41,'right':44,'colors':[3,4]})
 
+    @requires('GAME')
+    def test_round_form_colors_use_polygon_order(self):
+        # Packed word is DS:359D | DS:359E<<8; polygons publish [359E, 359D].
+        c=self.collector();self.begin(c)
+        self.assertEqual(c.current['round_forms'][0]['colors'],[3,2])
+
+    @requires('GAME')
+    def test_equal_parity_patterns_publish_one_run_per_span(self):
+        c=self.collector();self.begin(c)
+        self.span(c,y=99,left=40,width=6,patterns=(0x0303,0x0505))
+        self.span(c,y=100,left=40,width=6,patterns=(0x0303,0x0505))
+        self.span(c,y=101,left=40,width=1,patterns=(0x0304,0x0506))
+        self.assertEqual(c.current['round_forms'][0]['spans'],[{'y':99,'left':40,'right':46,'color':3},
+            {'y':100,'left':40,'right':46,'color':5},{'y':101,'left':40,'right':41,'color':3}])
+
+    @requires('GAME')
     def test_near_plane_rejection_is_distinct_from_incomplete(self):
         c=self.collector();self.event(c,8,bytes.fromhex('1c1e001d'));self.event(c,47)
         self.assertEqual(c.current['round_forms'][0]['status'],'rejected-before-raster')
@@ -56,6 +82,7 @@ class RoundFormTraceTests(unittest.TestCase):
         c=self.collector();self.begin(c);self.event(c,4,offset=0)
         self.assertEqual(c.passes[-1]['unsupported'],[{'kind':'incomplete_round_form','pointer':100}])
 
+    @requires('GAME')
     def test_radius_cap_and_offscreen_spans(self):
         c=self.collector();self.begin(c,128)
         form=c.current['round_forms'][0]
@@ -65,6 +92,7 @@ class RoundFormTraceTests(unittest.TestCase):
         c=self.collector();self.begin(c,65535)
         self.assertEqual(c.current['round_forms'][0]['radius'],0)
 
+    @requires('GAME')
     def test_malformed_or_stale_callbacks_fail_closed(self):
         for case in ('missing','owner','page','command','after_return','nested','width','length'):
             c=self.collector()
@@ -80,6 +108,7 @@ class RoundFormTraceTests(unittest.TestCase):
                 else:self.event(c,48,b'\0')
             self.assertIsNone(c.active);self.assertIsNone(c.current)
 
+    @requires('GAME')
     def test_detach_clears_pending_and_native_hook_is_stateless(self):
         c=self.collector();self.begin(c)
         c.detach(SimpleNamespace(pause_at_frame_end=lambda:None,core=SimpleNamespace(abrams_trace_configure=lambda *a:None)))

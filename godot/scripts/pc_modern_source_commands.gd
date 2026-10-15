@@ -21,8 +21,19 @@ static func round_runs(form: Dictionary, frame: Dictionary) -> Array:
 		var y := int(span.get("y",-32768))
 		var left := maxi(int(span.get("left",0)),int(frame.clip[0]))
 		var right := mini(int(span.get("right",0)),int(frame.clip[2])+1)
+		if y<int(frame.clip[1]) or y>int(frame.clip[3]) or right<=left: continue
+		var pattern = span.get("colors",null)
+		if pattern is Array:
+			# A dithered span: colors are [even x, odd x] by absolute screen x.
+			if pattern.size()!=2: continue
+			var even := int(pattern[0])
+			var odd := int(pattern[1])
+			if even<0 or even>15 or odd<0 or odd>15: continue
+			for x in range(left,right):
+				result.append({"points":[Vector2(x,y),Vector2(x+1,y),Vector2(x+1,y+1),Vector2(x,y+1)],"color":even if (x&1)==0 else odd})
+			continue
 		var color := int(span.get("color",-1))
-		if y<int(frame.clip[1]) or y>int(frame.clip[3]) or right<=left or color<0 or color>15: continue
+		if color<0 or color>15: continue
 		result.append({"points":[Vector2(left,y),Vector2(right,y),Vector2(right,y+1),Vector2(left,y+1)],"color":color})
 	return result
 

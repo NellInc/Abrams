@@ -96,7 +96,7 @@ def run():
             rows.append({'resource':'SIM.EXE','caption':caption,**finish(m,events,health,pointer,0x3cd4)})
     m=machine(0);events=observe(m);call(m,0x3c46,65535)
     if events or struct.unpack('<H',m.mem_read(ds+0x94e,2))[0]:raise ValueError('original no-message sentinel queued radio')
-    return {'source_sha256':SIM_SHA256,'unpack':unpacked,'engine':'unicorn-2.1.4/x86-16',
+    return {'source_sha256':SIM_SHA256,'unpack':unpacked,'engine':f'unicorn-{unicorn.__version__}/x86-16',
         'resources':resources,'rows':rows,'no_message_sentinel':'silent','scope':__doc__}
 
 

@@ -18,6 +18,12 @@ import urllib.error
 import urllib.request
 import wave
 
+try:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source
+
 ROOT = Path(__file__).resolve().parents[1]
 PREFERRED = "gemini-3.8-flash-tts"
 FALLBACK = "gemini-3.1-flash-tts-preview"
@@ -102,6 +108,22 @@ def validate_wav(raw):
             "sha256": hashlib.sha256(raw).hexdigest()}
 
 
+# The Gemini key item both voice tools read; one place to repoint it (e.g. to a project-scoped item).
+KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT = "aiguardians-google-ai", "gemini-api-key"
+
+
+def http_error(prefix, error, limit=2000):
+    """A RuntimeError carrying the API's (truncated) JSON error body, chained to the HTTPError.
+
+    HTTPError bodies and reprs carry no request headers, so the x-goog-api-key never appears.
+    """
+    try:
+        body = error.read(limit).decode("utf-8", "replace").strip()
+    except OSError:
+        body = ""
+    return RuntimeError(f"{prefix} HTTP {error.code}" + (f": {body}" if body else "") + "; no automatic retry")
+
+
 def keychain_secret(service, account):
     result = subprocess.run(["security", "find-generic-password", "-s", service,
                              "-a", account, "-w"], stdout=subprocess.PIPE,
@@ -138,8 +160,8 @@ def generate(args):
             with urllib.request.urlopen(request, timeout=180) as response:
                 data = json.load(response)
         except urllib.error.HTTPError as error:
-            # No response bodies, headers or request representations in logs.
-            raise RuntimeError(f"Gemini returned HTTP {error.code}; generation stopped without retry") from None
+            # The error body names the failing field or quota; the request (and its key header) is never logged.
+            raise http_error("Gemini generation stopped:", error) from error
         raw = decode_audio(data, args.model)
         metrics = validate_wav(raw)
         with (args.output / f"voice_{name}.wav").open("xb") as destination:
@@ -161,9 +183,12 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cue", action="append")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--keychain-service", default="aiguardians-google-ai")
-    parser.add_argument("--keychain-account", default="gemini-api-key")
-    generate(parser.parse_args())
+    parser.add_argument("--keychain-service", default=KEYCHAIN_SERVICE)
+    parser.add_argument("--keychain-account", default=KEYCHAIN_ACCOUNT)
+    args = parser.parse_args()
+    if inside_source(args.output, ROOT):
+        parser.error("output must be outside original sources")
+    generate(args)
 
 
 if __name__ == "__main__":

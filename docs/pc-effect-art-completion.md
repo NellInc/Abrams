@@ -117,18 +117,22 @@ reapplied the original coarse pixel silhouette to every authored effect. The
 previous native effect test exercised the ordinary presentation and therefore
 missed this Modern-only restriction.
 
-The ownership pass now retains original sprite coverage and unions the verified
-donor's alpha-at-least-0.5 silhouette at the same object painter slot. Its quad
+Since 15 October 2026 Modern effect ownership is exactly the original opaque
+runs at the same painter slot, the same as every other bitmap. The authored donor
+draws only inside that coverage; donor alpha beyond the original opaque pixels is
+discarded, so outer contours keep the original source-pixel steps, and no earlier
+actor visible through a transparent original pixel can be hidden. The quad still
 uses the mapping's original bounds, clipping, atlas registration and identity
-gates. Later objects still overwrite ownership. Original coverage is retained
-so an authored transparent hole cannot reveal a previously hidden Modern actor.
-Round-command ownership keeps its separate flag. No simulation state or timing
-is added, and the original bitmap fallback remains available.
+gates. Later objects still overwrite ownership. Round-command ownership keeps its
+separate flag. No simulation state or timing is added, and the original bitmap
+fallback remains available. (The earlier union with the donor's alpha-at-least-0.5
+silhouette was removed under the fidelity boundary; see WORK_LEDGER, 15 October
+2026.)
 
 The native effect test accepts `--modern` to exercise all 64 bindings with the
 real Modern catalogue. It compares actual pixels with independent bilinear
-samples, checks retained original coverage, and counts new contour pixels outside
-the coarse source mask. Both painter orders, clipping, source packet preservation,
+samples, checks retained original coverage, and counts changed pixels outside
+the coarse source mask, requiring zero. Both painter orders, clipping, source packet preservation,
 recorded phase selection and unknown-palette fallback remain covered.
 
 The exact resource identities are established, while the gameplay names of every
@@ -143,11 +147,19 @@ from visual resemblance. The correction applies to every verified bitmap.
 ```
 
 Local artifacts: `artifacts/modern-environment-polish-20260929/effects/`.
-Working if: Modern exposes authored high-resolution contours within the same
-source rectangle, preserves original ownership under alpha holes and later
-occluders, and passes the existing source identity and phase checks.
+Superseded 2026-10-15 (the donor-alpha ownership union was removed under the
+fidelity boundary): Working if: Modern exposes authored high-resolution contours
+within the same source rectangle, preserves original ownership under alpha holes
+and later occluders, and passes the existing source identity and phase checks.
 
-Native validation completed for Modern at 1x and 5x and ordinary presentation at 5x.
+Superseded 2026-10-15, same reason: native validation completed for Modern at 1x
+and 5x and ordinary presentation at 5x.
 All 64 variants remain visible. The Modern 5x run records 24,537 authored contour
 pixels outside the coarse source mask, 206,550 retained original ownership pixels,
 and maximum RGB error 1 across 628,987 independent samples, with zero errors.
+
+Working if: the `--native --native-scale 5 --modern` run reports
+`modern_contour_pixels` 0 and `retained_source_pixels` > 0 across all 64
+bindings, with source identity and phase checks unchanged. Native re-capture
+under the new rule is pending; headless `effect_ownership_contract` and
+`test_pc_effect_inventory` evidence is reported by the modern fix cluster.

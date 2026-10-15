@@ -17,11 +17,13 @@ from unicorn.x86_const import (UC_X86_INS_OUT, UC_X86_REG_CS, UC_X86_REG_DS,
     UC_X86_REG_ES, UC_X86_REG_SS, UC_X86_REG_SP, UC_X86_REG_AX, UC_X86_REG_BX,
     UC_X86_REG_CX, UC_X86_REG_DX, UC_X86_REG_DI, UC_X86_REG_EFLAGS)
 try:
+    from tools.source_guard import inside_source
     from tools.pc_bearing_oracle import cpu, set_registers, run_until
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.pc_materials import read_materials, material_pixel
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from pc_bearing_oracle import cpu, set_registers, run_until
     from pc_live_state import SimStateReader, SIM_SHA256
     from pc_materials import read_materials, material_pixel
@@ -88,6 +90,7 @@ def main():
     p.add_argument('--capture', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
+    if inside_source(args.output,ROOT): p.error('output must be outside original sources')
     ram = args.capture.read_bytes()
     result = verify(ram) | {'sim_sha256': SIM_SHA256, 'capture_sha256': hashlib.sha256(ram).hexdigest(),
         'scope': 'original span instructions; observed mode-2 VGA bit-mask writes; isolated colour/coverage cases'}

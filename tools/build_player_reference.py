@@ -10,6 +10,7 @@ import hashlib
 import html
 import json
 import math
+import os
 from pathlib import Path
 from reportlab.pdfgen import canvas
 from reportlab import rl_config
@@ -19,22 +20,27 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import ParagraphStyle
+try:
+    from tools.build_pc_modern_assets import load_catalog
+except ModuleNotFoundError:
+    from build_pc_modern_assets import load_catalog
 
 ROOT=Path(__file__).resolve().parents[1]
 REF=ROOT/'docs/player-reference'
 PDF=ROOT/'output/pdf'
 ESC=html.escape
 rl_config.useA85=0  # binary streams: ASCII85 would add a quarter to every embedded image
+rl_config.invariant=1  # fixed dates and document /ID: unchanged content rebuilds to identical bytes
 BG='#111a21'; INK='#17242b'; CREAM='#f4ead4'; MUTED='#bec7c8'; RED='#b84638'; GOLD='#e4b879'
 SHORTCUTS=[
- ('Quick save, slot 1','Cmd+S','Ctrl+Alt+S'),
+ ('Quick save, slot 1 (press again within four seconds to overwrite an existing save)','Cmd+S','Ctrl+Alt+S'),
  ('Quick load, slot 1','Cmd+L','Ctrl+Alt+L'),
  ('Undo last load','Cmd+Shift+L','Ctrl+Alt+Shift+L'),
  ('Cycle graphics','Cmd+G','Ctrl+Alt+G'),
  ('Toggle 8x / normal speed','Tab','Tab'),
 ]
-GRAPHICS_NOTE='Graphics offers EGA, EGA Upscaled (original colours), Genesis (optional ROM), Genesis Upscaled, Modern (Modernized) and Tactical. HUD Style chooses Restored or Tactical independently.'
-SHORTCUT_NOTE='Desktop macOS uses Command. Windows, Linux and the browser use Control + Alt. These remaster shortcuts remain separate from original game commands.'
+GRAPHICS_NOTE='Graphics offers EGA, EGA Upscaled (original colours), Genesis (optional ROM), Genesis Upscaled, Modern (Modernized) and Tactical, the default view. HUD Style chooses Tactical (default) or Restored independently.'
+SHORTCUT_NOTE='Desktop macOS uses Command. Windows, Linux and the browser use Control + Alt. These remaster shortcuts remain separate from original game commands. On Windows keyboard layouts where AltGr+S, L or G types a character, use the Session or Graphics menu instead.'
 QUALITY_NOTE='Restore full-quality defaults returns to 4x MSAA and 16x anisotropic filtering, keeping the selected graphics mode, HUD and audio mix.'
 MODEL_NAMES={'M1A1 Abrams':'M1-A1','M60A3':'M60a3','M2 Bradley':'M2','Mi-24 Hind':'HIND','FST-1':'F-ST','BTR':'BTR-70'}
 SPEC_LABELS={'introduced_year':'Introduced','combat_weight_tons':'Weight (t)','length_m':'Length (m)','width_m':'Width (m)','height_m':'Height (m)','maximum_speed_kmh':'Maximum speed (km/h)','primary_armament':'Primary weapon','secondary_armament':'Secondary weapon','reload_seconds':'Reload (s)','range_m':'Range (m)','armor':'Armour','overall_threat':'Threat'}
@@ -126,8 +132,26 @@ def model_polygons(model,width=640,height=245):
     return [([(ox+(x-xmin)*scale,oy+(y-ymin)*scale) for x,y in points],color) for _,points,color in sorted(faces,key=lambda r:r[0])]
 
 
-def illustrations(data):
-    catalogue=json.loads((ROOT/'local-art/pc-modern/catalog.json').read_text())
+def stage_commit(staged):
+    """Write every staged reference file only after all renderers succeeded, each via an atomic replace."""
+    for path,content in staged.items():
+        temporary=path.with_name('.'+path.name+'.tmp')
+        temporary.write_bytes(content.encode('utf-8') if isinstance(content,str) else content)
+        os.replace(temporary,path)
+
+
+def modern_catalogues():
+    """(published rows, rows merged with the player-derived source-shapes.json).
+
+    Pins hash the published rows; the studies draw the merged geometry, whose
+    source-line vertices live only in the derived registry.
+    """
+    published=json.loads((ROOT/'local-art/pc-modern/catalog.json').read_text())
+    return published,load_catalog(ROOT/'local-art/pc-modern')
+
+
+def illustrations(data,staged):
+    published,catalogue=modern_catalogues()
     shapes=model_shapes(catalogue); manifest=[]
     for row in data['vehicles']:
         name=MODEL_NAMES.get(row['name'],row['name']);index=shapes[name]
@@ -135,9 +159,9 @@ def illustrations(data):
         polygons=model_polygons(catalogue['models'][index])
         markup=''.join(('<polyline fill="none" stroke-width="1.4" stroke="#{:02x}{:02x}{:02x}" points="'.format(*color) if len(pts)==2 else '<polygon fill="#{:02x}{:02x}{:02x}" points="'.format(*color))+' '.join(f'{x:.2f},{245-y:.2f}' for x,y in pts)+'"/>' for pts,color in polygons)
         svg=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 245" role="img"><title>{ESC(row["name"])}: current Modern mesh study</title>{markup}</svg>'
-        (REF/filename).write_text(svg,encoding='utf-8')
-        manifest.append({'name':row['name'],'shape_index':index,'svg':filename,'triangles':sum(len(pts)==3 for pts,_ in polygons),'lines':sum(len(pts)==2 for pts,_ in polygons),'model_sha256':hashlib.sha256(json.dumps(catalogue['models'][index],sort_keys=True).encode()).hexdigest()})
-    (REF/'illustrations.json').write_text(json.dumps({'catalog_sha256':hashlib.sha256((ROOT/'local-art/pc-modern/catalog.json').read_bytes()).hexdigest(),'kind':'static orthographic studies of current Modern mesh geometry','vehicles':manifest},indent=2)+'\n')
+        staged[REF/filename]=svg
+        manifest.append({'name':row['name'],'shape_index':index,'svg':filename,'triangles':sum(len(pts)==3 for pts,_ in polygons),'lines':sum(len(pts)==2 for pts,_ in polygons),'model_sha256':hashlib.sha256(json.dumps(published['models'][index],sort_keys=True).encode()).hexdigest()})
+    staged[REF/'illustrations.json']=(json.dumps({'catalog_sha256':hashlib.sha256((ROOT/'local-art/pc-modern/catalog.json').read_bytes()).hexdigest(),'kind':'static orthographic studies of current Modern mesh geometry','vehicles':manifest},indent=2)+'\n')
     return catalogue,shapes
 
 
@@ -214,7 +238,7 @@ class Book:
     def para(self,text,x,y,width,size=10,color=INK):
         style=ParagraphStyle('p',parent=self.style,fontSize=size,leading=size*1.4,textColor=HexColor(color))
         p=Paragraph(text,style);_,h=p.wrap(width,self.h)
-        assert y-h>=47,('Page overflow',self.number,text[:55],y,h)
+        if y-h<47:raise ValueError(f'Page overflow on page {self.number}: {text[:55]!r} at y={y:.0f}, height {h:.0f}')
         p.drawOn(self.c,x,y-h);return y-h-8
     def heading(self,text,x,y,size=18):
         self.c.setFont('Barlow',size);self.c.setFillColor(HexColor(INK));self.c.drawString(x,y,text);return y-16
@@ -227,7 +251,7 @@ def key_rows(b, rows, x, y, width, key_width=92):
         dp=Paragraph(ESC(action),ParagraphStyle('action',fontName='Helvetica',fontSize=10,leading=14,textColor=HexColor(INK)))
         _,kh=kp.wrap(key_width-10,b.h);_,dh=dp.wrap(width-key_width-14,b.h)
         h=max(kh,dh)+14
-        assert y-h>=47,('Key row overflow',key,y,h)
+        if y-h<47:raise ValueError(f'Key row overflow: {key!r} at y={y:.0f}, height {h:.0f}')
         b.c.setFillColor(HexColor('#e5e6db'));b.c.roundRect(x-5,y-h+5,key_width,h-5,4,fill=1,stroke=0)
         kp.drawOn(b.c,x+2,y-kh-4);dp.drawOn(b.c,x+key_width+10,y-dh-4)
         y-=h
@@ -413,7 +437,7 @@ def field_pdf(data,catalog,shapes):
     b.finish()
 
 
-def native_maps():
+def native_maps(staged):
     """Render authored SVG diagrams with their labels for Godot's SVG decoder.
 
     The canonical SVG stays vector in HTML and PDF. Godot omits SVG text, so
@@ -429,15 +453,14 @@ def native_maps():
         name=Path(row['file']).stem
         book=Book(destination/(name+'.pdf'),row['name'],(1130,868))
         pdf_image(book,row['file'],0,868,1130,868);book.finish()
-        prefix=REF/name
-        subprocess.run([poppler,'-singlefile','-scale-to','2400','-png',str(destination/(name+'.pdf')),str(prefix)],check=True)
-        row['native_file']=name+'.png'
+        subprocess.run([poppler,'-singlefile','-scale-to','2400','-png',str(destination/(name+'.pdf')),str(destination/name)],check=True)
+        row['native_file']=name+'.png';native=(destination/row['native_file']).read_bytes();staged[REF/row['native_file']]=native
         source=next(r for r in provenance['maps'] if r['name']==row['name'])
         source['native_file']=row['native_file']
-        source['native_png_sha256']=hashlib.sha256((REF/row['native_file']).read_bytes()).hexdigest()
+        source['native_png_sha256']=hashlib.sha256(native).hexdigest()
         source['native_render']='2400-pixel ReportLab/Poppler rendering of the same authored SVG, including its labels'
-    (REF/'visuals.json').write_text(json.dumps(visuals,indent=2)+'\n')
-    (REF/'maps-provenance.json').write_text(json.dumps(provenance,indent=2)+'\n')
+    staged[REF/'visuals.json']=json.dumps(visuals,indent=2)+'\n'
+    staged[REF/'maps-provenance.json']=json.dumps(provenance,indent=2)+'\n'
 
 
 def main():
@@ -447,11 +470,13 @@ def main():
     args=parser.parse_args()
     REF.mkdir(parents=True,exist_ok=True);PDF.mkdir(parents=True,exist_ok=True)
     data=json.loads((REF/'manual-content.json').read_text())
-    assert len(data['missions'])==8 and len(data['vehicles'])==16
-    assert next(v for v in data['vehicles'] if v['name']=='M113')['allegiance']=='FRIENDLY'
+    if len(data['missions'])!=8 or len(data['vehicles'])!=16:raise ValueError('manual content must hold 8 missions and 16 vehicles')
+    if next(v for v in data['vehicles'] if v['name']=='M113')['allegiance']!='FRIENDLY':raise ValueError('M113 must stay FRIENDLY')
     pdfmetrics.registerFont(TTFont('Barlow',str(ROOT/'godot/assets/fonts/BarlowCondensed-SemiBold.ttf')))
-    # Preflight before any reference file is rewritten, so a failure never leaves a half-updated set.
-    if args.render_maps:native_maps()
+    # Render everything (SVG, JSON, HTML, PDFs, map PNGs) into memory or output/pdf first and write
+    # docs/player-reference only after every renderer succeeded, so a failure never leaves a half-updated set.
+    staged={}
+    if args.render_maps:native_maps(staged)
     else:
         for row in json.loads((REF/'visuals.json').read_text())['maps']:
             if not (REF/row.get('native_file','')).is_file():
@@ -461,16 +486,16 @@ def main():
         raw=(ROOT/'local-art/pc-modern/catalog.json').read_bytes()
         built=json.loads((REF/'illustrations.json').read_text()).get('catalog_sha256') if (REF/'illustrations.json').is_file() else None
         if built!=hashlib.sha256(raw).hexdigest():raise SystemExit('Modern catalogue changed since the model studies were built; rerun without --field-guide-only')
-        catalog=json.loads(raw);shapes=model_shapes(catalog)
+        catalog=modern_catalogues()[1];shapes=model_shapes(catalog)
     else:
-        catalog,shapes=illustrations(data)
+        catalog,shapes=illustrations(data,staged)
         keyboard_pdf(data)
-    (REF/'keyboard-controls.html').write_text(controls_html(data),encoding='utf-8')
-    (REF/'field-guide.html').write_text(catalogue_html(data),encoding='utf-8')
+    staged[REF/'keyboard-controls.html']=controls_html(data)
+    staged[REF/'field-guide.html']=catalogue_html(data)
     field_pdf(data,catalog,shapes)
-    import shutil
     outputs=['field-guide.pdf'] if args.field_guide_only else ['keyboard-controls.pdf','field-guide.pdf']
-    for name in outputs:shutil.copyfile(PDF/name,REF/name)
+    for name in outputs:staged[REF/name]=(PDF/name).read_bytes()
+    stage_commit(staged)
     print('Updated field guide; 8 scenarios, 16 vehicles.' if args.field_guide_only else 'Created two offline HTML references and two printable PDFs; 8 scenarios, 16 vehicles.')
 
 if __name__=='__main__':main()

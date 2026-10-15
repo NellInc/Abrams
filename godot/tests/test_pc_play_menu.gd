@@ -122,17 +122,30 @@ func run() -> void:
 	for mode in ["ega","ega_upscaled","genesis","upscaled"]:
 		check(menu.choose_graphics(mode) and choices[-1]==["graphics",mode],"live graphics signal: "+mode)
 	check(not menu.choose_graphics("modern") and not menu.choose_graphics("tactical") and menu.graphics_mode=="upscaled","unavailable Modern and Tactical never pretend to render")
+	check(menu.default_graphics_mode()=="upscaled","without the Modern catalogue the default view falls back to Genesis Upscaled")
+	check(menu.DEFAULT_HUD_STYLE=="tactical","Tactical HUD is the out-of-the-box HUD style")
 	check(menu.graphics_popup.is_item_disabled(menu.MODES.find("modern")) and menu.graphics_popup.is_item_disabled(menu.MODES.find("tactical")),"Modern and Tactical menu items explicitly disabled")
 	menu.modern_available=true
 	menu.refresh_controls()
 	check(not menu.graphics_popup.is_item_disabled(menu.MODES.find("modern")) and not menu.graphics_popup.is_item_disabled(menu.MODES.find("tactical")),"preloaded Modern assets enable both graphics profiles")
 	check(menu.available_graphics_modes()==["ega","ega_upscaled","genesis","upscaled","modern","tactical"],"six-mode order with original-palette upscaling")
+	check(menu.default_graphics_mode()=="tactical","Tactical is the default view whenever the Modern catalogue loads")
 	check(menu.graphics_popup.get_item_text(menu.MODES.find("upscaled"))=="Genesis Upscaled (remastered)","generated Genesis upscaling has explicit label and stable id")
 	check(menu.graphics_popup.get_item_text(menu.MODES.find("ega_upscaled"))=="EGA Upscaled (original colours)","original-palette EGA upscaling remains independently labelled")
 	check(menu.choose_graphics("modern") and choices[-1]==["graphics","modern"],"Modern dispatches through existing controls")
 	check(menu.choose_graphics("tactical") and choices[-1]==["graphics","tactical"],"Tactical dispatches independently of HUD Style")
 	menu.genesis_available=false
 	check(menu.available_graphics_modes()==["ega","ega_upscaled","upscaled","modern","tactical"],"PC-only cycle includes EGA upscaling, Modern and Tactical")
+	menu.refresh_controls()
+	check(menu.graphics_popup.get_item_text(menu.MODES.find("genesis"))=="Genesis (requires optional import)","native PC-only install asks for the optional import")
+	check(menu.genesis_label(false,true,true)=="Genesis (desktop edition only)" and menu.genesis_label(false,false,true)=="Genesis (requires optional import)","web ROM owners are not asked to import again")
+	check(menu.genesis_label(false,true,false)=="Genesis (requires optional import)" and menu.genesis_label(true,true,true)=="Genesis (original artwork)","desktop damaged import and loaded pack keep their labels")
+	menu.presentation_note="Genesis cockpit art disabled: cockpit-v2 gunner-genesis-v1.png hash mismatch"
+	menu.refresh_controls()
+	check(menu.graphics_popup.get_item_text(menu.graphics_popup.get_item_index(101))==menu.presentation_note,"damaged import reason visible in the Graphics menu")
+	menu.presentation_note=""
+	menu.refresh_controls()
+	check(menu.graphics_popup.get_item_text(menu.graphics_popup.get_item_index(101)).begins_with("Antialiasing applies"),"ordinary quality footer restored")
 	menu.modern_available=false
 	menu.genesis_available=true
 	menu.choose_graphics("upscaled")
@@ -155,6 +168,27 @@ func run() -> void:
 	check(not menu.busy and menu.request_state("load_state",0),"pre-load recovery can be loaded")
 	menu.set_state_status([{"slot":1}],"Loaded slot 1")
 	check(menu.load_popup.is_item_disabled(menu.load_popup.get_item_index(0)),"missing recovery remains disabled")
+	# An overwritten archive is offered only while the host lists it.
+	var plain_items:=menu.load_popup.item_count
+	check(menu.load_popup.get_item_index(menu.PREVIOUS_ID+1)<0 and not menu.request_state("load_previous",1),"unlisted overwritten archive is neither shown nor requested")
+	menu.set_state_status([{"slot":1,"saved_at":"2026-10-15 10:00:00","previous_saved_at":"2026-10-15 09:00:00"},{"slot":3,"exists":false,"previous_saved_at":"2026-10-14 08:00:00"}],"Saved slot 1")
+	var previous_index:=menu.load_popup.get_item_index(menu.PREVIOUS_ID+1)
+	check(previous_index>=0 and menu.load_popup.get_item_text(previous_index)=="Overwritten slot 1 (2026-10-15 09:00:00)" and not menu.load_popup.is_item_disabled(previous_index),"listed overwritten archive names its save time")
+	check(menu.load_popup.get_item_index(menu.PREVIOUS_ID+3)>=0 and menu.load_popup.get_item_index(menu.PREVIOUS_ID+2)<0,"only listed archives appear")
+	check(menu.load_popup.is_item_separator(menu.load_popup.get_item_index(menu.PREVIOUS_ID)) and menu.load_popup.item_count==plain_items+3,"archives sit after one divider")
+	menu.refresh_controls()
+	check(menu.load_popup.item_count==plain_items+3,"refresh never duplicates archive items")
+	check(not menu.request_state("load_previous",0) and not menu.request_state("load_previous",2),"recovery and unlisted slots have no archive request")
+	menu.load_popup.id_pressed.emit(menu.PREVIOUS_ID+1)
+	check(choices[-1]==["load_previous",1] and menu.busy and menu.state_message=="Loading state...","archive item requests that slot's overwritten save")
+	check(menu.load_popup.is_item_disabled(menu.load_popup.get_item_index(menu.PREVIOUS_ID+1)),"archive item disabled while busy")
+	menu.load_popup.id_pressed.emit(1)
+	check(choices[-1]==["load_previous",1],"busy menu cannot queue a second load")
+	menu.set_state_status([{"slot":1}],"Loaded slot 1")
+	check(menu.load_popup.item_count==plain_items and menu.load_popup.get_item_index(menu.PREVIOUS_ID)<0,"archives disappear when the host stops listing them")
+	menu.load_popup.id_pressed.emit(1)
+	check(choices[-1]==["load_state",1],"numbered load item still loads its slot")
+	menu.set_state_status([{"slot":1}],"Loaded slot 1")
 	for popup in [menu.session_popup,menu.save_popup,menu.load_popup,menu.speed_popup,menu.graphics_popup,menu.help_popup]+menu.quality_menus.values():
 		for i in popup.item_count:
 			check(popup.get_item_accelerator(i)==0 and popup.get_item_shortcut(i)==null,"no original key intercepted")

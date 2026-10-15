@@ -6,6 +6,7 @@ var boundary_samples: Dictionary = {}
 var source_records: Dictionary = {}
 var original_frame_zero := 0
 var errors: Array[String] = []
+var vehicle_art_frames := 0
 var checks := 0
 var boundaries := 0
 var native_rows: Array = []
@@ -89,7 +90,8 @@ func _apply_sample(message: Dictionary) -> void:
 	check(audit.get("ram_sha256")==record.get("ram_sha256") and audit.get("ram_bytes")==655360,"full paired RAM: %d"%frame)
 	check(audit.get("video_sha256")==record.get("video_sha256") and audit.get("video_bytes")==256000,"full paired video: %d"%frame)
 	check(bridge.failure.is_empty(),"production presentation accepted: %d"%frame)
-	check(draw_view.vehicle_art==null,"flat vehicles retained")
+	# One tripwire per run (below), not a constant per-frame check.
+	if draw_view.vehicle_art!=null: vehicle_art_frames+=1
 	if previous_program.get("name")!="SIM":
 		check(previous.is_empty() and not tandem_frame.world_enabled,"no stale world/state outside SIM")
 	var sample: Dictionary=boundary_samples.get(frame,{})
@@ -115,6 +117,7 @@ func _capture() -> void:
 	check(boundaries==fixture.samples.size(),"every source stage delivered")
 	check(previous_program.get("name")=="SIM" and tandem_frame.world_enabled,"new paired mission after original loss")
 	check(pc_audio!=null and pc_audio.failure.is_empty(),"default audio survives combat/end/reentry")
+	check(vehicle_art_frames==0,"rejected vehicle panels never attached (%d frames)"%vehicle_art_frames)
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({
 		"checks":checks,"errors":errors,"boundaries":boundaries,"packets":samples,"rows":native_rows,
 		"neutral_state":boot_boundary,"neutral_sha256":fixture.boot_state_sha256,

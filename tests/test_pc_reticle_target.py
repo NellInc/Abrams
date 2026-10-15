@@ -2,6 +2,7 @@ import hashlib
 import struct
 import unittest
 from tools.pc_reticle_target import TargetBoxRuns, lines, ink_pixels
+from tests._inputs import requires
 
 
 class TargetBoxTests(unittest.TestCase):
@@ -80,6 +81,7 @@ class TargetBoxTests(unittest.TestCase):
         self.begin(self.entry())
         with self.assertRaises(ValueError):self.observer.line(b'')
 
+    @requires('GAME')
     def test_collector_uses_presented_slot_and_hides_native_pixels(self):
         from tools.pc_render_trace import Collector
         import ctypes as C

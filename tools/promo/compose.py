@@ -10,6 +10,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
+from output_guard import guarded_output
+
 ROOT = Path(__file__).resolve().parents[2]
 BRIEF = ROOT / "tools/promo/brief.json"
 INK = "#141915"
@@ -250,7 +252,7 @@ def timeline(brief, out, final):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--final',action='store_true');p.add_argument('--animatic',action='store_true');args=p.parse_args()
-    out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
+    out=guarded_output(p,args.output);out.mkdir(parents=True,exist_ok=True)
     brief=prepare(json.loads(BRIEF.read_text()),out)
     frames=out/'animatic-frames';frames.mkdir(exist_ok=True)
     for shot in brief['shots']:card(shot,frames/(shot['id']+'.png'))

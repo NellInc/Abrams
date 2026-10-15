@@ -16,7 +16,7 @@ from mathutils import Vector
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from tools.extract_genesis_models import ROM_HASH, canonical_cycle
-from tools.source_guard import inside_source
+from tools.source_guard import inside_source, recorded
 
 
 def build(source: Path, output: Path):
@@ -186,11 +186,8 @@ def build(source: Path, output: Path):
             collection.hide_render = True
             collection.hide_viewport = True
     bpy.ops.wm.save_as_mainfile(filepath=str(output / 'genesis-source-fitted-studies.blend'))
-    try:  # Repo-relative, so the study survives a moved or re-cloned checkout.
-        recorded_source = str(source.resolve().relative_to(ROOT))
-    except ValueError:
-        recorded_source = str(source.resolve())
-    manifest = {'schema': 1, 'rom_sha256': ROM_HASH, 'source': recorded_source,
+    # Repo-relative (else the bare name), so the study survives a moved or re-cloned checkout.
+    manifest = {'schema': 1, 'rom_sha256': ROM_HASH, 'source': recorded(source, ROOT),
                 'source_catalog_sha256': hashlib.sha256(catalog_path.read_bytes()).hexdigest(),
                 'blender': bpy.app.version_string, 'models': receipts,
                 'transformation': {'raw_units_per_blender_unit': 64, 'bevel_raw_units': .45,

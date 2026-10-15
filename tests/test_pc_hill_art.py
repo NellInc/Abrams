@@ -11,6 +11,7 @@ from PIL import Image
 from tools.extract_genesis_vdp import VDP
 from tools.inspect_scenarios import decode_resource
 from tools.inspect_shapes import inspect_shapes, primitive_vertices
+from tests._inputs import requires
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -71,6 +72,7 @@ class HillSourceTests(unittest.TestCase):
         self.assertEqual(vertical, expected_vertical)
         self.assertEqual(len(vertical), 32)
 
+    @requires('GENESIS')
     def test_raised_terrain_has_exact_genesis_face_and_material_correspondence(self):
         from tools.extract_genesis_models import directory,program,neutral_geometry,geometry_union,compare_pc
         rom=(ROOT/'GENESIS/M-1 Abrams Battle Tank (USA, Europe).md').read_bytes()

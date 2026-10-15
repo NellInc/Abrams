@@ -40,10 +40,17 @@ and [resolution guide](https://docs.godotengine.org/en/stable/tutorials/renderin
 * `./Play.command --window-size 1920x1080`: requested initial physical window size.
 * `./Play.command --compare`: the existing side-by-side diagnostic layout.
 
-No keyboard shortcut was reserved or intercepted. Enter, Escape and all original
-function keys keep their original meaning. Fullscreen is a presentation option,
-not an original menu entry. This pass adds no persistent preferences or new
-save-state behaviour. Audio remains the existing explicit `--audio` option.
+When this display pass landed, no keyboard shortcut was reserved. Play now
+intercepts Tab (8x fast forward) and the Cmd (macOS) or Ctrl+Alt (other
+platforms) S/L/G checkpoint chords; see [play controls](play-controls.md).
+Enter, Escape and all original function keys keep their original meaning.
+Fullscreen is a presentation option, not an original menu entry. This display
+pass itself added no persistent preferences or save-state behaviour. Audio is on
+by default in trace mode; `--no-audio` is the only switch and turns presentation
+audio off. `--audio` is a tolerated legacy no-op, since audio is already on.
+
+Working if: in Play, Tab toggles fast forward without reaching the original, and
+`./Play.command --no-audio` starts silent.
 
 ## Acceptance coverage
 

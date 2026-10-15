@@ -65,7 +65,8 @@ Git. Main catalog locations include:
 * `local-art/pc-map-frame-v1/frame.json`
 * `local-art/genesis/status-damage-v1/manifest.json`
 * `local-art/genesis/remastered/effects-v1/` and `effects-v2/`
-* `local-art/pc-outline-fonts-v3/manifest.json`
+* `local-art/pc-outline-fonts-v5/manifest.json` (the selected pack pinned by the
+  runtime loader, private allowlist and Web builder; v3 is historical)
 
 The current programme receipts are under `artifacts/finish-20260928/`. Root
 reconciliation passed all 61 aggregate gates (418 Python tests included), the

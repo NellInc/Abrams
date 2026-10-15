@@ -4,6 +4,7 @@ import argparse,base64,difflib,hashlib,json,re,subprocess,wave
 from pathlib import Path
 from generate import budget,request,receipt
 from captions_critic import normalized,clock,audio_hash
+from output_guard import guarded_output
 
 def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
 def write(p,d): p.write_text(json.dumps(d,indent=2)+'\n')
@@ -160,4 +161,4 @@ def captions(out):
     print('CAPTIONS_READY',len(words),'words',len(cues),'cues')
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['sources','mix','captions']);p.add_argument('--output',type=Path,required=True);a=p.parse_args();globals()[a.action](a.output.resolve())
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['sources','mix','captions']);p.add_argument('--output',type=Path,required=True);a=p.parse_args();globals()[a.action](guarded_output(p,a.output))

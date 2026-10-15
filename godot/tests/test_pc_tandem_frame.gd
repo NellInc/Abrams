@@ -10,6 +10,14 @@ var ui_pixels_checked := 0
 var world_pixels_checked := 0
 var reticle_pixels_checked := 0
 
+# Records frontend loads without needing the optional art bank.
+class FrontendSpy extends Control:
+	var roots: Array[String] = []
+	func load_sources(root_path: String) -> bool:
+		roots.append(root_path)
+		return false
+	func clear() -> void: pass
+
 func check(ok: bool, message: String) -> void:
 	if not ok and failures.size() < 12: failures.append(message)
 
@@ -83,6 +91,10 @@ func _run() -> void:
 	var color_mask := Image.create_empty(320,200,false,Image.FORMAT_RGB8)
 	color_mask.fill(Color.WHITE)
 	check(not composite.set_frame(source,packet(color_mask,clip),world), "colour mask accepted")
+	await _replay_gaps(source,mask,clip,world,native)
+	_recorded_replay()
+	_mask_reuse(source,mask,clip,world)
+	_genesis_load_reason()
 	var args := OS.get_cmdline_user_args()
 	if native and "--ega-upscale" in args: await _ega_upscale_contract(args)
 	if native and "--fixture" in args:
@@ -91,6 +103,142 @@ func _run() -> void:
 	print("PC_TANDEM_FRAME: %s; %d exact RGB checks; %d live UI pixels; %d composited world pixels; %d original reticle-over-sprite pixels" % [
 		"PASS" if failures.is_empty() else "FAIL", pixels_checked, ui_pixels_checked, world_pixels_checked, reticle_pixels_checked])
 	quit(0 if failures.is_empty() else 1)
+
+# Unattributed original writes and primitives the replay dropped have no
+# Godot geometry; the frame must show the exact source instead of a gap.
+func _replay_gaps(source: Image, mask: Image, clip: Array, world: Texture2D, native: bool) -> void:
+	for kind in ["unattributed_bitmap","unattributed_polygon","opaque_command","unattributed_round_form","bitmap_plane_mask","incomplete_sprite","incomplete_round_form"]:
+		var presentation := packet(mask,clip)
+		presentation.draw_pass["unsupported"]=[{"kind":kind}]
+		check(not composite.set_frame(source,presentation,world) and not composite.world_enabled and composite.fallback_reason=="unsupported original draw commands","unsupported %s replaced original pixels" % kind)
+		if native and kind=="unattributed_bitmap":
+			var im := await snapshot()
+			for y in 200:
+				for x in 320: matches(im,source,x,y,1,"unsupported-command fallback")
+	var malformed := packet(mask,clip)
+	malformed.draw_pass["unsupported"]="unknown"
+	check(not composite.set_frame(source,malformed,world),"malformed unsupported list accepted")
+	var empty := packet(mask,clip)
+	empty.draw_pass["unsupported"]=[]
+	check(composite.set_frame(source,empty,world) and composite.world_enabled,"empty unsupported list refused")
+	var replay := DrawPass.new()
+	composite.world_replay=replay
+	replay.render_warnings.append("Unsupported original material 99")
+	check(not composite.set_frame(source,empty,world) and not composite.world_enabled and composite.fallback_reason.begins_with("world replay incomplete"),"dropped replay primitive replaced original pixels")
+	replay.render_warnings.clear()
+	check(composite.set_frame(source,empty,world) and composite.world_enabled,"complete replay refused")
+	composite.world_replay=null
+	replay.free()
+
+# Recorded SIM passes replayed through a real DrawPass: ordinary frames carry
+# no replay warning, so wiring world_replay cannot flicker to the source frame.
+func _recorded_replay() -> void:
+	var path := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("artifacts/pc-live-type-cockpit-02/report.json")
+	var report = JSON.parse_string(FileAccess.get_file_as_string(path))
+	check(report is Dictionary and report.get("ui_presentations",[]).size()>=20,"recorded replay fixture unavailable")
+	if not report is Dictionary or not report.has("ui_presentations"): return
+	var world_viewport := SubViewport.new()
+	world_viewport.own_world_3d = true
+	viewport.add_child(world_viewport)
+	var camera := Camera3D.new()
+	world_viewport.add_child(camera)
+	camera.make_current()
+	var draw = DrawPass.new()
+	draw.solid_enabled = true
+	camera.add_child(draw)
+	composite.world_replay = draw
+	var replayed := 0
+	var last: Dictionary = {}
+	for entry: Dictionary in report.ui_presentations:
+		var drawing: Dictionary = report.render_passes.filter(func(p): return p.sequence == entry.draw_sequence)[0].duplicate(true)
+		drawing.palette_rgb = report.presentations[int(entry.frame_index)].palette_rgb
+		var frame: Dictionary = drawing.camera.duplicate(true)
+		frame.matrix_q14_columns = [16384,0,0,0,16384,0,0,0,16384]
+		frame.world_position_raw = [0,0,0]
+		world_viewport.size = PcCamera.apply(camera,frame,Vector3.ZERO)*4
+		draw.apply_pass(drawing)
+		var source := Image.load_from_file(path.get_base_dir().path_join(entry.image))
+		var presentation := packet(Image.load_from_file(path.get_base_dir().path_join(entry.mask)),drawing.camera.clip)
+		presentation.draw_pass = drawing
+		check(draw.render_warnings.is_empty(),"recorded pass reported a replay warning: "+entry.stage+" "+str(draw.render_warnings))
+		check(composite.set_frame(source,presentation,world_viewport.get_texture()) and composite.world_enabled,"recorded replay fell back: "+entry.stage+" "+composite.fallback_reason)
+		replayed+=1
+		last = {"source":source,"presentation":presentation}
+	check(replayed>=20,"recorded replay covered too few passes")
+	# A page whose background event has not arrived replays without its sky.
+	var missing: Dictionary = last.presentation.duplicate(true)
+	missing.draw_pass.background = null
+	draw.apply_pass(missing.draw_pass)
+	check("Original background observation unavailable" in draw.render_warnings,"null background replayed without a warning")
+	check(not composite.set_frame(last.source,missing,world_viewport.get_texture()) and not composite.world_enabled and composite.fallback_reason=="world replay incomplete: Original background observation unavailable","missing background replaced original pixels")
+	draw.apply_pass(last.presentation.draw_pass)
+	check(composite.set_frame(last.source,last.presentation,world_viewport.get_texture()) and composite.world_enabled,"recovered background still fell back")
+	composite.world_replay = null
+	world_viewport.queue_free()
+
+func _mask_reuse(source: Image, mask: Image, clip: Array, world: Texture2D) -> void:
+	var presentation := packet(mask,clip)
+	check(composite.set_frame(source,presentation,world),"reuse fixture refused")
+	var ui_texture = composite.material.get_shader_parameter("ui_mask")
+	var frame_texture: Texture2D = composite.texture
+	check(composite.set_frame(source,packet(mask,clip),world),"identical mask refused")
+	check(composite.material.get_shader_parameter("ui_mask")==ui_texture and composite.texture==frame_texture,"identical encoded mask or frame re-uploaded")
+	var changed: Image = mask.duplicate()
+	changed.set_pixel(100,50,Color.WHITE if mask.get_pixel(100,50).r<0.5 else Color.BLACK)
+	check(composite.set_frame(source,packet(changed,clip),world),"changed mask refused")
+	var shader_mask: Image = composite.material.get_shader_parameter("ui_mask").get_image()
+	check(composite.material.get_shader_parameter("ui_mask")!=ui_texture and shader_mask.get_data()==changed.get_data(),"changed encoded mask kept a stale texture")
+	var edited: Image = source.duplicate()
+	edited.set_pixel(1,1,Color.RED)
+	# An in-place update() keeps the texture object; recreation replaces it.
+	check(composite.set_frame(edited,packet(changed,clip),world) and (TandemFrame._update_round_trips==1 or composite.texture!=frame_texture) and composite.texture.get_image().get_pixel(1,1)==Color.RED,"changed source frame kept a stale texture")
+	check(composite.set_frame(source,presentation,world) and composite.material.get_shader_parameter("ui_mask").get_image().get_data()==mask.get_data(),"restored mask differs")
+	# Where update() round-trips (any GPU renderer), changed content of the same
+	# shape stays in the one persistent texture. The dummy renderer cannot read an
+	# update back, so here the retained upload bytes stand in for the texture.
+	var probed: int = TandemFrame._update_round_trips
+	check(probed in [0,1],"texture update capability not probed")
+	if "--native" in OS.get_cmdline_user_args(): check(probed==1,"update() does not round-trip on this renderer")
+	TandemFrame._update_round_trips=1
+	var held: Texture2D=composite.texture
+	check(composite.set_frame(edited,presentation,world) and composite.texture==held and composite._source_bytes==edited.get_data(),"update path replaced the persistent source texture")
+	var resized: Image=edited.duplicate();resized.convert(Image.FORMAT_RGBA8)
+	composite._source_frame_texture(resized)
+	check(composite._source_texture!=held and composite._source_texture.get_format()==Image.FORMAT_RGBA8,"changed source shape reused an incompatible texture")
+	TandemFrame._update_round_trips=probed
+	check(composite.set_frame(source,presentation,world) and composite.texture.get_image().get_data()==source.get_data(),"source restored after update path")
+
+func _genesis_load_reason() -> void:
+	var probe = TandemFrame.new()
+	var spy := FrontendSpy.new()
+	probe.frontend_art=spy
+	var root_path := OS.get_user_data_dir().path_join("tandem-genesis-reason")
+	DirAccess.make_dir_recursive_absolute(root_path.path_join("local-art/genesis/cockpit-v2"))
+	for file in DirAccess.get_files_at(root_path.path_join("local-art/genesis/cockpit-v2")): DirAccess.remove_absolute(root_path.path_join("local-art/genesis/cockpit-v2").path_join(file))
+	check(not probe.load_genesis_art(root_path) and probe.genesis_art_reason=="Genesis cockpit donors not imported","absent donor set not reported as absent")
+	var corrupt := Image.create(4,4,false,Image.FORMAT_RGB8)
+	corrupt.save_png(root_path.path_join("local-art/genesis/cockpit-v2/systems-status-genesis-v1.png"))
+	check(not probe.load_genesis_art(root_path) and probe.genesis_art_reason=="cockpit-v2 gunner-genesis-v1.png missing","partial donor set not named")
+	for name in ["gunner","commander","cupola","driver"]: corrupt.save_png(root_path.path_join("local-art/genesis/cockpit-v2/"+name+"-genesis-v1.png"))
+	check(not probe.load_genesis_art(root_path) and probe.genesis_art_reason=="cockpit-v2 gunner-genesis-v1.png hash mismatch","damaged donor not named")
+	check(not probe.genesis_art_enabled,"damaged donor enabled cockpit art")
+	check(spy.roots.size()==3,"cockpit donor failure skipped independently pinned frontend restorations")
+	# Portraits validate their own pins: with the damaged cockpit set above and
+	# the installed crew art, a source crew face still gets its restoration.
+	var repo := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	check(probe.portrait_art.load_sources(repo) and probe.portrait_art.templates.size()==4,"installed portrait sources unavailable")
+	if probe.portrait_art.templates.size()==4:
+		var item: Dictionary=probe.portrait_art.templates[0]
+		var face := Image.create_empty(320,200,false,Image.FORMAT_RGB8)
+		face.fill(Color8(85,85,85))
+		for point in item.points: face.set_pixelv(probe.portrait_art.SOURCE_AT+point.at,Color.hex(point.rgb))
+		var owned := Image.create_empty(320,200,false,Image.FORMAT_L8)
+		owned.fill(Color.WHITE)
+		var flat := ImageTexture.create_from_image(Image.create_empty(256,97,false,Image.FORMAT_RGB8))
+		check(probe.set_frame(face,packet(owned,[32,13,287,109]),flat) and not probe.genesis_art_enabled,"portrait fixture refused")
+		check(probe.portrait_art.active.get("id")==0,"cockpit donor failure suppressed an independently pinned portrait")
+	spy.free()
+	probe.free()
 
 func _scale3x_pixel(source: Image, at: Vector2i, part: Vector2i) -> Color:
 	var around: Array[Color]=[]

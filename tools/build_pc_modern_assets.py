@@ -3,6 +3,8 @@
 
 JSON is the runtime contract. GLB is an editable inspection export in the same
 raw axes, deliberately without metre conversion or glTF Y-up rotation.
+catalog.json holds the authored meshes and never a SHAPE.TBL decode; the source
+shape registry beside it is derived on the player's machine from their own file.
 """
 from __future__ import annotations
 import argparse
@@ -15,17 +17,22 @@ import struct
 try:
     from tools.pc_vehicle_catalog import ROOT, source_catalog, mesh_reference
     from tools.inspect_scenarios import decode_resource, parse_world, parse_scenario
-    from tools.inspect_shapes import primitive_vertices
+    from tools.inspect_shapes import inspect_shapes, primitive_vertices
     from tools import source_guard
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from pc_vehicle_catalog import ROOT, source_catalog, mesh_reference
     from inspect_scenarios import decode_resource, parse_world, parse_scenario
-    from inspect_shapes import primitive_vertices
+    from inspect_shapes import inspect_shapes, primitive_vertices
     import source_guard
 
 SCHEMA = 1
-TRACKED = {'T-62': 5, 'T-64': 6, 'T-72': 6, 'T-80': 6, 'M1-A1': 7,
+# Per-shape SHAPE.TBL structure: published nowhere, derived from the player's
+# file (web-prototype/derived_art.mjs, native import) into this file name.
+REGISTRY = 'source-shapes.json'
+REGISTRY_FIELDS = ('selectors', 'roots', 'groups', 'source_primitives', 'opaque_commands', 'visual_commands')
+SHAPE_TBL_SHA256 = '81cf10917d8647e8ac187e49887494992828277333f17d6c1926e59581f0a193'
+TRACKED ={'T-62': 5, 'T-64': 6, 'T-72': 6, 'T-80': 6, 'M1-A1': 7,
            'M60a3': 6, 'M113': 5, 'M2': 6, 'BMP-1': 6, 'BMP-2': 6, 'ACRV-2': 7}
 WHEELED = {'BTR-70': 4, 'BRDM-2': 2, 'BRDM-3': 2}
 STRUCTURES = {0, 1, 45, 46, 47, 108, 114, *range(145, 159)}
@@ -1048,22 +1055,104 @@ def inside_source(path):
     return source_guard.inside_source(path,ROOT,SOURCE_DIRS)
 
 
-def export(output, result):
+def source_registry(data):
+    """Pure SHAPE.TBL decode: exactly the per-shape fields catalog.json omits.
+
+    Integers and fixed strings only, so the browser (derived_art.mjs) and the
+    native import reproduce registry_bytes() byte for byte from the same file.
+    """
+    digest=hashlib.sha256(data).hexdigest()
+    if digest!=SHAPE_TBL_SHA256:raise ValueError('unsupported SHAPE.TBL fingerprint')
+    shapes=[]
+    for shape in inspect_shapes(decode_resource(data))['shapes']:
+        ref=mesh_reference(shape)
+        shapes.append({'shape_index':shape['index'],'selectors':ref['selectors'],'roots':ref['roots'],
+                       'groups':ref['groups'],'source_primitives':ref['primitives'],
+                       'opaque_commands':ref['opaque_commands'],'visual_commands':visual_commands(shape)})
+    return {'schema':SCHEMA,'source':'SHAPE.TBL','source_sha256':digest,'shapes':shapes}
+
+
+def registry_bytes(registry):
+    return (json.dumps(registry,separators=(',',':'))+'\n').encode('ascii')
+
+
+def split_catalog(result):
+    """Published catalogue and source registry; merge_catalog() inverts it.
+
+    Source lines keep only their authored identity and bridge colour; their
+    vertices and prefix bytes come back from the registry primitive. Class rows
+    drop the raw SIM.EXE table bytes, which no runtime reads.
+    """
+    models=[];shapes=[]
+    for model in result['models']:
+        shapes.append({'shape_index':model['shape_index'],**{field:model[field] for field in REGISTRY_FIELDS}})
+        row={key:value for key,value in model.items() if key not in REGISTRY_FIELDS}
+        row['source_lines']=[{key:value for key,value in line.items() if key not in ('vertices','prefix_bytes')}
+                             for line in model['source_lines']]
+        models.append(row)
+    classes=[{key:value for key,value in row.items() if key!='raw_hex'} for row in result['classes']]
+    public={key:models if key=='models' else classes if key=='classes' else value for key,value in result.items()}
+    return public,{'schema':SCHEMA,'source':'SHAPE.TBL','source_sha256':result['sources']['SHAPE.TBL'],'shapes':shapes}
+
+
+def merge_catalog(public, registry):
+    """Reattach the player-derived source structure to the authored catalogue."""
+    if registry.get('schema')!=SCHEMA or registry.get('source_sha256')!=public['sources']['SHAPE.TBL']:
+        raise ValueError('source registry does not belong to this catalogue')
+    shapes={row['shape_index']:row for row in registry['shapes']}
+    if len(shapes)!=len(public['models']):raise ValueError('source registry shape count differs')
+    merged=dict(public,models=[])
+    for model in public['models']:
+        if any(field in model for field in REGISTRY_FIELDS):raise ValueError('published catalogue carries source structure')
+        try:
+            source=shapes[model['shape_index']];primitives={p['id']:p for p in source['source_primitives']}
+            row=dict(model,**{field:source[field] for field in REGISTRY_FIELDS})
+            row['source_lines']=[{'source_primitive':line['source_primitive'],'source_groups':line['source_groups'],
+                                  'vertices':clean_polygon(primitives[line['source_primitive']]['vertices']),
+                                  'prefix_bytes':primitives[line['source_primitive']]['prefix_bytes'],
+                                  **({'color':line['color']} if 'color' in line else {})} for line in model['source_lines']]
+        except KeyError as error:
+            raise ValueError('source registry lacks a shape or primitive the catalogue names') from error
+        merged['models'].append(row)
+    return merged
+
+
+def load_catalog(directory=ROOT/'local-art/pc-modern'):
+    """The merged catalogue, only when the registry matches catalog.json's pin."""
+    public=json.loads((directory/'catalog.json').read_text())
+    pin=public.get('source_registry',{})
+    raw=(directory/pin.get('file',REGISTRY)).read_bytes()
+    if pin.get('file')!=REGISTRY or hashlib.sha256(raw).hexdigest()!=pin.get('sha256'):
+        raise ValueError('source registry differs from the catalogue pin')
+    return merge_catalog(public,json.loads(raw))
+
+
+def export(output, result, source=ROOT/'GAME'):
     output=output.resolve()
     if inside_source(output):raise ValueError('output cannot overwrite source')
+    public,registry=split_catalog(result)
+    # The stripped fields must be exactly what a player-side decode produces.
+    if registry!=source_registry((source/'SHAPE.TBL').read_bytes()):
+        raise ValueError('catalogue source structure is not a pure SHAPE.TBL decode')
+    raw=registry_bytes(registry)
+    public['source_registry']={'file':REGISTRY,'sha256':hashlib.sha256(raw).hexdigest(),
+                               'contract':'Derived from the player\'s SHAPE.TBL, never published. Reattach by shape_index; source_lines take vertices and prefix_bytes from their source primitive.'}
     output.mkdir(parents=True,exist_ok=True)
     (output/'models').mkdir(exist_ok=True)
-    for model in result['models']:
+    for model,row in zip(result['models'],public['models']):
         glb=glb_bytes(model)
         if glb:
-            filename=f"models/{model['shape_index']:03d}.glb";(output/filename).write_bytes(glb);model['glb']=filename
-            model['glb_sha256']=hashlib.sha256(glb).hexdigest()
-    (output/'catalog.json').write_text(json.dumps(result,separators=(',',':'))+'\n')
+            filename=f"models/{model['shape_index']:03d}.glb";(output/filename).write_bytes(glb)
+            model['glb']=row['glb']=filename
+            model['glb_sha256']=row['glb_sha256']=hashlib.sha256(glb).hexdigest()
+    (output/REGISTRY).write_bytes(raw)
+    (output/'catalog.json').write_text(json.dumps(public,separators=(',',':'))+'\n')
     summary={'schema':SCHEMA,'sources':result['sources'],'models':len(result['models']),
              'required_shapes':len(result['inventory']['required_shapes']),
              'triangles':sum(len(m['triangles']) for m in result['models']),
              'statuses':dict(Counter(m['status'] for m in result['models'])),
-             'catalog_sha256':hashlib.sha256((output/'catalog.json').read_bytes()).hexdigest()}
+             'catalog_sha256':hashlib.sha256((output/'catalog.json').read_bytes()).hexdigest(),
+             'source_registry_sha256':public['source_registry']['sha256']}
     (output/'manifest.json').write_text(json.dumps(summary,indent=2)+'\n')
     return summary
 
@@ -1071,4 +1160,4 @@ def export(output, result):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source',type=Path,default=ROOT/'GAME');parser.add_argument('--output',type=Path,default=ROOT/'local-art/pc-modern')
-    args=parser.parse_args();print(json.dumps(export(args.output,build(args.source)),indent=2))
+    args=parser.parse_args();print(json.dumps(export(args.output,build(args.source),args.source),indent=2))

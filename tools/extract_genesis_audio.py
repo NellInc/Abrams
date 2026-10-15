@@ -16,8 +16,10 @@ import wave
 
 try:
     from .genesis_capture import BUTTONS, ROOT, ReferenceCore
+    from .source_guard import inside_source
 except ImportError:
     from genesis_capture import BUTTONS, ROOT, ReferenceCore
+    from source_guard import inside_source
 
 
 def parse_sequence(raw):
@@ -139,7 +141,10 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--sequence", default="1800", help="Comma-separated frames[+button] steps")
     parser.add_argument("--label", required=True)
-    capture(parser.parse_args())
+    args = parser.parse_args()
+    if inside_source(args.output, ROOT):
+        parser.error("output must be outside original sources")
+    capture(args)
 
 
 if __name__ == "__main__":

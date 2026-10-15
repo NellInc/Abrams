@@ -9,6 +9,7 @@ import unittest
 from tools.inspect_scenarios import (decode_resource, parse_world, parse_scenario,
                                      parse_shape_table, inspect_file)
 from tools.reference_inventory import inventory, serialize, verify
+from tests._inputs import requires
 
 ROOT = Path(__file__).resolve().parents[1]
 GAME = ROOT / "GAME"
@@ -38,6 +39,7 @@ class DecoderTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             decode_resource(b"\x02\xff\xff\xff\xff")
 
+    @requires('GAME')
     def test_regression_hashes(self):
         expected = {
             "SNARIO0.SSS": "f5b915cc1dd4ce4b50f2b3f9a605d812387e82a5c48611db2281f8a320bc785f",
@@ -54,6 +56,7 @@ class DecoderTests(unittest.TestCase):
                 self.assertEqual(len(decoded), int.from_bytes(data[1:5], "little"))
                 self.assertEqual(hashlib.sha256(decoded).hexdigest(), digest)
 
+    @requires('GAME')
     def test_every_supplied_type_two_resource(self):
         count = 0
         before = inventory(GAME)
@@ -69,6 +72,7 @@ class DecoderTests(unittest.TestCase):
 
 
 class StructureTests(unittest.TestCase):
+    @requires('GAME')
     def test_scenarios_and_worlds(self):
         counts = [45, 62, 35, 53, 73, 31, 21, 52]
         worlds = [486, 560, 501, 690, 978, 826, 828, 977]
@@ -81,6 +85,7 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(inspect_file(GAME / "SNARIO0.SSS")["scenario"]["messages"][0]["text"],
                          "Radar shows hind entering your sector!")
 
+    @requires('GAME')
     def test_shape_directory(self):
         result = parse_shape_table(decode_resource((GAME / "SHAPE.TBL").read_bytes()))
         self.assertEqual(result["count"], 188)
@@ -104,6 +109,7 @@ class StructureTests(unittest.TestCase):
 
 
 class InventoryTests(unittest.TestCase):
+    @requires('reference')
     def test_supplied_baseline_unchanged(self):
         baseline = ROOT / "reference/reports/game-manifest.json"
         self.assertEqual(verify(GAME, baseline), [])

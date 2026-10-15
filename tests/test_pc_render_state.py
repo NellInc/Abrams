@@ -5,6 +5,7 @@ import unittest
 from tools.inspect_scenarios import decode_resource
 from tools.inspect_shapes import inspect_shapes
 from tools.pc_render_state import read_camera, select_static_faces, transform, signed16
+from tests._inputs import requires
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -42,6 +43,7 @@ class RenderStateTests(unittest.TestCase):
         self.assertIsNone(read_camera(ram, ds, {"static": [], "dynamic": []}))
         self.assertEqual(read_camera(ram, ds, {"static": [], "dynamic": [{"pointer": 0x709E}]})["draw_order"], [0x709E])
 
+    @requires('GAME')
     def test_static_normal_faces_reverse_with_camera_side(self):
         shape = inspect_shapes(decode_resource((ROOT / "GAME/SHAPE.TBL").read_bytes()))["shapes"][166]
         a = select_static_faces(shape, 100, [0, 0, -100])

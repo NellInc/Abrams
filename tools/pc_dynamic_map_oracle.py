@@ -4,6 +4,7 @@ import argparse,json,struct
 from pathlib import Path
 from unicorn.x86_const import UC_X86_REG_CS,UC_X86_REG_DS,UC_X86_REG_SS,UC_X86_REG_SP,UC_X86_REG_BP,UC_X86_REG_AX,UC_X86_REG_EFLAGS
 from pc_bearing_oracle import ROOT,LOAD,cpu,original_unpack,set_registers,run_until,sha256
+from source_guard import inside_source
 
 def run():
  raw=(ROOT/'GAME/SIM.EXE').read_bytes();image,proof=original_unpack(raw);m=cpu();m.mem_write(LOAD*16,image)
@@ -34,4 +35,6 @@ def run():
   cases.append({'caller':0x1197,'point_color':actual})
  return {'source_sha256':sha256(raw),'scope':__doc__,'unpack':proof,'cases':cases}
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args();r=run();a.output.write_text(json.dumps(r,indent=2)+'\n');print('PC_DYNAMIC_MAP_ORACLE:',len(r['cases']),'exact original argument blocks passed')
+ p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+ if inside_source(a.output,ROOT):p.error('output must be outside original sources')
+ r=run();a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(r,indent=2)+'\n');print('PC_DYNAMIC_MAP_ORACLE:',len(r['cases']),'exact original argument blocks passed')

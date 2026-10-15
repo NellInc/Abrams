@@ -50,7 +50,10 @@ commands and page/scanout pairing, then exact current-pixel verification of the
 complete map region. Terrain, object visibility, marker colour/blink and zoom must
 remain source-selected. Inferred markers from colours or fresh game-state reads
 would weaken the existing visibility guarantee. Both dynamic map views therefore
-remain original pixels, explicitly unfinished in this pass.
+remained original pixels in this pass. (Superseded: see the source-owned vector
+path and Tactical cartographic sections below. The overview is now rendered from
+observed source draws; local-view terrain and contacts remain the original
+raster.)
 
 ## Validation
 
@@ -104,8 +107,9 @@ The current source-selected player ink is drawn last, including black.
 Continuous shared-patch contours replace stair steps along roads, riverbanks
 and terrain boundaries. Only two-class, non-diagonal 2×2 patches are contoured;
 diagonal, multi-class, unknown-ink and small-component patches retain their
-original shape. Every shared edge crosses at the same midpoint. Cubic Hermite
-arcs round bends and endcaps within the original corner's half-cell, meeting
+original shape. Every shared edge crosses at the same midpoint. Quintic Hermite
+arcs (the cubic's edge midpoints and endpoint tangents, plus zero endpoint
+curvature where the next patch is straight) round bends and endcaps within the original corner's half-cell, meeting
 neighbouring straight edges tangentially. Diagonal continuations remain straight
 rather than acquiring repeated scallops. These bounded curves retain finite
 cell-centre cores and cardinal corridors, preserving the original

@@ -7,15 +7,18 @@ import json
 from pathlib import Path
 try:
     from tools.pc_readiness import ReadinessBark
-    from tools.verify_pc_audio_trace import verify as verify_audio
+    from tools.verify_pc_audio_trace import CORE_MANIFEST, ROOT, inside_source, load_manifest, verify as verify_audio
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from pc_readiness import ReadinessBark
-    from verify_pc_audio_trace import verify as verify_audio
+    from verify_pc_audio_trace import CORE_MANIFEST, ROOT, inside_source, load_manifest, verify as verify_audio
 
 
-def verify(trace,baseline):
-    result=verify_audio(trace,baseline)
+def verify(trace,baseline,manifest=None):
+    # Readiness pairs every presentation with its original loop-channel state, so a report from
+    # before audio_states were recorded cannot be re-verified here (no --legacy-no-loop-states).
+    if not trace.get('audio_states'): raise ValueError('readiness requires original loop-channel audio_states; recapture the trace')
+    result=verify_audio(trace,baseline,manifest)
     groups=defaultdict(list)
     for event in trace['audio_events']: groups[event['frame_index']].append(event)
     gate=ReadinessBark();barks=[]
@@ -38,8 +41,10 @@ def verify(trace,baseline):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--trace',type=Path,required=True);p.add_argument('--baseline',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);args=p.parse_args()
-    result=verify(json.loads(args.trace.read_text()),json.loads(args.baseline.read_text()))
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--manifest',type=Path,default=CORE_MANIFEST)
+    args=p.parse_args()
+    if inside_source(args.output,ROOT): p.error('output must be outside original sources')
+    result=verify(json.loads(args.trace.read_text()),json.loads(args.baseline.read_text()),load_manifest(args.manifest))
     result['inputs']=[{'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
                       for path in (args.trace,args.baseline)]
     args.output.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))

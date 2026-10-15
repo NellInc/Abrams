@@ -13,7 +13,9 @@ var overlays: Dictionary = {}
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	# Illustrations are 2000px-class donors drawn into ~50-200 source pixels;
+	# mipmaps keep their minified detail filtered rather than aliased.
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	resized.connect(queue_redraw)
 	clear()
 
@@ -37,6 +39,7 @@ func load_sources(root_path: String) -> bool:
 			if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=item.art_sha256: return false
 			var image := Image.load_from_file(path)
 			if image==null or image.get_size()!=Vector2i(item.size[0],item.size[1]): return false
+			image.generate_mipmaps()
 			loaded[item.name] = ImageTexture.create_from_image(image)
 		var items := []
 		for overlay in entry.get("overlays",[]):
@@ -62,6 +65,7 @@ func load_completion(root_path: String, data: Dictionary, loaded: Dictionary) ->
 		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=layer.art_sha256: return false
 		var image:=Image.load_from_file(path)
 		if image==null or image.get_size()!=Vector2i(layer.size[0],layer.size[1]): return false
+		image.generate_mipmaps()
 		loaded[layer.name]=ImageTexture.create_from_image(image)
 		matches[0].layers=[matches[0].duplicate(true),layer]
 	for frame in supplement.frames:

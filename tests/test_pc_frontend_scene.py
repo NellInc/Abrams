@@ -8,8 +8,10 @@ from tools.inspect_shapes import primitive_vertices
 from tools.inspect_scenarios import decode_resource
 from tools.inspect_shapes import inspect_shapes
 from tests.test_pc_session import program_ram
+from tests._inputs import requires
 ROOT=Path(__file__).resolve().parents[1]
 
+@requires('GAME')
 class FrontendSceneTests(unittest.TestCase):
     def setUp(self):self.scene=FrontendScene(ROOT/'GAME')
 

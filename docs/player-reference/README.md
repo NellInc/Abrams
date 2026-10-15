@@ -56,6 +56,15 @@ rewrites any reference. PDF rasters are embedded as JPEG, capped at 300 dpi of
 their printed size. These tools are used
 only during authoring; players need neither.
 
+The builder sets ReportLab's invariant mode (`rl_config.invariant=1`: fixed
+dates and document `/ID`), so an unchanged rebuild with the same ReportLab
+release is byte-identical and a hash change means the content changed. PDF bytes
+still depend on that release; record it with each rebuild ([Unverified]: 5.0.1
+per the 15 October 2026 tooling review; no ReportLab is installed in this
+checkout's venvs). The PDFs in the tree predate invariant mode (they carry real
+creation dates), so the first invariant rebuild changes their bytes once.
+Working if: two consecutive invariant rebuilds produce identical PDF hashes.
+
 The packaged outputs include no original game, ROM or manual. Source hashes,
 page/crop references and restoration details are recorded in
 `maps-provenance.json`, `manual-maps-provenance.json`,

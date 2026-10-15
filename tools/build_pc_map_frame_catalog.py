@@ -7,6 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from tools.inspect_scenarios import decode_resource
 from tools.extract_pc_ui import screen_pixels
+from tools.source_guard import inside_source
 PALETTE=[(0,0,0),(255,255,255),(170,170,170),(85,85,85),(85,85,255),(85,255,255),
  (170,0,0),(170,85,0),(0,170,0),(85,255,85),(255,255,85),(0,0,0),(255,85,85),(0,0,170),(85,255,255),(255,255,255)]
 RECTS=[[0,0,320,10],[0,10,10,166],[310,10,10,166],[0,176,320,24]]
@@ -42,5 +43,7 @@ def build(root=ROOT):
   'rivets':rivets,'render_rect':[0,0,320,200],'rebuilt_footer':[0,187,320,13],
   'scope':'Analytic original-shaped bevel/green rule/Genesis-shared fasteners and a rebuilt matte-metal footer, applied only when the complete border, footer included, matches border_rgb_sha256. The original content rect remains untouched.'}
 if __name__=='__main__':
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,default=ROOT/'local-art/pc-map-frame-v1/frame.json');a=p.parse_args();d=build()
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,default=ROOT/'local-art/pc-map-frame-v1/frame.json');a=p.parse_args()
+ if inside_source(a.output,ROOT):p.error('output must be outside original sources')
+ d=build()
  a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(d,indent=2)+'\n');print(sha(a.output))

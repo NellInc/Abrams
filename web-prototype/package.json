@@ -2,6 +2,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test_checkpoint_lifecycle.mjs test_asset_contracts.mjs test_remaster_shell.mjs test_audio_shutdown.mjs && python3 test_package_site.py -q && python3 test_build_remaster.py -q"
+    "test": "node --test test_checkpoint_lifecycle.mjs test_asset_contracts.mjs test_remaster_shell.mjs test_audio_shutdown.mjs test_service_worker.mjs && python3 test_package_site.py -q && python3 test_build_remaster.py -q",
+    "test:local": "node test_derived_art.mjs && node -e \"const fs=require('node:fs');if(!fs.existsSync('../GAME')){console.log('SKIP: test_claim_catalog (GAME/ absent)');process.exit(0)}require('node:child_process').execFileSync(process.execPath,['test_claim_catalog.mjs'],{stdio:'inherit'})\" && node test_core.mjs && node test_mission.mjs && node --expose-gc test_bridge.mjs",
+    "test:all": "npm test && npm run test:local"
   }
 }

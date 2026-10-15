@@ -9,6 +9,8 @@ const SCREWS = [Vector2(190,66),Vector2(305,66),Vector2(196,149),
 	Vector2(297,149),Vector2(196,187),Vector2(297,187)]
 var active := false
 var scale_xy := Vector2.ONE
+var _ui_texture: ImageTexture
+var _plate_texture: ImageTexture
 var _verified_ui := PackedByteArray()
 var _verified_tags := PackedByteArray()
 
@@ -37,6 +39,9 @@ func set_frame(source: Image, ui: Image, tags: Image, camera: Rect2i, world: Tex
 	if ui.get_format()!=Image.FORMAT_L8 or tags.get_format()!=Image.FORMAT_L8: return
 	var bits := tags.get_data()
 	var owners := ui.get_data()
+	# The textures always hold the last verified pair, so an unchanged pair
+	# needs no upload at all.
+	var uploaded := _ui_texture!=null and bits==_verified_tags and owners==_verified_ui
 	if bits!=_verified_tags or owners!=_verified_ui:
 		# A mixed station transition cannot inherit an earlier settled housing.
 		if bits.count(0)+bits.count(2)!=bits.size(): return
@@ -54,11 +59,22 @@ func set_frame(source: Image, ui: Image, tags: Image, camera: Rect2i, world: Tex
 			if bits[p.y*320+p.x]!=2: return
 		_verified_tags = bits
 		_verified_ui = owners
-	material.set_shader_parameter("ui_mask",ImageTexture.create_from_image(ui))
-	material.set_shader_parameter("plate_mask",ImageTexture.create_from_image(tags))
+	if not uploaded:
+		_ui_texture=upload(_ui_texture,ui)
+		_plate_texture=upload(_plate_texture,tags)
+	material.set_shader_parameter("ui_mask",_ui_texture)
+	material.set_shader_parameter("plate_mask",_plate_texture)
 	active = true
 	_layout()
 	show()
+
+# Persistent mask textures: a same-size/format mask is uploaded in place
+# instead of allocating and freeing a texture resource every frame.
+static func upload(current: ImageTexture, image: Image) -> ImageTexture:
+	if current!=null and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format():
+		current.update(image)
+		return current
+	return ImageTexture.create_from_image(image)
 
 func _rect(box: Rect2, color: Color) -> void:
 	draw_rect(Rect2(box.position*scale_xy,box.size*scale_xy),color)

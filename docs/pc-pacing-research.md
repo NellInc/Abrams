@@ -323,6 +323,14 @@ On this local M1 Max, Godot 4.7.2 compatibility renderer, native Play at 1280x96
 | Gunner sample application | 15.73 ms | 5.49 ms | Average CPU time inside the production viewer's sample handler |
 | Repeated gunner plate predicate | 7.47 ms | 0.18 ms | 30 calls on the same recorded frame |
 | Repeated driver assembly predicate | 15.62 ms | 0.46 ms | 30 calls; driver baseline was the intermediate phase-corrected build |
+| Driver/cupola outline, stable frame | 29 us (1d039e0); 15-16 ms (first column-scan fix) | 17-23 us | Median of 15; exact tags + assembly/B-plane byte check (15 October 2026) |
+| Driver outline, turret-traverse miss | 11.4-14.0 ms frozen per-pixel scan | 0.52-0.71 ms | Median of 9; plate extents cached on tags, native per-column find/rfind on the B plane |
+| Driver assembly validation, changed mask | 16.3-21.0 ms frozen per-pixel | 0.63-0.83 ms | Whole-image native checks (counts, masked blits, per-row G sort) |
+
+The three 15 October 2026 outline rows were measured by the godot-frame fix
+cluster and are not re-measured here. Working if: `test_pc_cockpit_mask_reuse`
+prints `PC_COCKPIT_EDGE_TIMING` with stable <1 ms and miss/validation <0.5x the
+frozen scans in the same run.
 
 An earlier separate gunner probe measured 27.80 fps. These short probes establish
 the observed bottlenecks, not an invariant hardware speedup. Host scheduling and

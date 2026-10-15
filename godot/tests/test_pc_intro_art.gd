@@ -1,5 +1,9 @@
 extends SceneTree
 const Frontend = preload("res://scripts/pc_frontend_art.gd")
+# Record indices of the thirteen intro poses in pc-intro-trace-01, pinned from
+# the original capture rather than read back from the catalogue under test.
+const INTRO_RECORDS := [403,404,405,408,411,514,754,995,1235,1475,1712,1952,2193]
+const REPLAY_SELECTED := {"pc-intro-trace-01":2657,"pc-intro-skip-trace-01":1397}
 var errors: Array[String] = []
 var checks := 0
 var viewport: SubViewport
@@ -151,17 +155,34 @@ func run() -> void:
 		if native and entry.name=="flash-4": await render(source,"wrong-program-fallback")
 	# Replay every captured boundary with its actual program. Changing input
 	# changes native timing, but identical source frames select identical art.
+	# The expected set comes from the pinned original records, so an extra or
+	# wrong catalogue hash cannot vouch for itself.
+	var intro_hashes:={}
+	var intro_report=JSON.parse_string(FileAccess.get_file_as_string(fixture.path_join("report.json")))
+	check(intro_report is Dictionary and intro_report.get("records") is Array,"pinned intro trace report readable")
+	if intro_report is Dictionary and intro_report.get("records") is Array:
+		for record in intro_report.records:
+			if int(record.index) in INTRO_RECORDS: intro_hashes[record.rgb_sha256]=true
+	var catalogue_hashes:={}
+	for entry in art.intro_art.catalog.entries: catalogue_hashes[entry.rgb_sha256]=true
+	check(intro_hashes.size()==INTRO_RECORDS.size() and intro_hashes.keys().all(func(h):return catalogue_hashes.has(h)) and catalogue_hashes.size()==intro_hashes.size(),"catalogue binds exactly the pinned original intro frames")
 	for route in ["pc-intro-trace-01","pc-intro-skip-trace-01"]:
 		var folder:=root_path.path_join("artifacts/"+route)
 		var report: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(folder.path_join("report.json")))
 		var images: Dictionary={}
 		for hash in report.images: images[hash]=Image.load_from_file(folder.path_join(report.images[hash].image))
 		var selected:=0
+		var program_checked:=false
 		for record in report.records:
 			var recognized: bool=art.intro_art.set_frame(images[record.rgb_sha256],record.program)
-			var expected: bool=art.intro_art.frames.has(record.rgb_sha256)
+			var expected: bool=record.program.get("name")=="START" and intro_hashes.has(record.rgb_sha256)
 			check(recognized==expected,"original timing and fallback at every boundary: "+route)
 			if recognized: selected+=1
+			if recognized and not program_checked:
+				# Every record is START, so exercise the program filter explicitly.
+				check(not art.intro_art.set_frame(images[record.rgb_sha256],{"name":"SIM"}),"intro frame under another program falls back: "+route)
+				program_checked=true
+		check(selected==REPLAY_SELECTED[route],"pinned selected intro boundaries: %s %d"%[route,selected])
 		replay_counts[route]={"frames":report.records.size(),"selected":selected}
 	check(not art.intro_art.load_sources(root_path.path_join("artifacts/missing-intro")),"missing source rejected")
 	check(art.intro_art.active.is_empty() and art.intro_art.catalog.is_empty(),"missing source clears stale animation")

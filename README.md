@@ -37,7 +37,7 @@ Original game copyright 1988, 1989 Dynamix, Inc. The original intro credits are 
 
 Colonel Wilson's office in three graphics modes. Click an image for full resolution.
 
-| EGA | Genesis | Upscaled |
+| EGA | Genesis | Genesis Upscaled |
 | --- | --- | --- |
 | [![Colonel Wilson's office in original PC EGA](docs/images/colonel-ega.png)](docs/images/colonel-ega.png) | [![Colonel Wilson's office with Genesis artwork](docs/images/colonel-genesis.png)](docs/images/colonel-genesis.png) | [![Colonel Wilson's office remastered in high resolution](docs/images/colonel-upscaled.png)](docs/images/colonel-upscaled.png) |
 
@@ -55,14 +55,14 @@ The two run in tandem: the original PC executables run inside DOSBox Pure, while
 
 * High-resolution cockpits, portraits, briefings, information screens and ending newspapers, retaining the original visual style.
 * Reconstructed typefaces, animated intro credits and a memorial dedication.
-* Instant switching between **EGA**, **Genesis**, **Upscaled** and the experimental **Modern** graphics.
-* Sample-based sound effects, new music arrangements and generative crew speech, with separate volume controls.
+* Instant switching between six graphics modes: **EGA**, **EGA Upscaled**, **Genesis**, **Genesis Upscaled**, and the experimental **Modern** and **Tactical**, with an independent **HUD Style** (Restored or Tactical).
+* Sample-based sound effects, generative crew speech and, with a verified Genesis ROM in source checkouts and the browser edition, new frontend music arrangements, with separate volume controls.
 * Five save-state slots, quick save/load and **Undo last load**, alongside the original campaign saves.
 * **8x fast forward, toggled with Tab**, with sound muted during accelerated play.
 * Resizable windows and fullscreen, preserving the complete 4:3 display.
 * **4× MSAA and 16× anisotropic filtering** for remastered scenery, adjustable in Graphics.
 
-Upscaled is the default. Genesis mode uses original-resolution Genesis artwork where available; unmatched areas keep PC graphics. Modern adds source-bound low-poly vehicle and building detail, illustrated trees and a restrained battlefield palette. The original PC simulation, terrain and camera remain authoritative. Modern remains experimental while performance tuning and playtesting continue.
+Tactical (`tactical`) with the Tactical HUD is the default view; Genesis Upscaled (`upscaled`) stands in when the Modern catalogue has not been derived from your PC files. EGA Upscaled enlarges the original PC frame using only its own colours. Genesis mode uses original-resolution Genesis artwork where available; unmatched areas keep PC graphics. Modern adds source-bound low-poly vehicle and building detail, illustrated trees and a restrained battlefield palette. Tactical uses the same source-bound geometry with a Calibration Range-inspired palette and decorative near-field plants. HUD Style selects Restored or Tactical instruments and layouts independently of the graphics mode. The original PC simulation, terrain and camera remain authoritative. Modern and Tactical remain experimental while performance tuning and playtesting continue. See [graphics modes](docs/graphics-modes.md).
 
 ## Install
 
@@ -71,11 +71,11 @@ Standalone packages target **Apple Silicon macOS 14+**, **Windows x86_64** and *
 **You must supply the original PC game. The Genesis ROM is optional. Neither is bundled.**
 
 1. Download your platform's ZIP from [GitHub Releases](https://github.com/NellInc/Abrams/releases), extract it, and open `M1 Abrams Battle Tank Fan Remaster.app`, `M1 Abrams Battle Tank Fan Remaster.exe` or `M1 Abrams Battle Tank Fan Remaster.sh`. On macOS, move the app to Applications.
-2. Open Abrams and choose **Choose PC folder…** or **Import PC folder** and select the extracted folder containing `ABRAMS.COM`, `SIM.EXE` and the remaining game files.
-3. Optionally choose **Add Genesis ROM…** or **Import Genesis ROM** to enable the Genesis-based artwork and music.
-4. Click **Play**.
+2. Open Abrams, choose **Choose PC folder…** and select the extracted folder containing `ABRAMS.COM`, `SIM.EXE` and the remaining game files.
+3. Optionally choose **Add Genesis ROM…** to enable the Genesis-based remastered artwork.
+4. Click **Play Abrams** (macOS) or **Play** (Windows/Linux).
 
-The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA, PC-only Upscaled and Modern remain playable, with high-resolution lettering and crew speech; Genesis-based graphics and music stay disabled.
+The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA, EGA Upscaled, Genesis Upscaled (keeping PC graphics where Genesis-based artwork would be used), Modern and Tactical remain playable, with high-resolution lettering and crew speech; Genesis-based artwork stays disabled. A Genesis import derives the Genesis palette, effects, ending newspapers and destroyed-tank plates from your own verified ROM into your profile; the ROM itself is not copied. Native app builds made after 15 October 2026 (Alpha 4 predates this) do not offer Genesis graphics mode, the Genesis map frame or clipboard (these need captured Genesis screens), or the remastered frontend music (its percussion comes from Genesis samples whose redistribution rights are not established).
 
 These are alpha packages. The macOS app is Developer ID signed and notarized by Apple; Windows signing is not supplied. Intel Macs are not supported. See [macOS installation](docs/standalone-macos.md), [Windows/Linux installation](docs/standalone-portable.md) and the release notes for platform testing status.
 
@@ -83,7 +83,7 @@ These are alpha packages. The macOS app is Developer ID signed and notarized by 
 
 | Action | macOS | PC mapping |
 | --- | --- | --- |
-| Quick save to slot 1 | **Cmd+S** | **Ctrl+Alt+S** |
+| Quick save to slot 1 (press twice to overwrite) | **Cmd+S** | **Ctrl+Alt+S** |
 | Quick load from slot 1 | **Cmd+L** | **Ctrl+Alt+L** |
 | Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
 | Cycle graphics | **Cmd+G** | **Ctrl+Alt+G** |
@@ -112,7 +112,7 @@ From an equipped checkout:
 * `tests/`: Python tests.
 * `docs/`: setup, architecture, asset workflows and test results.
 
-[Architecture](docs/simulation-contract.md) · [Graphics coverage](docs/graphics-coverage.md) · [Audio](docs/pc-audio-research.md) · [Build status](docs/playability-status.md) · [Installation and recovery](docs/install-recovery.md)
+[Architecture](docs/pc-live-bridge.md) · [Calibration range (separate)](docs/simulation-contract.md) · [Graphics coverage](docs/graphics-coverage.md) · [Audio](docs/pc-audio-research.md) · [Build status](docs/playability-status.md) · [Installation and recovery](docs/install-recovery.md)
 
 ## Project status and contributions
 

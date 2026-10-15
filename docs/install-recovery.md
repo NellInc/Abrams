@@ -26,7 +26,10 @@ retain the old app and profile backup rather than modifying receipt hashes.
 The original campaign save system remains separate from save-state slots.
 
 For an independent test profile, use the launcher's `--data-home /absolute/path`
-option. No profile is automatically deleted, migrated or repaired.
+option. It works alike for the macOS app, the Windows `.exe`/`.cmd` and the Linux
+`.sh` launcher. The path is validated as absolute and outside the application
+(including miscased paths into it), and every setup request inherits it.
+No profile is automatically deleted, migrated or repaired.
 
 ### Portable setup recovery
 

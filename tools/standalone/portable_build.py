@@ -18,7 +18,8 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
 from tools import package_build
-from tools.standalone.build import APP_NAME, VERSION, REPOSITORY, clone_file, freeze
+from tools.standalone.build import (APP_NAME, VERSION, REPOSITORY, clone_file, freeze, native_derivations,
+                                    native_excluded, check_native_payload)
 from tools.standalone.runtime import CONTENT_SHA, ROM_SHA, sha
 from tools.standalone.portable_launcher import verify
 from tools.pc_reference_core import core_suffix
@@ -32,18 +33,26 @@ def payload(root):
     if len(names)!=len(set(names)):raise ValueError('Duplicate allowlist member')
     rows=[]
     banned={CONTENT_SHA,ROM_SHA}|{r['sha256'] for r in json.loads((root/'tools/package/game-inputs.json').read_text())['files']}
+    table=native_derivations(root)
+    # Same boundary scan as the review kits; pinned originals are skipped below.
+    guard=package_build.boundary_guard()
     for name in sorted(names):
         package_build.validate_name(name,'source' if name in source else 'private')
-        if name.startswith('GAME/') or name=='.runtime/pc-core/abrams-ref.zip':continue
+        # Raw Genesis extracts, reference captures and decoded PC data are
+        # derived on the player's machine; original-free inputs omit them.
+        if name.startswith('GAME/') or name=='.runtime/pc-core/abrams-ref.zip' or native_excluded(name,table):continue
         if name=='.runtime/pc-core/abrams-trace.dylib':name='.runtime/pc-core/abrams-trace'+core_suffix()
         relative=Path(name)
         path=root/relative
         if any(root.joinpath(*relative.parts[:i]).is_symlink() for i in range(1,len(relative.parts)+1)) or not path.is_file():
             raise ValueError('Missing regular portable payload: '+name)
-        digest=sha(path)
+        data=path.read_bytes()
+        digest=hashlib.sha256(data).hexdigest()
         if digest in banned:raise ValueError('Original content found outside excluded input locations: '+name)
+        guard(name,data,'portable')
         rows.append({'path':name,'sha256':digest,'size':path.stat().st_size,'mode':0o755 if name.endswith(('.sh','.command')) else 0o644})
     package_build.check_source_closure(root,[r['path'] for r in rows],include_assets=True)
+    check_native_payload(rows,table)
     return rows
 
 
@@ -61,24 +70,15 @@ def inspect_core():
     return manifest
 
 
-def notices(output, godot, python, core_source):
+def notices(output, godot, cache, core_source):
     directory=output/'notices';directory.mkdir()
     for name in ('LICENSE','NOTICE.md'):shutil.copyfile(ROOT/name,directory/name)
     shutil.copytree(ROOT/'LICENSES',directory/'LICENSES')
     shutil.copyfile(core_source/'LICENSE',directory/'DOSBox-Pure-LICENSE.txt')
     subprocess.run([str(godot),'--headless','--audio-driver','Dummy','--path',str(ROOT/'godot'),
                     '--script',str(ROOT/'tools/standalone/licenses.gd'),'--',str(directory/'Godot.json')],check=True)
-    code='''import importlib.metadata as m,json,pathlib,sys,sysconfig
-out={}
-for package in ['Pillow','PyInstaller']:
- d=m.distribution(package)
- for f in d.files:
-  if '.dist-info/licenses/' in str(f) and d.locate_file(f).is_file():out[package+'/'+str(f).split('/licenses/')[1]]=d.locate_file(f).read_text()
-for p in [pathlib.Path(sysconfig.get_path('stdlib'))/'LICENSE.txt',pathlib.Path(sys.base_prefix)/'LICENSE.txt']:
- if p.is_file():out['Python/LICENSE.txt']=p.read_text();break
-else:raise RuntimeError('Python licence text not found')
-print(json.dumps(out,indent=2))'''
-    (directory/'Python-runtime.json').write_bytes(subprocess.check_output([str(python),'-c',code]))
+    # Captured by freeze() from the interpreter that produced the shipped runtime.
+    shutil.copyfile(cache/'Python-runtime.json',directory/'Python-runtime.json')
 
 
 def build(output,godot,python,cache,core_source):
@@ -100,7 +100,7 @@ def build(output,godot,python,cache,core_source):
     renderer=output/'renderer'/('AbramsRenderer.exe' if os.name=='nt' else 'AbramsRenderer')
     renderer.parent.mkdir();shutil.copyfile(godot,renderer);renderer.chmod(0o755)
     # Bundle the full Godot Windows executable, not its tiny console wrapper.
-    notices(output,godot,python,core_source)
+    notices(output,godot,cache,core_source)
     if os.name=='nt':
         icon=cache/'Abrams.ico'
         subprocess.run([str(python),'-c','from PIL import Image;import sys;Image.open(sys.argv[1]).save(sys.argv[2],format="ICO",sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])',str(ROOT/'branding/abrams-icon.png'),str(icon)],check=True)
@@ -115,16 +115,21 @@ def build(output,godot,python,cache,core_source):
         launcher.chmod(0o755)
     runtime_files=[{'path':p.relative_to(output).as_posix(),'sha256':sha(p),'size':p.stat().st_size}
         for p in sorted(output.rglob('*')) if p.is_file() and not p.is_relative_to(output/'kit')]
-    identity=hashlib.sha256(json.dumps({'files':rows,'runtime':runtime_files},sort_keys=True).encode()).hexdigest()[:20]
+    table=native_derivations(ROOT);derived=table['derived']
+    identity=hashlib.sha256(json.dumps({'files':rows,'derived':derived,'runtime':runtime_files},sort_keys=True).encode()).hexdigest()[:20]
     manifest={'schema':1,'version':VERSION,'repository':REPOSITORY,'build_id':identity,'originals_included':False,
-              'files':rows,'portable_files':runtime_files,'platform':sys.platform+' x86_64',
+              'files':rows,'derived':derived,'portable_files':runtime_files,'platform':sys.platform+' x86_64',
               'release_ready':False,'minimum_os':'Windows 10' if os.name=='nt' else 'glibc 2.35 Linux',
               'godot_sha256':sha(godot),'runtime_entry_sha256':sha(ROOT/'tools/standalone/entry.py')}
     (output/'RUNTIME.json').write_text(json.dumps(manifest,indent=2)+'\n')
     verify(output)
     banned={CONTENT_SHA,ROM_SHA}|{r['sha256'] for r in json.loads((ROOT/'tools/package/game-inputs.json').read_text())['files']}
+    banned|={row['sha256'] for row in derived}
     for path in output.rglob('*'):
         if path.is_file() and sha(path) in banned:raise ValueError('Original content embedded in portable app')
+        relative=path.relative_to(output).as_posix()
+        if relative.startswith('kit/') and native_excluded(relative[4:],table):
+            raise ValueError('Original-derived data embedded in portable app: '+relative)
     archive=output.with_suffix('.zip')
     if archive.exists():raise ValueError('Archive already exists')
     # ZIP member permissions preserve Linux launchability across extraction.

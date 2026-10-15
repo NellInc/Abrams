@@ -6,6 +6,7 @@ import unittest
 from fontTools.ttLib import TTFont
 from tools.pc_fonts import decode_font
 from tools.build_pc_outline_fonts import build_face
+from tests._inputs import requires
 
 ROOT=Path(__file__).resolve().parents[1]
 DIRECTORY=ROOT/'local-art/pc-outline-fonts-v5'
@@ -36,6 +37,7 @@ def intervals(contours,y):
     return result
 
 
+@requires('local-art')
 class OutlineFontTests(unittest.TestCase):
     def test_source_aliases_retain_identical_outlines(self):
         manifest=json.loads((DIRECTORY/'manifest.json').read_text())

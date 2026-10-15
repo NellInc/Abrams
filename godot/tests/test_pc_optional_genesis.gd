@@ -13,6 +13,18 @@ class MusicProbe extends Node:
 	func apply_music_context(context: String, enabled: bool) -> void:
 		applied.append([context,enabled])
 
+class TransportProbe extends Node:
+	var transport_muted := false
+	var timeline: Array = []
+	func set_transport_muted(value: bool) -> void: transport_muted=value
+	func reset_timeline() -> void: timeline.append("reset")
+
+class ContinuingProbe extends TransportProbe:
+	func continue_timeline() -> void: timeline.append("continue")
+
+var web_syncs := 0
+func _sync_web_controls(_message: String = "") -> void: web_syncs+=1
+
 func check(ok: bool, label: String) -> void:
 	checks+=1
 	if not ok: errors.append(label)
@@ -68,6 +80,7 @@ func run() -> void:
 	check(tandem_frame.set_graphics_mode("upscaled") and tandem_frame.world_enabled,"Upscaled restores PC world")
 	audio_menu=Menu.new()
 	audio_menu.config_path=""
+	audio_menu.quality_config_path=""
 	root.add_child(audio_menu)
 	_choose_graphics("modern")
 	check(tandem_frame.graphics_mode=="modern" and draw_view.modern_enabled and not draw_view.tactical_landscape,"PC-only Modern enables its unchanged refined world")
@@ -92,7 +105,9 @@ func run() -> void:
 	pc_audio=null
 	for available in [true,false]:
 		var menu := Menu.new()
+		# Graphics choices persist; keep them out of the player's profile.
 		menu.config_path=""
+		menu.quality_config_path=""
 		menu.genesis_available=available
 		root.add_child(menu)
 		check(menu.graphics_popup.is_item_disabled(menu.MODES.find("genesis"))==not available,"Genesis availability visible in menu")
@@ -115,6 +130,80 @@ func run() -> void:
 		await process_frame
 		check(status.size.x>=float(extent.x-48),"startup text spans the available window")
 		check(status.get_line_count()==1,"startup text stays on one readable line")
+	# Play-shell wiring on the production play display.
+	audio_menu=Menu.new()
+	audio_menu.config_path=""
+	audio_menu.quality_config_path=""
+	root.add_child(audio_menu)
+	audio_menu.speed_selected.connect(_choose_speed)
+	_connect_web_resync()
+	await process_frame
+	web_syncs=0
+	audio_menu.choose_speed(8)
+	audio_menu.choose_hud_style("restored")
+	await process_frame
+	check(web_syncs==1 and fast_forward==8,"in-canvas and Tab changes resync the browser toolbar once")
+	audio_menu.choose_speed(1)
+	var program := {"name":"SIM"}
+	previous_presentation=presentation
+	previous_program=program
+	_present_tandem(source,presentation,world,program)
+	check(not _presentation_key.is_empty() and tandem_frame.instrument_art.pc_rounds_enabled,"Restored composition cached with PC round counters")
+	var builds := presentation_builds
+	_choose_hud_style("tactical")
+	check(_presentation_key.is_empty() and not tandem_frame.instrument_art.pc_rounds_enabled,"HUD switch replays an unchanged frame in the new style")
+	_present_tandem(source,presentation,world,program)
+	check(presentation_builds==builds+1,"unchanged source after a HUD switch cannot reuse the old composition")
+	_choose_hud_style("restored")
+	check(tandem_frame.instrument_art.pc_rounds_enabled,"returning to Restored restores PC round counters at once")
+	var transport := TransportProbe.new()
+	root.add_child(transport)
+	pc_audio=transport
+	_request_state("save_state",1)
+	_choose_speed(1)
+	check(not transport.transport_muted,"a requested save keeps in-flight play audible")
+	pending_state_command={}
+	_request_state("load_state",1)
+	check(transport.transport_muted,"a requested load mutes the frames it discards")
+	pending_state_command={}
+	_choose_speed(1)
+	check(not transport.transport_muted,"normal speed unmutes once no load is pending")
+	# The host is executing the operation: only a load keeps the transport muted.
+	state_control_pending=true
+	for op in ["save_state","load_state","load_previous"]:
+		state_control_op=op
+		_choose_speed(1)
+		check(transport.transport_muted==(op!="save_state"),"executing %s mutes only a rewind"%op)
+	# A save's worker restart keeps sounds already playing when the audio
+	# layer can continue its timeline; otherwise (and for loads) it resets.
+	state_control_op="save_state"
+	_reset_audio_timeline()
+	check(transport.timeline==["reset"],"save without continue_timeline keeps the reset fallback")
+	var continuing := ContinuingProbe.new()
+	root.add_child(continuing)
+	pc_audio=continuing
+	_reset_audio_timeline()
+	state_control_op="load_previous"
+	_reset_audio_timeline()
+	check(continuing.timeline==["continue","reset"],"save continues the audio timeline; a load resets it")
+	pc_audio=transport
+	continuing.free()
+	state_control_pending=false
+	state_control_op=""
+	# A transport that rejects an operation must not leave it queued forever.
+	audio_menu.state_requested.connect(_request_state)
+	audio_menu.set_state_status([{"slot":1,"previous_saved_at":"2026-10-15 09:00:00"}])
+	check(audio_menu.request_state("load_previous",1) and pending_state_command.get("op")=="load_previous","listed archive queues a load")
+	var transport_pending: bool=bridge.pending
+	bridge.pending=false
+	_send_state_command()
+	bridge.pending=transport_pending
+	check(pending_state_command.is_empty() and not state_control_pending and not audio_menu.busy and not transport.transport_muted,"rejected state operation is dropped, reported and unmuted")
+	check(audio_menu.state_message=="This state operation is unavailable here","rejection is reported to the player")
+	pc_audio=null
+	transport.free()
+	audio_menu.free()
+	audio_menu=null
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_OPTIONAL_GENESIS: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

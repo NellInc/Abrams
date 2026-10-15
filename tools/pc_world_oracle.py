@@ -244,8 +244,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     source = args.root.resolve()
-    if inside_source(args.output, source.parent, (source.name,)):
-        parser.error("output must be outside original directory")
+    if inside_source(args.output, ROOT) or inside_source(args.output, source.parent, (source.name,)):
+        parser.error("output must be outside original sources and --root")
     result = run(args.root, args.capture)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")

@@ -7,6 +7,14 @@ var streams: Dictionary = {}
 var failure := "" # Manifest failure: disables every context.
 var failures: Dictionary = {} # context -> reason; one bad track silences only itself.
 var manifest: Dictionary = {}
+# path -> [sha256, size, modified time] of a track already hashed this session,
+# so a reload after release_streams() decodes without re-hashing unchanged files.
+# Trust boundary: each track is hashed once per session; later reloads trust the
+# manifest sha plus file size and (1 s resolution) mtime. A same-size replacement
+# within the same second would decode unverified until the next session.
+static var verified: Dictionary = {}
+var hash_count := 0
+var full_frame_hashes := 0
 
 func _init() -> void:
 	directory = ("/" if OS.has_feature("web") else ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()).path_join("local-audio/frontend-music-v1")
@@ -28,7 +36,11 @@ func get_stream(context: String) -> AudioStreamWAV:
 		return _fail(context,"Invalid local frontend music track: "+context)
 	var path := directory.path_join(context+".wav")
 	if not FileAccess.file_exists(path): return _fail(context,"Local frontend music file missing: "+context)
-	if FileAccess.get_sha256(path)!=track.sha256: return _fail(context,"Local frontend music hash mismatch: "+context)
+	var stamp := [track.sha256,FileAccess.get_size(path),FileAccess.get_modified_time(path)]
+	if verified.get(path)!=stamp:
+		hash_count+=1
+		if FileAccess.get_sha256(path)!=track.sha256: return _fail(context,"Local frontend music hash mismatch: "+context)
+		verified[path]=stamp
 	var stream := AudioStreamWAV.load_from_file(path)
 	if stream==null or stream.mix_rate!=24000 or not stream.stereo:
 		return _fail(context,"Invalid local frontend music PCM: "+context)
@@ -38,6 +50,15 @@ func get_stream(context: String) -> AudioStreamWAV:
 	streams[context]=stream
 	return stream
 
+func prewarm() -> void:
+	# Hash and decode every local track once at startup, so the first briefing
+	# or debrief frame never stalls on a multi-megabyte WAV. Main thread only:
+	# _sync_music reads streams synchronously.
+	_load_intro_fingerprints()
+	for context in CONTEXTS:
+		get_stream(context)
+		if manifest.is_empty() or not failure.is_empty(): return # optional local assets absent
+
 func _fail(context: String, reason: String) -> AudioStreamWAV:
 	failures[context]=reason
 	push_warning(reason)
@@ -45,6 +66,8 @@ func _fail(context: String, reason: String) -> AudioStreamWAV:
 
 var intro_frames: Dictionary = {}
 var intro_checked := false
+var _last_start_bytes := PackedByteArray()
+var _last_start_intro := false
 
 func context_for_frame(source: Image, program: Dictionary, presentation: Dictionary) -> String:
 	if source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8: return ""
@@ -52,9 +75,17 @@ func context_for_frame(source: Image, program: Dictionary, presentation: Diction
 	if name not in ["START","BRIEF","END"]: return ""
 	if name=="START":
 		_load_intro_fingerprints()
-		var hash := HashingContext.new()
-		hash.start(HashingContext.HASH_SHA256);hash.update(source.get_data())
-		if intro_frames.has(hash.finish().hex_encode()): return "intro"
+		# Without pinned intro fingerprints no full-frame hash can match.
+		if not intro_frames.is_empty():
+			# An unchanged START frame reuses its own exact-byte result.
+			var bytes := source.get_data()
+			if bytes!=_last_start_bytes:
+				full_frame_hashes+=1
+				var hash := HashingContext.new()
+				hash.start(HashingContext.HASH_SHA256);hash.update(bytes)
+				_last_start_intro=intro_frames.has(hash.finish().hex_encode())
+				_last_start_bytes=bytes
+			if _last_start_intro: return "intro"
 	if presentation.get("frontend_program")!=program: return ""
 	var runs= presentation.get("text_runs")
 	if not runs is Array: return ""

@@ -141,7 +141,7 @@ def verify(ram, target_lock=False):
                         [[x,y,10,6,palette[state]]],page,mode,0x6E2D,
                         locals={-4:0xC92+3*i,-6:y+1,-2:x})
     return {'sim_sha256': SIM_SHA256, 'capture_sha256': hashlib.sha256(ram).hexdigest(),
-        'engine': 'unicorn-2.1.4/x86-16', 'cases': cases, 'case_count': len(cases),
+        'engine': f'unicorn-{unicorn.__version__}/x86-16', 'cases': cases, 'case_count': len(cases),
         'original_instruction_locations_checked': len(checked), 'vga_writes': writes,
         'plane_bytes_checked_including_untouched': len(cases)*4*65536,
         'scope': 'whole original commander lamp routine and STATUS lamp fragment, classifier and rectangle rasterizer; isolated fixtures, no live reachability or whole-modal timing claim'}

@@ -17,6 +17,12 @@ import sys
 
 from PIL import Image
 
+try:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source
+
 ROOT = Path(__file__).resolve().parents[1]
 BUTTONS = {"b": 0, "start": 3, "up": 4, "down": 5, "left": 6,
            "right": 7, "c": 8, "a": 1}
@@ -258,6 +264,8 @@ def main():
     parser.add_argument("--restore", type=Path)
     parser.add_argument("--sequence", default="180:title", help="Comma-separated frames[+button+button][:capture-name] steps")
     args = parser.parse_args()
+    if inside_source(args.output, ROOT):
+        parser.error("output must be outside original sources")
     try:
         steps = parse_capture_sequence(args.sequence)
     except ValueError as error:

@@ -25,6 +25,7 @@ static unsigned abrams_strut_page = 0;
 static AbramsPlateOwnership abrams_plates;
 static Bit8u abrams_plate_mask[320 * 200];
 static Bit8u abrams_driver_mask[320 * 200 * 3];
+static bool abrams_driver_seen = false; // any domain-8 pixel since the last scanout
 static bool abrams_driver_active = false;
 static unsigned abrams_driver_page = 0;
 static Bit32u abrams_driver_tag = 0;
@@ -53,6 +54,64 @@ static bool AbramsKnownTextCaller(Bit16u caller) {
         if (calls[i] == caller) return true;
     return false;
 }
+
+// AWB1 SIM RAM window bundle: begin.
+// Declares the packet format to web-prototype/build_core.py; the native
+// receipt records it as text/message/strut event schemas 3/2/2.
+#define ABRAMS_TRACE_SIM_RAM_WINDOWS 1
+// SIM events 26, 28 and 29 send only the guest RAM windows their readers
+// dereference, not a 640 KiB copy (tools/pc_trace_windows.py, whose
+// sim_event_windows and pack_window_bundle this mirrors byte for byte):
+// b'AWB1', u16 count, count x (u32 linear base, u32 length), then the bytes.
+// Windows are DS +64 KiB and SS:SP +10; event 26 adds the loaded font glyphs
+// named by DS 0x369e, event 29 its DS descriptor and the strut's four planes
+// plus mask. Windows at or past 640 KiB or empty are dropped, the rest are
+// clipped to 640 KiB before any read. Read-only: no guest or latch writes.
+// Worst case: header 6+4*8, DS 65536, stack 10, descriptor 10, then a font
+// clipped to 640 KiB (event 26) or a strut of at most 5*31*255 bytes (29).
+static Bit8u abrams_trace_windows[6 + 8 * 8 + 65536 + 10 + 10 + 640 * 1024];
+static Bit32u AbramsTraceWindowWord(Bit32u at) { return at + 2 <= 640u * 1024u ? mem_readw(at) : 0; }
+static Bit32u AbramsTraceWindowBundle(Bit32u event, const Bit16u* regs) {
+    const Bit32u limit = 640u * 1024u, ds = Bit32u(regs[9]) * 16u;
+    const Bit32u stack = Bit32u(regs[11]) * 16u + regs[7];
+    Bit32u bases[4] = {ds, stack, 0, 0}, lengths[4] = {65536, 10, 0, 0}, count = 2;
+    if (event == 26) {
+        if (ds + 0x36a0 > limit) return 0;
+        Bit32u width = mem_readb(ds + 0x364e), height = mem_readb(ds + 0x3662);
+        Bit32u glyphs = mem_readb(ds + 0x368a), segment = mem_readw(ds + 0x369e);
+        if (segment) { bases[count] = segment * 16u; lengths[count++] = ((width + 7) / 8) * height * glyphs; }
+    } else if (event == 29) {
+        Bit32u descriptor = ds + AbramsTraceWindowWord(stack + 4);
+        if (descriptor + 10 <= limit) {
+            bases[count] = descriptor; lengths[count++] = 10;
+            bases[count] = mem_readw(descriptor) * 16u + mem_readw(descriptor + 2);
+            lengths[count++] = 5 * (mem_readb(descriptor + 6) / 8) * mem_readb(descriptor + 7);
+        }
+    } else if (event != 28) return 0;
+    Bit32u kept = 0, size = 6;
+    for (Bit32u i = 0; i < count; ++i) {
+        if (bases[i] >= limit || !lengths[i]) continue;
+        bases[kept] = bases[i];
+        lengths[kept] = lengths[i] < limit - bases[i] ? lengths[i] : limit - bases[i];
+        size += 8 + lengths[kept++];
+    }
+    if (!kept || size > sizeof(abrams_trace_windows)) return 0;
+    Bit8u* out = abrams_trace_windows;
+    out[0] = 'A'; out[1] = 'W'; out[2] = 'B'; out[3] = '1';
+    out[4] = Bit8u(kept); out[5] = 0;
+    for (Bit32u i = 0; i < kept; ++i) for (Bit32u b = 0; b < 4; ++b) {
+        out[6 + i * 8 + b] = Bit8u(bases[i] >> (8 * b));
+        out[10 + i * 8 + b] = Bit8u(lengths[i] >> (8 * b));
+    }
+    out += 6 + kept * 8;
+    for (Bit32u i = 0; i < kept; ++i) { MEM_BlockRead(bases[i], out, lengths[i]); out += lengths[i]; }
+    return size;
+}
+static void AbramsTraceSendWindows(Bit32u event, const Bit16u* regs, Bit32u offset) {
+    Bit32u size = AbramsTraceWindowBundle(event, regs);
+    abrams_trace_callback(event, regs, size ? abrams_trace_windows : NULL, offset, size);
+}
+// AWB1 SIM RAM window bundle: end.
 
 extern "C" __attribute__((visibility("default")))
 void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
@@ -98,15 +157,17 @@ bool abrams_trace_claim_motor_pool(unsigned page) {
     return abrams_plates.claim_motor_pool(page);
 }
 
+// START/BRIEF/END consume no EGA ownership, plate or driver provenance, and
+// SIM attachment resets both models, so the frontend path skips them entirely.
 extern "C" void AbramsTraceVgaRead(Bit32u address) {
-    if (abrams_trace_callback && vga.mode == M_EGA) {
+    if (abrams_trace_callback && !abrams_frontend_text_mode && vga.mode == M_EGA) {
         abrams_ownership.read(address);
         abrams_plates.read(address);
     }
 }
 extern "C" void AbramsTraceVgaWrite(Bit32u address, Bit8u value) {
-    if (!abrams_trace_callback || vga.mode != M_EGA) return;
-    Bit32u before = address < 65536 ? abrams_ownership.owners[address] : 0xffffffffu;
+    if (!abrams_trace_callback || abrams_frontend_text_mode || vga.mode != M_EGA) return;
+    Bit32u before =address < 65536 ? abrams_ownership.owners[address] : 0xffffffffu;
     Bit32u plate_before = address < 65536 ? abrams_plates.origin[address] : 0;
     Bit32u plate_bits_before = address < 65536 ? abrams_plates.bits[address] : 0;
     Bit32u authored = 0;
@@ -148,8 +209,9 @@ extern "C" void AbramsTraceVgaWrite(Bit32u address, Bit8u value) {
     }
 }
 extern "C" void AbramsTraceRasterLine(Bit32u address, Bit32u row, Bit32u width, Bit32u wrap_mask) {
-    if (!abrams_trace_callback) return;
+    if (!abrams_trace_callback || abrams_frontend_text_mode) return;
     if (width != 320 || row >= 200 || vga.mode != M_EGA) { abrams_ui_valid = false; return; }
+    if (!abrams_ui_valid) return; // this frame's masks are already unsendable
     for (Bit32u x = 0; x < 320; ++x) {
         abrams_ui_mask[row * 320 + x] = abrams_ownership.pixel((address + x) & wrap_mask);
         Bit32u at = (address + x) & wrap_mask, pixel = row * 320 + x;
@@ -161,6 +223,7 @@ extern "C" void AbramsTraceRasterLine(Bit32u address, Bit32u row, Bit32u width, 
         abrams_driver_mask[pixel*3] = Bit8u(offset);
         abrams_driver_mask[pixel*3+1] = Bit8u(offset >> 8);
         abrams_driver_mask[pixel*3+2] = id == 8 ? 255 : 0;
+        abrams_driver_seen = abrams_driver_seen || id == 8;
     }
     abrams_ui_rows[row] = true;
 }
@@ -171,17 +234,22 @@ extern "C" void AbramsTraceScanout(Bit32u page) {
     const Bit16u regs[12] = {};
     memset(abrams_ui_rows, 0, sizeof(abrams_ui_rows));
     abrams_ui_valid = true;
+    abrams_driver_seen = false;
     abrams_trace_callback(10, regs, (const Bit8u*)render.pal.rgb, page, 16 * 4);
 }
 extern "C" void AbramsTraceVideoComplete(Bit32u slot) {
     if (!abrams_trace_callback) return;
     const Bit16u regs[12] = {};
+    if (abrams_frontend_text_mode) { abrams_trace_callback(11, regs, NULL, slot, 0); return; }
     bool complete = abrams_ui_valid && abrams_ownership.valid;
     for (unsigned y = 0; y < 200; ++y) complete = complete && abrams_ui_rows[y];
     abrams_trace_callback(19, regs, complete ? abrams_ui_mask : NULL, slot, complete ? sizeof(abrams_ui_mask) : 0);
     bool plates_complete = complete && abrams_plates.valid;
-    abrams_trace_callback(31, regs, plates_complete ? abrams_driver_mask : NULL, slot,
-        plates_complete ? sizeof(abrams_driver_mask) : 0);
+    // A frame without driver pixels sends no mask; hosts already read an
+    // empty mask exactly as the all-zero one (no driver overlay).
+    bool driver = plates_complete && abrams_driver_seen;
+    abrams_trace_callback(31, regs, driver ? abrams_driver_mask : NULL, slot,
+        driver ? sizeof(abrams_driver_mask) : 0);
     abrams_trace_callback(24, regs, plates_complete ? abrams_plate_mask : NULL, slot,
         plates_complete ? sizeof(abrams_plate_mask) : 0);
     abrams_trace_callback(11, regs, NULL, slot, 0);
@@ -617,8 +685,7 @@ static INLINE void AbramsTraceInstruction() {
         // radio-open store. Observation never implies that the words are visible.
         const Bit16u regs[12] = {reg_ax, reg_bx, reg_cx, reg_dx, reg_si, reg_di,
             reg_bp, reg_sp, SegValue(cs), SegValue(ds), SegValue(es), SegValue(ss)};
-        MEM_BlockRead(0, abrams_trace_snapshot, sizeof(abrams_trace_snapshot));
-        abrams_trace_callback(28, regs, abrams_trace_snapshot, ip, sizeof(abrams_trace_snapshot));
+        AbramsTraceSendWindows(28, regs, ip);
         return;
     }
     if (segment == abrams_trace_load + 0x0f8d && (ip == 0x020a || ip == 0x0259)) {
@@ -629,8 +696,7 @@ static INLINE void AbramsTraceInstruction() {
             if (stack + 10 > 640 * 1024 || mem_readw(stack + 2) != abrams_trace_load) return;
             Bit32u caller = mem_readw(stack);
             if (!AbramsKnownTextCaller(Bit16u(caller))) return;
-            MEM_BlockRead(0, abrams_trace_snapshot, sizeof(abrams_trace_snapshot));
-            abrams_trace_callback(26, regs, abrams_trace_snapshot, 0, sizeof(abrams_trace_snapshot));
+            AbramsTraceSendWindows(26, regs, 0);
             Bit32u pointer = mem_readw(stack + 4), n = 0;
             for (; n < 320 && pointer + n < 65536 && mem_readb(base + pointer + n); ++n) {}
             Bit32u x = mem_readw(stack + 6), y = mem_readw(stack + 8);
@@ -825,14 +891,16 @@ static INLINE void AbramsTraceInstruction() {
         abrams_bitmap_active = true;
         abrams_strut_active = false;
         unsigned table = mem_readw(base + 0x798e);
-        if (!abrams_driver_active && table && table + 14 <= 65536) for (unsigned index = 0; index < 7; ++index) {
+        // As with driver and plate pages, only the two original display pages
+        // are claimable (and checkpointable); other pages keep bitmap ownership.
+        bool strut_page = page == 0 || page == 8192;
+        if (!abrams_driver_active && strut_page && table && table + 14 <= 65536) for (unsigned index = 0; index < 7; ++index) {
             if (base + mem_readw(base + table + index*2) != descriptor) continue;
             const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,reg_bp,reg_sp,
                 SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
             abrams_strut_page = page;
             abrams_strut_active = true;
-            MEM_BlockRead(0, abrams_trace_snapshot, sizeof(abrams_trace_snapshot));
-            abrams_trace_callback(29, regs, abrams_trace_snapshot, index, sizeof(abrams_trace_snapshot));
+            AbramsTraceSendWindows(29, regs, index);
             break;
         }
         return;
@@ -868,7 +936,11 @@ static INLINE void AbramsTraceInstruction() {
         abrams_world_drawing = caller_valid && mem_readw(base + 0x358c) == 0x012c &&
             mem_readw(stack + 4) == abrams_trace_load + 0x0b4d &&
             (caller_ip == 0x040e || caller_ip == 0x04ce);
+        // A non-world caller (destroyed-GPS black panel) must not reset the
+        // completed pass: report it as payload-free event 57 instead of 13.
+        if (!abrams_world_drawing) { event = 57; start = 0; length = 0; }
     } else if (event == 4) abrams_world_drawing = false;
+    else if ((event == 15 || event == 16) && !abrams_world_drawing) return;
     const Bit16u regs[12] = {reg_ax, reg_bx, reg_cx, reg_dx, reg_si, reg_di,
         reg_bp, reg_sp, SegValue(cs), SegValue(ds), SegValue(es), SegValue(ss)};
     if (event == 1) abrams_trace_callback(14, regs, (const Bit8u*)render.pal.rgb, 0, 16 * 4);

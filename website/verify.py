@@ -29,6 +29,11 @@ class Page(HTMLParser):
         self.text = []
         self.downloads = []
         self.web_options = []
+        self.scenario_links = {}
+        self.scenario_names = {}
+        self.brief_titles = {}
+        self.brief = None
+        self.capture = None
         self.skip = 0
 
     def handle_data(self, data):
@@ -36,12 +41,20 @@ class Page(HTMLParser):
             self.text.append(data)
             if self.downloads and self.downloads[-1][2]:
                 self.downloads[-1][1].append(data)
+            if self.capture:
+                self.capture[3].append(data)
 
     def handle_endtag(self, tag):
         if tag in ("script", "style"):
             self.skip -= 1
         elif tag == "a" and self.downloads:
             self.downloads[-1][2] = False
+        if self.capture and tag == self.capture[0]:
+            _, target, key, parts = self.capture
+            target[key] = re.sub(r"\s+", " ", "".join(parts)).strip()
+            self.capture = None
+        if tag == "article":
+            self.brief = None
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -71,6 +84,13 @@ class Page(HTMLParser):
                 self.refs.append(candidate.split()[0])
         if "data-scenario" in attrs:
             self.scenarios.append(attrs["data-scenario"])
+            # The picker link is the only copy of each mission's name the script reads.
+            self.scenario_links[attrs["data-scenario"]] = attrs.get("href", "")
+            self.capture = [tag, self.scenario_names, attrs["data-scenario"], []]
+        if "data-brief" in attrs:
+            self.brief = attrs["data-brief"]
+        elif tag == "h3" and self.brief:
+            self.capture = [tag, self.brief_titles, self.brief, []]
 
     def visible_text(self):
         return re.sub(r"\s+", " ", " ".join(self.text))
@@ -111,6 +131,11 @@ def main():
         errors.append("The Web edition must link once to the packaged remaster")
     if not re.search(r'<a class="web-option"[^>]*>.*?original PC game folder.*?</a>', html, re.S):
         errors.append("The Web option must state its original-game requirement")
+    # WCAG 2.5.3: the accessible name is the visible text, so the original-game
+    # requirement is never hidden from assistive technology by a shorter name.
+    for _, attrs in page.web_options:
+        if "aria-label" in attrs or "aria-labelledby" in attrs:
+            errors.append("The Web option's accessible name must be its visible text, with no aria-label or aria-labelledby")
     for ref in page.refs:
         url = urlsplit(ref)
         if url.scheme or url.netloc:
@@ -123,14 +148,19 @@ def main():
                 errors.append(f"Missing or out-of-bound asset: {ref}")
         elif url.fragment and url.fragment not in page.ids:
             errors.append(f"Missing section: {ref}")
-    scenarios = json.loads((DIST / "scenarios.json").read_text())
-    if len(scenarios) != 8 or {s["slug"] for s in scenarios} != set(page.scenarios):
-        errors.append("Scenario inventory differs from all eight displayed missions")
-    for scenario in scenarios:
-        if not (DIST / f"assets/maps/manual-map-{scenario['slug']}.webp").is_file():
-            errors.append(f"Missing scenario map: {scenario['slug']}")
-    if set(page.briefs) != {s["slug"] for s in scenarios} or len(page.briefs) != 8:
+    # The page holds the only copy of the mission content: app.js reads each name
+    # from its picker link, so the link and its brief must agree.
+    if len(page.scenarios) != 8 or len(set(page.scenarios)) != 8:
+        errors.append("The scenario picker must list eight distinct missions")
+    for slug in page.scenarios:
+        if page.scenario_links[slug] != f"assets/maps/manual-map-{slug}.webp" or not dist_file(page.scenario_links[slug]).is_file():
+            errors.append(f"Missing scenario map: {slug}")
+        if not page.scenario_names.get(slug) or page.scenario_names.get(slug) != page.brief_titles.get(slug):
+            errors.append(f"Mission picker name differs from its brief: {slug}")
+    if sorted(page.briefs) != sorted(set(page.scenarios)) or len(page.briefs) != 8:
         errors.append("All eight mission briefs must be in the delivered HTML")
+    if (DIST / "scenarios.json").exists():
+        errors.append("Mission content must not be duplicated outside the page: scenarios.json")
     provenance = json.loads((ROOT / "asset-provenance.json").read_text())
     browser = DIST / "play"
     raster_files = {str(p.relative_to(ROOT)) for p in DIST.rglob("*") if p.suffix in {".webp", ".jpg", ".png"} and not p.is_relative_to(browser)}
@@ -140,8 +170,21 @@ def main():
         asset = ROOT / row["file"]
         if hashlib.sha256(asset.read_bytes()).hexdigest() != row["output_sha256"]:
             errors.append(f"Asset differs from recorded provenance: {asset.name}")
-        if asset.suffix == ".webp" and not asset.with_suffix(asset.suffix + ".json").is_file():
+        # A changed source must fail until the served copy and its record are refreshed.
+        # Sources under the ignored artifacts/ directory exist only locally; skip absent ones.
+        source = ROOT.parent / row["source"] if row.get("source") else None
+        if source and source.is_file() and hashlib.sha256(source.read_bytes()).hexdigest() != row.get("source_sha256"):
+            errors.append(f"Served asset is stale against its changed source: {asset.name} ({row['source']})")
+        sidecar = asset.with_suffix(asset.suffix + ".json")
+        if asset.suffix == ".webp" and not sidecar.is_file():
             errors.append(f"Missing origin sidecar: {asset.name}")
+        elif sidecar.is_file():
+            recorded = re.findall(r"Source SHA-256: ([0-9a-f]{64})", json.loads(sidecar.read_text()).get("prompt", ""))
+            if recorded and recorded != [row.get("source_sha256")]:
+                errors.append(f"Origin sidecar names a different source: {asset.name}")
+    for row in provenance["documents"]:
+        if row["source_sha256"] != row["output_sha256"]:
+            errors.append(f"Published document must be a verbatim copy of its source: {row['file']}")
     permitted = {".html", ".css", ".js", ".json", ".webp", ".jpg", ".png", ".svg", ".ttf", ".woff2", ".txt", ".mp4", ".vtt", ".xml", ".pdf"}
     for path in DIST.rglob("*"):
         if path.is_relative_to(browser):
@@ -155,6 +198,7 @@ def main():
             errors.append(f"Unexpected embedded media: {forbidden}")
         elif (DIST / forbidden).exists():
             errors.append(f"Original game must not be bundled: {forbidden}")
+    web_modes = set()
     bundle_path = browser / "BUNDLE.json"
     if not bundle_path.is_file():
         errors.append("The linked Web remaster bundle is missing")
@@ -174,6 +218,17 @@ def main():
                 errors.append(f"Original game file in browser bundle: {name}")
         if any(p.is_symlink() for p in browser.rglob("*")):
             errors.append("Symbolic link in browser bundle")
+        # asset-provenance.json points here rather than listing each bundle file.
+        pointer = provenance.get("browser_bundle", {})
+        manifest_name = ".generated/remaster-assets.json"
+        if (pointer.get("directory"), pointer.get("inventory"), pointer.get("asset_manifest")) != ("dist/play", "dist/play/BUNDLE.json", "dist/play/" + manifest_name):
+            errors.append("Asset provenance must point at the browser bundle's own inventory")
+        elif manifest_name not in files:
+            errors.append("The browser bundle must list its remaster asset manifest")
+        else:
+            parts = json.loads((browser / manifest_name).read_text()).get("parts", [])
+            if not parts or any(files.get(f".generated/{part.get('name')}") != {"bytes": part.get("bytes"), "sha256": part.get("sha256")} for part in parts):
+                errors.append("Remaster asset parts differ from the browser bundle inventory")
         remaster_page = (browser / "remaster.html").read_text()
         if 'id="game-folder"' not in remaster_page or 'webkitdirectory' not in remaster_page:
             errors.append("Browser remaster must require a local PC game folder")
@@ -182,6 +237,33 @@ def main():
             errors.append("Modified Web core must have linked corresponding source")
         if 'THIRD_PARTY.txt' not in files or 'href="THIRD_PARTY.txt"' not in remaster_page:
             errors.append("Browser engine and Python dependency notices must be linked")
+        # The bridge worker spawns core_worker.mjs, and the reconstructed
+        # lettering ships IBM Plex, whose OFL text must travel with it.
+        for required in ("core_worker.mjs", "LICENSES/IBM-Plex-OFL.txt"):
+            if required not in files:
+                errors.append(f"The browser bundle must include {required}")
+        # Homepage mode names come from the linked Web edition's Graphics menu,
+        # without its parenthetical qualifiers ("EGA Upscaled (original colours)").
+        menu = re.search(r'<select id="web-graphics">(.*?)</select>', remaster_page, re.S)
+        web_modes = {re.sub(r"\s*\(.*\)$", "", label.strip()) for label in re.findall(r"<option[^>]*>([^<]*)</option>", menu[1])} if menu else set()
+        listed = re.search(r'<span data-modes="web">([^<]*)</span>', html)
+        if not web_modes or not listed or set(re.split(r",\s*|\s+and\s+", listed[1].strip())) != web_modes:
+            errors.append("The homepage's Web edition mode list must match the Web edition's Graphics menu")
+        for mode in re.findall(r'<label for="mode-\w+">([^<]+)</label>', html):
+            if mode not in web_modes:
+                errors.append(f"Comparison mode label is not a Web edition mode: {mode}")
+        for mode, text in re.findall(r'<span data-mode="([^"]*)">([^<]*)</span>', html):
+            if mode not in web_modes or mode not in text:
+                errors.append(f"Gallery caption must name a Web edition mode: {text}")
+        # Only Genesis mode needs the ROM; the FAQ names the ROM-free modes of each
+        # edition so Web labels and alpha 4 labels are never mixed unqualified.
+        faq = re.search(r"<summary>Do I need the Genesis ROM\?</summary><p>(.*?)</p>", html, re.S)
+        if not faq or "Web edition" not in faq[1] or "alpha&nbsp;4" not in faq[1] or any(
+                not re.search(rf"\b{re.escape(mode)}\b(?! Upscaled)", faq[1]) for mode in web_modes - {"Genesis"}):
+            errors.append("The Genesis ROM FAQ must name each edition's ROM-free modes")
+    for stale in ("Four graphics modes", "of the four graphics modes"):
+        if stale in html:
+            errors.append(f"Stale graphics-mode count: {stale}")
     if len(page.videos) != 1:
         errors.append("Expected one requested project trailer")
     else:
@@ -215,6 +297,10 @@ def main():
         expected_links = {"assets/guides/field-guide.pdf", "assets/guides/keyboard-controls.pdf"}
         if len(references.refs) != 2 or {urlsplit(r).path for r in references.refs} != expected_links or reference_block[0].count('download=') != 2:
             errors.append("Reference buttons must download the two authored PDFs")
+    # A refreshed PDF needs a new cache token, or browsers keep serving the old sheet.
+    for ref in page.refs:
+        if urlsplit(ref).path.endswith(".pdf") and not token_matches(ref):
+            errors.append(f"PDF cache token must be the file's own hash: {ref}")
     for favicon in ('href="favicon.svg"', 'href="favicon-32.png"', 'href="apple-touch-icon.png"'):
         if favicon not in html:
             errors.append("Missing star favicon format: " + favicon)
@@ -310,6 +396,9 @@ def main():
                 errors.append(f"llms.txt omits: {fact}")
         if "not included" not in facts and "neither" not in facts:
             errors.append("llms.txt must say the original games are not included")
+        web_line = re.search(r"Graphics modes, Web edition: (.*)", facts)
+        if not web_line or not web_modes or any(not re.search(rf"\b{re.escape(mode)}\b(?! Upscaled)", web_line[1]) for mode in web_modes):
+            errors.append("llms.txt must list the Web edition's graphics modes")
         for fragment in re.findall(r"https://abramsremastered\.com/#([\w-]+)", facts):
             if fragment not in page.ids:
                 errors.append(f"llms.txt links a missing section: #{fragment}")

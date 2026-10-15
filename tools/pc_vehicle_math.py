@@ -1,15 +1,19 @@
 """Original vehicle drawing arithmetic, isolated from gameplay.
 
 These helpers reproduce SIM's integer operations, including its register-
-dependent fast matrix multiplication. They are research-only until the live
-bridge captures that register at the actual drawing boundary.
+dependent fast matrix multiplication. The live trace path uses them
+(pc_render_trace.Collector event 2, through pc_session/pc_bridge_host), with CX
+observed at the SIM 0b4d:2979 hook (event 5). A mismatch with the observed
+matrix raises an error, so changes here gate live SIM draw passes.
 """
 from __future__ import annotations
 try:
     from tools.pc_render_state import signed16, transform
+    from tools.inspect_shapes import primitive_vertices
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from pc_render_state import signed16, transform
+    from inspect_shapes import primitive_vertices
 
 IDENTITY = [16384, 0, 0, 0, 16384, 0, 0, 0, 16384]
 
@@ -84,11 +88,6 @@ def rotated_vector(raw_vector, packed, shift, matrix, mode):
 
 def primitive_camera_vertices(shape, primitive, context):
     """Use an observed original drawing context, including the actual matrix."""
-    try:
-        from tools.inspect_shapes import primitive_vertices
-    except ModuleNotFoundError as error:
-        if error.name != 'tools': raise
-        from inspect_shapes import primitive_vertices
     if context['static_path']:
         return [transform([signed16(a + b) for a, b in zip(vertex, context['world_delta'])],
                           context['matrix'], context['matrix_mode'])

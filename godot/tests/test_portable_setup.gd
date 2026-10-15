@@ -71,6 +71,19 @@ func run() -> void:
         check(scroll.size.y > 0 and not scroll.is_ancestor_of(play) and not scroll.is_ancestor_of(recheck), "action controls stay outside small-window scroll content")
     pc.grab_focus()
     check(pc.has_focus(), "PC import has reachable keyboard focus")
+    # A chosen path reaches the runtime byte for byte: no shell expands $,
+    # backticks or quotes. /bin/echo stands in for the bundled runtime.
+    if FileAccess.file_exists("/bin/echo"):
+        var saved_runtime := runtime
+        runtime = "/bin/echo"
+        var hostile := "/tmp/M1 Abrams ($5 bundle) `id` \"quoted\" 'single' \\back"
+        var result := _run_runtime(PackedStringArray(["--launcher", "--invoke", "--game", hostile]))
+        check(result[0] == 0, "argument echo runtime exits cleanly")
+        check(result[1] == "--launcher --invoke --game " + hostile + "\n", "chosen path is passed without shell interpretation: " + str(result[1]))
+        runtime = "/nonexistent/abrams-runtime"
+        result = _run_runtime(PackedStringArray(["--status"]))
+        check(result[0] != 0 and str(result[1]) != "", "missing runtime executable reports a failure instead of hanging")
+        runtime = saved_runtime
     if failures.is_empty(): print("PORTABLE_SETUP_RECOVERY: PASS")
     else:
         for failure in failures: printerr("FAIL: " + failure)

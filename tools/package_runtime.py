@@ -2,6 +2,7 @@
 """Check an already provisioned private kit, then run the original-PC bridge in Play mode."""
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,11 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+IMPORT_MARKER = '.godot/abrams-kit-import.json'
+PREFLIGHT_TIMEOUT = 300
+# Zero-exit compile failures. A bare 'ERROR:' is not fatal on its own during
+# editor import, so it is not a refusal marker here.
+PREFLIGHT_ERRORS = re.compile(br'SCRIPT ERROR|Parse Error|SHADER ERROR')
 
 
 def data_home(root=ROOT):
@@ -26,7 +32,7 @@ def data_home(root=ROOT):
     return path.resolve()
 
 
-def dependencies(root=ROOT):
+def dependencies(root=ROOT, closure=False):
     if sys.version_info < (3, 10):
         raise ValueError('Python 3.10 or newer is required')
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
@@ -55,11 +61,47 @@ def dependencies(root=ROOT):
     except ModuleNotFoundError as error:
         if error.name != 'tools': raise
         from package_build import selected_files, verify_private_inputs, check_source_closure
-    check_source_closure(root, selected_files(root, 'private'), include_assets=True)
+    names = selected_files(root, 'private')
+    # The closure is a build-time property (build and verify enforce it); launch
+    # keeps presence and hash checks and leaves the full walk to --check.
+    if closure:
+        check_source_closure(root, names, include_assets=True)
     verify_private_inputs(root)
     manifest = json.loads((root / '.runtime/pc-core/abrams-trace.json').read_text())
     return {'python': sys.version.split()[0], 'pillow': PIL.__version__, 'godot': version, 'godot_bin': godot,
             'core_sha256': manifest['trace_sha256'], 'data_home': str(data_home(root))}
+
+
+def preflight(arguments, env, log_path):
+    """Run one Godot preflight with a deadline, refusing zero-exit compile errors.
+
+    Working if: a hung import fails after PREFLIGHT_TIMEOUT seconds and a
+    SCRIPT ERROR/Parse Error/SHADER ERROR never reaches gameplay, as in the
+    standalone renderer_preflight; output is kept in the profile log.
+    """
+    with log_path.open('ab') as log:
+        start = log.tell()
+        try:
+            result = subprocess.run(arguments, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=PREFLIGHT_TIMEOUT)
+        except subprocess.TimeoutExpired as error:
+            raise subprocess.SubprocessError(f'Godot preflight timed out after {PREFLIGHT_TIMEOUT} seconds. Details: {log_path}') from error
+    with log_path.open('rb') as log:
+        log.seek(start)
+        output = log.read()
+    match = PREFLIGHT_ERRORS.search(output)
+    if result.returncode or match:
+        detail = (output[match.start():].split(b'\n', 1)[0][:512] if match else output[-2048:]).decode('utf-8', errors='replace').strip()
+        raise subprocess.SubprocessError(f'Godot preflight failed (exit {result.returncode}). Details: {log_path}' + ('\n' + detail if detail else ''))
+
+
+def import_stamp(root=ROOT, godot='', godot_bin=''):
+    # The receipt fingerprints every kit member, so it changes with any content.
+    # Kits bring no engine, so the Godot version and executable join the stamp:
+    # another engine's imported cache is never reused.
+    receipt = root / 'PACKAGE.json'
+    if not receipt.is_file():
+        return None
+    return hashlib.sha256(receipt.read_bytes() + b'\0' + godot.encode() + b'\0' + godot_bin.encode()).hexdigest()
 
 
 def main():
@@ -67,7 +109,7 @@ def main():
     parser.add_argument('--check', action='store_true')
     args, game_args = parser.parse_known_args()
     try:
-        report = dependencies()
+        report = dependencies(closure=args.check)
         if args.check:
             print(json.dumps(report, indent=2))
             return
@@ -78,9 +120,23 @@ def main():
         (home / 'saves').mkdir(parents=True, exist_ok=True)
         (home / 'logs').mkdir(parents=True, exist_ok=True)
         env = dict(os.environ, ABRAMS_PYTHON=sys.executable, GODOT_BIN=report['godot_bin'], PYTHONDONTWRITEBYTECODE='1')
-        # Source kits need an initial import. No downloads or package installation.
-        subprocess.run([report['godot_bin'], '--headless', '--path', str(ROOT / 'godot'), '--editor', '--import'], env=env, check=True)
-        subprocess.run([report['godot_bin'], '--headless', '--path', str(ROOT / 'godot'), '--script', 'res://scripts/pc_bridge_viewer.gd', '--check-only'], env=env, check=True)
+        log = home / 'logs/application.log'
+        project = ROOT / 'godot'
+        # Kits need an initial import, repeated only when the kit receipt or the
+        # Godot engine changes or .godot is cleared; a checkout without a receipt
+        # imports every time. No downloads or package installation.
+        stamp, marker = import_stamp(ROOT, report['godot'], report['godot_bin']), project / IMPORT_MARKER
+        # The marker is never written through a link, as in the standalone renderer_import.
+        if marker.parent.is_symlink() or marker.is_symlink():
+            raise ValueError('Godot import cache godot/.godot and its kit marker cannot be symlinks')
+        if not stamp or not marker.is_file() or marker.read_text() != stamp + '\n':
+            print(f'Abrams setup: importing Godot resources; this can take a few minutes. Log: {log}', file=sys.stderr, flush=True)
+            preflight([report['godot_bin'], '--headless', '--path', str(project), '--editor', '--import'], env, log)
+            if stamp:
+                marker.parent.mkdir(exist_ok=True)
+                marker.write_text(stamp + '\n')
+        # Script compilation is checked on every launch, as in the standalone app.
+        preflight([report['godot_bin'], '--headless', '--path', str(project), '--script', 'res://scripts/pc_bridge_viewer.gd', '--check-only'], env, log)
         os.execve(str(ROOT / 'PC Bridge.command'), [str(ROOT / 'PC Bridge.command'), '--play', '--saves', str(home / 'saves'), '--output', str(home / 'logs'), *game_args], env)
     except (ValueError, OSError, subprocess.SubprocessError, KeyError) as error:
         print(f'Abrams setup: {error}', file=sys.stderr)

@@ -33,8 +33,6 @@ vec3 tactical_particle_volume(vec3 colour, vec2 q, float density, float kind) {
     if(kind>1.5 && kind<3.5) {
         // Subdued amber motor shoulders, with the existing hot core retained.
         colour*=mix(vec3(1.0),vec3(1.0,0.965,0.92),dome*0.45);
-    } else if(kind>3.5) {
-        colour*=mix(vec3(1.0),vec3(1.025,1.0,0.955),shoulder*0.55);
     } else {
         // Cool dense folds and neutral/warm lifted rims stay within the
         // existing smoke or diesel palette. No opacity-derived new coverage.
@@ -56,8 +54,9 @@ void fragment() {
     float filtered=1.0-smoothstep(0.12,0.65,max(length(dFdx(q*7.0)),length(dFdy(q*7.0))));
     float id=owner_at(SCREEN_UV);
     float root=owner_at(anchor.xy);
-    // Sprite shading stays strictly in that source effect's painter coverage.
-    // Exhaust requires a visible emitter, then admits its owner or terrain.
+    // Emitter-owned puffs (vehicle fumes, flare glow, effect ash) require a
+    // visible root and shade strictly that object's final painter coverage, so
+    // nearer terrain, trees and actors that covered it cover the puff too.
     // Smoke deployments use only the observed terrain/background, never actors.
     if (id<0.0 || root<0.0 || id>=owner_count) discard;
     if (emitter.x>0.0 && root!=emitter.x) discard;

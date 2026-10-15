@@ -24,7 +24,7 @@ func run() -> void:
 	draw.terrain_style=preload("res://scripts/pc_terrain_style.gd").new()
 	check(draw.terrain_style.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")),"pinned detail textures loaded")
 	check(draw.terrain_style.load_hills(directory),"pinned hill texture loaded")
-	var catalog:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-modern/catalog.json")))
+	var catalog:Dictionary=art.load_catalogue(directory)
 	var baseline_art=Modern.new()
 	var baseline_shader:=Shader.new()
 	var baseline_legacy:=Shader.new()

@@ -6,13 +6,14 @@ import json
 import subprocess
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageFont
+from output_guard import guarded_output
 
 def run(args):subprocess.run([str(v) for v in args],check=True)
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    out=a.output.resolve();review=out/'final-review';frames=review/'caption-images';frames.mkdir(exist_ok=True)
+    out=guarded_output(p,a.output);review=out/'final-review';frames=review/'caption-images';frames.mkdir(exist_ok=True)
     duration=json.loads((out/'production-brief.json').read_text())['duration_seconds']
     serial=['-threads','1'] if json.loads((out/'production-brief.json').read_text()).get('revision')=='v5' else []
     cues=json.loads((review/'caption-cues.json').read_text())

@@ -64,6 +64,9 @@ var started: int
 var fast_forward := 1
 var pending_state_command: Dictionary = {}
 var state_control_pending := false
+# The checkpoint operation the host is executing; only loads rewind the guest.
+var state_control_op := ""
+const STATE_LOAD_OPS := ["load_state","load_previous"]
 var inflight_fast := false
 # Presentation-only reuse. Host replies, input sampling, audio and world drawing
 # still run for every original frame. Assets are loaded before the first reply.
@@ -76,6 +79,9 @@ var _presentation_frontend := false
 var _decoded_png := ""
 var _decoded_rgb := PackedByteArray()
 var _decoded_image: Image
+var web_sync_queued := false
+# A damaged optional import, shown to the player instead of failing silently.
+var genesis_art_note := ""
 
 func invalidate_presentation_cache() -> void:
 	_presentation_key.clear()
@@ -95,7 +101,8 @@ func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, p
 		key={"paired":paired,"program":program,"format":image.get_format(),"extent":image.get_size(),
 			"size":tandem_frame.size,"world":world,"mode":tandem_frame.graphics_mode,
 			"cockpits":cockpit_art_requested,"gunner":gunner_art_requested,
-			"text":tandem_frame.frontend_art.text_enabled}
+			"text":tandem_frame.frontend_art.text_enabled,
+			"hud":play_display.hud_style if play_display else ""}
 		pixels=image.get_data()
 		if not _presentation_key.is_empty() and pixels==_presentation_pixels and key.recursive_equal(_presentation_key,64):
 			presentation_reuses+=1
@@ -168,6 +175,12 @@ func _initialize() -> void:
 			quit(2)
 			return
 		output = anchor_path(directory,args[index])
+		# Play and every capture write saves, logs and images here. Never beside
+		# the original executables or ROM, in any case (APFS is case-insensitive).
+		if output_inside_source(directory,output):
+			printerr("--output must be outside original sources (GAME, GENESIS)")
+			quit(2)
+			return
 	DirAccess.make_dir_recursive_absolute(output)
 	_build_ui()
 	# Ordinary Play paints its cover before the synchronous presentation preload.
@@ -298,6 +311,8 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		# A browser has no application menu bar. Always show the controls in canvas.
 		if OS.has_feature("web"): audio_menu.prefer_global_menu=false
 		audio_menu.genesis_available=not pc_only
+		# The ROM may be imported where the native Genesis pack cannot load.
+		audio_menu.genesis_imported=not pc_only
 		audio_menu.modern_available=tandem_frame.modern_available
 		audio_menu.audio=pc_audio
 		if capture:
@@ -314,6 +329,7 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		audio_menu.state_requested.connect(_request_state)
 		audio_menu.control_notice.connect(_show_control_notice)
 		audio_menu.mix_changed.connect(_sync_web_controls)
+		_connect_web_resync()
 		audio_menu.resized.connect(_layout_audio_menu)
 		_layout_audio_menu.call_deferred()
 	_load_cockpit_presentation(directory)
@@ -325,20 +341,22 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		audio_menu.genesis_available=not pc_only and tandem_frame.native_graphics.loaded
 		audio_menu.refresh_controls()
 		var explicit_mode: bool="--original-art" in args or "--graphics" in args
-		var initial_mode: String="ega" if "--original-art" in args else audio_menu.preferred_graphics_mode if not audio_menu.preferred_graphics_mode.is_empty() else "upscaled"
+		var fallback_mode: String=audio_menu.default_graphics_mode()
+		var initial_mode: String="ega" if "--original-art" in args else audio_menu.preferred_graphics_mode if not audio_menu.preferred_graphics_mode.is_empty() else fallback_mode
 		if "--graphics" in args: initial_mode=args[args.find("--graphics")+1]
 		# Saved intent survives missing optional imports. Explicit CLI requests
 		# remain strict and transient; neither startup path writes preferences.
 		var preferred_unavailable: bool=not explicit_mode and initial_mode not in audio_menu.available_graphics_modes()
-		if preferred_unavailable: initial_mode="upscaled"
+		if preferred_unavailable: initial_mode=fallback_mode
 		if not audio_menu.choose_graphics(initial_mode,false):
-			if explicit_mode or not audio_menu.choose_graphics("upscaled",false):
+			if explicit_mode or not (audio_menu.choose_graphics(fallback_mode,false) or audio_menu.choose_graphics("upscaled",false)):
 				printerr("Requested graphics assets are unavailable: "+initial_mode)
 				quit(2)
 				return
 			preferred_unavailable=true
 		if preferred_unavailable:
-			audio_menu.quality_error="Saved graphics are unavailable with this import. Showing Genesis Upscaled; preference retained."
+			var shown: String="Tactical" if audio_menu.graphics_mode=="tactical" else "Genesis Upscaled"
+			audio_menu.quality_error="Saved graphics are unavailable with this import. Showing "+shown+"; preference retained."
 			audio_menu.refresh_controls()
 	var python := Bridge.default_python()
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
@@ -355,17 +373,28 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 			quit(2)
 			return
 		save_path=anchor_path(directory,args[index])
+	# Play draws only the paired actors; capture and the --trace caption keep the
+	# complete world. Substitute bridges without the property are unaffected.
+	bridge.set("slim_samples",play_mode and not capture)
 	bridge.start(python, startup_state, save_path,
 		output.path_join("host.log"), "trace" if trace_mode else "reference", "--frame-audit" in args)
 	startup_ready=true
 
 func _finish_startup_display() -> void:
 	if not play_mode: return
+	if not startup_splash.finished and not genesis_art_note.is_empty(): _show_control_notice(genesis_art_note)
 	status.hide()
 	startup_splash.finish()
 	if OS.has_feature("web") and not web_viewer_ready and bridge.host != null:
 		bridge.host.presentationReady()
 		web_viewer_ready=true
+
+## True if path is, or lies under, root/GAME or root/GENESIS, in any case.
+static func output_inside_source(root: String, path: String) -> bool:
+	var target := path.simplify_path().to_lower().trim_suffix("/")+"/"
+	for name: String in ["game","genesis"]:
+		if target.begins_with(root.simplify_path().to_lower().trim_suffix("/").path_join(name)+"/"): return true
+	return false
 
 ## Godot runs from godot/ under --path; relative paths mean the repo root, as in the launchers.
 static func anchor_path(directory: String, path: String) -> String:
@@ -488,7 +517,10 @@ func _load_cockpit_presentation(directory: String) -> void:
 	# even when those files happen to exist in a developer's checkout.
 	if pc_only: return
 	if trace_mode and cockpit_art_requested:
-		tandem_frame.load_genesis_art(directory)
+		# Absent donors are an ordinary PC-only install. A damaged import is named.
+		if not tandem_frame.load_genesis_art(directory) and tandem_frame.genesis_art_reason!="Genesis cockpit donors not imported":
+			genesis_art_note="Genesis cockpit art disabled: "+tandem_frame.genesis_art_reason
+			if audio_menu: audio_menu.presentation_note=genesis_art_note
 	elif trace_mode and gunner_art_requested:
 		var art_path := directory.path_join("local-art/pc-ui-remastered/gunner-plate-v2.png")
 		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
@@ -602,6 +634,8 @@ func _build_stage(viewport: SubViewport) -> void:
 	camera.look_at_from_position(Vector3(10, 8, 12), Vector3(0, 1.5, 0))
 	camera.make_current()
 	draw_view = DrawPass.new()
+	# Primitives this pass's replay dropped fail closed to the source frame.
+	if tandem_frame: tandem_frame.world_replay = draw_view
 	draw_view.solid_enabled = trace_mode and not wire_mode
 	draw_view.retain_render_target = play_mode and trace_mode and not wire_mode
 	camera.add_child(draw_view)
@@ -659,18 +693,25 @@ func _choose_graphics(mode: String) -> void:
 	audio_menu.refresh_controls()
 
 func _choose_hud_style(style: String) -> void:
-	if play_display and not play_display.set_hud_style(style):
+	if not play_display: return
+	if not play_display.set_hud_style(style):
 		audio_menu.hud_style=play_display.hud_style
 		audio_menu.refresh_controls()
-	elif play_display and style=="tactical":
-		tandem_frame.typography.set_hud_style(style)
-		tandem_frame.gunner_trim.set_hud_style(style)
+		return
+	tandem_frame.typography.set_hud_style(style)
+	tandem_frame.gunner_trim.set_hud_style(style)
+	# The instrument round counters follow the HUD inside set_frame. A static
+	# original frame would otherwise hit the cache and keep the old treatment.
+	invalidate_presentation_cache()
+	play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	if tandem_frame._cached_source!=null:
+		# Replay the frame already shown. No guest frame or audio advances.
+		tandem_frame.set_frame(tandem_frame._cached_source,tandem_frame._cached_presentation,tandem_frame._cached_world,tandem_frame._cached_program)
+		tandem_frame.present_frontend(tandem_frame._cached_program)
+	if style=="tactical":
 		play_display.set_hud_frame(previous_presentation,previous_program,tandem_frame._current_plate_mask,
 			not tandem_frame.dynamic_map_art.packet.is_empty(),
 			tandem_frame.cockpit_art_ids==[1])
-	elif play_display:
-		tandem_frame.typography.set_hud_style(style)
-		tandem_frame.gunner_trim.set_hud_style(style)
 
 func _choose_graphics_quality(samples: int, anisotropy: int) -> void:
 	if play_display:
@@ -680,7 +721,7 @@ func _choose_graphics_quality(samples: int, anisotropy: int) -> void:
 func _choose_speed(multiplier: int) -> void:
 	fast_forward=multiplier
 	elapsed=0.0
-	if pc_audio: pc_audio.set_transport_muted(multiplier>1 or inflight_fast or state_control_pending or not pending_state_command.is_empty())
+	if pc_audio: pc_audio.set_transport_muted(multiplier>1 or inflight_fast or _state_load_muted())
 	if play_mode:
 		var app_name := str(ProjectSettings.get_setting("application/config/name"))
 		root.title=app_name if multiplier==1 else "%s (%dx fast forward)"%[app_name,multiplier]
@@ -688,7 +729,37 @@ func _choose_speed(multiplier: int) -> void:
 func _request_state(operation: String, slot: int) -> void:
 	if closing or state_control_pending or not pending_state_command.is_empty(): return
 	pending_state_command={"op":operation,"slot":slot}
-	if pc_audio: pc_audio.set_transport_muted(true)
+	# A save neither advances nor rewinds the guest: a reply already in flight
+	# is real play and keeps its sound. A load discards what follows it.
+	if pc_audio and operation in STATE_LOAD_OPS: pc_audio.set_transport_muted(true)
+
+func _reset_audio_timeline() -> void:
+	# A save restarts the worker without rewinding the guest, so sounds
+	# already started still present played frames. A load stops them.
+	if pc_audio == null: return
+	if state_control_op=="save_state" and pc_audio.has_method("continue_timeline"): pc_audio.call("continue_timeline")
+	else: pc_audio.reset_timeline()
+
+func _state_load_muted() -> bool:
+	return state_control_op in STATE_LOAD_OPS or pending_state_command.get("op","") in STATE_LOAD_OPS
+
+func _connect_web_resync() -> void:
+	# Tab and in-canvas menu changes never pass through the browser toolbar.
+	# Mirror them after the handlers resolve (or revert) the state shown.
+	audio_menu.graphics_selected.connect(_queue_web_sync.unbind(1))
+	audio_menu.hud_style_selected.connect(_queue_web_sync.unbind(1))
+	audio_menu.quality_selected.connect(_queue_web_sync.unbind(2))
+	audio_menu.speed_selected.connect(_queue_web_sync.unbind(1))
+	audio_menu.state_requested.connect(_queue_web_sync.unbind(2))
+
+func _queue_web_sync() -> void:
+	if web_sync_queued: return
+	web_sync_queued=true
+	_flush_web_sync.call_deferred()
+
+func _flush_web_sync() -> void:
+	web_sync_queued=false
+	_sync_web_controls()
 
 func _sync_web_controls(message: String = "") -> void:
 	if not OS.has_feature("web") or audio_menu == null or bridge.host == null: return
@@ -737,7 +808,16 @@ func _send_state_command() -> void:
 	if pending_state_command.is_empty() or bridge.pending or state_control_pending: return
 	if bridge.state_command(pending_state_command.op,int(pending_state_command.slot)):
 		state_control_pending=true
+		state_control_op=str(pending_state_command.op)
 		pending_state_command.clear()
+	elif bridge.failure.is_empty() and not bridge.closing:
+		# A transport that rejects the operation outright must not leave it
+		# queued: the queue blocks every original frame until it is sent.
+		pending_state_command.clear()
+		if audio_menu and audio_menu.has_method("set_state_status"):
+			audio_menu.set_state_status(audio_menu.state_slots,"This state operation is unavailable here")
+		_sync_web_controls("This state operation is unavailable here")
+		if pc_audio: pc_audio.set_transport_muted(fast_forward>1)
 
 func _state_result(message: Dictionary) -> void:
 	# Restored samples carry their own original snapshot and a new audio
@@ -746,6 +826,7 @@ func _state_result(message: Dictionary) -> void:
 	if restored is Dictionary:
 		_apply_sample(restored)
 	state_control_pending=false
+	state_control_op=""
 	if audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.get("slots",[]),str(message.get("message","State operation finished")))
 	_sync_web_controls(str(message.get("message", "")))
@@ -781,8 +862,9 @@ func _process(delta: float) -> bool:
 		if bridge.has_exited() and audio_drained: quit(0 if bridge.failure.is_empty() and bridge.exit_code() == 0 else 1)
 		elif _close_expired():
 			# Never signal the child: exiting closes its pipes, and a helper that
-			# recovers still flushes on EOF. A hung one is reaped by the supervisor
-			# five seconds after EOF, which releases the save lock.
+			# recovers still flushes on EOF. The supervisor reaps a worker that hangs
+			# while a reply is outstanding five seconds after EOF, which releases the
+			# save lock; one wedged in its own shutdown is not bounded there.
 			printerr("PC_VIEW_FAILED: PC core host did not exit after close; see the local host log")
 			quit(1)
 		return false
@@ -824,18 +906,18 @@ func _process(delta: float) -> bool:
 func _apply_sample(message: Dictionary) -> void:
 	if message.get("timeline_reset",false):
 		invalidate_presentation_cache()
-		if pc_audio: pc_audio.reset_timeline()
+		_reset_audio_timeline()
 	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.slots)
 		_sync_web_controls()
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
-		pc_audio.set_transport_muted(fast_forward>1 or inflight_fast or state_control_pending or not pending_state_command.is_empty())
+		pc_audio.set_transport_muted(fast_forward>1 or inflight_fast or _state_load_muted())
 	inflight_fast=false
 	if pc_audio and not pc_audio.apply_audio(message.get("audio", {})):
 		bridge.failure = pc_audio.failure
 		return
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
-		pc_audio.set_transport_muted(fast_forward>1 or state_control_pending or not pending_state_command.is_empty())
+		pc_audio.set_transport_muted(fast_forward>1 or _state_load_muted())
 	var state = message.get("state")
 	if not state is Dictionary and not trace_mode:
 		bridge.failure = "SIM state is unavailable. No substitute simulation was started."
@@ -876,7 +958,8 @@ func _apply_sample(message: Dictionary) -> void:
 	# original host may compute the next frame while we build this presentation.
 	# All Godot scene work remains on the main thread; capture never prefetches.
 	_advance_live_frame()
-	if changed or picture.texture==null: picture.texture = ImageTexture.create_from_image(image)
+	# Play hides this rect; only captures and the comparison viewer read it.
+	if (capture or not play_mode) and (changed or picture.texture==null): picture.texture = ImageTexture.create_from_image(image)
 	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
 	if pc_audio:
 		_apply_frontend_music(image,previous_program,message.get("presentation",{}))
@@ -961,6 +1044,7 @@ func _apply_sample(message: Dictionary) -> void:
 			caption.text += "\nNo paired geometry: " + str(previous_presentation.get("reason", "awaiting scanout"))
 		if not tandem_frame.world_enabled:
 			caption.text += "\nORIGINAL FRAME FALLBACK: " + tandem_frame.fallback_reason
+		if not genesis_art_note.is_empty(): caption.text += "\n" + genesis_art_note.to_upper()
 		if cockpit_art_requested:
 			caption.text += "\nGENESIS-DERIVED COCKPITS: " + str(tandem_frame.cockpit_art_ids) + " | PC live values"
 			caption.text += " | illustrated instrument cells: %d" % tandem_frame.instrument_art.active.size()

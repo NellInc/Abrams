@@ -1,5 +1,5 @@
 extends SceneTree
-## Live-observer fixture replay across all original selector choices and modes.
+## Live-observer fixture replay across all original selector choices and all six graphics modes.
 const Draw = preload("res://scripts/pc_draw_pass.gd")
 const Tandem = preload("res://scripts/pc_tandem_frame.gd")
 const PcCamera = preload("res://scripts/pc_camera.gd")
@@ -73,29 +73,32 @@ func run()->void:
 		world.size=PcCamera.apply(camera,cam,Vector3.ZERO)*5
 		var rendered:Dictionary=drawing.duplicate(true);rendered.palette_rgb=presentation.palette_rgb
 		var upscaled: Image
-		for mode in ["ega","genesis","upscaled","modern"]:
-			draw.modern_enabled=mode=="modern";draw.apply_pass(rendered)
+		for mode in ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]:
+			# Same switch the production viewer makes (pc_bridge_viewer._choose_graphics).
+			draw.modern_enabled=mode in ["modern","tactical"];draw.tactical_landscape=mode=="tactical";draw.apply_pass(rendered)
 			check(frame.set_graphics_mode(mode),"mode "+mode)
 			frame.set_frame(source,presentation,world.get_texture(),program);frame.present_frontend(program)
-			check(frame.world_enabled==(mode in ["upscaled","modern"]),"scene follows mode "+mode)
-			if mode=="modern":
-				check(draw._modern_active and draw.terrain_active,"Modern preview active")
-				check(draw.ownership.size==world.size,"ownership extent matches on first frame")
-				check(draw.hill_polygon_count>0,"source hills upgraded")
-				check(draw.modern_assets.max_anchor_error<=0.25,"source geometry anchors")
+			check(frame.world_enabled==(mode in ["upscaled","modern","tactical"]),"scene follows mode "+mode)
+			if mode=="ega_upscaled":
+				check(frame.material==frame._ega_material and not bool(frame.frontend_art.material.get_shader_parameter("scene_enabled")),"EGA Upscaled keeps the original menu without scene or cutout")
+			if mode in ["modern","tactical"]:
+				check(draw._modern_active and draw.terrain_active,"Modern preview active: "+mode)
+				check(draw.ownership.size==world.size,"ownership extent matches on first frame: "+mode)
+				check(draw.hill_polygon_count>0,"source hills upgraded: "+mode)
+				check(draw.modern_assets.max_anchor_error<=0.25,"source geometry anchors: "+mode)
 			if not native:continue
 			var result:=await snap()
-			if count==1 or mode=="modern":result.save_png(output.path_join(entry.label+"-"+mode+".png"))
+			if count==1 or mode in ["modern","tactical"]:result.save_png(output.path_join(entry.label+"-"+mode+".png"))
 			if mode=="ega":
 				var expected:=source.duplicate();expected.resize(1280,960,Image.INTERPOLATE_NEAREST);expected.convert(result.get_format())
 				check(expected.get_data()==result.get_data(),"EGA pixel exact")
 			if mode=="upscaled":upscaled=result
-			if mode=="modern" and upscaled!=null:
+			if mode in ["modern","tactical"] and upscaled!=null:
 				# The selector panel, cursor and controls are identical between
 				# both high-resolution modes; only the observed scenery changes.
 				var panel_height:=106 if drawing.get("frontend_view")=="menu" else 374
-				check(upscaled.get_region(Rect2i(0,0,1280,panel_height)).get_data()==result.get_region(Rect2i(0,0,1280,panel_height)).get_data(),"panel unchanged by Modern")
-				check(upscaled.get_data()!=result.get_data(),"Modern changes the preview")
+				check(upscaled.get_region(Rect2i(0,0,1280,panel_height)).get_data()==result.get_region(Rect2i(0,0,1280,panel_height)).get_data(),"panel unchanged by "+mode)
+				check(upscaled.get_data()!=result.get_data(),mode+" changes the preview")
 		if count==1:
 			frame.frontend_art.text_enabled=false
 			frame.present_frontend(program)

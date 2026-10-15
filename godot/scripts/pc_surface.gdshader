@@ -15,6 +15,9 @@ uniform sampler2D material_means : source_color, filter_nearest, repeat_disable;
 uniform float hill_mean;
 uniform mat3 camera_to_local;
 uniform vec3 world_origin;
+// False when the frame supplied no valid source camera basis. The two uniforms
+// above are then the zero defaults, so no world-anchored normal is defined.
+uniform bool camera_basis_ready = false;
 // One atlas holds every effect donor (burst, fading, smoke); kind 4 only.
 uniform sampler2D impact_burst : filter_linear, repeat_disable;
 uniform sampler2D effect_correction : filter_linear, repeat_disable;
@@ -321,7 +324,8 @@ vec3 tactical_tree_normal(vec2 uv) {
     float x=clamp((uv.x-0.5)/width,-0.95,0.95);
     vec3 camera_normal=normalize(vec3(x,-sqrt(max(1.0-x*x,0.0))*0.85,0.18+height*0.45));
     vec3 normal=camera_to_local*camera_normal;
-    return normalize(vec3(normal.x,-normal.y,normal.z));
+    vec3 world=vec3(normal.x,-normal.y,normal.z);
+    return dot(world,world)>1e-8 ? normalize(world) : vec3(0.0,0.0,1.0);
 }
 
 vec3 tactical_tree_light(vec3 base, vec2 uv, vec2 footprint, vec3 eye, float distance) {
@@ -357,7 +361,8 @@ vec3 tactical_bark(vec3 base, vec2 uv, vec2 footprint) {
 vec3 tactical_trunk_fill(vec2 uv,vec2 footprint,float width) {
     float side=clamp((uv.x-0.5)/max(width,0.001),-0.95,0.95);
     vec3 camera_normal=normalize(vec3(side,-sqrt(max(1.0-side*side,0.0)),0.08));
-    vec3 n=camera_to_local*camera_normal;n=normalize(vec3(n.x,-n.y,n.z));
+    vec3 n=camera_to_local*camera_normal;n=vec3(n.x,-n.y,n.z);
+    n=dot(n,n)>1e-8 ? normalize(n) : vec3(0.0,0.0,1.0);
     float resolved=1.0-smoothstep(0.25,0.80,footprint.x/max(width,0.001));
     return tactical_environment_tint(n,0.55*resolved);
 }
@@ -794,6 +799,12 @@ vec3 tactical_relief_normal(vec3 face,vec2 gradient,vec3 position_dx,vec3 positi
     return normalize(face-slope);
 }
 
+// Interpolated UV is not guaranteed bit-exact for a per-vertex constant. The
+// nearest distinct kind tags are 1/256 apart, so 1/1024 cannot select another.
+bool kind_is(float tag, float kind) {
+    return abs(tag-kind)<0.0009765625;
+}
+
 void vertex() {
     source_owner = floor(UV.y/32.0);
     UV.y = mod(UV.y,32.0);
@@ -914,24 +925,24 @@ void fragment() {
         if(UV.y>8.5)realism_uv=position.xz;
         else if(UV.y>7.5)realism_uv=position.yz;
         family=UV.y>1.5 && UV.y<2.5 ? 11.0 : UV.y>6.5 && abs(UV.x-19.0)>0.25 ? 10.0 : 8.0;
-    } else if(UV.y==14.0 || UV.y==20.03125) {
+    } else if(kind_is(UV.y,14.0) || kind_is(UV.y,20.03125)) {
         realism_uv=world_origin.xy+vec2(realism_local.x,-realism_local.y);
-        family=UV.y==14.0 ? 12.0 : 8.0;
-    } else if(UV.y==21.0) {
+        family=kind_is(UV.y,14.0) ? 12.0 : 8.0;
+    } else if(kind_is(UV.y,21.0)) {
         family=UV2.y>=0.805 ? 4.0 : 9.0;
         realism_uv=UV2*vec2(100.0,220.0);
     }
-    if(UV.y==20.0625 && family>0.5)realism_uv=realism_crew_point;
-    if(UV.y==23.0)realism_uv=UV2*80.0;
+    if(kind_is(UV.y,20.0625) && family>0.5)realism_uv=realism_crew_point;
+    if(kind_is(UV.y,23.0))realism_uv=UV2*80.0;
     realism_uv/=realism_period(family);
     // Wheels/tracks use normalized moving coordinates rather than raw units.
-    if(UV.y==20.25 || UV.y==20.125)realism_uv=UV2*0.8;
+    if(kind_is(UV.y,20.25) || kind_is(UV.y,20.125))realism_uv=UV2*0.8;
     vec2 realism_dx=vec2(0.0);vec2 realism_dy=vec2(0.0);
     if(tactical_landscape && tactical_realism_ready && modern_surface_variation && family>0.5) {
         realism_dx=dFdx(realism_uv);realism_dy=dFdy(realism_uv);
     }
     vec4 horizon_footprint=vec4(0.0);
-    if(tactical_landscape && modern_active && modern_environment_polish && tactical_daylight_observed()) {
+    if(tactical_landscape && modern_active && modern_environment_polish && camera_basis_ready && tactical_daylight_observed()) {
         // Before owner discard and the per-fragment horizon/crown branches.
         vec3 direction=normalize(camera_to_local*original_view);
         vec2 angular=tactical_horizon_gradient(direction,dFdx(direction),dFdy(direction));
@@ -1001,7 +1012,7 @@ void fragment() {
                 crown*=mix(0.92,1.08,UV.x);
                 if (modern_surface_variation) {
                     crown=tactical_crown(tree.rgb,UV2,UV.x);
-                    if(tactical_daylight_observed())crown=tactical_tree_light(crown,UV2,bark_footprint,tactical_to_eye,length(original_view));
+                    if(camera_basis_ready && tactical_daylight_observed())crown=tactical_tree_light(crown,UV2,bark_footprint,tactical_to_eye,length(original_view));
                 }
                 vec3 leaf_colour=OUTPUT_IS_SRGB ? crown : pow(crown,vec3(2.2));
                 ALBEDO=mix(ALBEDO,leaf_colour,green);
@@ -1011,7 +1022,7 @@ void fragment() {
             float facet=smoothstep(0.5-trunk_width,0.5+trunk_width*0.4,UV2.x);
             vec3 bark=mix(vec3(0.48,0.39,0.27),vec3(0.28,0.24,0.17),facet);
             if (modern_surface_variation) bark=tactical_bark(bark,UV2,bark_footprint);
-            if(modern_environment_polish && modern_surface_variation && tactical_daylight_observed())bark*=tactical_trunk_fill(UV2,bark_footprint,trunk_width);
+            if(modern_environment_polish && modern_surface_variation && camera_basis_ready && tactical_daylight_observed())bark*=tactical_trunk_fill(UV2,bark_footprint,trunk_width);
             ALBEDO=OUTPUT_IS_SRGB ? bark : pow(bark,vec3(2.2));
         }
     } else if (UV.y > 19.5) {
@@ -1083,7 +1094,7 @@ void fragment() {
         }
     } else if (UV.y > 15.5 && UV.y < 16.5 && modern_active) {
         ALBEDO=texture(material_means,vec2((round(UV.x)+0.5)/(pattern_width*0.5),0.5)).rgb;
-        if (modern_environment_polish) ALBEDO=daylight_sky(camera_to_local*original_view,SCREEN_UV*source_dimensions+source_origin,horizon_footprint);
+        if (modern_environment_polish && camera_basis_ready) ALBEDO=daylight_sky(camera_to_local*original_view,SCREEN_UV*source_dimensions+source_origin,horizon_footprint);
     } else if (UV.y > 14.5 && UV.y < 15.5 && modern_active) {
         // The original source-line path keeps its far/painter depth and exact
         // width; only the verified bridge framework's colour is replaced.

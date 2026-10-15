@@ -10,15 +10,18 @@ import json
 from pathlib import Path
 import struct
 
+import unicorn
 from unicorn import Uc, UC_ARCH_M68K, UC_MODE_BIG_ENDIAN, UC_PROT_READ, UC_PROT_EXEC, UC_HOOK_CODE
 from unicorn.m68k_const import (UC_CPU_M68K_M68000, UC_M68K_REG_SR,
     UC_M68K_REG_A0, UC_M68K_REG_A1, UC_M68K_REG_A6, UC_M68K_REG_A7,
     UC_M68K_REG_D0, UC_M68K_REG_D2, UC_M68K_REG_D7, UC_M68K_REG_PC)
 try:
-    from tools.extract_genesis_models import ROOT, ROM_HASH, DISPATCH, MATERIAL_MAP, PATTERNS, POLYGONS, decode_models
+    from tools.source_guard import inside_source
+    from tools.extract_genesis_models import DIRECTORY_COUNT, ROOT, ROM_HASH, DISPATCH, MATERIAL_MAP, PATTERNS, POLYGONS, decode_models
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
-    from extract_genesis_models import ROOT, ROM_HASH, DISPATCH, MATERIAL_MAP, PATTERNS, POLYGONS, decode_models
+    from source_guard import inside_source
+    from extract_genesis_models import DIRECTORY_COUNT, ROOT, ROM_HASH, DISPATCH, MATERIAL_MAP, PATTERNS, POLYGONS, decode_models
 
 STOP = 0x70000
 STACK = 0xFFFFDF00
@@ -27,7 +30,11 @@ FLAGS = 0xFFFF6E10
 
 
 def verify(rom):
+    if unicorn.__version__ != "2.1.4":
+        raise ValueError("requires pinned unicorn==2.1.4")
     catalog = decode_models(rom)
+    if len(catalog["directory"]) != DIRECTORY_COUNT:
+        raise ValueError(f"Decoded {len(catalog['directory'])} directory entries, expected {DIRECTORY_COUNT}")
     cpu = Uc(UC_ARCH_M68K, UC_MODE_BIG_ENDIAN)
     cpu.ctl_set_cpu_model(UC_CPU_M68K_M68000)
     cpu.mem_map(0, 0x80000)
@@ -177,8 +184,8 @@ def verify(rom):
         pattern = rom[MATERIAL_MAP + material]
         if actual != rom[PATTERNS + pattern * 8:PATTERNS + pattern * 8 + 8]:
             raise ValueError("Native material-pattern translation differs")
-    return {"rom_sha256": ROM_HASH, "cpu": "Unicorn M68000, read/execute-only original ROM",
-            "directory_pointers": 188, "directory_extents": 188,
+    return {"rom_sha256": ROM_HASH, "cpu": "Unicorn M68000, read/execute-only original ROM", "unicorn": unicorn.__version__,
+            "directory_pointers": len(catalog["directory"]), "directory_extents": len(catalog["directory"]),
             "neutral_poses": poses, "executed_construction_commands": steps,
             "executed_construction_branches": branch_steps, "compared_workspace_bytes": compared,
             "control_branch_cases": branch_cases, "clipped_polygon_cases": polygon_cases,
@@ -192,6 +199,8 @@ def main():
     p.add_argument("--rom", type=Path, default=ROOT / "GENESIS/M-1 Abrams Battle Tank (USA, Europe).md")
     p.add_argument("--output", type=Path, required=True)
     a = p.parse_args()
+    if inside_source(a.output, ROOT):
+        p.error("output must be outside original sources")
     if a.output.exists():
         p.error("output must be a fresh report path")
     result = verify(a.rom.read_bytes())

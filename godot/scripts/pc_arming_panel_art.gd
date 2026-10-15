@@ -11,6 +11,15 @@ const FIELDS = [Rect2i(257,113,36,6),Rect2i(245,123,60,6),Rect2i(245,137,66,6),
 	Rect2i(245,147,66,6),Rect2i(245,157,66,6),Rect2i(245,170,66,6),Rect2i(259,183,30,6)]
 var catalog: Dictionary={}
 var indices := PackedByteArray()
+# Clip-local (81x113, row-major) proof layout, built once from CLIP.BMP's
+# indices: the required plate tag of every checked pixel, the [start,end) runs
+# whose tag is checked (all but the text fields and the bottom pixel) and the
+# runs whose RGB is checked (indexed CLIP.BMP colours outside those cells).
+var _tag_expected := PackedByteArray()
+var _tag_runs := PackedInt32Array()
+var _rgb_runs := PackedInt32Array()
+var _rgb_palette: Array = []
+var _rgb_expected := PackedByteArray()
 var active := false
 var backdrop: Texture2D
 var preserved: Color
@@ -41,8 +50,38 @@ func load_sources(root_path: String) -> bool:
 	if not source.get_pixel(208,112).is_equal_approx(WHITE) or not source.get_pixel(209,120).is_equal_approx(GREY) or not source.get_pixel(209,113).is_equal_approx(Color.BLACK): return false
 	indices=Marshalls.base64_to_raw(data.indices_base64)
 	if indices.size()!=9944: indices.clear(); return false
+	_build_layout()
 	catalog=data
 	return true
+
+func _build_layout() -> void:
+	_tag_expected.resize(CLIP_RECT.size.x*CLIP_RECT.size.y)
+	_tag_runs.clear();_rgb_runs.clear();_rgb_palette.clear();_rgb_expected.clear()
+	for y in range(CLIP_RECT.position.y,CLIP_RECT.end.y):
+		for x in range(CLIP_RECT.position.x,CLIP_RECT.end.x):
+			var at := Vector2i(x,y)
+			var local := (y-CLIP_RECT.position.y)*CLIP_RECT.size.x+x-CLIP_RECT.position.x
+			var c := int(indices[(y-87)*88+x-239])
+			_tag_expected[local]=8 if c==0 else 0
+			if at==Vector2i(312,199) or FIELDS.any(func(box):return box.has_point(at)): continue
+			_append_run(_tag_runs,local)
+			if c!=0: _append_run(_rgb_runs,local)
+
+static func _append_run(runs: PackedInt32Array, local: int) -> void:
+	if not runs.is_empty() and runs[runs.size()-1]==local: runs[runs.size()-1]=local+1
+	else: runs.append_array(PackedInt32Array([local,local+1]))
+
+func _expected_rgb(palette: Array) -> PackedByteArray:
+	if palette==_rgb_palette: return _rgb_expected
+	var expected := PackedByteArray()
+	expected.resize(CLIP_RECT.size.x*CLIP_RECT.size.y*3)
+	for local in CLIP_RECT.size.x*CLIP_RECT.size.y:
+		var c := int(indices[(local/CLIP_RECT.size.x)*88+local%CLIP_RECT.size.x])
+		if c==0: continue
+		for k in 3: expected[local*3+k]=int(palette[c][k])
+	_rgb_palette=palette.duplicate(true)
+	_rgb_expected=expected
+	return expected
 
 func set_frame(source: Image, ui: Image, tags: Image, runs: Array, palette: Array, background: Texture2D) -> bool:
 	clear()
@@ -57,20 +96,18 @@ func set_frame(source: Image, ui: Image, tags: Image, runs: Array, palette: Arra
 	# All static pixels, including the transparent outside of the original
 	# clip, must still be attributable. Text has its independent full-glyph
 	# proof. The intermittently overwritten bottom pixel is copied unchanged.
-	for y in range(CLIP_RECT.position.y,CLIP_RECT.end.y):
-		for x in range(CLIP_RECT.position.x,CLIP_RECT.end.x):
-			var at := Vector2i(x,y)
-			if ui.get_pixelv(at).r!=1.0: return false
-			if at==Vector2i(312,199): continue
-			if FIELDS.any(func(box):return box.has_point(at)): continue
-			var c := int(indices[(y-87)*88+x-239])
-			var tag := roundi(tags.get_pixelv(at).r*255)
-			if c==0:
-				if tag!=8: return false # Parent proved every ATBASE pixel's RGB.
-			else:
-				if tag!=0: return false
-				var expected := Color(palette[c][0]/255.0,palette[c][1]/255.0,palette[c][2]/255.0)
-				if not source.get_pixelv(at).is_equal_approx(expected): return false
+	# The caller supplies L8 masks and the RGB8 source frame.
+	if ui.get_format()!=Image.FORMAT_L8 or tags.get_format()!=Image.FORMAT_L8 or source.get_format()!=Image.FORMAT_RGB8: return false
+	if ui.get_region(CLIP_RECT).get_data().count(255)!=CLIP_RECT.size.x*CLIP_RECT.size.y: return false
+	# Transparent CLIP.BMP pixels must be ATBASE (tag 8; the parent proved
+	# every ATBASE pixel's RGB); every indexed pixel must be untagged.
+	var tag_bytes := tags.get_region(CLIP_RECT).get_data()
+	for i in range(0,_tag_runs.size(),2):
+		if tag_bytes.slice(_tag_runs[i],_tag_runs[i+1])!=_tag_expected.slice(_tag_runs[i],_tag_runs[i+1]): return false
+	var rgb := source.get_region(CLIP_RECT).get_data()
+	var expected := _expected_rgb(palette)
+	for i in range(0,_rgb_runs.size(),2):
+		if rgb.slice(_rgb_runs[i]*3,_rgb_runs[i+1]*3)!=expected.slice(_rgb_runs[i]*3,_rgb_runs[i+1]*3): return false
 	preserved=source.get_pixel(312,199)
 	backdrop=background
 	active=true;visible=true

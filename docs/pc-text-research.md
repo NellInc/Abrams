@@ -488,12 +488,17 @@ original main code segment:
 | 400d | Radio text actually being drawn | 0000:3f7a |
 | 55df | Weapon status, including READY, TRACK and LOAD | 0000:54b6 |
 
-Native event 26 copies conventional RAM at wrapper entry. Event 27 copies a
+Native event 26 copies conventional RAM at wrapper entry: the full 640 KiB in
+START/BRIEF/END, and in SIM, since the 15 October 2026 core
+(`text_event_schema: 3`), an AWB1 bundle of the DS window, the stack window and
+the loaded font glyphs, about 10% of the full bytes (`tools/pc_trace_windows.py`). Event 27 copies a
 six-word rectangle header `(x,y,width,height,page_offset,return_ip)`, followed by
 one EGA colour index per pixel, immediately before the wrapper's RETF. It reads
 host plane storage directly, avoiding guest VGA reads that would change latches.
 The original instructions, rendering, registers and emulated cycle schedule
-continue unchanged. The expanded observer requires `text_event_schema: 2`.
+continue unchanged. The expanded observer required `text_event_schema: 2`; the
+host now accepts 2 (full RAM) or 3 (SIM window bundles) as part of the 2/1/1 or
+3/2/2 text/message/strut set.
 It recognizes all 49 main-segment far calls to the same source string wrapper.
 The additional calls have the conservative `instrument` kind; their inclusion
 does not assign new speech or message identities. A source test matches the
@@ -592,6 +597,13 @@ python3 tools/verify_pc_text_trace.py \
   --baseline artifacts/pc-text-crew-baseline-02/report.json \
   --output artifacts/pc-text-crew-comparison-02.json
 ```
+
+Since 15 October 2026 `verify_pc_text_trace` requires a `mode: trace` report
+against a distinct `mode: baseline` core, both matching
+`.runtime/pc-core/abrams-trace.json` (`--manifest` overrides it), and the trace
+run's `trace_header_sha256` must match the receipt. After a trace-core rebuild
+only the trace half needs recapture; the baseline stays valid while
+`baseline_sha256` is unchanged. See [PC audio research](pc-audio-research.md).
 
 The font/readiness build used trace core SHA-256
 `303d494ecbb28a900d3732fc772e292b3a4fa271036f9c2cdf214f60698776e2`;

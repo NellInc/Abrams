@@ -2,6 +2,7 @@ extends SceneTree
 const Display=preload("res://scripts/pc_play_display.gd")
 const Menu=preload("res://scripts/pc_play_menu.gd")
 const Map=preload("res://scripts/pc_tactical_map.gd")
+const Instruments=preload("res://scripts/pc_tactical_instruments.gd")
 var errors: Array[String]=[]
 var checks:=0
 
@@ -13,6 +14,10 @@ func _initialize() -> void: run.call_deferred()
 
 func run() -> void:
 	map_surfaces()
+	map_labelling()
+	map_surface_cache()
+	hud_ink_separation()
+	uncovered_panel_pixels()
 	crew_panels()
 	var display:=Display.new()
 	root.add_child(display)
@@ -29,8 +34,10 @@ func run() -> void:
 	menu.config_path=""
 	menu.quality_config_path=""
 	root.add_child(menu)
-	check(menu.hud_style=="restored" and display.hud_style=="restored","Restored defaults")
-	check(not menu.choose_hud_style("unknown") and menu.hud_style=="restored","unknown HUD style rejected")
+	# The menu defaults to the Tactical HUD (Nell, 15 October 2026); an unconfigured display
+	# stays Restored until the viewer applies the menu's choice.
+	check(menu.hud_style=="tactical" and menu.hud_style==Menu.DEFAULT_HUD_STYLE and display.hud_style=="restored","Tactical menu default, Restored unconfigured display")
+	check(not menu.choose_hud_style("unknown") and menu.hud_style=="tactical","unknown HUD style rejected")
 	check(menu.choose_hud_style("tactical") and menu.hud_style=="tactical","Tactical control accepted")
 	check(menu._tactical_bar.visible and menu.theme.has_stylebox("normal","MenuBar"),"Tactical menu uses matching field theme")
 	menu.choose_hud_style("restored")
@@ -483,6 +490,7 @@ func fallback_instruments(display: Control, prefix: String, repo: String) -> voi
 			frame.set_graphics_mode(mode)
 			_present_fixture(display,source,packet)
 			check(renderer.panels.is_empty() and not map.picture.visible,"native graphics exclude fallback vector overlays "+mode)
+			check(display.display.material==null and display._wide_station==0,"native graphics bypass Tactical HUD restyle and reflow "+mode)
 		frame.set_graphics_mode("upscaled")
 		# A wide packet must reset child coordinates after all fallback resizes.
 		_present_fixture(display,Image.create_from_data(320,200,false,Image.FORMAT_RGB8,PackedByteArray(data.rgb)),data.packet.presentation)
@@ -594,8 +602,10 @@ func station_maps(display: Control, prefix: String) -> void:
 		# browser route switching LOCAL/OVERVIEW on this same live renderer.
 		map.crop_texture=null
 		frame.set_frame(source,packet,ImageTexture.create_from_image(source))
+		var reused: int=map.proof_reuse_count
 		display.set_hud_frame(packet,{"name":"SIM"},frame._current_plate_mask)
 		check(not map.packet.is_empty() and map.picture.visible,"Tactical map active: "+name)
+		check(map.proof_reuse_count==reused+1,"Tactical map reuses the tandem frame's identical map proof: "+name)
 		check(map.crop_texture.get_image().get_data()==source.get_region(Rect2i(16,63,144,96)).get_data(),"initial map texture retains every source feature: "+name)
 		check(JSON.stringify(packet)==before and source.get_data()==PackedByteArray(data.rgb),"map style never mutates source: "+name)
 		var mode:=int(packet.dynamic_map.mode)
@@ -635,7 +645,9 @@ func station_maps(display: Control, prefix: String) -> void:
 			hash.update(changed.get_region(Rect2i(16,63,144,96)).get_data())
 			live.dynamic_map.pixel_sha256=hash.finish().hex_encode()
 			frame._cached_source=changed;frame._cached_presentation=live
+			reused=map.proof_reuse_count
 			check(map.set_frame(frame,Display.TACTICAL_LAYOUTS[2]),"source-selected marker colour accepted %d/%d"%[mode,colour])
+			check(map.proof_reuse_count==reused,"a packet the tandem frame did not prove is proven independently")
 			check(map.crop_hash==live.dynamic_map.pixel_sha256,"texture update cache follows current whole-map proof")
 			check(map.surface_hash==stable_surface_hash,"player blinking never rebuilds terrain or pollutes surface classes")
 			var rgb: Array=live.dynamic_map.palette_rgb[colour]
@@ -675,7 +687,197 @@ func map_surfaces() -> void:
 		ink=source.duplicate();ink.set_pixel(3,3,Color(0,0,0,0))
 		check(Map.surface_image(ink,true).get_pixel(3,3).a==0,"player stencil cannot enter pattern recognition")
 	var joined:=PackedInt32Array([1,1,-1,2,1,-1,2,2,-1,1,1,-1,2,-1,-1,1])
-	var components:=Map._components(joined,4)
+	var classed:=PackedInt32Array()
+	for i in joined.size():
+		if joined[i]>=0: classed.append(i)
+	var components:=Map._components(joined,4,classed)
 	var total:=0
 	for cells in components: total+=cells.size()
 	check(components.size()==5 and total==10,"unique cardinal components keep diagonally touching classes separate")
+
+# Run labelling must equal the cell flood fill it replaced, component for
+# component, including diagonal contacts, wrapped rows and single columns.
+func map_labelling() -> void:
+	var rng:=RandomNumberGenerator.new();rng.seed=20261015
+	var exact:=true
+	for trial in 120:
+		var width:=rng.randi_range(1,24);var height:=rng.randi_range(1,18)
+		var codes:=PackedInt32Array();codes.resize(width*height)
+		for i in codes.size(): codes[i]=rng.randi_range(-3,-1) if trial%2==0 else (-1 if (i%width+i/width+trial)%3==0 else -2)
+		var every:=PackedInt32Array()
+		for i in codes.size(): every.append(i)
+		var expected: Dictionary={}
+		for cells: PackedInt32Array in Map._components(codes,width,every):
+			var first: int=cells[0]
+			for at in cells: first=mini(first,at)
+			for at in cells: expected[at]=[first,cells.size()]
+		var labelled:=Map._run_components(codes,width)
+		for run in labelled.starts.size():
+			var root: int=labelled.roots[run]
+			for at in range(labelled.starts[run],labelled.starts[run]+labelled.lengths[run]):
+				exact=exact and expected[at]==[labelled.starts[root],labelled.sizes[root]]
+	check(exact,"run labelling reproduces every cardinal component, size and first cell")
+	# A recorded-scale LOCAL crop: report the rebuild cost against a 60 Hz frame.
+	var local:=Image.create(144,96,false,Image.FORMAT_RGBA8)
+	local.fill(Color8(0,170,0))
+	for y in 96:
+		for x in 144:
+			if (x/24+y/16)%3==0: local.set_pixel(x,y,Color8(170,85,0) if (x+y+63)%2==1 else Color8(0 if x<72 else 85,0 if x<72 else 85,0 if x<72 else 85))
+			elif (x*7+y*3)%53==0: local.set_pixel(x,y,Color8(85,85,85))
+	local.fill_rect(Rect2i(69,45,6,6),Color(0,0,0,0))
+	var started:=Time.get_ticks_usec()
+	var styled:=Map.surface_image(local,true)
+	var elapsed:=Time.get_ticks_usec()-started
+	print("TACTICAL_MAP_SURFACE usec=",elapsed," cells=",144*96)
+	check(styled.get_pixel(5,5)==Color8(85,43,0) and styled.get_pixel(80,5)==Color8(128,85,43),"recorded-scale checker terrain receives both material recipes")
+	check(styled.get_pixel(71,47).a==0 and styled.get_pixel(30,30)==Color8(0,170,0),"stencil stays protected and field ink retained")
+	var white:=Image.create(8,8,false,Image.FORMAT_RGBA8);white.fill(Color.WHITE)
+	check(Map.surface_image(white,true).get_pixel(3,3).a==0,"unsupported white region cannot alias an unmarked pattern sentinel")
+
+# Blinking contacts alternate crops; an exact-content cache rebuilds each once.
+func map_surface_cache() -> void:
+	var map:=Map.new()
+	var sources: Array[Image]=[]
+	for blink in 2:
+		var source:=Image.create(320,200,false,Image.FORMAT_RGB8)
+		source.fill(Color8(0,170,0))
+		source.fill_rect(Rect2i(40,80,6,4),Color8(170,170,170) if blink==0 else Color8(0,170,0))
+		sources.append(source)
+	for repeat in 3:
+		for source in sources: map._surface(source,{"mode":1})
+	check(map.surface_build_count==2,"alternating crops rebuild their styled surfaces once each")
+	var expected:=Map.surface_image(Map.terrain_image(sources[1],{"mode":1}),true)
+	check(map._surface_cache[map.surface_hash].get_data()==expected.get_data(),"cached surface is the exact current crop's restyle")
+	for n in Map.SURFACE_CACHE_SIZE+2:
+		var source:=Image.create(320,200,false,Image.FORMAT_RGB8)
+		source.fill(Color8(0,170,0));source.set_pixel(30+n,80,Color8(85,85,255))
+		map._surface(source,{"mode":1})
+	check(map._surface_cache.size()==Map.SURFACE_CACHE_SIZE and map._surface_order.size()==Map.SURFACE_CACHE_SIZE,"surface cache stays bounded")
+	map.free()
+
+# CPU mirror of pc_tactical_hud.gdshader's neutral and chromatic ink ramps.
+# Every literal (segment ends, thresholds, chroma gate, branch conditions and
+# accent ramps) is read back from the shader so the mirror cannot drift.
+static func _vec3(text: String) -> Color:
+	var c:=text.split(",")
+	return Color(float(c[0]),float(c[1]),float(c[2]))
+
+# A condition is a conjunction of "source.x > source.y * k" or "source.x > k".
+static func _condition(text: String) -> Array:
+	var term:=RegEx.create_from_string("^source\\.([rgb]) > (?:source\\.([rgb]) \\* )?([0-9.]+)$")
+	var terms: Array=[]
+	for part in text.split("&&"):
+		var found:=term.search(part.strip_edges())
+		if found==null: return []
+		terms.append([found.get_string(1),found.get_string(2),float(found.get_string(3))])
+	return terms
+
+static func _holds(rgb: Color, terms: Array) -> bool:
+	var channel:={"r":rgb.r,"g":rgb.g,"b":rgb.b}
+	for t: Array in terms:
+		if not float(channel[t[0]])>(float(channel[t[1]])*float(t[2]) if t[1]!="" else float(t[2])): return false
+	return true
+
+static func hud_ramp_model(code: String) -> Dictionary:
+	var neutral_body:=code.substr(code.find("vec3 neutral_ink(float luma)"),code.find("void fragment()")-code.find("vec3 neutral_ink(float luma)"))
+	var segments: Array=[]
+	for found in RegEx.create_from_string("mix\\(vec3\\(([^)]*)\\), vec3\\(([^)]*)\\), \\(?luma(?: - ([0-9.]+)\\))? / ([0-9.]+)\\)").search_all(neutral_body):
+		segments.append([_vec3(found.get_string(1)),_vec3(found.get_string(2)),float(found.get_string(3)) if found.get_string(3)!="" else 0.0,float(found.get_string(4))])
+	var limits: Array=[]
+	for found in RegEx.create_from_string("luma < ([0-9.]+)").search_all(neutral_body): limits.append(float(found.get_string(1)))
+	var gate:=RegEx.create_from_string("if \\(chroma > ([0-9.]+)\\)").search(code)
+	var weight:=RegEx.create_from_string("clamp\\(\\(chroma - ([0-9.]+)\\) \\* ([0-9.]+), 0\\.0, 1\\.0\\)").search(code)
+	var body:=code.substr(code.find("vec3 accent;"),code.find("colour = mix(colour, accent, weight);")-code.find("vec3 accent;"))
+	var ramps: Array=[]
+	for found in RegEx.create_from_string("accent = mix\\(vec3\\(([^)]*)\\), vec3\\(([^)]*)\\), luma\\)").search_all(body):
+		ramps.append([_vec3(found.get_string(1)),_vec3(found.get_string(2))])
+	var conditions: Array=[]
+	for found in RegEx.create_from_string("if \\((source[^{\\n]*?)\\)(?: \\{| accent)").search_all(body): conditions.append(_condition(found.get_string(1)))
+	# Mirrored structure: if C0 { if C1 r0 else r1 } else if C2 r2 else if C3 r3
+	# else if C4 r4 else r5. Any other shape fails the model check below.
+	var shaped:=body.count("} else if (")==3 and body.count("else accent")==1 and body.count("} else {")==1
+	var ok:=segments.size()==4 and limits.size()==3 and gate!=null and weight!=null and ramps.size()==6 and conditions.size()==5 and shaped
+	for terms in conditions: ok=ok and not terms.is_empty()
+	return {"ok":ok,"segments":segments,"limits":limits,"gate":float(gate.get_string(1)) if gate else 0.0,
+		"offset":float(weight.get_string(1)) if weight else 0.0,"gain":float(weight.get_string(2)) if weight else 0.0,"ramps":ramps,"conditions":conditions}
+
+static func hud_ink(rgb: Color, model: Dictionary) -> Color:
+	var luma:=rgb.r*0.2126+rgb.g*0.7152+rgb.b*0.0722
+	var segment: int=model.limits.size()
+	for i in model.limits.size():
+		if luma<float(model.limits[i]): segment=i;break
+	var s: Array=model.segments[segment]
+	var neutral: Color=Color(s[0]).lerp(Color(s[1]),(luma-float(s[2]))/float(s[3]))
+	var chroma:=maxf(rgb.r,maxf(rgb.g,rgb.b))-minf(rgb.r,minf(rgb.g,rgb.b))
+	if not chroma>float(model.gate): return neutral
+	var c: Array=model.conditions
+	var ramp: int
+	if _holds(rgb,c[0]): ramp=0 if _holds(rgb,c[1]) else 1
+	elif _holds(rgb,c[2]): ramp=2
+	elif _holds(rgb,c[3]): ramp=3
+	elif _holds(rgb,c[4]): ramp=4
+	else: ramp=5
+	var accent: Color=Color(model.ramps[ramp][0]).lerp(Color(model.ramps[ramp][1]),luma)
+	return neutral.lerp(accent,clampf((chroma-float(model.offset))*float(model.gain),0.0,1.0))
+
+func hud_ink_separation() -> void:
+	var code:=FileAccess.get_file_as_string("res://scripts/pc_tactical_hud.gdshader")
+	var model:=hud_ramp_model(code)
+	check(model.ok,"HUD shader exposes the mirrored neutral ramp, chroma gate, five branch conditions and six accent ramps")
+	if not model.ok: return
+	# The parser reads what the shader evaluates: a perturbed branch literal or
+	# neutral segment end must change the mirrored model.
+	check(hud_ramp_model(code.replace("source.g * 1.30","source.g * 1.90")).conditions!=model.conditions \
+		and hud_ramp_model(code.replace("vec3(0.320, 0.398, 0.310), vec3(0.665","vec3(0.320, 0.398, 0.310), vec3(0.965")).segments!=model.segments,"HUD ramp mirror tracks shader literals")
+	# Every distinct SIM palette entry stays distinguishable after the finish.
+	var palette: Array=preload("res://scripts/pc_orientation_art.gd").PALETTE
+	var closest:=INF
+	for i in palette.size():
+		for j in range(i+1,palette.size()):
+			if palette[i]==palette[j]: continue
+			var a:=hud_ink(palette[i],model);var b:=hud_ink(palette[j],model)
+			closest=minf(closest,Vector3(a.r-b.r,a.g-b.g,a.b-b.b).length())
+	check(closest>=0.15,"Tactical HUD keeps every SIM palette pair apart (closest %.3f)"%closest)
+	var brown:=hud_ink(Color8(170,85,0),model);var salmon:=hud_ink(Color8(255,85,85),model)
+	check(Vector3(brown.r-salmon.r,brown.g-salmon.g,brown.b-salmon.b).length()>0.25,"light red stays bright against brown")
+	var blue:=hud_ink(Color8(0,0,170),model)
+	check(blue.b>0.35 and blue.b>blue.g,"blue ink stays blue rather than near-black teal")
+
+# The native panel test must accept and reject exactly the pixels the earlier
+# per-pixel predicate did, including the driver border blue exception.
+func uncovered_panel_pixels() -> void:
+	var rng:=RandomNumberGenerator.new();rng.seed=1015
+	var exact:=true
+	var accepted:=0
+	for trial in 160:
+		var id: int=[1,2,4,5][trial%4]
+		var box:=Rect2i(60,186,198,12) if id==4 else Rect2i(rng.randi_range(0,40),rng.randi_range(0,40),rng.randi_range(1,30),rng.randi_range(1,20))
+		var source:=Image.create(320,200,false,Image.FORMAT_RGB8)
+		var tags:=Image.create(320,200,false,Image.FORMAT_L8)
+		tags.fill(Color8(id,id,id))
+		var holes:=rng.randi_range(0,6)
+		for n in holes:
+			var at:=box.position+Vector2i(rng.randi_range(0,box.size.x-1),rng.randi_range(0,box.size.y-1))
+			tags.set_pixelv(at,Color8(0,0,0) if trial%5!=0 else Color8(3,3,3))
+			var ink:=rng.randi_range(0,3)
+			if ink==1: source.set_pixelv(at,Color8(170,170,170))
+			elif ink==2: source.set_pixelv(at,Color8(85,85,255))
+			elif ink==3: source.set_pixelv(at,Color8(0,0,1))
+		if id==4 and trial%8==0:
+			tags.fill_rect(Rect2i(64,189,45,9),Color8(0,0,0));source.fill_rect(Rect2i(64,189,45,1),Color8(85,85,255))
+		var reference:=true
+		for y in range(box.position.y,box.end.y):
+			for x in range(box.position.x,box.end.x):
+				if tags.get_pixel(x,y).r8==id: continue
+				var c:=source.get_pixel(x,y)
+				if c==Color.BLACK: continue
+				var border:=false
+				for rect in [Rect2i(64,189,45,9),Rect2i(112,189,39,9),Rect2i(154,189,51,9),Rect2i(208,189,45,9)]:
+					border=border or (rect.has_point(Vector2i(x,y)) and (x==rect.position.x or x==rect.end.x-1 or y==rect.position.y or y==rect.end.y-1))
+				if id==4 and c==Color8(85,85,255) and border: continue
+				reference=false
+		var native:=Instruments._uncovered_black(source,tags.get_region(box),box,id)
+		exact=exact and native==reference
+		if native: accepted+=1
+	check(exact and accepted>10 and accepted<150,"native uncovered-pixel test matches the per-pixel predicate")
+

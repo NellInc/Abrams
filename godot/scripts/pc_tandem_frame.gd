@@ -2,12 +2,13 @@ extends TextureRect
 ## Original UI pixels over scanout-paired Godot scenery. No inferred colour key.
 ## Missing attribution shows the actual source frame, never stale scenery.
 const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
+const COCKPIT_EDGES = preload("res://scripts/pc_cockpit_edges.gd")
 var typography = preload("res://scripts/pc_typography.gd").new()
 var damage_art = preload("res://scripts/pc_instrument_damage_art.gd").new()
 var dynamic_map_art = preload("res://scripts/pc_dynamic_map_art.gd").new()
 var gunner_trim = preload("res://scripts/pc_gunner_trim.gd").new()
 var commander_trim = preload("res://scripts/pc_commander_trim.gd").new()
-var cockpit_edges = preload("res://scripts/pc_cockpit_edges.gd").new()
+var cockpit_edges = COCKPIT_EDGES.new()
 var cupola_rail = preload("res://scripts/pc_cupola_rail.gd").new()
 var instrument_art = preload("res://scripts/pc_instrument_art.gd").new()
 var target_box_art = preload("res://scripts/pc_reticle_target_art.gd").new()
@@ -15,6 +16,8 @@ var reticle_art = preload("res://scripts/pc_reticle_art.gd").new()
 var portrait_art = preload("res://scripts/pc_portrait_art.gd").new()
 var frontend_art = preload("res://scripts/pc_frontend_art.gd").new()
 var genesis_art_enabled := false
+# Empty after a verified load; otherwise names the first failing donor or step.
+var genesis_art_reason := "Genesis cockpit donors not loaded"
 const GENESIS_ART = {
 	1:["gunner","f396cd9ade02fb6a6e6aeb7d13cd2e72dde0eabb79bf1a77f218c979d507f41a"],
 	2:["commander","4182083afd976950281f1bb3d303311b783e3ee68148858c7fb5b2a19227e180"],
@@ -62,7 +65,22 @@ var _current_driver_mask: Image
 var _driver_bits := PackedByteArray()
 var _driver_ui := PackedByteArray()
 var _driver_nonempty := false
-var _driver_row_nonempty := PackedByteArray()
+# Decoded overlay masks keyed by their exact encoded string, never by a hash.
+# The host resends an unchanged mask byte-identically; only a new string decodes.
+# Each caller receives a fresh Image over the cached bytes, so no consumer can
+# alter the cached copy, and its texture is created once per distinct mask.
+var _mask_cache: Dictionary = {}
+var _source_bytes := PackedByteArray()
+var _source_shape: Array = []
+var _source_texture: ImageTexture
+var _composed_bytes := PackedByteArray()
+var _composed_texture: ImageTexture
+# 1 when ImageTexture.update() round-trips on this renderer, 0 when not, -1 unknown.
+static var _update_round_trips := -1
+# The paired world replay (pc_draw_pass.gd), set by the viewer. Its render
+# warnings name original primitives the replay dropped; their pixels must stay
+# original, so a warned pass never replaces the source frame.
+var world_replay: Node
 
 func _init() -> void:
 	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -116,20 +134,92 @@ func _fallback(reason: String) -> bool:
 	_disable_art("original frame fallback")
 	return false
 
+# Returns null when the PNG fails to decode or is not 320x200. The caller checks
+# the format, so a malformed mask keeps its specific fallback reason.
+func _decoded_mask(slot: String, encoded: String) -> Image:
+	var cached: Dictionary=_mask_cache.get(slot,{})
+	if cached.is_empty() or cached.encoded!=encoded:
+		_mask_cache.erase(slot)
+		var mask := Image.new()
+		if mask.load_png_from_buffer(Marshalls.base64_to_raw(encoded)) != OK or mask.get_size() != Vector2i(320,200) or mask.has_mipmaps(): return null
+		cached={"encoded":encoded,"bytes":mask.get_data(),"format":mask.get_format(),"texture":null}
+		_mask_cache[slot]=cached
+	return Image.create_from_data(320,200,false,cached.format,cached.bytes)
+
+func _mask_texture(slot: String) -> ImageTexture:
+	var cached: Dictionary=_mask_cache[slot]
+	if cached.texture==null: cached.texture=ImageTexture.create_from_image(Image.create_from_data(320,200,false,cached.format,cached.bytes))
+	return cached.texture
+
+func _source_frame_texture(source: Image) -> ImageTexture:
+	if source==null or source.is_empty():
+		_source_texture=null
+		_source_bytes=PackedByteArray()
+		return null
+	var bytes := source.get_data()
+	if _source_texture==null or bytes!=_source_bytes or _source_shape!=_image_shape(source):
+		_source_texture=_upload(_source_texture,_source_shape,source)
+		_source_shape=_image_shape(source)
+		_source_bytes=bytes
+	return _source_texture
+
+static func _image_shape(image: Image) -> Array:
+	return [image.get_size(),image.get_format(),image.has_mipmaps()]
+
+# Changed content of an unchanged shape goes into the same GPU texture. A
+# renderer whose update() does not read back (the headless dummy) instead gets
+# a fresh texture, so every read-back still shows what was uploaded.
+static func _upload(texture: ImageTexture, shape: Array, image: Image) -> ImageTexture:
+	if texture!=null and shape==_image_shape(image) and _texture_updates():
+		texture.update(image)
+		return texture
+	return ImageTexture.create_from_image(image)
+
+static func _texture_updates() -> bool:
+	if _update_round_trips<0:
+		var probe := Image.create_empty(1,1,false,Image.FORMAT_L8)
+		var texture := ImageTexture.create_from_image(probe)
+		probe.fill(Color.WHITE)
+		texture.update(probe)
+		var back := texture.get_image()
+		_update_round_trips=1 if back!=null and back.get_data()==probe.get_data() else 0
+	return _update_round_trips==1
+
 func load_genesis_art(root: String) -> bool:
+	# Frontend, damage and portrait restorations pin their own sources. A cockpit
+	# donor mismatch must not silently disable them as well.
+	damage_art.load_sources(root)
+	portrait_art.load_sources(root)
+	frontend_art.load_sources(root)
+	genesis_art_reason=_load_cockpit_donors(root)
+	if not genesis_art_reason.is_empty():
+		# Absent donors are an ordinary PC-only install; a present but
+		# unverifiable file is a damaged import and is reported by name.
+		if genesis_art_reason!="Genesis cockpit donors not imported": push_warning("Genesis cockpit art disabled: "+genesis_art_reason)
+		return false
+	return true
+
+func _load_cockpit_donors(root: String) -> String:
 	# Validate the complete set before replacing any existing textures.
 	var images := {}
+	var missing := 0
 	for id in GENESIS_ART:
 		var entry: Array = GENESIS_ART[id]
-		var path := root.path_join("local-art/genesis/cockpit-v2/"+entry[0]+"-genesis-v1.png")
-		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=entry[1]: return false
+		if not FileAccess.file_exists(root.path_join("local-art/genesis/cockpit-v2/"+entry[0]+"-genesis-v1.png")): missing+=1
+	if missing==GENESIS_ART.size(): return "Genesis cockpit donors not imported"
+	for id in GENESIS_ART:
+		var entry: Array = GENESIS_ART[id]
+		var name: String = entry[0]+"-genesis-v1.png"
+		var path := root.path_join("local-art/genesis/cockpit-v2/"+name)
+		if not FileAccess.file_exists(path): return "cockpit-v2 "+name+" missing"
+		if FileAccess.get_sha256(path)!=entry[1]: return "cockpit-v2 "+name+" hash mismatch"
 		var image := Image.load_from_file(path)
-		if image==null or image.get_size()!=Vector2i(1586,992): return false
+		if image==null or image.get_size()!=Vector2i(1586,992): return "cockpit-v2 "+name+" unreadable or wrong size"
 		images[id] = image
-	if not cupola_rail.load_source(root): return false
+	if not cupola_rail.load_source(root): return "cupola rail source unavailable"
 	images[3]=preload("res://scripts/pc_cupola_material.gd").prepare(images[3])
 	images[4]=preload("res://scripts/pc_cupola_material.gd").prepare_driver(images[4])
-	if images[3]==null or images[4]==null: return false
+	if images[3]==null or images[4]==null: return "cupola/driver material preparation failed"
 	set_gunner_art(images[1])
 	for id in [2,3,4]: set_cockpit_art(id,images[id])
 	status_art_texture = ImageTexture.create_from_image(images[5])
@@ -145,10 +235,7 @@ func load_genesis_art(root: String) -> bool:
 	material.set_shader_parameter("genesis_art",true)
 	typography.fixed_labels_enabled = true
 	instrument_art.load_sources(root,images[1],images[2])
-	damage_art.load_sources(root)
-	portrait_art.load_sources(root)
-	frontend_art.load_sources(root)
-	return true
+	return ""
 
 func set_gunner_art(image: Image) -> bool:
 	gunner_art_texture = null
@@ -216,9 +303,8 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 	if not plates is Dictionary: return
 	var encoded = overlay.get("mask_png")
 	if not encoded is String: return
-	var mask := Image.new()
-	if mask.load_png_from_buffer(Marshalls.base64_to_raw(encoded)) != OK or mask.get_size() != Vector2i(320,200): return
-	if mask.get_format() != Image.FORMAT_L8: return
+	var mask := _decoded_mask("plate",encoded)
+	if mask==null or mask.get_format() != Image.FORMAT_L8: return
 	var tags := mask.get_data()
 	var ui_bits := ui.get_data()
 	var present: Dictionary
@@ -275,7 +361,7 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 		material.set_shader_parameter(["commander_art","cupola_art","driver_art"][id-2], donor)
 	material.set_shader_parameter("station_art_enabled", Vector3(1 if 2 in cockpit_art_ids else 0, 1 if 3 in cockpit_art_ids else 0, 1 if 4 in cockpit_art_ids else 0))
 	material.set_shader_parameter("gunner_art", gunner_art_texture)
-	material.set_shader_parameter("plate_mask", ImageTexture.create_from_image(mask))
+	material.set_shader_parameter("plate_mask", _mask_texture("plate"))
 	_current_plate_mask = mask
 	gunner_art_enabled = 1 in cockpit_art_ids
 	material.set_shader_parameter("gunner_art_enabled", gunner_art_enabled)
@@ -291,43 +377,64 @@ func _set_driver_assembly(presentation: Dictionary, ui: Image) -> void:
 	if not overlay is Dictionary or overlay.get("width") != 320 or overlay.get("height") != 200: return
 	if overlay.get("source") != "SIM.EXE:5ba1..5da3" or overlay.get("source_sha256") != "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099": return
 	if not overlay.get("mask_png") is String: return
-	var mask := Image.new()
-	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png)) != OK or mask.get_size() != Vector2i(320,200) or mask.get_format() != Image.FORMAT_RGB8: return
+	var mask := _decoded_mask("driver",overlay.mask_png)
+	if mask==null or mask.get_format() != Image.FORMAT_RGB8: return
 	var values := mask.get_data()
 	var ui_bits := ui.get_data()
 	var any := _driver_nonempty
 	if values!=_driver_bits or ui_bits!=_driver_ui:
-		any=false
-		var row_nonempty := PackedByteArray()
-		row_nonempty.resize(200)
-		for y in 200:
-			var lo := y*320
-			var hi := lo+320
-			var row := values.slice(lo*3,hi*3)
-			var owned := ui_bits.slice(lo,hi)
-			var occupied := false
-			if _driver_row_nonempty.size()==200 and row==_driver_bits.slice(lo*3,hi*3) and (not _driver_row_nonempty[y] or owned==_driver_ui.slice(lo,hi)):
-				occupied=bool(_driver_row_nonempty[y])
-			elif row.count(0)!=960:
-				for x in 320:
-					var i := x*3
-					if row[i+2] not in [0,255] or row[i+1]>127: return
-					if row[i+2]==0:
-						if row[i]!=0 or row[i+1]!=0: return
-					elif owned[x]!=255: return
-					else: occupied=true
-			row_nonempty[y]=int(occupied)
-			any=any or occupied
+		var claims := _driver_mask_claims(values,ui_bits)
+		if claims<0: return
+		any=claims==1
 		_driver_bits=values
 		_driver_ui=ui_bits
 		_driver_nonempty=any
-		_driver_row_nonempty=row_nonempty
 	if not any: return
 	material.set_shader_parameter("driver_art", cockpit_art_textures[4])
-	material.set_shader_parameter("driver_assembly_mask", ImageTexture.create_from_image(mask))
+	material.set_shader_parameter("driver_assembly_mask", _mask_texture("driver"))
 	material.set_shader_parameter("driver_assembly_enabled", true)
 	_current_driver_mask=mask
 	driver_assembly_enabled = true
+
+# Every pixel is either unclaimed (0,0,0) or a claim (R, G<=127, 255) that the
+# UI mask owns. Returns 1 when any pixel is claimed, 0 when none, -1 if invalid.
+# The checks run as whole-image native operations; a turret traverse changes
+# most assembly rows each frame, so a per-pixel script pass would repeat.
+static func _driver_mask_claims(values: PackedByteArray, ui_bits: PackedByteArray) -> int:
+	var full := Rect2i(0,0,320,200)
+	var blue := COCKPIT_EDGES.claim_plane(Image.create_from_data(320,200,false,Image.FORMAT_RGB8,values)).get_data()
+	var claimed := blue.count(255)
+	if blue.count(0)+claimed!=64000: return -1
+	if claimed==0: return 0 if values.count(0)==values.size() else -1
+	# RGBA8 whose alpha is each pixel's B byte: prefix one byte, so pixel i's
+	# fourth byte is the original pixel i's B (its RGB8->RGBA8 bytes shift by one).
+	var widened := Image.create_from_data(320,200,false,Image.FORMAT_RGB8,values)
+	widened.convert(Image.FORMAT_RGBA8)
+	var alpha := PackedByteArray([0])
+	alpha.append_array(widened.get_data().slice(0,-1))
+	var claims := Image.create_from_data(320,200,false,Image.FORMAT_RGBA8,alpha)
+	# Clearing every claimed pixel must leave no nonzero unclaimed byte.
+	var unclaimed := Image.create_from_data(320,200,false,Image.FORMAT_RGB8,values)
+	unclaimed.blit_rect_mask(Image.create_empty(320,200,false,Image.FORMAT_RGB8),claims,full,Vector2i.ZERO)
+	if unclaimed.get_data().count(0)!=values.size(): return -1
+	# Each claimed pixel must be UI-owned.
+	if ui_bits.count(255)!=ui_bits.size():
+		var owned := Image.create_empty(320,200,false,Image.FORMAT_L8)
+		owned.fill(Color.WHITE)
+		owned.blit_rect_mask(Image.create_from_data(320,200,false,Image.FORMAT_L8,ui_bits),claims,full,Vector2i.ZERO)
+		if owned.get_data().count(255)!=ui_bits.size(): return -1
+	# G is zero wherever unclaimed (checked above); a claim's G must be <=127.
+	var green := values.slice(1)
+	green.append_array(PackedByteArray([0]))
+	var g := Image.create_from_data(320,200,false,Image.FORMAT_RGB8,green)
+	g.convert(Image.FORMAT_R8)
+	var greens := g.get_data()
+	for y in 200:
+		var row := greens.slice(y*320,y*320+320)
+		if row.count(0)==320: continue
+		row.sort()
+		if row[319]>127: return -1
+	return 1
 
 func load_graphics_sources(root: String) -> bool:
 	return native_graphics.load_sources(root)
@@ -370,7 +477,7 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	if graphics_mode not in ["upscaled","modern","tactical"]:
 		_fallback("Untouched original EGA" if graphics_mode=="ega" else "Native Genesis donors with original PC fallback")
 		material=null
-		texture=ImageTexture.create_from_image(source) if source!=null and not source.is_empty() else null
+		texture=_source_frame_texture(source)
 		if graphics_mode=="genesis":native_graphics.set_frame(source,presentation,program)
 		if graphics_mode=="ega_upscaled" and texture!=null and source.get_size()==Vector2i(320,200):
 			material=_ega_material
@@ -381,7 +488,7 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	frontend_art.clear()
 	damage_art.clear()
 	dynamic_map_art.clear()
-	texture = ImageTexture.create_from_image(source) if source != null and not source.is_empty() else null
+	texture = _source_frame_texture(source)
 	if texture == null or source.get_size() != Vector2i(320, 200):
 		return _fallback("unsupported original framebuffer")
 	var drawing = presentation.get("draw_pass")
@@ -395,14 +502,22 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 			return _fallback("invalid camera bounds")
 	if clip[0] < 0 or clip[1] < 0 or clip[2] >= 320 or clip[3] >= 200 or clip[0] > clip[2] or clip[1] > clip[3]:
 		return _fallback("invalid camera bounds")
+	# Any original command the observer could not attribute (bitmap, polygon,
+	# opaque or round command, plane mask, incomplete sprite/round form) has no
+	# replay geometry, yet its pixels are world-phase writes. Show the source.
+	var unsupported = drawing.get("unsupported",[])
+	if not unsupported is Array or not unsupported.is_empty():
+		return _fallback("unsupported original draw commands")
+	if world_replay!=null and not world_replay.render_warnings.is_empty():
+		return _fallback("world replay incomplete: "+str(world_replay.render_warnings[0]))
 	var overlay = presentation.get("ui_overlay")
 	if not overlay is Dictionary or overlay.get("width") != 320 or overlay.get("height") != 200:
 		return _fallback("no scanout-paired UI mask")
 	var encoded = overlay.get("mask_png")
 	if not encoded is String:
 		return _fallback("missing UI mask")
-	var mask := Image.new()
-	if mask.load_png_from_buffer(Marshalls.base64_to_raw(encoded)) != OK or mask.get_size() != Vector2i(320, 200):
+	var mask := _decoded_mask("ui",encoded)
+	if mask == null:
 		return _fallback("invalid UI mask image")
 	# The host emits an L8 mask. Refuse colour/alpha conversions which could hide
 	# malformed provenance, and keep explicitly opaque black UI intact.
@@ -413,7 +528,7 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	if world == null: return _fallback("world texture unavailable")
 	material.set_shader_parameter("camera_rect", Vector4(clip[0], clip[1], clip[2]-clip[0]+1, clip[3]-clip[1]+1))
 	material.set_shader_parameter("world_texture", world)
-	material.set_shader_parameter("ui_mask", ImageTexture.create_from_image(mask))
+	material.set_shader_parameter("ui_mask", _mask_texture("ui"))
 	material.set_shader_parameter("world_enabled", true)
 	world_enabled = true
 	fallback_reason = ""
@@ -426,14 +541,17 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 			material.set_shader_parameter("cupola_rail_verified",cupola_rail.verify(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),3 in cockpit_art_ids))
 			for station in [3,4]:
 				if station in cockpit_art_ids:
-					cockpit_edges.set_frame(mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),cockpit_art_textures[station],_current_driver_mask,station,graphics_mode in ["modern","tactical"],bool(material.get_shader_parameter("cupola_rail_verified")),world)
+					cockpit_edges.set_frame(mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),cockpit_art_textures[station],_current_driver_mask,station,graphics_mode in ["modern","tactical"],bool(material.get_shader_parameter("cupola_rail_verified")),world,
+							_mask_texture("ui"),_mask_texture("plate"),_mask_texture("driver") if _current_driver_mask!=null else null)
 			if 1 in cockpit_art_ids:
 				gunner_trim.set_frame(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),world)
 			if 2 in cockpit_art_ids:
 				commander_trim.set_frame(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),world)
 			instrument_art.set_frame(source,mask,tags,presentation.get("orientation",{}))
 			damage_art.set_frame(source,mask,tags)
-	if genesis_art_enabled: portrait_art.set_frame(source,mask,presentation)
+	# Portraits pin their own sources and gate on their own loaded templates
+	# (none on a PC-only install), independent of the cockpit donor set.
+	portrait_art.set_frame(source,mask,presentation)
 	dynamic_map_art.set_frame(source,presentation)
 	typography.set_frame(source,mask,presentation,null,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1))
 	reticle_art.clear()
@@ -448,5 +566,9 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 		for pixel in typography.world_ink: composed_mask.set_pixelv(pixel,Color.BLACK)
 		for pixel in reticle_art.ink: composed_mask.set_pixelv(pixel,Color.BLACK)
 		for pixel in target_box_art.ink: composed_mask.set_pixelv(pixel,Color.BLACK)
-		material.set_shader_parameter("ui_mask",ImageTexture.create_from_image(composed_mask))
+		var composed_bytes := composed_mask.get_data()
+		if _composed_texture==null or composed_bytes!=_composed_bytes:
+			_composed_texture=_upload(_composed_texture,_image_shape(mask),composed_mask)
+			_composed_bytes=composed_bytes
+		material.set_shader_parameter("ui_mask",_composed_texture)
 	return true

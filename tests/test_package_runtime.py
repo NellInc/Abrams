@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import types
@@ -91,16 +92,91 @@ class PackageRuntimeTests(unittest.TestCase):
         self.assertFalse((self.profile / 'saves').exists())
 
     def test_upgrade_and_launch_preserve_existing_profile(self):
-        report = {'data_home': str(self.profile), 'godot_bin': '/fake/godot'}
+        report = {'data_home': str(self.profile), 'godot_bin': '/fake/godot', 'godot': '4.7.2.stable.official'}
         for kit in [self.root, self.root.with_name('upgraded-kit')]:
-            with patch.object(runtime, 'ROOT', kit), patch.object(runtime, 'dependencies', return_value=report), patch.object(sys, 'argv', ['runtime', '--fullscreen']), patch.object(runtime.subprocess, 'run') as run, patch.object(runtime.os, 'execve') as execute:
+            with patch.object(runtime, 'ROOT', kit), patch.object(runtime, 'dependencies', return_value=report), patch.object(sys, 'argv', ['runtime', '--fullscreen']), patch.object(runtime.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)) as run, patch.object(runtime.os, 'execve') as execute, contextlib.redirect_stderr(io.StringIO()):
                 runtime.main()
                 self.assertEqual(run.call_count, 2)
+                self.assertTrue(all(call.kwargs['timeout'] == runtime.PREFLIGHT_TIMEOUT for call in run.call_args_list))
                 args = execute.call_args.args[1]
                 self.assertEqual(args[0], str(kit / 'PC Bridge.command'))
                 self.assertIn(str(self.profile / 'saves'), args)
                 self.assertIn('--fullscreen', args)
             self.assertEqual((self.profile / 'campaign.keep').read_bytes(), b'preserve campaign')
+
+    def launch(self, run, godot='4.7.2.stable.official'):
+        report = {'data_home': str(self.profile), 'godot_bin': '/fake/godot', 'godot': godot}
+        with patch.object(runtime, 'ROOT', self.root), patch.object(runtime, 'dependencies', return_value=report), patch.object(sys, 'argv', ['runtime']), patch.object(runtime.subprocess, 'run', side_effect=run) as called, patch.object(runtime.os, 'execve') as execute, contextlib.redirect_stderr(io.StringIO()) as stderr:
+            try:
+                runtime.main()
+                code = None
+            except SystemExit as error:
+                code = error.code
+        return code, called, execute, stderr.getvalue()
+
+    def test_zero_exit_compile_errors_and_hung_preflights_never_launch(self):
+        def compile_error(marker):
+            def run(arguments, stdout, **kwargs):
+                stdout.write(b'Godot Engine v4.7.2\n' + marker + b': res://scripts/pc_bridge_viewer.gd:1 - broken\n')
+                return subprocess.CompletedProcess(arguments, 0)
+            return run
+        def hung(arguments, timeout, **kwargs):
+            raise subprocess.TimeoutExpired(arguments, timeout)
+        for name, run in [('script', compile_error(b'SCRIPT ERROR')), ('parse', compile_error(b'Parse Error')), ('shader', compile_error(b'SHADER ERROR')), ('timeout', hung)]:
+            with self.subTest(name=name):
+                code, called, execute, stderr = self.launch(run)
+                self.assertEqual(code, 1); execute.assert_not_called()
+                self.assertEqual(called.call_args.kwargs['timeout'], runtime.PREFLIGHT_TIMEOUT)
+                self.assertIn(str(self.profile / 'logs/application.log'), stderr)
+        self.assertIn(b'SCRIPT ERROR', (self.profile / 'logs/application.log').read_bytes())
+
+    def test_import_runs_once_per_kit_receipt_and_check_only_every_launch(self):
+        clean = lambda arguments, **kwargs: subprocess.CompletedProcess(arguments, 0)
+        (self.root / 'PACKAGE.json').write_text('{"files": 1}')
+        (self.root / 'godot').mkdir()
+        modes = []
+        for change in [False, False, True, False]:
+            if change:
+                (self.root / 'PACKAGE.json').write_text('{"files": 2}')
+            code, called, execute, _ = self.launch(clean)
+            self.assertIsNone(code); execute.assert_called_once()
+            modes.append(['--import' in call.args[0] for call in called.call_args_list])
+            self.assertIn('--check-only', called.call_args.args[0])
+        self.assertEqual(modes, [[True, False], [False], [True, False], [False]])
+        # Clearing the import cache repeats the import.
+        (self.root / 'godot' / runtime.IMPORT_MARKER).unlink()
+        self.assertEqual(['--import' in call.args[0] for call in self.launch(clean)[1].call_args_list], [True, False])
+        # Another engine version must not reuse the imported cache.
+        self.assertEqual(['--import' in call.args[0] for call in self.launch(clean, godot='4.4.1.stable.official')[1].call_args_list], [True, False])
+        self.assertEqual(['--import' in call.args[0] for call in self.launch(clean, godot='4.4.1.stable.official')[1].call_args_list], [False])
+        self.assertEqual(['--import' in call.args[0] for call in self.launch(clean)[1].call_args_list], [True, False])
+
+    def test_symlinked_import_cache_is_refused(self):
+        clean = lambda arguments, **kwargs: subprocess.CompletedProcess(arguments, 0)
+        (self.root / 'PACKAGE.json').write_text('{"files": 1}')
+        (self.root / 'godot').mkdir()
+        elsewhere = self.root / 'elsewhere'; elsewhere.mkdir()
+        (self.root / 'godot' / '.godot').symlink_to(elsewhere)
+        code, called, execute, stderr = self.launch(clean)
+        self.assertEqual(code, 1); execute.assert_not_called(); called.assert_not_called()
+        self.assertIn('symlink', stderr)
+        self.assertEqual(list(elsewhere.iterdir()), [])
+        # A real cache with a linked marker is refused too, leaving the target intact.
+        (self.root / 'godot' / '.godot').unlink(); (self.root / 'godot' / '.godot').mkdir()
+        target = elsewhere / 'target.txt'; target.write_bytes(b'keep')
+        (self.root / 'godot' / runtime.IMPORT_MARKER).symlink_to(target)
+        code, called, execute, stderr = self.launch(clean)
+        self.assertEqual(code, 1); execute.assert_not_called(); called.assert_not_called()
+        self.assertEqual(target.read_bytes(), b'keep')
+
+    def test_launch_skips_build_time_closure_walk(self):
+        self.private_fixture()
+        with patch.object(runtime.subprocess, 'check_output', return_value='4.7.2.stable'):
+            runtime.dependencies(self.root)
+            package_build.check_source_closure.assert_not_called()
+            package_build.selected_files.assert_called_once_with(self.root, 'private')
+            runtime.dependencies(self.root, closure=True)
+            package_build.check_source_closure.assert_called_once_with(self.root, [], include_assets=True)
 
     def test_import_bad_hash_or_incomplete_manifest_leaves_no_destination(self):
         source = self.root / 'originals'; source.mkdir()

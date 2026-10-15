@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 from types import SimpleNamespace
 from tools.pc_live_state import active_program
-from tools.pc_session import PresentationSession
+from tools.pc_session import PresentationSession, slim_sample
 
 
 def program_ram(name='SIM', psp=0x1DD):
@@ -205,6 +205,41 @@ class SessionTests(unittest.TestCase):
         self.assertIsNone(session.sample()['loop_diagnostic'])
         self.assertEqual(session.sample()['render_epoch'],2)
         session.close()
+
+    def test_slim_sample_keeps_every_field_play_reads_and_no_undrawn_actor(self):
+        actor = lambda pointer, shape: {'pointer': pointer, 'shape_index': shape, 'world_position_raw': [pointer, 2, 3],
+                                        'orientation_u8': [0, 0, 7], 'speed_raw': 4, 'shape_header_word': 1}
+        world = {'window_origin': [5, 6], 'cell_size_raw': 4096, 'static': [{'pointer': 1, 'shape_index': 40}],
+                 'dynamic': [actor(0x50, 115), actor(0x70, 116), actor(0x90, 187)],
+                 'presentation_effects': {'schema': 1, 'smoke': {'active': False}}}
+        drawing = {'sequence': 9, 'camera': {'clip': [0, 0, 319, 135]}, 'world': world,
+                   'objects': [{'pointer': 1, 'dynamic_instance': False}, {'pointer': 0x50, 'dynamic_instance': True},
+                               {'kind': 'sprite', 'pointer': 0x90, 'dynamic_instance': True}]}
+        state = {'station': 'gunner', 'world_position_raw': [7, 8, 9], 'camera': {'view_index': 0}, 'world': world,
+                 'heading_degrees': 10, 'ammunition': {'HEAT': 1}}
+        sample = {'program': {'name': 'SIM'}, 'state': state, 'render_epoch': 2,
+                  'presentation': {'draw_pass': drawing, 'text_runs': [], 'palette_rgb': [[0, 0, 0]]}}
+        before = json.dumps(sample, sort_keys=True)
+        slim = slim_sample(sample)
+        self.assertEqual(json.dumps(sample, sort_keys=True), before)  # the collector's packet is untouched
+        self.assertEqual(slim['state'], {k: v for k, v in state.items() if k != 'world'})
+        self.assertEqual(slim['presentation']['draw_pass']['world'], {'window_origin': [5, 6],
+            'presentation_effects': world['presentation_effects'], 'dynamic': [actor(0x50, 115), actor(0x90, 187)]})
+        self.assertEqual({k: v for k, v in slim['presentation']['draw_pass'].items() if k != 'world'},
+                         {k: v for k, v in drawing.items() if k != 'world'})
+        self.assertEqual(slim['presentation']['text_runs'], [])
+        self.assertEqual((slim['program'], slim['render_epoch']), (sample['program'], 2))
+        # A null list or stray entry is skipped, as the Godot consumers skip it.
+        for objects, dynamic in ((None, world['dynamic']), (drawing['objects'], None),
+                                 (drawing['objects'] + [None, 7, {'dynamic_instance': True}],
+                                  world['dynamic'] + [None, 'x', {'shape_index': 9}])):
+            odd = dict(sample, presentation={'draw_pass': dict(drawing, objects=objects, world=dict(world, dynamic=dynamic))})
+            kept = slim_sample(odd)['presentation']['draw_pass']['world']['dynamic']
+            self.assertEqual(kept, [] if objects is None or dynamic is None else [actor(0x50, 115), actor(0x90, 187)])
+        # Menus, unattached SIM and control replies pass through unchanged.
+        for other in ({'program': {'name': 'START'}, 'state': None, 'presentation': {'draw_pass': None, 'reason': 'menu'}},
+                      {'type': 'captured'}, {'type': 'state_result', 'id': 1, 'success': False}):
+            self.assertEqual(slim_sample(other), other)
 
 
 if __name__ == '__main__': unittest.main()

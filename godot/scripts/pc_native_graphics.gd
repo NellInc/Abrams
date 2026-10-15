@@ -1,6 +1,7 @@
 extends TextureRect
 ## Extracted native donors only. No high-resolution art or world rerendering.
 const CATALOG_SHA := "c35a2628fa44e91ea716a0522290efe3a3307a010ca96eb189ae7078bd006cc1"
+const EXPECTED_PIXELS_SHA:="154d489c50054d7c96ea3ce6b7cead02179a4aac652d0780da9c72a6886012c9"
 var splash_aftermath_art=preload("res://scripts/pc_splash_aftermath_art.gd").new()
 var newspaper_art=preload("res://scripts/pc_newspaper_art.gd").new()
 var catalog: Dictionary = {}
@@ -23,6 +24,11 @@ var mask_values := PackedByteArray()
 var mask_bits := PackedByteArray()
 var mask_textures := []
 var mask_decode_count := 0
+# Plate-5 STATUS proof: tag coverage is a property of the validated mask pair;
+# the donor region is fixed at load. Each frame compares source bytes natively.
+const STATUS_RECT := Rect2i(123,37,182,63)
+var status_tags_pristine := false
+var expected_status_bytes := PackedByteArray()
 
 func _init() -> void:
 	expand_mode=TextureRect.EXPAND_IGNORE_SIZE
@@ -43,15 +49,22 @@ func load_sources(root: String) -> bool:
 	splash_aftermath_art.load_sources(root)
 	loaded=false;catalog.clear();catalogs.clear();images.clear();fonts.clear()
 	mask_keys=["",""];mask_valid=false;mask_values.clear();mask_bits.clear();mask_textures.clear()
+	status_tags_pristine=false;expected_status_bytes.clear()
 	var path:=root.path_join("local-art/pc-graphics-native-v1/graphics.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA:return false
 	var data:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
 	for name in data.donors:
 		var item:Dictionary=data.donors[name]
 		path=root.path_join(item.path)
-		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=item.sha256:return false
+		if not FileAccess.file_exists(path):return false
+		# expected.png is decoded from the player's GAME plates at import time;
+		# pin its RGB8 pixels because PNG bytes differ between encoders.
+		if name!="expected" and FileAccess.get_sha256(path)!=item.sha256:return false
 		var im:=Image.load_from_file(path)
 		if im==null or im.get_size()!=Vector2i(item.size[0],item.size[1]):return false
+		if name=="expected":
+			im.convert(Image.FORMAT_RGB8)
+			if fingerprint(im.get_data())!=EXPECTED_PIXELS_SHA:return false
 		images[name]=im
 	for name in data.catalogs:
 		var item:Dictionary=data.catalogs[name]
@@ -84,6 +97,8 @@ func load_sources(root: String) -> bool:
 		var native:Image=images["crew-"+["commander","gunner","driver","loader"][id]].duplicate()
 		native.resize(width,int(face.height),Image.INTERPOLATE_NEAREST)
 		portrait_templates.append({"points":points,"donor":native,"name":["commander","gunner","driver","loader"][id]})
+	# images.expected is RGB8 (pinned above), matching the RGB8 source frame.
+	expected_status_bytes=images.expected.get_region(Rect2i(STATUS_RECT.position+Vector2i(0,800),STATUS_RECT.size)).get_data()
 	catalog=data
 	material.set_shader_parameter("plate_donors",ImageTexture.create_from_image(images.plates))
 	material.set_shader_parameter("plate_originals",ImageTexture.create_from_image(images.expected))
@@ -189,7 +204,7 @@ func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> 
 	if not plate.get("mask_png") is String or not ui.get("mask_png") is String:return
 	if plate.mask_png!=mask_keys[0] or ui.mask_png!=mask_keys[1]:_validate_masks(plate.mask_png,ui.mask_png)
 	if not mask_valid:return
-	var values:=mask_values;var bits:=mask_bits
+	var bits:=mask_bits
 	if program.get("name")=="SIM":
 		for item in portrait_templates:
 			var matches:=true
@@ -207,13 +222,7 @@ func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> 
 		var claimed:Dictionary=plate.get("plates",{}).get(str(id),{})
 		var expected:Dictionary=catalog.plates[slot]
 		if claimed.get("source")==expected.source and claimed.get("source_sha256")==expected.source_sha256:
-			if id==5:
-				var pristine:=true
-				for y in range(37,100):
-					for x in range(123,305):
-						if values[y*320+x]!=5 or source.get_pixel(x,y)!=images.expected.get_pixel(x,800+y):pristine=false;break
-					if not pristine:break
-				if not pristine:continue
+			if id==5 and not (status_tags_pristine and source.get_region(STATUS_RECT).get_data()==expected_status_bytes):continue
 			enabled|=1<<id
 	material.set_shader_parameter("plate_tags",mask_textures[0])
 	material.set_shader_parameter("ui_mask",mask_textures[1])
@@ -225,6 +234,7 @@ func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> 
 func _validate_masks(plate_png: String, ui_png: String) -> void:
 	mask_decode_count+=1
 	mask_keys=[plate_png,ui_png];mask_valid=false;mask_values.clear();mask_bits.clear();mask_textures.clear()
+	status_tags_pristine=false
 	var tags:=Image.new();var mask:=Image.new()
 	if tags.load_png_from_buffer(Marshalls.base64_to_raw(plate_png))!=OK or mask.load_png_from_buffer(Marshalls.base64_to_raw(ui_png))!=OK:return
 	if tags.get_size()!=Vector2i(320,200) or mask.get_size()!=Vector2i(320,200) or tags.get_format()!=Image.FORMAT_L8 or mask.get_format()!=Image.FORMAT_L8:return
@@ -236,5 +246,9 @@ func _validate_masks(plate_png: String, ui_png: String) -> void:
 	for i in values.size():
 		if values[i]!=0 and bits[i]!=255:return
 	mask_values=values;mask_bits=bits
+	status_tags_pristine=true
+	for y in range(STATUS_RECT.position.y,STATUS_RECT.end.y):
+		var lo:=y*320+STATUS_RECT.position.x
+		if values.slice(lo,lo+STATUS_RECT.size.x).count(5)!=STATUS_RECT.size.x:status_tags_pristine=false;break
 	mask_textures=[ImageTexture.create_from_image(tags),ImageTexture.create_from_image(mask)]
 	mask_valid=true

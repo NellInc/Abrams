@@ -70,7 +70,7 @@ def build(root, capture):
     sprites = decode_bitmaps(decode_resource((root/'GAME/EXPLO.BMP').read_bytes()))
     if [(s['width'],s['height']) for s in sprites]!=[(64,46),(80,60),(128,95),(160,125)]:
         raise ValueError('unsupported original flash directory')
-    current = base.copy(); entries = []
+    current = base.copy(); entries = []; flash_images = []
     for index,frame in enumerate(FRAMES):
         record = report['records'][frame]
         path = capture/report['images'][record['rgb_sha256']]['image']
@@ -85,6 +85,7 @@ def build(root, capture):
             current.paste(rgb, POSES[index-1], mask)
         if index <= 4 and current.tobytes()!=image.tobytes():
             raise ValueError('original title/flash source composition differs')
+        if 1 <= index <= 4: flash_images.append(image)  # already hash- and composition-verified
         entry = {'name':'title' if index==0 else f'flash-{index}' if index<=4 else f'credit-{index-4}',
                  'rgb_sha256':record['rgb_sha256'], 'capture_image':path.name, 'flash':min(index,4),
                  'overlays':[], 'text_runs':[]}
@@ -107,8 +108,8 @@ def build(root, capture):
                                           'foreground':list(fg)})
         entries.append(entry)
     flashes = []
-    for index,frame in enumerate(FRAMES[1:5]):
-        with Image.open(capture/f'frame-{frame:04d}.png') as raw: image = raw.convert('RGB')
+    # The capture saves one PNG per unique image, so a repeated pose has no frame-NNNN.png of its own.
+    for index,image in enumerate(flash_images):
         x0,y0,x1,y1 = ImageChops.difference(base,image).getbbox()
         flashes.append({'rect':[x0,y0,x1-x0,y1-y0], 'source_rect':DONORS[index]})
     assets = {}

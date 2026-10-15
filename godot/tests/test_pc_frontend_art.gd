@@ -1,5 +1,6 @@
 extends SceneTree
 const Frontend = preload("res://scripts/pc_frontend_art.gd")
+const MipReference = preload("res://tests/pc_mip_reference.gd")
 var errors: Array[String] = []
 var checks := 0
 var view: SubViewport
@@ -59,16 +60,21 @@ func render(source: Image, label: String) -> void:
 		var office: Image = art.material.get_shader_parameter("office").get_image()
 		var face: Image = art.portraits[art.active.pose].get_image()
 		var rect: Array = art.catalog.templates[art.active.pose].portrait_rect
+		# Wilson is premultiplied and mipmapped: composite every candidate level.
+		check(face.has_mipmaps() and face.get_format()==Image.FORMAT_RGBA8,"premultiplied mipmapped Wilson: "+label)
+		var minified: float=maxf(face.get_width()/(float(rect[2])*4.0),face.get_height()/(float(rect[3])*4.0))
+		var levels := {}
 		for y in range(0,height*4,31):
 			for x in range(0,1280,29):
 				var p := (Vector2(x,y)+Vector2(0.5,0.5))/4
-				var expected := bilinear(office,p/Vector2(320,200))
+				var under := bilinear(office,p/Vector2(320,200))
+				var candidates: Array[Color]=[under]
 				var q := (p-Vector2(rect[0],rect[1]))/Vector2(rect[2],rect[3])
 				if q.x>=0 and q.y>=0 and q.x<1 and q.y<1:
-					var fg := bilinear(face,q)
-					expected = expected.lerp(Color(fg.r,fg.g,fg.b,1),fg.a)
-				var actual := image.get_pixel(x,y)
-				check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"wrong Genesis donor/alpha/filter: "+label)
+					candidates.clear()
+					for fg in MipReference.samples(face,q,minified,levels):
+						candidates.append(Color(under.r*(1.0-fg.a)+fg.r,under.g*(1.0-fg.a)+fg.g,under.b*(1.0-fg.a)+fg.b))
+				check(MipReference.inside(image.get_pixel(x,y),candidates,3.0/255),"wrong Genesis donor/alpha/filter: "+label)
 	check(image.save_png(output.path_join(label+".png"))==OK,"save native frame: "+label)
 	samples.append({"label":label,"active":art.active.duplicate(),"changed_pixels":changed,
 		"text":art.typography.runs.map(func(r):return r.text)})
@@ -101,6 +107,14 @@ func run() -> void:
 	art.size=view.size
 	view.add_child(art)
 	check(art.load_sources(root_path),"pinned original templates and Genesis art loaded")
+	for face in art.portraits:
+		# Premultiplied: no channel can exceed its own coverage.
+		var image: Image=face.get_image()
+		var premultiplied: bool=image.get_format()==Image.FORMAT_RGBA8 and image.has_mipmaps()
+		for at in [Vector2i(0,0),image.get_size()/2,image.get_size()/3,image.get_size()*2/3]:
+			var c:=image.get_pixelv(at)
+			premultiplied=premultiplied and c.r<=c.a+0.5/255 and c.g<=c.a+0.5/255 and c.b<=c.a+0.5/255
+		check(premultiplied,"Wilson portrait premultiplied with mipmaps")
 	check(FileAccess.file_exists(fixture),"fixture exists")
 	if art.catalog.is_empty() or not FileAccess.file_exists(fixture): finish(); return
 	var data = JSON.parse_string(FileAccess.get_file_as_string(fixture))
@@ -160,13 +174,19 @@ func run() -> void:
 	tandem.queue_free()
 	# Outline text needs only the pinned GAME fonts: a missing Wilson supplement
 	# disables the office but never information-page typography.
-	var partial:=OS.get_user_data_dir().path_join("frontend-art-partial-root")
-	DirAccess.make_dir_recursive_absolute(partial.path_join("local-art"))
+	# A per-run root, never the shared player profile: links always point at
+	# this checkout and are removed afterwards.
+	var partial:=OS.get_temp_dir().path_join("abrams-frontend-partial-%d"%OS.get_process_id())
+	remove_partial_root(partial)
+	check(not DirAccess.dir_exists_absolute(partial) and DirAccess.make_dir_recursive_absolute(partial.path_join("local-art"))==OK,"fresh partial asset root: "+partial)
 	var links:=DirAccess.open(partial)
-	if not DirAccess.dir_exists_absolute(partial.path_join("GAME")): links.create_link(root_path.path_join("GAME"),partial.path_join("GAME"))
-	for folder in DirAccess.get_directories_at(root_path.path_join("local-art")):
-		if folder!="pc-wilson-completion-v1" and not DirAccess.dir_exists_absolute(partial.path_join("local-art/"+folder)):
-			links.create_link(root_path.path_join("local-art/"+folder),partial.path_join("local-art/"+folder))
+	check(links!=null,"partial asset root opens")
+	if links!=null:
+		var targets:=[["GAME","GAME"]]
+		for folder in DirAccess.get_directories_at(root_path.path_join("local-art")):
+			if folder!="pc-wilson-completion-v1": targets.append(["local-art/"+folder,"local-art/"+folder])
+		for item in targets:
+			check(links.create_link(root_path.path_join(item[0]),partial.path_join(item[1]))==OK,"partial root link: "+item[1])
 	var fresh=Frontend.new() # No fonts retained from the complete load above.
 	fresh.text_enabled=true
 	check(not fresh.load_sources(partial) and fresh.catalog.is_empty(),"missing Wilson supplement disables office art")
@@ -178,6 +198,7 @@ func run() -> void:
 		check(fresh.set_frame(Image.load_from_file(info_path.get_base_dir().path_join(heat.image)),heat.program) and fresh.active.get("scene")=="information","information art independent of office")
 		check(not fresh.typography.runs.is_empty(),"information outline text independent of office")
 	fresh.free()
+	check(remove_partial_root(partial),"partial asset root removed")
 	# START/ANIM replay marker survives the text-only presentation, and a
 	# nonbinary UI mask rejects both the replay and the menu typography.
 	var menu_path:=root_path.path_join("artifacts/pc-menu-text-trace-04/report.json")
@@ -204,6 +225,19 @@ func run() -> void:
 		file.store_string(JSON.stringify({"checks":checks,"errors":errors,"coverage":coverage,
 			"fixture":fixture,"fixture_sha256":FileAccess.get_sha256(fixture),"samples":samples},"  "))
 	finish()
+
+# Removes only symbolic links and the empty folders this test made; it never
+# recurses through a link into GAME/ or local-art/.
+func remove_partial_root(partial: String) -> bool:
+	if not DirAccess.dir_exists_absolute(partial): return true
+	var top:=DirAccess.open(partial)
+	if top==null: return false
+	for name in ["GAME"]+Array(DirAccess.get_directories_at(partial.path_join("local-art"))).map(func(n):return "local-art/"+n):
+		if top.is_link(name): top.remove(name)
+	for name in ["local-art",""]:
+		var path:=partial.path_join(name) if not name.is_empty() else partial
+		if DirAccess.dir_exists_absolute(path) and DirAccess.get_directories_at(path).is_empty() and DirAccess.get_files_at(path).is_empty(): DirAccess.remove_absolute(path)
+	return not DirAccess.dir_exists_absolute(partial)
 
 func finish() -> void:
 	for error in errors: printerr("FAIL: "+error)

@@ -32,6 +32,13 @@ func run() -> void:
 		var world := ImageTexture.create_from_image(source.get_region(Trim.CAMERA))
 		trim.set_frame(source,ui,tags,Trim.CAMERA,world)
 		check(trim.active and trim.corners_verified,"complete verified corner shape qualifies")
+		var uploads:int=trim.upload_count
+		trim.set_frame(source.duplicate(),ui.duplicate(),tags.duplicate(),Trim.CAMERA,world)
+		check(trim.active and trim.corners_verified and trim.upload_count==uploads,"unchanged mask bytes skip the texture upload")
+		var moved := ui.duplicate()
+		moved.set_pixel(0,0,Color.BLACK)
+		trim.set_frame(source,moved,tags,Trim.CAMERA,world)
+		check(trim.upload_count==uploads+1,"a changed ui mask byte is re-uploaded")
 		for kind in ["pixel","ui","plate"]:
 			var a := source.duplicate()
 			var b := ui.duplicate()

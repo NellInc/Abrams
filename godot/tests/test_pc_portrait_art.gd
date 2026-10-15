@@ -1,5 +1,6 @@
 extends SceneTree
 const Portraits = preload("res://scripts/pc_portrait_art.gd")
+const MipReference = preload("res://tests/pc_mip_reference.gd")
 var view: SubViewport
 var background: TextureRect
 var portraits: Control
@@ -35,17 +36,6 @@ func snapshot(source: Image) -> Image:
 	RenderingServer.force_sync()
 	return view.get_texture().get_image()
 
-func bilinear(image: Image, uv: Vector2) -> Color:
-	var p := uv*Vector2(image.get_size())-Vector2(0.5,0.5)
-	var a := Vector2i(floori(p.x),floori(p.y))
-	var f := p-Vector2(a)
-	var bounds := image.get_size()-Vector2i.ONE
-	var c00 := image.get_pixelv(a.clamp(Vector2i.ZERO,bounds))
-	var c10 := image.get_pixelv((a+Vector2i.RIGHT).clamp(Vector2i.ZERO,bounds))
-	var c01 := image.get_pixelv((a+Vector2i.DOWN).clamp(Vector2i.ZERO,bounds))
-	var c11 := image.get_pixelv((a+Vector2i.ONE).clamp(Vector2i.ZERO,bounds))
-	return c00.lerp(c10,f.x).lerp(c01.lerp(c11,f.x),f.y)
-
 func verify_native(source: Image, label: String, output: String) -> void:
 	var active: Dictionary = portraits.active.duplicate()
 	var rendered := await snapshot(source)
@@ -55,11 +45,15 @@ func verify_native(source: Image, label: String, output: String) -> void:
 		var item: Dictionary = portraits.templates[active.id]
 		for point in item.points: allowed.set_pixelv(active.at+point.at,Color.WHITE)
 		var donor: Image = item.texture.get_image()
+		check(donor.has_mipmaps(),"portrait donor is mipmapped: "+label)
+		# 1280x800 view: one source pixel is four output pixels.
+		var minified: float=maxf(donor.get_width()/(item.size.x*4.0),donor.get_height()/(item.size.y*4.0))
+		var levels := {}
 		for i in range(0,item.points.size(),29):
 			var p: Vector2i = item.points[i].at
-			var expected := bilinear(donor,(Vector2(p)+Vector2(0.625,0.625))/Vector2(item.size))
+			var candidates := MipReference.samples(donor,(Vector2(p)+Vector2(0.625,0.625))/Vector2(item.size),minified,levels)
 			var actual := rendered.get_pixelv((Vector2i(active.at)+p)*4+Vector2i(2,2))
-			check(absf(actual.r-expected.r)<=2.0/255 and absf(actual.g-expected.g)<=2.0/255 and absf(actual.b-expected.b)<=2.0/255,"wrong portrait donor/filter: "+label)
+			check(MipReference.inside(actual,candidates,2.0/255),"wrong portrait donor/filter: "+label)
 	var changed := 0
 	for y in 800:
 		for x in 1280:
@@ -94,6 +88,9 @@ func run() -> void:
 	if portraits.templates.size()!=4:
 		finish()
 		return
+	check(portraits.texture_filter==CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS,"minified faces sample their mip chain")
+	for item in portraits.templates:
+		check(item.texture.get_image().has_mipmaps() and item.texture.get_size()==Vector2(1254,1254),"full-size face carries mipmaps: "+item.name)
 	var source := Image.create_empty(320,200,false,Image.FORMAT_RGB8)
 	var ui := Image.create_empty(320,200,false,Image.FORMAT_L8)
 	ui.fill(Color.WHITE)

@@ -119,7 +119,8 @@ void fragment() {
         leaf*=light*tone;
         if(material_kind<0.75)leaf*=tactical_environment_tint(n,0.40*(1.0-distance_fade));
     }
-    if(tactical_realism_ready && material_kind<0.75)leaf*=realism_gain(detail_uv,detail_dx,detail_dy,material_kind>0.25 ? 4.0 : plant.w>0.5 ? 8.0 : 9.0,length(leaf_eye));
+    // realism fades are in source units, like pc_surface; leaf_eye is MODEL units.
+    if(tactical_realism_ready && material_kind<0.75)leaf*=realism_gain(detail_uv,detail_dx,detail_dy,material_kind>0.25 ? 4.0 : plant.w>0.5 ? 8.0 : 9.0,length(leaf_eye)*64.0);
     // One restrained woodland-green transition for crowns and stems. Existing
     // aerial colour below remains the sole directional atmospheric response.
     leaf=mix(leaf,vec3(0.39,0.435,0.315),distance_fade*0.28);

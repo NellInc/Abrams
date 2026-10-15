@@ -12,6 +12,60 @@
 extern "C" bool abrams_trace_claim_strut(unsigned, unsigned, const uint8_t*, unsigned);
 extern "C" bool abrams_trace_claim_motor_pool(unsigned);
 
+// Guest RAM as event 29 carries it. build_core.py defines
+// ABRAMS_TRACE_WINDOW_BUNDLES=1 only when the pinned native receipt declares
+// AWB1 window bundles (tools/pc_trace_windows.py); otherwise the event is the
+// full 640 KiB snapshot. Either way the other format is refused. A bundle is
+// validated exactly as expand_window_bundle does, then read in place: bytes
+// outside its windows read as zero, so a stray read fails closed.
+class AbramsTraceRam {
+    enum : unsigned { kRam = 640 * 1024, kMaxWindows = 8 };
+    const uint8_t* full = nullptr;
+    const uint8_t* bytes[kMaxWindows] = {};
+    unsigned bases[kMaxWindows] = {}, lengths[kMaxWindows] = {}, count = 0;
+    static unsigned u32(const uint8_t* at) {
+        return unsigned(at[0]) | unsigned(at[1]) << 8 | unsigned(at[2]) << 16 | unsigned(at[3]) << 24;
+    }
+public:
+    bool parse(const uint8_t* data, unsigned length) {
+        full = nullptr; count = 0;
+        if (!data) return false;
+#if ABRAMS_TRACE_WINDOW_BUNDLES
+        if (length == kRam || length < 6 || memcmp(data, "AWB1", 4)) return false;
+        const unsigned windows = unsigned(data[4]) | unsigned(data[5]) << 8;
+        if (!windows || windows > kMaxWindows || 6 + 8 * windows > length) return false;
+        size_t at = 6 + 8 * windows;
+        for (unsigned index = 0; index < windows; ++index) {
+            const unsigned base = u32(data + 6 + 8 * index), size = u32(data + 10 + 8 * index);
+            if (!size || base >= kRam || size > kRam - base || size > length - at) return false;
+            for (unsigned prior = 0; prior < index; ++prior) {
+                const unsigned low = base > bases[prior] ? base : bases[prior];
+                const unsigned high = base + size < bases[prior] + lengths[prior] ?
+                    base + size : bases[prior] + lengths[prior];
+                if (low < high && memcmp(data + at + (low - base),
+                                         bytes[prior] + (low - bases[prior]), high - low)) return false;
+            }
+            bases[index] = base; lengths[index] = size; bytes[index] = data + at;
+            at += size;
+        }
+        if (at != length) return false;
+        count = windows;
+        return true;
+#else
+        if (length != kRam) return false;
+        full = data;
+        return true;
+#endif
+    }
+    // Later windows overwrite earlier ones on expansion; overlaps are identical.
+    uint8_t operator[](size_t at) const {
+        if (full) return at < kRam ? full[at] : 0;
+        for (unsigned index = count; index-- > 0;)
+            if (at >= bases[index] && at - bases[index] < lengths[index]) return bytes[index][at - bases[index]];
+        return 0;
+    }
+};
+
 class AbramsWebClaims {
     struct Bitmap { unsigned width, height; std::vector<uint8_t> pixels; };
     std::array<std::vector<uint8_t>, 5> plates;
@@ -22,17 +76,17 @@ class AbramsWebClaims {
     bool pending = false;
     bool loaded = false;
 
-    static unsigned word(const uint8_t* bytes, size_t at) {
+    template <class Bytes> static unsigned word(const Bytes& bytes, size_t at) {
         return unsigned(bytes[at]) | (unsigned(bytes[at + 1]) << 8);
     }
-    static int signed_word(const uint8_t* bytes, size_t at) {
+    template <class Bytes> static int signed_word(const Bytes& bytes, size_t at) {
         return int(int16_t(word(bytes, at)));
     }
     static void append_word(std::vector<uint8_t>& target, unsigned value) {
         for (int i = 0; i < 4; ++i) target.push_back(uint8_t(value >> (8 * i)));
     }
-    bool begin(const uint16_t* regs, const uint8_t* ram, unsigned index) {
-        if (pending || !ram || index >= struts.size()) return false;
+    bool begin(const uint16_t* regs, const AbramsTraceRam& ram, unsigned index) {
+        if (pending || index >= struts.size()) return false;
         const unsigned ds_seg = regs[9], cs_seg = regs[8];
         if (ds_seg < 0x19e0) return false;
         const unsigned load = ds_seg - 0x19e0, ds = ds_seg * 16;
@@ -164,7 +218,10 @@ public:
     bool observe(unsigned event, const uint16_t* regs, const uint8_t* data,
                  unsigned offset, unsigned length) {
         if (!loaded) return true;
-        if (event == 29) return length == 640 * 1024 && begin(regs, data, offset);
+        if (event == 29) {
+            AbramsTraceRam ram;
+            return ram.parse(data, length) && begin(regs, ram, offset);
+        }
         if (event == 30) return finish(data, offset, length);
         if (event == 32) {
             if (!data || length != 64000 || (offset != 0 && offset != 8192)) return false;

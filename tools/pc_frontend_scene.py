@@ -48,39 +48,54 @@ def exposed_matches(raw,pixels,palette,preview,cursor,covered):
         if any(seg[c::4]!=idx.translate(tables[c]) for c in range(3)):return False
     return True
 
+# Decoded pinned sources, built once per process and shared read-only.
+STATIC={}
+
+
+def static_sources(directory):
+    exe=(directory/'START.EXE').read_bytes()
+    if hashlib.sha256(exe).hexdigest()!=START_SHA: raise ValueError('unsupported START scene executable')
+    raws={}
+    for name,pin in SOURCES.items():
+        raws[name]=(directory/name).read_bytes()
+        if hashlib.sha256(raws[name]).hexdigest()!=pin:raise ValueError('unsupported START scene source: '+name)
+    # Every input matched its fixed pin, so one entry serves every attachment.
+    if 'pinned' in STATIC:return STATIC['pinned']
+    decoded,meta=unpack(exe)
+    anchors=[]
+    for at,n in [(0x42e4,9),(0x10850+0x27c9,32),(0x10850+0x3b2,10),(0x7600+0x31f4,8)]:
+        if any(at<=r['load_offset']<at+n for r in meta['relocations']): raise ValueError('relocated scene anchor')
+        anchors.append((at,decoded[at:at+n]))
+    shape_bytes=decode_resource(raws['ANIM.TBL'])
+    shapes=inspect_shapes(shape_bytes)['shapes']
+    # Reuse existing Modern scenery only for exactly identical source faces,
+    # colours and roots. Cutscene-only objects keep their own source geometry.
+    sim=inspect_shapes(decode_resource(raws['SHAPE.TBL']))['shapes']
+    def signature(s,p):return (str(primitive_vertices(s,p)),tuple(p['prefix_bytes'][1:]))
+    sim_signatures=[[signature(t,p) for p in t['primitives']] for t in sim]
+    aliases={}
+    for s in shapes:
+        signatures=[signature(s,p) for p in s['primitives']]
+        if not signatures or s['opaque_commands']:continue
+        for t,target in zip(sim,sim_signatures):
+            if sorted(signatures)!=sorted(target) or len(set(signatures))!=len(signatures):continue
+            faces={p['offset']:t['primitives'][target.index(signature(s,p))]['offset'] for p in s['primitives']}
+            def members(shape,root):
+                groups={g['offset']:g for g in shape['groups']}
+                return sorted(p for g in root['group_pointers'] for p in groups[g]['primitive_pointers'])
+            roots={}
+            for root in s['roots']:
+                matched=[r['offset'] for r in t['roots'] if members(t,r)==sorted(faces[p] for p in members(s,root))]
+                if len(matched)==1:roots[root['offset']]=matched[0]
+            if len(roots)==len(s['roots']):aliases[s['index']]={'shape':t['index'],'faces':faces,'roots':roots};break
+    STATIC['pinned']=(anchors,shape_bytes,shapes,aliases)
+    return STATIC['pinned']
+
+
 class FrontendScene:
     def __init__(self, directory):
-        exe=(directory/'START.EXE').read_bytes()
-        if hashlib.sha256(exe).hexdigest()!=START_SHA: raise ValueError('unsupported START scene executable')
-        decoded,meta=unpack(exe)
-        self.anchors=[]
-        for at,n in [(0x42e4,9),(0x10850+0x27c9,32),(0x10850+0x3b2,10),(0x7600+0x31f4,8)]:
-            if any(at<=r['load_offset']<at+n for r in meta['relocations']): raise ValueError('relocated scene anchor')
-            self.anchors.append((at,decoded[at:at+n]))
-        for name,pin in SOURCES.items():
-            if hashlib.sha256((directory/name).read_bytes()).hexdigest()!=pin:raise ValueError('unsupported START scene source: '+name)
-        self.shape_bytes=decode_resource((directory/'ANIM.TBL').read_bytes())
-        self.shapes=inspect_shapes(self.shape_bytes)['shapes']
-        # Reuse existing Modern scenery only for exactly identical source faces,
-        # colours and roots. Cutscene-only objects keep their own source geometry.
-        sim=inspect_shapes(decode_resource((directory/'SHAPE.TBL').read_bytes()))['shapes']
-        def signature(s,p):return (str(primitive_vertices(s,p)),tuple(p['prefix_bytes'][1:]))
-        self.aliases={}
-        for s in self.shapes:
-            signatures=[signature(s,p) for p in s['primitives']]
-            if not signatures or s['opaque_commands']:continue
-            for t in sim:
-                target=[signature(t,p) for p in t['primitives']]
-                if sorted(signatures)!=sorted(target) or len(set(signatures))!=len(signatures):continue
-                faces={p['offset']:t['primitives'][target.index(signature(s,p))]['offset'] for p in s['primitives']}
-                def members(shape,root):
-                    groups={g['offset']:g for g in shape['groups']}
-                    return sorted(p for g in root['group_pointers'] for p in groups[g]['primitive_pointers'])
-                roots={}
-                for root in s['roots']:
-                    matched=[r['offset'] for r in t['roots'] if members(t,r)==sorted(faces[p] for p in members(s,root))]
-                    if len(matched)==1:roots[root['offset']]=matched[0]
-                if len(roots)==len(s['roots']):self.aliases[s['index']]={'shape':t['index'],'faces':faces,'roots':roots};break
+        # Immutable source tables are shared; observation state is per instance.
+        self.anchors,self.shape_bytes,self.shapes,self.aliases=static_sources(directory)
         self.active=None;self.current=None;self.primitive=None;self.background=None
         self.completed=deque(maxlen=4);self.sequence=0;self.vertices_checked=0
 

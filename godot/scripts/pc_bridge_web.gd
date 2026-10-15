@@ -2,8 +2,13 @@ extends RefCounted
 ## Browser transport for the same original-program packets consumed by Play.
 ## JavaScript owns a dedicated WebAssembly worker, never a replacement game.
 const Keyboard = preload("res://scripts/pc_keyboard.gd")
+const STEP_TIMEOUT_MS := 30000
+## A browser load boots a fresh original core before restoring into it, and a
+## save or load commits to IndexedDB. Allow it the shell's cold-start budget.
+const STATE_TIMEOUT_MS := 300000
 
 var pending := true
+var request_timeout_ms := STEP_TIMEOUT_MS
 var failure := ""
 var waiting_id := -1
 var next_id := 0
@@ -38,18 +43,20 @@ func step(frames: int, keys: Array) -> bool:
 		failure = "Original PC browser step could not be sent."
 		return false
 	pending = true
+	request_timeout_ms = STEP_TIMEOUT_MS
 	request_started = Time.get_ticks_msec()
 	return true
 
 func state_command(operation: String, slot: int) -> bool:
 	if pending or closing or not failure.is_empty() or not connected: return false
-	if operation not in ["save_state", "load_state"] or slot < 0 or slot > 5 or (operation == "save_state" and slot == 0): return false
+	if operation not in ["save_state", "load_state", "load_previous"] or slot < 0 or slot > 5 or (operation != "load_state" and slot == 0): return false
 	waiting_id = next_id
 	next_id += 1
 	if not bool(host.send(JSON.stringify({"op":operation, "id":waiting_id, "slot":slot}))):
 		failure = "Original PC browser state command could not be sent."
 		return false
 	pending = true
+	request_timeout_ms = STATE_TIMEOUT_MS
 	request_started = Time.get_ticks_msec()
 	return true
 
@@ -95,7 +102,7 @@ func poll() -> Array[Dictionary]:
 			break
 		pending = false
 		messages.append(value)
-	if failure.is_empty() and pending and Time.get_ticks_msec() - request_started > 30000:
+	if failure.is_empty() and pending and Time.get_ticks_msec() - request_started > request_timeout_ms:
 		failure = "Original PC browser response timed out."
 	return messages
 

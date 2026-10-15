@@ -12,7 +12,7 @@ import struct
 import sys
 ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
 if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
-from tools.extract_genesis_newspapers import ROM_SHA, render
+from tools.extract_genesis_newspapers import ROM_SHA, pinned_unicorn, render
 from tools.source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +34,7 @@ def decode(rom):
     from unicorn.m68k_const import (UC_CPU_M68K_M68000, UC_M68K_REG_SR,
         UC_M68K_REG_A0, UC_M68K_REG_A1, UC_M68K_REG_A7, UC_M68K_REG_PC)
     if hashlib.sha256(rom).hexdigest() != ROM_SHA: raise ValueError('unsupported ROM')
+    pinned_unicorn()
     machine = Uc(UC_ARCH_M68K, UC_MODE_BIG_ENDIAN)
     machine.ctl_set_cpu_model(UC_CPU_M68K_M68000)
     machine.mem_map(0, 0x80000); machine.mem_write(0, rom)
@@ -134,7 +135,7 @@ def main():
             for kind, resource in entry['resources'].items():
                 path = args.output / (name + '-' + kind + '.bin')
                 path.write_bytes(resource.pop('data')); resource['file'] = path.name
-        manifest = {'schema': 1, 'rom_sha256': ROM_SHA, 'entries': entries,
+        manifest = {'schema': 1, 'rom_sha256': ROM_SHA, 'unicorn': pinned_unicorn(), 'entries': entries,
                     'source_sequence': 'DA50 selects script0; DA5E selects script1 through9354; original waits unchanged',
                     'scope': __doc__}
     (args.output / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')

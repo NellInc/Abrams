@@ -32,9 +32,13 @@ SIM_SHA256 = "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099"
 LOAD = 0x1000
 DATA_SEGMENT = LOAD + 0x19E0
 RETURN_IP = 0xFF00
+UNICORN_VERSION = "2.1.4"
 
 
 def cpu() -> Uc:
+    # Every x86 oracle builds its machine here, so the evidence pin cannot be skipped.
+    if unicorn.__version__ != UNICORN_VERSION:
+        raise ValueError(f"oracle requires pinned unicorn=={UNICORN_VERSION}, found {unicorn.__version__}")
     machine = Uc(UC_ARCH_X86, UC_MODE_16)
     machine.mem_map(0, 0x100000)
 
@@ -122,8 +126,6 @@ def bearing_rows(relocated_image: bytes) -> list:
 
 
 def run(root: Path) -> dict:
-    if unicorn.__version__ != "2.1.4":
-        raise ValueError("oracle requires pinned unicorn==2.1.4")
     receipts = {}
     for name in NAMES:
         source = (root / f"{name}.EXE").read_bytes()
@@ -132,7 +134,7 @@ def run(root: Path) -> dict:
         image, receipts[name] = original_unpack(source)
         if name == "SIM":
             rows = bearing_rows(image)
-    return {"schema": 1, "engine": "unicorn-2.1.4/x86-16", "load_segment": LOAD,
+    return {"schema": 1, "engine": f"unicorn-{unicorn.__version__}/x86-16", "load_segment": LOAD,
             "source_sha256": SIM_SHA256, "unpackers": receipts,
             "routines": {"degrees": "0000:56ea", "hit_bark": "0000:3d0e"},
             "scope": "isolated original instructions, no DOS/device/timing parity",
@@ -146,8 +148,8 @@ def main() -> int:
     parser.add_argument("--check-fixture", type=Path)
     args = parser.parse_args()
     source = args.root.resolve()
-    if inside_source(args.out, source.parent, (source.name,)):
-        parser.error("output must be outside original reference directory")
+    if inside_source(args.out, ROOT) or inside_source(args.out, source.parent, (source.name,)):
+        parser.error("output must be outside original sources and --root")
     result = run(args.root)
     if args.check_fixture and result != json.loads(args.check_fixture.read_text()):
         raise ValueError("fresh original CPU results differ from committed fixture")

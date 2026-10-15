@@ -6,14 +6,15 @@ from pathlib import Path
 import subprocess
 import sys
 import threading
-from tools.standalone.runtime import app_resources, sha, valid_payload, profile_home, managed, renderer_preflight
+from tools.standalone.runtime import (app_resources, sha, valid_payload, profile_home, managed, renderer_preflight,
+                                      renderer_import, is_link, PAYLOAD_VERIFIED_ENV)
 
 OUTPUT_TAIL_BYTES = 65536
 
 
-def invoke_runtime(command, timeout):
+def invoke_runtime(command, timeout, env=None):
     """Drain both pipes concurrently, retaining only their UTF-8 failure tails."""
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     tails = [b'', b'']
     tail_lock = threading.Lock()
 
@@ -88,8 +89,8 @@ def verify(bundle):
             raise ValueError('Unsafe portable integrity member')
         names.add(name)
         path = resources / relative
-        if any(resources.joinpath(*relative.parts[:i]).is_symlink() for i in range(1,len(relative.parts)+1)):
-            raise ValueError('Portable runtime contains a symlink')
+        if any(is_link(resources.joinpath(*relative.parts[:i])) for i in range(1,len(relative.parts)+1)):
+            raise ValueError('Portable runtime contains a symlink or junction')
         if not path.is_file() or sha(path) != row['sha256']:
             raise ValueError('Portable runtime changed: '+name)
     return manifest
@@ -101,30 +102,44 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--bundle',type=Path,required=True)
     p.add_argument('--invoke',action='store_true')
+    p.add_argument('--data-home')
     args,extra=p.parse_known_args()
     bundle=args.bundle.resolve()
     try:
-        verify(bundle)
+        env=dict(os.environ)
+        if args.data_home:
+            # Validated here (absolute, outside the application) and inherited by
+            # the setup UI and every runtime request it makes.
+            env['ABRAMS_DATA_HOME']=str(profile_home(bundle,args.data_home))
         runtime=bundle/'runtime/AbramsRuntime'/('AbramsRuntime.exe' if os.name=='nt' else 'AbramsRuntime')
         if args.invoke:
+            # Status only reports profile state; every request that copies,
+            # imports or runs code from this build verifies it first.
+            if extra[:1]!=['--status'] or len(extra)!=1:
+                env[PAYLOAD_VERIFIED_ENV]=verify(bundle)['build_id']
             # Setup requests are bounded; gameplay owns its lifetime and exits
             # through the existing original-game shutdown/overlay flush path.
             result=invoke_runtime([str(runtime),*extra],
-                                  timeout=None if '--play' in extra else 300)
+                                  timeout=None if '--play' in extra else 300,env=env)
             # Success replies are JSON on stdout; failures explain themselves on stderr.
             print(result.stdout if result.returncode==0 or not result.stderr.strip() else result.stderr,end='')
             return result.returncode
+        # Only setup-UI arguments after '--' pass through; anything else would
+        # otherwise reach Godot as an engine option and be silently ignored.
+        if extra and extra[0]!='--':
+            raise ValueError('Unknown launcher arguments: '+' '.join(extra)+'. Supported: --data-home /absolute/path')
+        manifest=verify(bundle)
         renderer=bundle/'renderer'/('AbramsRenderer.exe' if os.name=='nt' else 'AbramsRenderer')
-        env=dict(os.environ,ABRAMS_PYTHON=str(runtime))
-        for name in ('PYTHONHOME','PYTHONPATH','GODOT_BIN','ABRAMS_BUNDLE'):env.pop(name,None)
+        env['ABRAMS_PYTHON']=str(runtime)
+        for name in ('PYTHONHOME','PYTHONPATH','GODOT_BIN','ABRAMS_BUNDLE',PAYLOAD_VERIFIED_ENV):env.pop(name,None)
         # A fresh portable kit has no platform import cache for its fonts/assets.
         # Working if: first setup imports cleanly before its theme is parsed.
-        home=profile_home(bundle)
+        home=profile_home(bundle,env.get('ABRAMS_DATA_HOME'))
         home.mkdir(parents=True,exist_ok=True)
         logs=managed(home,home/'logs');logs.mkdir(exist_ok=True)
         log=managed(home,logs/'setup.log')
-        renderer_preflight([str(renderer),'--headless','--audio-driver','Dummy',
-            '--path',str(bundle/'kit/godot'),'--editor','--import'],env,log)
+        renderer_import(renderer,bundle/'kit/godot',manifest['build_id'],env,log,extra=('--audio-driver','Dummy'),
+                        preflight=lambda *request: renderer_preflight(*request))
         renderer_preflight([str(renderer),'--headless','--audio-driver','Dummy',
             '--path',str(bundle/'kit/godot'),'--script',
             'res://scripts/portable_setup.gd','--check-only'],env,log)

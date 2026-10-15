@@ -8,8 +8,15 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
-const scenarios = JSON.parse(fs.readFileSync(path.join(__dirname, "dist/scenarios.json")));
 const source = fs.readFileSync(path.join(__dirname, "dist/app.js"), "utf8");
+// The fixture mirrors the delivered page: mission slugs and names come from the
+// real picker links, and graphics names from the real comparison radio labels.
+const page = fs.readFileSync(path.join(__dirname, "dist/index.html"), "utf8");
+const scenarios = [...page.matchAll(/<a href="([^"]+)" data-scenario="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map(([, href, slug, name]) => ({href, slug, name}));
+assert.equal(scenarios.length, 8, "the page lists eight mission links");
+const modeLabels = Object.fromEntries([...page.matchAll(/<label for="mode-(\w+)">([^<]+)<\/label>/g)].map(([, mode, label]) => [mode, label]));
+assert.deepEqual(Object.keys(modeLabels), ["ega", "genesis", "upscaled"]);
+const initialDescription = page.match(/<p id="mode-description">([^<]+)<\/p>/)[1].replace(/&nbsp;/g, " ");
 const deferred = () => {
   let resolve, reject;
   const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
@@ -34,39 +41,54 @@ function fixture(globals = {}) {
       replaceWith(next) { assert.equal(nodes.get("#scenario-image"), this); nodes.set("#scenario-image", next); }
     };
   };
-  for (const id of ["comparison-image", "comparison-status", "comparison-panel", "map-panel", "map-status", "map-full", "map-open-link", "map-caption", "trailer-caption", "scenarios"])
+  for (const id of ["comparison-image", "comparison-status", "comparison-panel", "comparison-caption", "mode-description", "map-panel", "map-status", "map-full", "map-open-link", "map-caption", "trailer-caption", "scenarios"])
     nodes.set(`#${id}`, element());
   nodes.set(".scenario-picker", element());
   const trailerSource = element();
   nodes.set("#trailer-player", element({source: trailerSource, querySelector: selector => selector === "source:last-of-type" ? trailerSource : null}));
   nodes.set("#scenario-image", element({id:"scenario-image", width:1254, height:1254,
     src:`https://example.test/assets/maps/manual-map-${scenarios[0].slug}.webp`, alt:"Initial mission map"}));
-  const links = scenarios.map(s => element({dataset:{scenario:s.slug}, href:`https://example.test/assets/maps/manual-map-${s.slug}.webp`}));
+  nodes.get("#comparison-image").src = "assets/images/colonel-upscaled.webp";
+  nodes.get("#comparison-caption").textContent = modeLabels.upscaled;
+  // One radio group: checking a radio unchecks the others, as in a browser.
+  let checkedMode = "upscaled";
+  const radios = Object.keys(modeLabels).map(value => element({value}));
+  radios.forEach(radio => {
+    Object.defineProperty(radio, "checked", {get: () => checkedMode === radio.value, set: on => {
+      if (on) checkedMode = radio.value; else if (checkedMode === radio.value) checkedMode = null;
+    }});
+    nodes.set(`#mode-${radio.value}`, radio);
+  });
+  // Whitespace around the link text, as in formatted markup; the script trims it.
+  const links = scenarios.map(s => element({dataset:{scenario:s.slug}, textContent:`\n  ${s.name}  `, href:`https://example.test/${s.href}`}));
   const briefs = scenarios.map(s => element({dataset:{brief:s.slug}, hidden:s.slug !== scenarios[0].slug}));
   const downloads = ["macos", "windows", "linux"].map(platform => element({dataset:{platform}, classes:["button", "button-outline", "download-button"]}));
   const loads = [];
-  const metadata = deferred();
+  const fetches = [];
   const Image = function() {
     const image = element({completion:deferred()});
     image.decode = () => { loads.push(image); return image.completion.promise; };
     return image;
   };
-  const selectors = {"[data-scenario]": links, "[data-brief]": briefs, ".download-button[data-platform]": downloads};
+  const selectors = {"[data-scenario]": links, "[data-brief]": briefs, ".download-button[data-platform]": downloads, 'input[name="graphics"]': radios};
   const document = {
     querySelector: selector => nodes.get(selector),
     querySelectorAll: selector => selectors[selector] || []
   };
-  vm.runInNewContext(source, {Image, document, fetch:() => metadata.promise, ...globals});
-  const enable = async () => {
-    metadata.resolve({ok:true, json:async () => scenarios});
-    await flush();
+  vm.runInNewContext(source, {Image, document, fetch:url => { fetches.push(url); return new Promise(() => {}); }, ...globals});
+  const enable = flush;
+  // A real radio is checked before its change event fires.
+  const choose = value => {
+    const radio = radios.find(item => item.value === value);
+    radio.checked = true;
+    return radio.handlers.get("change")();
   };
   const click = (index, extra = {}) => {
     let prevented = false;
     const promise = links[index].handlers.get("click")({preventDefault(){prevented = true;}, ...extra});
     return {promise, get prevented() { return prevented; }};
   };
-  return {nodes, links, briefs, downloads, loads, metadata, enable, click};
+  return {nodes, links, briefs, downloads, radios, loads, fetches, enable, click, choose};
 }
 function observerStub() {
   const observers = [];
@@ -157,11 +179,15 @@ const platforms = f => f.downloads.map(b => b.classList.contains("button-primary
   }
   {
     const f = fixture();
-    f.metadata.reject(new Error("metadata unavailable"));
+    // Map switching reads the page itself: no scenario metadata request, handlers at once.
+    assert.equal(f.loads.length, 8);
+    assert.ok(f.links.every(link => link.handlers.has("click")), "every mission link switches maps without a metadata fetch");
     await flush();
-    assert.equal(f.loads.length, 8, "preloading is independent of scenario metadata");
-    assert.equal(f.links[0].handlers.has("click"), false, "ordinary map links remain usable without metadata");
-    assert.equal(f.nodes.get("#map-status").attrs.get("data-tone"), "notice");
+    assert.deepEqual(f.fetches, [], "the page makes no scenario metadata request");
+    f.loads[5].completion.resolve();
+    await f.click(5).promise;
+    assert.equal(f.nodes.get("#map-caption").textContent, scenarios[5].name, "the trimmed link text names the mission");
+    assert.equal(f.nodes.get("#map-full").attrs.get("aria-label"), `Open full-size restored map of ${scenarios[5].name}`);
   }
   {
     // Save-Data: never warm; a selection loads exactly its own map.
@@ -205,16 +231,92 @@ const platforms = f => f.downloads.map(b => b.classList.contains("button-primary
   }
   {
     // Download promotion: the visitor's desktop platform only; never on phones or without detection.
-    const nav = (platform, userAgent = "", maxTouchPoints = 0) => fixture({navigator:{platform, userAgent, maxTouchPoints}});
-    assert.deepEqual(platforms(nav("Win32", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")), ["outline", "primary", "outline"]);
-    assert.deepEqual(platforms(nav("MacIntel", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")), ["primary", "outline", "outline"]);
-    assert.deepEqual(platforms(nav("Linux x86_64", "Mozilla/5.0 (X11; Linux x86_64)")), ["outline", "outline", "primary"]);
-    assert.deepEqual(platforms(nav("iPhone", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)", 5)), ["outline", "outline", "outline"]);
-    assert.deepEqual(platforms(nav("MacIntel", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)", 5)), ["outline", "outline", "outline"], "iPadOS reports MacIntel with touch");
-    assert.deepEqual(platforms(nav("Linux armv8l", "Mozilla/5.0 (Linux; Android 14)")), ["outline", "outline", "outline"]);
-    assert.deepEqual(platforms(fixture()), ["outline", "outline", "outline"], "no navigator, no promotion");
+    // The macOS build is arm64-only and the Linux build x86_64-only: promote those
+    // only on a known matching architecture.
+    const promoted = async (platform, userAgent = "", maxTouchPoints = 0, userAgentData) => {
+      const f = fixture({navigator:{platform, userAgent, maxTouchPoints, userAgentData}});
+      await flush();
+      return platforms(f);
+    };
+    const hints = (platform, values) => ({platform, getHighEntropyValues: async keys => {
+      assert.equal(JSON.stringify(keys), JSON.stringify(["architecture", "bitness"]), "only the needed client hints are requested");
+      if (values instanceof Error) throw values;
+      return values;
+    }});
+    const mac = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)";
+    const none = ["outline", "outline", "outline"];
+    assert.deepEqual(await promoted("Win32", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"), ["outline", "primary", "outline"]);
+    assert.deepEqual(await promoted("MacIntel", mac), none, "Safari and Firefox report MacIntel on Intel and Apple Silicon alike");
+    assert.deepEqual(await promoted("MacIntel", mac, 0, hints("macOS", {architecture:"arm", bitness:"64"})), ["primary", "outline", "outline"], "Chromium on Apple Silicon");
+    assert.deepEqual(await promoted("MacIntel", mac, 0, hints("macOS", {architecture:"x86", bitness:"64"})), none, "Chromium on an Intel Mac");
+    assert.deepEqual(await promoted("MacIntel", mac, 0, hints("macOS", new Error("hints unavailable"))), none, "failed hints promote nothing");
+    assert.deepEqual(await promoted("Linux x86_64", "Mozilla/5.0 (X11; Linux x86_64)"), ["outline", "outline", "primary"]);
+    assert.deepEqual(await promoted("Linux x86_64", "Mozilla/5.0 (X11; Linux x86_64)", 0, hints("Linux", {architecture:"x86", bitness:"64"})), ["outline", "outline", "primary"]);
+    assert.deepEqual(await promoted("Linux aarch64", "Mozilla/5.0 (X11; Linux aarch64)"), none, "ARM Linux cannot run the x86_64 build");
+    assert.deepEqual(await promoted("Linux armv81", "Mozilla/5.0 (X11; Linux armv81)", 0, hints("Linux", {architecture:"arm", bitness:"64"})), none);
+    assert.deepEqual(await promoted("Linux i686", "Mozilla/5.0 (X11; Linux i686)"), none, "32-bit Linux cannot run the x86_64 build");
+    assert.deepEqual(await promoted("Linux", "Mozilla/5.0 (X11; Linux)", 0, hints("Linux", {architecture:"x86", bitness:"32"})), none);
+    assert.deepEqual(await promoted("iPhone", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)", 5), none);
+    assert.deepEqual(await promoted("MacIntel", mac, 5), none, "iPadOS reports MacIntel with touch");
+    assert.deepEqual(await promoted("Linux armv8l", "Mozilla/5.0 (Linux; Android 14)"), none);
+    const bare = fixture();
+    await flush();
+    assert.deepEqual(platforms(bare), none, "no navigator, no promotion");
   }
-  console.log("PASS: lazily warmed low-priority decoded maps (IntersectionObserver, Save-Data aware); node reuse, rapid selection, retry, quiet status, shared mission links, trailer source errors, platform promotion and link fallbacks");
+  {
+    // Graphics comparison: the latest selection wins, whatever order decodes finish in.
+    const f = fixture();
+    const image = f.nodes.get("#comparison-image"), status = f.nodes.get("#comparison-status"), panel = f.nodes.get("#comparison-panel");
+    const comparisonLoad = mode => f.loads.find(load => load.src === `assets/images/colonel-${mode}.webp`);
+    const ega = f.choose("ega"), genesis = f.choose("genesis");
+    assert.equal(panel.attrs.get("aria-busy"), "true");
+    assert.equal(status.textContent, `Loading ${modeLabels.genesis}…`);
+    comparisonLoad("genesis").completion.resolve();
+    await genesis;
+    comparisonLoad("ega").completion.resolve();
+    await ega;
+    assert.equal(image.src, "assets/images/colonel-genesis.webp", "a late EGA decode cannot replace the newer Genesis choice");
+    assert.ok(image.alt.startsWith(`${modeLabels.genesis} graphics:`));
+    assert.equal(f.nodes.get("#comparison-caption").textContent, modeLabels.genesis, "caption matches the radio label");
+    assert.equal(status.textContent, `${modeLabels.genesis} graphics selected.`);
+    assert.equal(status.attrs.has("data-tone"), false);
+    assert.equal(panel.attrs.get("aria-busy"), "false");
+    // Every mode's caption and alt name its page label; Upscaled restores the page's own description.
+    for (const mode of ["ega", "upscaled"]) {
+      const selection = f.choose(mode);
+      f.loads.at(-1).completion.resolve();
+      await selection;
+      assert.equal(f.nodes.get("#comparison-caption").textContent, modeLabels[mode]);
+      assert.ok(image.alt.startsWith(`${modeLabels[mode]} graphics:`));
+    }
+    assert.equal(f.nodes.get("#mode-description").textContent, initialDescription, "script and page describe Upscaled identically");
+    // A failed decode reverts the radio to the mode still shown.
+    const failed = f.choose("genesis");
+    f.loads.at(-1).completion.reject(new Error("decode failed"));
+    await failed;
+    assert.equal(status.attrs.get("data-tone"), "error");
+    assert.match(status.textContent, /could not load/);
+    assert.deepEqual(f.radios.filter(r => r.checked).map(r => r.value), ["upscaled"], "the shown mode's radio is checked again");
+    assert.equal(image.src, "assets/images/colonel-upscaled.webp");
+    assert.equal(panel.attrs.get("aria-busy"), "false");
+  }
+  {
+    // A stale failure leaves the newer selection alone.
+    const f = fixture();
+    const status = f.nodes.get("#comparison-status"), panel = f.nodes.get("#comparison-panel");
+    const ega = f.choose("ega"), genesis = f.choose("genesis");
+    const [egaLoad, genesisLoad] = f.loads.slice(-2);
+    egaLoad.completion.reject(new Error("stale failure"));
+    await ega;
+    assert.equal(status.attrs.has("data-tone"), false, "a stale failure shows no error");
+    assert.deepEqual(f.radios.filter(r => r.checked).map(r => r.value), ["genesis"], "a stale failure does not revert the radio");
+    assert.equal(panel.attrs.get("aria-busy"), "true", "the newer selection is still loading");
+    genesisLoad.completion.resolve();
+    await genesis;
+    assert.equal(f.nodes.get("#comparison-image").src, "assets/images/colonel-genesis.webp");
+    assert.equal(panel.attrs.get("aria-busy"), "false");
+  }
+  console.log("PASS: lazily warmed low-priority decoded maps (IntersectionObserver, Save-Data aware); node reuse, rapid selection, retry, quiet status, shared mission links, page-derived mission names without a metadata fetch, trailer source errors, architecture-aware platform promotion, graphics comparison (ordering, error rollback, stale failures, aria-busy) and link fallbacks");
   settled = true;
   process.exitCode = 0;
 })().catch(error => { settled = true; console.error(error); process.exitCode = 1; });

@@ -29,7 +29,7 @@ def main():
     p.add_argument('--trace', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
-    if inside_source(args.output, ROOT, ('GAME',)): p.error('output must be outside GAME')
+    if inside_source(args.output, ROOT): p.error('output must be outside original sources')
     ram = args.capture.read_bytes()
     trace = json.loads(args.trace.read_text())
     first = trace['render_passes'][0]

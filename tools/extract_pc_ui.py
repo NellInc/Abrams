@@ -15,13 +15,13 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap
     from tools.pc_live_state import SimStateReader
-    from tools.source_guard import inside_source
+    from tools.source_guard import inside_source, recorded
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from inspect_scenarios import decode_resource
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap
     from pc_live_state import SimStateReader
-    from source_guard import inside_source
+    from source_guard import inside_source, recorded
 
 ROOT = Path(__file__).resolve().parents[1]
 PLATES = ('FRAME', 'DRIVER.BIN', 'AA.BIN', 'TC.BIN', 'GPS.BIN', 'STATUS.BIN', 'IDENTIFY')
@@ -53,7 +53,7 @@ def main():
     parser.add_argument('--trace', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    if inside_source(args.output): parser.error('output must be outside GAME')
+    if inside_source(args.output, ROOT): parser.error('output must be outside original sources')
     ram = args.capture.read_bytes()
     ram_hash = hashlib.sha256(ram).hexdigest()
     trace = json.loads(args.trace.read_text())
@@ -95,7 +95,7 @@ def main():
             'image': filename, 'width': sprite['width'], 'height': sprite['height'], 'index': sprite['index'],
             'descriptor': sprite['descriptor'], 'validation': 'every pixel and preservation-mask bit matches loaded original EGA memory'})
     for entry in entries: entry['image_sha256'] = hashlib.sha256((args.output/entry['image']).read_bytes()).hexdigest()
-    receipt = {'palette_rgb': palette, 'trace': str(args.trace), 'ram_sha256': ram_hash,
+    receipt = {'palette_rgb': palette, 'trace': recorded(args.trace, ROOT), 'ram_sha256': ram_hash,
         'strut_pixels_verified': sum(s['width'] * s['height'] for s in struts), 'assets': entries,
         'scope': 'native source extracts; no remastered-art, runtime replacement or redistribution claim'}
     (args.output/'manifest.json').write_text(json.dumps(receipt,indent=2)+'\n')

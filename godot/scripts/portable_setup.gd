@@ -180,12 +180,42 @@ func _request(arguments: Array) -> void:
     message.text = "Game running. Close the game window to return here." if "--play" in arguments else "Verifying originals and installation…"
     thread = Thread.new()
     var error := _start_worker(func():
-        var output: Array = []
-        var code := OS.execute(runtime, ["--launcher", "--invoke"] + arguments, output, true)
-        _completed.call_deferred(code, "\n".join(output), "--play" in arguments))
+        var result := _run_runtime(PackedStringArray(["--launcher", "--invoke"] + arguments))
+        _completed.call_deferred(result[0], result[1], "--play" in arguments))
     if error != OK:
         thread = null
         _failed("Setup could not start verification (error %d). Close unused applications and choose Recheck installation." % error)
+
+## Worker-thread request. OS.execute with an output array goes through
+## /bin/sh on Linux and macOS, which would expand $, backticks and quotes in a
+## chosen folder or ROM path. execute_with_pipe uses fork/exec, with no shell.
+## Both pipes are drained so a full stderr pipe cannot stall the runtime.
+func _run_runtime(arguments: PackedStringArray) -> Array:
+    var process: Dictionary = OS.execute_with_pipe(runtime, arguments, false)
+    if process.is_empty():
+        return [-1, "Setup could not start the bundled runtime. Restore the portable package, then choose Recheck installation."]
+    var stdio: FileAccess = process.stdio
+    var errors: FileAccess = process.stderr
+    var pid := int(process.pid)
+    var output := PackedByteArray()
+    var diagnostics := PackedByteArray()
+    while true:
+        var running := OS.is_process_running(pid)
+        var chunk := stdio.get_buffer(65536)
+        var error_chunk := errors.get_buffer(65536)
+        output.append_array(chunk)
+        diagnostics.append_array(error_chunk)
+        if chunk.is_empty() and error_chunk.is_empty():
+            # Read once more after exit, so nothing written before it is lost.
+            if not running: break
+            OS.delay_msec(10)
+    stdio.close()
+    errors.close()
+    var code := OS.get_process_exit_code(pid)
+    var text := output.get_string_from_utf8()
+    # Success replies are JSON on stdout; a silent failure may explain itself on stderr.
+    if code != 0 and text.strip_edges() == "": text = diagnostics.get_string_from_utf8()
+    return [code, text]
 
 func _valid_status(result: Variant) -> bool:
     return result is Dictionary and typeof(result.get("pc_installed")) == TYPE_BOOL and typeof(result.get("genesis_enabled")) == TYPE_BOOL

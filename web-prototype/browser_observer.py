@@ -17,10 +17,13 @@ import zipfile
 
 from tools.pc_frontend_text import FrontendText, FrontendSources
 from tools.pc_live_state import SimStateReader, active_program
-from tools.pc_render_trace import Collector
+from tools.pc_render_trace import Collector, prewarm
+from tools.pc_trace_windows import build_window_bundles
+from tools.pc_session import slim_sample
 from tools.pc_audio_events import audio_status
 from tools.pc_readiness import ReadinessBark
 from tools.pc_crew_voice import CrewBarks, RadioBarks
+from tools.inspect_scenarios import decode_resource
 
 ROOT = Path('/repo')
 MAX_PACKET = 64 * 1024 * 1024
@@ -42,9 +45,14 @@ def install_originals(archive: bytes, manifest: dict) -> None:
 
 
 class BrowserObserver:
-    def __init__(self):
+    def __init__(self, build_info: dict | None = None):
+        # SIM event packet format of the Web core that feeds this observer,
+        # from its build-info.json; a build that records none sends full RAM.
+        self.window_bundles = build_window_bundles(build_info or {})
         self.reader = SimStateReader(ROOT / 'GAME/SIM.EXE')
+        self.shape_bytes = decode_resource((ROOT / 'GAME/SHAPE.TBL').read_bytes())
         self.frontend_sources = FrontendSources(ROOT / 'GAME')
+        prewarm()  # decode pinned SIM sources before the first mission step
         self.frontend = None
         self.collector = None
         self.mode = None
@@ -52,6 +60,7 @@ class BrowserObserver:
         self.frame = 0
         self.epoch = 0
         self.audio_sequence = 0
+        self.audio_pending = []
         self.readiness = ReadinessBark()
         self.crew = CrewBarks()
         self.radio = RadioBarks()
@@ -73,7 +82,7 @@ class BrowserObserver:
             return {'mode': 'unchanged'}
         self.mode = wanted
         if wanted == 'sim':
-            self.collector = Collector(self.reader, history_limit=2)
+            self.collector = Collector(self.reader, history_limit=2, window_bundles=self.window_bundles)
             self.frontend = None
             self.epoch += 1
             return {'mode': 'sim', 'load_segment': program['load_segment']}
@@ -81,10 +90,21 @@ class BrowserObserver:
         self.collector = None
         return {'mode': 'frontend'}
 
-    def after_frame(self, packet: bytes, receipts: bytes, ram: bytes,
-                    video: bytes, width: int, height: int, pitch: int) -> dict:
+    def after_frame(self, packet: bytes, receipts: bytes, paired_ram: bytes,
+                    current_ram: bytes, video: bytes, width: int, height: int,
+                    pitch: int, final: bool = True) -> dict | None:
+        """Consume one original frame, mirroring desktop PresentationSession.
+
+        ``paired_ram`` is the snapshot taken immediately before retro_run, at
+        the boundary of the framebuffer that call submitted (desktop
+        ``last_video_ram``). Program, state and presentation use it.
+        ``current_ram`` is read after the frame; like desktop ``step`` it only
+        drives audio status. Audio events accumulate until a ``final`` frame,
+        which alone builds the packet sample, as desktop ``sample`` does.
+        """
         self.frame += 1
-        if (len(packet) > MAX_PACKET or len(ram) != 640 * 1024 or
+        if (len(packet) > MAX_PACKET or len(paired_ram) != 640 * 1024 or
+                len(current_ram) != 640 * 1024 or
                 (width, height, pitch) != (320, 200, 1280) or len(video) != pitch * height):
             raise ValueError('invalid paired browser frame')
         expected = []
@@ -140,31 +160,57 @@ class BrowserObserver:
             count += 1
         if expected:
             raise ValueError('native claim lacks desktop source proof')
-        program = active_program(ram)
-        state = None
-        presentation = {'draw_pass': None, 'reason': 'no paired original presentation'}
-        if self.mode == 'sim' and program and program['name'] == 'SIM' and self.collector:
-            state = self.reader.read(ram)
-            presentation = self.collector.paired_video((video, width, height, pitch))
-        elif self.mode == 'frontend' and self.frontend:
-            presentation = self.frontend.paired_video((video, width, height, pitch), ram)
-        verified = (self.mode == 'sim' and program and
-                    (program['name'], program['psp']) == self.identity and
-                    self.reader.locate(ram) == program['load_segment'] * 16)
-        status = audio_status(ram, program if verified else None)
+        frame_video = (video, width, height, pitch)
+        current = active_program(current_ram)
+        verified = (self.mode == 'sim' and self.collector is not None and current and
+                    (current['name'], current['psp']) == self.identity and
+                    self.reader.locate(current_ram) == current['load_segment'] * 16)
+        status = audio_status(current_ram, current if verified else None)
         events = self.collector.audio.drain() if self.collector else []
-        events += self.readiness.advance(self.frame, events, presentation, status)
-        events += self.crew.advance(presentation, status)
-        events += self.radio.advance(presentation, status)
-        if len(events) > 4096:
-            raise ValueError('browser original-audio event queue overflow')
+        bark_view = self.collector.paired_video(frame_video) if verified else {}
+        events += self.readiness.advance(self.frame, events, bark_view, status)
+        events += self.crew.advance(bark_view, status)
+        events += self.radio.advance(bark_view, status)
         for event in events:
+            if len(self.audio_pending) >= 4096:
+                raise ValueError('browser original-audio event queue overflow')
             self.audio_sequence += 1
-            event.update(id=self.audio_sequence, frame=self.frame, epoch=self.epoch)
+            self.audio_pending.append(
+                event | {'id': self.audio_sequence, 'frame': self.frame, 'epoch': self.epoch})
+        if not final:
+            return None
+        program = active_program(paired_ram)
+        identity = (program['name'], program['psp']) if program else None
+        state = None
+        if (program and program['name'] == 'SIM' and
+                self.reader.locate(paired_ram) == program['load_segment'] * 16):
+            state = self.reader.read(paired_ram)
+        presentation = {'draw_pass': None,
+                        'reason': 'original program has no active observed SIM view'}
+        if self.mode == 'sim' and self.collector and identity == self.identity:
+            presentation = self.collector.paired_video(frame_video)
+        elif self.mode == 'frontend' and self.frontend:
+            candidate = self.frontend.paired_video(frame_video, paired_ram)
+            source = candidate.get('frontend_program')
+            if ((source['name'], source['psp']) if source else None) == identity:
+                presentation = candidate
+        if state:
+            ds = state['load_segment'] * 16 + 0x19E00
+            offset, segment = struct.unpack_from('<HH', paired_ram, ds + 0x6D50)
+            address = segment * 16 + offset
+            if paired_ram[address:address + len(self.shape_bytes)] != self.shape_bytes:
+                # SIM can be initializing. Only a completed observed draw
+                # turns a resource mismatch into a hard attribution error.
+                if presentation.get('draw_pass'):
+                    raise ValueError('original SHAPE.TBL differs during observed drawing')
+                state = None
+        events, self.audio_pending = self.audio_pending, []
         audio = {'schema': 3, 'frame': self.frame, 'epoch': self.epoch,
                  'last_id': self.audio_sequence, 'events': events, **status}
-        return {'program': program, 'state': state, 'presentation': presentation,
-                'audio': audio, 'events': count}
+        # Play-only surface, as desktop --slim-samples: undrawn actors never
+        # leave the observer.
+        return slim_sample({'program': program, 'state': state, 'presentation': presentation,
+                            'audio': audio, 'events': count})
 
 
 def from_json(value: str) -> str:

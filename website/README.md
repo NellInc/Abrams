@@ -28,8 +28,11 @@ The header icon is served as 88px and 132px WebP variants for 2x and 3x
 screens; the box art has 520w and 760w variants beside the 1039px original. Underlying game artwork
 retains its original rights, as described by the project notice.
 
-Nell selected GitHub Pages. The project's `Project webpage` workflow verifies
-and publishes only `dist`, on changes to the website on `main`.
+Nell selected GitHub Pages. The project's `Project webpage` workflow publishes
+only `dist`, on changes to the website on `main`. Before `verify.py` and the
+Pages upload it runs `python3 -m tools.package.git_boundary` (index mode) over
+the checked-out tree; a boundary failure stops the build job, so nothing is
+deployed. Run the same command locally before pushing website changes.
 Project URL: https://abramsremastered.com/.
 Nell authorized making NellInc/Abrams public with the website publication.
 The download block links to the notarized macOS and native Windows/Linux alpha.4 packages, their release notes, checksums and matching DOSBox-Pure source archives. Original PC files and the optional Genesis
@@ -47,14 +50,17 @@ search engines, not by the deployment check.
 Polished website map PNGs and exact generation prompts are in artwork/maps.
 All eight maps share the approved NATO-inspired treatment. The matching field-guide PDF, including side-by-side manual and extracted PC game-data maps, is served from assets/guides/field-guide.pdf. Source originals remain unchanged.
 
-Scenario maps load and decode at low priority as the section approaches (not at all when Save-Data is on); mission selection reuses the decoded image, and failed preloads remain retryable. A `#scenario-<slug>` link opens that mission's map.
+Scenario maps load and decode at low priority as the section approaches (not at all when Save-Data is on); mission selection reuses the decoded image, and failed preloads remain retryable. A `#scenario-<slug>` link opens that mission's map. Mission names and briefs exist only in `index.html`; the script reads each name from its picker link, and `verify.py` checks that each link matches its brief.
 
 The download section offers large Keyboard controls and Field guide buttons.
 Both PDFs are authored remaster references; the original manual stays private.
 The field guide (31 pages, about 4.8 MB) has one paired-map spread per scenario; its links carry the file's hash as their cache token.
 The platform download buttons have equal weight without JavaScript; the script
 promotes the visitor's own desktop platform to the primary style when it can be
-detected, and never on phones or tablets. Neither PDF contains game files. The favicon
+detected, and never on phones or tablets. Because the macOS build is Apple Silicon
+only and the Linux build x86_64 only, those two are promoted only on a known
+matching architecture (Chromium client hints, or an x86_64 Linux platform string);
+Safari and Firefox on a Mac promote nothing. Neither PDF contains game files. The favicon
 uses the title emblem's white star on a black disc, with SVG and PNG editions.
 
 After `python3 web-prototype/package_site.py` from the repository root, run `python3 verify.py`, `node --check dist/app.js` and `node test-maps.cjs` before publishing. The Web bundle is hash-checked by `verify.py`.

@@ -248,16 +248,22 @@
     {
       "file": "dist/assets/guides/field-guide.pdf",
       "source": "docs/player-reference/field-guide.pdf",
-      "source_sha256": "88f6025204d0216a3b0eb348cd4e1da9d8d9e33a11d9e90c72daf763d321d392",
-      "output_sha256": "88f6025204d0216a3b0eb348cd4e1da9d8d9e33a11d9e90c72daf763d321d392",
+      "source_sha256": "f3c1f782aec297eee057ad1ba6366b04acbe48fe181020878f8b813c6b2bc7b8",
+      "output_sha256": "f3c1f782aec297eee057ad1ba6366b04acbe48fe181020878f8b813c6b2bc7b8",
       "kind": "Authored illustrated field guide with eight NATO/manual and extracted PC-data map pairs"
     },
     {
       "file": "dist/assets/guides/keyboard-controls.pdf",
       "source": "docs/player-reference/keyboard-controls.pdf",
-      "source_sha256": "a8498f39c0ef7a3dd651e7ccb3eee32d24f8b9aa5f8bfd616557748b422d60ec",
-      "output_sha256": "a8498f39c0ef7a3dd651e7ccb3eee32d24f8b9aa5f8bfd616557748b422d60ec",
+      "source_sha256": "4fdea02f5321b66064ba3e9e1e37c58eb41dca5bceccff086357fc4e6fde4003",
+      "output_sha256": "4fdea02f5321b66064ba3e9e1e37c58eb41dca5bceccff086357fc4e6fde4003",
       "kind": "Authored three-page remaster keyboard-controls reference."
     }
-  ]
+  ],
+  "browser_bundle": {
+    "directory": "dist/play",
+    "inventory": "dist/play/BUNDLE.json",
+    "asset_manifest": "dist/play/.generated/remaster-assets.json",
+    "origin": "The Web remaster bundle is assembled by web-prototype/package_site.py. Its per-file bytes and SHA-256 hashes are recorded in BUNDLE.json, and its remaster asset parts in .generated/remaster-assets.json; website/verify.py checks both instead of listing each bundle file here."
+  }
 }

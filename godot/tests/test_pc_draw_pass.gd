@@ -35,7 +35,7 @@ func _run() -> void:
 	foliage.prepare(data,mapping,blank)
 	check(foliage.visible and foliage.instance_count>0 and foliage.instance_count<2000,"bounded real Tactical foliage missing")
 	var shrubs: MultiMesh = foliage.plants[0].multimesh
-	check(shrubs.mesh.get_surface_count()==1 and shrubs.instance_count>0,"actual shrub mesh missing")
+	check(shrubs.mesh.get_surface_count()==1 and shrubs.visible_instance_count>0,"actual shrub mesh missing")
 	var mesh_arrays: Array=shrubs.mesh.surface_get_arrays(0)
 	var materials: PackedVector2Array=mesh_arrays[Mesh.ARRAY_TEX_UV2]
 	var canopy_low:=INF
@@ -73,11 +73,12 @@ func _run() -> void:
 	check(foliage.plants[1].multimesh.mesh.surface_get_array_len(0)==96,"grass changed its 32-triangle budget")
 	var source_before:=JSON.stringify(data)
 	var buffer_before: PackedFloat32Array=shrubs.buffer.duplicate()
-	var position := shrubs.get_instance_transform(0)
+	# The dummy renderer serves no per-instance reads; compare the uploaded buffer.
+	var position: PackedFloat32Array = shrubs.buffer.slice(0,16)
 	var count: int = foliage.instance_count
 	var builds: int=foliage._grid_build_count
 	foliage.prepare(data,mapping,blank)
-	check(foliage.instance_count==count and shrubs.get_instance_transform(0)==position,"stationary foliage drift")
+	check(foliage.instance_count==count and position.size()==16 and shrubs.buffer.slice(0,16)==position,"stationary foliage drift")
 	check(shrubs.buffer==buffer_before,"stationary plant proportions or colours drifted")
 	check(JSON.stringify(data)==source_before,"vegetation changed the source packet")
 	check(foliage._grid_build_count==builds,"stationary planting grid rebuilt")
@@ -89,15 +90,17 @@ func _run() -> void:
 	foliage.prepare(data,moved,blank)
 	check(foliage._grid_build_count==builds+2,"cross-cell camera motion did not refresh both grids")
 	foliage.prepare(data,mapping,blank)
-	check(foliage.instance_count==count and shrubs.get_instance_transform(0)==position,"returning camera changed deterministic planting")
+	check(foliage.instance_count==count and shrubs.buffer.slice(0,16)==position,"returning camera changed deterministic planting")
 	var rotated: Dictionary=mapping.duplicate()
 	rotated.inverse=Basis(Vector3(0,0,1),0.4)
 	foliage.prepare(data,rotated,blank)
-	check(shrubs.instance_count>0,"rotated view lost every shrub")
+	check(shrubs.visible_instance_count>0,"rotated view lost every shrub")
 	var proportions_stable:=true
-	for i in shrubs.instance_count:
-		var basis: Basis=shrubs.get_instance_transform(i).basis
-		var seed: float=shrubs.get_instance_custom_data(i).b
+	var packed: PackedFloat32Array=shrubs.buffer
+	for i in shrubs.visible_instance_count:
+		var at:=i*16
+		var basis:=Basis(Vector3(packed[at],packed[at+4],packed[at+8]),Vector3(packed[at+1],packed[at+5],packed[at+9]),Vector3(packed[at+2],packed[at+6],packed[at+10]))
+		var seed: float=packed[at+14]
 		proportions_stable=proportions_stable and absf(basis.x.length()/basis.y.length()-(0.86+seed*0.28)/(0.90+seed*0.20))<0.0001
 	check(proportions_stable,"camera rotation changed plant-local proportions")
 	foliage.prepare(data,mapping,blank)
@@ -194,9 +197,111 @@ func _run() -> void:
 		print("PC_DRAW_PASS_SPRITES: %d" % sprites)
 	if "--foliage-lighting" in args:
 		await foliage_lighting(args[args.find("--foliage-lighting")+1])
+	await camera_basis()
+	surface_shader_variants()
+	snapshot_motion()
 	print("PC_DRAW_PASS: %d checks, %d errors" % [checks, failures.size()])
 	for message in failures: printerr("FAIL: " + message)
 	quit(0 if failures.is_empty() else 1)
+
+func basis_pass(with_matrix: bool, x_shift := 0) -> Dictionary:
+	var palette: Array = []
+	for i in 16: palette.append([i*16,i*16,i*16])
+	var camera := {"clip":[0,0,255,95],"center":[128,48],"near_raw":16,"focal_pixels":128}
+	if with_matrix:
+		camera.matrix_q14_columns=[16384,0,0,0,0,16384,0,-16384,0]
+		camera.world_position_raw=[1000+x_shift,2000,50]
+	return {"camera":camera,"materials":[[0,0],[1,1]],"palette_rgb":palette,
+		"background":{"kind":"horizon","line":[[0,48],[255,48]],"colors":[5,8]},
+		"objects":[{"static_path":1,"dynamic_instance":false,"polygons":[{"colors":[1,1],"fill_mode":1,
+			"camera_vertices":[[-400+x_shift,400,-50],[400,400,-50],[400,800,-50]]}]}]}
+
+# Regression: the camera basis was bound only with terrain detail, so Tactical
+# tree normals normalized a zero vector (NaN) under --flat-world.
+func camera_basis() -> void:
+	var view = DrawPass.new()
+	view.solid_enabled=true
+	root.add_child(view)
+	view.apply_pass(basis_pass(true))
+	var material: ShaderMaterial = view.mesh_node.mesh.surface_get_material(0) if view.mesh_node.mesh!=null else null
+	check(material!=null and not view.terrain_active,"flat-world surface pass missing")
+	if material!=null:
+		check(view.camera_basis_ready and material.get_shader_parameter("camera_basis_ready")==true,"observed camera basis not marked ready without terrain detail")
+		var expected: Basis=Basis(Vector3(1,0,0),Vector3(0,0,1),Vector3(0,-1,0)).inverse()
+		check(material.get_shader_parameter("camera_to_local")==expected and material.get_shader_parameter("world_origin")==Vector3(1000,2000,50),"camera basis not bound without terrain detail")
+	view.apply_pass(basis_pass(false))
+	material = view.mesh_node.mesh.surface_get_material(0) if view.mesh_node.mesh!=null else null
+	check(material!=null and not view.camera_basis_ready and material.get_shader_parameter("camera_basis_ready")==false,"missing camera basis reported ready")
+	view.queue_free()
+	await process_frame
+	# The reported path itself: Tactical over the production Modern catalogue,
+	# daylight 5/8 horizon, no terrain detail. Every uniform that admits
+	# tactical_tree_light/tactical_trunk_fill is set, with a finite basis.
+	var stage := SubViewport.new()
+	stage.size=Vector2i(256,96)
+	stage.own_world_3d=true
+	root.add_child(stage)
+	var camera := Camera3D.new()
+	stage.add_child(camera)
+	camera.make_current()
+	var tactical = DrawPass.new()
+	tactical.solid_enabled=true
+	camera.add_child(tactical)
+	var repo := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	check(tactical.load_modern_assets(repo),"production Modern catalogue unavailable: "+str(tactical.modern_status))
+	tactical.modern_enabled=true
+	tactical.tactical_landscape=true
+	var daylight := basis_pass(true)
+	daylight.palette_rgb=preload("res://scripts/pc_modern_assets.gd").PC_PALETTE.duplicate(true)
+	tactical.apply_pass(daylight)
+	material = tactical.mesh_node.mesh.surface_get_material(0) if tactical.mesh_node.mesh!=null else null
+	check(material!=null and tactical.terrain_style==null and not tactical.terrain_active,"flat-world Tactical pass missing")
+	if material!=null:
+		for gate in ["modern_active","tactical_landscape","modern_environment_polish","camera_basis_ready"]:
+			check(material.get_shader_parameter(gate)==true,"flat-world Tactical tree-light gate closed: "+gate)
+		var horizon: Variant=material.get_shader_parameter("source_horizon_line")
+		check(horizon is Vector3 and horizon.is_finite() and Vector2(horizon.x,horizon.y).length_squared()>0.5,"5/8 horizon not observed as daylight")
+		var basis: Variant=material.get_shader_parameter("camera_to_local")
+		var origin: Variant=material.get_shader_parameter("world_origin")
+		check(basis is Basis and basis.is_finite() and absf(basis.determinant())>0.5 and origin is Vector3 and origin.is_finite(),"flat-world Tactical camera basis not finite")
+	stage.queue_free()
+	await process_frame
+
+# GPU-free compile canary for every production surface program, including the
+# runtime-patched groundlight variant. The dummy renderer parses shader code and
+# returns no uniforms when compilation fails; validate.sh also rejects any
+# SHADER ERROR line. Backend GLSL still needs the native polish test.
+func surface_shader_variants() -> void:
+	var view = DrawPass.new()
+	check(view._groundlight_shader!=null,"groundlight anchors drifted")
+	if view._groundlight_shader!=null:
+		var code: String=view._groundlight_shader.code
+		for include in ["pc_tactical_polish","pc_tactical_finishgrain","pc_tactical_diffusion","pc_tactical_groundlight"]:
+			check(code.contains("#include \"res://scripts/%s.gdshaderinc\"" % include),"groundlight lacks "+include)
+	for shader: Shader in [DrawPass.SurfaceShader,view._modern_shader,view._groundlight_shader]:
+		if shader==null: continue
+		var names: Array=shader.get_shader_uniform_list().map(func(u): return u.name)
+		check("modern_environment_polish" in names and "camera_basis_ready" in names,"surface shader variant failed to compile")
+	view.free()
+
+# Sustained motion keeps only the cheap pre-key; a static camera snapshots
+# again and the next identical pass is a full-equality hit.
+func snapshot_motion() -> void:
+	var view = DrawPass.new()
+	view.solid_enabled=true
+	root.add_child(view)
+	for shift in range(1,9): view.apply_pass(basis_pass(true,shift))
+	check(view._cached_pass.is_empty(),"moving camera still deep-copied every pass")
+	view.apply_pass(basis_pass(true,8))
+	check(not view._cached_pass.is_empty(),"static camera did not snapshot")
+	var builds: int=view.mesh_build_count
+	view.apply_pass(basis_pass(true,8))
+	check(view.mesh_build_count==builds and view.mesh_reuse_count>0,"identical pass after motion did not reuse")
+	var edited := basis_pass(true,8)
+	edited.objects[0].polygons[0].colors=[0,0]
+	view.apply_pass(edited)
+	check(view.mesh_build_count==builds+1,"changed pass with an unchanged camera reused stale geometry")
+	view.free()
 
 # Optional rendered material regression: production meshes and ownership shader,
 # staged close for inspection. These images are studies, not mission captures.
@@ -244,6 +349,7 @@ func foliage_lighting(baseline_path: String) -> void:
 	for layer in 2:
 		var mesh: MultiMesh=plants.plants[layer].multimesh
 		mesh.instance_count=1
+		mesh.visible_instance_count=-1
 		mesh.set_instance_custom_data(0,Color(0.5,0.8,0.6,float(layer)))
 		for angle in [0.0,PI*0.5,PI]:
 			plants.material.set_shader_parameter("camera_to_local",Basis(Vector3(0,0,1),-angle))
@@ -297,6 +403,7 @@ func foliage_lighting(baseline_path: String) -> void:
 	# Force the existing bark and footprint branches independently: lighting
 	# changes must leave these non-leaf materials byte-identical.
 	plants.plants[0].multimesh.instance_count=1
+	plants.plants[0].multimesh.visible_instance_count=-1
 	plants.plants[0].multimesh.set_instance_transform(0,Transform3D(Basis.IDENTITY.scaled(Vector3.ONE*0.05),Vector3(0,-0.55,-48 if aerial else -3)))
 	plants.plants[0].multimesh.set_instance_custom_data(0,Color(0.5,0.8,0.6,0))
 	for kind in ["0.5","1.0"]:

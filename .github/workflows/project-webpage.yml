@@ -26,6 +26,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      # website/verify.py checks names and bundle hashes only. The Git boundary
+      # adds the pinned original-input fingerprints, credential patterns and
+      # archive-member checks, so originals cannot reach Pages even when the
+      # parallel Source-only safeguards run has not finished or has failed.
+      - name: Reject originals, private data and credentials in the published tree
+        run: python3 -m tools.package.git_boundary
       - name: Verify the isolated webpage
         run: |
           python3 website/verify.py

@@ -21,6 +21,20 @@ class BrowserPackageTests(unittest.TestCase):
     def unchanged(self):
         self.assertEqual(self.before, {p.relative_to(self.target).as_posix(): p.read_bytes() for p in self.target.rglob('*') if p.is_file()})
         self.assertEqual(list(self.root.glob('.abrams-play-*')), [])
+    def test_every_embedded_font_ships_its_licence(self):
+        # OFL condition 2: each font the Godot PCK embeds travels with its licence text.
+        published = {name: package.SOURCE / name for name in package.APP} | package.LICENSES
+        licences = {'IBMPlex': ('LICENSES/IBM-Plex-OFL.txt', 'Plex-OFL.txt'),
+                    'Barlow': ('assets/Barlow-OFL.txt', 'Barlow-OFL.txt')}
+        fonts = sorted((package.ROOT / 'godot/assets/fonts').glob('*.ttf'))
+        self.assertTrue(fonts)
+        for font in fonts:
+            with self.subTest(font=font.name):
+                family = next((key for key in licences if font.name.startswith(key)), None)
+                self.assertIsNotNone(family, 'map this font family to its licence in package_site')
+                name, text = licences[family]
+                self.assertIn(name, published)
+                self.assertEqual(published[name].read_bytes(), (font.parent / text).read_bytes())
     def test_copy_failure_preserves_previous(self):
         with patch.object(package.shutil, 'copy2', side_effect=OSError('disk full')):
             with self.assertRaisesRegex(OSError, 'disk full'): package.install_bundle({'remaster.mjs': self.source}, self.target)
@@ -70,6 +84,27 @@ class BrowserPackageTests(unittest.TestCase):
         wanted = {'bytes': self.source.stat().st_size, 'sha256': package.sha(self.source)}
         result = package.install_bundle({'remaster.mjs': self.source}, self.target, {'remaster.mjs': wanted})
         self.assertEqual(result['remaster.mjs'], wanted)
+    def test_stale_observer_source_is_detected(self):
+        import io, sys, types, zipfile
+        def write(stream, body=b'observer v2'):
+            with zipfile.ZipFile(stream, 'w') as archive:
+                archive.writestr('tools/__init__.py', '')
+                archive.writestr('browser_observer.py', body)
+        fake = types.ModuleType('build_observer'); fake.write_source_archive = write
+        packaged = self.root / 'python-source.zip'
+        with patch.dict(sys.modules, {'build_observer': fake}):
+            write(packaged)
+            self.assertEqual(package.observer_drift(packaged), [])
+            write(packaged, b'observer v1')
+            self.assertEqual(package.observer_drift(packaged), ['browser_observer.py'])
+            with zipfile.ZipFile(packaged, 'a') as archive: archive.writestr('tools/extra.py', 'x')
+            self.assertEqual(package.observer_drift(packaged), ['browser_observer.py', 'tools/extra.py'])
+    def test_real_observer_builder_round_trips(self):
+        import io, zipfile
+        from build_observer import write_source_archive
+        stream = io.BytesIO(); write_source_archive(stream)
+        packaged = self.root / 'python-source.zip'; packaged.write_bytes(stream.getvalue())
+        self.assertEqual(package.observer_drift(packaged), [])
     def test_complete_replacement_is_verified(self):
         self.source.write_text('new')
         rows = package.install_bundle({'remaster.mjs': self.source}, self.target)

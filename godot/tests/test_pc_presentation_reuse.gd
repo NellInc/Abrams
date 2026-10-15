@@ -104,6 +104,18 @@ func run() -> void:
 			await equivalent(source,bad,world,program,"malformed mask")
 			check(not tandem_frame.world_enabled and _presentation_key.is_empty(),"failed composition never cached")
 			await equivalent(source,paired,world,program,"recovery after fallback")
+			# A HUD switch on an unchanged frame must replay it with the new
+			# round-counter treatment, never return the old cached composition.
+			_present_tandem(source,paired,world,program)
+			var before_hud := presentation_builds
+			_choose_hud_style("tactical")
+			check(_presentation_key.is_empty() and not tandem_frame.instrument_art.pc_rounds_enabled,"HUD switch replays the static frame: "+mode)
+			_present_tandem(source,paired,world,program)
+			check(presentation_builds==before_hud+1,"HUD switch cannot reuse the old composition: "+mode)
+			_choose_hud_style("restored")
+			check(tandem_frame.instrument_art.pc_rounds_enabled,"Restored HUD restores PC round counters: "+mode)
+			# Re-prime the cache so the resize check below counts its own rebuild.
+			await equivalent(source,paired,world,program,"restored HUD replay")
 			var resized := presentation_builds
 			tandem_frame.size+=Vector2(4,3)
 			_present_tandem(source,paired,world,program)

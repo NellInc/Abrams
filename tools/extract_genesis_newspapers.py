@@ -16,6 +16,15 @@ ROM_SHA = 'ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea'
 ENTRIES = {'victory': (0x93CE, 0x2A1BA, 0x1A816, 'MOSCOW'),
            'defeat': (0x9402, 0x2CC2C, 0x1AEFC, 'PARIS'),
            'stalemate': (0x9436, 0x2F588, 0x1B5DE, 'STALE')}
+UNICORN_VERSION = '2.1.4'
+
+
+def pinned_unicorn():
+    # Every M68000 decode of the original ROM is evidence only on the pinned emulator build.
+    import unicorn
+    if unicorn.__version__ != UNICORN_VERSION:
+        raise ValueError(f'decoder requires pinned unicorn=={UNICORN_VERSION}, found {unicorn.__version__}')
+    return unicorn.__version__
 
 
 def decode(rom):
@@ -24,6 +33,7 @@ def decode(rom):
         UC_M68K_REG_A0, UC_M68K_REG_A1, UC_M68K_REG_A7, UC_M68K_REG_PC)
     if hashlib.sha256(rom).hexdigest() != ROM_SHA:
         raise ValueError('unsupported Genesis source')
+    pinned_unicorn()
     m = Uc(UC_ARCH_M68K, UC_MODE_BIG_ENDIAN)
     m.ctl_set_cpu_model(UC_CPU_M68K_M68000)
     m.mem_map(0, 0x80000); m.mem_write(0, rom)
@@ -125,7 +135,7 @@ def main():
             for kind in ['tiles','map']:
                 resource = entry[kind]; path = a.output/(name+'-'+kind+'.bin')
                 path.write_bytes(resource.pop('data')); resource['file'] = path.name
-        report = {'schema':1, 'rom_sha256':ROM_SHA, 'entries':entries,
+        report = {'schema':1, 'rom_sha256':ROM_SHA, 'unicorn':pinned_unicorn(), 'entries':entries,
                   'decoder':'unchanged M68000 9AFE/9B20; read-only ROM; isolated private RAM; bounded return',
                   'palette_commands':[0x58E8E,0x58FE6], 'scope':__doc__}
     (a.output/'manifest.json').write_text(json.dumps(report, indent=2)+'\n')

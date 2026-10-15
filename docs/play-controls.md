@@ -28,8 +28,15 @@ Shortcuts work in Play, including fullscreen, menus and briefings. A brief
 on-screen message confirms the action. Graphics changes immediately and skips
 unavailable modes. Holding a shortcut never repeats saves or switches.
 The chord is withheld from the original game until its keys are released; bare
-S, L, G and the original function keys remain unchanged. Quick save overwrites
-slot 1 while retaining its preceding archive. Use Session for slots 2 to 5.
+S, L, G and the original function keys remain unchanged. Quick save writes an
+empty slot 1 at once. If slot 1 already holds a save, the first press shows its
+time; press the shortcut again within four seconds to overwrite it (the preceding
+archive is retained). **Session > Save state** names the save each slot would
+replace. Use Session for slots 2 to 5. On Windows, natively and in its browsers,
+AltGr is reported as Ctrl+Alt: on keyboard layouts where AltGr+S, L or G types a
+character (for example Polish ś or ł), those shortcuts are unavailable; use the
+Session menu. Browsers on macOS are unaffected. The browser uses Ctrl+Alt on every
+platform, because browsers intercept Command chords.
 
 You can keep steering or firing while using a save/load shortcut. Only the
 shortcut chord is withheld; unrelated held controls continue. A checkpoint
@@ -52,9 +59,13 @@ Loading therefore rewinds campaign files as well as the current mission.
 Before loading, the current session is saved automatically. **Load state >
 Undo last load** restores that recovery slot. A later load replaces the recovery
 slot. Overwriting a numbered slot retains its preceding archive as
-`slot-N.previous.zip`; the normal menu shows the current version only.
+`slot-N.previous.zip`; when the host lists it, **Load state** also offers
+**Overwritten slot N (time)**, which loads that archive (saving the current
+session to Undo last load) without changing either slot file.
 
-Checkpoint operations briefly stop source execution and mute presentation audio.
+Checkpoint operations briefly stop source execution. A load mutes presentation
+audio from the moment it is requested. A save keeps sound from frames already
+played.
 They run serially, report success or failure in the Session menu, and never queue
 behind another checkpoint. Empty, corrupt and incompatible slots are unavailable.
 A failed native restore attempts to return to the session captured immediately
@@ -105,9 +116,9 @@ restored on a fresh launch; fast forward is not a sticky preference.
 
 Choose a mode under **Graphics** during play, menus or briefings. The current frame is recomposed immediately from preloaded artwork, with no restart, new game input or extra original frame.
 
-* **EGA**: the untouched PC framebuffer and source lettering.
+* **EGA**: the untouched PC framebuffer and source lettering. Tactical HUD Style does not alter it, nor EGA Upscaled or Genesis.
 * **EGA Upscaled**: larger, smoother contours using only the original PC colours, including its dark skin tones.
-* **Genesis**: verified original-resolution donor artwork. PC geometry, controls, values and unmatched imagery stay original. This does not run the Genesis game.
+* **Genesis**: verified original-resolution donor artwork. PC geometry, controls, values and unmatched imagery stay original. This does not run the Genesis game. Its donor pack is built from captured Genesis screens, so only an equipped checkout offers it; native apps built after 15 October 2026 and the browser list it as unavailable.
 * **Genesis Upscaled** (`upscaled`): the generated high-resolution remaster artwork and restored interfaces.
 * **Modern** (Modernized in browser): refined source-bound low-poly scenery with the existing restored interfaces.
 * **Tactical**: the separate textured, Range-inspired battlefield treatment. **HUD Style** independently selects Restored or Tactical instruments and layouts.
@@ -134,7 +145,10 @@ and Music controls. The mix persists separately from campaign saves. Original
 F5 and pause still govern gameplay audio. Frontend music has its own Music and
 Master gates, and stays silent on unrecognized screens and during simulation.
 The four new arrangements use individual samples, including extracted Genesis
-percussion. They are authored arrangements, not recovered original scores.
+percussion. They are authored arrangements, not recovered original scores. Native
+apps built after 15 October 2026 do not include them, because the percussion
+samples' redistribution rights are not established; equipped checkouts and the
+browser edition keep them, once a Genesis ROM is imported or verified.
 
 ## Verification boundary
 
@@ -148,7 +162,7 @@ that every mission or campaign has been completed.
 
 ## Browser play and recovery
 
-Choose your original PC folder, then Start remaster. The file picker shows your selection before verification. An optional Genesis ROM enables original Genesis art and music. EGA Upscaled preserves the original PC palette and skin colours; Genesis Upscaled retains the generated high-resolution artwork. Graphics and HUD Style remain independent.
+Choose your original PC folder, then Start remaster. The file picker shows your selection before verification. An optional Genesis ROM unlocks the Genesis-based remaster artwork and frontend music, and the browser derives the Genesis effects from your verified ROM. Since 15 October 2026 the browser edition publishes no captured Genesis screens, so its Genesis mode, Genesis newspaper, map frame and clipboard restorations and Genesis vehicle colours keep original PC pixels (see [release rights](release-rights.md)). EGA Upscaled preserves the original PC palette and skin colours; Genesis Upscaled retains the generated high-resolution artwork. Graphics and HUD Style remain independent.
 
 Use **Game keyboard** after interacting with browser controls to return keyboard focus to the game. **Fullscreen** keeps the browser controls available; Escape leaves browser fullscreen. Editing a browser selector does not trigger quick-save/load or graphics shortcuts.
 

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import stat
 import struct
 import sys
 import tempfile
@@ -21,6 +22,24 @@ OPTIONAL_LIMITS = {'observer.bin': 2 * 1024 * 1024}
 LIMITS = {'state.bin': MAX_STATE, 'resume.json': MAX_RESUME, 'campaign.zip': MAX_DISK}
 # zipfile passes decompression faults through unwrapped; report them as invalid data.
 DAMAGED = (zlib.error, NotImplementedError, EOFError, RuntimeError, zipfile.BadZipFile, zipfile.LargeZipFile)
+
+# Name-surrogate reparse tags; the stat module defines them only on Windows.
+LINK_REPARSE_TAGS = (getattr(stat, 'IO_REPARSE_TAG_SYMLINK', 0xA000000C),
+                     getattr(stat, 'IO_REPARSE_TAG_MOUNT_POINT', 0xA0000003))
+
+
+def is_link(path):
+    """Symlinks, plus Windows junctions, which Path.is_symlink() misses.
+
+    Other reparse points (OneDrive placeholders, deduplicated files) are
+    ordinary files and folders, so only the link tags count."""
+    path = Path(path)
+    if path.is_symlink(): return True
+    try: info = os.lstat(path)
+    except OSError: return False
+    return (bool(getattr(info, 'st_file_attributes', 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+            and getattr(info, 'st_reparse_tag', 0) in LINK_REPARSE_TAGS)
+
 
 def sha(raw):
     return hashlib.sha256(raw).hexdigest()
@@ -90,9 +109,14 @@ def core_identity(core):
 
 
 class StateStore:
-    def __init__(self, saves, core, content, backend):
+    def __init__(self, saves, core, content, backend, overlay=None):
+        # Checked before resolve(), which would follow a link or junction at the
+        # saves folder itself. Ancestors are the launcher's to police (system
+        # paths such as macOS /var are links), not the store's.
+        if is_link(saves) or is_link(Path(saves) / 'states'):
+            raise ValueError('state directory must not be a symlink or junction')
         self.root = Path(saves).resolve() / 'states'
-        if self.root.is_symlink(): raise ValueError('state directory must not be a symlink')
+        if is_link(self.root): raise ValueError('state directory must not be a symlink or junction')
         self.root.mkdir(parents=True, exist_ok=True)
         identity, actual = core_identity(core)
         self.compatibility = {'schema': 1, 'backend': backend,
@@ -103,18 +127,25 @@ class StateStore:
         # Slots written before checkpoints used the pre-signing identity were
         # keyed on these exact signed bytes; they remain readable.
         self.accepted = [self.compatibility, self.compatibility | {'core_sha256': actual}]
-        self.disk = Path(saves).resolve() / (Path(content).stem + '.pure.zip')
-        if self.disk.is_symlink(): raise ValueError('campaign overlay must not be a symlink')
+        # A snapshot session keeps its slots here but its live overlay elsewhere.
+        if is_link(overlay or saves): raise ValueError('campaign overlay folder must not be a symlink or junction')
+        self.disk = Path(overlay or saves).resolve() / (Path(content).stem + '.pure.zip')
+        if is_link(self.disk): raise ValueError('campaign overlay must not be a symlink or junction')
 
     def path(self, slot):
         if type(slot) is not int or not 0 <= slot <= 5: raise ValueError('slot must be 0 to 5')
         path = self.root / f'slot-{slot}.zip'
-        if path.is_symlink(): raise ValueError('slot must not be a symlink')
+        if is_link(path): raise ValueError('slot must not be a symlink or junction')
         return path
 
-    def read(self, slot):
+    def read(self, slot, previous=False):
         path = self.path(slot)
-        if not path.exists(): raise ValueError(f'Slot {slot} is empty')
+        if previous:
+            # The archive write() kept when this numbered slot was overwritten.
+            if not 1 <= slot <= 5: raise ValueError('Only numbered slots keep an overwritten archive')
+            path = path.with_suffix('.previous.zip')
+            if is_link(path): raise ValueError('slot must not be a symlink or junction')
+        if not path.exists(): raise ValueError(f'Slot {slot} has no overwritten archive' if previous else f'Slot {slot} is empty')
         raw = read_bounded(path, sum(LIMITS.values()) + sum(OPTIONAL_LIMITS.values()) + 65536)
         try:
             with zipfile.ZipFile(io.BytesIO(raw)) as archive:
@@ -181,11 +212,18 @@ class StateStore:
                     row.update(valid=True, saved_at=manifest['saved_at'], program=manifest['program'])
             # One damaged file must never break the listing (or the host that sends it).
             except Exception as error: row['message'] = str(error) or type(error).__name__
+            # Listed only when it reads back whole; a damaged or incompatible
+            # overwritten archive is simply absent and never affects the slot row.
+            if slot:
+                try:
+                    if (self.root / f'slot-{slot}.previous.zip').exists():
+                        row['previous_saved_at'] = self.read(slot, previous=True)[0]['saved_at']
+                except Exception: pass
             result.append(row)
         return result
 
     def install_disk(self, raw):
         validate_disk(raw)
-        if self.disk.is_symlink(): raise ValueError('campaign overlay must not be a symlink')
+        if is_link(self.disk): raise ValueError('campaign overlay must not be a symlink or junction')
         if raw: atomic_write(self.disk, raw)
         elif self.disk.exists(): self.disk.unlink()

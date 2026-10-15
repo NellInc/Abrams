@@ -120,9 +120,15 @@ class PcBridgeTests(unittest.TestCase):
 
     def supervise_stub(self, stdin, grace=5.0):
         """Run the real supervisor against a stub worker; returns (error, quit_flushed, output)."""
-        import contextlib,io,os
+        import contextlib,io,subprocess
         from unittest import mock
         from tools import pc_state_host
+        # Record every worker this test spawns, so cleanup only ever signals
+        # owned handles; a bare PID may be reused, and os.kill(pid,0)
+        # terminates on Windows rather than probing.
+        spawned=[]; real_popen=subprocess.Popen
+        def popen(*args,**kwargs):
+            process=real_popen(*args,**kwargs); spawned.append(process); return process
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); path=root/'saves'
             (root/'core').write_bytes(b'core'); (root/'game.zip').write_bytes(b'game')
@@ -132,19 +138,18 @@ class PcBridgeTests(unittest.TestCase):
             out=io.StringIO(); error=None; strays=[]
             try:
                 with mock.patch.object(pc_state_host,'WORKER',root/'worker.py'),mock.patch.object(pc_state_host,'ORPHAN_GRACE',grace),\
+                        mock.patch.object(pc_state_host.subprocess,'Popen',popen),\
                         mock.patch('sys.stdin',io.StringIO(stdin)),contextlib.redirect_stdout(out):
                     try: pc_state_host.supervise(args,[str(marker)],lock_saves,validate_command)
                     except Exception as raised: error=raised
-                pid=json.loads(out.getvalue().splitlines()[0])['pid']
                 # The save overlay is free again however the session ended.
                 lock_saves(path).close()
             finally:
                 # Shared machine: never leave a stub behind, but record any survivor.
-                for line in out.getvalue().splitlines():
-                    stray=json.loads(line).get('pid')
-                    try: os.kill(stray,0) if stray else None
-                    except OSError: continue
-                    if stray: strays.append(stray); os.kill(stray,9)
+                for process in spawned:
+                    if process.poll() is None:
+                        strays.append(process.pid); process.kill(); process.wait()
+            self.assertEqual(len(spawned),1)
             self.assertEqual(strays,[],'worker outlived its supervisor')
             return error,marker.exists(),[json.loads(line) for line in out.getvalue().splitlines()]
 
@@ -168,6 +173,54 @@ class PcBridgeTests(unittest.TestCase):
                 self.assertIsNone(error)
                 self.assertTrue(flushed)
                 self.assertEqual([line['type'] for line in lines],['ready']+['sample']*stdin.count('step'))
+
+    def test_missing_original_file_reaches_the_player_as_a_json_error(self):
+        import subprocess,sys
+        # A worker whose root has no imported game: the supervisor relays this
+        # line, so the player sees the real cause, not 'ended before replying'.
+        script=("import sys\nfrom pathlib import Path\nfrom tools import pc_bridge_host as host\n"
+                "host.ROOT=Path(sys.argv[1])\nsys.argv=['pc_bridge_host.py','--saves',sys.argv[2],'--backend','trace','--state-worker']\n"
+                "host.main()\n")
+        with tempfile.TemporaryDirectory() as directory:
+            result=subprocess.run([sys.executable,'-c',script,directory,str(Path(directory)/'saves')],cwd=ROOT,
+                                  stdin=subprocess.DEVNULL,capture_output=True,text=True,timeout=60)
+        self.assertNotEqual(result.returncode,0)
+        lines=result.stdout.splitlines()
+        self.assertEqual(len(lines),1,result.stderr)
+        self.assertEqual(json.loads(lines[0]),{'type':'error','message':'Original game SIM.EXE is missing; import the original PC game again'})
+
+    def test_worker_error_report_tolerates_a_supervisor_that_already_left(self):
+        import errno,sys
+        from unittest import mock
+        from tools import pc_bridge_host as host
+        # Windows reports writes to a departed reader as EINVAL, POSIX as EPIPE:
+        # either way the real fault propagates alone, with no nested pipe fault.
+        for make in (lambda: BrokenPipeError(32,'Broken pipe'), lambda: OSError(errno.EINVAL,'Invalid argument')):
+            class Gone:
+                closed=0
+                def write(self,text): raise make()
+                def close(self): Gone.closed+=1; raise make()
+            with tempfile.TemporaryDirectory() as directory, \
+                 mock.patch.object(host,'ROOT',Path(directory)), \
+                 mock.patch.object(host.os,'fdopen',lambda *a,**k: Gone()), \
+                 mock.patch.object(host.os,'dup',lambda fd: fd), mock.patch.object(host.os,'dup2',lambda *a: None), \
+                 mock.patch.object(sys,'argv',['pc_bridge_host.py','--saves',str(Path(directory)/'saves'),'--backend','trace','--state-worker']):
+                with self.assertRaisesRegex(ValueError,'SIM.EXE is missing') as caught:
+                    host.main()
+            self.assertIsInstance(caught.exception.__cause__,FileNotFoundError)
+            self.assertEqual(Gone.closed,1)
+        # Any other output fault is still a real error.
+        class Broken:
+            def write(self,text): raise OSError(errno.EIO,'I/O error')
+            def close(self): pass
+        with tempfile.TemporaryDirectory() as directory, \
+             mock.patch.object(host,'ROOT',Path(directory)), \
+             mock.patch.object(host.os,'fdopen',lambda *a,**k: Broken()), \
+             mock.patch.object(host.os,'dup',lambda fd: fd), mock.patch.object(host.os,'dup2',lambda *a: None), \
+             mock.patch.object(sys,'argv',['pc_bridge_host.py','--saves',str(Path(directory)/'saves'),'--backend','trace','--state-worker']):
+            with self.assertRaises(OSError) as caught:
+                host.main()
+        self.assertEqual(caught.exception.errno,errno.EIO)
 
     @unittest.skipUnless((ROOT / 'GAME/SIM.EXE').is_file(), 'Requires separately supplied original PC executable')
     def test_anchor_rejects_absent_incomplete_and_ambiguous_images(self):
@@ -298,6 +351,13 @@ class PcBridgeTests(unittest.TestCase):
             receipt["pressed_keys"] = [32]
             receipt_path.write_text(json.dumps(receipt))
             with self.assertRaises(ValueError): core.restore(state, expected_source_sha256="b" * 64)
+            self.assertEqual(loaded, [10])
+            # No receipt means no pin, fingerprint or neutral-key check: refuse.
+            receipt_path.unlink()
+            for pin in (None, "a" * 64, "b" * 64):
+                with self.assertRaisesRegex(ValueError, "requires the snapshot receipt"):
+                    core.restore(state, expected_source_sha256=pin)
+            self.assertEqual(loaded, [10])
 
     def test_protocol_accepts_only_bounded_keyboard_steps(self):
         validate_command({"op": "quit"})

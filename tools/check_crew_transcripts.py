@@ -14,10 +14,12 @@ import re
 import urllib.error
 import urllib.request
 try:
-    from tools.generate_crew_voice import keychain_secret,validate_wav,BASE
+    from tools.generate_crew_voice import ROOT,KEYCHAIN_ACCOUNT,KEYCHAIN_SERVICE,http_error,keychain_secret,validate_wav,BASE
+    from tools.source_guard import inside_source
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
-    from generate_crew_voice import keychain_secret,validate_wav,BASE
+    from generate_crew_voice import ROOT,KEYCHAIN_ACCOUNT,KEYCHAIN_SERVICE,http_error,keychain_secret,validate_wav,BASE
+    from source_guard import inside_source
 
 
 def normalized(text):
@@ -124,8 +126,9 @@ def main():
     p.add_argument('--directory',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--number-delivery',action='store_true',help='Separate blind phonetic classification for selected bearing clips')
     p.add_argument('--cue',action='append');p.add_argument('--dry-run',action='store_true')
-    p.add_argument('--keychain-service',default='aiguardians-google-ai')
-    p.add_argument('--keychain-account',default='gemini-api-key');a=p.parse_args()
+    p.add_argument('--keychain-service',default=KEYCHAIN_SERVICE)
+    p.add_argument('--keychain-account',default=KEYCHAIN_ACCOUNT);a=p.parse_args()
+    if inside_source(a.output,ROOT): p.error('output must be outside original sources')
     request,inputs=prepare(a.directory,a.cue,number_delivery=a.number_delivery);a.output.mkdir(parents=True,exist_ok=False)
     safe={'model':request['model'],'prompt':request['input'][0]['text'],'inputs':inputs,
           'method':('Blind spoken-number classification' if a.number_delivery else 'Automated transcription')+', cue identities and expected words withheld from model'}
@@ -136,7 +139,10 @@ def main():
         headers={'Content-Type':'application/json','x-goog-api-key':secret})
     try:
         with urllib.request.urlopen(req,timeout=180) as response:data=json.load(response)
-    except urllib.error.HTTPError as error:raise RuntimeError(f'Gemini QA returned HTTP {error.code}; no automatic retry') from None
+    except urllib.error.HTTPError as error:
+        failure=http_error('Gemini QA returned',error)
+        (a.output/'error.json').write_text(json.dumps({'error':str(failure)},indent=2)+'\n')  # keep the failed run's evidence
+        raise failure from error
     (a.output/'response.json').write_text(json.dumps(data,indent=2)+'\n')
     results=evaluate(data,inputs,number_delivery=a.number_delivery)
     result=results if a.number_delivery else {'method':safe['method'],'model':request['model'],'results':results}

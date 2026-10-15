@@ -6,20 +6,28 @@ must match the plate at the original coordinate, and the completed driver must
 produce that source colour before any host-only ownership bits are assigned.
 """
 from collections import Counter,deque
+import hashlib
 import struct
 try:
     from tools.pc_bitmaps import decode_bitmaps,read_ega_bitmap
     from tools.inspect_scenarios import decode_resource
+    from tools.pc_plate_trace import plate_indices
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from pc_bitmaps import decode_bitmaps,read_ega_bitmap
     from inspect_scenarios import decode_resource
+    from pc_plate_trace import plate_indices
+
+# Decoded STRUTS.BMP keyed by exact bytes, shared read-only across attachments.
+SOURCES={}
 
 
 class StrutDraws:
     def __init__(self,game,plates):
-        self.sources=decode_bitmaps(decode_resource((game/'STRUTS.BMP').read_bytes()))
-        self.plates={i+1:[c for byte in plates.resources[name][0] for c in (byte>>4,byte&15)]
+        raw=(game/'STRUTS.BMP').read_bytes();key=hashlib.sha256(raw).hexdigest()
+        if key not in SOURCES:SOURCES[key]=decode_bitmaps(decode_resource(raw))
+        self.sources=SOURCES[key]
+        self.plates={i+1:plate_indices(plates.resources[name])
                      for i,name in enumerate(('GPS.BIN','TC.BIN','AA.BIN','DRIVER.BIN'))}
         self.pending=None;self.counts=Counter();self.draws=deque(maxlen=64)
 

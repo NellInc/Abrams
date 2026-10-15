@@ -6,7 +6,7 @@ Modern is a Compatibility renderer presentation of a paired original draw pass. 
 
 The runtime uses the generated catalogue's bounded triangle geometry directly, rather than loading a separate scene graph per actor. The catalogue and its GLB previews share the same generated geometry. `docs/modern-asset-register.md` records source identities and unresolved families. Availability requires the pinned original SIM/shape resources, structurally valid geometry, and the pinned illustrated tree. An unsupported backend or missing resource leaves Modern unavailable. Unsupported source palettes use the original source palette and geometry for that frame.
 
-This is a conservative source-silhouette renderer. New rounded corners and tree alpha gaps can remove old filled pixels. New model geometry cannot extend beyond its original object's reconstructed visible silhouette. The original hidden actors stay hidden inside those gaps; sky and source terrain form the underpaint. Validated bitmap effects use the bounded authored-contour refinement described below, retaining all original hidden-actor coverage.
+This is a conservative source-silhouette renderer. New rounded corners and tree alpha gaps can remove old filled pixels. New model geometry cannot extend beyond its original object's reconstructed visible silhouette. The original hidden actors stay hidden inside those gaps; sky and source terrain form the underpaint. Validated bitmap effects own exactly the original opaque bitmap pixels, so their authored contours can trim but never extend the original coverage (see below).
 
 ## Scenery sampling
 
@@ -40,8 +40,9 @@ moving-gameplay FPS. Receipts: `artifacts/render-quality-20260930/`.
 * `modern_polygon_count`, `modern_triangle_count`, `modern_tree_count`, `modern_fallback_polygon_count`, `modern_running_gear_triangles`, `source_round_count`: emitted detail and explicit fallback coverage.
 * `modern_assets.disk_io_count`: cumulative logical file probes, reads, hashes, and image loads. Frame mapping and mode switching do not call those operations.
 * `modern_assets.max_anchor_error`: maximum accepted projected source-anchor error in the applied pass.
+* `modern_assets.position_cache_hits`, `modern_assets.position_cache_misses`: cumulative transformed-position cache lookups since the last `configure`.
 
-An empty or unavailable pass clears meshes, ownership, counters, and frame status immediately. Only immutable geometry, palette, and image resources persist. There is no actor-slot cache, retained transform, motion history, effect simulation, or sequence-dependent object identifier to survive a restore incorrectly.
+An empty or unavailable pass clears meshes, ownership, counters, and frame status immediately. Geometry, palette, and image resources persist and stay immutable between catalogue loads. The one retained transform is a bounded cache of transformed face positions and their anchor error, held on the `ModernAssets` instance rather than in the shared face catalogue. Its key is the exact serialized shape, primitive, original camera vertices and the three frame scalars `anchor_frame` reads (projection centre, focal length, near plane); a hit therefore requires byte-identical fit inputs, which makes it restore-safe. Same-shape instances in one pass keep separate entries. The cache holds two generations of at most `POSITION_CACHE_LIMIT` (8,192) entries each and is cleared by `configure` and `load_assets`. It stores no clipping, UVs, motion, palette acceptance or ownership. There is no actor-slot cache, motion history, effect simulation, or sequence-dependent object identifier to survive a restore incorrectly. One `ModernAssets` instance belongs to one draw view; it is not shared between threads.
 
 ## Per-frame algorithm
 
@@ -70,13 +71,13 @@ The illustrated tree uses source shape 103's existing crossed planes. Its crown 
 
 Polygon ownership reuses the existing reconstructed camera-space source fills and line strips at the presentation resolution. It is a geometric, original-painter ownership proof. It is **not byte-exact reproduction of the original VGA scanline edge-inclusion and rounding rules**. The 0.25-pixel anchor tolerance is a transform criterion, not an exact native raster claim.
 
-Original bitmap opaque runs and newly observed round-command spans do carry original pixel coverage directly. Unsupported opaque source commands remain the responsibility of the upstream original-frame fallback. They are not silently replaced by an invented shape.
+Original bitmap opaque runs and newly observed round-command spans do carry original pixel coverage directly. A solid span arrives as `{y, left, right, color}`. A dithered span arrives once as `{y, left, right, colors: [even x, odd x]}`, and `pc_modern_source_commands.round_runs()` expands it per pixel by absolute screen-x parity after clipping. A colour outside 0..15 yields no run. Any pass whose `draw_pass.unsupported` list is non-empty (unattributed bitmap, polygon, opaque or round command, bitmap plane mask, incomplete sprite or round form), or whose Godot replay reports a render warning (dropped material, vertical horizon, missing background observation), is not composited: `pc_tandem_frame.gd` shows the exact original framebuffer for that frame. Unsupported commands are never silently replaced by an invented shape. Working if: `test_pc_tandem_frame` replays every recorded SIM pass of `pc-live-type-cockpit-02` with no warning and composited, and a null-background pass falls back.
 
 New cutouts can reveal source terrain where the old opaque silhouette existed. They never reveal an originally concealed actor. This preserves source tactical ownership conservatively, but does not establish identical human spotting, range judgment, or target recognition. In-game visual acceptance remains necessary. Source fallback is counted and does not complete an unresolved asset family.
 
 ## Resource and shader warmup
 
-The loader pins `SIM.EXE`, `SHAPE.GI`, and `SHAPE.TBL`. Scenario provenance hashes are recorded in the asset catalogue but are not treated as immutable runtime dependencies, since campaign data may legitimately change. Tree image hash, dimensions, metadata identity, and alpha cutoff are checked. A failed reload clears resources rather than retaining an earlier successful catalogue.
+The loader pins `SIM.EXE`, `SHAPE.GI`, and `SHAPE.TBL`. It joins `catalog.json` to the player-derived `source-shapes.json` only under the SHA-256 the catalogue pins, so a missing or foreign registry leaves Modern unavailable (`docs/modern-asset-register.md`). Scenario provenance hashes are recorded in the asset catalogue but are not treated as immutable runtime dependencies, since campaign data may legitimately change. Tree image hash, dimensions, metadata identity, and alpha cutoff are checked. A failed reload clears resources rather than retaining an earlier successful catalogue.
 
 The loader creates palette textures and tree mipmaps once. It then draws the actual Modern and ownership shader programs into an isolated 4 by 4 RenderingServer viewport, forces GPU completion, and checks the readback dimensions. The temporary viewport, scenario, camera, and instance use server RIDs directly: production calls the loader synchronously in `SceneTree._initialize`, before its new nodes enter the tree. Warmup therefore must not depend on `Node.is_inside_tree`. All temporary RIDs are released after the GPU readback. This does not modify the active source mesh or advance a guest frame. Headless runs explicitly skip GPU warmup; they test loader and geometry logic only.
 
@@ -113,6 +114,10 @@ The Compatibility gate does not constitute a Forward+ comparison. There are no n
 
 The final bounded Compatibility renderer run passed **142,033 native checks**. The corresponding headless suite passed **91 checks**. Existing legacy color verification passed **1,280 exact RGB checks with zero failures**; existing sprite verification passed **seven native pixel checks**. Headless source-surface and sprite suites also passed. `git diff --check` reported no whitespace errors on the integrated tree at handover.
 
+Native counts such as these come from the opt-in `VALIDATE_NATIVE=1 ./tools/validate.sh` tier. The default headless gate prints `native Modern ownership checks NOT run`, so a green headless gate is not native coverage.
+
+Shader coverage in the native tier: the 14 `pc_tactical_<contract>_gpu` checks (finishgrain, diffusion, groundlight, optics, radiance, sheen, bevel, aerial, microfinish, arbor, grounding, horizon, lighting, naturalism) each run `test_pc_modern_environment_polish.gd` with that contract's `--<contract>-gpu` flag. The runtime-patched spatial `_groundlight_shader` (`pc_draw_pass._groundlight_source()`, the only program that includes `pc_tactical_polish.gdshaderinc`; `pc_surface.gdshader` and `pc_tactical_effects.gdshader` also include `pc_tactical_effect_finish.gdshaderinc`) is compiled by `pc_modern_startup_native` through the Modern prewarm (receipt `prewarmed=true`) and by `pc_environment_polish_native`. The gate's `SHADER ERROR:` grep turns a compile failure in either into a failing check. Working if: `VALIDATE_NATIVE=1 ./tools/validate.sh` passes all 14 contracts plus both of those checks with no `SHADER ERROR:` line.
+
 These results cover the renderer implementation and the source-derived ellipse fixture, with the scope limits above. They do not substitute for root-owned production, performance, packaging, long-session, or human acceptance evidence.
 
 The synchronous-startup regression is additionally covered by `test_pc_modern_startup.gd`, which passed natively with `entered_before_load=false` and `prewarmed=true`. After that correction, the real production ScenarioFrames command with `--boot --play --trace --capture --no-audio --graphics modern` passed **195 checks across all 32 station/scenario views with zero errors**. Its report and native captures are in `artifacts/modern-pass-20260928/startup-repair-scenario-frames/`.
@@ -121,7 +126,7 @@ Modern source fallback and terrain faces resolve original 2x2 material dither to
 
 ## Exact-packet mesh reuse
 
-`pc_draw_pass` retains a single deep-copied paired packet and the current mesh, including the ownership mesh. A hit requires full recursive packet-content equality, matching presentation mode/palette, asset loader revision and texture/configuration references, Compatibility method, and viewport dimensions. It never uses sequence, pointer, or page identity alone. Mode changes and asset loads invalidate immediately. Empty or unavailable passes clear the slot; unsupported Modern palettes are not cached. A different restored packet rebuilds deterministically. Loaded model geometry is immutable between `load_assets`, `configure`, or `load_tree` revision changes.
+`pc_draw_pass` retains a single deep-copied paired packet and the current mesh, including the ownership mesh. A hit requires full recursive packet-content equality, matching presentation mode/palette, asset loader revision and texture/configuration references, Compatibility method, and viewport dimensions. It never uses sequence, pointer, or page identity alone. Mode changes and asset loads invalidate immediately. Empty or unavailable passes clear the slot; unsupported Modern palettes are not cached. A different restored packet rebuilds deterministically. Loaded model geometry is immutable between `load_assets`, `configure`, or `load_tree` revision changes; only the exact-keyed position cache described above changes between them.
 
 Cumulative `mesh_build_count` and `mesh_reuse_count` expose the optimization. A hit retains all matching frame counters and source geometry; it does not skip guest frames or original UI work. The later one-shot ownership optimization retains the identical completed mask on a hit. Tests cover independent equal packets, same-identity and in-place mutations, restore, palette/mode/viewport/resource changes, and empty/unavailable data. Performance benefit requires a fresh production profile and is not inferred from the unit hit count.
 
@@ -131,7 +136,7 @@ After the quiet-ground and exact-packet reuse changes, the bounded native render
 
 Set `draw_view.profile_builds=true` to receive `last_apply_timings_usec` after each solid `apply_pass`. Fields are `total`, `cache_check`, `ownership`, `mapping`, `upload`, and boolean `reused`. Ownership includes source-mask geometry construction and resource submission; mapping includes model/tree mapping; upload covers main mesh/material construction and submission. Remaining total includes palette work, source fallback construction, sorting, append operations, and snapshot copying. These are CPU durations, not GPU completion timings. Disabled instrumentation avoids clock reads.
 
-Affine source-face scalar invariants are computed once per fit, preserving the prior per-vertex arithmetic order and piecewise fallback. Facet color lookup is performed once per facet. Sorting and source visibility are unchanged. An exact-result test compares the optimized transform against the prior expression. Ownership uses `UPDATE_ONCE` on every prepared packet, including viewport resize. Reused packets retain the completed full-resolution mask without redrawing it. The native retained-mask test requires identical scene and mask bytes across three cache hits, hides the ownership geometry without requesting an update to prove no redraw occurs, and verifies changed/restored packet updates.
+Affine source-face scalar invariants are computed once per fit, preserving the prior per-vertex arithmetic order and piecewise fallback. Facet color lookup is performed once per facet. Static per-corner surface coordinates are computed once at catalogue load; only wheel and track marks are evaluated per pass. `mapping` keeps the shipped per-face far-to-near order by default: it sorts a triangle index permutation with the same comparator over the same sequence, so the order, ties included, is identical to the earlier sort of triangle records. The draw pass's object-level `sort_custom` is unstable and resolves equal depths by input order, so removing that pre-sort could change native pixels. `mapping(..., depth_presort=false)` skips the per-face sort and returns catalogue triangle order. The draw pass may pass it only together with an explicit object-level tie-break (source face order, then triangle order) and re-baselined native image hashes; until then it uses the default. Source visibility is unchanged. An exact-result test compares the optimized transform against the prior expression. Ownership uses `UPDATE_ONCE` on every prepared packet, including viewport resize. Reused packets retain the completed full-resolution mask without redrawing it. The native retained-mask test requires identical scene and mask bytes across three cache hits, hides the ownership geometry without requesting an update to prove no redraw occurs, and verifies changed/restored packet updates.
 
 
 The affine/facet CPU changes and one-shot ownership gate passed **142,090 native checks**, **133 headless checks**, source-surface checks, and whitespace validation. All **22 retained native PNGs were byte-identical** to their pre-optimization captures (`artifacts/pc-modern-renderer/pre-cpu-opt-image-hashes.json`). The retained-mask test proves no redraw with a deliberately hidden ownership mesh across three cache hits, then verifies changed-packet and restored-packet images. An initial test incorrectly expected the node's update-mode getter to reflect rendering-server consumption; the [engine getter](https://raw.githubusercontent.com/godotengine/godot/master/scene/main/viewport.cpp) returns the configured property, so rendered sentinel evidence replaced that assertion. Production timing still requires the root's focused profile.
@@ -191,25 +196,34 @@ contours, live cells and non-Modern frames; driver paint follows both signed
 turret offsets; terrain geometry and actor colours remain identical. Evidence:
 `artifacts/modern-palette-balance-20260929/`.
 
-### High-resolution effect contour repair
+### Effect ownership boundary
 
-The 20 existing authored effect donors were already high resolution. Modern's
-original per-pixel ownership mask was cutting their contours back into coarse
-source-pixel steps. For an exactly validated effect binding, ownership now
-combines the original opaque pixels with the authored alpha cutout inside the
-original bitmap bounds and clip, at the same painter position. Later original
-objects still cover the effect. Retaining the original mask prevents a hole in
-the redraw from revealing an actor that the original effect hid.
+The 20 existing authored effect donors are high resolution. An earlier
+refinement let a validated effect binding own the union of the original opaque
+pixels and the donor's alpha cutout across the bitmap bounds. That union
+claimed pixels where the original sprite was transparent, so an earlier actor
+visible through a sparse smoke or explosion bitmap in EGA and Upscaled could
+be hidden in Modern. That is a visibility departure without Nell's agreement,
+so it was removed on 2026-10-15.
 
-This deliberate, bounded silhouette refinement applies to all 64 effect bitmap
-bindings. It changes neither source phase/LOD selection nor event duration.
-Unknown bindings and palettes keep the original sprite. No new donor was
-necessary. The shared path covers projectile effects without guessing which
-source bitmap corresponds to a particular weapon from its appearance.
+Effect ownership is now exactly the original opaque runs at the same painter
+position, the same as every other bitmap. The authored donor still draws
+inside that coverage. Where its alpha is transparent within an original opaque
+pixel, terrain underpaint shows and the actor the original hid stays hidden.
+Where its alpha extends beyond the original opaque pixels, the ownership gate
+discards it, so outer contours keep the original source-pixel steps. Later
+original objects still cover the effect. Source phase/LOD selection, event
+duration and the 64 effect bindings are unchanged. Unknown bindings and
+palettes keep the original sprite.
 
 Working if: native sky/water/tree tests preserve geometry and source packets;
 legacy pixels match the preceding shaders; all 64 effect bindings render their
-authored contours with later-occluder and original-coverage protection; cache
-reuse remains active; restored frames are byte-identical; all four stations
-across all eight captured scenarios render without warnings. Local evidence:
-`artifacts/modern-environment-polish-20260929/`.
+authored art with zero Modern pixels changed outside the original opaque
+pixels (`./tools/godot.sh --audio-driver Dummy --disable-render-loop --script
+res://tests/test_pc_effect_art.gd -- --native --native-scale 5 --modern
+--output <dir>`, reporting `modern_contour_pixels` 0); the headless
+`effect_ownership_contract` in `test_pc_modern.gd` finds only original-run
+ownership triangles; cache reuse remains active; restored frames are
+byte-identical. The pre-change evidence in
+`artifacts/modern-environment-polish-20260929/` shows the removed union and
+must be re-captured.

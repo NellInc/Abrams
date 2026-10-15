@@ -29,6 +29,7 @@ try:
     from tools.pc_live_state import SIM_SHA256
     from tools.pc_message_events import visible_messages
     from tools.pc_plate_trace import PlateLoads, PLATE_IDS
+    from tools.pc_trace_windows import WINDOW_EVENTS, event_ram, receipt_window_bundles
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from pc_vehicle_math import compose, object_matrix, orientation_mode, primitive_camera_vertices
@@ -46,6 +47,7 @@ except ModuleNotFoundError as error:
     from pc_live_state import SIM_SHA256
     from pc_message_events import visible_messages
     from pc_plate_trace import PlateLoads, PLATE_IDS
+    from pc_trace_windows import WINDOW_EVENTS, event_ram, receipt_window_bundles
 
 ROOT = Path(__file__).resolve().parents[1]
 CALLBACK = C.CFUNCTYPE(None, C.c_uint32, C.POINTER(C.c_uint16), C.c_void_p, C.c_uint32, C.c_uint32)
@@ -53,15 +55,55 @@ FULL_UI_BYTES = bytes(255) + b'\xff'
 EMPTY_DRIVER_MASK = bytes(320 * 200 * 3)
 INVALID_DRIVER_HIGH = bytes(int(i > 127) for i in range(256))
 INVALID_PLATE = bytes(int(i > len(PLATE_IDS)) for i in range(256))
+# Decoded original resources, keyed by their exact bytes. They are immutable
+# and shared read-only; every attachment still starts with empty run state.
+SOURCE_CACHE = {}
+
+
+def cached_source(path, decode):
+    raw = path.read_bytes()
+    key = (decode.__name__, hashlib.sha256(raw).hexdigest())
+    if key not in SOURCE_CACHE: SOURCE_CACHE[key] = decode(raw)
+    return SOURCE_CACHE[key]
+
+
+def effect_table(raw):
+    return decode_bitmaps(decode_resource(raw))
+
+
+def shape_table(raw):
+    """Source shapes plus first-match offset lookups for primitives and commands."""
+    shapes = inspect_shapes(decode_resource(raw))['shapes']
+    primitives, commands = [], []
+    for shape in shapes:
+        primitives.append({}); commands.append({})
+        for p in shape['primitives']: primitives[-1].setdefault(p['offset'], p)
+        for c in shape['opaque_commands']: commands[-1].setdefault(c['offset'], c)
+    return shapes, primitives, commands
+
+
+def prewarm():
+    """Decode every pinned SIM source into the shared caches before the first
+    SIM attach, so entering a mission never pays the cold decode inside a
+    bridge step. Hosts call this once at startup; nothing observes the guest.
+    Each later attach still reads and hash-checks the exact source bytes."""
+    cached_source(ROOT / 'GAME/EFFECTS.BMP', effect_table)
+    cached_source(ROOT / 'GAME/SHAPE.TBL', shape_table)
+    StrutDraws(ROOT / 'GAME', PlateLoads(ROOT / 'GAME'))
 
 
 class Collector:
-    def __init__(self, reader, output=None, *, history_limit=3000, loop_diagnostics=False):
+    def __init__(self, reader, output=None, *, history_limit=3000, loop_diagnostics=False,
+                 window_bundles=False):
         self.reader, self.output = reader, output
+        # Packet format of SIM events 26/28/29, as the trace core's receipt
+        # declares it (pc_trace_windows). attach() reads it from the core.
+        self.window_bundles = window_bundles
         self.loop_diagnostics = loop_diagnostics
         self.loop_diagnostic = None
         self.loop_sequence = 0
         self.active = None
+        self.indexed_pass, self.active_objects, self.active_dynamic = None, {}, set()
         self.passes = deque(maxlen=history_limit)
         self.completed_count = 0
         self.pages = {}
@@ -92,9 +134,9 @@ class Collector:
         self.claim_strut = None
         self.claim_motor_pool = None
         self.vertices_checked = 0
-        self.effects = decode_bitmaps(decode_resource((ROOT / 'GAME/EFFECTS.BMP').read_bytes()))
+        self.effects = cached_source(ROOT / 'GAME/EFFECTS.BMP', effect_table)
         self.effect_pixels_checked = 0
-        self.shapes = inspect_shapes(decode_resource((ROOT / 'GAME/SHAPE.TBL').read_bytes()))['shapes']
+        self.shapes, self.shape_primitives, self.shape_commands = cached_source(ROOT / 'GAME/SHAPE.TBL', shape_table)
         self.callback = CALLBACK(self.observe)
 
     def observe(self, event, registers, data, offset, length):
@@ -139,6 +181,10 @@ class Collector:
                 self.observe_video(event, offset, raw, registers)
                 return
             regs = dict(zip(('ax','bx','cx','dx','si','di','bp','sp','cs','ds','es','ss'), registers[:12]))
+            # The one decode point for native and Web SIM window bundles. Readers
+            # keep their exact 640 KiB gates; unsent bytes read as zero. The
+            # declared format is enforced both ways (fail closed).
+            if event in WINDOW_EVENTS: raw = event_ram(raw, self.window_bundles)
             if event in (43,44,45):
                 if event==43: self.dynamic_map.begin(raw)
                 elif event==44: self.dynamic_map.line(raw)
@@ -189,9 +235,15 @@ class Collector:
                 self.plates.observe(event, raw, regs['ax'])
                 return
             if event == 23: raise ValueError(f'unsupported native plate observation: {offset}')
-            def word(at): return struct.unpack_from('<H', raw, at - offset)[0]
-            def words(at, n): return list(struct.unpack_from('<' + 'h' * n, raw, at - offset))
-            def byte(at): return raw[at - offset]
+            def window(at, size):
+                # Python would silently wrap a negative index to the buffer tail.
+                index = at - offset
+                if index < 0 or index + size > len(raw):
+                    raise ValueError(f'event {event} read {at:#x}+{size} outside native window {offset:#x}+{len(raw):#x}')
+                return index
+            def word(at): return struct.unpack_from('<H', raw, window(at, 2))[0]
+            def words(at, n): return list(struct.unpack_from('<' + 'h' * n, raw, window(at, 2 * n)))
+            def byte(at): return raw[window(at, 1)]
             if event == 14:
                 if len(raw) != 64: raise ValueError('unsupported palette snapshot')
                 self.palette_rgb = [list(raw[i:i + 3]) for i in range(0, 64, 4)]
@@ -205,6 +257,14 @@ class Collector:
                 if self.scanout and self.scanout['page_offset'] == page:
                     self.scanout['draw_pass'] = None
                     self.scanout['reason'] = 'displayed page redrawn during scanout'
+                return
+            if event == 57:
+                # The native hook saw 340b called by a non-world caller, such as
+                # the destroyed-GPS black panel after the world pass. Its pixels
+                # are UI-owned; completed passes and backgrounds stay unchanged.
+                self.background_page = None
+                return
+            if event in (15, 16) and self.background_page is None:
                 return
             if event == 15:
                 upper, lower = struct.unpack('<HH', raw)
@@ -247,12 +307,11 @@ class Collector:
                 self.current = None
                 self.composition_cx = None
                 if raw[0] & 128:
-                    obj = next((o for name in ('static', 'dynamic') for o in self.active['world'][name]
-                               if o['pointer'] == regs['bx']), None)
+                    obj, dynamic = self.world_object(regs['bx'])
                     if obj is None: raise ValueError(f"unknown sprite root object {regs['bx']:#x}")
                     self.current = {'kind': 'sprite', 'pointer': regs['bx'], 'root': regs['di'],
                         'shape_index': obj['shape_index'], 'bitmap_index': raw[1], 'sprite_status': 'pending',
-                        'dynamic_instance': any(o['pointer'] == regs['bx'] for o in self.active['world']['dynamic']),
+                        'dynamic_instance': dynamic,
                         'polygons': []}
                     self.active['objects'].append(self.current)
             elif event == 17:
@@ -287,11 +346,11 @@ class Collector:
                 self.composition_cx = regs['cx']
             elif event == 2:
                 pointer = word(0x12CC)
-                obj = next((o for name in ('static','dynamic') for o in self.active['world'][name] if o['pointer'] == pointer), None)
+                obj, dynamic = self.world_object(pointer)
                 if obj is None: raise ValueError(f'unknown draw object {pointer:#x}')
                 matrix = words(word(0x1CDA), 9)
                 self.current = {'pointer': pointer, 'shape_index': obj['shape_index'], 'root': regs['di'],
-                    'dynamic_instance': any(o['pointer'] == pointer for o in self.active['world']['dynamic']),
+                    'dynamic_instance': dynamic,
                     'static_path': byte(0x1CDF), 'matrix_mode': byte(0x1CDE), 'matrix': matrix,
                     'view_origin': words(0x1426, 3), 'world_delta': words(0x142C, 3),
                     'packed_shift': byte(0x1425), 'composition_cx': self.composition_cx,
@@ -311,7 +370,7 @@ class Collector:
                 if not 0 <= count <= 16: raise ValueError('unsupported polygon buffer length')
                 shape = self.shapes[self.current['shape_index']]
                 primitive_id = self.current['primitive_ids'][-1] if self.current['primitive_ids'] else None
-                primitive = next((p for p in shape['primitives'] if p['offset'] == primitive_id), None)
+                primitive = self.shape_primitives[self.current['shape_index']].get(primitive_id)
                 if primitive is None: raise ValueError(f"primitive {primitive_id!r} not in source shape {shape['index']}")
                 vertices = primitive_camera_vertices(shape, primitive, self.current)
                 for encoded, expected in zip(primitive['encoded_indices'], vertices):
@@ -345,6 +404,21 @@ class Collector:
             self.current = None
 
 
+    def world_object(self, pointer):
+        """Pointer lookup for events 2/7, indexed once per active pass.
+
+        The first static entry wins, as the former linear scan did; dynamic
+        membership is a separate test, so a pointer in both pools keeps both.
+        """
+        if self.indexed_pass is not self.active:
+            world = self.active['world']
+            self.active_objects = {}
+            for name in ('dynamic', 'static'):
+                for o in reversed(world[name]): self.active_objects[o['pointer']] = o
+            self.active_dynamic = {o['pointer'] for o in world['dynamic']}
+            self.indexed_pass = self.active
+        return self.active_objects.get(pointer), pointer in self.active_dynamic
+
     def observe_round_form(self, event, regs, raw, offset):
         """Consume only observed original round-form calls, never rebuild poses."""
         obj = self.current
@@ -359,7 +433,7 @@ class Collector:
         if event == 8:
             if len(raw) != 4: raise ValueError('invalid round-form command length')
             shape = self.shapes[obj['shape_index']]
-            command = next((c for c in shape['opaque_commands'] if c['offset']==regs['di']), None)
+            command = self.shape_commands[obj['shape_index']].get(regs['di'])
             if command is None or bytes.fromhex(command['hex']) != raw:
                 raise ValueError('round-form command differs from source')
             if forms and forms[-1]['status'] in ('pending','observing'):
@@ -391,7 +465,8 @@ class Collector:
             radius=min(max(0,signed(values[3])),102)
             form.update({'status':'observing','center':list(map(signed,values[4:6])),
                          'radius_raw':values[3],'radius':radius,'horizontal_radius':radius+radius//4,
-                         'colors':[values[11]&255,values[11]>>8],'fill_mode':values[12]>>8,
+                         # Same order as polygon colors: [DS:359E, DS:359D].
+                         'colors':[values[11]>>8,values[11]&255],'fill_mode':values[12]>>8,
                          'clip':clip,'page_offset':values[10]})
             obj.setdefault('draw_order',[]).append({'kind':'round_form','index':len(forms)-1})
         else:
@@ -403,14 +478,17 @@ class Collector:
             if clip[1]<=y<=clip[3] and left<right:
                 if len(form['spans'])>=64000:raise ValueError('too many round-form spans')
                 # The original span receives AX/DX pattern words. Convert to
-                # exact palette-index runs so a renderer need not infer dither.
-                words=values[7:9];start=left;color=material_pixel(words,left,y)
-                for x in range(left+1,right+1):
-                    following=material_pixel(words,x,y) if x<right else -1
-                    if following!=color:
-                        form['spans'].append({'y':y,'left':start,'right':x,'color':color})
-                        start=x;color=following
-                if len(form['spans'])>64000:raise ValueError('too many round-form color runs')
+                # exact palette indices so a renderer need not decode words.
+                # For one row the colour depends only on x parity: a solid or
+                # equal-nibble span is one {'color'} run; a real dither is one
+                # record whose 'colors' are [even x, odd x] by absolute screen
+                # x, so clipping cannot shift the phase. Expanded per pixel by
+                # pc_modern_source_commands.gd round_runs().
+                words=values[7:9];even,odd=material_pixel(words,0,y),material_pixel(words,1,y)
+                if even==odd or right-left==1:
+                    form['spans'].append({'y':y,'left':left,'right':right,'color':odd if left&1 else even})
+                else:
+                    form['spans'].append({'y':y,'left':left,'right':right,'colors':[even,odd]})
 
     @staticmethod
     def binary_mask(raw):
@@ -443,7 +521,7 @@ class Collector:
         if previous is not None and previous[0] == raw:
             return previous[1]
         png = io.BytesIO()
-        Image.frombytes(mode, (320,200), raw).save(png, format='PNG')
+        Image.frombytes(mode, (320,200), raw).save(png, format='PNG', compress_level=1)
         encoded = base64.b64encode(png.getvalue()).decode('ascii')
         self.mask_png_cache[event] = (raw, encoded)
         return encoded
@@ -556,6 +634,7 @@ class Collector:
 
     def attach(self, core, load_segment):
         core.pause_at_frame_end()
+        self.window_bundles = receipt_window_bundles(getattr(core, 'core_sha256', None), ROOT / '.runtime/pc-core')
         self.claim_strut = core.core.abrams_trace_claim_strut
         self.claim_strut.argtypes = [C.c_uint,C.c_uint,C.POINTER(C.c_uint8),C.c_uint]
         self.claim_strut.restype = C.c_bool

@@ -1,5 +1,6 @@
 extends SceneTree
 const Frontend = preload("res://scripts/pc_frontend_art.gd")
+const MipReference = preload("res://tests/pc_mip_reference.gd")
 var checks := 0
 var errors: Array[String] = []
 var art: TextureRect
@@ -29,11 +30,13 @@ func check(ok: bool, reason: String) -> void:
 
 func _initialize() -> void: run.call_deferred()
 
-func bilinear(image: Image, point: Vector2) -> Color:
-	var at := Vector2i(floori(point.x),floori(point.y))
-	var f := point-Vector2(at)
-	var limit := image.get_size()-Vector2i.ONE
-	return image.get_pixelv(at.clamp(Vector2i.ZERO,limit)).lerp(image.get_pixelv((at+Vector2i.RIGHT).clamp(Vector2i.ZERO,limit)),f.x).lerp(image.get_pixelv((at+Vector2i.DOWN).clamp(Vector2i.ZERO,limit)).lerp(image.get_pixelv((at+Vector2i.ONE).clamp(Vector2i.ZERO,limit)),f.x),f.y)
+# Donors are mipmapped and linearly filtered. A probe at donor texel point
+# (centre convention) drawn from crop into target output pixels (1280x800,
+# four per source pixel) must lie between its adjacent mip-level samples.
+func mip_probe(actual: Color, donor: Image, point: Vector2, crop: Vector2, target: Vector2, levels: Dictionary) -> bool:
+	var minified:=maxf(crop.x/(target.x*4.0),crop.y/(target.y*4.0))
+	var candidates:=MipReference.samples(donor,(point+Vector2(0.5,0.5))/Vector2(donor.get_size()),minified,levels)
+	return MipReference.inside(actual,candidates,3.0/255)
 
 func render(source: Image, label: String) -> void:
 	backdrop.texture=ImageTexture.create_from_image(source)
@@ -72,22 +75,20 @@ func render(source: Image, label: String) -> void:
 		if height>donor.get_height():
 			var width := donor.get_height()*target.size.x/target.size.y
 			crop=Rect2((donor.get_width()-width)/2,0,width,donor.get_height())
+		var levels := {}
 		for fraction in [Vector2(0.23,0.27),Vector2(0.51,0.53),Vector2(0.81,0.71)]:
 			var pixel := Vector2i((target.position+target.size*fraction)*4)
 			var uv := ((Vector2(pixel)+Vector2(0.5,0.5))/4-target.position)/target.size
-			var expected := bilinear(donor,crop.position+crop.size*uv-Vector2(0.5,0.5))
-			var actual := image.get_pixelv(pixel)
-			check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"independent Genesis donor probe: "+label)
+			check(mip_probe(image.get_pixelv(pixel),donor,crop.position+crop.size*uv-Vector2(0.5,0.5),crop.size,target.size,levels),"independent Genesis donor probe: "+label)
 		for layer in item.get("layers",[]):
 			if not layer.name.ends_with("-topdown"): continue
 			var overhead: Image=art.information_art.textures[layer.name].get_image()
 			var box:=Rect2(layer.rect[0],layer.rect[1],layer.rect[2],layer.rect[3])
+			var overhead_levels:={}
 			for fraction in [Vector2(0.22,0.24),Vector2(0.34,0.43),Vector2(0.53,0.12),Vector2(0.53,0.87),Vector2(0.76,0.51)]:
 				var pixel:=Vector2i((box.position+box.size*fraction)*4)
 				var uv:=((Vector2(pixel)+Vector2(0.5,0.5))/4-box.position)/box.size
-				var expected:=bilinear(overhead,uv*Vector2(overhead.get_size())-Vector2(0.5,0.5))
-				var actual:=image.get_pixelv(pixel)
-				check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"independent overhead donor and selection probe: "+label)
+				check(mip_probe(image.get_pixelv(pixel),overhead,uv*Vector2(overhead.get_size())-Vector2(0.5,0.5),Vector2(overhead.get_size()),box.size,overhead_levels),"independent overhead donor and selection probe: "+label)
 	for caption in item.get("captions",[]):
 		if not caption.has("clear_rect"): continue
 		var r: Array=caption.clear_rect
@@ -113,12 +114,15 @@ func verify_crew(source: Image, image: Image) -> void:
 	var layers: Array=art.information_art.active.layers
 	check(layers.map(func(l):return l.name)==["crew-diagram","crew-gunner","crew-driver","crew-loader","crew-commander"],"original crew-role placement/order")
 	var images := {}
-	for layer in layers: images[layer.name]=art.information_art.textures[layer.name].get_image()
+	var levels := {}
+	for layer in layers:
+		images[layer.name]=art.information_art.textures[layer.name].get_image()
+		levels[layer.name]={}
 	for y in 800:
 		for x in 1280:
 			var p:=Vector2i(x/4,y/4)
 			var centre:=(Vector2(x,y)+Vector2(0.5,0.5))/4
-			var expected:=Color.BLACK
+			var candidates: Array[Color]=[Color.BLACK]
 			for layer in layers:
 				var r: Array=layer.rect
 				var box:=Rect2(r[0],r[1],r[2],r[3])
@@ -126,21 +130,22 @@ func verify_crew(source: Image, image: Image) -> void:
 				var donor: Image=images[layer.name]
 				var area:=Rect2(Vector2.ZERO,Vector2(donor.get_size()))
 				if layer.name=="crew-diagram": area=Rect2(33,62,2106,560)
-				expected=bilinear(donor,area.position+(centre-box.position)/box.size*area.size-Vector2(0.5,0.5))
+				var minified:=maxf(area.size.x/(box.size.x*4.0),area.size.y/(box.size.y*4.0))
+				candidates=MipReference.samples(donor,(area.position+(centre-box.position)/box.size*area.size)/Vector2(donor.get_size()),minified,levels[layer.name])
 			if not portrait_boxes.any(func(box):return box.has_point(p)):
 				var rgb:=source.get_pixelv(p).to_rgba32()
-				if Rect2i(16,10,288,8).has_point(p) and rgb==0x00aa00ff: expected=Color8(238,238,238)
+				if Rect2i(16,10,288,8).has_point(p) and rgb==0x00aa00ff: candidates=[Color8(238,238,238)]
 				elif Rect2i(68,62,61,21).has_point(p) and rgb in [0xffffffff,0x555555ff]:
-					expected=Color8(172,170,172) if rgb==0xffffffff else Color8(65,68,65)
+					candidates=[Color8(172,170,172) if rgb==0xffffffff else Color8(65,68,65)]
 				elif Rect2i(8,20,304,150).has_point(p):
-					if rgb==0xffff55ff: expected=Color8(238,238,65)
-					elif rgb==0x55ffffff: expected=Color8(65,238,238)
-					elif rgb==0xff5555ff: expected=Color8(238,0,0)
+					if rgb==0xffff55ff: candidates=[Color8(238,238,65)]
+					elif rgb==0x55ffffff: candidates=[Color8(65,238,238)]
+					elif rgb==0xff5555ff: candidates=[Color8(238,0,0)]
 					elif rgb==0xaa5500ff:
-						expected=Color8(98,32,0) if Rect2i(59,60,202,61).has_point(p) else Color8(205,101,32)
+						candidates=[Color8(98,32,0) if Rect2i(59,60,202,61).has_point(p) else Color8(205,101,32)]
 			var actual:=image.get_pixel(x,y)
 			var run:=text_run_at(centre)
-			if run.is_empty(): check(absf(actual.r-expected.r)<=3.0/255 and absf(actual.g-expected.g)<=3.0/255 and absf(actual.b-expected.b)<=3.0/255,"complete crew donor/label/callout composition")
+			if run.is_empty(): check(MipReference.inside(actual,candidates,3.0/255),"complete crew donor/label/callout composition")
 			else: check(outlines.matches(actual,run,centre,Vector2(4,4)),"complete crew outline label")
 
 func apply_frame(source: Image, program: Dictionary, presentation: Dictionary={}) -> bool:
@@ -179,6 +184,8 @@ func run() -> void:
 	else:
 		art=Frontend.new(); art.size=viewport.size; viewport.add_child(art)
 	check(art.load_sources(root_path),"frontend source set loaded")
+	check(not art.information_art.textures.is_empty() and art.information_art.textures.values().all(func(t):return t.get_image().has_mipmaps()),"every minified illustration carries mipmaps")
+	check(art.information_art.texture_filter==CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS,"illustrations sample their mip chain")
 	check(not art.information_art.catalog.is_empty(),"pinned information catalog loaded")
 	check(FileAccess.file_exists(fixture),"fixture exists")
 	if not FileAccess.file_exists(fixture) or art.information_art.catalog.is_empty(): finish(); return

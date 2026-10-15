@@ -4,7 +4,7 @@ extends RefCounted
 ## occlusion belongs to original UI ownership, not an invented effect tint.
 const Colour = preload("res://scripts/pc_colour.gd")
 const PC_PALETTE = preload("res://scripts/pc_tandem_frame.gd").ART_PALETTE
-const SOURCE_HASH := "c23a534927e8b7e433f2e86b516dbcefdb6cd36680158b753f2ff24e4e2f929f"
+const SOURCE_HASH := "8d6483bdc0ad1df38338e24c2bd413ca497603d0aea819034b72a1862f19db41"
 const ASSETS := [
 	["effects-v1/impact-15-native-candidate.png", "b931d8f463483d3ff901203351cf553b4fdaa8d0df231f03ae28e9819b4fc7d4"],
 	["effects-v1/impact-16-native-candidate.png", "15e46c62fc8b894b483c46129b9182e8d965284772e18f5f1520571ee79c3a85"],

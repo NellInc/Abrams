@@ -4,20 +4,22 @@ import argparse,base64,difflib,hashlib,json,re,subprocess
 from pathlib import Path
 from captions_critic import clock,normalized,audio_hash
 from generate import request,budget,receipt
+from output_guard import guarded_output
 
 ROOT=Path(__file__).resolve().parents[2]
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def write(p,x):p.write_text(json.dumps(x,indent=2)+'\n')
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--asr-backend',choices=['local','openrouter'],default='local');a=p.parse_args();out=a.output.resolve();review=out/'final-review';review.mkdir(exist_ok=True)
+    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--asr-backend',choices=['local','openrouter'],default='local');p.add_argument('--model-cache',type=Path,default=ROOT/'.runtime/asr-models');a=p.parse_args();out=guarded_output(p,a.output);cache=guarded_output(p,a.model_cache);review=out/'final-review';review.mkdir(exist_ok=True)
     video=out/'abrams-promo-clean.mp4';brief=json.loads((out/'production-brief.json').read_text());script=brief['narration']
     first,middle=script.split('Underneath,',1);middle,last=('Underneath,'+middle).split('Save states',1);last='Save states'+last
     expected_chunks=iter([first,middle,last]);segments=json.loads((out/'speech-segments.json').read_text())
     model=None
     if a.asr_backend=='local':
         from faster_whisper import WhisperModel
-        cache=ROOT/'artifacts/promo-20260929/final-review/asr-models';model=WhisperModel('small.en',device='cpu',compute_type='int8',download_root=str(cache))
+        # Shared, gitignored model cache; never recreate a retired production folder.
+        model=WhisperModel('small.en',device='cpu',compute_type='int8',download_root=str(cache))
     video_sha=sha(video);all_raw=[];display=[];differences=[];receipts=[];corrections=[]
     pronunciation=json.loads((out/'pronunciation-final-mix-review-receipt.json').read_text())
     pronunciation_review=json.loads(pronunciation['review'])

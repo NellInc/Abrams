@@ -3,7 +3,7 @@
 const graphics = {
   ega: { name: "EGA", description: "The original PC artwork and palette, preserved for the familiar look you remember.", alt: "EGA graphics: the original pixel-art Colonel in his office and original briefing lettering." },
   genesis: { name: "Genesis", description: "Original-resolution Genesis artwork where available, while the PC version remains the gameplay source.", alt: "Genesis graphics: the donor Colonel portrait and office artwork, displaying the same original PC briefing." },
-  upscaled: { name: "Upscaled", description: "The remastered artwork in high resolution, with carefully rebuilt lettering. Upscaled is the game’s default graphics mode.", alt: "Upscaled graphics: the Colonel in his office, with restored portrait, desk and briefing lettering." }
+  upscaled: { name: "Genesis Upscaled", description: "The remastered artwork in high resolution, with carefully rebuilt lettering. Genesis Upscaled was called Upscaled in alpha\u00a04, where it is the default; the Web edition now opens in Tactical.", alt: "Genesis Upscaled graphics: the Colonel in his office, with restored portrait, desk and briefing lettering." }
 };
 
 const comparisonImage = document.querySelector("#comparison-image");
@@ -114,17 +114,11 @@ if (!saveData) {
 
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+// Each picker link carries its mission's slug and name, so map switching needs no
+// second copy of the scenario content and no network request beyond the map itself.
+const scenarioOf = link => ({ slug: link.dataset.scenario, name: link.textContent.trim() });
+
 async function enableMaps() {
-  let scenarios;
-  try {
-    const response = await fetch("scenarios.json");
-    if (!response.ok) throw new Error("Scenario content unavailable");
-    scenarios = await response.json();
-  } catch {
-    mapStatus.setAttribute("data-tone", "notice");
-    mapStatus.textContent = "Select a mission to open its full-size map.";
-    return;
-  }
   async function select(link, scenario, reveal) {
     const sequence = ++mapSequence;
     mapStatus.removeAttribute("data-tone");
@@ -158,19 +152,16 @@ async function enableMaps() {
   mapLinks.forEach(link => {
     link.addEventListener("click", async event => {
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-      const scenario = scenarios.find(item => item.slug === link.dataset.scenario);
-      if (!scenario) return;
       event.preventDefault();
-      await select(link, scenario, true);
+      await select(link, scenarioOf(link), true);
     });
   });
   // A shared #scenario-<slug> link opens that mission's map.
   const requested = typeof location !== "undefined" && location.hash.startsWith("#scenario-") ? location.hash.slice(10) : "";
-  const shared = scenarios.find(item => item.slug === requested);
-  const sharedLink = shared && mapLinks.find(link => link.dataset.scenario === shared.slug);
+  const sharedLink = requested && mapLinks.find(link => link.dataset.scenario === requested);
   if (sharedLink) {
     scenarioSection?.scrollIntoView?.();
-    await select(sharedLink, shared, false);
+    await select(sharedLink, scenarioOf(sharedLink), false);
   }
 }
 enableMaps();
@@ -184,14 +175,27 @@ trailer.querySelector?.("source:last-of-type")?.addEventListener("error", showTr
 
 // S5: downloads have equal weight without JavaScript; promote the visitor's own
 // desktop platform when it can be detected. Phones and tablets promote nothing.
-function desktopPlatform() {
+// The macOS build is Apple Silicon only and the Linux build x86_64 only, so those
+// are promoted only on a known matching architecture. Intel and Apple Silicon Macs
+// both report "MacIntel"; only Chromium's client hints tell them apart.
+async function desktopPlatform() {
   if (typeof navigator === "undefined") return "";
   const agent = navigator.userAgent || "";
   if (/Android|iPhone|iPad|iPod|CrOS/.test(agent) || (/Mac/.test(navigator.platform || "") && navigator.maxTouchPoints > 1)) return "";
   const name = (navigator.userAgentData?.platform || navigator.platform || agent).toLowerCase();
-  return name.includes("mac") ? "macos" : name.includes("win") ? "windows" : name.includes("linux") ? "linux" : "";
+  if (name.includes("win")) return "windows";
+  const mac = name.includes("mac");
+  if (!mac && !name.includes("linux")) return "";
+  const reported = `${navigator.platform || ""} ${agent}`.toLowerCase();
+  let hints = {};
+  if (typeof navigator.userAgentData?.getHighEntropyValues === "function")
+    hints = await navigator.userAgentData.getHighEntropyValues(["architecture", "bitness"]);
+  if (mac) return hints.architecture === "arm" ? "macos" : "";
+  const x86_64 = hints.architecture ? hints.architecture === "x86" && hints.bitness !== "32" : /x86_64|amd64/.test(reported);
+  return x86_64 ? "linux" : "";
 }
-const platform = desktopPlatform();
-document.querySelectorAll(".download-button[data-platform]").forEach(button => {
-  if (platform && button.dataset.platform === platform) button.classList.replace("button-outline", "button-primary");
-});
+desktopPlatform().then(platform => {
+  document.querySelectorAll(".download-button[data-platform]").forEach(button => {
+    if (platform && button.dataset.platform === platform) button.classList.replace("button-outline", "button-primary");
+  });
+}).catch(() => {});

@@ -58,7 +58,13 @@ calibration range. Source-dependent motor control remains in `pc_audio.gd`.
   framebuffer-paired RAM/video records match `pc-play-final-controls-02`.
   `image-comparison.json` also proves every decoded pixel of the final original,
   paired, tandem and world images unchanged. Process exit 0, no script errors.
-* `pc-audio-menu-native-04/menu-report.json`: all 15 checks pass after actual
+* `pc-audio-menu-native-04/menu-report.json` (a four-channel run that predates
+  the Music channel and Restore default mix; the current
+  `test_pc_audio_menu_native.gd` expects `music:70` and has no recorded native
+  receipt yet; the -04 fallback half built the bare `pc_audio_menu.gd`, while
+  the current test builds the production `pc_play_menu.gd` with
+  `prefer_global_menu=false`, as players see it, and adds a
+  `fallback_is_play_menu` check): all 15 checks pass after actual
   macOS menu clicks set effects to 40% and voices to 70%. The players change,
   saved configuration reloads exactly, and the diagnostic's frozen original
   frame/state remain unchanged. Native menu consumes no game pixels. A fresh

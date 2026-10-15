@@ -60,8 +60,11 @@ def _generation(source,script_path):
             'qa':report,'delivery':delivery,'inputs':[f for f in (manifest_path,script_path,qa,numbers) if f.exists()]}
 
 
-def prepare(source,script_path=SCRIPT,*,source_script=None,repair=None,additional=()):
+def prepare(source,script_path=SCRIPT,*,source_script=None,repair=None,additional=(),receipt_path=None):
     script=json.loads(script_path.read_text())
+    # A repair may supersede an installed take only when custody says that take is what is installed.
+    installed=json.loads(receipt_path.read_text())['voices'] if receipt_path and receipt_path.exists() else {}
+    repaired=set()
     base=_generation(source,source_script or script_path)
     batches=[base];selected={name:base for name in base['manifest']['voices']}
     for source in additional:
@@ -74,7 +77,7 @@ def prepare(source,script_path=SCRIPT,*,source_script=None,repair=None,additiona
         replacement=_generation(repair,script_path)
         names=replacement['manifest']['voices'].keys()
         if not names or not names<=selected.keys():raise ValueError('unknown/empty repair selection')
-        selected.update({name:replacement for name in names});batches.append(replacement)
+        selected.update({name:replacement for name in names});batches.append(replacement);repaired=set(names)
     voices={};payloads={};dest=ROOT/'godot/assets/audio'
     for name,batch in selected.items():
         if not re.fullmatch('pc_[a-z_]+',name):raise ValueError('unsafe PC cue')
@@ -89,10 +92,14 @@ def prepare(source,script_path=SCRIPT,*,source_script=None,repair=None,additiona
         if voice['performed_text']!=pronounce_headings(expected):raise ValueError('performed text differs from script')
         transcript=batch['qa']['results'][name];delivery=batch['delivery'].get(name)
         check_take(voice,transcript,delivery)
-        path=dest/f'voice_{name}.wav'
-        if path.exists() and path.read_bytes()!=raw:raise ValueError('refusing to replace different installed voice')
+        path=dest/f'voice_{name}.wav';previous={}
+        if path.exists() and (current:=path.read_bytes())!=raw:
+            current_sha=hashlib.sha256(current).hexdigest()
+            if name not in repaired or (installed.get(name) or {}).get('sha256')!=current_sha:
+                raise ValueError('refusing to replace different installed voice')
+            previous={'previous_take_sha256':current_sha}
         payloads[path]=raw
-        voices[name]=voice|{'source_master':_repo_rel(folder/f'voice_{name}.wav'),
+        voices[name]=voice|previous|{'source_master':_repo_rel(folder/f'voice_{name}.wav'),
             'generation_script_sha256':batch['manifest']['script_sha256'],
             'processing':'Unmodified generated dry master','transcript_qa':transcript,
             'number_delivery_qa':delivery}
@@ -110,10 +117,11 @@ def main():
     p.add_argument('--additional-source',type=Path,action='append',default=[],help='Disjoint fingerprinted partial batch completing this catalogue')
     p.add_argument('--repair-source',type=Path,help='Independently generated and blind-checked replacement subset from the current script')
     p.add_argument('--bank',choices=('crew','damage','warning','radio','remaining'),default='crew');a=p.parse_args()
-    payloads,receipt=prepare(a.source,{'crew':SCRIPT,'damage':DAMAGE,'warning':WARNINGS,'radio':RADIO,'remaining':REMAINING}[a.bank],source_script=a.source_script,repair=a.repair_source,additional=a.additional_source)
+    provenance=ROOT/'godot/assets/audio'/f'pc_{a.bank}_provenance.json'
+    payloads,receipt=prepare(a.source,{'crew':SCRIPT,'damage':DAMAGE,'warning':WARNINGS,'radio':RADIO,'remaining':REMAINING}[a.bank],source_script=a.source_script,repair=a.repair_source,additional=a.additional_source,receipt_path=provenance)
     if not a.dry_run:
         for path,raw in payloads.items():path.write_bytes(raw)
-        (ROOT/'godot/assets/audio'/f'pc_{a.bank}_provenance.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        provenance.write_text(json.dumps(receipt,indent=2)+'\n')
     print(f'{len(payloads)} PC {a.bank} takes verified'+(' (dry run)' if a.dry_run else ' and installed'))
 
 

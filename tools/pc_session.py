@@ -21,6 +21,31 @@ except ModuleNotFoundError as error:
     from pc_frontend_text import FrontendText, FrontendSources
 
 
+def slim_sample(sample):
+    """Play's copy of a sample, without allocated-object pools it never draws.
+
+    Play reads only scalar SIM state and, from the paired pass, the drawn
+    dynamic actors and presentation effects. Undrawn actors never reach the
+    presentation process. Copies only: the collector's packet stays complete.
+    """
+    result = dict(sample)
+    if isinstance(sample.get('state'), dict):
+        result['state'] = {k: v for k, v in sample['state'].items() if k != 'world'}
+    presentation = sample.get('presentation')
+    drawing = presentation.get('draw_pass') if isinstance(presentation, dict) else None
+    if isinstance(drawing, dict) and isinstance(drawing.get('world'), dict):
+        world = drawing['world']
+        # As tolerant as its Godot consumers: a null list or stray entry is skipped.
+        drawn = {o.get('pointer') for o in (drawing.get('objects') or [])
+                 if isinstance(o, dict) and o.get('dynamic_instance')}
+        drawn.discard(None)
+        trimmed = {k: world[k] for k in ('window_origin', 'presentation_effects') if k in world}
+        trimmed['dynamic'] = [actor for actor in (world.get('dynamic') or [])
+                              if isinstance(actor, dict) and actor.get('pointer') in drawn]
+        result['presentation'] = dict(presentation, draw_pass=dict(drawing, world=trimmed))
+    return result
+
+
 class PresentationSession:
     def __init__(self, core, reader, shape_bytes, *, trace=True, collector_factory=Collector,
                  loop_diagnostics=False):

@@ -17,9 +17,13 @@ __pycache__/
 .env
 .env.*
 builds/
+# Decompressed original resources (inspect_scenarios --extract) stay local.
+# Working if: git check-ignore tools/SCENARIO.DAT.decoded succeeds.
+*.decoded
 /web-prototype/.generated/
 /capture/
-# Local box-art derivatives and generation intermediates are not cleared to publish.
+# Box-art working copies and generation intermediates stay local. The approved
+# cover and icon are published only from docs/images (website/asset-provenance.json).
 # Working if: git check-ignore branding/abrams-icon.png tmp/custom-icons/abrams-app/final.png succeeds.
 /branding/*.png
 /tmp/custom-icons/
@@ -41,8 +45,7 @@ builds/
 !/website/dist/assets/guides/keyboard-controls.pdf
 
 # Local session output: Playwright captures of original-game pixels, PDF
-# scratch, background job state and an unregistered local hook copy.
-# Working if: git check-ignore output/playwright work succeeds and the local hook copy is ignored.
+# scratch and background job state.
+# Working if: git check-ignore output/playwright work succeeds.
 /output/
 /work/
-/hooks/

@@ -7,12 +7,13 @@ import json
 import subprocess
 from pathlib import Path
 from generate import budget,request,receipt
+from output_guard import guarded_output
 
 ROOT=Path(__file__).resolve().parents[2]
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--video',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--action',default='final-av-review');p.add_argument('--model',default='google/gemini-3.8-flash');p.add_argument('--reasoning-effort',choices=['low','medium','high']);a=p.parse_args()
-    out=a.output.resolve();video=a.video.resolve();proxy=out/'critic-proxy.mp4';video_sha=hashlib.sha256(video.read_bytes()).hexdigest()
+    out=guarded_output(p,a.output);video=a.video.resolve();proxy=out/'critic-proxy.mp4';video_sha=hashlib.sha256(video.read_bytes()).hexdigest()
     brief_path=out/'production-brief.json'
     brief=json.loads((brief_path if brief_path.exists() else ROOT/'tools/promo/brief.json').read_text())
     serial=['-threads','1'] if brief.get('revision')=='v5' else []

@@ -11,8 +11,10 @@ from __future__ import annotations
 import argparse
 from array import array
 import hashlib
+import io
 import json
 import math
+import operator
 from pathlib import Path
 import struct
 import sys
@@ -23,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 from tools.pc_audio_events import SAMPLES
 from tools.unpack_pc_executables import unpack
 from tools.pc_crew_voice import catalogue
+from tools.source_guard import inside_source
 
 SIM_HASH = '9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099'
 CONTROL_CALLS = {0xBD0:4, 0x1965:0, 0x198E:4, 0x253F:5, 0x2580:12,
@@ -102,23 +105,28 @@ def source_inventory(root=ROOT):
 
 
 def pcm_metrics(path):
-    with wave.open(str(path), 'rb') as wav:
+    # One read serves both the custody hash and the PCM; C-level array passes keep the gate fast.
+    data=path.read_bytes()
+    with wave.open(io.BytesIO(data), 'rb') as wav:
         channels,width,rate,frames,*_=wav.getparams()
         raw=wav.readframes(frames)
     if width != 2 or channels not in (1,2) or not frames or len(raw)!=frames*channels*width:
         raise ValueError('Invalid complete 16-bit PCM: '+str(path))
     values=array('h',raw)
     if sys.byteorder!='little': values.byteswap()
-    peak=max(abs(v) for v in values)
-    rms=math.sqrt(sum(v*v for v in values)/len(values))/32768
+    high,low=max(values),min(values)
+    peak=max(high,-low)
+    sumprod=getattr(math,'sumprod',None)  # Python 3.12+; exact integer fallback below
+    energy=sumprod(values,values) if sumprod else sum(map(operator.mul,values,values))
+    rms=math.sqrt(energy/len(values))/32768
     # -60 dBFS activity threshold records silence without trimming dry masters.
     threshold=33
     first=next((i//channels for i,v in enumerate(values) if abs(v)>=threshold),frames)
     last=next((i//channels for i,v in enumerate(reversed(values)) if abs(v)>=threshold),frames)
-    return {'sha256':sha(path),'frames':frames,'channels':channels,'sample_rate':rate,
+    return {'sha256':hashlib.sha256(data).hexdigest(),'frames':frames,'channels':channels,'sample_rate':rate,
             'seconds':frames/rate,'peak_dbfs':20*math.log10(max(peak/32768,1e-12)),
             'rms_dbfs':20*math.log10(max(rms,1e-12)),
-            'full_scale_samples':sum(v in (-32768,32767) for v in values),
+            'full_scale_samples':(values.count(-32768) if low==-32768 else 0)+(values.count(32767) if high==32767 else 0),
             'leading_silence_seconds':first/rate,'trailing_silence_seconds':last/rate,
             'boundary_delta':max(abs(values[c]-values[-channels+c]) for c in range(channels))/32768}
 
@@ -167,7 +175,9 @@ def audit(root=ROOT):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True)
-    args=parser.parse_args();report=audit()
+    args=parser.parse_args()
+    if inside_source(args.output,ROOT): parser.error('output must be outside original sources')
+    report=audit()
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,indent=2)+'\n')
     print(f"PC_AUDIO_AUDIT: {len(report['assets'])} WAVs, {report['inventory']['source_caption_total']} source captions, "

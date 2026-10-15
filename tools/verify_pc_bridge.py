@@ -15,11 +15,13 @@ try:
     from tools.pc_reference_core import PcReferenceCore, CORE_SHA256
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.inspect_scenarios import decode_resource, parse_world
+    from tools.source_guard import inside_source
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from pc_reference_core import PcReferenceCore, CORE_SHA256
     from pc_live_state import SimStateReader, SIM_SHA256
     from inspect_scenarios import decode_resource, parse_world
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 STEPS = [
@@ -42,6 +44,7 @@ def main():
     p.add_argument("--core", type=Path, default=ROOT / ".runtime/pc-core/dosbox_pure_libretro.dylib")
     p.add_argument("--content", type=Path, default=ROOT / ".runtime/pc-core/abrams-ref.zip")
     args = p.parse_args()
+    if inside_source(args.output, ROOT): p.error("output must be outside original sources")
     args.output.mkdir(parents=True, exist_ok=False)
     reader = SimStateReader(ROOT / "GAME/SIM.EXE")
     core = PcReferenceCore(args.core, args.content, args.output / "saves")

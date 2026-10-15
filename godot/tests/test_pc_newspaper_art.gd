@@ -69,7 +69,16 @@ func run()->void:
 				var im:=await snap();var donor:Image=frame.native_graphics.newspaper_art.images[entry.name].native.get_image()
 				for y in range(0,200,2):
 					for x in range(0,320,2):check(im.get_pixel(x*4+1,y*4+1)==(source.get_pixel(x,y) if prose and y>=72 else donor.get_pixel(x,y)),"native source pixel footprint")
-			check(not frame.set_graphics_mode("modern"),"Modern remains deferred")
+			check(frame.set_graphics_mode("ega_upscaled"),"immediate EGA Upscaled switch")
+			check(not frame.frontend_art.visible and not frame.native_graphics.visible,"EGA Upscaled hides all new art")
+			check(frame.material==frame._ega_material and frame.texture.get_image().get_data()==source.get_data(),"EGA Upscaled filters unchanged source bytes")
+			check(not frame.set_graphics_mode("modern") and not frame.set_graphics_mode("tactical") and frame.graphics_mode=="ega_upscaled","Modern/Tactical rejected without loaded Modern assets")
+			# Newspapers need no Modern geometry; availability only gates the menu.
+			frame.modern_available=true
+			for mode in ["modern","tactical"]:
+				check(frame.set_graphics_mode(mode),"immediate switch: "+mode)
+				check(frame.frontend_art.visible and art.active.get("name")==entry.name and art.active.get("height")==(72 if prose else 200),"PC-selected newspaper binding in "+mode)
+			frame.modern_available=false
 			frame.set_graphics_mode("upscaled")
 			check(art.active.get("name")==entry.name,"cached instant return")
 		check(original.get_data()==immutable,"source image immutable")
@@ -79,7 +88,7 @@ func run()->void:
 		check(not art.set_frame(null,{"name":"END"}),"absent source rejected")
 	check(not art.load_sources(root_path.path_join("missing-newspapers")) and art.entries.is_empty() and art.images.is_empty(),"missing assets fail closed")
 	if native:
-		var f:=FileAccess.open(output.path_join("report.json"),FileAccess.WRITE);f.store_string(JSON.stringify({"checks":checks,"errors":errors,"scope":"Three isolated source fixtures, two display phases, three live presentation modes. No campaign completion claim."},"  "))
+		var f:=FileAccess.open(output.path_join("report.json"),FileAccess.WRITE);f.store_string(JSON.stringify({"checks":checks,"errors":errors,"scope":"Three isolated source fixtures, two display phases, all six graphics modes (Modern/Tactical with the availability flag only; no Modern geometry is involved). No campaign completion claim."},"  "))
 	print("PC_NEWSPAPERS: %d checks, %d errors"%[checks,errors.size()])
 	for e in errors:printerr(e)
 	quit(0 if errors.is_empty() else 1)

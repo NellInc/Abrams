@@ -31,6 +31,7 @@ func run()->void:
 	if "--output" in args and args.find("--output")+1<args.size():output=args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	viewport=SubViewport.new();viewport.size=Vector2i(640,400);viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(viewport)
+	await hud_mode_gate()
 	frame=Frame.new();frame.size=viewport.size;viewport.add_child(frame)
 	check(not frame.set_graphics_mode("genesis") and frame.graphics_mode=="upscaled","unavailable whole native bank rejects switch and preserves current mode")
 	check(frame.load_graphics_sources(root_path),"native donor pack prewarmed")
@@ -198,6 +199,35 @@ func run()->void:
 	frame.set_frame(null,{},null,{})
 	check(frame.texture==null and frame.native_graphics.texture==null,"missing frame clears native texture instead of showing stale art")
 	finish()
+# EGA (exact framebuffer), upscaled EGA and Genesis must bypass the Tactical HUD
+# restyle, plate replacement, olive letterbox and 16:9 reflow (graphics-modes.md).
+func hud_mode_gate()->void:
+	var display=preload("res://scripts/pc_play_display.gd").new()
+	display.size=Vector2(800,600);root.add_child(display)
+	await process_frame
+	var source:=Image.create_empty(320,200,false,Image.FORMAT_RGB8);source.fill(Color8(85,85,85))
+	var ui:=Image.create_empty(320,200,false,Image.FORMAT_L8);ui.fill(Color.WHITE);ui.fill_rect(Rect2i(32,13,256,97),Color.BLACK)
+	var tags:=Image.create_empty(320,200,false,Image.FORMAT_L8);tags.fill(Color8(1,1,1));tags.fill_rect(Rect2i(32,13,256,97),Color.BLACK)
+	var packet:={"draw_pass":{"camera":{"clip":[32,13,287,109]},"unsupported":[]},
+		"ui_overlay":{"width":320,"height":200,"mask_png":Marshalls.raw_to_base64(ui.save_png_to_buffer())},
+		"plate_overlay":{"width":320,"height":200,"mask_png":Marshalls.raw_to_base64(tags.save_png_to_buffer()),
+			"plates":{"1":{"source":Frame.COCKPIT_SOURCES[1][0],"source_sha256":Frame.COCKPIT_SOURCES[1][1]}}}}
+	var world:=ImageTexture.create_from_image(Image.create_empty(256,97,false,Image.FORMAT_RGB8))
+	var tandem=display.tandem_frame
+	check(display.set_hud_style("tactical"),"Tactical HUD style")
+	for mode in ["upscaled","ega","ega_upscaled","upscaled"]:
+		check(tandem.set_graphics_mode(mode),"HUD gate mode "+mode)
+		tandem.set_frame(source,packet,world,{"name":"SIM"})
+		display.set_hud_frame(packet,{"name":"SIM"})
+		var restyled:bool=mode=="upscaled"
+		check((display.display.material!=null)==restyled,"Tactical HUD material in "+mode)
+		check(restyled or (display._wide_station==0 and display.background.color==Color.BLACK),"EGA keeps exact layout and letterbox: "+mode)
+		check(not restyled or display.background.color==Color("101a13"),"Upscaled keeps Tactical letterbox")
+	tandem.set_graphics_mode("ega")
+	display.set_hud_style("tactical")
+	check(display.display.material==null and display.background.color==Color.BLACK,"reselecting Tactical HUD over EGA restyled the original")
+	display.queue_free()
+	await process_frame
 func finish()->void:
 	var result:={"checks":checks,"errors":errors,"samples":samples,"native":native}
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify(result,"  "))

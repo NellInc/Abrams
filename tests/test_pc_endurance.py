@@ -66,7 +66,9 @@ class EnduranceGateTests(unittest.TestCase):
                 return {'success': False}
             def close(self):
                 if getattr(self, 'crashed', False) and Fake.close_error: raise RuntimeError(Fake.close_error)
-        for fail, close_error, raised in [('save', None, AssertionError), ('crash', 'host exited 1', RuntimeError)]:
+        # The receipt is under test here, not how the gate raises a refusal.
+        refused = (AssertionError, RuntimeError)
+        for fail, close_error, raised in [('save', None, refused), ('crash', 'host exited 1', RuntimeError)]:
             with self.subTest(fail=fail), tempfile.TemporaryDirectory() as directory:
                 Fake.fail, Fake.close_error = fail, close_error
                 output = Path(directory)/'out'
@@ -74,7 +76,7 @@ class EnduranceGateTests(unittest.TestCase):
                         patch('sys.stdout', io.StringIO()):
                     with self.assertRaises(raised) as caught:
                         gate.main()
-                if fail == 'crash': self.assertIn('native worker crashed', str(caught.exception))
+                self.assertIn('native worker crashed' if fail == 'crash' else "'success': False", str(caught.exception))
                 report = json.loads((output/'report.json').read_text())
                 self.assertIs(report['passed'], False)
                 self.assertIs(report['completed'], False)

@@ -9,6 +9,11 @@ var active := false
 var corners_verified := false
 var hud_style := "restored"
 var scale_xy := Vector2.ONE
+var _ui_texture: ImageTexture
+var _plate_texture: ImageTexture
+var _ui_bytes := PackedByteArray()
+var _plate_bytes := PackedByteArray()
+var upload_count := 0
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -51,13 +56,34 @@ func set_frame(source: Image, ui: Image, tags: Image, camera: Rect2i, world: Tex
 		if ui.get_pixelv(p).r!=1.0 or tags.get_pixelv(p).r!=0.0 or source.get_pixelv(p).to_rgba32()!=Color8(85,85,85).to_rgba32():
 			corners_verified = false
 			break
-	material.set_shader_parameter("ui_mask",ImageTexture.create_from_image(ui))
-	material.set_shader_parameter("plate_mask",ImageTexture.create_from_image(tags))
+	var owners := ui.get_data()
+	var bits := tags.get_data()
+	if not unchanged(_ui_texture,ui,owners,_ui_bytes):
+		_ui_texture=upload(_ui_texture,ui)
+		_ui_bytes=owners
+		upload_count+=1
+	if not unchanged(_plate_texture,tags,bits,_plate_bytes):
+		_plate_texture=upload(_plate_texture,tags)
+		_plate_bytes=bits
+		upload_count+=1
+	material.set_shader_parameter("ui_mask",_ui_texture)
+	material.set_shader_parameter("plate_mask",_plate_texture)
 	material.set_shader_parameter("world_texture",world)
 	material.set_shader_parameter("corners_verified",corners_verified)
 	active = true
 	_layout()
 	show()
+
+# Persistent mask textures: a same-size/format mask is uploaded in place
+# instead of allocating and freeing a texture resource every frame.
+static func unchanged(current: ImageTexture, image: Image, bytes: PackedByteArray, last: PackedByteArray) -> bool:
+	return current!=null and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format() and bytes==last
+
+static func upload(current: ImageTexture, image: Image) -> ImageTexture:
+	if current!=null and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format():
+		current.update(image)
+		return current
+	return ImageTexture.create_from_image(image)
 
 func _rect(box: Rect2, color: Color) -> void:
 	draw_rect(Rect2(box.position*scale_xy,box.size*scale_xy),color)

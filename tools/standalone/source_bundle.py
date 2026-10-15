@@ -12,19 +12,19 @@ import hashlib
 import io
 import json
 from pathlib import Path, PurePosixPath
+import shlex
 import stat
 import subprocess
 import tarfile
+
+# The builder's patch table is the single source of truth for which upstream
+# files its receipt fingerprints; a separate list here silently drifted once.
+from tools.build_pc_trace_core import PATCHED_SOURCES as PATCHED, WINDOWS_LDFLAGS
 
 ROOT = Path(__file__).resolve().parents[2]
 UPSTREAM = '73e03aa145e0549ed4d5a20f8e65532714da33f5'
 UPSTREAM_URL = 'https://github.com/schellingb/dosbox-pure'
 PREFIX = 'dosbox-pure-abrams-source'
-PATCHED = {
-    'src/dos/drives.h', 'src/dos/drive_union.cpp',
-    'src/hardware/vga_draw.cpp', 'src/hardware/vga_memory.cpp',
-    'dosbox_pure_libretro.cpp',
-}
 HEADERS = {
     'src/cpu/abrams_trace.h': 'trace_header_sha256',
     'src/cpu/abrams_vga_ownership.h': 'ownership_header_sha256',
@@ -32,7 +32,15 @@ HEADERS = {
     'src/cpu/abrams_observer_checkpoint.h': 'observer_checkpoint_header_sha256',
     'src/dos/abrams_state_overlay.h': 'state_overlay_header_sha256',
 }
-ORIGINAL_ARCHIVE_SHA = 'c1821239d91a23883a44c4484ca13091479bf0c75347f01b8cb7b3a089565d05'
+# Platform heading and toolchain for each distributed core, matching the
+# release builds (macOS locally, Windows/Linux in portable-alpha.yml).
+PLATFORMS = {
+    '.dylib': ('macOS ARM64', "Install Apple's command-line developer tools (make and a C++ compiler)"),
+    '.dll': ('Windows x86_64', 'Install MSYS2 with the make and mingw-w64-x86_64-gcc packages and '
+             'use its MINGW64 shell (the release build used this toolchain)'),
+    '.so': ('Linux x86_64', 'Install GNU make and a C++ compiler such as g++'),
+}
+ORIGINAL_ARCHIVE_SHA ='c1821239d91a23883a44c4484ca13091479bf0c75347f01b8cb7b3a089565d05'
 ROM_SHA = 'ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea'
 
 
@@ -73,13 +81,59 @@ def regular_bytes(base, name):
     return path.read_bytes()
 
 
+def built_source(root, receipt):
+    """Return the checkout the receipt's `make -C` built, when it lies in root.
+
+    The active core may come from a task tree rather than the default checkout;
+    only that tree is its corresponding source. Paths outside root (or the
+    builder's '<source>' placeholder) fall back to the default checkout."""
+    command = receipt.get('build')
+    if isinstance(command, list) and '-C' in command[:-1]:
+        recorded = command[command.index('-C') + 1]
+        if isinstance(recorded, str) and recorded != '<source>':
+            path = Path(recorded) if Path(recorded).is_absolute() else root / recorded
+            try:
+                path.resolve().relative_to(root)
+                return path
+            except ValueError:
+                pass
+    return root / '.runtime/dosbox-pure-source'
+
+
+def build_instructions(receipt, suffix):
+    """Return the README build section for this core's platform.
+
+    The make arguments come from the receipt's recorded command (run inside
+    source/, so its `-C <checkout>` pair is dropped). Receipts that predate
+    recorded commands get the builder's command for that platform instead."""
+    platform, toolchain = PLATFORMS[suffix]
+    command = receipt.get('build')
+    if (isinstance(command, list) and command[:1] == ['make']
+            and all(isinstance(part, str) and part.isprintable() for part in command)):
+        if '-C' in command[:-1]:
+            at = command.index('-C')
+            command = command[:at] + command[at + 2:]
+        origin = 'This is the build command recorded in CORE-BUILD.json.'
+    else:
+        command = ['make', '-j4'] + ([WINDOWS_LDFLAGS] if suffix == '.dll' else [])
+        origin = ('CORE-BUILD.json records no build command; this is the trace-core '
+                  'builder\'s command for this platform.')
+    return f'''## Build on {platform}
+
+{toolchain}, unpack this archive into a new directory, then run:
+
+    cd source
+    {shlex.join(command)}
+
+{origin} The output is dosbox_pure_libretro{suffix}. The recorded compiler was:
+{receipt['compiler']}
+The distributed binary is named abrams-trace{suffix}.'''
+
+
 def collect(root, source=None, suffix='.dylib'):
     # Normalize the caller-selected root (macOS /var aliases /private/var);
     # links within the source and runtime inputs remain forbidden.
     root = root.resolve()
-    source = Path(source) if source is not None else root / '.runtime/dosbox-pure-source'
-    if source.is_symlink():
-        raise ValueError('Symlink source checkout')
     # Runtime input paths are deliberately outside the archive-name policy.
     receipt_path = root / '.runtime/pc-core/abrams-trace.json'
     if suffix not in ('.dylib', '.dll', '.so'):
@@ -90,6 +144,9 @@ def collect(root, source=None, suffix='.dylib'):
             raise ValueError('Core receipt/core must be regular non-symlink files')
     receipt_bytes = receipt_path.read_bytes()
     receipt = json.loads(receipt_bytes)
+    source = Path(source) if source is not None else built_source(root, receipt)
+    if source.is_symlink():
+        raise ValueError('Symlink source checkout')
     if (receipt['commit'] != UPSTREAM or receipt['upstream'] != UPSTREAM_URL
             or git(source, 'rev-parse', 'HEAD').decode().strip() != UPSTREAM):
         raise ValueError('Unreviewed upstream identity')
@@ -163,22 +220,13 @@ DOSBOX-THANKS. DOSBox Pure and the Abrams modifications are GPL-2.0-or-later;
 retain applicable component notices in source files when redistributing.
 
 Local changes add instruction/render observation, VGA and plate ownership,
-video presentation/raster callbacks, and observer checkpoint/save-overlay
-interfaces. The complete modified files and added headers are included.
+video presentation/raster callbacks, observer checkpoint/save-overlay
+interfaces, and native save format 9, which stores the DOS calendar. The
+complete modified files and added headers are included.
 SOURCE-FILES.json records every included source file's SHA-256 and mode.
 CORE-BUILD.json is the original compiled-core build receipt.
 
-## Build on macOS ARM64
-
-Install Apple's command-line developer tools (make and a C++ compiler), unpack
-this archive into a new directory, then run:
-
-    cd source
-    make -j4
-
-The output is dosbox_pure_libretro.dylib. The recorded compiler was:
-{receipt['compiler']}
-The distributed binary is named abrams-trace.dylib. No patching step, game
+{build_instructions(receipt, suffix)} No patching step, game
 installation, ROM, save data, baseline binary or network download is required
 to compile this supplied patched source. See source/README.md and Makefile for
 upstream build instructions and other target platforms. Recompilation was not
@@ -225,7 +273,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--root', type=Path, default=ROOT, help='Payload root containing the matching core/receipt')
-    parser.add_argument('--source', type=Path, help='Pinned upstream source checkout')
+    parser.add_argument('--source', type=Path, help='Pinned upstream source checkout (default: the tree the receipt records building, else .runtime/dosbox-pure-source)')
     parser.add_argument('--core-suffix', choices=['.dylib', '.dll', '.so'], default='.dylib')
     args = parser.parse_args()
     print(json.dumps(build(args.root, args.output, args.source, args.core_suffix), sort_keys=True, indent=2))

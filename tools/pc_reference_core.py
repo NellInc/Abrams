@@ -269,14 +269,18 @@ class PcReferenceCore:
             raise ValueError("invalid saved-state size")
         # The research restore contract supports neutral-key snapshots only.
         # Do not silently clear a held-key snapshot and call that exact replay.
+        # The receipt is mandatory: without it no core pin, fingerprint or
+        # neutral-key check is possible (dump() always writes one).
         receipt_path = path.with_name("receipt.json")
-        if receipt_path.exists():
-            receipt = json.loads(receipt_path.read_text())
-            source_pin = expected_source_sha256 or self.core_sha256
-            if receipt.get("core_sha256") != source_pin or receipt.get("pressed_keys"):
-                raise ValueError("restore requires this core and a neutral-key snapshot")
-            if receipt.get("files", {}).get(path.name) != hashlib.sha256(raw).hexdigest():
-                raise ValueError("saved-state fingerprint mismatch")
+        if not receipt_path.is_file():
+            raise ValueError("restore requires the snapshot receipt")
+        receipt = json.loads(receipt_path.read_text())
+        source_pin = expected_source_sha256 or self.core_sha256
+        if not isinstance(receipt, dict) or receipt.get("core_sha256") != source_pin or receipt.get("pressed_keys"):
+            raise ValueError("restore requires this core and a neutral-key snapshot")
+        files = receipt.get("files")
+        if not isinstance(files, dict) or files.get(path.name) != hashlib.sha256(raw).hexdigest():
+            raise ValueError("saved-state fingerprint mismatch")
         self.set_keys(())
         self.pause_at_frame_end()
         buffer = C.create_string_buffer(raw)
@@ -314,6 +318,7 @@ class PcReferenceCore:
         function = getattr(self.core, 'abrams_observer_checkpoint_' + ('save' if raw is None else 'load'))
         function.argtypes, function.restype = [C.c_void_p, C.c_size_t], C.c_bool
         if not function(buffer, size):
+            if raw is None: raise ValueError("Observer checkpoint capture refused: observer state is not checkpointable")
             raise ValueError("Observer checkpoint does not match the restored native display")
         return buffer.raw
 

@@ -56,22 +56,30 @@ class EffectInventoryTests(unittest.TestCase):
         draw = (ROOT / 'godot/scripts/pc_draw_pass.gd').read_text()
         shader = (ROOT / 'godot/scripts/pc_surface.gdshader').read_text()
         self.assertIn('"impact_burst",effect_art.atlas', draw)
-        self.assertIn('materials.append(Vector2(0,4+_owner*32))', draw)
+        # Effects stay material kind 4 with the ownership channel above it;
+        # UV.x may carry the selected donor, never a different effect kind.
+        body = re.search(r'func _add_effect\(.*?(?=\nfunc )', draw, re.S)
+        self.assertIsNotNone(body)
+        kinds = re.findall(r'materials\.append\(Vector2\(([^\n]*),\s*([^,\n]*?)\)\)\n', body[0])
+        self.assertTrue(kinds)
+        self.assertEqual({kind.replace(' ', '') for _, kind in kinds}, {'4+_owner*32'})
+        self.assertTrue(all('effect.donor' in x or x.strip() == '0' for x, _ in kinds))
         # The ownership channel must not change the existing effect kind.
         self.assertIn('UV.y = mod(UV.y,32.0)', shader)
         self.assertIn('uniform sampler2D impact_burst : filter_linear, repeat_disable;', shader)
         self.assertIn('if (effect.a < 0.5) discard;', shader)
 
-    def test_modern_effect_ownership_unions_original_and_authored_coverage(self):
+    def test_modern_effect_ownership_is_exactly_the_original_sprite_coverage(self):
+        # Authored effect alpha must never widen ownership past the original
+        # opaque runs, or it could conceal an actor the original left visible.
         ownership = (ROOT / 'godot/scripts/pc_modern_ownership.gd').read_text()
         shader = (ROOT / 'godot/scripts/pc_modern_ownership.gdshader').read_text()
-        self.assertIn('effect_art: RefCounted = null', ownership)
-        self.assertLess(ownership.index('Geometry.sprite_runs'), ownership.index('effect_art.mapping'))
-        self.assertLess(ownership.index('effect_art.mapping'), ownership.index('SourceCommands.ordered'))
-        self.assertIn('effect.rect', ownership)
-        self.assertIn('effect.source_uv', ownership)
-        self.assertIn('texture(effect_atlas,UV2).a < 0.5', shader)
+        self.assertLess(ownership.index('Geometry.sprite_runs'), ownership.index('SourceCommands.ordered'))
+        for retired in ('effect_art.mapping', 'add_effect', 'effect_atlas'):
+            self.assertNotIn(retired, ownership)
+            self.assertNotIn(retired, shader)
         self.assertIn('ALBEDO = vec3(UV,UV2.x)', shader)
+        self.assertNotIn('texture(effect_atlas', shader)
 
 
 @unittest.skipUnless((ROOT / 'artifacts/finish-20260928/target-live-trace-02/report.json').exists(), 'Requires retained source mode captures')

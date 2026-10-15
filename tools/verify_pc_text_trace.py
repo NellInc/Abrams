@@ -6,10 +6,16 @@ import hashlib
 import json
 from pathlib import Path
 from PIL import Image
+try:
+    from tools.verify_pc_audio_trace import CORE_MANIFEST, ROOT, check_core_pins, inside_source, load_manifest
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from verify_pc_audio_trace import CORE_MANIFEST, ROOT, check_core_pins, inside_source, load_manifest
 
 
-def verify(trace_path, baseline_path):
+def verify(trace_path, baseline_path, manifest=None):
     trace=json.loads(trace_path.read_text());baseline=json.loads(baseline_path.read_text())
+    manifest=load_manifest() if manifest is None else manifest
     rows=trace['presentations'];runs=[run for row in rows for run in row.get('text_runs',[])]
     counts=Counter((run['kind'],run['text']) for run in runs)
     stats=trace['text_observation']
@@ -26,6 +32,7 @@ def verify(trace_path, baseline_path):
         'presented_evidence_accounted':len(runs)==stats.get('presented_runs'),
         'visibility_gate_exercised':stats.get('frame_mismatches',0)>0,
         'every_run_belongs_to_scanned_page':all(run['page_offset']==row['page_offset'] for row in rows for run in row.get('text_runs',[])),
+        **check_core_pins(trace,baseline,manifest),
     }
     readiness_delays=[]
     if trace['profile']=='audio':
@@ -112,8 +119,10 @@ def verify(trace_path, baseline_path):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--trace',type=Path,required=True);p.add_argument('--baseline',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);args=p.parse_args()
-    result=verify(args.trace,args.baseline)
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--manifest',type=Path,default=CORE_MANIFEST)
+    args=p.parse_args()
+    if inside_source(args.output,ROOT): p.error('output must be outside original sources')
+    result=verify(args.trace,args.baseline,load_manifest(args.manifest))
     args.output.write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result,indent=2))
     if not all(result['checks'].values()): raise SystemExit(1)

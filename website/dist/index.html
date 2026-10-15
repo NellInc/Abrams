@@ -289,13 +289,13 @@
 
     <section class="restoration section-shell" id="restoration" aria-labelledby="restoration-title">
       <div class="section-heading">
-        <h2 id="restoration-title"><span class="kicker">Four graphics modes</span> A familiar face.<br>A clearer view.</h2>
+        <h2 id="restoration-title"><span class="kicker">Graphics modes</span> A familiar face.<br>A clearer view.</h2>
         <p>From the Colonel’s office to the gunner’s instruments, the artwork and lettering keep the character of the originals.</p>
       </div>
       <div class="comparison-layout">
         <figure class="comparison-figure" id="comparison-panel" aria-busy="false">
-          <div class="screen-frame"><img id="comparison-image" src="assets/images/colonel-upscaled.webp" alt="Upscaled graphics: the Colonel in his office, with restored portrait, desk and briefing lettering." width="1280" height="960" loading="lazy"></div>
-          <figcaption><span id="comparison-caption">Upscaled</span><span>The same original PC briefing in three of the four graphics modes.</span></figcaption>
+          <div class="screen-frame"><img id="comparison-image" src="assets/images/colonel-upscaled.webp" alt="Genesis Upscaled graphics: the Colonel in his office, with restored portrait, desk and briefing lettering." width="1280" height="960" loading="lazy"></div>
+          <figcaption><span id="comparison-caption">Genesis Upscaled</span><span>The same original PC briefing in three of the graphics modes.</span></figcaption>
         </figure>
         <div class="comparison-copy">
           <fieldset class="mode-picker">
@@ -303,15 +303,15 @@
             <div class="mode-options">
               <input type="radio" name="graphics" id="mode-ega" value="ega"><label for="mode-ega">EGA</label>
               <input type="radio" name="graphics" id="mode-genesis" value="genesis"><label for="mode-genesis">Genesis</label>
-              <input type="radio" name="graphics" id="mode-upscaled" value="upscaled" checked><label for="mode-upscaled">Upscaled</label>
+              <input type="radio" name="graphics" id="mode-upscaled" value="upscaled" checked><label for="mode-upscaled">Genesis Upscaled</label>
             </div>
           </fieldset>
-          <p id="mode-description">The remastered artwork in high resolution, with carefully rebuilt lettering. Upscaled is the game’s default graphics mode.</p>
+          <p id="mode-description">The remastered artwork in high resolution, with carefully rebuilt lettering. Genesis Upscaled was called Upscaled in alpha&nbsp;4, where it is the default; the Web edition now opens in Tactical.</p>
           <p class="interaction-status" id="comparison-status" role="status"></p>
           <h3>The PC game still runs the show.</h3>
           <p>The original MS-DOS simulation runs in DOSBox Pure, in tandem with the Godot game engine. Missions, aiming, damage and vehicle behaviour remain with the PC game, while the remaster handles what you see and hear.</p>
-          <p>Switch graphics immediately during play, including the experimental Modern mode.</p>
-          <noscript><p>Open the original-resolution <a href="assets/images/colonel-ega.webp">EGA</a>, <a href="assets/images/colonel-genesis.webp">Genesis</a> or <a href="assets/images/colonel-upscaled.webp">Upscaled</a> screenshots.</p></noscript>
+          <p>Switch graphics immediately during play. The Web edition offers <span data-modes="web">EGA, EGA Upscaled, Genesis, Genesis Upscaled, Modernized and Tactical</span>, with HUD Style chosen separately. The alpha&nbsp;4 downloads offer EGA, Genesis, Upscaled and the experimental Modern mode.</p>
+          <noscript><p>Open the original-resolution <a href="assets/images/colonel-ega.webp">EGA</a>, <a href="assets/images/colonel-genesis.webp">Genesis</a> or <a href="assets/images/colonel-upscaled.webp">Genesis Upscaled</a> screenshots.</p></noscript>
         </div>
       </div>
     </section>
@@ -319,20 +319,20 @@
     <section class="inside section-shell" id="features" aria-labelledby="inside-title">
       <div class="section-heading">
         <h2 id="inside-title"><span class="kicker">Features</span> Every station.<br>Back in service.</h2>
-        <p>Restored crew portraits, gauges and ammunition displays, with an optional Modern battlefield built around the original geometry.</p>
+        <p>Restored crew portraits, gauges and ammunition displays, with optional 3D battlefields built around the original geometry.</p>
       </div>
       <div class="station-gallery">
         <figure class="station-large">
-          <a href="assets/images/gunner-upscaled.webp" aria-label="Open full-size Upscaled gunner station screenshot"><img src="assets/images/gunner-upscaled.webp" alt="Upscaled gunner station with crisp instruments, ammunition icons and the original PC battlefield." width="1280" height="960" loading="lazy"></a>
-          <figcaption><strong>Gunner station</strong><span>Upscaled</span></figcaption>
+          <a href="assets/images/gunner-upscaled.webp" aria-label="Open full-size Genesis Upscaled gunner station screenshot"><img src="assets/images/gunner-upscaled.webp" alt="Genesis Upscaled gunner station with crisp instruments, ammunition icons and the original PC battlefield." width="1280" height="960" loading="lazy"></a>
+          <figcaption><strong>Gunner station</strong><span data-mode="Genesis Upscaled">Genesis Upscaled</span></figcaption>
         </figure>
         <figure>
-          <a href="assets/images/modern-cupola.webp?v=21600af9ca26" aria-label="Open full-size Tactical Sheen cupola screenshot"><img src="assets/images/modern-cupola.webp?v=21600af9ca26" alt="Tactical Sheen cupola view with textured road and terrain, foliage, a clouded sky and restored tank hardware." width="1440" height="811" loading="lazy"></a>
-          <figcaption><strong>Cupola view</strong><span>Tactical Sheen version</span></figcaption>
+          <a href="assets/images/modern-cupola.webp?v=21600af9ca26" aria-label="Open full-size Tactical Sheen cupola screenshot, Tactical graphics"><img src="assets/images/modern-cupola.webp?v=21600af9ca26" alt="Tactical Sheen cupola view in Tactical graphics, with textured road and terrain, foliage, a clouded sky and restored tank hardware." width="1440" height="811" loading="lazy"></a>
+          <figcaption><strong>Cupola view</strong><span data-mode="Tactical">Tactical Sheen version, Tactical mode</span></figcaption>
         </figure>
         <figure>
-          <a href="assets/images/modern-driver.webp" aria-label="Open full-size Modernized Classic driver station screenshot"><img src="assets/images/modern-driver.webp" alt="Modernized Classic driver station, showing the restored instrument panel and crisp original road geometry." width="1224" height="918" loading="lazy"></a>
-          <figcaption><strong>Driver station</strong><span>Modernized Classic version</span></figcaption>
+          <a href="assets/images/modern-driver.webp" aria-label="Open full-size Modernized Classic driver station screenshot, Modernized graphics"><img src="assets/images/modern-driver.webp" alt="Modernized Classic driver station in Modernized graphics, showing the restored instrument panel and crisp original road geometry." width="1224" height="918" loading="lazy"></a>
+          <figcaption><strong>Driver station</strong><span data-mode="Modernized">Modernized Classic version, Modernized mode</span></figcaption>
         </figure>
       </div>
       <dl class="feature-list">
@@ -402,7 +402,7 @@
               <p>Damaged Allied vehicles lie west of the player, across the Mossel, after defeating a Soviet reconnaissance group. A powerful Soviet patrol approaches southward along the river.</p>
               <p class="mission-objective"><strong>Objective</strong><span>Reach the damaged Allied vehicles before the Soviet patrol, then escort them to your base.</span></p>
             </article>
-            <p class="guide-link"><a href="assets/guides/field-guide.pdf?v=88f6025204d0">Open the field guide <span class="nowrap">(PDF, 4.8 MB)</span></a></p>
+            <p class="guide-link"><a href="assets/guides/field-guide.pdf?v=f3c1f782aec2">Open the field guide <span class="nowrap">(PDF, 4.8 MB)</span></a></p>
           </div>
           <figure class="map-figure" id="map-panel" aria-busy="false">
             <a id="map-full" tabindex="-1" href="assets/maps/manual-map-the-mossel-defense.webp" aria-label="Open full-size restored map of The Mossel Defense"><img id="scenario-image" src="assets/maps/manual-map-the-mossel-defense.webp" alt="Restored map of The Mossel Defense, showing the Mossel river, crossing, M1 base, bridge, roads and hills." width="1254" height="1254" loading="lazy"></a>
@@ -420,12 +420,12 @@
           <a class="button button-outline download-button" data-platform="macos" href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.4/Abrams-0.1.0-alpha.4-macOS-arm64.zip"><span>Download for macOS</span><span class="dot-list"><span>macOS&nbsp;14+</span><span>Apple&nbsp;Silicon</span><span>alpha&nbsp;4</span><span>290&nbsp;MB&nbsp;ZIP</span></span></a>
           <a class="button button-outline download-button" data-platform="windows" href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.4/Abrams-0.1.0-alpha.4-Windows-x86_64.zip"><span>Download for Windows</span><span class="dot-list"><span>Windows&nbsp;10+</span><span>x86_64</span><span>alpha&nbsp;4</span><span>317&nbsp;MB&nbsp;ZIP</span></span></a>
           <a class="button button-outline download-button" data-platform="linux" href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.4/Abrams-0.1.0-alpha.4-Linux-x86_64.zip"><span>Download for Linux</span><span class="dot-list"><span>Linux</span><span>x86_64</span><span>glibc&nbsp;2.35+</span><span>alpha&nbsp;4</span><span>327&nbsp;MB&nbsp;ZIP</span></span></a>
-          <a class="web-option" href="play/remaster.html" aria-label="Play the Abrams Web remaster"><span>Play in browser <small>Web edition</small></span><span>Bring your original PC game folder. A Genesis ROM is optional.</span></a>
+          <a class="web-option" href="play/remaster.html"><span>Play in browser <small>Web edition</small></span><span>Bring your original PC game folder. A Genesis ROM is optional.</span></a>
         </div>
         <h3 class="reference-title">Player reference</h3>
         <div class="reference-downloads" role="group" aria-label="Player reference downloads">
-          <a class="button button-outline download-button" href="assets/guides/keyboard-controls.pdf?v=a8498f39c0ef" download="Abrams-Keyboard-Controls.pdf"><span>Keyboard controls</span><span class="dot-list"><span>3-page reference</span><span>PDF</span></span></a>
-          <a class="button button-outline download-button" href="assets/guides/field-guide.pdf?v=88f6025204d0" download="Abrams-Field-Guide.pdf"><span>Field guide</span><span class="dot-list"><span>31 illustrated pages</span><span>PDF</span><span>4.8&nbsp;MB</span></span></a>
+          <a class="button button-outline download-button" href="assets/guides/keyboard-controls.pdf?v=4fdea02f5321" download="Abrams-Keyboard-Controls.pdf"><span>Keyboard controls</span><span class="dot-list"><span>3-page reference</span><span>PDF</span></span></a>
+          <a class="button button-outline download-button" href="assets/guides/field-guide.pdf?v=f3c1f782aec2" download="Abrams-Field-Guide.pdf"><span>Field guide</span><span class="dot-list"><span>31 illustrated pages</span><span>PDF</span><span>4.8&nbsp;MB</span></span></a>
         </div>
         <div class="download-links">
           <a href="https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.4">Alpha 4 release notes</a>
@@ -460,7 +460,7 @@
         <div class="faq-col">
         <details><summary>Is the original game included?</summary><p>No. The remaster is free, but it runs your own copy of the original PC game, which isn’t included. A Sega Genesis ROM is optional and isn’t included either.</p></details>
         <details><summary>Which copy of the PC game works?</summary><p>The importer checks every file against the one supported release and turns away other versions, changed files and partial folders. Choose the complete extracted game folder (all 68 original files), not a ZIP or the executables alone.</p></details>
-        <details><summary>Do I need the Genesis ROM?</summary><p>No. EGA, Upscaled and Modern work with the PC game alone. The supported raw ROM (not a ZIP) adds Genesis-mode artwork and music; it can’t replace the PC game.</p></details>
+        <details><summary>Do I need the Genesis ROM?</summary><p>No. Only Genesis mode needs it. With the PC game alone, the Web edition offers EGA, EGA Upscaled, Genesis Upscaled, Modernized and Tactical, and the alpha&nbsp;4 downloads offer EGA, Upscaled and Modern. The supported raw ROM (not a ZIP) adds Genesis-mode artwork and music; it can’t replace the PC game.</p></details>
         <details><summary>My computer warns me about the app.</summary><p>The macOS app is signed and notarized by Apple, so it opens normally. The Windows build is unsigned, so Windows may ask you to approve it. Compare your download with the published checksums, and never turn off system-wide security. On Linux, if the launcher won’t start, restore execute permissions as the <a href="https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.4">alpha 4 release notes</a> describe.</p></details>
         </div>
         <div class="faq-col">

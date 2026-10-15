@@ -193,6 +193,7 @@ func run() -> void:
 	# received while the worker restarts take effect at the next source frame.
 	audio_menu=preload("res://scripts/pc_play_menu.gd").new()
 	audio_menu.config_path=""
+	audio_menu.quality_config_path=""
 	root.add_child(audio_menu)
 	for operation in ["save_state","load_state","undo_load","failed_load"]:
 		for held_after in [[],[KEY_UP,KEY_SPACE],[KEY_KP_4]]:

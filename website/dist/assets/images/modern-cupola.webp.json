@@ -1,4 +1,4 @@
 {
-  "prompt": "Origin: artifacts/cupola-material-edges-20260929/scenario-frames-matched/scenario-0-cupola.png. Modern production-renderer replay capture; artifacts/cupola-material-edges-20260929/scenario-frames-matched/report.json. 4:3 trim (x 28\u20131252, y 42\u2013960) removing the in-game mode-switch notice; no retouching. 1224x918, WebP quality 92. Source SHA-256: 01efc2132d6f4c7a5bd59392e4fcbfb752e60aa5e2af0d787c581fa1f5f12cdf. Underlying original-game rights are retained.",
-  "createdAt": "2026-10-03T02:16:10.254527+00:00"
+  "prompt": "Origin: artifacts/tactical-optics-20261013/cupola-candidate.png. Tactical production-renderer replay screenshot from the accepted local optics build; artifacts/tactical-optics-20261013/pixel-comparison.json and delivery.json. Full 1440x811 composition preserved, including Tactical HUD; no retouching. WebP quality 92. Source SHA-256: 421f42823a85acb16c23b81701cc7d21a6a0bccf06cb1180725d0b31192dbf03. Underlying original-game rights are retained.",
+  "createdAt": "2026-10-14T10:54:47+00:00"
 }

@@ -7,13 +7,18 @@ signal speed_selected(multiplier: int)
 signal state_requested(operation: String, slot: int)
 signal control_notice(message: String)
 var shortcut_is_macos := _uses_macos_shortcuts()
+# Only hosts that report AltGr as Ctrl+Alt screen out layout characters.
+var layout_filter := _altgr_is_ctrl_alt()
 var shortcut_keys: Array = []
 const MODES := ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]
 var graphics_mode := "upscaled"
 # Saved intent stays independent of temporary startup overrides and fallback.
 var preferred_graphics_mode := ""
-var hud_style := "restored"
 const HUD_STYLES := ["restored","tactical"]
+# Tactical graphics with the Tactical HUD is the out-of-the-box view (Nell, 15 October
+# 2026); Genesis Upscaled stands in wherever the Modern catalogue is unavailable.
+const DEFAULT_HUD_STYLE := "tactical"
+var hud_style := DEFAULT_HUD_STYLE
 const QUALITY_DEFAULTS := {"msaa":4,"anisotropy":16}
 const QUALITY_LEVELS := {"msaa":[0,2,4,8],"anisotropy":[0,2,4,8,16]}
 var quality: Dictionary = QUALITY_DEFAULTS.duplicate()
@@ -21,6 +26,10 @@ var quality_config_path := "user://pc_graphics.cfg"
 var quality_menus: Dictionary = {}
 var quality_error := ""
 var genesis_available := true
+# The ROM was imported, even if this edition cannot load the native pack.
+var genesis_imported := false
+# A presentation asset problem the player should see (for example a damaged import).
+var presentation_note := ""
 var modern_available := false
 var speed := 1
 var busy := false
@@ -33,6 +42,11 @@ var load_popup: PopupMenu
 var state_slots: Array = []
 var state_message := "Save states include the campaign disk. Loading rewinds both."
 var help_popup: PopupMenu
+# A quick save onto an occupied slot needs a second press inside this window.
+const OVERWRITE_CONFIRM_MSEC := 4000
+var overwrite_armed_until := 0
+# Load menu ids above this restore slot N's overwritten archive (id-PREVIOUS_ID).
+const PREVIOUS_ID := 10
 var _styled_hud := ""
 var _tactical_bar := ColorRect.new()
 
@@ -128,6 +142,15 @@ static func _uses_macos_shortcuts() -> bool:
 	if OS.has_feature("web"): return false
 	return OS.get_name()=="macOS"
 
+static func _altgr_is_ctrl_alt() -> bool:
+	# Windows, natively and in its browsers, reports AltGr as Ctrl+Alt. A Mac
+	# browser's Ctrl+Option composes text (Option+S is ß) on a real chord, and
+	# X11 reports AltGr as its own level shift, so neither is filtered.
+	if OS.has_feature("web"):
+		var agent = JavaScriptBridge.eval("(navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||''",true)
+		return str(agent).to_lower().begins_with("win")
+	return OS.get_name()=="Windows"
+
 func _ready() -> void:
 	_tactical_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	_tactical_bar.show_behind_parent=true
@@ -148,7 +171,9 @@ func _ready() -> void:
 	load_popup.add_separator()
 	load_popup.add_item("Undo last load",0)
 	save_popup.id_pressed.connect(func(slot):request_state("save_state",slot))
-	load_popup.id_pressed.connect(func(slot):request_state("load_state",slot))
+	load_popup.id_pressed.connect(func(id):
+		if id>PREVIOUS_ID: request_state("load_previous",id-PREVIOUS_ID)
+		else: request_state("load_state",id))
 	session_popup.add_separator()
 	speed_popup=_submenu(session_popup,"Fast forward")
 	for multiplier in [1,8]:
@@ -213,7 +238,7 @@ func _reader_changed(open: bool) -> void:
 
 func load_quality_settings() -> bool:
 	quality=QUALITY_DEFAULTS.duplicate()
-	hud_style="restored"
+	hud_style=DEFAULT_HUD_STYLE
 	preferred_graphics_mode=""
 	quality_error=""
 	if quality_config_path.is_empty(): return true
@@ -231,8 +256,8 @@ func load_quality_settings() -> bool:
 			return false
 		loaded[key]=value
 	quality=loaded
-	var saved_style=file.get_value("graphics","hud_style","restored")
-	hud_style=saved_style if saved_style is String and saved_style in HUD_STYLES else "restored"
+	var saved_style=file.get_value("graphics","hud_style",DEFAULT_HUD_STYLE)
+	hud_style=saved_style if saved_style is String and saved_style in HUD_STYLES else DEFAULT_HUD_STYLE
 	if file.has_section_key("graphics","graphics_mode"):
 		var saved_mode=file.get_value("graphics","graphics_mode")
 		if not saved_mode is String or saved_mode not in MODES:
@@ -296,6 +321,9 @@ func handle_shortcut(event: InputEvent) -> bool:
 	var modifier: bool=event.meta_pressed and not event.ctrl_pressed and not event.alt_pressed if shortcut_is_macos else event.ctrl_pressed and event.alt_pressed and not event.meta_pressed
 	if not modifier:return false
 	if code not in [KEY_S,KEY_L,KEY_G] or (event.shift_pressed and code!=KEY_L):return false
+	# Windows reports AltGr as Ctrl+Alt. AltGr+S/L on some layouts types a
+	# letter (Polish ś, ł): that is text, never a save, load or graphics chord.
+	if layout_filter and not shortcut_is_macos and _layout_character(event,code):return false
 	# Claim the entire chord, including repeats and its release. The bridge polls
 	# Input directly, so marking the event handled alone cannot protect the guest.
 	for name in preload("res://scripts/pc_keyboard.gd").encode([code]):
@@ -306,13 +334,27 @@ func handle_shortcut(event: InputEvent) -> bool:
 	if event.shift_pressed and "shift" not in shortcut_keys: shortcut_keys.append("shift")
 	if not event.pressed or event.echo or not open_menus.is_empty():return true
 	match code:
-		KEY_S:request_state("save_state",1)
+		KEY_S:
+			if busy:return true
+			var saved := _slot_entry(1)
+			if saved.is_empty() or Time.get_ticks_msec()<overwrite_armed_until:
+				overwrite_armed_until=0
+				request_state("save_state",1)
+			else:
+				overwrite_armed_until=Time.get_ticks_msec()+OVERWRITE_CONFIRM_MSEC
+				control_notice.emit("Slot 1 holds a save from %s. Press %sS again to overwrite it."%[str(saved.get("saved_at","earlier")),shortcut_prefix()])
 		KEY_L:
 			var slot := 0 if event.shift_pressed else 1
 			if not busy and not request_state("load_state",slot):
 				control_notice.emit("No recovery state available" if slot==0 else "Slot 1 is empty or unavailable")
 		KEY_G:cycle_graphics()
 	return true
+
+static func _layout_character(event: InputEventKey, code: int) -> bool:
+	# A genuine chord carries no printable text, a control character, or at
+	# most its own letter. Anything else came from the keyboard layout.
+	if event.unicode<32: return false
+	return String.chr(event.unicode).to_lower()!=OS.get_keycode_string(code).to_lower()
 
 func game_keys(held: Array) -> Array:
 	var reader := get_tree().root.get_node_or_null("PlayerReference") if is_inside_tree() else null
@@ -337,10 +379,18 @@ func _submenu(parent: PopupMenu, title: String) -> PopupMenu:
 	_watch(menu)
 	return menu
 
+## Web owners who imported the ROM are told where Genesis mode runs, not asked to import it again.
+static func genesis_label(available: bool, imported: bool, web: bool) -> String:
+	if available: return "Genesis (original artwork)"
+	return "Genesis (desktop edition only)" if web and imported else "Genesis (requires optional import)"
+
 func available_graphics_modes() -> Array:
 	var modes: Array = ["ega","ega_upscaled","genesis","upscaled"] if genesis_available else ["ega","ega_upscaled","upscaled"]
 	if modern_available: modes.append_array(["modern","tactical"])
 	return modes
+
+func default_graphics_mode() -> String:
+	return "tactical" if "tactical" in available_graphics_modes() else "upscaled"
 
 func cycle_graphics() -> bool:
 	var modes := available_graphics_modes()
@@ -369,9 +419,11 @@ func choose_speed(multiplier: int) -> bool:
 	return true
 
 func request_state(operation: String, slot: int) -> bool:
-	if busy or operation not in ["save_state","load_state"]: return false
+	if busy or operation not in ["save_state","load_state","load_previous"]: return false
 	if operation=="save_state" and (slot<1 or slot>5): return false
 	if operation=="load_state" and not _has_slot(slot): return false
+	# Only a host that lists the archive accepts the operation.
+	if operation=="load_previous" and _previous_save(slot).is_empty(): return false
 	busy=true
 	state_message="Saving state..." if operation=="save_state" else "Loading state..."
 	refresh_controls()
@@ -379,12 +431,26 @@ func request_state(operation: String, slot: int) -> bool:
 	state_requested.emit(operation,slot)
 	return true
 
+func _slot_entry(slot: int) -> Dictionary:
+	# Any existing file is occupied, including one this build cannot load.
+	for entry in state_slots:
+		if entry is Dictionary and int(entry.get("slot",-1))==slot and entry.get("exists",true): return entry
+	return {}
+
+func _previous_save(slot: int) -> String:
+	# The host lists a verified slot-N.previous.zip as previous_saved_at.
+	if slot<1 or slot>5: return ""
+	for entry in state_slots:
+		if entry is Dictionary and int(entry.get("slot",-1))==slot and entry.has("previous_saved_at"): return str(entry.previous_saved_at)
+	return ""
+
 func _has_slot(slot: int) -> bool:
 	return state_slots.any(func(entry):return entry is Dictionary and int(entry.get("slot",-1))==slot and entry.get("exists",true) and entry.get("valid",true))
 
 func set_state_status(slots: Array, message: String="") -> void:
 	state_slots=slots.duplicate(true)
 	busy=false
+	overwrite_armed_until=0
 	if not message.is_empty(): state_message=message
 	refresh_controls()
 	if not message.is_empty():control_notice.emit(message)
@@ -413,7 +479,7 @@ func refresh_controls() -> void:
 	_apply_hud_theme()
 	_refresh_tactical_tooltips()
 	graphics_popup.set_item_disabled(MODES.find("genesis"),not genesis_available)
-	graphics_popup.set_item_text(MODES.find("genesis"),"Genesis (original artwork)" if genesis_available else "Genesis (requires optional import)")
+	graphics_popup.set_item_text(MODES.find("genesis"),genesis_label(genesis_available,genesis_imported,OS.has_feature("web")))
 	graphics_popup.set_item_disabled(MODES.find("modern"),not modern_available)
 	graphics_popup.set_item_text(MODES.find("modern"),"Modern (refined low-poly)" if modern_available else "Modern (assets unavailable)")
 	graphics_popup.set_item_disabled(MODES.find("tactical"),not modern_available)
@@ -423,20 +489,29 @@ func refresh_controls() -> void:
 	for key in quality_menus:
 		var menu: PopupMenu=quality_menus[key]
 		for index in menu.item_count: menu.set_item_checked(index,menu.get_item_id(index)==quality[key])
-	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else "Antialiasing applies to Genesis Upscaled, Modern and Tactical scenery")
+	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else presentation_note if not presentation_note.is_empty() else "Antialiasing applies to Genesis Upscaled, Modern and Tactical scenery")
 	for index in speed_popup.item_count:
 		speed_popup.set_item_checked(index,speed_popup.get_item_id(index)==speed)
 		speed_popup.set_item_disabled(index,busy)
 	for slot in range(1,6):
 		save_popup.set_item_disabled(save_popup.get_item_index(slot),busy)
-		save_popup.set_item_text(save_popup.get_item_index(slot),"Slot %d"%slot+(" ("+shortcut_prefix()+"S)" if slot==1 else ""))
 		var available := _has_slot(slot)
+		var saved := _slot_entry(slot)
+		var stored := "empty" if saved.is_empty() else str(saved.get("saved_at","saved")) if available else "invalid or incompatible"
+		# Saving names what it replaces, as Load does.
+		save_popup.set_item_text(save_popup.get_item_index(slot),("Slot %d (empty)"%slot if saved.is_empty() else "Slot %d (overwrite %s)"%[slot,stored])+(" ("+shortcut_prefix()+"S)" if slot==1 else ""))
 		load_popup.set_item_disabled(load_popup.get_item_index(slot),busy or not available)
-		var description := "Slot %d (empty)"%slot
-		for entry in state_slots:
-			if entry is Dictionary and int(entry.get("slot",-1))==slot and entry.get("exists",true):
-				description="Slot %d (%s)"%[slot,str(entry.get("saved_at","saved")) if available else "invalid or incompatible"]
-		load_popup.set_item_text(load_popup.get_item_index(slot),description+(" ("+shortcut_prefix()+"L)" if slot==1 else ""))
+		load_popup.set_item_text(load_popup.get_item_index(slot),"Slot %d (%s)"%[slot,stored]+(" ("+shortcut_prefix()+"L)" if slot==1 else ""))
 	load_popup.set_item_disabled(load_popup.get_item_index(0),busy or not _has_slot(0))
 	load_popup.set_item_text(load_popup.get_item_index(0),"Undo last load ("+shortcut_prefix()+"Shift+L)")
+	# Overwritten archives are listed only while the host advertises them, so
+	# the menu never offers an operation the host would reject.
+	for index in range(load_popup.item_count-1,-1,-1):
+		if load_popup.get_item_id(index)>=PREVIOUS_ID: load_popup.remove_item(index)
+	for slot in range(1,6):
+		var previous := _previous_save(slot)
+		if previous.is_empty(): continue
+		if load_popup.get_item_index(PREVIOUS_ID)<0: load_popup.add_separator("",PREVIOUS_ID)
+		load_popup.add_item("Overwritten slot %d (%s)"%[slot,previous],PREVIOUS_ID+slot)
+		load_popup.set_item_disabled(load_popup.get_item_index(PREVIOUS_ID+slot),busy)
 	session_popup.set_item_text(session_popup.get_item_index(100),state_message)

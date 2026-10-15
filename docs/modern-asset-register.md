@@ -10,7 +10,8 @@ The assets were produced by the same author who performed their mechanical revie
 
 * `tools/build_pc_modern_assets.py`: editable, deterministic procedural source, standard library only.
 * `tests/test_pc_modern_assets.py`: independent geometric fixtures and separate local-corpus integration checks.
-* `local-art/pc-modern/catalog.json`: runtime mesh contract and complete source registry.
+* `local-art/pc-modern/catalog.json`: runtime mesh contract. It carries the authored meshes and no SHAPE.TBL decode.
+* `local-art/pc-modern/source-shapes.json`: the source shape registry, a pure decode of the player's own SHAPE.TBL (`source_registry()`). It is never published; the Web edition derives it in the browser and the native import derives it on the player's machine.
 * `local-art/pc-modern/models/NNN.glb`: editable geometry previews in original raw axes and units.
 * `local-art/pc-modern/manifest.json`: source fingerprints, catalogue hash, counts and explicit completion categories.
 
@@ -23,11 +24,15 @@ Outputs remain in ignored local-art. No original resources, executable bytes, sc
 
 ## Mesh contract, schema 1
 
-Top level: `schema`, `authoring_revision`, `sources`, `classes`, `inventory`, `materials`, `models`, `coordinate_contract`, `visibility_contract`.
+Top level: `schema`, `authoring_revision`, `sources`, `classes`, `inventory`, `materials`, `models`, `coordinate_contract`, `visibility_contract`, `source_registry` (the registry pin, below).
 
 Each model is indexed by source `shape_index`. `class_roles` preserves every class-table primary, alternate and replacement association. `scenario_placements` counts the eight WLDs separately. `required` means present in those world files or referenced by the full class table, including player and special classes absent from SSS actor records.
 
 `source_primitives` is a list of `{id, prefix_bytes, vertices}` in the exact decoded primitive order. The `id` is the absolute offset in decoded SHAPE.TBL. Vertices are produced by the existing `primitive_vertices` decoder, including signed arithmetic and packed-vector conversion. `selectors`, `roots`, `groups` and `opaque_commands` retain the source structure. `source_lines` retains line and degenerate polygon witnesses.
+
+Since 2026-10-15 these six source fields (`selectors`, `roots`, `groups`, `source_primitives`, `opaque_commands`, `visual_commands`) are written to `source-shapes.json`, one entry per `shape_index`, and not to `catalog.json`. In the catalogue, each `source_lines` entry keeps only `source_primitive`, `source_groups` and an authored bridge `color`; its `vertices` (the cleaned primitive polygon) and `prefix_bytes` come back from the registry primitive. Class rows omit the raw SIM.EXE `raw_hex` table bytes, which no runtime reads. `catalog.json` pins the registry's SHA-256 under `source_registry`. `load_catalog()` (Python) and `load_catalogue()` (Godot) merge the two by `shape_index` and reject a missing, unpinned or foreign registry. They also reject a catalogue that still carries source fields. The in-memory `build()` result is unchanged, and `export()` refuses to write unless the stripped fields equal `source_registry()` of the local SHAPE.TBL. Authored triangles, including the triangulated `source_surface` faces of unrefined shapes, stay in the catalogue.
+
+Working if: `tests.test_pc_modern_assets` proves split, merge and build are equivalent and that the published catalogue has no decoded key; `web-prototype/derived_art.mjs` reproduces `source-shapes.json` byte for byte; and `test_pc_modern.gd` rejects an unpinned, foreign or absent registry.
 
 Each triangle contains:
 
@@ -83,6 +88,10 @@ Working if: both crews visibly retain a helmet and face within original head cov
 The US compound's existing flag (shape 156, source primitive 28325) now carries the Stars and Stripes: thirteen alternating red/white stripes and fifty five-point white stars in nine alternating six/five-star rows on a blue canton. The original flag plane, size, pole and source ownership are retained. Disjoint coloured facets avoid coplanar overlays or a new texture. Roof and wall Army stars, Soviet markings and every other model are unchanged.
 
 Working if: the flag has exactly thirteen stripe regions and fifty star regions, retains its original area and plane, renders red/white/blue in the native viewer, and all non-flag geometry and other models remain identical.
+
+At authoring revision 9 the catalogue contains 188 models and 23,720 triangles in total (`local-art/pc-modern/manifest.json`, catalogue SHA-256 `438dfe23…`). The 19,702 figures above are the revision 5 and 7 totals. The revision 8 total was not separately recorded.
+
+Working if: a rebuilt revision-9 catalogue reports 23,720 triangles, unless an authoring change is recorded here with its new total.
 
 ## Exact vegetation identity
 
@@ -373,7 +382,7 @@ Original `0b4d:31a6..324a` transforms the command center via `1a5c`, rejects the
 
 `abrams_trace.h` adds event46 at raster entry, event48 immediately before six span calls (`1446`, `1495`, `14c4`, `1573`, `15c2`, `15f1`) and point call `125f`, plus event47 at command return `0b4d:324a`. Entry snapshots are30bytes, spans18bytes; each is bounded, caller-validated and read-only. The original saved command DI and shape ES are recovered from exact stack depths20/20/16/18/18/14/14 respectively. Every span validates return3247 and original caller CS. There is no native pending field, so observer checkpoint ABI1 is unchanged.
 
-Event46 is15 little-endian words: schema, command, owner, radius, centerx, centery, clipleft, cliptop, clipright, clipbottom, page, packedcolors, packedclip/fill, two command words. Event48 is9 words: schema, command, owner, y, left, width, page, patternA, patternB. Pattern words come from actual AX/DX; point color comes from DS:359D. `pc_render_trace.py` resolves the original dither pattern to exact palette-index runs `{y,left,right,color}` with right-exclusive edges, preserves source painter order, and rejects stale/malformed/unfinished attribution. Unsupported negative signed radius inputs retain their raw word and effective radius0.
+Event46 is15 little-endian words: schema, command, owner, radius, centerx, centery, clipleft, cliptop, clipright, clipbottom, page, packedcolors (DS:359D low byte, DS:359E high byte; `pc_render_trace.py` publishes round-form `colors` as [359E, 359D], the same order as polygon `colors`), packedclip/fill, two command words. Event48 is9 words: schema, command, owner, y, left, width, page, patternA, patternB. Pattern words come from actual AX/DX; point color comes from DS:359D. `pc_render_trace.py` resolves the original dither pattern to exact palette-index runs with right-exclusive edges: `{y,left,right,color}` for solid or equal-parity rows, and `{y,left,right,colors:[even-x colour, odd-x colour]}` (absolute screen x parity) for alternating dithers, which `pc_modern_source_commands.gd` `round_runs()` expands per pixel. It preserves source painter order and rejects stale/malformed/unfinished attribution. Unsupported negative signed radius inputs retain their raw word and effective radius0.
 
 `tools/modern_assets/opaque_probe.py` executed33 unmodified original projection cases for all11 commands, plus two bridge control modes. `round_span_probe.py` executed10 original raster cases: filled/outline, point radius1, zero/negative radius, cap102 visible clipping, source-empty cap102, lower/right clipping and fully offscreen. All6822 actual EGA-written pixels, including colors and absence of extra coverage, match the packet spans; all seven span/point sites are witnessed.
 

@@ -70,23 +70,23 @@ class OutputGuardTests(unittest.TestCase):
 
     @unittest.skipUnless(HAS_PIL, 'Pillow required')
     def test_render_trace_capture(self):
-        for out in self.aliases('GAME'):
+        for out in self.aliases('GAME', 'GENESIS'):
             with self.subTest(out=out):
                 self.rejects('capture_pc_render_trace', ['--state', 's', '--output', out],
-                             'output must be outside original GAME')
+                             'output must be outside original sources')
 
     @unittest.skipUnless(HAS_PIL, 'Pillow required')
     def test_pc_effects(self):
-        for out in self.aliases('GAME'):
+        for out in self.aliases('GAME', 'GENESIS'):
             with self.subTest(out=out):
                 self.rejects('extract_pc_effects', ['--capture', 'c', '--trace', 't', '--output', out],
-                             'output must be outside GAME')
+                             'output must be outside original sources')
 
     def test_genesis_effects(self):
-        for out in self.aliases('GENESIS'):
+        for out in self.aliases('GAME', 'GENESIS'):
             with self.subTest(out=out):
                 self.rejects('extract_genesis_effects', ['--capture', 'c', '--palette-bank', '0', '--output', out],
-                             'output must be outside GENESIS')
+                             'output must be outside original sources')
 
     def test_genesis_damage(self):
         for out in self.aliases('GAME', 'GENESIS'):
@@ -98,9 +98,9 @@ class OutputGuardTests(unittest.TestCase):
         mod = importlib.import_module('tools.pc_vehicle_oracle')
         if mod.unicorn.__version__ != '2.1.4':
             self.skipTest('pinned Unicorn 2.1.4 required')
-        for out in self.aliases('GAME'):
+        for out in self.aliases('GAME', 'GENESIS'):
             with self.subTest(out=out):
-                self.rejects('pc_vehicle_oracle', ['--capture', 'c', '--output', out], 'output must be outside original GAME')
+                self.rejects('pc_vehicle_oracle', ['--capture', 'c', '--output', out], 'output must be outside original sources')
 
     @unittest.skipUnless(HAS_UNICORN, 'Unicorn required')
     def test_reticle_oracle(self):
@@ -124,14 +124,20 @@ class OutputGuardTests(unittest.TestCase):
     def test_user_rooted_guards(self):
         # --game/--root name the protected tree; its aliases are inside it, its neighbours are not.
         (self.root / 'GAME/SIM.EXE').write_bytes(b'')
-        for out in self.aliases('GAME'):
+        for out in self.aliases('GAME', 'GENESIS'):
             with self.subTest(out=out):
                 self.rejects('inspect_scenarios', ['--game', self.root / 'GAME', '--output', out / 'r.json'],
-                             'report output must be outside GAME')
+                             'report output must be outside original sources and --game')
                 self.rejects('unpack_pc_executables', ['--root', self.root / 'GAME', '--out', out],
-                             'outputs must be outside original reference directory')
+                             'outputs must be outside original sources and --root')
         from tools.source_guard import inside_source
         self.assertFalse(inside_source(self.root / 'GAME-copy/x', self.root, ('GAME',)))
+        # Decoded resources and decoded-prefix reports hash-match no pinned input: tracked paths are refused.
+        for out in (self.root / 'docs/research/scenarios.json', self.root / 'website/dist/s.json'):
+            for extra in ([], ['--extract']):
+                with self.subTest(out=out, extra=extra):
+                    self.rejects('inspect_scenarios', ['--game', self.root / 'GAME', '--output', out, *extra],
+                                 'report output must be in a private directory')
 
     def test_blender_builders(self):
         # Blender scripts: stub bpy, run as __main__ against the real ROOT; reference/ is protected too.
@@ -145,6 +151,97 @@ class OutputGuardTests(unittest.TestCase):
                     mock.patch.object(sys, 'argv', argv), no_writes(), contextlib.redirect_stderr(io.StringIO()), \
                     self.assertRaises(exc):
                 runpy.run_path(str(ROOT / 'tools' / script), run_name='__main__')
+
+
+# Every tool with a caller-chosen output path must call inside_source(). Exempt only with a reason.
+OUTPUT_OPTIONS = {'--output', '--out', '--output-dir', '--out-dir', '--dest', '--destination', 'output'}
+EXEMPT = {
+    'build_pc_trace_core.py': 'core-gpl cluster owns it; guard requested on --output-dir',
+}
+# Tools guarded in the output sweep: extra required arguments, none read before the guard.
+SWEPT = {'audit_pc_audio': [], 'audit_pc_effect_inventory': [], 'audit_pc_effect_modes': [], 'build_frontend_music': [],
+         'build_pc_map_frame_catalog': [], 'check_crew_transcripts': ['--directory', 'x'], 'extract_genesis_audio': ['--label', 'x'],
+         'extract_genesis_samples': [], 'generate_crew_voice': [], 'genesis_capture': [], 'genesis_effect_oracle': [],
+         'genesis_model_oracle': [], 'pc_audio_loop_oracle': [], 'pc_bitmap_oracle': ['--capture', 'x'],
+         'pc_damage_voice_oracle': [], 'pc_dissolve_oracle': ['--capture', 'x'], 'pc_dynamic_map_oracle': [],
+         'pc_font_oracle': ['--capture', 'x'], 'pc_map_frame_oracle': [], 'pc_material_oracle': ['--capture', 'x'],
+         'pc_plate_oracle': ['--capture', 'x'], 'pc_remaining_voice_oracle': [], 'pc_request_sound_oracle': [],
+         'pc_vehicle_catalog_oracle': ['--capture', 'x'], 'verify_pc_audio_trace': ['--trace', 'x', '--baseline', 'x'],
+         'verify_pc_bridge': ['--state', 'x'], 'verify_pc_dialogue': ['--trace', 'x', '--baseline', 'x'],
+         'verify_pc_driver_overlay': ['--trace', 'x', '--baseline', 'x'], 'verify_pc_dynamic_map': ['--mode', 'trace', '--state', 'x'],
+         'verify_pc_held_inputs': [], 'verify_pc_plate_overlay': ['--report', 'x'], 'verify_pc_readiness': ['--trace', 'x', '--baseline', 'x'],
+         'verify_pc_save_states': [], 'verify_pc_text_trace': ['--trace', 'x', '--baseline', 'x'], 'extract_genesis_vdp': None,
+         'modern_assets/round_span_probe': ['--output-dir']}
+OPTIONAL_MODULES = ('PIL', 'unicorn', 'fontTools', 'reportlab')
+
+
+class OutputSweepTests(unittest.TestCase):
+    def test_every_output_tool_calls_the_source_guard(self):
+        import ast
+        for path in sorted([*(ROOT / 'tools').glob('*.py'), *(ROOT / 'tools/modern_assets').glob('*.py')]):
+            tree = ast.parse(path.read_text())
+            options = {a.value for n in ast.walk(tree) if isinstance(n, ast.Call) and getattr(n.func, 'attr', '') == 'add_argument'
+                       for a in n.args if isinstance(a, ast.Constant) and isinstance(a.value, str)}
+            if not options & OUTPUT_OPTIONS or path.name in EXEMPT:
+                continue
+            calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and ast.unparse(n.func).endswith('inside_source')]
+            with self.subTest(tool=str(path.relative_to(ROOT))):
+                self.assertTrue(calls, 'writes a caller-chosen path without tools.source_guard.inside_source()')
+
+    def test_swept_tools_refuse_miscased_sources_before_writing(self):
+        wrote = AssertionError('touched a file before the output guard')
+        for name, extra in SWEPT.items():
+            for alias in ('game', 'Genesis'):
+                target = ROOT / alias / 'never-created-output-sweep' / 'x'
+                argv = [str(ROOT / 'capture'), str(target)] if extra is None else \
+                    [*extra, str(target)] if extra == ['--output-dir'] else [*extra, '--output', str(target)]
+                stderr = io.StringIO()
+                with self.subTest(tool=name, alias=alias):
+                    try:
+                        with mock.patch.object(sys, 'argv', [name, *argv]), mock.patch.object(sys, 'path', [str(ROOT / 'tools'), *sys.path]), \
+                                mock.patch.object(Path, 'mkdir', side_effect=wrote), mock.patch.object(Path, 'write_text', side_effect=wrote), \
+                                mock.patch.object(Path, 'write_bytes', side_effect=wrote), mock.patch.object(Path, 'open', side_effect=wrote), \
+                                mock.patch('os.mkdir', side_effect=wrote), contextlib.redirect_stderr(stderr), \
+                                self.assertRaises(SystemExit) as caught:
+                            runpy.run_path(str(ROOT / 'tools' / f'{name}.py'), run_name='__main__')
+                    except ModuleNotFoundError as error:
+                        if error.name not in OPTIONAL_MODULES: raise
+                        self.skipTest(f'{error.name} unavailable in this interpreter')
+                    self.assertEqual(caught.exception.code, 2, stderr.getvalue()[-400:])
+                    self.assertIn('outside original', stderr.getvalue())
+                    self.assertFalse(target.parent.exists())
+
+    def test_swept_tools_import_the_guard_in_script_mode(self):
+        # `python3 tools/<name>.py` puts tools/, not the repo, on sys.path: the guard import must still resolve.
+        env = {k: v for k, v in os.environ.items() if k != 'PYTHONPATH'} | {'PYTHONDONTWRITEBYTECODE': '1'}
+        with tempfile.TemporaryDirectory() as cwd:
+            for name in SWEPT:
+                with self.subTest(tool=name):
+                    done = subprocess.run([sys.executable, str(ROOT / 'tools' / f'{name}.py'), '--help'], cwd=cwd, env=env,
+                                          capture_output=True, text=True, timeout=60)
+                    missing = [m for m in OPTIONAL_MODULES if f"No module named '{m}'" in done.stderr]
+                    if done.returncode and missing:
+                        self.skipTest(f'{missing[0]} unavailable in this interpreter')
+                    self.assertEqual(done.returncode, 0, done.stderr[-400:])
+                    self.assertIn('usage:', done.stdout)
+
+    def test_bearing_install_refuses_outside_source_before_any_take_is_read(self):
+        from tools.install_pc_bearings import prepare
+        with tempfile.TemporaryDirectory() as outside, \
+                mock.patch.object(Path, 'read_text', side_effect=AssertionError('read before the source check')), \
+                self.assertRaisesRegex(ValueError, '--source must be inside the repository'):
+            prepare(Path(outside) / 'bearing-batches')
+
+    def test_request_sounds_refuse_the_whole_batch_before_writing(self):
+        from tools import build_pc_request_sounds
+        for existing in ('pc_request_10.wav', 'pc_request_provenance.json'):
+            with self.subTest(existing=existing), tempfile.TemporaryDirectory() as tmp:
+                audio = Path(tmp) / 'godot/assets/audio'
+                audio.mkdir(parents=True)
+                (audio / existing).write_bytes(b'kept')
+                with mock.patch.object(build_pc_request_sounds, 'ROOT', Path(tmp)), self.assertRaises(FileExistsError):
+                    build_pc_request_sounds.main()
+                self.assertEqual([p.name for p in audio.iterdir()], [existing])
 
 
 class ScriptModeImportTests(unittest.TestCase):

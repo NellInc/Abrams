@@ -14,10 +14,12 @@ import unicorn
 from unicorn.x86_const import (UC_X86_REG_CS, UC_X86_REG_DS, UC_X86_REG_ES,
     UC_X86_REG_SS, UC_X86_REG_SP, UC_X86_REG_BP, UC_X86_REG_AX, UC_X86_REG_EFLAGS)
 try:
+    from tools.source_guard import inside_source
     from tools.pc_bearing_oracle import (ROOT, LOAD, DATA_SEGMENT, RETURN_IP,
         SIM_SHA256, cpu, original_unpack, set_registers, run_until, sha256)
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from pc_bearing_oracle import (ROOT, LOAD, DATA_SEGMENT, RETURN_IP,
         SIM_SHA256, cpu, original_unpack, set_registers, run_until, sha256)
 
@@ -68,7 +70,7 @@ def run():
                 rows.append({'family':family,'index':index,'condition_before':condition,
                     'condition_after':actual,'speaker':speaker,'assignment_ip':0x3dd2 if parts else None,
                     'pointers':pointers,'parts':parts,'caption':''.join(parts)})
-    return {'source_sha256':SIM_SHA256,'engine':'unicorn-2.1.4/x86-16','unpack':unpacked,
+    return {'source_sha256':SIM_SHA256,'engine':f'unicorn-{unicorn.__version__}/x86-16','unpack':unpacked,
         'scope':__doc__,'rows':rows}
 
 
@@ -76,7 +78,9 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--check-fixture',type=Path)
-    args=p.parse_args();result=run()
+    args=p.parse_args()
+    if inside_source(args.output,ROOT): p.error('output must be outside original sources')
+    result=run()
     if args.check_fixture and result!=json.loads(args.check_fixture.read_text()):
         raise ValueError('original damage messages differ from fixture')
     args.output.parent.mkdir(parents=True,exist_ok=True)

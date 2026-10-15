@@ -130,6 +130,14 @@ func run() -> void:
 		check(enabled,"original pool restored: "+entry.label)
 		if not enabled: continue
 		check(art.active.pixels>50000,"complete background survives clipboard")
+		# An identical frame reuses the decoded masks and their derived plate
+		# runs, but still re-proves source pixels and yields the same result.
+		var decodes:int=art.mask_decode_count
+		var first:Dictionary=art.active.duplicate(true)
+		var panel:bool=art.arming_panel.active
+		var texts:Array=art.typography.runs.map(func(r):return r.text)
+		check(art.set_frame(source,program,entry.presentation) and art.mask_decode_count==decodes,"identical frame decodes no mask again: "+entry.label)
+		check(art.active==first and art.arming_panel.active==panel and art.typography.runs.map(func(r):return r.text)==texts,"identical frame reproduces the same proof: "+entry.label)
 		if art.text_enabled and entry.label!="boot-21" and not entry.label.ends_with("-press"):
 			check(art.typography.runs.size()==7,"seven original clipboard text runs: "+str(art.typography.runs.map(func(r):return r.text)))
 			check(art.arming_panel.active,"complete original panel enables remastered clipboard: "+entry.label)
@@ -174,7 +182,13 @@ func run() -> void:
 		bad=entry.presentation.duplicate(true);bad.palette_rgb[4][0]=1
 		check(not art.set_frame(source,program,bad),"changed source palette rejected")
 		var changed := source.duplicate();changed.set_pixel(20,10,Color.MAGENTA)
+		var decodes_before:int=art.mask_decode_count
 		check(not art.set_frame(changed,program,entry.presentation),"one source pixel mismatch rejects replacement")
+		check(art.mask_decode_count==decodes_before,"cached masks never hide a changed source pixel")
+		for at in [Vector2i(0,0),Vector2i(319,199),Vector2i(160,100)]:
+			if roundi(mask.get_pixelv(at).r*255)!=8: continue
+			changed=source.duplicate();changed.set_pixelv(at,Color.MAGENTA)
+			check(not art.set_frame(changed,program,entry.presentation),"changed plate-8 pixel rejects at "+str(at))
 		bad=entry.presentation.duplicate(true)
 		var ui := Image.new();ui.load_png_from_buffer(Marshalls.base64_to_raw(bad.ui_overlay.mask_png));ui.set_pixel(20,10,Color.BLACK)
 		bad.ui_overlay.mask_png=Marshalls.raw_to_base64(ui.save_png_to_buffer())

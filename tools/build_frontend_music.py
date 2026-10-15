@@ -15,6 +15,12 @@ from pathlib import Path
 import struct
 import wave
 
+try:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source
+
 ROOT = Path(__file__).resolve().parents[1]
 RATE = 24000
 CONTEXTS = ('intro', 'menu', 'briefing', 'debrief')
@@ -147,7 +153,7 @@ def build(source, output):
                          **write_wave(path,left,right),'events':events}
     manifest={'schema':1,'kind':'authored sample-based frontend score',
         'claim':'New arrangements, not the original Genesis score or exact chip synthesis',
-        'source_policy':'Local-only source-derived percussion; no mixed gameplay recording, no upload or redistribution authority',
+        'source_policy':'Percussion derived from original Genesis samples; no mixed gameplay recording. The owner authorised public browser use on 10 October 2026 (docs/release-rights.md); redistribution rights in the donor samples are not established',
         'builder_sha256':digest(Path(__file__)),'native_sources':receipts,'tracks':tracks}
     (output/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     return manifest
@@ -158,6 +164,7 @@ def main():
     parser.add_argument('--source',type=Path,default=ROOT/'local-audio/genesis-native-v1')
     parser.add_argument('--output',type=Path,default=ROOT/'local-audio/frontend-music-v1')
     args=parser.parse_args()
+    if inside_source(args.output,ROOT): parser.error('output must be outside original sources')
     result=build(args.source,args.output)
     print(json.dumps({name:{k:v for k,v in track.items() if k!='events'} for name,track in result['tracks'].items()},indent=2))
 

@@ -21,9 +21,11 @@ extern "C" void abrams_frontend_text_configure(AbramsTraceCallback);
 
 namespace {
 constexpr const char* kSaveDirectory = "/saves";
-// A source-owned SIM draw can snapshot the 640 KiB RAM image more than 25
-// times in one original frame. The former 16 MiB cap stopped ordinary play.
-// Keep a finite bound; the observer consumes this packet inside its worker.
+// A source-owned SIM draw once snapshot the 640 KiB RAM image more than 25
+// times in one original frame, and the former 16 MiB cap stopped ordinary play.
+// SIM events 26/28/29 now carry AWB1 RAM window bundles (about 10% of 640 KiB
+// each); frontend event 26 still copies the full 640 KiB. Keep a finite bound;
+// the observer consumes this packet inside its worker.
 constexpr size_t kTraceLimit = 64 * 1024 * 1024;
 std::map<std::string, std::string> defaults;
 std::map<std::string, std::string> overrides = {

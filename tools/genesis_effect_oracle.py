@@ -10,20 +10,25 @@ import json
 from pathlib import Path
 import struct
 
+import unicorn
 from unicorn import Uc, UC_ARCH_M68K, UC_MODE_BIG_ENDIAN
 from unicorn.m68k_const import (UC_CPU_M68K_M68000, UC_M68K_REG_SR,
     UC_M68K_REG_A0, UC_M68K_REG_A7, UC_M68K_REG_D0, UC_M68K_REG_D1,
     UC_M68K_REG_PC)
 try:
-    from tools.extract_genesis_effects import ROOT, ROM_HASH, TABLE, decode_effects
+    from tools.source_guard import inside_source
+    from tools.extract_genesis_effects import COUNT, ROOT, ROM_HASH, TABLE, decode_effects
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
-    from extract_genesis_effects import ROOT, ROM_HASH, TABLE, decode_effects
+    from source_guard import inside_source
+    from extract_genesis_effects import COUNT, ROOT, ROM_HASH, TABLE, decode_effects
 
 
 def verify(rom):
     if hashlib.sha256(rom).hexdigest() != ROM_HASH:
         raise ValueError("Unrecognized original ROM")
+    if unicorn.__version__ != "2.1.4":
+        raise ValueError("requires pinned unicorn==2.1.4")
     cpu = Uc(UC_ARCH_M68K, UC_MODE_BIG_ENDIAN)
     cpu.ctl_set_cpu_model(UC_CPU_M68K_M68000)
     cpu.mem_map(0, 0x80000)
@@ -36,7 +41,10 @@ def verify(rom):
     cpu.mem_write(0xFFFFF100, struct.pack(">10H", *[x * 256 for x in range(10)]))
     positions = [(8 + phase, 8) for phase in range(8)] + [(0, 0), (64, 54), (12, -3), (-8, 10), (80, 0), (0, 64)]
     cases, compared = 0, 0
-    for sprite in decode_effects(rom):
+    sprites = decode_effects(rom)
+    if len(sprites) != COUNT:
+        raise ValueError(f"Decoded {len(sprites)} effects, expected {COUNT}")
+    for sprite in sprites:
         for background in (0, 5, 15):
             for x, y in positions:
                 backing = bytes([background * 17]) * 2560
@@ -66,8 +74,8 @@ def verify(rom):
                 compared += 80 * 64
                 cases += 1
     return {"rom_sha256": ROM_HASH, "entry": "0x5988", "return": "0x70000",
-            "cpu": "Unicorn M68000, original instructions unchanged",
-            "effects": 64, "positions": positions, "backgrounds": [0, 5, 15],
+            "cpu": "Unicorn M68000, original instructions unchanged", "unicorn": unicorn.__version__,
+            "effects": len(sprites), "positions": positions, "backgrounds": [0, 5, 15],
             "cases": cases, "compared_pixels": compared, "mismatched_pixels": 0,
             "scope": "Source decode, nibble alignment, opaque/preserve behavior and bounded clipping. Separate from native live timing and palette proof."}
 
@@ -77,6 +85,8 @@ def main():
     parser.add_argument("--rom", type=Path, default=ROOT / "GENESIS/M-1 Abrams Battle Tank (USA, Europe).md")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if inside_source(args.output, ROOT):
+        parser.error("output must be outside original sources")
     if args.output.exists():
         parser.error("output must be a fresh report path")
     result = verify(args.rom.read_bytes())

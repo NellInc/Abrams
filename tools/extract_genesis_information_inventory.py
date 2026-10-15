@@ -8,7 +8,7 @@ import argparse,hashlib,json,struct,sys
 from pathlib import Path
 ROOT_FOR_IMPORT = Path(__file__).resolve().parents[1]
 if str(ROOT_FOR_IMPORT) not in sys.path: sys.path.insert(0, str(ROOT_FOR_IMPORT))
-from tools.extract_genesis_newspapers import ROOT,ROM_SHA
+from tools.extract_genesis_newspapers import ROOT,ROM_SHA,pinned_unicorn
 from tools.source_guard import inside_source
 
 def chain(rom,start,stop,kind):
@@ -25,7 +25,7 @@ def chain(rom,start,stop,kind):
 def decode(rom,items,out):
     from unicorn import Uc,UC_ARCH_M68K,UC_MODE_BIG_ENDIAN,UC_PROT_READ,UC_PROT_EXEC
     from unicorn.m68k_const import UC_CPU_M68K_M68000,UC_M68K_REG_SR,UC_M68K_REG_A0,UC_M68K_REG_A1,UC_M68K_REG_A7,UC_M68K_REG_PC
-    m=Uc(UC_ARCH_M68K,UC_MODE_BIG_ENDIAN);m.ctl_set_cpu_model(UC_CPU_M68K_M68000)
+    pinned_unicorn();m=Uc(UC_ARCH_M68K,UC_MODE_BIG_ENDIAN);m.ctl_set_cpu_model(UC_CPU_M68K_M68000)
     m.mem_map(0,0x80000);m.mem_write(0,rom);m.mem_protect(0,0x80000,UC_PROT_READ|UC_PROT_EXEC);m.mem_map(0xffff0000,65536)
     for entry in items:
         m.mem_write(0xffff0000,bytes(65536));m.reg_write(UC_M68K_REG_SR,0x2000);m.reg_write(UC_M68K_REG_A7,0xffffef00);m.mem_write(0xffffef00,struct.pack('>I',0x70000));m.reg_write(UC_M68K_REG_A0,entry['record']+12);m.reg_write(UC_M68K_REG_A1,0xffff0000)
@@ -75,6 +75,6 @@ def main():
     if a.render:
         report=json.loads((a.output/'inventory.json').read_text());render(a.output,report,rom)
     else:
-        a.output.mkdir(parents=True,exist_ok=True);maps=chain(rom,0x18628,0x1dfde,'map');tiles=chain(rom,0x1dfde,0x3c09e,'tiles');decode(rom,maps+tiles,a.output);report={'rom_sha256':ROM_SHA,'maps':maps,'tiles':tiles,'scope':__doc__}
+        a.output.mkdir(parents=True,exist_ok=True);maps=chain(rom,0x18628,0x1dfde,'map');tiles=chain(rom,0x1dfde,0x3c09e,'tiles');decode(rom,maps+tiles,a.output);report={'rom_sha256':ROM_SHA,'unicorn':pinned_unicorn(),'maps':maps,'tiles':tiles,'scope':__doc__}
     (a.output/'inventory.json').write_text(json.dumps(report,indent=2)+'\n');print('GENESIS_INFORMATION_INVENTORY:',len(report['maps']),'maps;',len(report['tiles']),'tile banks')
 if __name__=='__main__':main()

@@ -1,16 +1,16 @@
 {
   "files": {
     ".generated/build-info.json": {
-      "bytes": 168,
-      "sha256": "16fd87109e1115542cfd0b71421ff356784e423a1ef79e1e85fe59caa2f3f1ec"
+      "bytes": 250,
+      "sha256": "da10d695242030f55988db46293863865717e7f5b9c0196ff74b0574c27b0e92"
     },
     ".generated/core.js": {
       "bytes": 150361,
       "sha256": "515a0159079abfaa03325b5b149e21f959d1a2820e98819dc8061df3109650e6"
     },
     ".generated/core.wasm": {
-      "bytes": 2597599,
-      "sha256": "0d7e1b9b89b60fc49a10ab17906b42fee7704f858e2a19605626d61ca1db882c"
+      "bytes": 2601985,
+      "sha256": "c84edcbc036b09e510fda60df020c522d529bcf044f260e4ddc28d0f7cc06c2f"
     },
     ".generated/game-inputs.json": {
       "bytes": 8370,
@@ -37,8 +37,8 @@
       "sha256": "efb917219f345230545e5fe56ed0df313418e604e1ce42bd5cc3789c4b6bd37f"
     },
     ".generated/godot/index.pck": {
-      "bytes": 16258400,
-      "sha256": "531f393ce1299b699559fe4090d1e2747288eff56ff8b55e1e8195b1f82d06b8"
+      "bytes": 13614404,
+      "sha256": "7da41720051a3551cdd90ba4ea7f0060c9797c5612a47d3e4ff329de57a58bee"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
@@ -69,36 +69,48 @@
       "sha256": "831fd1e535084b972f87c6a35275de3d236efd5166f5e77ce89497710635e73c"
     },
     ".generated/python-source.zip": {
-      "bytes": 403601,
-      "sha256": "ec54d9761df90a761c3d9a88a378fc887b0bf8690ecb0af445c1982368968c3c"
+      "bytes": 430817,
+      "sha256": "9e16bfa4ec1898e708caf8473b1ca2829f82d1f97e521955d40b5f9ef1c44c2a"
     },
     ".generated/remaster-assets-00.zip": {
-      "bytes": 47737278,
-      "sha256": "715afab15a4b522734a7ffbfbf2ad813bd5b655e7543c05d411170436d4a86ce"
+      "bytes": 29013294,
+      "sha256": "175c11d183d4763a4035926e17ca0961b12ee806b112ce219f80c6515e78e53d"
     },
     ".generated/remaster-assets-01.zip": {
-      "bytes": 47075992,
-      "sha256": "b85088ba09795ccb502f3e7e4b2fac37707af979486615c6083588a5a6dc00d8"
+      "bytes": 11723903,
+      "sha256": "425db48058ebdafe044a3575727b4fb51b12ec5b4a6b5105f160209a76639ac7"
     },
     ".generated/remaster-assets-02.zip": {
-      "bytes": 46867588,
-      "sha256": "6a9147a8db28c73de6af9e4dc1fbb8466862c57e7885fec240bcc3c657a81955"
+      "bytes": 37515333,
+      "sha256": "b855416d90d782ca8dbaae95226f667b97b541b9b1edf9643a8d5bea1ae6cf08"
     },
     ".generated/remaster-assets-03.zip": {
-      "bytes": 47029357,
-      "sha256": "c5c6b11486d44c037d9da6850573b32931573b3924895d189c2566afe4def64f"
+      "bytes": 11564046,
+      "sha256": "27a69ccbf0d8f207c15c67b450af0f0d2cc3f51ffb174e5676227730d921f087"
     },
     ".generated/remaster-assets-04.zip": {
-      "bytes": 6109694,
-      "sha256": "2504b2da84646962e80cd3171fc76c933d2e399a03bf29c61af460632f048d6d"
+      "bytes": 46896494,
+      "sha256": "55ddcc26b9f31c3a99c19577f07925984a77e857b583fdcd606b004612f633b8"
+    },
+    ".generated/remaster-assets-05.zip": {
+      "bytes": 16762438,
+      "sha256": "52ebd129c4e72732f2e37670be2d315449af13d8e6f7e572b131e14deb758fff"
+    },
+    ".generated/remaster-assets-06.zip": {
+      "bytes": 16185537,
+      "sha256": "11c2c5885350dd94546483dcc863356219d18a3446a43424a8803489430e129e"
+    },
+    ".generated/remaster-assets-07.zip": {
+      "bytes": 1403953,
+      "sha256": "1cd06a3c316bd5891ef40486418f7289d17e7a4754c6fe8ad287ec218b89f8e6"
     },
     ".generated/remaster-assets.json": {
-      "bytes": 45764,
-      "sha256": "9bc5f0ca4da566d437b59d8eb64b2ed308d1e0d5d8f29101aa246ef645be54c4"
+      "bytes": 28946,
+      "sha256": "7548c3302d70bce9981d6c3af13e8491c4808180224b4114e0d6832a3da5606e"
     },
     ".generated/web-core-corresponding-source.tar.gz": {
-      "bytes": 2308137,
-      "sha256": "dff2085594c4d1fb9dd2483802002bba548f786dde7246dae3190be0170af6d7"
+      "bytes": 2311357,
+      "sha256": "46babe047ab5e7376bbb0459859205f92e6b0877b41104097c7e5c004565b1bb"
     },
     "LICENSES/CPython-3.13.2.txt": {
       "bytes": 13809,
@@ -111,6 +123,10 @@
     "LICENSES/Godot-4.7.2.json": {
       "bytes": 116082,
       "sha256": "58e0e89516fd77704c0c14c5d51b86671167f3e5766511ba1d2dc3e9f5fe308a"
+    },
+    "LICENSES/IBM-Plex-OFL.txt": {
+      "bytes": 4456,
+      "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da"
     },
     "LICENSES/Pillow-11.3.0.txt": {
       "bytes": 1453,
@@ -125,8 +141,8 @@
       "sha256": "3ad157e302b615974972849a0c52e32e0e2a31ee677aed4e6db23ecf95bbe19a"
     },
     "THIRD_PARTY.txt": {
-      "bytes": 1117,
-      "sha256": "763525c102aeb6cb868b49962a3ce744baec97229b04a03245c02a784d62c74d"
+      "bytes": 1425,
+      "sha256": "e10556a919fcf36f448defb7249a08b998b3f919ef29ba2432ed6ccfb9c9aefe"
     },
     "assets/Barlow-OFL.txt": {
       "bytes": 4377,
@@ -137,16 +153,16 @@
       "sha256": "a3260b525c579d790fff8f5cbc9058e9fbadf2759dc959dfe2c9051e53708dc4"
     },
     "bridge_host.mjs": {
-      "bytes": 5562,
-      "sha256": "f7f26aac47341e5d6d341704ffc53a6d5bfa829617bc940c24727d477ac5e9b3"
+      "bytes": 5934,
+      "sha256": "5a84ca4255771bbfca2681d7ecd486a81c26999f8d9cf4586d242900e6e6c20b"
     },
     "bridge_worker.mjs": {
-      "bytes": 15316,
-      "sha256": "215f91b10fb9a51624c3a437439f74fd782fa40a741d4793b3d9b76ac04754bd"
+      "bytes": 19104,
+      "sha256": "cd95d3ba265c2451ff0b67cbb44b92d4f8602ecef9d66ecb1ffa2b4e39a56850"
     },
     "browser_observer.mjs": {
-      "bytes": 2345,
-      "sha256": "da2fce1094ef1f647785cc678b6830adbd0d3189ccf0ca4c9940c31c37b2afd8"
+      "bytes": 4339,
+      "sha256": "b61e4d52cfb6b868f2c299095297d29cd8144b4da1ef3565f5696a1e6ad342df"
     },
     "checkpoint_core.mjs": {
       "bytes": 2753,
@@ -156,29 +172,37 @@
       "bytes": 4494,
       "sha256": "8d8db41491e12ca8b1bdf21d1799145ed887560c79828dcc4636eec1656004ac"
     },
+    "core_worker.mjs": {
+      "bytes": 6022,
+      "sha256": "7fad584c837db838b1f57e146aa8114c486e77e6ad6de64162be397f279374de"
+    },
+    "derived_art.mjs": {
+      "bytes": 25260,
+      "sha256": "7c3173b44bfececa2d77f27f94663e60195434a9542a0f792171086435571f15"
+    },
     "remaster.html": {
-      "bytes": 11902,
-      "sha256": "28a30f42ea82dab82f49bcdaa99849caedfa271e482ecd2ab83c4d965243b626"
+      "bytes": 12079,
+      "sha256": "6b27a7e253e9dc586b6c3ea7abd31bd29d442acc15ddfce0728adab201aac957"
     },
     "remaster.mjs": {
-      "bytes": 21194,
-      "sha256": "4a67e8fd61bfcf3774258c640026b19d67bb6bfac78737de22669e800f3c1f94"
+      "bytes": 23824,
+      "sha256": "c5e62465a7e082a5676f48999d0c3f192821e2b00442c4b7d0fd02fd12772c6e"
     },
     "remaster.service.worker.js": {
-      "bytes": 802,
-      "sha256": "c83840a3ec426ac8bb0668e04a3f468e423e6e729a60bb358dca5492eefe1682"
+      "bytes": 4557,
+      "sha256": "27718d510eb0d6ee68ac618760f9cee11f2183cac17879d19738187363248d69"
     },
     "remaster_assets.mjs": {
-      "bytes": 6607,
-      "sha256": "62f3d0052fe117cd18d8328075ce6279cf30abcf8eca127ce65325383df79171"
+      "bytes": 10468,
+      "sha256": "3aa50d5933f9fb9ee6de78ecf7055b644ebe52957618986fa49a4c4e3a455764"
     },
     "style.css": {
       "bytes": 4465,
       "sha256": "c62ad92fac30ca4e3bd9ce211edb6565e3c5a883dd866bff1ff2a8dca4f0d9e9"
     },
     "zip_store.mjs": {
-      "bytes": 6324,
-      "sha256": "864ebb0dfb761758dfa69af8f9fe05cad849eabc655af3a57bc0e43f020b2c01"
+      "bytes": 6331,
+      "sha256": "567773d0e9330095d82e5a9f441b858f5a009e73ad46f2ced27c681468296024"
     }
   },
   "original_pc_files_included": false,

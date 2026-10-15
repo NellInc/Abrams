@@ -34,14 +34,26 @@ func _capture() -> void:
 	# its layout, not Windows/Linux platform acceptance.
 	# Construct a local menu in its startup mode rather than switching an
 	# existing native menu (whose cached native minimum size can remain zero).
-	var settings: Dictionary=audio_menu.settings.duplicate()
-	root.remove_child(audio_menu)
-	audio_menu.free()
-	audio_menu=preload("res://scripts/pc_audio_menu.gd").new()
-	audio_menu.prefer_global_menu=false
-	audio_menu.settings=settings
-	audio_menu.audio=pc_audio
-	audio_menu.config_path=""
+	# It is the production play menu (Session/Graphics/Audio/Help) that the web
+	# and non-native backends show, configured as pc_bridge_viewer.gd does, so
+	# the header-height checks measure the menu players actually see.
+	var native_menu=audio_menu
+	var fallback=preload("res://scripts/pc_play_menu.gd").new()
+	fallback.prefer_global_menu=false
+	fallback.genesis_available=native_menu.genesis_available
+	fallback.genesis_imported=native_menu.genesis_imported
+	fallback.modern_available=native_menu.modern_available
+	fallback.graphics_mode=native_menu.graphics_mode
+	fallback.hud_style=native_menu.hud_style
+	fallback.quality=native_menu.quality.duplicate()
+	fallback.speed=native_menu.speed
+	fallback.settings=native_menu.settings.duplicate()
+	fallback.audio=pc_audio
+	fallback.config_path=""
+	fallback.quality_config_path=""
+	root.remove_child(native_menu)
+	native_menu.free()
+	audio_menu=fallback
 	root.add_child(audio_menu)
 	audio_menu.resized.connect(_layout_audio_menu)
 	await process_frame
@@ -50,11 +62,12 @@ func _capture() -> void:
 	RenderingServer.force_draw(false)
 	RenderingServer.force_sync()
 	root.get_texture().get_image().save_png(output.path_join("local-menu-fallback.png"))
+	checks.fallback_is_play_menu=audio_menu.get_script()==preload("res://scripts/pc_play_menu.gd") and not audio_menu.is_native_menu()
 	checks.fallback_outside_HUD=play_display.offset_top>=audio_menu.get_combined_minimum_size().y and play_display.offset_top>0
 	checks.fallback_4_by_3=tandem_viewport.size.x*3==tandem_viewport.size.y*4
 	checks.fallback_no_original_requests=samples==start_samples and picture.texture.get_image().get_data()==source
 	FileAccess.open(output.path_join("menu-report.json"),FileAccess.WRITE).store_string(JSON.stringify({
-		"checks":checks,"settings":audio_menu.settings,"scope":"Real UI interaction with native macOS menus; fallback rendered on macOS; original frame frozen at diagnostic boundary."},"  "))
+		"checks":checks,"settings":audio_menu.settings,"scope":"Real UI interaction with native macOS menus; production pc_play_menu in-canvas fallback rendered on macOS; original frame frozen at diagnostic boundary."},"  "))
 	print("PC_AUDIO_MENU: "+JSON.stringify(checks))
 	if not checks.values().all(func(value):return value==true): bridge.failure="native Audio menu acceptance failed"
 	await super._capture()

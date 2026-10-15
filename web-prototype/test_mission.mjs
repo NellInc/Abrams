@@ -2,12 +2,20 @@
 // and a checkpoint restores into an independent WebAssembly core instance.
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import createCore from './.generated/core.js';
 import { captureCheckpoint, restoreCheckpoint } from './checkpoint_core.mjs';
 
 const root = new URL('../', import.meta.url);
+const required = ['GAME/SIM.EXE', '.runtime/pc-core/abrams-ref.zip', 'web-prototype/.generated/core.js',
+  'godot/tests/fixtures/pc_boot_steps.json'];
+const missing = required.filter(name => !existsSync(new URL(name, root)));
+if (missing.length) {
+  console.log(`SKIP: local inputs absent (${missing.join(', ')})`);
+  process.exit(0);
+}
+const {default: createCore} = await import('./.generated/core.js');
 const game = await readFile(new URL('.runtime/pc-core/abrams-ref.zip', root));
 const fixture = JSON.parse(await readFile(new URL('godot/tests/fixtures/pc_boot_steps.json', root), 'utf8'));
 const keys = { return: 13, escape: 27, space: 32 };
@@ -89,7 +97,14 @@ for (let frame = 0; frame < 12; frame++) {
   if (beforeFrame) {
     const width = first._abrams_web_video_width(), height = first._abrams_web_video_height();
     const pitch = first._abrams_web_video_pitch(), videoPointer = first._abrams_web_video();
-    browserFrames.push({before: beforeFrame, packet: a, after: ram(first),
+    // The step copied RAM just before retro_run, which submitted this
+    // framebuffer: desktop last_video_ram. Read it before ram() reuses the
+    // native buffer for current RAM, as core_worker.mjs does.
+    const pairedPointer = first._abrams_web_paired_ram();
+    const paired = first.HEAPU8.slice(pairedPointer, pairedPointer + 640 * 1024);
+    if (hash(paired) !== hash(beforeFrame))
+      throw new Error('Paired RAM is not the pre-frame VGA boundary snapshot');
+    browserFrames.push({before: beforeFrame, packet: a, paired, after: ram(first),
       video: first.HEAPU8.slice(videoPointer, videoPointer + pitch * height),
       width, height, pitch});
   }
@@ -146,7 +161,7 @@ json.dumps(module.replay_to_summary(json.loads(payload_json)))
 sys.path.insert(0, '/repo/web-prototype')
 from browser_observer import BrowserObserver
 from pathlib import Path
-web_observer = BrowserObserver()
+web_observer = BrowserObserver(json.loads(Path('/repo/web-prototype/.generated/build-info.json').read_text()))
 `);
   let browserSample;
   const started = performance.now();
@@ -158,12 +173,13 @@ web_observer = BrowserObserver()
     if (mode !== 'sim' && mode !== 'unchanged') throw new Error('Browser observer did not attach to SIM');
     pyodide.FS.writeFile('/packet.bin', frame.packet);
     pyodide.FS.writeFile('/receipts.bin', new Uint8Array());
+    pyodide.FS.writeFile('/paired.bin', frame.paired);
     pyodide.FS.writeFile('/ram.bin', frame.after);
     pyodide.FS.writeFile('/video.bin', frame.video);
     const expression = `web_observer.after_frame(
       Path('/packet.bin').read_bytes(), Path('/receipts.bin').read_bytes(),
-      Path('/ram.bin').read_bytes(), Path('/video.bin').read_bytes(),
-      ${frame.width}, ${frame.height}, ${frame.pitch})`;
+      Path('/paired.bin').read_bytes(), Path('/ram.bin').read_bytes(),
+      Path('/video.bin').read_bytes(), ${frame.width}, ${frame.height}, ${frame.pitch})`;
     if (process.env.ABRAMS_WEB_PROFILE === '1' && index === browserFrames.length - 1) {
       const result = JSON.parse(pyodide.runPython(`
 import cProfile, pstats, io
@@ -185,6 +201,15 @@ json.dumps({'sample': sample, 'profile': stream.getvalue()}, separators=(',', ':
     objects: browserSample.presentation.draw_pass?.objects?.length || 0,
     text_runs: browserSample.presentation.text_runs?.length || 0,
     ui_overlay: !!browserSample.presentation.ui_overlay};
+  // State comes from the VGA-paired RAM and passes the desktop SHAPE.TBL check.
+  if (browserSample.program?.name !== 'SIM' || browserSample.state?.station !== observed.station)
+    throw new Error('Browser observer lost the paired original SIM state');
+  // Play-only samples, as desktop --slim-samples: no undrawn actor leaves the observer.
+  const drawnActors = new Set(browserSample.presentation.draw_pass.objects
+    .filter(object => object.dynamic_instance).map(object => object.pointer));
+  if ('world' in browserSample.state ||
+      (browserSample.presentation.draw_pass.world?.dynamic || []).some(actor => !drawnActors.has(actor.pointer)))
+    throw new Error('Browser sample carries undrawn allocated actors');
   if (!browserReplay.draw_pass || browserReplay.objects !== replay.objects ||
       browserReplay.text_runs !== replay.text_runs || browserReplay.ui_overlay !== replay.ui_overlay)
     throw new Error('Browser presentation differs from desktop collector sample');

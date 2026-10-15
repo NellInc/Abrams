@@ -10,6 +10,7 @@ from pathlib import Path
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 
@@ -19,13 +20,24 @@ SOURCE = ROOT / ".runtime/dosbox-pure-source"
 OUTPUT = ROOT / ".runtime/web-core"
 SERVE = ROOT / "web-prototype/.generated"
 UPSTREAM = "73e03aa145e0549ed4d5a20f8e65532714da33f5"
+# tools/pc_trace_windows.py FULL_RAM_SCHEMAS / WINDOW_BUNDLE_SCHEMAS, repeated
+# here because the published source archive carries no tools/ tree.
+EVENT_SCHEMA_KEYS = ("text_event_schema", "message_event_schema", "strut_event_schema")
+FULL_RAM_SCHEMAS, WINDOW_BUNDLE_SCHEMAS = (2, 1, 1), (3, 2, 2)
+WINDOW_MARKER = re.compile(r"^#define ABRAMS_TRACE_SIM_RAM_WINDOWS 1$", re.M)
 
 
 def main() -> None:
+    global SOURCE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-archive', action='store_true',
                         help='Rebuild from the published SOURCE-FILES.json inventory without a Git checkout')
+    # The native builder may patch a separate checkout (its receipt's build
+    # tree); the pins below still require byte-identical reviewed sources.
+    parser.add_argument('--source', type=Path, default=SOURCE,
+                        help='Pinned DOSBox Pure checkout (default: .runtime/dosbox-pure-source)')
     args = parser.parse_args()
+    SOURCE = args.source.resolve()
     compiler = shutil.which("em++")
     if not compiler:
         raise SystemExit("Emscripten is not active; source .runtime/emsdk/emsdk_env.sh")
@@ -63,6 +75,14 @@ def main() -> None:
             if hashlib.sha256((SOURCE / name).read_bytes()).hexdigest() != expected:
                 raise SystemExit(f"The local DOSBox Pure source differs from the native pin: {name}")
 
+    # SIM events 26/28/29 are full RAM or AWB1 window bundles, as the pinned
+    # tracing header declares. claim_core.h and the browser observer accept
+    # only that format; build-info.json carries it to the observer.
+    bundles = bool(WINDOW_MARKER.search((SOURCE / "src/cpu/abrams_trace.h").read_text()))
+    schemas = WINDOW_BUNDLE_SCHEMAS if bundles else FULL_RAM_SCHEMAS
+    if not args.source_archive and tuple(receipt.get(key) for key in EVENT_SCHEMA_KEYS) != schemas:
+        raise SystemExit("The native tracing receipt and header disagree on SIM event formats")
+
     files = []
     for pattern in ("*.cpp", "src/*.cpp", "src/*/*.cpp", "src/*/*/*.cpp"):
         files.extend(sorted(SOURCE.glob(pattern)))
@@ -85,7 +105,8 @@ def main() -> None:
     ]
     command = [
         compiler, "-O2", "-pthread", "-DDISABLE_DYNAREC=1", "-D__LIBRETRO__",
-        "-D_FILE_OFFSET_BITS=64", "-std=gnu++11", "-fexceptions",
+        "-D_FILE_OFFSET_BITS=64", f"-DABRAMS_TRACE_WINDOW_BUNDLES={int(bundles)}",
+        "-std=gnu++11", "-fexceptions",
         "-Wno-address-of-packed-member", "-Wno-format", "-Wno-switch",
         f"-I{SOURCE / 'include'}", f"-I{SOURCE}", "--no-entry", "-sMODULARIZE=1",
         "-sEXPORT_ES6=1", "-sENVIRONMENT=web,worker,node", "-sPTHREAD_POOL_SIZE=2",
@@ -111,6 +132,7 @@ def main() -> None:
         "schema": 1,
         "source_revision": UPSTREAM,
         "wasm_sha256": hashlib.sha256((OUTPUT / "core.wasm").read_bytes()).hexdigest(),
+        **dict(zip(EVENT_SCHEMA_KEYS, schemas)),
     }, indent=2) + "\n")
     print(f"Built {OUTPUT / 'core.js'} from {len(files)} C++ files")
 

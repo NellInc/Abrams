@@ -3,6 +3,7 @@ extends Node3D
 const Simulation = preload("res://scripts/simulation.gd")
 const Vehicle = preload("res://scripts/vehicle.gd")
 const Landscape = preload("res://scripts/landscape.gd")
+const CoverScene = preload("res://scripts/cover_scene.gd")
 const Interface = preload("res://scripts/interface.gd")
 const Sound = preload("res://scripts/audio.gd")
 
@@ -12,7 +13,12 @@ var camera: Camera3D
 var sound: Node
 var ui: Control
 var environment: Environment
+var world_environment: WorldEnvironment
+var cover_scene: Node3D
+var landscape: Node3D
+var menu_mood := -1
 var light: DirectionalLight3D
+var fill_light: DirectionalLight3D
 var target_nodes: Array[Node3D] = []
 var effects: Array[Dictionary] = []
 var commands: Dictionary = {}
@@ -32,9 +38,13 @@ var elapsed := 0.0
 var flash := 0.0
 var hit_count := 0
 var shots := 0
-var recorded_commands: Array = []
 var capture_mode := false
 var thermal_material: StandardMaterial3D
+# Burst particles share one unit sphere and three materials; per-particle size is node scale.
+var burst_mesh: SphereMesh
+var burst_smoke: StandardMaterial3D
+var burst_hit: StandardMaterial3D
+var burst_dust: StandardMaterial3D
 var shutting_down := false
 var thermal_overlay_state := -1
 var range_save := "user://range-save.bin"
@@ -74,37 +84,72 @@ func request_quit() -> void:
 	var drained: bool = await sound.drain_for_shutdown()
 	get_tree().quit.call_deferred(0 if drained else 1)
 
+# Title screen uses the cover set; play views keep the range daylight.
+func _apply_mood(menu: bool) -> void:
+	if int(menu) == menu_mood:
+		return
+	menu_mood = int(menu)
+	world_environment.environment = cover_scene.environment if menu else environment
+	cover_scene.set_active(menu)
+	landscape.visible = not menu
+	light.visible = not menu
+	fill_light.visible = not menu
+	vehicle.crew.visible = menu
+
 func _setup_world() -> void:
 	environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
 	var material := ProceduralSkyMaterial.new()
-	material.sky_top_color = Color("536b79")
-	material.sky_horizon_color = Color("b5b8a4")
-	material.ground_bottom_color = Color("515b43")
-	material.ground_horizon_color = Color("b6b79f")
-	material.sky_curve = 0.16
-	material.sun_angle_max = 4.0
+	# Late-afternoon light: a cool zenith over a warm, hazy horizon.
+	material.sky_top_color = Color("35546e")
+	material.sky_horizon_color = Color("cfc29a")
+	material.ground_bottom_color = Color("464e34")
+	material.ground_horizon_color = Color("bfb187")
+	material.sky_curve = 0.11
+	material.sun_angle_max = 4.5
+	material.sun_curve = 0.12
 	sky.sky_material = material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("aab8bf")
-	environment.ambient_light_energy = 0.45
-	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	environment.ambient_light_color = Color("b7bfae")
+	environment.ambient_light_energy = 0.62
+	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
+	environment.tonemap_exposure = 1.0
+	environment.glow_enabled = true
+	environment.glow_intensity = 0.3
+	environment.glow_bloom = 0.02
+	environment.glow_hdr_threshold = 1.3
+	environment.adjustment_enabled = true
+	environment.adjustment_saturation = 1.1
+	environment.adjustment_contrast = 1.06
 	environment.fog_enabled = true
-	environment.fog_light_color = Color("b0b5a0")
-	environment.fog_density = 0.00009
-	var world := WorldEnvironment.new()
-	world.environment = environment
-	add_child(world)
+	environment.fog_light_color = Color("cdbd92")
+	environment.fog_density = 0.00016
+	environment.fog_sun_scatter = 0.3
+	environment.fog_aerial_perspective = 0.35
+	world_environment = WorldEnvironment.new()
+	world_environment.environment = environment
+	add_child(world_environment)
 	light = DirectionalLight3D.new()
-	light.rotation_degrees = Vector3(-25,-42,0)
-	light.light_color = Color("fff0ca")
-	light.light_energy = 1.15
+	# A lower, warmer sun rakes across the hull and throws long shadows through the grass.
+	light.rotation_degrees = Vector3(-17,-95,0)
+	light.light_color = Color("ffd9a3")
+	light.light_energy = 1.2
+	# A faint cool sky fill from the opposite side lifts shadowed armour out of pure black.
+	fill_light = DirectionalLight3D.new()
+	fill_light.rotation_degrees = Vector3(-32,95,0)
+	fill_light.light_color = Color("a9bed0")
+	fill_light.light_energy = 0.28
+	fill_light.light_specular = 0.2
+	add_child(fill_light)
 	light.shadow_enabled = true
 	light.directional_shadow_max_distance = 220
 	add_child(light)
-	add_child(Landscape.new())
+	landscape = Landscape.new()
+	add_child(landscape)
+	cover_scene = CoverScene.new()
+	add_child(cover_scene)
 	vehicle = Vehicle.new()
 	add_child(vehicle)
 	camera = Camera3D.new()
@@ -115,6 +160,17 @@ func _setup_world() -> void:
 	thermal_material = StandardMaterial3D.new()
 	thermal_material.albedo_color = Color("d7ffba")
 	thermal_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	burst_mesh = SphereMesh.new()
+	burst_mesh.radius = 1.0
+	burst_mesh.height = 2.0
+	burst_mesh.radial_segments = 8
+	burst_mesh.rings = 4
+	burst_smoke = StandardMaterial3D.new()
+	burst_smoke.albedo_color = Color("b8bcac")
+	burst_hit = StandardMaterial3D.new()
+	burst_hit.albedo_color = Color("dda057")
+	burst_dust = StandardMaterial3D.new()
+	burst_dust.albedo_color = Color("66665b")
 	for target in sim.targets:
 		var model := Vehicle.new()
 		model.scale = Vector3(0.88,0.88,0.88)
@@ -134,14 +190,12 @@ func _physics_process(_delta: float) -> void:
 	input.steer = steer
 	input.turret_axis = steer
 	input.sight_axis = input.throttle
-	if Input.is_key_pressed(KEY_SPACE):
-		input.fire = true
+	# Space fire is edge-triggered in _unhandled_key_input; M is the one deliberately held action (COAX cadence gates it).
 	if Input.is_key_pressed(KEY_M):
 		input.machinegun = true
 	if capture_mode:
 		# Deterministic --capture runs drive the sim from _capture_sequence; ignore all live keyboard input.
 		input = {}
-	recorded_commands.append(input.duplicate(true))
 	var was_locked: bool = sim.locked
 	var events: Array = sim.tick(input)
 	for event in events:
@@ -158,18 +212,20 @@ func _process(delta: float) -> void:
 	notice_time = maxf(0.0,notice_time-delta)
 	flash = maxf(0.0,flash-delta*4.0)
 	vehicle.position = Vector3(sim.pos.x,0,sim.pos.y)
-	vehicle.rotation.y = sim.heading
+	vehicle.rotation = Vector3(0,sim.heading,0)
 	vehicle.visible = screen != "range" or sim.station == 2
 	vehicle.update_pose(sim.turret-sim.heading,delta)
+	_apply_mood(screen != "range")
 	if screen != "range":
+		# Box-cover framing: low, front three-quarter view with the gun raised.
 		vehicle.visible = true
 		vehicle.position = Vector3.ZERO
-		vehicle.rotation.y = -0.40
-		vehicle.update_pose(-0.2,delta)
-		camera.position = Vector3(11.5,5.4,-12.5)
-		camera.look_at(Vector3(3.0,1.1,0))
-		camera.fov = 39
+		vehicle.rotation = Vector3(CoverScene.HULL_PITCH,0,0)
+		vehicle.update_pose(CoverScene.TURRET,delta,CoverScene.ELEVATION,CoverScene.GUN_YAW)
+		CoverScene.frame(camera,get_viewport().get_visible_rect().size)
 	else:
+		camera.projection = Camera3D.PROJECTION_PERSPECTIVE
+		camera.near = 0.08
 		var bearing: float = view_bearing()
 		var eye := 2.65
 		if sim.station == 2:
@@ -226,7 +282,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				scan_angle = [0.0,-PI/2,PI,PI/2][event.keycode-KEY_F7]
 		KEY_1,KEY_2,KEY_3:
 			commands.select_weapon = int(event.keycode-KEY_1)
-		KEY_M: commands.machinegun = true
+		KEY_SPACE: commands.fire = true
 		KEY_KP_5: commands.stop = true
 		KEY_C: commands.toggle_control = true
 		KEY_T: commands.toggle_thermal = true
@@ -251,7 +307,6 @@ func start_range() -> void:
 	sim.reset()
 	hit_count = 0
 	shots = 0
-	recorded_commands.clear()
 	commands.clear()
 	scan_angle = 0
 	map_overview = false
@@ -338,16 +393,10 @@ func _burst(at: Vector2, hit: bool, smoke := false) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 88 + effects.size()
 	for i in range(10):
-		var mesh := SphereMesh.new()
-		mesh.radius = 0.3+rng.randf()*0.5
-		mesh.height = mesh.radius*2
-		mesh.radial_segments = 8
-		mesh.rings = 4
 		var p := MeshInstance3D.new()
-		p.mesh = mesh
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color("b8bcac") if smoke else (Color("dda057") if hit and i<4 else Color("66665b"))
-		p.material_override = mat
+		p.mesh = burst_mesh
+		p.scale = Vector3.ONE*(0.3+rng.randf()*0.5)
+		p.material_override = burst_smoke if smoke else (burst_hit if hit and i<4 else burst_dust)
 		p.position = Vector3(rng.randf_range(-1.2,1.2),rng.randf_range(0,1.5),rng.randf_range(-1.2,1.2))
 		root.add_child(p)
 	effects.append({"node":root,"age":0.0,"duration":8.0 if smoke else 2.2,"smoke":smoke})
@@ -399,17 +448,84 @@ func load_range() -> void:
 	shots = data.shots
 	hit_count = data.hits
 	commands.clear()
-	recorded_commands.clear()
 	clear_effects()
 	scan_angle = 0
 	_update_targets()
 	ui.rebuild_buttons()
 	set_notice("Range state restored.")
 
+## Capture output directory, or "" when refused. Godot runs from godot/ under --path, so relative paths mean the
+## repo root, as in the launchers. Outputs inside res:// (imported, exportable) or the original sources are refused,
+## as are an empty value and the bare repo root (captures would land loose beside the sources).
+static func capture_directory(path: String, repo_root: String = "") -> String:
+	if path.strip_edges().is_empty():
+		return ""
+	var project := ProjectSettings.globalize_path("res://").trim_suffix("/")
+	if repo_root.is_empty():
+		repo_root = project.get_base_dir()
+	var resolved := ProjectSettings.globalize_path(path)
+	if resolved.is_relative_path():
+		resolved = repo_root.path_join(resolved)
+	resolved = resolved.simplify_path()
+	# Like tools/source_guard.inside_source, compare symlink-resolved paths too, so a link outside the repo that
+	# points at GAME/, GENESIS/ or godot/ is still refused.
+	var real := _real_path(resolved)
+	if real.is_empty():
+		return ""
+	# APFS and NTFS are case-insensitive, so a miscased game/ is still GAME/.
+	var candidates := [resolved.to_lower(), real.to_lower()]
+	for candidate in candidates:
+		for root in [repo_root.simplify_path(), _real_path(repo_root.simplify_path())]:
+			if candidate == root.to_lower():
+				return ""
+		for blocked in [project, repo_root.path_join("GAME"), repo_root.path_join("GENESIS")]:
+			var plain: String = blocked.simplify_path()
+			for root in [plain, _real_path(plain)]:
+				var folded: String = root.to_lower()
+				if not folded.is_empty() and (candidate == folded or candidate.begins_with(folded + "/")):
+					return ""
+	return resolved
+
+## The absolute path with every symlink component replaced by its target, component by component, as realpath
+## does; missing components are kept as they are. "" for a dangling link or a link loop, whose target cannot be
+## checked.
+static func _real_path(path: String) -> String:
+	var parts := Array(path.simplify_path().split("/"))
+	var real: String = parts.pop_front() + "/"
+	var hops := 0
+	while not parts.is_empty():
+		var name: String = parts.pop_front()
+		if name.is_empty():
+			continue
+		var dir := DirAccess.open(real)
+		if dir == null or not dir.is_link(name):
+			real = real.path_join(name)
+			continue
+		hops += 1
+		var target := dir.read_link(name)
+		if hops > 40 or target.is_empty():
+			return ""
+		if target.is_relative_path():
+			target = real.path_join(target)
+		target = target.simplify_path()
+		if not DirAccess.dir_exists_absolute(target) and not FileAccess.file_exists(target):
+			return ""
+		# Resolve the target's own components again before continuing with the rest of the path.
+		parts = Array(target.split("/")).slice(1) + parts
+		real = target.split("/")[0] + "/"
+	return real.simplify_path()
+
 func _capture_sequence() -> void:
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--capture")
-	var out := args[index+1] if index+1 < args.size() else "user://captures"
+	# A missing value or a following flag means the default; "--capture --smoke-test" must not create "--smoke-test/".
+	# An empty value (an unset "$OUT") also means the default rather than the repo root.
+	var requested := args[index+1] if index+1 < args.size() and not args[index+1].begins_with("--") and not args[index+1].strip_edges().is_empty() else "user://captures"
+	var out := capture_directory(requested)
+	if out.is_empty():
+		printerr("--capture refuses output inside godot/ or the original sources: " + requested)
+		get_tree().quit(2)
+		return
 	DirAccess.make_dir_recursive_absolute(out)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -443,6 +559,19 @@ func _capture_sequence() -> void:
 func _smoke_fail(message: String) -> void:
 	push_error("RUNTIME_SMOKE_FAIL: " + message)
 	get_tree().quit(1)
+
+# The smoke save lives in a per-process cache folder, never beside the player's real profile saves.
+func _smoke_save_dir() -> String:
+	return OS.get_cache_dir().path_join("abrams-range-smoke-%d" % OS.get_process_id())
+
+# Every exit after the smoke save is redirected runs this, pass or fail.
+func _smoke_cleanup_save(real_save: String) -> void:
+	for path in [range_save + ".tmp", range_save]:
+		if FileAccess.file_exists(path) or DirAccess.dir_exists_absolute(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	if DirAccess.dir_exists_absolute(_smoke_save_dir()):
+		DirAccess.remove_absolute(_smoke_save_dir())
+	range_save = real_save
 
 func _smoke_test() -> void:
 	start_range()
@@ -512,28 +641,47 @@ func _smoke_test() -> void:
 	if sim.locked or not subtitle.is_empty():
 		_smoke_fail("unlock announced as acquisition")
 		return
+	# Space is a one-shot press: it queues fire once, and a repeat or a paused press queues nothing.
+	var space := InputEventKey.new()
+	space.keycode = KEY_SPACE
+	space.pressed = true
+	commands.clear()
+	_unhandled_key_input(space)
+	var fired: bool = commands.get("fire",false)
+	commands.clear()
+	space.echo = true
+	_unhandled_key_input(space)
+	space.echo = false
 	paused = true
+	_unhandled_key_input(space)
+	if not fired or not commands.is_empty():
+		_smoke_fail("space fire is not edge-triggered")
+		return
 	var real_save := range_save
-	range_save = "user://smoke-range-save.bin"
+	if DirAccess.make_dir_recursive_absolute(_smoke_save_dir()) != OK:
+		_smoke_fail("smoke save directory")
+		return
+	range_save = _smoke_save_dir().path_join("smoke-range-save.bin")
 	save_range()
 	var saved_shots := shots
 	shots = 99
 	load_range()
 	if notice != "Range state restored.":
-		range_save = real_save
+		_smoke_cleanup_save(real_save)
 		_smoke_fail("save restore")
 		return
 	save_range()
 	if shots != saved_shots or notice != "Range state saved locally." or FileAccess.file_exists(range_save + ".tmp"):
-		range_save = real_save
+		_smoke_cleanup_save(real_save)
 		_smoke_fail("save round trip")
 		return
 	DirAccess.make_dir_absolute(ProjectSettings.globalize_path(range_save + ".tmp"))
 	save_range()
 	var kept := FileAccess.file_exists(range_save) and notice.begins_with("Save failed")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(range_save + ".tmp"))
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(range_save))
-	range_save = real_save
+	_smoke_cleanup_save(real_save)
+	if DirAccess.dir_exists_absolute(_smoke_save_dir()):
+		_smoke_fail("smoke save not cleaned up")
+		return
 	if not kept:
 		_smoke_fail("failed save did not keep previous save")
 		return

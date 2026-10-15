@@ -1,6 +1,7 @@
 """Shared original-source output guard: case, symlink and '..' aliases, no writes."""
 import contextlib
 import io
+import json
 import os
 from pathlib import Path
 import sys
@@ -8,7 +9,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from tools.source_guard import ROOT, inside_source
+from tools.source_guard import ROOT, inside_source, pinned_evidence, recorded
 
 
 class SourceGuardTests(unittest.TestCase):
@@ -78,12 +79,76 @@ class SourceGuardTests(unittest.TestCase):
         self.assertIn('output must be outside proprietary source directories', stderr.getvalue())
         self.assertFalse((self.root / 'GAME/fixture').exists())
 
+    def test_existing_pinned_gate_inputs_are_refused(self):
+        # Regenerating a pinned gate input in place would change what the gate proves.
+        r = self.root
+        (r / 'tests').mkdir()
+        (r / 'tests/gate_fixtures.json').write_text(json.dumps({
+            'fixtures': {'artifacts/trace-01': {}, 'artifacts/finish/fixture.json': {}},
+            'live': {'artifacts/live-01': {}, 'artifacts/cleared-01': {}}}))
+        for name in ('trace-01', 'live-01'):
+            (r / 'artifacts' / name).mkdir(parents=True)
+        (r / 'artifacts/finish').mkdir()
+        (r / 'artifacts/finish/fixture.json').write_text('{}')
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            for path, pinned in ((r / 'artifacts/trace-01', 'artifacts/trace-01'),
+                                 (r / 'artifacts/trace-01/new/report.json', 'artifacts/trace-01'),
+                                 (r / 'Artifacts/TRACE-01/x', 'artifacts/trace-01'),
+                                 (r / 'artifacts/finish/fixture.json', 'artifacts/finish/fixture.json'),
+                                 (r / 'artifacts/live-01/x', 'artifacts/live-01')):
+                with self.subTest(path=path):
+                    self.assertEqual(pinned_evidence(path, r), pinned)
+                    self.assertTrue(inside_source(path, r))
+                    self.assertTrue(inside_source(path, r, ('reference',)))
+        self.assertIn('pinned gate input artifacts/trace-01', stderr.getvalue())
+        (r / 'local-art/link').symlink_to(r / 'artifacts/trace-01', target_is_directory=True)
+        self.assertEqual(pinned_evidence(r / 'local-art/link/x', r), 'artifacts/trace-01')
+        # Neighbours, parents and a cleared (absent) fixture may still be written.
+        for path in (r / 'artifacts/trace-012', r / 'artifacts', r / 'artifacts/finish/other.json',
+                     r / 'artifacts/cleared-01/report.json', r / 'local-art/x'):
+            with self.subTest(path=path):
+                self.assertIsNone(pinned_evidence(path, r))
+                self.assertFalse(inside_source(path, r))
+
+    def test_unreadable_gate_manifest_protects_nothing(self):
+        (self.root / 'tests').mkdir()
+        (self.root / 'tests/gate_fixtures.json').write_text('{not json')
+        self.assertIsNone(pinned_evidence(self.root / 'reference/x', self.root))
+        self.assertFalse(inside_source(self.root / 'reference/x', self.root))
+
+    @unittest.skipUnless((ROOT / 'tests/gate_fixtures.json').is_file()
+                         and (ROOT / 'artifacts/finish-20260928/cursor-struts/coverage-fixtures.json').is_file(),
+                         'Requires the local pinned gate inputs')
+    def test_strut_coverage_generator_refuses_to_regenerate_its_fixture(self):
+        import subprocess
+        fixture = ROOT / 'artifacts/finish-20260928/cursor-struts/coverage-fixtures.json'
+        before = fixture.read_bytes()
+        result = subprocess.run([sys.executable, str(ROOT / 'tools/verify_pc_strut_coverage.py')],
+                                capture_output=True, text=True, cwd=ROOT)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Refusing to overwrite artifacts/finish-20260928/cursor-struts/coverage-fixtures.json', result.stderr)
+        self.assertEqual(fixture.read_bytes(), before)
+
     @unittest.skipUnless((ROOT / 'GAME').is_dir(), 'Requires private original inputs')
     def test_real_tree(self):
         self.assertTrue(inside_source(ROOT / 'GAME'))
         self.assertTrue(inside_source(ROOT / 'GAME/../game/never-created'))
         self.assertFalse(inside_source(ROOT / 'artifacts/never-created'))
         self.assertFalse(inside_source(ROOT / 'reference/never-created'))
+
+    def test_recorded_paths_are_repo_relative_or_bare_names(self):
+        # Receipts must not depend on where the checkout lives, nor leak a home directory.
+        self.assertEqual(recorded(self.root / 'reference/genesis/cap', self.root), 'reference/genesis/cap')
+        self.assertEqual(recorded(self.root / 'local-art/../reference/x.json', self.root), 'reference/x.json')
+        outside = Path(self.tmp.name) / 'elsewhere' / 'capture-01'
+        self.assertEqual(recorded(outside, self.root), 'capture-01')
+        cwd = os.getcwd()
+        try:
+            os.chdir(self.root)
+            self.assertEqual(recorded('reference/x', self.root), 'reference/x')
+        finally:
+            os.chdir(cwd)
 
 
 if __name__ == '__main__':

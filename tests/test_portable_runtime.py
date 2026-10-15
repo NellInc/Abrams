@@ -18,25 +18,77 @@ class PortableContracts(unittest.TestCase):
         for fail in (False, True):
             with self.subTest(fail=fail), tempfile.TemporaryDirectory() as temporary:
                 bundle=Path(temporary).resolve()/'portable';home=Path(temporary).resolve()/'profile'
+                (bundle/'kit/godot').mkdir(parents=True)
                 calls=[]
                 def preflight(arguments, env, log):
                     calls.append(arguments)
                     self.assertEqual(log,home/'logs/setup.log')
                     self.assertNotIn('PYTHONPATH',env)
                     if fail:raise subprocess.SubprocessError('SCRIPT ERROR: importer failed')
-                with patch.object(portable_launcher,'verify'), \
-                     patch.object(sys,'argv',['launcher','--bundle',str(bundle)]), \
-                     patch.dict(os.environ,{'ABRAMS_DATA_HOME':str(home),'PYTHONPATH':'untrusted override'}), \
-                     patch.object(portable_launcher,'renderer_preflight',side_effect=preflight), \
-                     patch.object(portable_launcher.subprocess,'call',return_value=0) as launch, \
-                     contextlib.redirect_stdout(io.StringIO()):
-                    self.assertEqual(portable_launcher.main(),1 if fail else 0)
-                self.assertEqual(calls[0][-2:],['--editor','--import'])
-                self.assertIn('Dummy',calls[0])
-                if fail:launch.assert_not_called()
-                else:
-                    self.assertEqual(calls[1][-1],'--check-only')
+                for launch_number in (1, 2):
+                    calls.clear()
+                    with patch.object(portable_launcher,'verify',return_value={'build_id':'synthetic-build'}), \
+                         patch.object(sys,'argv',['launcher','--bundle',str(bundle)]), \
+                         patch.dict(os.environ,{'ABRAMS_DATA_HOME':str(home),'PYTHONPATH':'untrusted override'}), \
+                         patch.object(portable_launcher,'renderer_preflight',side_effect=preflight), \
+                         patch.object(portable_launcher.subprocess,'call',return_value=0) as launch, \
+                         contextlib.redirect_stdout(io.StringIO()):
+                        self.assertEqual(portable_launcher.main(),1 if fail else 0)
+                    if fail or launch_number == 1:
+                        self.assertEqual(calls[0][-2:],['--editor','--import'])
+                        self.assertIn('Dummy',calls[0])
+                    if fail:
+                        launch.assert_not_called()
+                        self.assertFalse((bundle/'kit/godot'/runtime.IMPORT_MARKER).exists())
+                        break
+                    # A clean import is recorded once per build; parse checks always run.
+                    self.assertEqual(len(calls),2 if launch_number == 1 else 1)
+                    self.assertEqual(calls[-1][-1],'--check-only')
                     self.assertEqual(launch.call_count,1)
+
+    def test_launcher_data_home_reaches_setup_and_requests(self):
+        import contextlib, io, subprocess, sys
+        from tools.standalone import portable_launcher
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary).resolve();bundle=root/'portable';chosen=root/'independent test profile'
+            (bundle/'kit/godot').mkdir(parents=True)
+            for argv in (['--data-home',str(chosen)],['--data-home='+str(chosen)]):
+                with self.subTest(argv=argv), patch.object(portable_launcher,'verify',return_value={'build_id':'synthetic-build'}), \
+                     patch.dict(os.environ,{},clear=False), patch.object(portable_launcher,'renderer_preflight') as preflight, \
+                     patch.object(portable_launcher.subprocess,'call',return_value=0) as launch, \
+                     patch.object(sys,'argv',['launcher','--bundle',str(bundle),*argv]), contextlib.redirect_stdout(io.StringIO()):
+                    os.environ.pop('ABRAMS_DATA_HOME',None)
+                    self.assertEqual(portable_launcher.main(),0)
+                    renderer_argv=launch.call_args.args[0];env=launch.call_args.kwargs['env']
+                    self.assertEqual(env['ABRAMS_DATA_HOME'],str(chosen))
+                    self.assertFalse(any(arg.startswith('--data-home') for arg in renderer_argv))
+                    self.assertEqual(preflight.call_args.args[2],chosen/'logs/setup.log')
+            # Requests made by the setup UI also carry the chosen profile.
+            with patch.object(portable_launcher,'invoke_runtime',return_value=subprocess.CompletedProcess([],0,'{}','')) as invoke, \
+                 patch.object(portable_launcher,'verify') as verified, \
+                 patch.object(sys,'argv',['launcher','--bundle',str(bundle),'--invoke','--data-home',str(chosen),'--status']), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(portable_launcher.main(),0)
+            self.assertEqual(invoke.call_args.kwargs['env']['ABRAMS_DATA_HOME'],str(chosen))
+            self.assertNotIn('--data-home',invoke.call_args.args[0])
+            # Status only reports; it does not re-hash the whole application.
+            verified.assert_not_called()
+            for invalid in (['--data-home','relative profile'],['--data-home',str(bundle/'kit/profile')],['--unknown-engine-flag']):
+                with self.subTest(invalid=invalid), patch.object(portable_launcher,'verify',return_value={'build_id':'synthetic-build'}), \
+                     patch.object(portable_launcher.subprocess,'call') as launch, \
+                     patch.object(sys,'argv',['launcher','--bundle',str(bundle),*invalid]), contextlib.redirect_stdout(io.StringIO()) as output:
+                    self.assertEqual(portable_launcher.main(),1)
+                    launch.assert_not_called()
+                    self.assertIn('error',json.loads(output.getvalue()))
+
+    def test_invoke_child_skips_payload_hash_only_after_launcher_verified_it(self):
+        import contextlib, io, subprocess, sys
+        from tools.standalone import portable_launcher
+        with patch.object(portable_launcher,'verify',return_value={'build_id':'verified-build'}) as verified, \
+             patch.object(portable_launcher,'invoke_runtime',return_value=subprocess.CompletedProcess([],0,'{}','')) as invoke, \
+             patch.object(sys,'argv',['launcher','--bundle','/synthetic','--invoke','--play']), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(portable_launcher.main(),0)
+        verified.assert_called_once()
+        self.assertEqual(invoke.call_args.kwargs['env'][runtime.PAYLOAD_VERIFIED_ENV],'verified-build')
 
     def test_native_freezer_pins_utf8_in_bootloader_and_cache(self):
         from tools.standalone.build import freeze
@@ -44,11 +96,30 @@ class PortableContracts(unittest.TestCase):
             root=Path(temporary)/'source';entry=root/'tools/standalone/entry.py'
             entry.parent.mkdir(parents=True);entry.write_text('import sys\n',encoding='utf-8')
             cache=Path(temporary)/'cache'
-            with patch('tools.standalone.build.ROOT',root), patch('tools.standalone.build.subprocess.check_output',return_value='6.22.3 12.0.0'), patch('tools.standalone.build.subprocess.run') as run:
+            def probe(command,text=False):
+                code=command[-1]
+                if 'cache_tag' in code:return '6.22.3\n12.0.0\n3.12.10\ncpython-312\n'
+                return b'{"Python/LICENSE.txt": "synthetic"}\n'
+            with patch('tools.standalone.build.ROOT',root), patch('tools.standalone.build.subprocess.check_output',side_effect=probe), patch('tools.standalone.build.subprocess.run') as run:
                 freeze(cache,Path('synthetic-python'),target='win32')
+                (cache/'dist/AbramsRuntime').mkdir(parents=True)
+                # The same interpreter reuses its cache, with notices captured at freeze time.
+                self.assertEqual(freeze(cache,Path('synthetic-python'),target='win32'),cache/'dist/AbramsRuntime')
             command=run.call_args.args[0]
             self.assertEqual(command[command.index('--python-option')+1],'X utf8')
-            self.assertEqual(json.loads((cache/'frozen.json').read_text())['python_options'],['X utf8'])
+            recorded=json.loads((cache/'frozen.json').read_text())
+            self.assertEqual(recorded['python_options'],['X utf8'])
+            self.assertEqual((recorded['python'],recorded['cache_tag']),('3.12.10','cpython-312'))
+            self.assertEqual((cache/'Python-runtime.json').read_bytes(),b'{"Python/LICENSE.txt": "synthetic"}\n')
+            # A different interpreter or package release never reuses the old runtime.
+            for changed in ('6.22.3\n12.0.0\n3.13.1\ncpython-313\n','6.22.3\n12.1.0\n3.12.10\ncpython-312\n'):
+                with self.subTest(changed=changed), patch('tools.standalone.build.ROOT',root), \
+                     patch('tools.standalone.build.subprocess.check_output',return_value=changed):
+                    with self.assertRaises(ValueError):freeze(cache,Path('synthetic-python'),target='win32')
+            # Notices edited after the freeze are refused rather than shipped.
+            (cache/'Python-runtime.json').write_bytes(b'{}')
+            with patch('tools.standalone.build.ROOT',root), patch('tools.standalone.build.subprocess.check_output',side_effect=probe):
+                with self.assertRaisesRegex(ValueError,'fresh build-cache'):freeze(cache,Path('synthetic-python'),target='win32')
 
     def test_windows_launcher_rejects_a_non_utf8_frozen_runtime(self):
         from types import SimpleNamespace
@@ -132,12 +203,17 @@ class PortableContracts(unittest.TestCase):
             files={'tools/package/game-inputs.json':json.dumps({'files':records}),
                    'godot/project.godot':'config_version=5',
                    '.runtime/pc-core/abrams-trace.json':'{}',
-                   '.runtime/pc-core/abrams-trace.so':'synthetic native core'}
+                   '.runtime/pc-core/abrams-trace.so':'synthetic native core',
+                   'tools/standalone/import-derived.json':(Path(__file__).resolve().parents[1]/'tools/standalone/import-derived.json').read_text()}
             for name,data in files.items():
                 path=root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(data)
+            # Original-free inputs omit raw extracts and decoded data entirely.
+            raw=['local-art/genesis/source/effects-v1/effects.json','local-art/genesis/source/title-original.png',
+                 'reference/genesis/extracted/gunner/palette.gpl','local-art/pc-ui-v2/frame.png',
+                 'local-art/pc-portraits-v1/faces.json','local-art/pc-graphics-native-v1/plates.png']
             allow={'schema':1,'source':['tools/package/game-inputs.json','godot/project.godot'],
                    'private':['GAME/ABRAMS.COM','.runtime/pc-core/abrams-ref.zip',
-                              '.runtime/pc-core/abrams-trace.dylib','.runtime/pc-core/abrams-trace.json']}
+                              '.runtime/pc-core/abrams-trace.dylib','.runtime/pc-core/abrams-trace.json',*raw]}
             (root/'tools/package/allowlist.json').write_text(json.dumps(allow))
             with patch('tools.pc_reference_core.sys.platform','linux'):
                 rows=payload(root)
@@ -145,6 +221,25 @@ class PortableContracts(unittest.TestCase):
             self.assertIn('.runtime/pc-core/abrams-trace.so',names)
             self.assertFalse(any(name.startswith('GAME/') for name in names))
             self.assertNotIn('.runtime/pc-core/abrams-ref.zip',names)
+            self.assertFalse(names & set(raw))
+            # A present local copy is never shipped either, even if its bytes changed.
+            for name in raw:
+                path=root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text('local original-derived data')
+            with patch('tools.pc_reference_core.sys.platform','linux'):
+                with self.assertRaisesRegex(ValueError,'Derived input changed'):payload(root)
+
+    def test_native_payload_guard_rejects_original_derived_rows(self):
+        from tools.standalone.build import check_native_payload, native_derivations, NATIVE_RAW_WHITELIST
+        table=native_derivations(Path(__file__).resolve().parents[1])
+        self.assertEqual(NATIVE_RAW_WHITELIST,frozenset())
+        for name in ['reference/genesis/anything.png','local-art/genesis/source/intro-v1/flash-1-original.png',
+                     'local-art/pc-ui-v2/strut-03.png','local-art/pc-ui-v2/panel-contact.png']:
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError,'must not ship'):
+                check_native_payload([{'path':name,'sha256':'0'*64}],table)
+        pinned=table['derived'][0]['sha256']
+        with self.assertRaisesRegex(ValueError,'another payload path'):
+            check_native_payload([{'path':'godot/renamed.bin','sha256':pinned}],table)
+        check_native_payload([{'path':'local-art/genesis/remastered/title-v1.png','sha256':'1'*64}],table)
 
     def test_exclusive_save_lock_released_on_close(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -177,20 +272,26 @@ class PortableContracts(unittest.TestCase):
             for name in ['renderer/AbramsRenderer.exe' if sys.platform=='win32' else 'renderer/AbramsRenderer',
                          'runtime/AbramsRuntime/'+('AbramsRuntime.exe' if sys.platform=='win32' else 'AbramsRuntime')]:
                 path=bundle/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'synthetic');path.chmod(0o755)
+            (root/'install/godot').mkdir(parents=True)
             def game(arguments,env,stdout,stderr):
                 self.assertEqual(stderr,subprocess.STDOUT)
+                engine_arguments=arguments[:arguments.index('--')]
+                if '--no-audio' in extra:
+                    self.assertEqual(engine_arguments[1:3],['--audio-driver','Dummy'])
+                    self.assertIn('--no-audio',arguments[arguments.index('--')+1:])
+                else:self.assertNotIn('--audio-driver',engine_arguments)
                 stdout.write(b'Godot Engine banner\nPC_VIEW_FAILED: synthetic\n');return game.code
-            for game.code in (3,0):
+            for game.code,extra in [(3,[]),(0,[]),(0,['--no-audio'])]:
                 stream=io.StringIO()
-                with self.subTest(code=game.code), patch.object(runtime,'app_resources',return_value=(bundle,{})), \
+                with self.subTest(code=game.code), patch.object(runtime,'app_resources',return_value=(bundle,{'build_id':'synthetic'})), \
                      patch.object(runtime,'prepare_install',return_value=root/'install'), patch.object(runtime,'genesis_enabled',return_value=False), \
                      patch.object(runtime.subprocess,'run',return_value=subprocess.CompletedProcess([],0)), patch.object(runtime.subprocess,'call',side_effect=game), contextlib.redirect_stderr(stream):
-                    self.assertEqual(runtime.launch(bundle,home,[]),game.code)
+                    self.assertEqual(runtime.launch(bundle,home,extra),game.code)
                 if game.code:
                     message=json.loads(stream.getvalue())['error']
                     self.assertIn('exited with code 3',message);self.assertIn('game.log',message);self.assertIn('PC_VIEW_FAILED: synthetic',message)
                 else:self.assertEqual(stream.getvalue(),'')
-            self.assertEqual((home/'logs/game.log').read_bytes().count(b'PC_VIEW_FAILED: synthetic'),2)
+            self.assertEqual((home/'logs/game.log').read_bytes().count(b'PC_VIEW_FAILED: synthetic'),3)
 
 @unittest.skipUnless(os.environ.get('ABRAMS_PORTABLE_SMOKE'), 'Native portable core smoke opt-in')
 class NativePortableCoreSmoke(unittest.TestCase):
@@ -216,6 +317,32 @@ class NativePortableCoreSmoke(unittest.TestCase):
                 self.assertEqual(core.frame,240)
                 self.assertIsNotNone(core.last_video)
                 self.assertEqual(len(core.conventional_memory()),640*1024)
+                # The native serialize/unserialize path behind every checkpoint
+                # round-trips on this platform's compiled core.
+                import hashlib
+                ram=hashlib.sha256(core.conventional_memory()).hexdigest()
+                raw=core.serialize_local()
+                core.run(60)
+                core.restore_local(raw,[],240,ram)
+                self.assertEqual((core.frame,hashlib.sha256(core.conventional_memory()).hexdigest()),(240,ram))
             finally:core.close()
+
+
+class CrossProcessLockTests(unittest.TestCase):
+    def test_save_lock_is_exclusive_across_processes(self):
+        # fcntl on Linux/macOS and msvcrt on Windows, held by a separate process.
+        import subprocess,sys
+        with tempfile.TemporaryDirectory(prefix='Abrams lock smoke ') as temporary:
+            directory=Path(temporary)/'save folder'
+            root=Path(__file__).resolve().parents[1]
+            holder=subprocess.Popen([sys.executable,'-c','import sys\nfrom pathlib import Path\nsys.path.insert(0,sys.argv[1])\nfrom tools.pc_bridge_host import lock_saves\nlock=lock_saves(Path(sys.argv[2]))\nprint("locked",flush=True)\nsys.stdin.readline()\nlock.close()',
+                                     str(root),str(directory)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
+            try:
+                self.assertEqual(holder.stdout.readline().strip(),'locked')
+                with self.assertRaisesRegex(ValueError,'already open'):lock_saves(directory)
+            finally:
+                holder.stdin.write('\n');holder.stdin.flush();holder.wait(timeout=30)
+            self.assertEqual(holder.returncode,0)
+            lock_saves(directory).close()
 
 if __name__=='__main__':unittest.main()

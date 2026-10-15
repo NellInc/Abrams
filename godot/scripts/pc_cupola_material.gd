@@ -40,12 +40,15 @@ static func _prepare(donor: Image, hardware: Array) -> Image:
 	if donor==null or donor.get_size()!=SIZE: return null
 	var rgba: Image = donor.duplicate()
 	rgba.convert(Image.FORMAT_RGBA8)
-	var bytes: PackedByteArray = rgba.get_data()
+	# View the RGBA bytes as a 4-wide L8 image, so column 3 is every pixel's
+	# alpha and the whole channel is checked and cleared natively.
+	var pixels := SIZE.x*SIZE.y
+	var channels := Image.create_from_data(4,pixels,false,Image.FORMAT_L8,rgba.get_data())
 	# This channel is safe only for the verified all-opaque donor. Reject an
 	# unexpected cutout instead of silently erasing its transparency contract.
-	for at in range(3,bytes.size(),4):
-		if bytes[at]!=255: return null
-		bytes[at]=0
+	if channels.get_region(Rect2i(3,0,1,pixels)).get_data().count(255)!=pixels: return null
+	channels.fill_rect(Rect2i(3,0,1,pixels),Color.BLACK)
+	var bytes: PackedByteArray = channels.get_data()
 	for box: Rect2i in hardware:
 		for y in range(box.position.y,box.end.y):
 			var left := -1

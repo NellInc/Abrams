@@ -142,7 +142,7 @@ def verify(ram):
                     # before the containing function's stack epilogue.
                     run('driver_temperature', 0x684F, changes, [[233,190,19,7,color]], blink*8192, mode, 0x6893, red)
     return {'sim_sha256': SIM_SHA256, 'capture_sha256': hashlib.sha256(ram).hexdigest(),
-        'engine': 'unicorn-2.1.4/x86-16', 'cases': cases, 'case_count': len(cases),
+        'engine': f'unicorn-{unicorn.__version__}/x86-16', 'cases': cases, 'case_count': len(cases),
         'original_instruction_locations_checked': len(checked), 'vga_writes': writes,
         'plane_bytes_checked_including_untouched': len(cases)*4*65536,
         'scope': 'original gauge callers, classifier, line and rectangle rasterization; isolated fixture data; no live guest changes or timing proof'}

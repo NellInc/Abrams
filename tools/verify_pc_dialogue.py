@@ -8,11 +8,24 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+try:
+    from tools.verify_pc_audio_trace import CORE_MANIFEST, ROOT, check_core_pins, inside_source, load_manifest
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from verify_pc_audio_trace import CORE_MANIFEST, ROOT, check_core_pins, inside_source, load_manifest
 
 
-def verify(trace,baseline):
-    if trace.get('profile')=='smoke-warnings':return verify_warnings(trace,baseline)
-    if trace.get('profile')=='radio-retrieval':return verify_radio(trace,baseline)
+def verify(trace,baseline,manifest=None):
+    # Every profile is parity evidence only for a trace run against the distinct pinned baseline core.
+    # Dialogue traces captured before capture_pc_dialogue recorded the trace header carry none.
+    pins=check_core_pins(trace,baseline,load_manifest() if manifest is None else manifest,require_header=False)
+    result=(verify_warnings if trace.get('profile')=='smoke-warnings' else
+            verify_radio if trace.get('profile')=='radio-retrieval' else verify_damage)(trace,baseline)
+    result['checks'].update(pins)
+    return result
+
+
+def verify_damage(trace,baseline):
     first={}
     for change in trace['changes']:
         for message in change['messages']:
@@ -115,8 +128,10 @@ def verify_radio(trace,baseline):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--trace',type=Path,required=True);p.add_argument('--baseline',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    result=verify(json.loads(a.trace.read_text()),json.loads(a.baseline.read_text()))
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--manifest',type=Path,default=CORE_MANIFEST)
+    a=p.parse_args()
+    if inside_source(a.output,ROOT): p.error('output must be outside original sources')
+    result=verify(json.loads(a.trace.read_text()),json.loads(a.baseline.read_text()),load_manifest(a.manifest))
     result['inputs']=[{'path':str(f),'sha256':hashlib.sha256(f.read_bytes()).hexdigest()} for f in (a.trace,a.baseline)]
     result.update(passed=all(result['checks'].values()),trace_sha256=result['inputs'][0]['sha256'],baseline_sha256=result['inputs'][1]['sha256'])
     a.output.write_text(json.dumps(result,indent=2)+'\n')

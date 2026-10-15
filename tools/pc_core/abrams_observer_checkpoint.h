@@ -61,9 +61,16 @@ bool abrams_observer_checkpoint_save(void* output, size_t size) {
     Bit8u* raw = (Bit8u*)output;
     memcpy(raw, header, sizeof(header)); raw += sizeof(header);
     memcpy(raw, vga.mem.linear, abrams_observer_vga_bytes); raw += abrams_observer_vga_bytes;
+    Bit8u* payload = raw;
 #define ABRAMS_SAVE(field) memcpy(raw, &field, sizeof(field)); raw += sizeof(field);
     ABRAMS_OBSERVER_FIELDS(ABRAMS_SAVE)
 #undef ABRAMS_SAVE
+    // Refuse at capture any state that load would reject, so a saved
+    // checkpoint is always restorable rather than failing on every resume.
+    raw = payload;
+#define ABRAMS_VALIDATE(field) if (!AbramsObserverFieldValid(raw, field)) return false; raw += sizeof(field);
+    ABRAMS_OBSERVER_FIELDS(ABRAMS_VALIDATE)
+#undef ABRAMS_VALIDATE
     return true;
 }
 extern "C" __attribute__((visibility("default")))
@@ -89,6 +96,7 @@ bool abrams_observer_checkpoint_load(const void* input, size_t size) {
     // slots. Rebuild them from fresh scanlines; do not reuse a displayed mask.
     memset(abrams_ui_rows, 0, sizeof(abrams_ui_rows));
     abrams_ui_valid = false;
+    abrams_driver_seen = false;
     return true;
 }
 #undef ABRAMS_OBSERVER_FIELDS

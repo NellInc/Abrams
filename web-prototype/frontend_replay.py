@@ -17,7 +17,8 @@ sys.path.insert(0, str(ROOT))
 from tools.pc_frontend_text import FrontendText
 
 SOURCE = sys.stdin.buffer
-MAX_PACKET = 16 * 1024 * 1024
+# Mirrors kTraceLimit in core_frontend.cpp and browser_observer.MAX_PACKET.
+MAX_PACKET = 64 * 1024 * 1024
 
 
 def read_exact(length: int) -> bytes:

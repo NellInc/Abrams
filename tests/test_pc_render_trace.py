@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from PIL import Image
 
 from tools.pc_render_trace import Collector
+from tests._inputs import requires
 
 
 class RenderTraceTests(unittest.TestCase):
@@ -41,6 +42,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertTrue(Collector.safe_driver_mask(b'',b''))
         self.assertFalse(Collector.outside_ui(b'',b''))
 
+    @requires('GAME')
     def test_mask_encoding_cache_is_exact_bounded_and_not_an_ownership_bypass(self):
         from unittest.mock import patch
         c = self.collector()
@@ -65,6 +67,7 @@ class RenderTraceTests(unittest.TestCase):
     def collector(self):
         return Collector(None, history_limit=2)
 
+    @requires('GAME')
     def test_detach_removes_native_callback_not_only_load_segment(self):
         calls = []
         core = SimpleNamespace(pause_at_frame_end=lambda: None,
@@ -72,6 +75,7 @@ class RenderTraceTests(unittest.TestCase):
         self.collector().detach(core)
         self.assertEqual(calls,[(0,False)])
 
+    @requires('GAME')
     def test_loop_diagnostics_remain_separate_from_displayed_pass_and_invalidate_on_rejection(self):
         c = self.collector()
         state = {'camera':{'position_raw':[1,2,3]},'station':'driver',
@@ -105,6 +109,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertIs(c.active,active); self.assertIs(c.current,current)
         self.assertIs(c.presented,displayed)
 
+    @requires('GAME')
     def test_disabled_and_unavailable_diagnostics_are_null_and_detach_clears_history(self):
         c = self.collector()
         self.event(c,56,0xE85,b'ignored')  # disabled: no reader required
@@ -135,6 +140,7 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 12, slot, pixels, [1, 1] + [0] * 10)
         return c.paired_video((pixels, 1, 1, 4))
 
+    @requires('GAME')
     def test_text_candidates_follow_native_slot_and_never_leak_internal_pixels(self):
         c = self.collector()
         item = {'kind':'weapon_status','text':'READY ','rect':[52,165,1,1],
@@ -153,6 +159,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertEqual(self.present(c,1)['text_runs'],[])
         self.assertEqual(calls,[(candidate,),()])
 
+    @requires('GAME')
     def test_scanout_uses_displayed_page_not_latest_complete_pass(self):
         c = self.collector()
         self.finish_pass(c, 1, 0)
@@ -166,6 +173,7 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 11, 2)
         self.assertEqual(self.present(c, 2)['draw_pass']['sequence'], 3)
 
+    @requires('GAME')
     def test_triple_buffer_slot_is_preserved_while_next_scanout_runs(self):
         c = self.collector()
         self.finish_pass(c, 1, 0)
@@ -177,6 +185,7 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 11, 0)
         self.assertEqual(self.present(c, 0)['draw_pass']['sequence'], 2)
 
+    @requires('GAME')
     def test_ui_mask_follows_scanned_slot_and_survives_later_scanout(self):
         c = self.collector()
         self.finish_pass(c, 1, 0)
@@ -196,6 +205,7 @@ class RenderTraceTests(unittest.TestCase):
             self.assertEqual(image.tobytes(), mask)
         self.assertEqual(self.present(c, 0)['ui_overlay']['ui_pixels'], 0)
 
+    @requires('GAME')
     def test_missing_ui_provenance_is_explicit_and_not_reused(self):
         c = self.collector()
         self.event(c, 10, 0)
@@ -206,6 +216,7 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 11, 0)
         self.assertIsNone(self.present(c, 0)['ui_overlay'])
 
+    @requires('GAME')
     def test_plate_provenance_follows_slot_and_requires_original_UI(self):
         c = self.collector()
         self.event(c,10,0)
@@ -239,6 +250,7 @@ class RenderTraceTests(unittest.TestCase):
         c.ui_mask_slot = None
         with self.assertRaisesRegex(ValueError,'plate mask.*slots differ'): self.event(c,11,1)
 
+    @requires('GAME')
     def test_motor_pool_uses_new_transport_ID_without_reassigning_others(self):
         c=self.collector()
         self.event(c,10,0)
@@ -250,6 +262,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertEqual(plate['plates']['8']['pixels'],64000)
         self.assertEqual(plate['plates']['7']['source'],'FRAME')
 
+    @requires('GAME')
     def test_motor_pool_claim_requires_complete_exact_original_readback(self):
         c=self.collector();calls=[]
         c.claim_motor_pool=lambda page: calls.append(page) or True
@@ -262,6 +275,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertFalse(c.plates.report()['motor_pool_readbacks'][-1]['verified'])
         with self.assertRaisesRegex(ValueError,'readback'):self.event(c,32,0,pixels[:-1])
 
+    @requires('GAME')
     def test_driver_assembly_offsets_follow_scanline_frame_and_clear(self):
         c=self.collector();raw=bytearray(64000*3)
         raw[0:3]=bytes((0,64,255));raw[3:6]=bytes((253,63,255))
@@ -280,6 +294,7 @@ class RenderTraceTests(unittest.TestCase):
         c=self.collector();self.event(c,10,0)
         with self.assertRaisesRegex(ValueError,'paired UI'):self.event(c,31,0,bytes(raw))
 
+    @requires('GAME')
     def test_invalid_ui_mask_fails_instead_of_inventing_transparency(self):
         for raw, error in [(b'\0', 'dimensions'), (bytes([254])*64000, 'provenance')]:
             with self.subTest(error=error):
@@ -291,6 +306,7 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 19, 2, bytes(64000))
         with self.assertRaisesRegex(ValueError, 'slots differ'): self.event(c, 11, 0)
 
+    @requires('GAME')
     def test_first_error_survives_cascading_events_from_one_native_call(self):
         c = self.collector()
         def send(event, raw=b''):
@@ -304,6 +320,7 @@ class RenderTraceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'invalid UI provenance mask'):
             c.paired_video((b'\0'*4, 1, 1, 4))
 
+    @requires('GAME')
     def test_unknown_draw_lookups_name_the_missing_source(self):
         world = lambda: {'unsupported': [], 'objects': [], 'world': {'static': [], 'dynamic': []}}
         c = self.collector(); c.active = world()
@@ -318,6 +335,7 @@ class RenderTraceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'not in source shape'):
             self.event(c, 6, 0, bytes(0x1A70))
 
+    @requires('GAME')
     def test_redrawing_displayed_page_invalidates_scanout_even_if_pass_finishes(self):
         c = self.collector()
         self.finish_pass(c, 1, 0)
@@ -332,6 +350,7 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 11, 1)
         self.assertEqual(self.present(c, 1)['draw_pass']['sequence'], 2)
 
+    @requires('GAME')
     def test_scanout_of_incomplete_or_unobserved_page_is_explicit(self):
         c = self.collector()
         self.event(c, 13, 0x35A0, b'\0' * 8 + b'\x00\xa2')
@@ -341,6 +360,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertIsNone(self.present(c, 0)['draw_pass'])
         self.assertIsNone(self.present(c, 2)['draw_pass'])
 
+    @requires('GAME')
     def test_host_framebuffer_must_match_traced_bytes_and_dimensions(self):
         c = self.collector()
         self.present(c, 0)
@@ -349,6 +369,7 @@ class RenderTraceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'dimensions differ'):
             c.paired_video((b'\0' * 8, 1, 1, 8))
 
+    @requires('GAME')
     def test_sprite_root_resets_stale_matrix_and_observes_original_rejection(self):
         c = self.collector()
         c.active = {'unsupported': [], 'objects': [], 'world': {'static': [],
@@ -365,6 +386,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertEqual([x['kind'] for x in c.active['unsupported']],
                          ['opaque_command', 'unattributed_polygon'])
 
+    @requires('GAME')
     def test_unobserved_sprite_completion_is_reported(self):
         c = self.collector()
         c.active = {'page_offset': 0, 'unsupported': [], 'objects': [
@@ -372,12 +394,14 @@ class RenderTraceTests(unittest.TestCase):
         self.event(c, 4)
         self.assertEqual(c.passes[-1]['unsupported'], [{'kind': 'incomplete_sprite', 'pointer': 123}])
 
+    @requires('GAME')
     def test_unattributed_bitmap_is_reported(self):
         c = self.collector()
         c.active = {'unsupported': []}
         self.event(c, 17)
         self.assertEqual(c.active['unsupported'], [{'kind': 'unattributed_bitmap'}])
 
+    @requires('GAME')
     def test_live_history_is_bounded_and_count_is_total(self):
         c = self.collector()
         for i in range(10): self.finish_pass(c, i, (i % 2) * 8192)
@@ -385,6 +409,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertEqual(c.completed_count, 10)
         self.assertEqual(len(c.pages), 2)
 
+    @requires('GAME')
     def test_material_background_is_owned_by_original_drawing_page(self):
         c = self.collector()
         self.event(c, 13, 0x35A0, b'\0' * 8 + b'\x00\xa0')
@@ -400,6 +425,7 @@ class RenderTraceTests(unittest.TestCase):
         self.assertIsNone(c.backgrounds[0])
         self.assertEqual(c.backgrounds[8192], {'kind': 'solid', 'color': 8})
 
+    @requires('GAME')
     def test_palette_is_frozen_with_scanned_buffer_not_latest_draw_palette(self):
         c = self.collector()
         first = bytes(value for i in range(16) for value in (i, i + 16, i + 32, 0))
@@ -415,9 +441,99 @@ class RenderTraceTests(unittest.TestCase):
         self.assertEqual(self.present(c, 2)['palette_rgb'], expected)
         self.assertNotEqual(c.palette_rgb, expected)
 
+    @requires('GAME')
     def test_invalid_draw_palette_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'unsupported palette snapshot'):
             self.event(self.collector(), 14, raw=b'\0' * 63)
+
+    @requires('GAME')
+    def test_non_world_background_call_keeps_completed_pass_and_background(self):
+        # The destroyed-GPS black panel calls 340b after the world pass. The
+        # native hook reports it as event 57, so its UI fill cannot drop the
+        # completed pass or replace the world background.
+        c = self.collector()
+        horizon = {'kind': 'solid', 'color': 2}
+        self.event(c, 13, 0x35A0, b'\0' * 8 + b'\x00\xa0')
+        self.event(c, 16, regs=[0, 0, 0, 2] + [0] * 8)
+        self.finish_pass(c, 1, 0)
+        self.event(c, 57)
+        self.event(c, 16, regs=[0, 0, 0, 0] + [0] * 8)
+        self.event(c, 15, raw=b'\x05\x00\x08\x00')
+        self.assertEqual(c.backgrounds[0], horizon)
+        self.assertNotIn(0, c.drawing_pages)
+        self.event(c, 10, 0); self.event(c, 11, 1)
+        result = self.present(c, 1)
+        self.assertEqual(result['draw_pass']['sequence'], 1)
+        self.assertIsNone(result['reason'])
+        # The next world call still starts a redraw as before.
+        self.event(c, 13, 0x35A0, b'\0' * 8 + b'\x00\xa0')
+        self.assertIsNone(c.backgrounds[0])
+        self.assertIn(0, c.drawing_pages)
+
+    @requires('GAME')
+    def test_relative_reads_outside_native_window_fail_with_bounds_error(self):
+        c = self.collector()
+        c.active = {'unsupported': [], 'objects': [], 'world': {'static': [{'pointer': 7, 'shape_index': 0}], 'dynamic': []}}
+        raw = bytearray(0x0F00)
+        raw[0x12CC - 0x1100:0x12CE - 0x1100] = (7).to_bytes(2, 'little')
+        # A matrix pointer below DS:1100 must not wrap to the window's tail.
+        raw[0x1CDA - 0x1100:0x1CDC - 0x1100] = (0x1000).to_bytes(2, 'little')
+        with self.assertRaisesRegex(ValueError, 'outside native window'):
+            self.event(c, 2, 0x1100, bytes(raw))
+        c = self.collector()
+        c.active = {'unsupported': [], 'objects': [], 'world': {'static': [], 'dynamic': []}}
+        c.current = {'shape_index': 0, 'primitive_ids': [], 'polygons': []}
+        with self.assertRaisesRegex(ValueError, 'outside native window'):
+            self.event(c, 6, 0, bytes(0x1A6A))
+
+    @requires('GAME')
+    def test_object_index_keeps_static_precedence_and_dynamic_membership(self):
+        c = self.collector()
+        static, dynamic = {'pointer': 123, 'shape_index': 168}, {'pointer': 123, 'shape_index': 1}
+        c.active = {'unsupported': [], 'objects': [], 'world': {'static': [static], 'dynamic': [dynamic]}}
+        self.event(c, 7, 20, b'\x80\x05', [0, 123, 0, 0, 0, 20] + [0] * 6)
+        self.assertEqual((c.current['shape_index'], c.current['dynamic_instance']), (168, True))
+        # A new pass is reindexed, never served from the previous one.
+        c.active = {'unsupported': [], 'objects': [], 'world': {'static': [], 'dynamic': [dynamic]}}
+        self.event(c, 7, 20, b'\x80\x05', [0, 123, 0, 0, 0, 20] + [0] * 6)
+        self.assertEqual((c.current['shape_index'], c.current['dynamic_instance']), (1, True))
+
+    @requires('GAME')
+    def test_attachments_share_decoded_sources_but_not_run_state(self):
+        first, second = self.collector(), self.collector()
+        for name in ('shapes', 'shape_primitives', 'shape_commands', 'effects'):
+            self.assertIs(getattr(first, name), getattr(second, name))
+        for a, b in ((first.plates.resources['GPS.BIN'], second.plates.resources['GPS.BIN']),
+                     (first.struts.sources, second.struts.sources), (first.struts.plates[1], second.struts.plates[1])):
+            self.assertIs(a, b)
+        for a, b in ((first.pages, second.pages), (first.plates.resources, second.plates.resources),
+                     (first.plates.loads, second.plates.loads), (first.struts.draws, second.struts.draws),
+                     (first.struts.plates, second.struts.plates), (first.text.pages, second.text.pages)):
+            self.assertIsNot(a, b)
+        shape = first.shapes[145]
+        self.assertEqual(first.shape_primitives[145], {p['offset']: p for p in reversed(shape['primitives'])})
+        self.assertEqual(first.shape_commands[145], {c['offset']: c for c in reversed(shape['opaque_commands'])})
+
+    @requires('GAME')
+    def test_prewarm_leaves_no_decode_for_the_first_sim_attach(self):
+        # A fresh process: after prewarm() the first Collector must not decode
+        # any original resource, so entering SIM never stalls a bridge step.
+        script = '''
+import tools.pc_render_trace as r, tools.pc_plate_trace as p, tools.pc_strut_trace as s
+r.prewarm()
+def forbidden(*_args, **_kwargs): raise AssertionError('decoded after prewarm')
+for module, names in ((r, ('decode_resource', 'decode_bitmaps', 'inspect_shapes')),
+                      (p, ('decode_resource',)), (s, ('decode_resource', 'decode_bitmaps'))):
+    for name in names: setattr(module, name, forbidden)
+r.Collector(None, history_limit=1)
+print('PREWARM_OK')
+'''
+        import subprocess, sys
+        from pathlib import Path
+        result = subprocess.run([sys.executable, '-c', script], cwd=Path(__file__).resolve().parents[1],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('PREWARM_OK', result.stdout)
 
 
 if __name__ == '__main__': unittest.main()

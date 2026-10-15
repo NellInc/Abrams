@@ -1,0 +1,158 @@
+{
+ "fixtures": {
+  "artifacts/finish-20260928/cursor-struts/coverage-fixtures.json": {
+   "files": 1,
+   "kind": "file",
+   "read_by": "pc_cursor_struts, pc_cockpit_refinement",
+   "sha256": "b8d3064a09083f0cf34a3e94d272cdb08588959757babddd5480fc42114ea555"
+  },
+  "artifacts/finish-20260928/effect-mode-fixtures.json": {
+   "files": 1,
+   "kind": "file",
+   "read_by": "pc_effect_modes",
+   "sha256": "525fbc58d0b9adce1be6d8c0810cbb71e8817325f0a28be26a7bb262fd8d533a"
+  },
+  "artifacts/finish-20260928/maps/live-trace": {
+   "files": 5,
+   "kind": "dir",
+   "read_by": "pc_dynamic_map (--live)",
+   "sha256": "15442038e27d922ff623b31ad4692a882c991f181f470e19b0c6e6bd9b510316"
+  },
+  "artifacts/finish-20260928/status-damage-oracle-02": {
+   "files": 131,
+   "kind": "dir",
+   "read_by": "pc_instrument_damage, pc_tactical_hud",
+   "sha256": "01911e9c426d9c43ad3b1e5d85defdbcc20bb56648804587f0ab0b3638928b3d"
+  },
+  "artifacts/finish-20260928/target-lock-oracle.json": {
+   "files": 1,
+   "kind": "file",
+   "read_by": "pc_instrument_lock",
+   "sha256": "0b73985f83fb74464d2a61731e82cf086cde1e67e1fdd67b2f19fe3a0c6f77ab"
+  },
+  "artifacts/intro-menu-20260930/trace": {
+   "files": 84,
+   "kind": "dir",
+   "read_by": "pc_frontend_scene",
+   "sha256": "0423db2f58454ee89cf7014fdfb944457f86725983614778a1a55f0f49e9318e"
+  },
+  "artifacts/pc-genesis-arming-allocations-trace-01": {
+   "files": 152,
+   "kind": "dir",
+   "read_by": "pc_motor_pool_arming_art",
+   "sha256": "a9506ef16dd7fe8052fb47ec1c3c2a3329350294119bed299e08455193a28113"
+  },
+  "artifacts/pc-information-baseline-02": {
+   "files": 80,
+   "kind": "dir",
+   "read_by": "pc_information_art, pc_frontend_art, pc_graphics_modes, pc_portrait_coverage",
+   "sha256": "168076dbdeb9c17a8ea2fb4b48c68e60cdc50aa81eee7948252b724d24d3d836"
+  },
+  "artifacts/pc-intro-skip-trace-01": {
+   "files": 14,
+   "kind": "dir",
+   "read_by": "pc_intro_art",
+   "sha256": "0a6f4a554950f48c8dd4e8952fb728a0e63c7251d79267bc38fbce1bbf2e654f"
+  },
+  "artifacts/pc-intro-trace-01": {
+   "files": 370,
+   "kind": "dir",
+   "read_by": "pc_intro_art, pc_graphics_modes, pc_frontend_music",
+   "sha256": "fe0d838d7fa5a98d4f082d91578ae1e7b24e89ee59b5c777f5171d5602f69ac3"
+  },
+  "artifacts/pc-live-type-cockpit-02": {
+   "files": 66,
+   "kind": "dir",
+   "read_by": "pc_tandem_frame, pc_cockpit_mask_reuse, pc_cockpit_refinement, pc_commander_trim, pc_graphics_modes, pc_presentation_reuse",
+   "sha256": "bffa1cff57b9e7c5457380286a567021f9d3ce0ffd8b67d6785c1fbe687217fe"
+  },
+  "artifacts/pc-live-type-crew-02": {
+   "files": 108,
+   "kind": "dir",
+   "read_by": "pc_portrait_art",
+   "sha256": "af1b05cff1f1472047988f96c7a749b355614df5d0fa0b584a7a4d145848a9e4"
+  },
+  "artifacts/pc-live-type-lifecycle-01": {
+   "files": 54,
+   "kind": "dir",
+   "read_by": "pc_frontend_art, pc_graphics_modes",
+   "sha256": "62ff96f63dcc389af7bf487e97fde824e5ad68e1be3f0b35bdcc431b051695f2"
+  },
+  "artifacts/pc-menu-text-trace-04": {
+   "files": 83,
+   "kind": "dir",
+   "read_by": "pc_menu_text, pc_cursor_struts, pc_frontend_art",
+   "sha256": "aee0197e8ed4fc3392caa97df0716003e75ab37b11357d54b6f8248ee56cf549"
+  },
+  "artifacts/pc-motor-pool-baseline-01/mission-summary.png": {
+   "files": 1,
+   "kind": "file",
+   "read_by": "pc_map_art",
+   "sha256": "79b68dd20d5dc813b49352c07695a182eed047f26252b49d0adb196684318b49"
+  },
+  "artifacts/pc-motor-pool-controls-01": {
+   "files": 104,
+   "kind": "dir",
+   "read_by": "pc_motor_pool_controls_art",
+   "sha256": "57d1260a9fcfb12c55389d41a5d533cbb19bf69ca796266c69825389498350b9"
+  },
+  "artifacts/pc-motor-pool-trace-03": {
+   "files": 86,
+   "kind": "dir",
+   "read_by": "pc_motor_pool_art",
+   "sha256": "a257af9af78623bc10d8b565737dbe92440154408d0c9e7fcd4c501b74bce5c7"
+  },
+  "artifacts/pc-portrait-lifecycle-trace-01": {
+   "files": 453,
+   "kind": "dir",
+   "read_by": "pc_portrait_coverage",
+   "sha256": "861a46809404ce99e51274890194572d18154fb83acb72951cb5aa40205f114c"
+  },
+  "artifacts/pc-sprite-controls-02": {
+   "files": 6,
+   "kind": "dir",
+   "read_by": "pc_effect_art, pc_hill_art, pc_vehicle_art, pc_modern, pc_modern_mapping_reuse",
+   "sha256": "a1278f7eb9dcf1012ea36340c11967a78b430abc0a35a12f125eec95cfe1da11"
+  },
+  "artifacts/performance-60fps-20260929/optimized-canvas/diagnostic-draws.json": {
+   "files": 1,
+   "kind": "file",
+   "read_by": "pc_modern_mapping_reuse",
+   "sha256": "ed989c98a401fdc5f9ceda4c2e56e26256fe423db509233fa3d15a9e1aba8942"
+  }
+ },
+ "live": {
+  "artifacts/pc-all-scenarios-trace-01": {
+   "files": 1121,
+   "kind": "dir",
+   "read_by": "pc_scenario_frames",
+   "sha256": "8af178f4df068fb437aaf1f2f705a479788e847927501a93fe43ad259574dd42"
+  },
+  "artifacts/pc-combat-loss-trace-01": {
+   "files": 491,
+   "kind": "dir",
+   "read_by": "pc_combat_outcome",
+   "sha256": "29d27f6b089cbacaff7c355cf4094106b079a241a32200b15e5852e6ee73b539"
+  },
+  "artifacts/pc-crew-trace-01": {
+   "files": 31,
+   "kind": "dir",
+   "read_by": "pc_crew_bridge",
+   "sha256": "5aacae0e6545fae4d3e1e54488a8639d17b3b4cf96edcb977f98089490c87791"
+  },
+  "artifacts/pc-radio-trace-01": {
+   "files": 160,
+   "kind": "dir",
+   "read_by": "pc_radio_bridge",
+   "sha256": "bd786fa776e406601a2907beb22ad3e13f1849bca1637d1a96f2030fdb4c7564"
+  },
+  "artifacts/pc-warning-trace-03": {
+   "files": 23,
+   "kind": "dir",
+   "read_by": "pc_warning_bridge",
+   "sha256": "2cfcee2016187fb1689d2a53c656ef18a2ed8ba91640d2ae1ca667838f13c300"
+  }
+ },
+ "schema": 1,
+ "scope": "Local gate inputs under gitignored artifacts/; pinned so a cleared or regenerated capture fails before any Godot check."
+}

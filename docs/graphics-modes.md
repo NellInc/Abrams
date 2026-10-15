@@ -2,7 +2,9 @@
 
 The original PC executable owns every frame, input, transition, value and rule.
 The graphics selector never requests an emulator frame or changes game state.
-A successful explicit mode selection is remembered with HUD style and quality. Startup and command-line overrides never overwrite that preference. An unavailable saved mode falls back to Genesis Upscaled with a visible warning and retains its intent for the next compatible import.
+Without a saved preference, Play opens in Tactical with the Tactical HUD (Nell, 15 October 2026: "make Tactical the default view"); Genesis Upscaled stands in when the Modern catalogue is unavailable. A successful explicit mode selection is remembered with HUD style and quality. Startup and command-line overrides never overwrite that preference. An unavailable saved mode falls back to that default with a visible warning and retains its intent for the next compatible import.
+
+Working if: a fresh profile with the Modern catalogue derived starts in Tactical with the Tactical HUD, and the same profile without it starts in Genesis Upscaled.
 
 Assets are validated and loaded at startup. Switching uses the currently cached
 source framebuffer, presentation metadata and paired world texture synchronously.
@@ -10,6 +12,9 @@ source framebuffer, presentation metadata and paired world texture synchronously
 * **EGA** displays the exact original 320×200 RGB framebuffer, including source
   glyphs and colours. The display scales those pixels with nearest sampling.
   Every presentation overlay and world-compositing shader is bypassed.
+  HUD Style Tactical does not restyle, replace plates in, letterbox or reflow
+  EGA, EGA Upscaled or Genesis frames; the Tactical HUD applies only in Genesis
+  Upscaled, Modern and Tactical.
 * **EGA Upscaled** enlarges the current original PC frame with palette-preserving
   [Scale3x](https://www.scale2x.it/algorithm) neighbourhood rules. Edge contours
   gain subpixel steps; every displayed colour is selected from the original
@@ -23,6 +28,9 @@ source framebuffer, presentation metadata and paired world texture synchronously
   Unmatched and dynamic regions retain the current original PC pixels. This is
   a partial-donor presentation, not emulation of the Genesis version. A missing
   or invalid complete native pack rejects the switch and preserves the prior mode.
+  The pack is built from captured Genesis screens, so only an equipped checkout
+  carries it: native apps built after 15 October 2026 and the Web edition do not,
+  and there the menu shows Genesis as unavailable.
 * **Genesis Upscaled** (`upscaled`) restores the existing high-resolution artwork, typography and
   scanout-paired world. Its existing provenance and visibility gates still apply.
 * **Modern** uses refined source-bound low-poly geometry, illustrated foliage
@@ -71,6 +79,12 @@ paired frame. Source ownership must prove that every discarded pixel belongs to
 static cockpit artwork; an unknown live overlay immediately restores the complete
 4:3 arrangement. Camera projection, zoom, thermal semantics and controls are unchanged.
 All five layouts also work with PC-only imports, without an optional Genesis ROM.
+These layouts, the olive restyle and the Tactical letterbox apply only while the
+graphics mode is Genesis Upscaled, Modern or Tactical. The gate follows the
+selected graphics mode, not whether the paired world composited that frame, so a
+frame that falls back to original pixels does not flicker between HUD styles.
+Working if: test_pc_graphics_modes shows EGA, EGA Upscaled and Genesis frames
+unchanged by HUD Style Tactical.
 
 Tactical instrument faces use output-resolution vector gauges, ammunition and
 status readouts, orientation diagrams, and an authored M1A1 plan-view schematic.
@@ -905,6 +919,19 @@ original silhouettes and visibility remain exact, barrel bores and other
 untagged surfaces are unchanged, Modernized switches back to identical pixels,
 and both upscale choices remain independently selectable.
 
+## Upscaled donor filtering
+
+Crew popup faces, information-page illustrations and Wilson office poses are
+uploaded with mipmaps and drawn with linear-mipmap filtering (Wilson
+premultiplied), so minified donors are filtered rather than aliased. The
+frontend shader samples the portrait in uniform control flow, so mip selection is
+defined at the `portrait_rect` and `restored_height` edges. Original-coverage
+masks remain nearest. Native `--native` captures have not yet been rerun for this
+change, so shader compilation and pixels are not yet verified natively.
+
+Working if: the `--native` portrait, information, frontend and Wilson tests pass
+their adjacent-mip-level probes (`godot/tests/pc_mip_reference.gd`).
+
 ## Integration
 
 `pc_tandem_frame.gd` provides:
@@ -960,33 +987,46 @@ Tactical adds source-bound smoke and particles in one transparent mesh batch:
   position. Rounded billows expand and dissipate with that timer. When the
   original smoke background places the optic inside the cloud, immersed
   billows soften that same background while foreground ownership stays intact.
-* Guided missiles receive a compact motor flare and short exhaust wake. The
-  original AX and enemy guided-launch routines allocate shape-base + 71 with
-  header 100 and movement speed 250, then alternate shapes 186/187
-  in the pinned game. Both flare phases retain the wake. Only the actually observed, matching
-  projectile is eligible. A launcher crew model alone never produces a flare.
-* Moving vehicles with admitted engine geometry receive restrained exhaust.
-  The emitter is fitted to the original observed face. Stationary engines are
-  not assumed to be running from allocation alone.
-* Ground vehicles receive low dust at their source-model contact height. Hinds
-  receive engine fumes without ground dust. Decorative dust changes no cover,
-  collision, aim or ground shape.
+* Guided missiles receive a compact motor glow confined to the observed flare's
+  registered sprite rectangle. The original AX and enemy guided-launch routines
+  allocate shape-base + 71 with header 100 and movement speed 250, then
+  alternate shapes 186/187 in the pinned game. Both flare phases retain the glow.
+  Only the actually observed, matching projectile is eligible. A launcher crew
+  model alone never produces a flare. No wake is laid along the RAM travel
+  direction, so the glow never points back at a launcher before the flare's own
+  motion shows it.
+* Every visible, identity-matched vehicle with admitted engine geometry receives
+  the same restrained idle fumes from its original observed vent face. They
+  shade only pixels the original painted as that vehicle, inside the rectangle it
+  was drawn into, so they never extend a silhouette over sky, a crest or a tree
+  line. A vent outside the drawn on-screen hull emits nothing. RAM speed, heading
+  and position select and shape nothing, so moving, reversing and parked vehicles
+  look identical. There is no ground dust, because it could only signal motion
+  the original screen does not show. This retracts the earlier rule that
+  stationary engines are not assumed to be running: Nell approved idle fumes on
+  parked vehicles on 15 October 2026 ("yes") under the docs/GOAL.md fidelity
+  clause.
 * Every admitted original effect phase receives shaded smoke, warm fire cores
   and sparse hot fragments. The original bitmap selects its phase and footprint.
   The existing cutout and painter coverage remain authoritative.
 * Soft particles sample the same-frame ownership mask. An exhaust root must
   belong to its visible vehicle; hidden or unmatched actors emit nothing.
-  Other actors, trees and fallback geometry stay in front. Burst embellishment
-  is additionally confined to its original registered sprite rectangle.
+  Vehicle fumes, missile glow and burst embellishment shade only their own
+  object's final painter coverage, so terrain, trees, actors and fallback
+  geometry painted over them in the original frame cover them too. Burst
+  embellishment and missile glow are also confined to their original registered
+  sprite rectangle. Smoke deployment may tint only observed terrain and
+  background.
 * Particles reconstruct from the current source snapshot. There is no wall-clock
   timer, accumulated history, emitter simulation or replay of an old launch.
   Repeated, paused and restored packets reproduce the same image. Switching
   away clears the particle batch. A finite 512-puff ceiling, one batch and
-  derivative-filtered detail bound the additional work. A smoke-timer or
-  movement-cue change updates only the small particle batch when the original
-  geometry is unchanged, retaining the terrain and actor mesh cache.
+  derivative-filtered detail bound the additional work. A smoke-timer change
+  updates only the small particle batch; actor speed, heading and position never
+  dirty it. When the original geometry is unchanged, the terrain and actor mesh
+  cache is retained.
 
-Smoke and dust use rounded colour shading with darker folds, pale lifted crowns
+Smoke uses rounded colour shading with darker folds, pale lifted crowns
 and restrained warm edges. Diesel soot keeps a darker, brown-grey body. Launch
 bursts and missile motors use warm-white, gold, orange and cooled-red transitions;
 the source-selected sprites retain their authored highlights and cutouts. Shared
@@ -997,8 +1037,10 @@ lighting. Modernized, EGA Upscaled and Genesis Upscaled retain their preceding
 rendering.
 
 Working if: popping smoke shows a source-timed cloud, an observed guided
-projectile has a motor wake, a visible moving vehicle has rooted fumes and low
-dust, covered emitters stay silent, and matching Modernized views remain exact.
+projectile has a motor glow inside its flare, a visible vehicle shows the same
+fumes inside its own silhouette whether moving, reversing or parked, terrain or
+actors painted over a vent hide its fumes, covered emitters stay silent, and
+matching Modernized views remain exact.
 
 ## Tactical doors, timber and stone trim
 
@@ -1254,6 +1296,11 @@ Native rendering and FPS delta were not measured. Evidence:
 5. **Boundary filtering:** colour-grain derivatives are evaluated before
    source-ownership discard diverges. The preceding bounded footprint filter
    remains; opacity still uses the original density calculation.
+
+Superseded 15 October 2026 for items 2 and 3: the movement requirement, heading
+drift and low dust were removed under the fidelity boundary, and vehicle fumes
+are now identical idle plumes confined to each vehicle's painted pixels (see
+"Tactical source effects" above). The soot colour treatment still applies.
 
 This is a colour-only refinement of the existing Tactical particle shader. The
 same two procedural noise layers, three ownership/anchor samplers, puff budgets
@@ -1844,6 +1891,20 @@ Working if: admitted Tactical terrain shows bounded material light on original
 facets; admission-off transitions select the exact incumbent program and pixels;
 mode/cached transitions preserve geometry and bindings; Modernized and both
 upscales retain their pixels; both local packages contain the tested candidate.
+
+The headless gate (test_pc_draw_pass) compile-checks the base, Modern and
+patched groundlight surface programs through the dummy renderer's parser; backend
+GLSL for the groundlight variant is verified only by the native-GPU
+test_pc_modern_environment_polish.
+Working if: test_pc_draw_pass reports the groundlight variant with all four
+includes and a non-empty uniform list.
+
+Tactical and Modern world-anchored shading binds the observed camera basis even
+without terrain detail art (for example `--flat-world`); `camera_basis_ready`
+gates tree, trunk, horizon and sky lighting when no basis was observed.
+Working if: test_pc_draw_pass shows a flat-world Tactical pass with
+`modern_active`, `tactical_landscape`, `modern_environment_polish` and
+`camera_basis_ready` all true and a finite basis.
 
 ### Tactical brown hills, local refinement
 

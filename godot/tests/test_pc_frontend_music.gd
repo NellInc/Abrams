@@ -1,5 +1,6 @@
 extends SceneTree
 const Audio=preload("res://scripts/pc_audio.gd")
+const Music=preload("res://scripts/pc_frontend_music.gd")
 var checks:=0
 var errors:Array[String]=[]
 func _initialize()->void: run.call_deferred()
@@ -10,8 +11,20 @@ func packet(frame:int,event:bool=false)->Dictionary:
 	return {"schema":3,"frame":frame,"epoch":1,"last_id":1 if event or frame>1 else 0,"active":true,"enabled":true,"loops":{},
 		"events":[{"id":1,"frame":frame,"epoch":1,"kind":"sound","ip":0x9107,"return_ip":0x33c4,"value":1,"backend":0,"enabled":true,"sample":"cannon","voice":"on_the_way"}] if event else []}
 func run()->void:
+	# The session hash cache is static; start empty so the hash_count==4 check
+	# below does not depend on this being the first Audio in the process.
+	Music.verified.clear()
 	var audio=Audio.new()
 	root.add_child(audio)
+	var local_music:=FileAccess.file_exists(audio.music_bank.directory.path_join("manifest.json"))
+	if local_music:
+		check(audio.music_bank.streams.size()==4 and audio.music_bank.hash_count==4,"startup prewarm verifies and decodes every local track once")
+		var second=Audio.new()
+		root.add_child(second)
+		check(second.music_bank.streams.size()==4 and second.music_bank.hash_count==0,"verified tracks are hashed once per session")
+		second.free()
+	else:
+		check(audio.music_bank.streams.is_empty() and audio.music_bank.failures.is_empty(),"absent optional music prewarms quietly")
 	var source:=Image.create(320,200,false,Image.FORMAT_RGB8)
 	source.fill(Color.BLACK)
 	var region:=source.get_region(Rect2i(0,0,8,8))
@@ -78,6 +91,23 @@ func run()->void:
 	check(not audio.music.playing and audio.last_event_id==0 and audio.last_frame==-1 and audio.epoch==0,"restore resets audio timeline and stops music")
 	check(audio.apply_audio(packet(1,true)) and audio.delivered==1,"restored host can begin a fresh event sequence")
 	check(await audio.drain_for_shutdown(),"all streams drain including music")
+	if local_music:
+		audio.music_bank.streams.clear() # as release_streams() leaves it
+		var hashes:int=audio.music_bank.hash_count
+		check(audio.music_bank.get_stream("briefing")!=null and audio.music_bank.hash_count==hashes,"reload after release decodes without re-hashing")
+	# START without intro fingerprints never hashes the full frame; an unchanged
+	# frame reuses its exact-byte result; any changed pixel is hashed again.
+	var quiet=preload("res://scripts/pc_frontend_music.gd").new()
+	quiet.intro_checked=true
+	source.fill(Color.BLACK)
+	quiet.context_for_frame(source,{"name":"START"},{})
+	check(quiet.full_frame_hashes==0,"no intro catalogue, no full-frame hash")
+	var black_hash:=HashingContext.new();black_hash.start(HashingContext.HASH_SHA256);black_hash.update(source.get_data())
+	quiet.intro_frames[black_hash.finish().hex_encode()]=true
+	check(quiet.context_for_frame(source,{"name":"START"},{})=="intro" and quiet.full_frame_hashes==1,"pinned frame selects intro")
+	check(quiet.context_for_frame(source,{"name":"START"},{})=="intro" and quiet.full_frame_hashes==1,"unchanged frame reuses its result")
+	source.set_pixel(5,5,Color.WHITE)
+	check(quiet.context_for_frame(source,{"name":"START"},{}).is_empty() and quiet.full_frame_hashes==2,"changed frame is hashed again")
 	# One bad local track silences only its own context and records why.
 	var bank=preload("res://scripts/pc_frontend_music.gd").new()
 	check(bank.IntroArt.CATALOG_SHA==preload("res://scripts/pc_intro_art.gd").CATALOG_SHA,"intro music shares the intro art pin")

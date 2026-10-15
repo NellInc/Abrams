@@ -61,8 +61,13 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
     if (message.rgb && (!(message.rgb instanceof Uint8Array) || message.rgb.byteLength !== 320 * 200 * 3)) {
       fail('Invalid original RGB frame'); return;
     }
+    // Sample packets arrive already serialised once by the observer; packet is
+    // then only their small envelope for status and request matching.
+    if (message.json !== undefined && (typeof message.json !== 'string' || message.json[0] !== '{')) {
+      fail('Invalid original worker packet'); return;
+    }
     if (queue.length >= MAX_QUEUE) { fail('Original bridge response queue is full'); return; }
-    queue.push({packet, rgb: message.rgb || null});
+    queue.push({packet, json: message.json ?? null, rgb: message.rgb || null});
     if (pending === packet.id) pending = null;
     if (packet.type === 'ready') { ready = true; firstResolve(); }
     onStatus?.(packet);
@@ -80,14 +85,14 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
     send(json) {
       if (!ready || failed || closed || pending !== null || queue.length >= MAX_QUEUE) return false;
       const message = parseObject(json);
-      if (!message || !['step', 'save_state', 'load_state'].includes(message.op) ||
+      if (!message || !['step', 'save_state', 'load_state', 'load_previous'].includes(message.op) ||
           !Number.isSafeInteger(message.id) || message.id < 0) return false;
       if (message.op === 'step') {
         if (!Number.isInteger(message.frames) || message.frames < 1 || message.frames > 600 ||
             !Array.isArray(message.keys) || message.keys.length > 16 ||
             message.keys.some(key => typeof key !== 'string') || new Set(message.keys).size !== message.keys.length) return false;
       } else if (!Number.isInteger(message.slot) || message.slot < 0 || message.slot > 5 ||
-                 (message.op === 'save_state' && message.slot === 0)) return false;
+                 (message.op !== 'load_state' && message.slot === 0)) return false;
       try { worker.postMessage(message); pending = message.id; return true; }
       catch (error) { fail(`Original PC worker send failed: ${error.message}`); return false; }
     },
@@ -95,7 +100,7 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
       if (closed || !queue.length) return '';
       const item = queue.shift();
       try {
-        const json = JSON.stringify(item.packet);
+        const json = item.json ?? JSON.stringify(item.packet);
         takenFrame = item.rgb;
         return json;
       } catch { fail('Invalid original bridge response'); return ''; }

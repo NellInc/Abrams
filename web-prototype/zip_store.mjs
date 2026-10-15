@@ -14,7 +14,7 @@ const crcTable = Uint32Array.from({ length: 256 }, (_, index) => {
   return value >>> 0;
 });
 
-function crc32(bytes) {
+export function crc32(bytes) {
   let result = 0xffffffff;
   for (const byte of bytes) result = crcTable[(result ^ byte) & 255] ^ (result >>> 8);
   return (result ^ 0xffffffff) >>> 0;

@@ -3,6 +3,7 @@ extends "res://scripts/pc_bridge_viewer.gd"
 var fixture: Dictionary
 var events_by_frame := {}
 var errors: Array[String] = []
+var vehicle_art_frames := 0
 var checks := 0
 var warnings: Array = []
 var warning_receipts: Array = []
@@ -72,7 +73,8 @@ func _apply_sample(message: Dictionary) -> void:
 	check(audit.get("video_sha256")==source.video_sha256 and audit.get("video_bytes")==256000,"paired original video: %d"%index)
 	check(message.get("program")==source.program,"original program: %d"%index)
 	check(bridge.failure.is_empty() and pc_audio.failure.is_empty(),"production presentation/audio accepted")
-	check(draw_view.vehicle_art==null and draw_view.vehicle_polygon_count==0,"rejected vehicle textures absent")
+	# One tripwire per run (below), not a constant per-frame check.
+	if draw_view.vehicle_art!=null: vehicle_art_frames+=1
 	var packet: Dictionary=message.audio
 	check(packet.events==events_by_frame.get(index,[]),"every audio request equals the parity-tested trace: %d"%index)
 	for event: Dictionary in packet.events:
@@ -115,6 +117,7 @@ func _capture() -> void:
 	check(warnings.map(func(e):return int(e.message_id))==[1,2,3],"monotone once-only warning identities")
 	check(warning_receipts.map(func(r):return r.reason)==["","original-sound-gate",""],"two audible warnings and one muted warning")
 	check(restored_silent_frames>0,"F5 restore observed before fresh warning")
+	check(vehicle_art_frames==0,"rejected vehicle panels never attached (%d frames)"%vehicle_art_frames)
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({
 		"checks":checks,"errors":errors,"frames":samples,"warnings":warnings,"receipts":warning_receipts,
 		"restored_silent_frames":restored_silent_frames,

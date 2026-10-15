@@ -2,11 +2,18 @@
 // No game data is printed, uploaded or written into the tracked prototype.
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import createCore from './.generated/core.js';
 
 const root = new URL('../', import.meta.url);
+const required = ['GAME/SIM.EXE', '.runtime/pc-core/abrams-ref.zip', 'web-prototype/.generated/core.js'];
+const missing = required.filter(name => !existsSync(new URL(name, root)));
+if (missing.length) {
+  console.log(`SKIP: local inputs absent (${missing.join(', ')})`);
+  process.exit(0);
+}
+const { default: createCore } = await import('./.generated/core.js');
 const game = await readFile(new URL('.runtime/pc-core/abrams-ref.zip', root));
 const core = await createCore();
 core.FS.mkdir('/game');
@@ -53,6 +60,9 @@ const height = core._abrams_web_video_height();
 const pitch = core._abrams_web_video_pitch();
 if (!width || !height || pitch < width * 4) throw new Error('No original framebuffer');
 const video = core.HEAPU8.slice(core._abrams_web_video(), core._abrams_web_video() + pitch * height);
+// The last step copied RAM just before retro_run submitted this framebuffer:
+// the VGA pairing of desktop last_video_ram, which core_worker.mjs also uses.
+// Never call _abrams_web_ram_now() first; it overwrites this snapshot.
 const ram = core.HEAPU8.slice(core._abrams_web_paired_ram(), core._abrams_web_paired_ram() + 640 * 1024);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const footer = Buffer.allocUnsafe(4 + 16 + video.length + ram.length);

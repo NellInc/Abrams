@@ -17,6 +17,12 @@ sys.path.insert(0, str(ROOT))
 
 from tools.pc_live_state import SimStateReader
 from tools.pc_render_trace import Collector
+from tools.pc_trace_windows import build_window_bundles
+
+
+def core_window_bundles() -> bool:
+    """SIM event packet format of the generated Web core under test."""
+    return build_window_bundles(json.loads((ROOT / "web-prototype/.generated/build-info.json").read_text()))
 
 
 def replay(packet: bytes, collector: Collector) -> int:
@@ -38,7 +44,8 @@ def replay(packet: bytes, collector: Collector) -> int:
 
 
 def replay_to_summary(value: dict) -> dict:
-    collector = Collector(SimStateReader(ROOT / "GAME/SIM.EXE"), history_limit=2)
+    collector = Collector(SimStateReader(ROOT / "GAME/SIM.EXE"), history_limit=2,
+                          window_bundles=core_window_bundles())
     count = sum(replay(base64.b64decode(raw, validate=True), collector)
                 for raw in value["packets"])
     video = base64.b64decode(value["video"], validate=True)

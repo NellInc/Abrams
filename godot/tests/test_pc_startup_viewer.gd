@@ -37,6 +37,9 @@ func _initialize() -> void:
 	if mode not in ["normal","early-close","invalid-frame"]:
 		quit(2)
 		return
+	# --output never resolves beside the original executables or ROM.
+	check(output_inside_source("/repo","/repo/GAME") and output_inside_source("/repo","/repo/game/capture") and output_inside_source("/repo/","/repo/Genesis/x/"),"output guard rejects original sources in any case")
+	check(output_inside_source("/repo","/repo/artifacts/../GAME/x") and not output_inside_source("/repo","/repo/games/x") and not output_inside_source("/repo","/repo/artifacts/pc-boot-viewer"),"output guard resolves dot segments and admits ordinary output")
 	if mode=="invalid-frame": bridge=InvalidFrameBridge.new()
 	RenderingServer.frame_post_draw.connect(_first_draw)
 	super._initialize()
@@ -81,7 +84,15 @@ func finish_test() -> void:
 func _close() -> void:
 	if mode=="early-close":
 		check(not loading_started and bridge.process.is_empty(),"early Close starts no presentation load or guest")
+	if mode=="early-close" or not startup_ready:
+		# Before startup the base quits at once on bridge.failure alone, which
+		# would ignore this test's checks (a deadline failure would exit 0).
+		if mode!="invalid-frame": check(bridge.failure.is_empty(),"no bridge failure before startup")
 		write_report()
+		if not bridge.process.is_empty(): bridge.close()
+		closing=true
+		quit(0 if errors.is_empty() else 3)
+		return
 	super._close()
 
 func write_report() -> void:
@@ -93,8 +104,13 @@ func write_report() -> void:
 
 func _process(delta: float) -> bool:
 	if closing and bridge.has_exited():
+		# A real guest must also have exited cleanly; the invalid-frame bridge
+		# fails by design, so its failure and exit code are not this result.
+		if mode!="invalid-frame" and not report_written:
+			check(bridge.failure.is_empty() and bridge.exit_code()==0,"guest exited cleanly")
 		write_report()
 		if not errors.is_empty(): quit(3);return false
+		if mode=="invalid-frame" and audio_drained: quit(0);return false
 	if Time.get_ticks_msec()>timeout:
 		check(false,"bounded startup deadline")
 		write_report()

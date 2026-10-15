@@ -29,6 +29,9 @@ func _initialize() -> void:
 	# This fixture exercises parsing, not native child liveness or deadlines.
 	bridge.closing=true
 	bridge.request_started=Time.get_ticks_msec()
+	# The production 2 ms budget is wall clock, so a loaded machine would need
+	# more polls. Widen it here: the bounds below count drain work, not time.
+	bridge.read_budget_usec=200000
 	var value: Dictionary={"type":"ready","id":-1,"protocol":4,"payload":"a".repeat(54000)}
 	pipe.raw=(JSON.stringify(value)+"\n").to_utf8_buffer()
 	var messages:=bridge.poll()
@@ -45,11 +48,32 @@ func _initialize() -> void:
 	bridge.pending=true;pipe.replenish=true;pipe.was_read=false
 	pipe.raw=(JSON.stringify(value)+"\n").to_utf8_buffer()
 	messages.clear();polls=0
-	while messages.is_empty() and polls<16:
+	var fragments:=ceili(pipe.raw.size()/float(pipe.width))
+	# Drain fully even on failure so later checks never see a stale partial line.
+	while messages.is_empty() and polls<fragments:
 		messages.append_array(bridge.poll());polls+=1
 	check(messages.size()==1 and messages[0].payload==value.payload,"brief empty reads preserve and complete the exact reply")
 	check(polls<16,"writer replenishment cannot force one frame per fragment")
 	pipe.replenish=false
+	# A Windows host may end lines with CRLF. Place the CR as the last byte of
+	# a 512-byte fragment so the LF arrives in the next one.
+	var sample: Dictionary={"type":"sample","id":-1,"payload":""}
+	var base_size:=JSON.stringify(sample).to_utf8_buffer().size()
+	sample.payload="c".repeat(posmod(511-base_size,512)+1024)
+	var line:=JSON.stringify(sample).to_utf8_buffer()
+	check(line.size()%512==511,"CRLF fixture splits CR and LF across fragments")
+	var lf_parsed: Array[Dictionary]=[]
+	var crlf_parsed: Array[Dictionary]=[]
+	for ending in ["\n","\r\n"]:
+		bridge.pending=true
+		pipe.raw=line.duplicate()
+		pipe.raw.append_array(ending.to_utf8_buffer())
+		var parsed: Array[Dictionary]=lf_parsed if ending=="\n" else crlf_parsed
+		for _poll in 16:
+			parsed.append_array(bridge.poll())
+			if not parsed.is_empty() or not bridge.failure.is_empty(): break
+	check(lf_parsed.size()==1 and crlf_parsed.size()==1 and crlf_parsed[0].recursive_equal(lf_parsed[0],8),"CRLF reply parses exactly as LF")
+	check(bridge.failure.is_empty() and not bridge.pending and bridge.buffered.is_empty(),"CRLF leaves no failure or partial line")
 	bridge.pending=true
 	bridge.waiting_id=1
 	pipe.raw="{\"type\":\"sample\",\"id\":0}\n".to_utf8_buffer()

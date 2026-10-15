@@ -14,7 +14,7 @@ func run() -> void:
 	draw.terrain_style=preload("res://scripts/pc_terrain_style.gd").new()
 	check(draw.terrain_style.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")),"terrain loaded")
 	check(draw.terrain_style.load_hills(directory),"hills loaded")
-	var catalog:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-modern/catalog.json")))
+	var catalog:Dictionary=art.load_catalogue(directory)
 	var old_code:=FileAccess.get_file_as_string(directory.path_join("artifacts/modern-palette-balance-20260929/before/godot/scripts/pc_surface.gdshader"))
 	var old:=Shader.new();old.code=old_code.replace("depth_test_disabled, depth_draw_never","depth_draw_opaque").replace("void fragment() {","void fragment() {\n DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
 	var legacy_old:=Shader.new();legacy_old.code=old_code

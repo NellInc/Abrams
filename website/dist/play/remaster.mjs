@@ -1,6 +1,7 @@
 import {packOriginals, sha256} from './zip_store.mjs';
 import {createBridgeHost} from './bridge_host.mjs';
 import {installRemasterAssets} from './remaster_assets.mjs';
+import {deriveGenesisArt, derivePcArt} from './derived_art.mjs';
 
 const input = document.querySelector('#game-folder');
 const genesisInput = document.querySelector('#genesis-rom');
@@ -31,6 +32,7 @@ const resetQualityButton = document.querySelector('#web-reset-quality');
 let runtimeFailure = '';
 let started = false;
 let isolationReady = false;
+let isolationRetry = false;
 let busy = false;
 let reloadRequired = false;
 let storageWarning = '';
@@ -43,7 +45,7 @@ const notice = message => { controlStatus.textContent = message; };
 const descriptions = {
   ega: 'Exact original PC EGA artwork and palette.',
   ega_upscaled: 'EGA Upscaled: crisp original artwork, original palette and skin colours.',
-  genesis: 'Original-resolution Genesis artwork. Requires your optional ROM.',
+  genesis: 'Original-resolution Genesis artwork. Unavailable in the Web edition: its captured Genesis screens are not published.',
   upscaled: 'Genesis Upscaled: generated high-resolution remaster artwork and lettering.',
   modern: 'Modernized 3D: the existing remaster presentation.',
   tactical: 'Tactical 3D: textured terrain, grounded vegetation and source-driven effects.',
@@ -89,7 +91,14 @@ clearGenesisButton.addEventListener('click', () => {
     : 'Genesis ROM cleared. Choose your original PC folder for PC-only play.');
   genesisInput.focus();
 });
-reloadButton.addEventListener('click', () => location.reload());
+reloadButton.addEventListener('click', () => {
+  if (!isolationRetry) { location.reload(); return; }
+  // Clear the automatic-attempt guards so this reload registers again.
+  try { sessionStorage.removeItem('abrams-web-isolation-attempt'); } catch { /* Storage may be disabled. */ }
+  const url = new URL(location.href);
+  url.searchParams.delete('abrams-isolation');
+  location.replace(url);
+});
 async function prepareIsolation() {
   const attempt = 'abrams-web-isolation-attempt';
   const url = new URL(location.href);
@@ -111,28 +120,36 @@ async function prepareIsolation() {
     isolationReady = true;
     input.disabled = false;
     genesisInput.disabled = false;
-    report('Choose your original PC folder to begin. Optional Genesis artwork requires your ROM.');
+    report('Choose your original PC folder to begin. Your optional Genesis ROM unlocks the Genesis remaster artwork and music.');
     selectionChanged();
     return;
   }
   let attempted = url.searchParams.get('abrams-isolation') === '1';
   try { attempted ||= sessionStorage.getItem(attempt) === '1'; } catch { /* URL marker also bounds reloads. */ }
-  if (!isSecureContext || !('serviceWorker' in navigator) || attempted) {
+  const unsupported = !isSecureContext || !('serviceWorker' in navigator);
+  if (unsupported || attempted) {
     report('This browser cannot provide the isolation required by the original game. Use HTTPS or localhost in a current desktop browser; allow this site’s service worker.');
+    // After the one automatic attempt, a deliberate retry starts clean.
+    if (!unsupported) { isolationRetry = true; reloadButton.hidden = false; }
     return;
   }
   report('Preparing the browser for the original game…');
   try {
-    try { sessionStorage.setItem(attempt, '1'); } catch { /* Bounded by the URL marker. */ }
     await deadline((async () => {
-      await navigator.serviceWorker.register('./remaster.service.worker.js', {scope: './'});
+      const registration = await navigator.serviceWorker.register('./remaster.service.worker.js', {scope: './'});
+      const installing = !!(registration?.installing || registration?.waiting);
       await navigator.serviceWorker.ready;
-      if (!navigator.serviceWorker.controller)
+      // A hard reload bypasses an already active worker, which never claims
+      // again; a normal navigation is controlled. Wait only for a new worker.
+      if (!navigator.serviceWorker.controller && installing)
         await new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, {once: true}));
     })(), 15000, 'The isolation worker did not become ready. Check site permissions, then reload.');
+    // The marker bounds only this automatic navigation, never a failed registration.
+    try { sessionStorage.setItem(attempt, '1'); } catch { /* Bounded by the URL marker. */ }
     url.searchParams.set('abrams-isolation', '1');
     location.replace(url);
   } catch (error) {
+    try { sessionStorage.removeItem(attempt); } catch { /* Storage may be disabled. */ }
     report(`The browser could not prepare the original game: ${error?.message || error}`);
     reloadButton.hidden = false;
   }
@@ -222,6 +239,17 @@ function updateToolbar(state) {
     option.textContent = `${label} (${detail})`;
     option.disabled = busy || !valid;
   }
+  // Saving over an occupied slot replaces it, so say what is there.
+  for (const option of saveSlot.options) {
+    const row = state.slots.find(row => String(row.slot) === option.value);
+    let detail = 'empty';
+    if (row?.exists) {
+      detail = 'overwrite ' + (row.valid ? (row.program || 'saved') : 'incompatible');
+      if (row.valid && row.saved_at && Number.isFinite(Date.parse(row.saved_at)))
+        detail += `, ${new Date(row.saved_at).toLocaleString()}`;
+    }
+    option.textContent = `Slot ${option.value} (${detail})`;
+  }
   if (!available.has(loadSlot.value)) loadSlot.value = [...available][0] || '1';
   loadButton.disabled = busy || !!storageWarning || !available.has(loadSlot.value);
   loadSlot.disabled = busy || !!storageWarning || !available.size;
@@ -310,7 +338,7 @@ startButton.addEventListener('click', async () => {
   try {
     report('Verifying your original PC files locally…');
     const fetchManifest = async name => {
-      const response = await fetch(`./.generated/${name}`, {signal: startup.signal});
+      const response = await fetch(`./.generated/${name}`, {signal: startup.signal, cache: 'no-cache'});
       if (!response.ok) throw new Error(`Missing browser manifest: ${name}. Reload to get a complete build.`);
       return response.json();
     };
@@ -322,16 +350,27 @@ startButton.addEventListener('click', async () => {
     const {zip, catalog, originalBytes} = await packOriginals(input.files, manifest,
       (done, total) => report(`Verifying original PC files ${done}/${total}…`));
     let genesisEnabled = false;
+    let rom;
     if (genesisInput.files.length) {
       if (genesisInput.files.length !== 1) throw new Error('Choose one original Genesis ROM');
       const file = genesisInput.files[0];
       if (!Number.isSafeInteger(genesis.bytes) || file.size !== genesis.bytes || !/^[0-9a-f]{64}$/.test(genesis.sha256))
         throw new Error('Unsupported Genesis ROM size. Choose the supported original ROM, or clear this optional selection.');
-      const rom = new Uint8Array(await file.arrayBuffer());
+      rom = new Uint8Array(await file.arrayBuffer());
       if (await sha256(rom) !== genesis.sha256)
         throw new Error('Unsupported Genesis ROM. The selected file was not imported.');
       genesisEnabled = true;
     }
+    // Recognition data decoded here, from the visitor's verified files, is
+    // never fetched from the site. A decode failure only leaves original
+    // pixels in place; Godot verifies every derived file before using it.
+    const derived = new Map();
+    for (const [label, derive] of [['PC', () => derivePcArt(originalBytes)],
+        ...(genesisEnabled ? [['Genesis', () => deriveGenesisArt(rom)]] : [])]) {
+      try { for (const [path, bytes] of await derive()) derived.set(path, bytes); }
+      catch (error) { console.error(`${label} recognition data could not be derived:`, error); }
+    }
+    rom = undefined;
     report('Starting the original game and downloading the remaster…');
     host = createBridgeHost(zip, catalog, build.wasm_sha256, message => {
       if (message.type === 'progress') report(`Starting the original PC game ${message.frame}/${message.total}…`);
@@ -382,10 +421,14 @@ startButton.addEventListener('click', async () => {
       host.first, engine.init('./.generated/godot/index'),
       engine.preloadFile('./.generated/godot/index.pck', 'index.pck'),
     ]), 300000, 'The original game or remaster engine did not become ready. Reload to retry safely.', () => startup.abort());
-    await deadline(installRemasterAssets(engine, (done, total) =>
-      report(`Loading remaster artwork ${done}/${total}…`), {signal: startup.signal}),
-      300000, 'The remaster artwork did not finish downloading. Reload to retry safely.', () => startup.abort());
+    // Genesis-gated artwork and music download only for a verified ROM. The
+    // loader fails on a stalled connection rather than a fixed deadline.
+    const megabytes = bytes => (bytes / 1e6).toFixed(0);
+    await installRemasterAssets(engine, (done, total, received, size) =>
+      report(`Loading remaster artwork ${megabytes(received)} of ${megabytes(size)} MB (${done}/${total} files)…`),
+      {signal: startup.signal, sets: genesisEnabled ? ['common', 'genesis'] : ['common']});
     for (const [name, bytes] of originalBytes) engine.copyToFS('/GAME/' + name, bytes);
+    for (const [path, bytes] of derived) engine.copyToFS('/' + path, bytes);
     report('Starting the remastered Godot presentation…');
     engineStarted = true;
     await deadline(engine.start({args: ['--main-pack', 'index.pck', '--', '--boot', '--play',

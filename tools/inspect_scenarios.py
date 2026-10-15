@@ -12,6 +12,8 @@ import re
 import struct
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+
 MAX_DECODED_SIZE = 16 * 1024 * 1024
 
 
@@ -240,12 +242,19 @@ def main() -> int:
     # Resolve every input and output before writing. Never overwrite original data.
     try:
         from tools.source_guard import inside_source
+        from tools.package.git_boundary import PRIVATE_PARTS
     except ModuleNotFoundError as error:
         if error.name != 'tools': raise
         from source_guard import inside_source
+        from package.git_boundary import PRIVATE_PARTS
     game = args.game.resolve()  # Case, symlink and ".." aliases of the game directory count as inside it.
-    if inside_source(args.output, game.parent, (game.name,)):
-        parser.error("report output must be outside GAME")
+    if inside_source(args.output, ROOT) or inside_source(args.output, game.parent, (game.name,)):
+        parser.error("report output must be outside original sources and --game")
+    # The report embeds decoded prefixes and --extract writes whole decompressed resources:
+    # neither hash-matches a pinned input, so inside the checkout only a private directory may hold them.
+    parent = args.output.resolve().parent
+    if parent.is_relative_to(ROOT) and not any(part.casefold() in PRIVATE_PARTS for part in parent.relative_to(ROOT).parts):
+        parser.error("report output must be in a private directory (reference/, artifacts/, ...) or outside the checkout")
     reports = [inspect_file(args.game / name) for name in names]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps({"schema": 2, "files": reports}, indent=2) + "\n")

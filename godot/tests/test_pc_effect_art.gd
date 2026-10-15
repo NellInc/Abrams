@@ -273,7 +273,7 @@ func run() -> void:
 					compare_outside(a,b,mapping.rect,"clipped donor leaked outside source rectangle")
 
 	if modern and "--native" in args and native_scale>1:
-		check(modern_contour_pixels>0,"Modern still clips authored contours to coarse sprite pixels")
+		check(modern_contour_pixels==0,"Modern effect changed pixels outside the original opaque sprite pixels")
 	view.apply_pass({"objects":[]})
 	check(view.effect_art_ids.is_empty() and view.mesh_node.mesh==null,"stale effect survived missing original frame")
 	finish()
@@ -407,7 +407,7 @@ func particle_pair(data: Dictionary,name: String,positive: bool) -> void:
 	check(JSON.stringify(data)==source,name+": original snapshot immutable")
 	particle_rows.append({"case":name,"changed_pixels":changed,"queued_puffs":queued})
 	# Bounded visual evidence; the test is not an original mission capture.
-	if name in ["smoke-deployment","missile","moving-m113","effect-15","effect-17"]:
+	if name in ["smoke-deployment","missile","idle-m113","effect-15","effect-17"]:
 		JavaScriptBridge.eval("window.effectImages=window.effectImages||{};window.effectImages["+JSON.stringify(name)+"]="+JSON.stringify([Marshalls.raw_to_base64(modern_image.save_png_to_buffer()),Marshalls.raw_to_base64(tactical_image.save_png_to_buffer())]))
 
 func tactical_particles(directory: String) -> void:
@@ -432,9 +432,12 @@ func tactical_particles(directory: String) -> void:
 	await particle_pair(missile,"missile",true)
 	view.tactical_landscape=true;view.apply_pass(missile)
 	check(view.tactical_effects.counts.missile==9,"original guided projectile admits motor trail")
-	check(view.tactical_effects.tail_direction([0,0,64],250.0).distance_to(Vector3(1,0,0))<0.00001,"wake follows original westbound heading")
-	check(view.tactical_effects.tail_direction([64,0,0],250.0).distance_to(Vector3(0,0,-1))<0.00001,"wake follows original pitch")
-	check(view.tactical_effects.tail_direction([0,0,64],-30.0).distance_to(Vector3(-1,0,0))<0.00001,"reverse movement reverses wake")
+	# The glow stays on the drawn flare: RAM heading and speed lay no wake.
+	var turned:=missile.duplicate(true)
+	turned.world.dynamic[0].orientation_u8=[0,0,192];turned.world.dynamic[0].speed_raw=-250
+	var puffs_before: Array=view.tactical_effects.puffs.duplicate(true)
+	view.apply_pass(turned)
+	check(view.tactical_effects.puffs==puffs_before,"missile glow ignores RAM heading and speed")
 	check(view.tactical_effects.world_position_ok([79872,141312,50]),"streamed original positions exceed local model bounds")
 	check(not view.tactical_effects.world_position_ok([INF,0,0]),"nonfinite world position rejected")
 	var motor_image:=await particle_capture(missile,true)
@@ -496,24 +499,45 @@ func tactical_particles(directory: String) -> void:
 	vehicle.world={"dynamic":[{"pointer":99,"shape_index":129,"world_position_raw":[0,-300,0],"orientation_u8":[0,0,0],"speed_raw":30,"shape_header_word":100}],"presentation_effects":{"schema":1,"shape_base":115}}
 	# Compare Tactical with the exact same Tactical surface, particles disabled.
 	view.tactical_landscape=true;view.apply_pass(vehicle)
-	check(view.tactical_effects.counts.exhaust==7 and view.tactical_effects.counts.dust==4,"visible moving vehicle queues anchored exhaust and dust")
+	check(view.tactical_effects.counts.exhaust==7 and not view.tactical_effects.counts.has("dust"),"visible vehicle queues anchored idle fumes without motion dust")
 	var with_particles:=await particle_capture(vehicle,true)
-	if particle_material_polish: await particle_material_pair("moving-m113",with_particles)
+	if particle_material_polish: await particle_material_pair("idle-m113",with_particles)
 	if source_material_polish:
 		await particle_material_pair("diesel-exhaust",with_particles,1)
-		await particle_material_pair("track-dust",with_particles,4)
 	view.tactical_effects.visible=false
 	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
 	var without_particles:=viewport.get_texture().get_image()
 	var vehicle_changed:=image_difference(with_particles,without_particles)
-	check(vehicle_changed>20,"moving M113 particles actually visible")
-	particle_rows.append({"case":"moving-m113","changed_pixels":vehicle_changed,"queued_puffs":view.tactical_effects.counts.duplicate()})
-	JavaScriptBridge.eval("window.effectImages=window.effectImages||{};window.effectImages['moving-m113']="+JSON.stringify([Marshalls.raw_to_base64(without_particles.save_png_to_buffer()),Marshalls.raw_to_base64(with_particles.save_png_to_buffer())]))
+	check(vehicle_changed>20,"idle M113 particles actually visible")
+	# Clip [32,13,287,109] fills the 1024x388 viewport: four pixels per unit.
+	var hull: Rect2=view.tactical_effects.drawn_rect(vehicle.objects[0],frame)
+	var hull_pixels:=Rect2((hull.position-Vector2(32,13))*4.0,hull.size*4.0).grow(1.0)
+	var escaped:=0
+	for y in with_particles.get_height():
+		for x in with_particles.get_width():
+			if with_particles.get_pixel(x,y)!=without_particles.get_pixel(x,y) and not hull_pixels.has_point(Vector2(x,y)+Vector2(0.5,0.5)):escaped+=1
+	check(hull.has_area() and escaped==0,"idle fumes stay inside the vehicle's drawn silhouette: %d escaped"%escaped)
+	particle_rows.append({"case":"idle-m113","changed_pixels":vehicle_changed,"escaped_pixels":escaped,"queued_puffs":view.tactical_effects.counts.duplicate()})
+	JavaScriptBridge.eval("window.effectImages=window.effectImages||{};window.effectImages['idle-m113']="+JSON.stringify([Marshalls.raw_to_base64(without_particles.save_png_to_buffer()),Marshalls.raw_to_base64(with_particles.save_png_to_buffer())]))
 	view.tactical_effects.visible=true
 	var count: int=view.mesh_build_count
 	view.apply_pass(vehicle);check(view.mesh_build_count==count,"same source particle mesh reused")
+	var moving_puffs: Array=view.tactical_effects.puffs.duplicate(true)
 	invalid=vehicle.duplicate(true);invalid.world.dynamic[0].speed_raw=0
-	view.apply_pass(invalid);check(view.tactical_effects.counts.exhaust==0 and view.tactical_effects.counts.dust==0,"stationary movement cue emits nothing")
+	view.apply_pass(invalid);check(view.tactical_effects.counts.exhaust==7 and view.tactical_effects.puffs==moving_puffs,"parked vehicle fumes match a moving one")
+	# Terrain the original painted over the vent hides every fume.
+	var vent: Dictionary=view.tactical_effects.engine_anchor(vehicle.objects[0],view.modern_assets,frame)
+	check(not vent.is_empty() and not view.modern_assets.terrain_shapes.is_empty(),"vent anchor and terrain shape available")
+	if not vent.is_empty() and not view.modern_assets.terrain_shapes.is_empty():
+		var vent_at:=Geometry.project([vent.engine.x,vent.engine.y,vent.engine.z],frame)
+		var crest:=cover(Rect2(vent_at-Vector2(6,6),Vector2(12,12)))
+		crest.shape_index=int(view.modern_assets.terrain_shapes.keys()[0])
+		invalid=vehicle.duplicate(true);invalid.objects.append(crest)
+		var crest_particles:=await particle_capture(invalid,true)
+		view.tactical_effects.visible=false
+		await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+		check(crest_particles.get_data()==viewport.get_texture().get_image().get_data(),"terrain painted over the vent hides every fume")
+		view.tactical_effects.visible=true
 	invalid=vehicle.duplicate(true);invalid.objects.append(cover(Rect2(32,13,256,97)))
 	await particle_capture(invalid,true);view.tactical_effects.visible=false
 	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
@@ -529,7 +553,7 @@ func tactical_particles(directory: String) -> void:
 	view.apply_pass({"objects":[]});check(view.tactical_effects.puffs.is_empty() and not view.tactical_effects.visible,"empty frame clears all particles")
 	JavaScriptBridge.eval("window.effectReport="+JSON.stringify(particle_rows))
 	if particle_material_polish:
-		check(particle_material_rows.size()==(7 if source_material_polish else 5),"all particle material studies completed")
+		check(particle_material_rows.size()==(6 if source_material_polish else 5),"all particle material studies completed")
 		JavaScriptBridge.eval("window.particleMaterialReport="+JSON.stringify(particle_material_rows))
 	if source_material_polish:
 		check(source_material_rows.size()==Art.BASES.size(),"every source donor material studied")

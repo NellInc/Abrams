@@ -2,7 +2,11 @@
 """Stage authored presentation assets for local Godot Web QA.
 
 The visitor's PC game and optional Genesis ROM are never read by this builder.
-Only files loaded by the desktop Play presentation are eligible.
+Only the exact paths and bytes in tools/package/web-publication.json are
+eligible. Decodes of original data are derived in the visitor's browser
+(web-prototype/derived_art.mjs) and are never packed.
+
+Usage: build_remaster_assets.py [--update-publication]
 """
 from pathlib import Path
 from contextlib import contextmanager
@@ -19,61 +23,100 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from tools.standalone.runtime import ROM_SHA
 OUT = ROOT / 'web-prototype/.generated'
-KINDS = {'.png', '.json', '.ttf', '.gpl', '.svg'}
+PUBLICATION = ROOT / 'tools/package/web-publication.json'
+KINDS = {'.png', '.json', '.ttf', '.svg', '.wav'}
+# Text members are deflated; PNG/TTF/WAV gain little and stay stored.
+DEFLATED = {'.json', '.svg'}
+# Git accepts objects up to 100 MB; one part stays near 48 MB so the browser
+# holds a bounded archive in memory while it verifies and installs it.
 MAX_PART_BYTES = 48_000_000
+# Families smaller than this share pooled parts; larger ones own theirs, so a
+# change re-publishes only its own family's parts.
+FAMILY_POOL_BYTES = 8_000_000
+ZIP_EPOCH = (1980, 1, 1, 0, 0, 0)
 GODOT_FILES = ('index.js', 'index.wasm', 'index.pck', 'index.icon.png',
                'index.audio.worklet.js', 'index.audio.position.worklet.js')
 STALE_GODOT_FILES = ('index.html', 'index.service.worker.js', 'index.manifest.json',
                      'index.offline.html', 'index.144x144.png', 'index.180x180.png',
                      'index.512x512.png')
-RUNTIME_JSON = {
-    'docs/player-reference/manual-content.json',
-    'docs/player-reference/visuals.json',
-    'docs/player-reference/credits.json',
-    'local-art/genesis/source/effects-v1/effects.json',
-    'local-art/genesis/status-damage-v1/manifest.json',
-    'local-art/pc-arming-panel-v1/arming-panel.json',
-    'local-art/pc-frontend-v1/office.json',
-    'local-art/pc-graphics-native-v1/graphics.json',
-    'local-art/pc-information-completion-v1/information.json',
-    'local-art/pc-information-v3/information.json',
-    'local-art/pc-intro-v2/intro.json',
-    'local-art/pc-map-frame-v1/frame.json',
-    'local-art/pc-modern/catalog.json',
-    'local-art/pc-modern/tree.json',
-    'local-art/pc-motor-pool-v1/motor-pool.json',
-    'local-art/pc-newspapers-v1/newspapers.json',
-    'local-art/pc-outline-fonts-v5/manifest.json',
-    'local-art/pc-portraits-v1/faces.json',
-    'local-art/pc-splash-aftermath-v1/catalog.json',
-    'local-art/pc-wilson-completion-v1/office.json',
-    'local-audio/frontend-music-v1/manifest.json',
-}
+def publication():
+    """The reviewed public list; the desktop private allowlist is never used."""
+    from tools.package.git_boundary import load_publication
+    return load_publication(PUBLICATION.parents[2])
 
 
 def selected():
-    # The desktop kit already has a reviewed asset allowlist. Packaging every
-    # file in local-art also published donor captures, rejected studies and
-    # authoring prompts that Play never reads.
-    inventory = json.loads((ROOT / 'tools/package/allowlist.json').read_text())
-    reviewed = inventory['private']
-    names = {name for name in reviewed if name.startswith((
-        'local-art/', 'local-audio/frontend-music-v1/', 'docs/player-reference/',
-        'reference/genesis/extracted/gunner/palette.gpl', 'branding/abrams-cover-remastered.png'))}
-    # Newer Play art has not yet entered the prior private-alpha allowlist.
-    names.add('local-art/pc-ui-remastered/gunner-plate-v2.png')
-    # The guide's three runtime indices are reviewed source, not private art.
-    # Without them the illustrations install but the reader has no content.
-    names.update(name for name in inventory['source']
-                 if name.startswith('docs/player-reference/') and name in RUNTIME_JSON)
-    for name in sorted(names):
+    # Only exact reviewed paths and bytes publish. The private desktop kit's
+    # allowlist includes original GAME files and decodes; it is not a source.
+    reviewed = publication()
+    for name, row in sorted(reviewed['files'].items()):
         path = ROOT / name
         if path.is_symlink() or not path.is_file():
-            raise SystemExit(f'Missing or linked desktop presentation asset: {name}')
-        if path.suffix.lower() == '.json' and name not in RUNTIME_JSON:
-            continue
-        if path.suffix.lower() in (KINDS | {'.wav'} if name.startswith('local-audio/') else KINDS):
-            yield path
+            raise SystemExit(f'Missing or linked published Web asset: {name}')
+        if path.suffix.lower() not in KINDS:
+            raise SystemExit(f'Unsupported published Web asset format: {name}')
+        if fingerprint(path)[-1] != row['sha256']:
+            raise SystemExit(f'Published Web asset differs from its reviewed entry: {name}. Review the change, '
+                             'then run web-prototype/build_remaster_assets.py --update-publication')
+        yield path
+
+
+def asset_set(name, reviewed=None):
+    row = (reviewed or publication())['files'].get(name)
+    return row['set'] if row else 'common'
+
+
+def family(name):
+    """Stable packing group: set plus the first two path components."""
+    parts = name.split('/')
+    return '/'.join(parts[:2]) if len(parts) > 2 else parts[0]
+
+
+def plan_parts(rows):
+    """Group (name, set, size) rows into ordered parts that stay stable.
+
+    Each large family owns its parts; small families share one pooled run per
+    set. Adding a file only changes parts of its own family (or its pool).
+    """
+    families = {}
+    for name, kind, size in rows:
+        families.setdefault((kind, family(name)), []).append((name, size))
+    groups = {}
+    for (kind, key), members in families.items():
+        total = sum(size for _, size in members)
+        groups.setdefault((kind, key if total >= FAMILY_POOL_BYTES else '~pool'), []).extend(members)
+    plan = []
+    for (kind, _), members in sorted(groups.items(), key=lambda item: (item[0][0] != 'common', item[0][1])):
+        current, used = [], 22
+        for name, size in sorted(members):
+            estimated = size + 100 + 2 * len(name.encode())
+            if estimated + 22 > MAX_PART_BYTES:
+                raise SystemExit(f'One authored asset exceeds a Web part: {name}')
+            if current and used + estimated > MAX_PART_BYTES:
+                plan.append((kind, current)); current, used = [], 22
+            current.append(name); used += estimated
+        if current: plan.append((kind, current))
+    return plan
+
+
+def update_publication():
+    """Re-pin reviewed paths after a human has reviewed their changed bytes."""
+    from tools.package.git_boundary import decoded_payload
+    data = json.loads(PUBLICATION.read_text())
+    changed = []
+    for name, row in data['files'].items():
+        path = ROOT / name
+        if path.is_symlink() or not path.is_file():
+            raise SystemExit(f'Missing or linked published Web asset: {name}')
+        digest = fingerprint(path)[-1]
+        if digest in data['decoded_denylist']:
+            raise SystemExit(f'Refusing to publish a known original decode: {name}')
+        if path.suffix.lower() == '.json' and decoded_payload(path.read_bytes()) and name not in data['exceptions']:
+            raise SystemExit(f'Refusing to publish decoded original data: {name}')
+        if digest != row['sha256']:
+            row['sha256'] = digest; changed.append(name)
+    PUBLICATION.write_text(json.dumps(data, indent=1) + '\n')
+    print(f'Re-pinned {len(changed)} reviewed Web asset(s): ' + (', '.join(changed) or 'none'))
 
 
 def fingerprint(path):
@@ -192,56 +235,48 @@ def install_outputs(inputs, out, expected, include_godot=False):
 
 def stage_assets(out):
     out.mkdir(parents=True, exist_ok=True)
-    control = ROOT / 'tools/package/allowlist.json'
+    control = PUBLICATION
     control_identity = fingerprint(control)
     paths = list(selected())
     if not 1 <= len(paths) <= 10000:
         raise SystemExit('Authored asset inventory is empty or exceeds its consumer limit')
     identities = {path: fingerprint(path) for path in paths}
-    # Keep every static-hosting object below ordinary Git's 100 MB limit.
-    # Entry-aligned ZIP parts can be loaded one at a time in the browser.
+    reviewed = publication()
+    by_name = {}
+    for path in paths:
+        name = path.relative_to(ROOT).as_posix()
+        if not re.fullmatch(r'[A-Za-z0-9_./-]+', name) or any(p in ('', '.', '..') for p in name.split('/')) or name.startswith(('GAME/', 'GENESIS/')):
+            raise SystemExit(f'Unsafe authored asset path: {name}')
+        by_name[name] = path
+    plan = plan_parts([(name, asset_set(name, reviewed), identities[path][2]) for name, path in by_name.items()])
+    if len(plan) > 100:
+        raise SystemExit('Too many authored asset parts')
+    # Entry-aligned ZIP parts load one at a time in the browser. Fixed entry
+    # metadata makes unchanged inputs rebuild to byte-identical parts.
     parts = []
     manifest = []
-    bundle = None
-    archive = None
-    part_bytes = 0
-    def finish_part():
-        nonlocal bundle
-        if bundle is None:
-            return
-        bundle.close()
+    for index, (kind, names) in enumerate(plan):
+        archive = out / f'remaster-assets-{index:02d}.zip'
+        with zipfile.ZipFile(archive, 'w', allowZip64=False) as bundle:
+            for name in names:
+                path = by_name[name]
+                raw = path.read_bytes()
+                if fingerprint(path) != identities[path] or hashlib.sha256(raw).hexdigest() != identities[path][-1]:
+                    raise SystemExit(f'Authored asset changed during building: {name}')
+                entry = zipfile.ZipInfo(name, date_time=ZIP_EPOCH)
+                entry.create_system = 3
+                entry.external_attr = 0o644 << 16
+                entry.compress_type = zipfile.ZIP_DEFLATED if path.suffix.lower() in DEFLATED else zipfile.ZIP_STORED
+                bundle.writestr(entry, raw, compresslevel=9 if entry.compress_type == zipfile.ZIP_DEFLATED else None)
+                manifest.append({'path': name, 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(), 'set': kind})
         if not 22 <= archive.stat().st_size <= MAX_PART_BYTES:
             raise SystemExit('Completed authored asset part exceeds its Web limit')
         parts.append({'name': archive.name, 'bytes': archive.stat().st_size,
-                      'sha256': hashlib.sha256(archive.read_bytes()).hexdigest()})
-        bundle = None
-    try:
-        for path in paths:
-            name = path.relative_to(ROOT).as_posix()
-            if not re.fullmatch(r'[A-Za-z0-9_./-]+', name) or any(p in ('', '.', '..') for p in name.split('/')) or name.startswith(('GAME/', 'GENESIS/')):
-                raise SystemExit(f'Unsafe authored asset path: {name}')
-            raw = path.read_bytes()
-            if fingerprint(path) != identities[path] or hashlib.sha256(raw).hexdigest() != identities[path][-1]:
-                raise SystemExit(f'Authored asset changed during building: {name}')
-            estimated = len(raw) + 100 + 2 * len(name.encode())
-            if estimated + 22 > MAX_PART_BYTES:
-                raise SystemExit(f'One authored asset exceeds a Web part: {name}')
-            if bundle is None or part_bytes + estimated > MAX_PART_BYTES:
-                finish_part()
-                if len(parts) >= 100: raise SystemExit('Too many authored asset parts')
-                archive = out / f'remaster-assets-{len(parts):02d}.zip'
-                bundle = zipfile.ZipFile(archive, 'w', zipfile.ZIP_STORED, allowZip64=False)
-                part_bytes = 22
-            bundle.writestr(name, raw)
-            part_bytes += estimated
-            manifest.append({'path': name, 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()})
-        finish_part()
-    finally:
-        if bundle is not None: bundle.close()
+                      'sha256': hashlib.sha256(archive.read_bytes()).hexdigest(), 'set': kind})
     if fingerprint(control) != control_identity or list(selected()) != paths or any(fingerprint(p) != identities[p] for p in paths):
         raise SystemExit('Authored inventory changed during building; previous build retained')
     (out / 'remaster-assets.json').write_text(json.dumps({
-        'schema': 2, 'parts': parts,
+        'schema': 3, 'parts': parts,
         'files': manifest}, separators=(',', ':')) + '\n')
     (out / 'genesis-input.json').write_text(json.dumps({
         'sha256': ROM_SHA, 'bytes': 524288}, separators=(',', ':')) + '\n')
@@ -250,7 +285,12 @@ def stage_assets(out):
     return {name: out / name for name in ['remaster-assets.json', 'genesis-input.json'] + [p['name'] for p in parts]}
 
 
-def main():
+def main(argv=()):
+    if list(argv) == ['--update-publication']:
+        update_publication()
+        return
+    if argv:
+        raise SystemExit('usage: build_remaster_assets.py [--update-publication]')
     with generated_lock(OUT):
         expected = output_identity(OUT)
         with tempfile.TemporaryDirectory(prefix='.abrams-assets-', dir=OUT) as workspace:
@@ -259,4 +299,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

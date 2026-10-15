@@ -12,19 +12,25 @@ from pathlib import Path
 import re
 try:
     from tools.generate_crew_voice import validate_wav, pronounce_headings
-    from tools.install_pc_crew_voice import check_take
+    from tools.install_pc_crew_voice import _repo_rel, check_take
     from tools.pc_crew_voice import BEARINGS
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from generate_crew_voice import validate_wav, pronounce_headings
-    from install_pc_crew_voice import check_take
+    from install_pc_crew_voice import _repo_rel, check_take
     from pc_crew_voice import BEARINGS
 
 ROOT=Path(__file__).resolve().parents[1]
 
 
-def prepare(source):
+def prepare(source,receipt_path=None):
+    # Receipts ship in packages with repo-relative masters; refuse an outside batch before any WAV/QA work.
+    if not Path(source).resolve().is_relative_to(ROOT.resolve()):
+        raise ValueError(f'--source must be inside the repository (e.g. local-audio/...): {source}')
     script=json.loads(BEARINGS.read_text());voices={};payloads={}
+    # A repair may supersede an installed take only when custody says that take is what is installed.
+    receipt_path=receipt_path or ROOT/'godot/assets/audio/pc_bearing_provenance.json'
+    installed=json.loads(receipt_path.read_text())['voices'] if receipt_path.exists() else {}
     repair_folder=source/'repairs'
     repairs={};repair_qa={}
     if repair_folder.exists():
@@ -72,9 +78,10 @@ def prepare(source):
                 raise ValueError('WAV differs from generation receipt')
             check_take(voice,transcript,numbers.get(name))
             path=ROOT/'godot/assets/audio'/f'voice_{name}.wav'
-            if path.exists() and path.read_bytes()!=raw:
+            if path.exists() and (current:=path.read_bytes())!=raw and (name not in repairs or
+                    (installed.get(name) or {}).get('sha256')!=hashlib.sha256(current).hexdigest()):
                 raise ValueError('refusing to replace different installed voice')
-            voices[name]=voice|{'source_master':str((master_folder/f'voice_{name}.wav').resolve().relative_to(ROOT)),
+            voices[name]=voice|{'source_master':_repo_rel(master_folder/f'voice_{name}.wav'),
                 'processing':'Unmodified generated dry master','transcript_qa':transcript,
                 'previous_take_sha256':original_hash if name in repairs else None,
                 'number_delivery_qa':numbers.get(name)}
@@ -88,12 +95,17 @@ def prepare(source):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True)
     p.add_argument('--dry-run',action='store_true');args=p.parse_args()
+    if not args.source.resolve().is_relative_to(ROOT.resolve()):
+        p.error(f'--source must be inside the repository (e.g. local-audio/...): {args.source}')
     payloads,receipt=prepare(args.source)
+    # prepare() admits a differing installed take only as a custody-checked repair.
+    added=[path for path in payloads if not path.exists()]
+    replaced=[path for path,raw in payloads.items() if path.exists() and path.read_bytes()!=raw]
     if not args.dry_run:
-        for path,raw in payloads.items():
-            if not path.exists():path.write_bytes(raw)
+        for path in added+replaced:path.write_bytes(payloads[path])
         (ROOT/'godot/assets/audio/pc_bearing_provenance.json').write_text(json.dumps(receipt,indent=2)+'\n')
-    print(f'PC_BEARINGS: {len(payloads)} fully verified takes; '+('dry run' if args.dry_run else 'installed unchanged'))
+    print(f'PC_BEARINGS: {len(payloads)} fully verified takes; {len(added)} new, {len(replaced)} repaired, '
+          f'{len(payloads)-len(added)-len(replaced)} unchanged'+(' (dry run, nothing written)' if args.dry_run else ''))
 
 
 if __name__=='__main__':main()

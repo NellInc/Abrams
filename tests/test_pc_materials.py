@@ -27,8 +27,10 @@ class MaterialTests(unittest.TestCase):
             tree = ast.parse(path.read_text())
             self.assertFalse(any(isinstance(n, ast.Assert) for n in ast.walk(tree)), path.name)
 
-    @unittest.skipUnless(importlib.util.find_spec('unicorn') and (ROOT / 'GAME/SIM.EXE').exists() and CAPTURE.exists(),
-                         'Requires unicorn, the original SIM.EXE and the local scanout capture')
+    # Missing local inputs are reported first; only a genuine unicorn gap names unicorn.
+    @unittest.skipUnless((ROOT / 'GAME/SIM.EXE').exists() and CAPTURE.exists(),
+                         'Requires the original SIM.EXE and the local scanout capture')
+    @unittest.skipUnless(importlib.util.find_spec('unicorn'), 'unicorn unavailable in this interpreter')
     def test_material_oracle_detects_a_silent_solid_white_span(self):
         from tools import pc_material_oracle as oracle
         from unicorn.x86_const import UC_X86_REG_AX, UC_X86_REG_DX

@@ -6,6 +6,7 @@ import json
 import subprocess
 from pathlib import Path
 from urllib.parse import urlparse,unquote
+from output_guard import guarded_output
 
 def run(cmd):
     subprocess.run([str(x) for x in cmd],check=True)
@@ -60,8 +61,8 @@ def assemble(out,copy_audio=False):
     print('ASSEMBLY_COMPLETE',target)
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['mix','assemble']);p.add_argument('--output',type=Path,required=True);p.add_argument('--copy-audio',action='store_true');a=p.parse_args()
-    if a.action=='mix':mix(a.output.resolve())
-    else:assemble(a.output.resolve(),a.copy_audio)
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['mix','assemble']);p.add_argument('--output',type=Path,required=True);p.add_argument('--copy-audio',action='store_true');a=p.parse_args();out=guarded_output(p,a.output)
+    if a.action=='mix':mix(out)
+    else:assemble(out,a.copy_audio)
 
 if __name__=='__main__':main()

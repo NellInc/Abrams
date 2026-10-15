@@ -5,9 +5,45 @@ from collections import Counter
 import hashlib
 import json
 from pathlib import Path
+try:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source
+
+ROOT = Path(__file__).resolve().parents[1]
+CORE_MANIFEST = ROOT / '.runtime/pc-core/abrams-trace.json'
 
 
-def verify(trace, baseline):
+def load_manifest(path=CORE_MANIFEST):
+    """The pinned core receipt, or {} so every pin check fails rather than raises."""
+    path = Path(path)
+    return json.loads(path.read_text()) if path.is_file() else {}
+
+
+def check_core_pins(trace, baseline, manifest, require_header=True):
+    """Read-only parity is evidence only for a trace run against a distinct, pinned baseline core.
+
+    Self-comparison (the same report twice, or two trace-core runs) must fail. Only the trace
+    run's header is compared with the receipt: the baseline core has no trace header, so a
+    reused baseline stays valid while baseline_sha256 is unchanged. capture_pc_render_trace has
+    always recorded the header, so it is required unless the caller (dialogue captures made
+    before capture_pc_dialogue recorded it) opts out; a recorded header is always compared.
+    """
+    trace_core, baseline_core = trace.get('core_sha256'), baseline.get('core_sha256')
+    checks = {
+        'modes_trace_and_baseline': trace.get('mode') == 'trace' and baseline.get('mode') == 'baseline',
+        'core_pins_distinct_and_match_receipt': bool(manifest) and trace_core != baseline_core and
+            trace_core == manifest.get('trace_sha256') and baseline_core == manifest.get('baseline_sha256'),
+    }
+    if require_header or 'trace_header_sha256' in trace:
+        checks['trace_header_matches_receipt'] = bool(manifest.get('trace_header_sha256')) and \
+            trace.get('trace_header_sha256') == manifest['trace_header_sha256']
+    return checks
+
+
+def verify(trace, baseline, manifest=None, legacy_no_loop_states=False):
+    manifest = load_manifest() if manifest is None else manifest
     events = trace['audio_events']
     sounds = [e for e in events if e['kind'] == 'sound']
     cannon = [e for e in sounds if e.get('sample') == 'cannon']
@@ -33,19 +69,26 @@ def verify(trace, baseline):
             trace['stages']['rejected-fire-key']['ammunition']['HEAT'] == final['HEAT'],
         'only_context_correct_voices': all(e.get('voice') in (None,'on_the_way','smoke') for e in events),
         'event_frame_order': all(a['frame_index']<=b['frame_index'] for a,b in zip(events,events[1:])),
+        **check_core_pins(trace, baseline, manifest),
     }
-    audio_states = trace.get('audio_states', [])
-    if audio_states:
+    audio_states = trace.get('audio_states') or []
+    # Loop-channel parity fails closed: absent states or a renamed stage is a failure,
+    # never a vacuous all() over nothing. Pre-loop-state reports need the explicit flag.
+    if not legacy_no_loop_states:
+        checks['audio_states_present'] = bool(audio_states) and bool(baseline.get('audio_states'))
+    if audio_states or not legacy_no_loop_states:
         stages = lambda name: [r for r in audio_states if r['stage'] == name]
+        held = lambda name, test: bool(stages(name)) and all(test(r) for r in stages(name))
+        stopped = stages('turret-stopped')
         checks.update({
             'original_sound_channel_states_identical': audio_states == baseline.get('audio_states'),
-            'engine_idle_channel_present': all(r['loops']['engine']['active'] for r in stages('baseline')),
+            'engine_idle_channel_present': held('baseline', lambda r: r['loops']['engine']['active']),
             'engine_tone_changes_with_original_program': len({r['loops']['engine']['period'] for r in audio_states}) > 1,
-            'turret_persists_on_key_release': all(r['loops']['turret']['active'] for r in stages('turn-coast')),
-            'turret_original_deceleration_tail': any(r['loops']['turret']['active'] for r in stages('turret-stopped')) and
-                not stages('turret-stopped')[-1]['loops']['turret']['active'],
-            'mute_and_pause_preserve_silent_engine_state': all(r['loops']['engine']['active'] and not r['enabled']
-                for r in stages('muted') + stages('paused')),
+            'turret_persists_on_key_release': held('turn-coast', lambda r: r['loops']['turret']['active']),
+            'turret_original_deceleration_tail': any(r['loops']['turret']['active'] for r in stopped) and
+                bool(stopped) and not stopped[-1]['loops']['turret']['active'],
+            'mute_and_pause_preserve_silent_engine_state': held('muted', lambda r: r['loops']['engine']['active'] and not r['enabled']) and
+                held('paused', lambda r: r['loops']['engine']['active'] and not r['enabled']),
         })
     return {'checks':checks,'frames':len(trace['frames']),'events':len(events),
             'sample_request_counts':dict(counts),'core_sha256':trace['core_sha256'],
@@ -57,8 +100,13 @@ def main():
     p.add_argument('--trace',type=Path,required=True)
     p.add_argument('--baseline',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--manifest',type=Path,default=CORE_MANIFEST)
+    p.add_argument('--legacy-no-loop-states',action='store_true',
+                   help='accept a report captured before original loop-channel states were recorded')
     args=p.parse_args()
-    result=verify(json.loads(args.trace.read_text()),json.loads(args.baseline.read_text()))
+    if inside_source(args.output,ROOT): p.error('output must be outside original sources')
+    result=verify(json.loads(args.trace.read_text()),json.loads(args.baseline.read_text()),
+                  load_manifest(args.manifest),args.legacy_no_loop_states)
     result['inputs']=[{'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
                       for path in (args.trace,args.baseline)]
     args.output.write_text(json.dumps(result,indent=2)+'\n')

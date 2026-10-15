@@ -166,7 +166,7 @@ The box-art yellow and flame orange warm a near-black, olive-tinted ground; rest
 
 Self-hosted Barlow Condensed Semibold, served as a Latin WOFF2 subset, supplies display headings, section headings and compact descriptive titles. A metric-adjusted local Arial Bold face ("Barlow Condensed Fallback") holds the heading boxes steady while the subset loads. Arial, with Helvetica and sans-serif fallbacks, supplies paragraphs, buttons and main navigation. The font file has weight 600; some display-family labels inherit normal weight in the current CSS. The hero title, brand and footer title are written in title case and uppercased by CSS, so crawlers and screen readers get ordinary words.
 
-Each section heading opens with a kicker: a small uppercase, tracked Arial label inside the h2 that echoes the box's tagline band and names the topic (Fan remaster trailer, Four graphics modes, Features, Scenario maps, Free download, Original credits). It is orange on dark ground, a slightly lighter orange on the olive credits band (keeping at least 6.5:1 contrast) and map rust on map paper. The dedication has no kicker.
+Each section heading opens with a kicker: a small uppercase, tracked Arial label inside the h2 that echoes the box's tagline band and names the topic (Fan remaster trailer, Graphics modes, Features, Scenario maps, Free download, Original credits). It is orange on dark ground, a slightly lighter orange on the olive credits band (keeping at least 6.5:1 contrast) and map rust on map paper. The dedication has no kicker.
 
 The frontmatter records the base hierarchy. The hero subtitle uses 0.56em of the title, orange and expanded tracking. Supporting text ranges from 0.8125rem captions to a 1.05rem hero description. The hero description is limited to 43ch; installation prose uses 49ch at desktop and up to 65ch in the narrower layout.
 
@@ -204,7 +204,7 @@ Platform download buttons are equal-weight outline buttons in the delivered HTML
 
 ### Graphics mode radio labels
 
-Three native, visually clipped radios control the EGA, Genesis and Upscaled choices. Their labels have a minimum height of 46px and an olive border; selection fills the label orange with ink text. Unselected hover uses the surface fill. A focused radio outlines its label in yellow with a four-pixel offset. Checked styling takes precedence over hover.
+Three native, visually clipped radios control the EGA, Genesis and Genesis Upscaled choices (Genesis Upscaled is called Upscaled in alpha 4). Their labels have a minimum height of 46px and an olive border; selection fills the label orange with ink text. Unselected hover uses the surface fill. A focused radio outlines its label in yellow with a four-pixel offset. Checked styling takes precedence over hover.
 
 ### Mission links
 
@@ -229,7 +229,7 @@ The main navigation uses bold Arial, plain text links and one bordered alpha act
 ## Do's and Don'ts
 
 ### Do
-- Do preserve complete cover lettering and the proportions of screenshots and maps. Working if: the supplied title remains visible, station images remain 4:3 and maps remain square. The Modern screenshots carry a recorded 4:3 trim that removes the in-game mode notice, without retouching.
+- Do preserve complete cover lettering and the proportions of screenshots and maps. Working if: the supplied title remains visible, station images keep their recorded proportions and maps remain square. The Genesis Upscaled gunner and Modernized driver screenshots are 4:3, the driver through a recorded trim that removes the in-game mode notice; the Tactical cupola keeps its full 1440×811 composition, including the Tactical HUD. None is retouched.
 - Do keep display headings in Barlow Condensed and reading copy in Arial. Working if: computed typography follows the documented roles.
 - Do retain visible keyboard focus, native radio selection and reduced-motion behavior. Working if: keyboard users can locate and operate each gallery control, and reduced-motion mode disables the cover animation and transitions.
 

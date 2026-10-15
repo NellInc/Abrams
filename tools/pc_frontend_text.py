@@ -44,47 +44,111 @@ def cursor_cells(cursor):
     x,y,w,h=cursor['rect']
     return {(x+i%w,y+i//w) for i,c in enumerate(base64.b64decode(cursor['indices'])) if c}
 
-def visible_runs(candidates,raw,width,height,palette,cursor=None):
+RUN_MEMO_LIMIT = 512
+
+def cell_colours_by_pixel(raw,ink,x,y,w,h,cell,i,covered):
+    """Exact per-pixel classification, used only where a cursor covers the cell."""
+    colours=[set(),set()]
+    for dy in range(h):
+        for dx in range(cell):
+            if (x+i*cell+dx,y+dy) in covered:continue
+            start=((y+dy)*320+x+i*cell+dx)*4
+            colours[ink[dy*w+i*cell+dx]].add(struct.unpack_from('<I',raw,start)[0]&0xffffff)
+    return colours
+
+def cell_colours_by_row(planes,ink,x,y,w,h,cell,i):
+    """The same uniform-colour test, comparing whole rows of each colour plane.
+
+    Returns the per-ink colour sets the per-pixel scan would build when each set
+    holds at most one colour, else None (the cell cannot match).
+    """
+    rows=[ink[dy*w+i*cell:dy*w+i*cell+cell] for dy in range(h)]
+    joined=b''.join(rows)
+    if joined.translate(None,b'\0\1'):raise ValueError('invalid source glyph ink')
+    first=[joined.find(0),joined.find(1)]
+    origin=y*320+x+i*cell
+    colours=[None,None]
+    for bit,at in enumerate(first):
+        if at>=0:
+            index=origin+(at//cell)*320+at%cell
+            colours[bit]=tuple(plane[index] for plane in planes)
+    if colours[0] is None:return None
+    for c,plane in enumerate(planes):
+        table=bytes((colours[0][c],(colours[1] or colours[0])[c]))+bytes(254)
+        for dy,row in enumerate(rows):
+            at=origin+dy*320
+            if plane[at:at+cell]!=row.translate(table):return None
+    pack=lambda rgb:(rgb[0]<<16)|(rgb[1]<<8)|rgb[2]
+    return [{pack(colours[0])},{pack(colours[1])} if colours[1] else set()]
+
+def classify_candidate(item,ink,raw,planes,covered,palette_by_color):
+    x,y,w,h=item['rect'];cell=item['cell_size'][0];groups=[]
+    cx,cy,cw,ch=covered[1] if covered else (0,0,0,0)
+    for i,char in enumerate(item['text']):
+        if covered and x+i*cell<cx+cw and cx<x+(i+1)*cell and y<cy+ch and cy<y+h:
+            colours=cell_colours_by_pixel(raw,ink,x,y,w,h,cell,i,covered[0])
+        else:
+            colours=cell_colours_by_row(planes,ink,x,y,w,h,cell,i)
+            if colours is None:continue
+        if len(colours[0])==1 and not colours[1]:
+            bg=next(iter(colours[0]))
+            bg_rgb=[bg>>16,(bg>>8)&255,bg&255]
+            if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==x+i*cell and groups[-1]['uniform_background_rgb']==bg_rgb:
+                groups[-1]['text']+=char;groups[-1]['rect'][2]+=cell
+            continue
+        if len(colours[0])!=1 or len(colours[1])!=1:continue
+        bg=next(iter(colours[0]));fg=next(iter(colours[1]))
+        if bg==fg or fg not in palette_by_color:continue
+        value=item|{'text':char,'rect':[x+i*cell,y,cell,h],
+            'foreground':palette_by_color[fg],
+            'uniform_background_rgb':[bg>>16,(bg>>8)&255,bg&255],
+            'basis':'completed original string and exact full current glyph cell; original highlight colours retained'}
+        if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==value['rect'][0] and all(groups[-1][k]==value[k] for k in ('foreground','uniform_background_rgb')):
+            groups[-1]['text']+=char;groups[-1]['rect'][2]+=cell
+        else:groups.append(value)
+    for value in groups:
+        crop=bgrx_rect_rgb(raw,320,200,value['rect'])
+        value['pixel_sha256']=hashlib.sha256(crop).hexdigest()
+    return groups
+
+def visible_runs(candidates,raw,width,height,palette,cursor=None,memo=None):
     """Match complete source cells after original selection-colour inversion.
 
     Menus invert highlights after drawing their strings. Match the original ink
     mask against two uniform current colours, never infer a word from RAM alone.
-    A pointer/overwrite rejects its cell; adjacent intact letters can still draw.
+    Pixels under a verified opaque cursor are excluded from the comparison, and
+    the cursor is composited above the text. Any other pointer or overwrite
+    rejects its cell; adjacent intact letters can still draw.
+
+    An optional bounded memo reuses a candidate's result only when the same
+    completed candidate, current rectangle bytes, palette and overlapping cursor
+    recur, so stale candidates cost one row copy per frame, not a pixel scan.
     """
     if (width,height)!=(320,200) or not palette or len(palette)!=16:return []
     found={};covered=cursor_cells(cursor)
     palette_by_color={}
     for index,(red,green,blue) in enumerate(palette):
         palette_by_color.setdefault((red<<16)|(green<<8)|blue,index)
+    palette_key=tuple(map(tuple,palette));planes=None
+    cursor_rect=cursor['rect'] if cursor else None
     for item,pixels,ink in candidates:
-        x,y,w,h=item['rect'];cell=item['cell_size'][0];groups=[]
-        for i,char in enumerate(item['text']):
-            colours=[set(),set()]
-            for dy in range(h):
-                for dx in range(cell):
-                    if (x+i*cell+dx,y+dy) in covered:continue
-                    start=((y+dy)*320+x+i*cell+dx)*4
-                    color=struct.unpack_from('<I',raw,start)[0]&0xffffff
-                    colours[ink[dy*w+i*cell+dx]].add(color)
-            if len(colours[0])==1 and not colours[1]:
-                bg=next(iter(colours[0]))
-                bg_rgb=[bg>>16,(bg>>8)&255,bg&255]
-                if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==x+i*cell and groups[-1]['uniform_background_rgb']==bg_rgb:
-                    groups[-1]['text']+=char;groups[-1]['rect'][2]+=cell
-                continue
-            if len(colours[0])!=1 or len(colours[1])!=1:continue
-            bg=next(iter(colours[0]));fg=next(iter(colours[1]))
-            if bg==fg or fg not in palette_by_color:continue
-            value=item|{'text':char,'rect':[x+i*cell,y,cell,h],
-                'foreground':palette_by_color[fg],
-                'uniform_background_rgb':[bg>>16,(bg>>8)&255,bg&255],
-                'basis':'completed original string and exact full current glyph cell; original highlight colours retained'}
-            if groups and groups[-1]['rect'][0]+groups[-1]['rect'][2]==value['rect'][0] and all(groups[-1][k]==value[k] for k in ('foreground','uniform_background_rgb')):
-                groups[-1]['text']+=char;groups[-1]['rect'][2]+=cell
-            else:groups.append(value)
+        x,y,w,h=item['rect']
+        overlap=bool(cursor_rect) and x<cursor_rect[0]+cursor_rect[2] and cursor_rect[0]<x+w and y<cursor_rect[1]+cursor_rect[3] and cursor_rect[1]<y+h
+        cursor_key=(tuple(cursor_rect),cursor['indices']) if overlap else None
+        crop=b''.join(raw[((y+dy)*320+x)*4:((y+dy)*320+x+w)*4] for dy in range(h))
+        key=(item['draw_sequence'],tuple(item['rect']))
+        cached=memo.get(key) if memo is not None else None
+        if cached and cached[0] is item and cached[1:4]==(crop,palette_key,cursor_key):
+            memo.move_to_end(key)
+            groups=[dict(value,rect=list(value['rect'])) for value in cached[4]]
+        else:
+            if planes is None:planes=(bytes(raw[2::4]),bytes(raw[1::4]),bytes(raw[0::4]))
+            groups=classify_candidate(item,ink,raw,planes,(covered,cursor_rect) if overlap else None,palette_by_color)
+            if memo is not None:
+                memo[key]=(item,crop,palette_key,cursor_key,[dict(value,rect=list(value['rect'])) for value in groups])
+                memo.move_to_end(key)
+                while len(memo)>RUN_MEMO_LIMIT:memo.popitem(last=False)
         for value in groups:
-            crop=bgrx_rect_rgb(raw,width,height,value['rect'])
-            value['pixel_sha256']=hashlib.sha256(crop).hexdigest()
             key=(tuple(value['rect']),value['font_sha256'],value['text'])
             if key not in found or value['draw_sequence']>found[key]['draw_sequence']:found[key]=value
     return sorted(found.values(),key=lambda r:r['draw_sequence'])
@@ -150,6 +214,7 @@ class FrontendText:
         self.counts=[]
         self.scene=FrontendScene(ROOT/'GAME')
         self.mask_cache=OrderedDict()
+        self.run_memo=OrderedDict()
 
     def observe(self,event,registers,data,offset,length):
         try:raw=C.string_at(data,length)
@@ -210,7 +275,7 @@ class FrontendText:
         # Classify only requested presentations, using their immutable scanout
         # candidates. Fast-forwarded capture frames never need host font meshes.
         cursor=self.sources.visible_cursor(ram,raw,self.last_frame.get('palette_rgb')) if ram is not None else None
-        runs=visible_runs(self.last_frame.get('candidates',()),raw,w,h,self.last_frame.get('palette_rgb'),cursor)
+        runs=visible_runs(self.last_frame.get('candidates',()),raw,w,h,self.last_frame.get('palette_rgb'),cursor,self.run_memo)
         is_start=(self.presented.get('frontend_program') or {}).get('name')=='START'
         drawing=self.scene.paired(raw,self.last_frame.get('palette_rgb'),runs,cursor) if is_start and w==320 and h==200 else None
         cursor_ink=cursor_cells(cursor) if drawing else set()
@@ -226,7 +291,7 @@ class FrontendText:
                 for x,y in cursor_ink:mask.putpixel((x,y),255)
             for run in runs:
                 x,y,ww,hh=run['rect'];mask.paste(255,(x,y,x+ww,y+hh))
-            stream=io.BytesIO();mask.save(stream,format='PNG')
+            stream=io.BytesIO();mask.save(stream,format='PNG',compress_level=1)
             mask_png=base64.b64encode(stream.getvalue()).decode()
             self.mask_cache[mask_key]=mask_png
             if len(self.mask_cache)>32:self.mask_cache.popitem(last=False)

@@ -3,10 +3,12 @@ import struct
 import unittest
 from tools.pc_orientation import OrientationRuns,diagram,QUAD_CALLERS,EDGE_CALLERS
 from tools.unpack_pc_executables import unpack
+from tests._inputs import requires
 
 ROOT=Path(__file__).resolve().parents[1]
 
 
+@requires('GAME')
 class OrientationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

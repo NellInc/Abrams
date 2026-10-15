@@ -1,6 +1,8 @@
 import hashlib,json,unittest
 from tools.build_pc_map_frame_catalog import ROOT,build,border_bytes
 from PIL import Image
+from tests._inputs import requires
+@requires('GAME', 'artifacts/pc-motor-pool-baseline-01')
 class MapFrameTests(unittest.TestCase):
  def test_catalog_is_source_reproducible_with_complete_rivet_domain(self):
   actual=build();saved=json.loads((ROOT/'local-art/pc-map-frame-v1/frame.json').read_text())

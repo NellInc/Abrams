@@ -13,12 +13,12 @@ from pathlib import Path
 try:
     from tools.inspect_scenarios import decode_resource
     from tools.pc_bitmaps import decode_bitmaps
-    from tools.source_guard import inside_source
+    from tools.source_guard import inside_source, recorded
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from inspect_scenarios import decode_resource
     from pc_bitmaps import decode_bitmaps
-    from source_guard import inside_source
+    from source_guard import inside_source, recorded
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_SHA256 = 'e769b71bee8a40023e6ffdb3ac0fd5db0a7485148c1d2eb3fd4fe3b1da6ffa42'
@@ -79,8 +79,8 @@ def main():
     payload = (json.dumps(data, indent=2) + '\n').encode()
     (args.output / 'faces.json').write_bytes(payload)
     receipt = {'catalog_sha256': hashlib.sha256(payload).hexdigest(),
-               'capture': str(args.capture), 'ram_sha256': hashlib.sha256(ram).hexdigest(),
-               'trace': str(args.trace), 'portraits': proof,
+               'capture': recorded(args.capture, ROOT), 'ram_sha256': hashlib.sha256(ram).hexdigest(),
+               'trace': recorded(args.trace, ROOT), 'portraits': proof,
                'scope': 'PC source matching and original loaded pixel/mask proof only; no Genesis identity or live rendering claim'}
     (args.output / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
     print(json.dumps(receipt, indent=2))

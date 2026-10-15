@@ -1509,7 +1509,7 @@ func run() -> void:
 	draw.terrain_style=preload("res://scripts/pc_terrain_style.gd").new()
 	check(draw.terrain_style.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")),"terrain loaded")
 	check(draw.terrain_style.load_hills(directory),"hills loaded")
-	var catalog:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-modern/catalog.json")))
+	var catalog:Dictionary=art.load_catalogue(directory)
 	if "--finishgrain-materials" in args:
 		await naturalism_materials(catalog,args[args.find("--finishgrain-materials")+1])
 		return

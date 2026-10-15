@@ -6,6 +6,7 @@ import unittest
 from tools.inspect_scenarios import decode_resource, parse_world
 from tools.pc_world import world_position, read_objects
 from tools.pc_live_state import SimStateReader
+from tests._inputs import requires
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -40,6 +41,7 @@ class WorldTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_world(bytes(data))
 
+    @requires('GAME')
     def test_all_world_entries_fit_declared_cell_coordinates(self):
         counts = [510, 609, 529, 733, 1014, 876, 879, 1013]
         for index, count in enumerate(counts):
@@ -103,6 +105,7 @@ class WorldTests(unittest.TestCase):
             struct.pack_into('<h', ram, ds + 0x0DAC, remaining)
             self.assertFalse(read_objects(ram, ds)['presentation_effects']['smoke']['active'])
 
+    @requires('GAME')
     def test_player_schema_corrects_unsigned_local_coordinate_bug(self):
         reader = SimStateReader(ROOT / "GAME/SIM.EXE")
         ram, base = bytearray(640 * 1024), 0x1ED0

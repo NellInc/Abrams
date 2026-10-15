@@ -15,9 +15,15 @@ from tools.build_pc_graphics_catalog import PALETTE
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'artifacts/finish-20260928/cursor-struts'
+FIXTURE=OUT/'coverage-fixtures.json'
 
 
 def build():
+    # The fixture is a pinned gate input (tests/gate_fixtures.py): regenerating it
+    # in place would change what pc_cursor_struts proves. Replace it deliberately.
+    if FIXTURE.exists():
+        raise SystemExit(f'Refusing to overwrite {FIXTURE.relative_to(ROOT)}: move it aside, rerun, '
+                         'then re-pin with python3 -m tests.gate_fixtures --write')
     OUT.mkdir(parents=True,exist_ok=True)
     path=ROOT/'artifacts/pc-driver-assembly-trace-03/report.json';report=json.loads(path.read_text())
     sources=decode_bitmaps(decode_resource((ROOT/'GAME/STRUTS.BMP').read_bytes()));sprite=sources[3]
@@ -69,7 +75,7 @@ def build():
                  'packet':packet,'donor':3,'points':points,'synthetic':True})
     result={'schema':1,'historical_capture':str(path.relative_to(ROOT)),'capture_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
             'samples':rows,'scope':__doc__}
-    (OUT/'coverage-fixtures.json').write_text(json.dumps(result,indent=2)+'\n')
+    FIXTURE.write_text(json.dumps(result,indent=2)+'\n')
     print('STRUT_COVERAGE:',len(rows),'samples; driver595 surviving +79 later plate pixels; cupola',len(points),'visible source pixels')
 
 

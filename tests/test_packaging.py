@@ -136,7 +136,8 @@ class PackagingTests(unittest.TestCase):
             package.check_source_closure(root, names, include_assets=True)
             for dependency in dependencies:
                 with self.subTest(dependency=dependency):
-                    with self.assertRaisesRegex(ValueError, 'Missing resource dependency'):
+                    # Escaped includes also fail the code closure, which runs first.
+                    with self.assertRaisesRegex(ValueError, 'Missing (?:code|resource) dependency'):
                         package.check_source_closure(root, [n for n in names if n != 'godot/' + dependency], include_assets=True)
 
     def test_historical_comparison_exception_is_exact_and_preserves_code_closure(self):
@@ -150,7 +151,7 @@ class PackagingTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Missing resource dependency'):
                 package.check_source_closure(root, [production.relative_to(root).as_posix()], include_assets=True)
             for text, error in [
-                ('extends "res://tests/missing.gd"\n', 'Missing resource dependency'),
+                ('extends "res://tests/missing.gd"\n', 'Missing code dependency'),
                 ('var image = "res://tests/unrelated.png"\n', 'Missing resource dependency'),
                 ('var shader = load("res://tests/effects-before.gdshader")\n', 'Missing code dependency'),
             ]:
@@ -164,8 +165,104 @@ class PackagingTests(unittest.TestCase):
             root = Path(directory); name = 'godot/scripts/a.gd'; path = root / name
             path.parent.mkdir(parents=True)
             path.write_text('var shader = "#include \\"res://scripts/missing.gdshaderinc\\""\nvar dynamic = "%s"\n')
-            with self.assertRaisesRegex(ValueError, 'Missing resource dependency'):
+            with self.assertRaisesRegex(ValueError, 'Missing code dependency: .* -> godot/scripts/missing.gdshaderinc'):
                 package.check_source_closure(root, [name], include_assets=True)
+            path.write_text('var image = "\\"res://scripts/missing.png\\""\nvar dynamic = "%s"\n')
+            with self.assertRaisesRegex(ValueError, 'Missing resource dependency: .* -> godot/scripts/missing.png'):
+                package.check_source_closure(root, [name], include_assets=True)
+
+    def test_shader_includes_and_script_inheritance_close_in_both_modes(self):
+        files = {
+            'godot/scripts/a.gdshader': 'shader_type spatial;\n#include "res://scripts/b.gdshaderinc"\n',
+            'godot/scripts/b.gdshaderinc': '#include "res://scripts/c.gdshaderinc"\n',
+            'godot/scripts/c.gdshaderinc': 'float c() { return 1.0; }\n',
+            'godot/scripts/child.gd': 'extends "res://scripts/base.gd"\n',
+            'godot/scripts/base.gd': 'extends Node\n',
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name, text in files.items():
+                path = root / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text)
+            for include_assets in (False, True):
+                package.check_source_closure(root, list(files), include_assets=include_assets)
+                for missing in ['godot/scripts/b.gdshaderinc', 'godot/scripts/c.gdshaderinc', 'godot/scripts/base.gd']:
+                    with self.subTest(missing=missing, include_assets=include_assets):
+                        with self.assertRaisesRegex(ValueError, 'Missing code dependency: .* -> ' + missing):
+                            package.check_source_closure(root, [n for n in files if n != missing], include_assets=include_assets)
+            # A formatted include in a shader template is resolved at runtime.
+            dynamic = root / 'godot/scripts/template.gd'
+            dynamic.write_text('const SOURCE := "#include \\"res://scripts/%s.gdshaderinc\\"\n"\n')
+            for include_assets in (False, True):
+                with self.subTest(dynamic=True, include_assets=include_assets):
+                    package.check_source_closure(root, [*files, 'godot/scripts/template.gd'], include_assets=include_assets)
+
+    def test_mixed_case_exclusions_fail_closed(self):
+        for name in ['Godot/assets/voice.json', 'godot/Data/pc_crew_voice_script.json', 'godot/DATA/x.json',
+                     'godot/tests/Fixtures/dialogue.json', 'godot/tests/Fixtures/a_steps.json',
+                     'Local-Audio/notes.md', 'Game/notes.txt', 'Local-Art/a.json', 'Reference/a.json']:
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                package.validate_name(name, 'source')
+        for name in ['Local-Audio/frontend-music-v1/a.wav', 'local-audio/Frontend-Music-v1/a.wav', 'Local-Art/Genesis/a.png', 'local-art/GENESIS/a.png']:
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                package.validate_name(name, 'private')
+        package.validate_name('godot/tests/fixtures/a_steps.json', 'source')
+        package.validate_name('local-audio/frontend-music-v1/a.wav', 'private')
+
+    def test_allowlist_spelling_must_match_disk(self):
+        for spelling in ['tools/A.py', 'Tools/a.py']:
+            with self.subTest(spelling=spelling), tempfile.TemporaryDirectory() as directory:
+                root = self.fixture(directory)
+                manifest = json.loads((root / package.MANIFEST).read_text())
+                manifest['source'] = [package.MANIFEST, spelling]
+                (root / package.MANIFEST).write_text(json.dumps(manifest))
+                # Case-insensitive volumes open the file; case-sensitive ones do not.
+                with self.assertRaisesRegex(ValueError, 'case differs|Missing'):
+                    package.build(root, root / 'bad.zip', 'source')
+                self.assertFalse((root / 'bad.zip').exists())
+
+    def test_working_tree_credentials_and_originals_never_enter_kits(self):
+        token = 'sk-' + 'A1b2' * 10  # Assembled so this file carries no signature.
+        original = b'synthetic original bytes'
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.fixture(directory)
+            (root / 'tools/a.py').write_text(f'KEY = "{token}"\n')
+            with self.assertRaisesRegex(ValueError, 'Boundary violation .* tools/a.py: credential signature'):
+                package.build(root, root / 'secret.zip', 'source')
+            with zipfile.ZipFile(root / 'secret.zip') as archive:
+                self.assertNotIn('tools/a.py', archive.namelist())
+                self.assertNotIn(package.RECEIPT, archive.namelist())
+            (root / 'tools/a.py').write_text('print("hello")\n')
+            launchers = ['Play.command', 'tools/package/Play.command']
+            for name in launchers:
+                (root / name).write_text('#!/bin/sh\n')
+            for name in ['tools/renamed.txt', '.runtime/pc-core/abrams-ref.zip']:
+                (root / name).parent.mkdir(parents=True, exist_ok=True); (root / name).write_bytes(original)
+            manifest = json.loads((root / package.MANIFEST).read_text())
+            manifest['source'] += launchers
+            boundary = package.git_boundary()
+            with patch.object(boundary, 'known_inputs', return_value={hashlib.sha256(original).hexdigest()}), \
+                    patch('tools.package_setup.CONTENT_SHA', hashlib.sha256(original).hexdigest()), \
+                    patch.object(package, 'verify_private_inputs'):
+                manifest['private'] = ['.runtime/pc-core/abrams-ref.zip']
+                (root / package.MANIFEST).write_text(json.dumps(manifest))
+                # Only an original at its pinned path with its pinned hash is exempt.
+                self.assertEqual(package.build(root, root / 'pinned.zip', 'private')['kind'], 'private')
+                for kind, rows in [('private', ['tools/renamed.txt']), ('source', [])]:
+                    with self.subTest(kind=kind):
+                        manifest['private'] = rows
+                        manifest['source'] = [package.MANIFEST, 'tools/a.py', *launchers] + (['tools/renamed.txt'] if kind == 'source' else [])
+                        (root / package.MANIFEST).write_text(json.dumps(manifest))
+                        with self.assertRaisesRegex(ValueError, 'tools/renamed.txt: fingerprinted original'):
+                            package.build(root, root / f'{kind}-renamed.zip', kind)
+
+    def test_output_inside_original_sources_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.fixture(directory)
+            (root / 'GAME').mkdir()
+            for output in [root / 'GAME/kit.zip', root / 'game/nested/kit.zip']:
+                with self.subTest(output=output), self.assertRaisesRegex(ValueError, 'outside original source'):
+                    package.build(root, output, 'source')
+            self.assertEqual(list((root / 'GAME').iterdir()), [])
 
     def test_symlink_archive_metadata_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -213,14 +310,16 @@ class PackagingTests(unittest.TestCase):
                 with patch.dict(os.environ, {'ABRAMS_DATA_HOME': invalid}), self.assertRaises(ValueError):
                     data_home(root)
 
-    def test_real_source_allowlist_and_private_custody(self):
+    def test_real_source_allowlist(self):
         source = package.selected_files(ROOT, 'source')
         self.assertIn('tools/package_build.py', source)
         # Output guards (and the runtime host) import the shared helper.
         self.assertIn('tools/source_guard.py', source)
         package.check_source_closure(ROOT, source)
-        if not (ROOT / 'GAME').exists():
-            return  # The source kit deliberately has no private dependencies.
+
+    @unittest.skipUnless((ROOT / 'GAME').is_dir(), 'Requires private original inputs')
+    def test_real_private_custody(self):
+        # The source kit deliberately has no private dependencies; this skip is counted.
         private = package.selected_files(ROOT, 'private')
         self.assertIn('.runtime/pc-core/abrams-ref.zip', private)
         self.assertNotIn('tools/build_pc_vehicle_studies.py', private)
@@ -256,6 +355,14 @@ class PackagingTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'already exists'):
                 prepare(ROOT / 'GAME', target, records)
             self.assertEqual(hashlib.sha256((target / '.runtime/pc-core/abrams-ref.zip').read_bytes()).hexdigest(), CONTENT_SHA)
+
+    def test_import_destination_inside_original_sources_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for alias in ['GAME', 'game', 'Genesis']:
+                destination = ROOT / alias / 'never-created-setup-kit'
+                with self.subTest(alias=alias), self.assertRaisesRegex(ValueError, 'outside original source'):
+                    prepare(Path(directory), destination, [])
+                self.assertFalse(destination.exists())
 
 
 if __name__ == '__main__':

@@ -134,11 +134,20 @@ func _draw() -> void:
 func _capture() -> void:
 	var args := OS.get_cmdline_user_args()
 	var at := args.find("--capture-art")
-	if at+1 >= args.size() or not errors.is_empty():
-		push_error("Artwork capture needs an output path and all local source/remaster files.")
+	if at+1 >= args.size() or args[at+1].begins_with("--") or args[at+1].strip_edges().is_empty():
+		push_error("--capture-art requires an output directory.")
+		get_tree().quit(2)
+		return
+	# Captures include extracted original Genesis pages, so they must never land inside res:// or the sources.
+	var output: String = preload("res://scripts/main.gd").capture_directory(args[at+1])
+	if output.is_empty():
+		push_error("--capture-art refuses output inside godot/ or the original sources: " + args[at+1])
+		get_tree().quit(2)
+		return
+	if not errors.is_empty():
+		push_error("Artwork capture needs all local source/remaster files.")
 		get_tree().quit(1)
 		return
-	var output := args[at+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	for p in range(ART.size()):
 		page = p

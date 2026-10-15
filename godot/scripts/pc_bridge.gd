@@ -15,6 +15,11 @@ var closing := false
 var expected_protocol := 2
 var python_path := ""
 var killed := false
+## Wall-clock cap on one poll's pipe drain; an idle host never stalls a frame.
+var read_budget_usec := 2000
+## Play only: ask the trace host to omit allocated-object pools it never draws.
+## A property, not a start() argument, so harness overrides keep their signature.
+var slim_samples := false
 
 ## Same interpreter rule as PC Bridge.command: ABRAMS_PYTHON, else python3 on PATH.
 static func default_python() -> String:
@@ -28,6 +33,7 @@ func start(python: String, state_path: String, save_path: String, log_path: Stri
 	var arguments := ["-u",project_root.path_join("tools/pc_bridge_host.py"),"--saves",save_path,"--backend",backend]
 	if not state_path.is_empty(): arguments.append_array(["--state",state_path])
 	if frame_audit: arguments.append("--frame-audit")
+	if slim_samples and backend == "trace": arguments.append("--slim-samples")
 	python_path = python
 	process = OS.execute_with_pipe(python, arguments, false)
 	if process.is_empty():
@@ -49,7 +55,7 @@ func step(frames: int, keys: Array) -> bool:
 
 func state_command(operation: String, slot: int) -> bool:
 	if pending or closing or not failure.is_empty() or process.is_empty(): return false
-	if operation not in ["save_state","load_state"] or slot<0 or slot>5 or (operation=="save_state" and slot==0): return false
+	if operation not in ["save_state","load_state","load_previous"] or slot<0 or slot>5 or (operation!="load_state" and slot==0): return false
 	waiting_id=next_id
 	next_id+=1
 	_write({"op":operation,"id":waiting_id,"slot":slot})
@@ -74,19 +80,19 @@ func poll() -> Array[Dictionary]:
 	# A nonblocking pipe read can return only 512 bytes even when a full reply
 	# is ready. Drain available fragments here instead of spending a rendered
 	# frame on each fragment. A full tiny pipe can briefly read empty while its
-	# blocked writer replenishes it. Yield only after progress, within 2 ms.
+	# blocked writer replenishes it. Yield only after progress, within read_budget_usec.
 	# Bound both work and bytes; an idle host never makes the renderer wait.
 	var bytes := PackedByteArray()
 	var read_started := Time.get_ticks_usec()
 	for _read in 256:
 		var chunk: PackedByteArray = process.stdio.get_buffer(65536)
 		if chunk.is_empty():
-			if bytes.is_empty() or Time.get_ticks_usec()-read_started >= 2000: break
+			if bytes.is_empty() or Time.get_ticks_usec()-read_started >= read_budget_usec: break
 			OS.delay_usec(50)
 		else:
 			bytes.append_array(chunk)
 			if chunk.has(10): break # A complete JSON line needs no further yield.
-		if bytes.size() >= 2 * 1024 * 1024 or Time.get_ticks_usec()-read_started >= 2000: break
+		if bytes.size() >= 2 * 1024 * 1024 or Time.get_ticks_usec()-read_started >= read_budget_usec: break
 	buffered += bytes.get_string_from_utf8()
 	if buffered.length() > 2 * 1024 * 1024:
 		failure = "Oversized PC bridge response."

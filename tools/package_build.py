@@ -9,10 +9,17 @@ import argparse
 import ast
 import hashlib
 import json
+import os
 from pathlib import Path, PurePosixPath
 import stat
 import re
+import sys
 import zipfile
+try:
+    from tools.source_guard import inside_source
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import inside_source
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = 'tools/package/allowlist.json'
@@ -25,20 +32,62 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def git_boundary():
+    # Imported on demand: the managed launcher loads this module as a sibling
+    # script and never builds kits, and the guard itself imports tools.*.
+    try:
+        from tools.package import git_boundary as boundary
+    except ModuleNotFoundError as error:
+        if error.name != 'tools': raise
+        sys.path.insert(0, str(ROOT))
+        from tools.package import git_boundary as boundary
+    return boundary
+
+
+def boundary_guard():
+    """Return a member check with the Git boundary's fingerprint and credential rules.
+
+    Kits are read from the working tree, which git_boundary never sees, so each
+    member is inspected here. Only an original at its pinned private path with
+    its pinned hash is exempt; a renamed or relocated copy still fails.
+    Working if: a source kit carrying a credential or a fingerprinted original
+    fails, and a private kit fails on anything but its pinned inputs.
+    """
+    boundary = git_boundary()
+    known = boundary.known_inputs()
+    records = json.loads((boundary.ROOT / 'tools/package/game-inputs.json').read_text())['files']
+    from tools.package_setup import CONTENT_SHA
+    pinned = {'GAME/' + r['name']: r['sha256'] for r in records} | {'.runtime/pc-core/abrams-ref.zip': CONTENT_SHA}
+
+    def check(name, data, kind):
+        if kind == 'private' and pinned.get(name) == digest(data):
+            return
+        problem = boundary.inspect_blob(data, known, name)
+        if problem:
+            raise ValueError(f'Boundary violation in {kind} kit member {name}: {problem}')
+    return check
+
+
 def validate_name(name, kind):
     p = PurePosixPath(name)
     if not name or '\\' in name or p.is_absolute() or str(p) != name or '..' in p.parts:
         raise ValueError(f'Unsafe package path: {name}')
-    if any(x.lower() in BANNED or x.lower().startswith('.env') or x.lower().endswith('.env') for x in p.parts) or p.suffix.lower() in {'.state', '.pyc', '.log', '.tmp', '.pem', '.key', '.p12', '.pfx'}:
+    # Exclusions compare case-insensitively (APFS opens 'Godot/Data' as godot/data);
+    # exemptions stay exact-case, so a miscased spelling fails closed.
+    lower = name.lower()
+    parts = [x.lower() for x in p.parts]
+    if any(x in BANNED or x.startswith('.env') or x.endswith('.env') for x in parts) or p.suffix.lower() in {'.state', '.pyc', '.log', '.tmp', '.pem', '.key', '.p12', '.pfx'}:
         raise ValueError(f'Forbidden private state: {name}')
-    if any(x.lower() == 'genesis' for x in p.parts) and not (kind == 'private' and name.startswith(('local-art/genesis/', 'reference/genesis/'))):
+    if 'genesis' in parts and not (kind == 'private' and name.startswith(('local-art/genesis/', 'reference/genesis/'))):
         raise ValueError(f'Original ROM directory: {name}')
-    if p.parts[0] == 'local-audio' and not (kind == 'private' and name.startswith('local-audio/frontend-music-v1/')):
+    if parts[0] == 'local-audio' and not (kind == 'private' and name.startswith('local-audio/frontend-music-v1/')):
         raise ValueError(f'Unreviewed audio working files: {name}')
     if kind == 'source':
-        if p.parts[0].lower() in {'game', 'reference', 'local-art', '.runtime'} or name.startswith(('godot/assets/', 'godot/data/')):
+        if parts[0] in {'game', 'reference', 'local-art', '.runtime'} or lower.startswith(('godot/assets/', 'godot/data/')):
             raise ValueError(f'Non-source member in source kit: {name}')
-        if name.startswith('godot/tests/fixtures/') and not (p.name.endswith('_steps.json') or p.name in {'pc_bearings.json', 'pc_request_sound_oracle.json'}):
+        if lower.startswith('godot/tests/fixtures/') and not (name.startswith('godot/tests/fixtures/') and (p.name.endswith('_steps.json') or p.name in {'pc_bearings.json', 'pc_request_sound_oracle.json',
+                'pc_reticle_ink.json', 'pc_reticle_target_ink.json'})):
+            # The reticle ink fixtures are CPU-model output from the tracked offset table, not original bytes.
             raise ValueError(f'Extracted dialogue fixture: {name}')
         if p.suffix not in SOURCE_SUFFIXES and name != 'LICENSE':
             raise ValueError(f'Unreviewed source format: {name}')
@@ -54,6 +103,7 @@ def selected_files(root, kind):
         names += manifest['private']
     if len(set(names)) != len(names) or RECEIPT in names:
         raise ValueError('Duplicate or reserved allowlist member')
+    listings = {}
     for name in names:
         validate_name(name, 'source' if name in manifest['source'] else 'private')
         path = root / name
@@ -61,6 +111,15 @@ def selected_files(root, kind):
             raise ValueError(f'Symlinks are excluded: {name}')
         if not path.is_file() or not path.resolve().is_relative_to(root.resolve()):
             raise ValueError(f'Missing regular allowlisted file: {name}')
+        # Case-insensitive filesystems open miscased entries; require the
+        # on-disk spelling so kits carry the paths Linux and Windows expect.
+        parent = root
+        for part in PurePosixPath(name).parts:
+            if parent not in listings:
+                listings[parent] = set(os.listdir(parent))
+            if part not in listings[parent]:
+                raise ValueError(f'Allowlist case differs from disk: {name}')
+            parent = parent / part
     return sorted(names)
 
 
@@ -70,8 +129,11 @@ def build(root, output, kind):
     check_source_closure(root, names, include_assets=kind == 'private')
     if kind == 'private':
         verify_private_inputs(root)
+    if inside_source(output, root):
+        raise ValueError('Output must be outside original source directories')
     if output.resolve() in {(root / n).resolve() for n in names}:
         raise ValueError('Output must not overwrite an input')
+    guard = boundary_guard()
     output.parent.mkdir(parents=True, exist_ok=True)
     # Exclusive creation preserves earlier releases; each file is read once for
     # both its hash and ZIP member. Concurrent edits require a subsequent rebuild.
@@ -84,6 +146,8 @@ def build(root, output, kind):
             for name in names:
                 source_name = overrides.get(name, name)
                 data = (root / source_name).read_bytes()
+                # The offending member is never written; the partial kit has no receipt.
+                guard(name, data, kind)
                 mode = 0o755 if name.endswith(('.command', '.sh')) else 0o644
                 records.append({'path': name, 'size': len(data), 'sha256': digest(data), 'mode': mode, 'input_path': source_name})
                 write_member(archive, name, data, mode)
@@ -95,7 +159,7 @@ def build(root, output, kind):
     except Exception:
         # Keep failed output for diagnosis; never overwrite or remove user files.
         raise
-    return verify(output)
+    return verify(output, guard)
 
 
 # Historical comparison inputs are optional to playable/native kits. Their
@@ -120,8 +184,24 @@ def check_source_closure(root, names, include_assets=False):
     for name in names:
         path = root / name
         if path.suffix == '.gd':
-            for dependency in re.findall(r'(?<![A-Za-z_])(?:pre)?load\(\s*["\']res://([^"\']+)["\']\s*\)', path.read_text()):
+            text = path.read_text()
+            for dependency in re.findall(r'(?<![A-Za-z_])(?:pre)?load\(\s*["\']res://([^"\']+)["\']\s*\)', text):
                 if dependency.endswith(('.gd', '.gdshader')) and 'godot/' + dependency not in selected:
+                    raise ValueError(f'Missing code dependency: {name} -> godot/{dependency}')
+            # Inherited scripts compile with the child, so a missing base breaks it.
+            extends = re.findall(r'''^[ \t]*extends[ \t]+["']res://([^"']+)["']''', text, re.MULTILINE)
+            # Shader templates in strings escape their include delimiters.
+            includes = [m[2] for m in re.findall(r'''#include[ \t]+(\\?)(["'])res://([^"'\\\r\n]+)\1\2''', text)]
+            for dependency in extends + includes:
+                # Formatted template paths are resolved at runtime, as in the resource scan.
+                if '%' in dependency or (name, dependency) in OPTIONAL_COMPARISON_INPUTS:
+                    continue
+                if 'godot/' + dependency not in selected:
+                    raise ValueError(f'Missing code dependency: {name} -> godot/{dependency}')
+        if path.suffix in {'.gdshader', '.gdshaderinc'}:
+            # Every selected include is scanned in turn, so nested includes close too.
+            for dependency in re.findall(r'''^[ \t]*#include[ \t]+"res://([^"]+)"''', path.read_text(), re.MULTILINE):
+                if 'godot/' + dependency not in selected:
                     raise ValueError(f'Missing code dependency: {name} -> godot/{dependency}')
         if include_assets and path.suffix in {'.gd', '.tscn'}:
             # GDScript shader templates contain singly escaped quote delimiters.
@@ -178,7 +258,8 @@ def write_member(archive, name, data, mode):
     archive.writestr(info, data)
 
 
-def verify(path):
+def verify(path, guard=None):
+    guard = guard or boundary_guard()
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
         if len(names) != len(set(names)):
@@ -205,10 +286,16 @@ def verify(path):
             info = archive.getinfo(name)
             if len(data) != row['size'] or digest(data) != row['sha256']:
                 raise ValueError(f'Archive fingerprint mismatch: {name}')
+            guard(name, data, 'source' if name in embedded['source'] else receipt['kind'])
             if info.date_time != (1980, 1, 1, 0, 0, 0) or stat.S_IMODE(info.external_attr >> 16) != row['mode']:
                 raise ValueError(f'Archive metadata mismatch: {name}')
+    sha = hashlib.sha256()
+    with path.open('rb') as handle:
+        # Chunked: a private kit is hundreds of megabytes.
+        for chunk in iter(lambda: handle.read(1 << 20), b''):
+            sha.update(chunk)
     return {'kind': receipt['kind'], 'files': len(expected), 'bytes': path.stat().st_size,
-            'sha256': digest(path.read_bytes()), 'release_ready': False}
+            'sha256': sha.hexdigest(), 'release_ready': False}
 
 
 def main():

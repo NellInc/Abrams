@@ -18,12 +18,12 @@ ARGPARSE = [
     ('build_pc_outline_fonts.py', ('fontTools', 'PIL'), [], 'output must be outside source directories'),
     ('extract_genesis_models.py', (), ['--rom', '/nonexistent', '--capture', '/nonexistent'], 'output must be outside original source directories'),
     ('capture_pc_menu_text.py', ('PIL',), ['--mode', 'trace'], 'output must be outside original sources'),
-    ('capture_pc_views.py', ('PIL',), [], 'output must be outside original GAME'),
-    ('extract_pc_ui.py', ('PIL',), ['--capture', '/nonexistent', '--trace', '/nonexistent'], 'output must be outside GAME'),
+    ('capture_pc_views.py', ('PIL',), [], 'output must be outside original sources'),
+    ('extract_pc_ui.py', ('PIL',), ['--capture', '/nonexistent', '--trace', '/nonexistent'], 'output must be outside original sources'),
     ('pc_gauge_oracle.py', ('unicorn',), ['--capture', '/nonexistent'], 'output must be outside original reference directories'),
     ('pc_orientation_oracle.py', ('unicorn',), ['--capture', '/nonexistent'], 'output must be outside original references'),
     ('pc_strut_oracle.py', ('unicorn',), ['--capture', '/nonexistent'], 'output must stay outside originals'),
-    ('pc_world_oracle.py', ('unicorn',), ['--capture', '/nonexistent'], 'output must be outside original directory'),
+    ('pc_world_oracle.py', ('unicorn',), ['--capture', '/nonexistent'], 'output must be outside original sources and --root'),
     ('modern_assets/opaque_probe.py', ('unicorn',), None, None),
 ]
 # No argparse: importing in script mode must not run build() (it writes).
@@ -68,7 +68,6 @@ class ToolScriptGuardTests(unittest.TestCase):
             target = alias(name)
             for tool, modules, extra, message in ARGPARSE:
                 if extra is None: continue
-                if name == 'GENESIS' and tool == 'pc_world_oracle.py': continue  # guards its --root (GAME)
                 with self.subTest(tool=tool, source=name):
                     py = interpreter(modules)
                     if not target or not py: self.skipTest('needs case-insensitive FS, local sources and deps'); continue
@@ -81,7 +80,7 @@ class ToolScriptGuardTests(unittest.TestCase):
         if not py or not target: self.skipTest('needs case-insensitive FS, local sources and unicorn')
         done = self.run_tool(py, ROOT / 'tools/pc_world_oracle.py', '--root', ROOT / 'GAME', '--capture', '/nonexistent', '--output', target / 'x.json')
         self.assertEqual(done.returncode, 2, done.stderr[-400:])
-        self.assertIn('output must be outside original directory', done.stderr)
+        self.assertIn('output must be outside original sources and --root', done.stderr)
 
     def test_builders_import_in_script_mode(self):
         for tool, modules in NO_ARGPARSE:

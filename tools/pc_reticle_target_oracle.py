@@ -105,7 +105,7 @@ def verify(ram):
                 if bool(candidate)!=bool(ink):raise ValueError('target observer differs from CPU ink')
                 cases.append({'center':[cx,cy],'color':color,'page':page,'lines':observed,'ink_pixels':ink})
     return {'sim_sha256':SIM_SHA256,'capture_sha256':hashlib.sha256(ram).hexdigest(),
-        'engine':'unicorn-2.1.4/x86-16','case_count':len(cases),'instruction_locations':len(checked),
+        'engine':f'unicorn-{unicorn.__version__}/x86-16','case_count':len(cases),'instruction_locations':len(checked),
         'vga_writes':writes,'plane_bytes_compared':len(cases)*4*65536,'cases':cases,
         'observer':observer.report(),
         'scope':'unchanged 66c5..673d target-box draw fragment and original line rasterizer; isolated projected screen positions, no projection substitution in live bridge or live reachability claim'}

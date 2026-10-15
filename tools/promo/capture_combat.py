@@ -2,12 +2,13 @@
 """Finite ordinary-input original-PC enemy approach and magnified sight capture."""
 import argparse,hashlib,json,math,subprocess,sys
 from pathlib import Path
+from output_guard import guarded_output
 
 ROOT=Path(__file__).resolve().parents[2]
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--output',type=Path,required=True);a=ap.parse_args()
-    out=a.output.resolve();out.mkdir(exist_ok=False);source=ROOT/'artifacts/pc-source-boot-01/mission-entry/reference.state'
+    out=guarded_output(ap,a.output);out.mkdir(exist_ok=False);source=ROOT/'artifacts/pc-source-boot-01/mission-entry/reference.state'
     source_pins={str(p):sha(p) for p in [source,ROOT/'.runtime/pc-core/abrams-trace.dylib',ROOT/'tools/pc_bridge_host.py']}
     route=[];counter=0
     with (out/'host.log').open('w') as log:

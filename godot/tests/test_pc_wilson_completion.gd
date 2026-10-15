@@ -1,6 +1,7 @@
 extends SceneTree
 ## Source-fixture binding and bounded donor/alpha rendering, no emulator needed.
 const Frontend=preload("res://scripts/pc_frontend_art.gd")
+const MipReference=preload("res://tests/pc_mip_reference.gd")
 var checks:=0
 var errors:Array[String]=[]
 var native:=false
@@ -34,8 +35,6 @@ func bilinear(image:Image,uv:Vector2)->Color:
 	var b:=image.get_pixelv((at+Vector2i.DOWN).clamp(Vector2i.ZERO,limit)).lerp(image.get_pixelv((at+Vector2i.ONE).clamp(Vector2i.ZERO,limit)),f.x)
 	return a.lerp(b,f.y)
 
-func close_colour(a:Color,b:Color)->bool:
-	return absf(a.r-b.r)<=3.0/255.0 and absf(a.g-b.g)<=3.0/255.0 and absf(a.b-b.b)<=3.0/255.0
 
 func with_dialogue(source:Image,height:int)->Image:
 	var result:Image=source.duplicate()
@@ -83,17 +82,24 @@ func render(source:Image,label:String)->void:
 				if alpha>0.02 and alpha<0.98:
 					points.append(Vector2i(x,y));mixed_found=true;break
 			if mixed_found:break
+		# Premultiplied, mipmapped portrait: composite every candidate mip level.
+		check(portrait.has_mipmaps() and portrait.get_format()==Image.FORMAT_RGBA8,"premultiplied mipmapped portrait "+label)
+		var minified:float=maxf(portrait.get_width()/(float(rect[2])*2.0),portrait.get_height()/(float(rect[3])*2.0))
+		var levels:={}
 		for point in points:
 			var p:=(Vector2(point)+Vector2(0.5,0.5))/2
-			var expected:=bilinear(office,p/Vector2(320,200))
+			var under:=bilinear(office,p/Vector2(320,200))
+			var candidates:Array[Color]=[under]
 			var q:=(p-Vector2(rect[0],rect[1]))/Vector2(rect[2],rect[3])
 			if q.x>=0 and q.y>=0 and q.x<1 and q.y<1:
 				var fg:=bilinear(portrait,q)
 				if fg.a<0.001:stats.transparent+=1
 				elif fg.a>=0.98:stats.near_opaque+=1
 				else:stats.mixed_alpha+=1
-				expected=expected.lerp(Color(fg.r,fg.g,fg.b,1),fg.a)
-			check(close_colour(image.get_pixelv(point),expected),"exact authored donor/office bilinear alpha "+label+" "+str(point))
+				candidates.clear()
+				for level in MipReference.samples(portrait,q,minified,levels):
+					candidates.append(Color(under.r*(1.0-level.a)+level.r,under.g*(1.0-level.a)+level.g,under.b*(1.0-level.a)+level.b))
+			check(MipReference.inside(image.get_pixelv(point),candidates,3.0/255),"exact authored donor/office mip-filtered alpha "+label+" "+str(point))
 			stats.donor_samples+=1
 		check(stats.transparent>0 and stats.near_opaque>0 and stats.mixed_alpha>0,"transparent/near-opaque/edge alpha samples covered "+label)
 	check(image.save_png(output.path_join(label+".png"))==OK,"native image saved "+label)

@@ -1,5 +1,5 @@
 extends SceneTree
-## Exact output equivalence against the pre-reuse mapping loop. No GPU needed.
+## Exact output equivalence against a reference mapping traversal. No GPU needed.
 const Modern = preload("res://scripts/pc_modern_assets.gd")
 const Geometry = preload("res://scripts/pc_surface_geometry.gd")
 # This exhaustively executes both mapping implementations. Its wall-clock
@@ -24,6 +24,13 @@ func check(ok: bool, message: String) -> void:
 	checks += 1
 	if not ok and failures.size()<20: failures.append(message)
 
+# Order-insensitive facet content, so a reordering cannot hide a content change.
+func multiset(facets: Array) -> Array:
+	var out: Array = []
+	for facet in facets: out.append(var_to_bytes(facet).hex_encode())
+	out.sort()
+	return out
+
 func compare(art, object: Dictionary, polygon: Dictionary, camera: Dictionary, palette: Array, gate: bool, phase: float) -> void:
 	var input_bytes := var_to_bytes([object,polygon,camera,palette])
 	var expected := oracle_mapping(art,object,polygon,camera,palette,gate,phase)
@@ -31,6 +38,12 @@ func compare(art, object: Dictionary, polygon: Dictionary, camera: Dictionary, p
 	var observed: Array = art.mapping(object,polygon,camera,palette,gate,phase)
 	check(var_to_bytes(expected)==var_to_bytes(observed),"mapping bytes differ: shape=%s primitive=%s gate=%s phase=%s"%[object.shape_index,polygon.primitive,gate,phase])
 	check(reason==art.last_reason,"fallback reason changed")
+	# Opting out of the per-face presort changes order only, never content.
+	var unsorted_expected := oracle_mapping(art,object,polygon,camera,palette,gate,phase,false)
+	var unsorted: Array = art.mapping(object,polygon,camera,palette,gate,phase,false)
+	check(var_to_bytes(unsorted_expected)==var_to_bytes(unsorted),"catalogue-order mapping bytes differ: shape=%s primitive=%s"%[object.shape_index,polygon.primitive])
+	check(multiset(unsorted)==multiset(observed),"depth presort changed facet content")
+	check(reason==art.last_reason,"catalogue-order fallback reason changed")
 	check(input_bytes==var_to_bytes([object,polygon,camera,palette]),"mapping mutated input packet")
 	var repeated: Array = art.mapping(object,polygon,camera,palette,gate,phase)
 	check(var_to_bytes(expected)==var_to_bytes(repeated),"warm transformed-position cache changed mapping bytes")
@@ -39,7 +52,7 @@ func compare(art, object: Dictionary, polygon: Dictionary, camera: Dictionary, p
 func run() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	var art = Modern.new()
-	var catalog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-modern/catalog.json")))
+	var catalog: Dictionary = art.load_catalogue(directory)
 	check(art.configure(catalog),"production catalogue configure")
 	var source_corners := 0
 	var unique_positions := 0
@@ -124,6 +137,8 @@ func run() -> void:
 	for bad_points in [[],[[0,160,0],[0,160,0],[0,160,0],[0,160,0]],[[-40,160,-20],[40,160,-20],[40,160,20],[NAN,160,20]]]:
 		polygon.camera_vertices=bad_points
 		compare(probe,object,polygon,frame,Modern.PC_PALETTE,false,0.0)
+	same_shape_instances(probe)
+	rubber_running_gear()
 	var timings: Array = []
 	# Alternating measured order, identical corpus; warm both before measuring.
 	for round_index in 7:
@@ -173,9 +188,72 @@ func run() -> void:
 	print("PC_MODERN_MAPPING_REUSE: %s; %d checks; %d facets; %s"%["PASS" if failures.is_empty() else "FAIL",checks,compared_facets,JSON.stringify(timings)])
 	quit(0 if failures.is_empty() else 1)
 
-# Frozen pre-optimization traversal, copied from the before snapshot. Deliberately
-# retains repeated vec/transform_point calls, original sort and UV expressions.
-func oracle_mapping(art, object: Dictionary, polygon: Dictionary, frame: Dictionary, palette: Array, primitive_gate: bool = true, motion_anchor: float = NAN) -> Array:
+# Several same-shape actors in one pass hold separate position entries, so
+# alternating instances keep hitting; the cache stays within two generations.
+func same_shape_instances(probe) -> void:
+	probe.configure(probe_catalogue())
+	check(probe._positions.is_empty() and probe._retired_positions.is_empty(),"configure retained transformed positions")
+	var object := {"shape_index":115,"root":1}
+	var instances: Array = []
+	for offset in [0.0,100.0,-100.0]:
+		var points: Array = []
+		for raw: Array in [[-40,0,-20],[40,0,-20],[40,0,20],[-40,0,20]]: points.append([raw[0]+offset,160.0+offset*0.5,raw[2]])
+		instances.append({"primitive":10,"fill_mode":1,"camera_vertices":points})
+	var first: Array = []
+	for polygon: Dictionary in instances: first.append(var_to_bytes(probe.mapping(object,polygon,frame,Modern.PC_PALETTE,false,NAN)))
+	var hits: int = probe.position_cache_hits
+	var misses: int = probe.position_cache_misses
+	for round_index in 3:
+		for i in instances.size():
+			check(var_to_bytes(probe.mapping(object,instances[i],frame,Modern.PC_PALETTE,false,NAN))==first[i],"same-shape instance reused another instance's positions")
+	check(probe.position_cache_misses==misses and probe.position_cache_hits==hits+9,"same-shape instances evicted each other's positions")
+	# A frame field anchor_frame never reads (clip) shares positions exactly.
+	var clipped: Dictionary = frame.duplicate(true)
+	clipped.clip=[10,10,300,190]
+	compare(probe,object,instances[0],clipped,Modern.PC_PALETTE,false,NAN)
+	check(probe.position_cache_misses==misses,"unread frame field forced a position refit")
+	var bounded: Dictionary = instances[0].duplicate(true)
+	for i in Modern.POSITION_CACHE_LIMIT+8:
+		bounded.camera_vertices[0][0]=-40.0+float(i)/65536.0
+		probe.mapping(object,bounded,frame,Modern.PC_PALETTE,false,NAN)
+	check(probe._positions.size()<=Modern.POSITION_CACHE_LIMIT and probe._retired_positions.size()<=Modern.POSITION_CACHE_LIMIT,"position cache exceeded its two bounded generations")
+	check(var_to_bytes(probe.mapping(object,instances[1],frame,Modern.PC_PALETTE,false,NAN))==first[1],"generation turnover changed mapping bytes")
+
+func probe_catalogue() -> Dictionary:
+	return {"schema":1,"models":[{"shape_index":115,"roots":[{"offset":1,"group_pointers":[2]}],"groups":[{"offset":2,"primitive_pointers":[10]}],"source_primitives":{"10":[[-40,0,-20],[40,0,-20],[40,0,20],[-40,0,20]]},"triangles":[{"source_primitive":10,"vertices":[[-40,-4,-20],[40,-4,-20],[40,-4,20]],"color":[90,110,70]},{"source_primitive":10,"vertices":[[-40,-4,-20],[40,-4,20],[-40,-4,20]],"color":[90,110,70]}]}]}
+
+# BTR-70 tyres keep the rubber family whether the actor is static or moving;
+# a steel 'wheel' facet keeps the plain running-gear tag.
+func rubber_running_gear() -> void:
+	var catalogue := probe_catalogue()
+	catalogue.models[0].shape_index=137
+	var wheel := {"kind":"wheel","center":[0,-4,0],"radius":20}
+	catalogue.models[0].triangles[0].material="tyre"
+	catalogue.models[0].triangles[0].motion=wheel
+	catalogue.models[0].triangles[1].material="wheel"
+	catalogue.models[0].triangles[1].motion=wheel
+	var gear = Modern.new()
+	check(gear.configure(catalogue),"rubber running-gear fixture accepted")
+	var object := {"shape_index":137,"root":1,"dynamic_instance":true,"pointer":5}
+	var polygon := {"primitive":10,"fill_mode":1,"camera_vertices":[[-40,160,-20],[40,160,-20],[40,160,20],[-40,160,20]]}
+	var expected := {Modern.EQUIPMENT_RUBBER:20.25390625,Modern.realism_kind("wheel",20.0):20.25}
+	for phase in [NAN,0.0,37.25]:
+		var facets: Array = gear.mapping(object,polygon,frame,Modern.PC_PALETTE,false,phase,false)
+		check(facets.size()==2,"rubber running-gear facets mapped")
+		var kinds: Array = []
+		for facet: Dictionary in facets: kinds.append(facet.kind)
+		var wanted: Array = expected.keys() if is_nan(phase) else expected.values()
+		check(kinds==wanted,"tyre/wheel running-gear kinds %s at phase %s"%[kinds,phase])
+		for facet: Dictionary in facets:
+			for point: Array in facet.points: check(point.size()==5,"running-gear facets carry surface or wheel-mark coordinates")
+		compare(gear,object,polygon,frame,Modern.PC_PALETTE,false,phase)
+
+# Reference traversal, not a frozen copy: it started from the pre-optimization
+# loop and is maintained to mirror the current material-tag coordinates, the
+# rubber running-gear rule and the depth_presort contract. It deliberately keeps
+# repeated vec/transform_point calls and per-vertex UV expressions, so it checks
+# the optimized reuse paths, not the shipped catalogue rules themselves.
+func oracle_mapping(art, object: Dictionary, polygon: Dictionary, frame: Dictionary, palette: Array, primitive_gate: bool = true, motion_anchor: float = NAN, depth_presort: bool = true) -> Array:
 	art.last_reason = "unsupported source face"
 	if not art.ready or not Modern.supported_palette(palette): return []
 	var shape := int(object.get("shape_index",-1))
@@ -197,12 +275,23 @@ func oracle_mapping(art, object: Dictionary, polygon: Dictionary, frame: Diction
 		var kind: float=float(triangle.get("structure_kind",20.0))
 		var motion: Dictionary=triangle.get("motion",{})
 		if is_finite(motion_anchor):
-			if motion.get("kind","")=="wheel": kind=20.25
+			# Rubber tyres keep realism family 6 at both triangle and corner level.
+			if motion.get("kind","")=="wheel": kind=20.25390625 if kind==Modern.EQUIPMENT_RUBBER or (kind>=24.0 and kind<28.0 and int(round(fmod(kind,1.0)*64.0))==6) else 20.25
 			elif motion.get("kind","")=="track": kind=20.125
 		for raw: Array in triangle.vertices:
 			var point := Modern.transform_point(Modern.vec(raw),fit)
 			var vertex: Array=[point.x,point.y,point.z]
-			if kind==Modern.HIND_PAINT:
+			# Mirrors the material-tag surface coordinates in pc_modern_assets.gd:
+			# realism/texture/architecture tags decode to their incumbent kind.
+			var axis := int(triangle.structure_axis)
+			var base_kind: float=Modern.architecture_base_kind(kind)
+			if (kind>=24.0 and kind<28.0 and base_kind==20.0) or kind==Modern.TEXTURE_PAINT:
+				vertex.append_array([float(raw[1]) if axis==0 else float(raw[0]),float(raw[1]) if axis==2 else float(raw[2])])
+			elif kind==Modern.ARCH_DOOR:
+				vertex.append_array([float(raw[1]) if axis==0 else float(raw[0]),float(raw[2])])
+			elif kind in [Modern.EQUIPMENT_VENT,Modern.EQUIPMENT_CANVAS,Modern.EQUIPMENT_RUBBER,Modern.GLAZING]:
+				vertex.append_array([float(raw[1]) if axis==0 else float(raw[0]),float(raw[1]) if axis==2 else float(raw[2])])
+			elif kind==Modern.HIND_PAINT:
 				# Original object-local longitudinal/height coordinates. Both rotor
 				# states share the livery; camera movement and rebases cannot slide it.
 				vertex.append_array([float(raw[1]),float(raw[2])])
@@ -210,9 +299,9 @@ func oracle_mapping(art, object: Dictionary, polygon: Dictionary, frame: Diction
 				# Oblique local projection joins roof and side patches without
 				# screen/world-space sliding or seams between owning source faces.
 				vertex.append_array([float(raw[1])+float(raw[0])*.45,float(raw[2])+float(raw[0])*.25])
-			elif kind>20.3:
+			elif base_kind>20.3:
 				# Mirrors the F064 roof-grain fix in pc_modern_assets.gd: roofs (>=20.4) use both horizontal axes.
-				vertex.append_array([float(raw[0]) if int(triangle.structure_axis)==1 or kind>=20.4 else float(raw[1]),float(raw[2]) if kind<20.4 else float(raw[1])])
+				vertex.append_array([float(raw[0]) if axis==1 or base_kind>=20.4 else float(raw[1]),float(raw[2]) if base_kind<20.4 else float(raw[1])])
 			elif kind>20.2:
 				var center: Vector3=Modern.vec(motion.center)
 				var radius: float=float(motion.radius)
@@ -223,7 +312,7 @@ func oracle_mapping(art, object: Dictionary, polygon: Dictionary, frame: Diction
 			transformed.append(vertex)
 			depth += point.y
 		ordered.append({"points":transformed,"color":triangle.color,"depth":depth,"kind":kind})
-	ordered.sort_custom(func(a,b): return a.depth>b.depth)
+	if depth_presort: ordered.sort_custom(func(a,b): return a.depth>b.depth)
 	var result: Array = []
 	for triangle: Dictionary in ordered:
 		var clipped := Modern.clip_to_source(triangle.points,points,frame) if primitive_gate else Geometry.triangle_vertices(triangle.points,frame)

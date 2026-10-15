@@ -14,11 +14,13 @@ from unicorn import UC_HOOK_INSN, UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE
 from unicorn.x86_const import (UC_X86_INS_OUT, UC_X86_REG_CS, UC_X86_REG_DS, UC_X86_REG_ES,
     UC_X86_REG_SS, UC_X86_REG_SP, UC_X86_REG_BP, UC_X86_REG_DX, UC_X86_REG_AX, UC_X86_REG_EFLAGS)
 try:
+    from tools.source_guard import inside_source
     from tools.pc_bearing_oracle import cpu,set_registers,run_until
     from tools.pc_live_state import SimStateReader,SIM_SHA256
     from tools.pc_fonts import FONT_NAMES,decode_font,loaded_font
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from pc_bearing_oracle import cpu,set_registers,run_until
     from pc_live_state import SimStateReader,SIM_SHA256
     from pc_fonts import FONT_NAMES,decode_font,loaded_font
@@ -104,4 +106,5 @@ def verify(ram):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--capture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    if inside_source(a.output,ROOT): p.error('output must be outside original sources')
     result=verify(a.capture.read_bytes());a.output.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))

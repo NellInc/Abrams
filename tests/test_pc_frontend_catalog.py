@@ -5,6 +5,7 @@ import unittest
 from PIL import Image
 
 from tools.build_pc_frontend_catalog import build, compose, motor_pool, arming_panel, information, PALETTE
+from tests._inputs import requires
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -17,6 +18,7 @@ class FrontendCatalogTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'outside'):
             compose([2]*64000,{'width':8,'height':1,'pixels':[1]*8},319,0)
 
+    @requires('GAME')
     def test_exact_native_office_prefixes(self):
         data=build(ROOT/'GAME')
         fixtures=ROOT/'artifacts/pc-live-type-lifecycle-01'
@@ -38,6 +40,7 @@ class FrontendCatalogTests(unittest.TestCase):
         payload=(json.dumps(build(ROOT/'GAME'),indent=2)+'\n').encode()
         self.assertEqual(payload,local.read_bytes())
 
+    @requires('GAME')
     def test_motor_pool_catalog_is_exact_pinned_original_indices(self):
         import base64
         from tools.inspect_scenarios import decode_resource
@@ -48,6 +51,7 @@ class FrontendCatalogTests(unittest.TestCase):
         local=ROOT/'local-art/pc-motor-pool-v1/motor-pool.json'
         self.assertEqual((json.dumps(data,indent=2)+'\n').encode(),local.read_bytes())
 
+    @requires('GAME')
     def test_clipboard_geometry_is_original_and_loaded_planes_match(self):
         import base64
         from tools.inspect_scenarios import decode_resource
@@ -61,6 +65,7 @@ class FrontendCatalogTests(unittest.TestCase):
         ram=ROOT/'artifacts/pc-motor-pool-loader-diagnostic-01/boot-21.bin'
         if ram.exists():self.assertEqual(verify_loaded(ram.read_bytes(),sprite)['pixels_checked'],9944)
 
+    @requires('GAME')
     def test_information_sources_and_native_loaded_planes(self):
         data=information(ROOT/'GAME',ROOT/'artifacts/pc-information-baseline-02')
         local=ROOT/'local-art/pc-information-v3/information.json'
@@ -94,6 +99,7 @@ class FrontendCatalogTests(unittest.TestCase):
         self.assertEqual(route,json.loads((ROOT/'godot/tests/fixtures/pc_information_steps.json').read_text()))
         self.assertEqual([s['label'] for s in route if s['label'] in INFORMATION_PAGES],list(INFORMATION_PAGES))
 
+    @requires('local-art')
     def test_information_text_matches_every_original_font_bit(self):
         from tools.pc_fonts import decode_font,text_pixels
         data=json.loads((ROOT/'local-art/pc-information-v3/information.json').read_text())

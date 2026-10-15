@@ -1,7 +1,9 @@
 extends Control
 ## Genesis illustrations registered into verified original-PC instrument cells.
 ## No values, states or visibility are inferred from the remastered artwork.
-const SOURCE_HASH = "83e46895044a85a4e3abdd8daf836605a40cbb475c02fe2c8b3fe0664da9e036"
+# Plates are decoded from the player's verified GAME files (desktop builder or
+# browser import), so pins cover decoded RGB8 pixels, not one PNG encoder.
+const SOURCE_HASH = "cd54a3984a855a804a08a32833c2ca694e73f42bd643943d365ad5be710e66ed"
 # Source rectangles are PC coordinates. Donor rectangles are measured pixels
 # in the Genesis-derived 1586x992 illustration, never guessed gameplay values.
 const CELLS = [
@@ -40,10 +42,10 @@ var gauges: Array[Dictionary] = []
 var plates: Dictionary = {}
 var orientation = preload("res://scripts/pc_orientation_art.gd").new()
 const PLATES = {
-	1:["gps-bin","83e46895044a85a4e3abdd8daf836605a40cbb475c02fe2c8b3fe0664da9e036"],
-	2:["tc-bin","c6c3691fc37cb6e7856e7f8f15ea1997facce823ecd724a89176226ee0b26b98"],
-	4:["driver-bin","914d1605f7afa79f293e666a29e81d6c001cac41e0f89d14897c3ec61fecf32b"],
-	5:["status-bin","0ab4bd6ad016bad0c1a6ce5993a5e016705f5f2fee651b9173ab6702b628385e"]}
+	1:["gps-bin","cd54a3984a855a804a08a32833c2ca694e73f42bd643943d365ad5be710e66ed"],
+	2:["tc-bin","2bd471a10f3f4be5ed1e000c25fe6c9f3a49a03be56a1573042197b0473d1035"],
+	4:["driver-bin","1820a92890db60d3cd4b091030d3e69e59b0285e244e30993810da295e9eb790"],
+	5:["status-bin","834d450f9084b685f37c85d5d032299cf88ef6242eb8fa966e5ac0d4e41129ae"]}
 # Six-row strips are proved by the original line rasterizer, not an inclusive
 # interpretation of its (y,y+6) arguments. All rectangles are source pixels.
 const BARS = [
@@ -90,10 +92,9 @@ func load_sources(root: String, art: Image, commander: Image = null) -> bool:
 	donor = null
 	commander_donor = null
 	plates.clear()
-	var path := root.path_join("local-art/pc-ui-v2/gps-bin.png")
-	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=SOURCE_HASH: return false
 	if art==null or art.get_size()!=Vector2i(1586,992): return false
-	source_plate = Image.load_from_file(path)
+	source_plate = load_plate(root.path_join("local-art/pc-ui-v2/gps-bin.png"),SOURCE_HASH)
+	if source_plate==null: return false
 	_load_pc_rounds()
 	donor = ImageTexture.create_from_image(art)
 	if commander!=null and commander.get_size()==Vector2i(1586,992):
@@ -101,10 +102,19 @@ func load_sources(root: String, art: Image, commander: Image = null) -> bool:
 	# A missing station source disables just its dynamic instruments.
 	for id in PLATES:
 		var entry: Array = PLATES[id]
-		var plate_path := root.path_join("local-art/pc-ui-v2/"+entry[0]+".png")
-		if FileAccess.file_exists(plate_path) and FileAccess.get_sha256(plate_path)==entry[1]:
-			plates[id] = Image.load_from_file(plate_path)
+		var plate := load_plate(root.path_join("local-art/pc-ui-v2/"+entry[0]+".png"),entry[1])
+		if plate!=null: plates[id] = plate
 	return true
+
+static func load_plate(path: String, pixel_sha256: String) -> Image:
+	if not FileAccess.file_exists(path): return null
+	var image := Image.load_from_file(path)
+	if image==null or image.get_size()!=Vector2i(320,200): return null
+	image.convert(Image.FORMAT_RGB8)
+	var digest := HashingContext.new()
+	digest.start(HashingContext.HASH_SHA256)
+	digest.update(image.get_data())
+	return image if digest.finish().hex_encode()==pixel_sha256 else null
 
 func load_pc_sources(root: String) -> bool:
 	# Tactical's geometry needs the original PC guards, never optional donor art.
@@ -113,9 +123,8 @@ func load_pc_sources(root: String) -> bool:
 	source_plate=null
 	for id in PLATES:
 		var entry: Array=PLATES[id]
-		var path:=root.path_join("local-art/pc-ui-v2/"+entry[0]+".png")
-		if FileAccess.file_exists(path) and FileAccess.get_sha256(path)==entry[1]:
-			plates[id]=Image.load_from_file(path)
+		var plate:=load_plate(root.path_join("local-art/pc-ui-v2/"+entry[0]+".png"),entry[1])
+		if plate!=null: plates[id]=plate
 	source_plate=plates.get(1)
 	return source_plate!=null
 

@@ -126,7 +126,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if unicorn.__version__ != '2.1.4': raise ValueError('pinned Unicorn 2.1.4 required')
-    if inside_source(args.output, ROOT, ('GAME',)): parser.error('output must be outside original GAME')
+    if inside_source(args.output, ROOT): parser.error('output must be outside original sources')
     result = run(args.capture.read_bytes())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + '\n')

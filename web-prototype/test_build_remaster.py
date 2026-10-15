@@ -2,7 +2,9 @@
 import ast
 import importlib.util
 import json
+import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -92,24 +94,69 @@ class GeneratedBuildTests(unittest.TestCase):
         with patch.object(assets.shutil, 'copy2', copy), self.assertRaisesRegex(SystemExit, 'candidate changed'): self.install()
         self.unchanged()
     def setup_assets(self):
-        control = self.root / 'tools/package/allowlist.json'; control.parent.mkdir(parents=True); control.write_text('{}')
-        paths = [self.root / 'local-art/a.png', self.root / 'local-art/b.png']
+        paths = [self.root / 'local-art/a.png', self.root / 'local-art/b.png', self.root / 'local-art/c.json']
         paths[0].parent.mkdir()
         for path in paths: path.write_bytes(b'full resolution authored payload')
         return paths
-    def test_asset_catalog_matches_stored_zip_entries(self):
-        paths = self.setup_assets(); target = self.root / 'private-assets'
-        with patch.object(assets, 'ROOT', self.root), patch.object(assets, 'selected', return_value=iter(paths)) as select:
-            select.side_effect = lambda: iter(paths)
-            inputs = assets.stage_assets(target)
+    def test_asset_catalog_matches_zip_entries_and_rebuilds_identically(self):
+        paths = self.setup_assets()
+        def build(target):
+            with patch.object(assets, 'ROOT', self.root), patch.object(assets, 'selected', side_effect=lambda: iter(paths)):
+                return assets.stage_assets(target)
+        inputs = build(self.root / 'private-assets')
         catalog = json.loads(inputs['remaster-assets.json'].read_text())
-        self.assertEqual(len(catalog['files']), 2)
+        self.assertEqual(catalog['schema'], 3)
+        self.assertEqual(len(catalog['files']), 3)
+        self.assertEqual({row['set'] for row in catalog['files'] + catalog['parts']}, {'common'})
         for part in catalog['parts']:
             archive = inputs[part['name']]; self.assertEqual(assets.fingerprint(archive)[-1], part['sha256']); self.assertEqual(archive.stat().st_size, part['bytes'])
             with zipfile.ZipFile(archive) as z:
                 for info in z.infolist():
-                    self.assertEqual(info.compress_type, zipfile.ZIP_STORED)
+                    # Text deflates; images stay stored. Entry metadata is fixed.
+                    self.assertEqual(info.compress_type, zipfile.ZIP_DEFLATED if info.filename.endswith('.json') else zipfile.ZIP_STORED)
+                    self.assertEqual(info.date_time, (1980, 1, 1, 0, 0, 0))
                     self.assertEqual(z.read(info), (self.root / info.filename).read_bytes())
+        for path in paths: os.utime(path, (1, 1))  # A touch alone must not change parts.
+        again = build(self.root / 'rebuilt-assets')
+        self.assertEqual({n: p.read_bytes() for n, p in inputs.items()}, {n: p.read_bytes() for n, p in again.items()})
+
+    def test_part_plan_keeps_other_families_stable(self):
+        rows = [(f'local-art/big-{f}/{i:02d}.png', 'common', 3_000_000) for f in 'ab' for i in range(4)]
+        rows += [('local-art/genesis/x.png', 'genesis', 9_000_000), ('branding/cover.png', 'common', 1000)]
+        before = assets.plan_parts(rows)
+        after = assets.plan_parts(rows + [('local-art/big-a/00a.png', 'common', 3_000_000)])
+        unchanged = [part for part in before if 'local-art/big-a/00.png' not in part[1]]
+        for part in unchanged: self.assertIn(part, after)
+        self.assertEqual([kind for kind, _ in before], sorted((kind for kind, _ in before), key=lambda k: k != 'common'))
+        self.assertTrue(all(len({name.split('/')[1] for name in names}) == 1 or kind == 'common' for kind, names in before))
+
+    def test_publication_entries_are_exact_and_reviewed(self):
+        data = assets.publication()
+        name, row = next(iter(data['files'].items()))
+        path = assets.ROOT / name
+        if not path.is_file(): self.skipTest('requires local authored assets')
+        changed = dict(data, files={name: dict(row, sha256='0' * 64)})
+        with patch.object(assets, 'publication', return_value=changed):
+            with self.assertRaisesRegex(SystemExit, 'differs from its reviewed entry'): list(assets.selected())
+        # The private desktop allowlist (with GAME files and decodes) is never consulted.
+        self.assertNotIn('allowlist.json', Path(assets.__file__).read_text().split('def selected')[1].split('def asset_set')[0])
+
+    def test_publication_update_refuses_decodes(self):
+        sys.path.insert(0, str(assets.ROOT))
+        from tools.package.git_boundary import decoded_payload
+        self.assertEqual(decoded_payload(b'{"images": [{"pixels": [1]}]}'), 'pixels')
+        self.assertIsNone(decoded_payload(b'{"rects": [[1, 2, 3, 4]]}'))
+        control = self.root / 'web-publication.json'
+        decoded = self.root / 'local-art/faces.json'; decoded.parent.mkdir(parents=True); decoded.write_text('{"pixels": [1]}')
+        control.write_text(json.dumps({'schema': 1, 'files': {'local-art/faces.json': {'set': 'common', 'sha256': '0' * 64}},
+                                       'decoded_denylist': {}, 'exceptions': {}, 'historical_publications': {}}))
+        with patch.object(assets, 'ROOT', self.root), patch.object(assets, 'PUBLICATION', control):
+            with self.assertRaisesRegex(SystemExit, 'decoded original data'): assets.update_publication()
+        self.assertIn('"0000', control.read_text())
+
+    def test_godot_preset_never_exports_capture_artifacts(self):
+        preset = (assets.ROOT / 'godot/export_presets.cfg').read_text()
+        self.assertEqual(len(re.findall(r'^\[preset\.\d+\]$', preset, re.M)), len(re.findall(r'^exclude_filter=".*artifacts/\*.*"$', preset, re.M)))
     def test_asset_read_failure_preserves_normal_outputs_and_closes_archive(self):
         paths = self.setup_assets(); original = Path.read_bytes
         def read(path):

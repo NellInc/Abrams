@@ -1,5 +1,8 @@
 {
   "schema": 1,
   "source_revision": "73e03aa145e0549ed4d5a20f8e65532714da33f5",
-  "wasm_sha256": "0d7e1b9b89b60fc49a10ab17906b42fee7704f858e2a19605626d61ca1db882c"
+  "wasm_sha256": "c84edcbc036b09e510fda60df020c522d529bcf044f260e4ddc28d0f7cc06c2f",
+  "text_event_schema": 3,
+  "message_event_schema": 2,
+  "strut_event_schema": 2
 }

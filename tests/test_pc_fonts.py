@@ -3,6 +3,7 @@ from pathlib import Path
 import struct
 import unittest
 from tools.pc_fonts import decode_font, loaded_font, rendered_glyph, text_pixels
+from tests._inputs import requires
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -23,6 +24,7 @@ class FontTests(unittest.TestCase):
                     bytes([1,1,255,2,128,128]),bytes([1,1,32,0]),bytes([1,1,32,1]),bytes([1,1,32,1,0,0])):
             with self.subTest(raw=raw),self.assertRaises(ValueError): decode_font(raw)
 
+    @requires('GAME')
     def test_original_signed_rejection_in_supplied_font(self):
         font=decode_font((ROOT/'GAME/8X8.FNT').read_bytes())
         self.assertEqual((font['first'],font['count']),(32,105))
@@ -32,6 +34,7 @@ class FontTests(unittest.TestCase):
             with self.subTest(text=text),self.assertRaises(ValueError): text_pixels(font,text)
         with self.assertRaises(ValueError): rendered_glyph(font,256)
 
+    @requires('GAME')
     def test_loaded_font_identity_and_aliases(self):
         raw=(ROOT/'GAME/6X6.FNT').read_bytes();ram=bytearray(640*1024);ds=4096
         for at,v in zip((0x364E,0x3662,0x3676,0x368A),raw[:4]): ram[ds+at]=v
@@ -54,6 +57,7 @@ class FontTests(unittest.TestCase):
         self.assertEqual((decode_font((ROOT/'GAME/8X6.FNT').read_bytes())['width'],
                           decode_font((ROOT/'GAME/8X6.FNT').read_bytes())['height']),(8,8))
 
+    @requires('reference')
     def test_printable_genesis_stencil_matches_original_pc_face(self):
         from tools.extract_genesis_vdp import VDP
         capture=VDP(ROOT/'reference/genesis/graphics-ammo-pages-01/ax')

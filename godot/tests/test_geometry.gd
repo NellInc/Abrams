@@ -11,7 +11,11 @@ func _initialize() -> void:
 			quit(1)
 			return
 	# Placement is seeded: these counts change if the RNG draw order before or during placement changes.
-	if land.get_child(1).multimesh.instance_count != 287 or land.get_child(2).multimesh.instance_count != 287 or land.get_child(3).multimesh.instance_count != 3181:
+	# Children 1-4 are trunks, broadleaf crowns, grass clumps and conifer crowns; every tree has one trunk.
+	var trunks: int = land.get_child(1).multimesh.instance_count
+	var broadleaf: int = land.get_child(2).multimesh.instance_count
+	var conifers: int = land.get_child(4).multimesh.instance_count
+	if trunks != 828 or broadleaf != 539 or conifers != 289 or broadleaf + conifers != trunks or land.get_child(3).multimesh.instance_count != 28484:
 		printerr("FAIL: seeded tree/grass placement changed")
 		quit(1)
 		return

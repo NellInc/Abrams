@@ -132,6 +132,21 @@ class SyntheticGraphicsTests(unittest.TestCase):
         self.vdp.vsram = bytes(raw)
         self.assertEqual(self.vdp.export(self.root / "scroll")["compositor"], "unsupported")
 
+    def test_window_stride_follows_h40_and_h32(self):
+        self.vdp.reg = self.vdp.reg[:3] + bytes([0x36]) + self.vdp.reg[4:]  # window base with WD11 set
+        h40 = self.vdp.export(self.root / "h40")
+        self.assertEqual((h40["display_mode"], h40["planes"]["window"]), ("H40", 0x34 << 10))  # WD11 ignored
+        with Image.open(self.root / "h40/window.png") as window:
+            self.assertEqual(window.size, (64 * 8, 32 * 8))
+        self.vdp.reg = self.vdp.reg[:12] + bytes([0]) + self.vdp.reg[13:]  # H32: RS0/RS1 clear
+        h32 = self.vdp.export(self.root / "h32")
+        self.assertEqual(h32["compositor"], "unsupported")
+        self.assertTrue(h32["display_mode"].startswith("H32"))
+        self.assertEqual(h32["planes"]["window"], 0x36 << 10)  # WD11 is significant in H32
+        with Image.open(self.root / "h32/window.png") as window:
+            self.assertEqual(window.size, (32 * 8, 32 * 8))
+        self.assertEqual(h32["capture"], self.root.name)  # outside the checkout: no absolute path recorded
+
 
 class LocalOriginalGraphicsTests(unittest.TestCase):
     @unittest.skipUnless((ROOT / "reference/genesis/graphics-crew-02/crew-settled").exists(), "Requires local reference capture")

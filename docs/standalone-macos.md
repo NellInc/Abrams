@@ -22,15 +22,15 @@ source files unchanged. Genesis alone cannot run the game.
 
 | Available content | Presentation |
 | --- | --- |
-| PC only | EGA, PC-only Upscaled, Modern and Tactical when included, high-resolution lettering/world rendering, generated speech and synthesized gameplay sounds. PC graphics remain where Genesis assets would be used. |
-| PC and Genesis | Also enables Genesis mode, Genesis-based remastered artwork and frontend music. |
+| PC only | EGA, EGA Upscaled, Genesis Upscaled (with PC graphics where Genesis-based artwork would be used), Modern and Tactical when included, high-resolution lettering/world rendering, generated speech and synthesized gameplay sounds. PC graphics remain where Genesis assets would be used. |
+| PC and Genesis | The import derives the Genesis palette, effects, ending newspapers and destroyed-tank plates from your verified ROM into the profile (the ROM is not copied) and enables the Genesis-based remastered artwork. In app builds made after 15 October 2026, Genesis graphics mode, the Genesis map frame and clipboard (which need captured Genesis screens) and the remastered frontend music (Genesis percussion samples without established redistribution rights) are not included; Alpha 4 predates this change. |
 
-Use **Cmd+S** to save, **Cmd+L** to load, **Cmd+Shift+L** to undo a load and
+Use **Cmd+S** to save (press again within four seconds to overwrite an occupied slot 1), **Cmd+L** to load, **Cmd+Shift+L** to undo a load and
 **Cmd+G** to cycle the available graphics modes. The **Session** menu contains all
-five slots and fast-forward speeds; **Audio** controls the mix.
+five slots and normal/8x fast forward; **Audio** controls the mix.
 Choose **Graphics → Tactical** for the Calibration Range-inspired 3D scene, or
 **Modern** for its original refined low-poly palette. Choose **Graphics → HUD Style → Tactical** for the modern olive interface, or **Restored** for the original cockpit treatment. HUD Style is independent of graphics mode.
-On a verified Gunner frame, Tactical HUD enlarges the original optic into a 16:9 field layout and places its five live instruments below it. Other stations retain their complete original framing. Both 3D graphics profiles keep the source camera and gameplay unchanged.
+On verified Gunner, Commander, Cupola, Driver and Systems Status frames, Tactical HUD uses a reflowed 16:9 layout (an enlarged optic or view, with live instruments and panels rearranged). Any frame or overlay that cannot be verified keeps the complete original 4:3 framing. Tactical HUD applies in Genesis Upscaled, Modern and Tactical only; EGA, EGA Upscaled and Genesis frames are never restyled. See [graphics modes](graphics-modes.md) for the per-station details. Both 3D graphics profiles keep the source camera and gameplay unchanged.
 
 ### If installation stops
 
@@ -74,6 +74,8 @@ bundle itself is never used for saves, caches or Godot imports.
 
 For an independent profile, set `ABRAMS_DATA_HOME` to an absolute directory, or
 run `"M1 Abrams Battle Tank Fan Remaster.app/Contents/MacOS/Abrams" --data-home /absolute/profile/path`.
+The path must be absolute and outside the application (miscased paths into the app
+are refused too), and every setup request inherits it.
 Do not run two game instances against one profile. Close the game window before
 quitting the launcher, so the original simulation can close its campaign disk.
 Godot audio preferences retain the existing separate `user://` location.

@@ -14,12 +14,14 @@ from unicorn import UC_HOOK_INSN, UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE
 from unicorn.x86_const import (UC_X86_INS_OUT, UC_X86_REG_CS, UC_X86_REG_IP, UC_X86_REG_DS,
     UC_X86_REG_ES, UC_X86_REG_SS, UC_X86_REG_SP, UC_X86_REG_EFLAGS)
 try:
+    from tools.source_guard import inside_source
     from tools.pc_bearing_oracle import cpu, set_registers, run_until
     from tools.pc_live_state import SimStateReader, SIM_SHA256
     from tools.pc_bitmaps import decode_bitmaps, verify_loaded_effects
     from tools.inspect_scenarios import decode_resource
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from pc_bearing_oracle import cpu, set_registers, run_until
     from pc_live_state import SimStateReader, SIM_SHA256
     from pc_bitmaps import decode_bitmaps, verify_loaded_effects
@@ -125,6 +127,7 @@ def main():
     parser.add_argument('--capture', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    if inside_source(args.output,ROOT): parser.error('output must be outside original sources')
     raw = args.capture.read_bytes()
     result = verify(raw) | {'sim_sha256': SIM_SHA256, 'capture_sha256': hashlib.sha256(raw).hexdigest(),
         'scope': 'original bitmap instructions and loaded pixels/masks; bounded mode-0/mode-2 VGA observer'}

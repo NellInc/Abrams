@@ -9,12 +9,14 @@ from pathlib import Path
 from PIL import Image
 
 try:
+    from tools.source_guard import inside_source
     from tools.extract_genesis_effects import ROM_HASH, decode_effects
     from tools.inspect_scenarios import decode_resource
     from tools.inspect_shapes import inspect_shapes
     from tools.pc_bitmaps import decode_bitmaps
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from extract_genesis_effects import ROM_HASH, decode_effects
     from inspect_scenarios import decode_resource
     from inspect_shapes import inspect_shapes
@@ -112,6 +114,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
+    if inside_source(args.output,ROOT): p.error('output must be outside original sources')
     result = inventory()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + '\n')

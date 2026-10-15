@@ -8,12 +8,14 @@ import struct
 import unicorn
 from unicorn.x86_const import UC_X86_REG_CS,UC_X86_REG_DS,UC_X86_REG_ES,UC_X86_REG_SS,UC_X86_REG_SP,UC_X86_REG_BP,UC_X86_REG_EFLAGS
 try:
+    from tools.source_guard import inside_source
     from tools.pc_vehicle_catalog import ROOT,DATA,TABLE,STRIDE,COUNT,VARIANTS,source_catalog,verify_live
     from tools.pc_bearing_oracle import cpu,set_registers,run_until
     from tools.pc_live_state import SimStateReader
     from tools.unpack_pc_executables import unpack
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
+    from source_guard import inside_source
     from pc_vehicle_catalog import ROOT,DATA,TABLE,STRIDE,COUNT,VARIANTS,source_catalog,verify_live
     from pc_bearing_oracle import cpu,set_registers,run_until
     from pc_live_state import SimStateReader
@@ -55,4 +57,5 @@ def verify(ram):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--capture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    if inside_source(a.output,ROOT): p.error('output must be outside original sources')
     result=verify(a.capture.read_bytes());a.output.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))

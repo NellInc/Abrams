@@ -44,11 +44,17 @@ func run()->void:
 				check(mismatch==0,"complete exact original map geometry at "+str(scale)+"x")
 			view.remove_child(art);root.add_child(art);view.queue_free()
 	var folder:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	# Native renders go to their own output tree, never into the retained capture inputs.
+	var args:=OS.get_cmdline_user_args()
+	var output:String=args[args.find("--output")+1] if "--output" in args and args.find("--output")+1<args.size() else folder.path_join("artifacts/pc-dynamic-map-native")
+	if "--native" in args:check(DirAccess.make_dir_recursive_absolute(output)==OK,"native output writable: "+output)
 	for name in ["overview","local"]:
 		var capture:= "live-integration" if "--integrated" in OS.get_cmdline_user_args() else "live-trace"
 		var path:=folder.path_join("artifacts/finish-20260928/maps/"+capture+"/"+name)
-		if not FileAccess.file_exists(path+".json"):
-			check("--live" not in OS.get_cmdline_user_args(),"required live fixture available: "+name)
+		if not FileAccess.file_exists(path+".json") or not FileAccess.file_exists(path+".png"):
+			# A missing capture is never a pass: --live (the gate) fails, other runs say SKIP.
+			if "--live" in OS.get_cmdline_user_args():check(false,"required live fixture available: "+path)
+			else:print("SKIP: actual source map packet checks need "+path+".json/.png")
 			continue
 		var fixture=JSON.parse_string(FileAccess.get_file_as_string(path+".json"))
 		var live:Dictionary=fixture.get("presentation",fixture)
@@ -68,7 +74,7 @@ func run()->void:
 					for x in image.get_width():
 						if image.get_pixel(x,y).to_rgba32()!=original.get_pixel(x/scale,y/scale).to_rgba32():mismatch+=1
 				check(mismatch==0,"actual map + all protected pixels remain exact at "+str(scale)+"x")
-				if scale==4:image.save_png(folder.path_join("artifacts/finish-20260928/maps/native/dynamic-"+name+"-4x.png"))
+				if scale==4:check(image.save_png(output.path_join("dynamic-"+name+"-4x.png"))==OK,"native map image saved: "+name)
 			view.remove_child(art);root.add_child(art);view.queue_free()
 	art.queue_free()
 	for error in errors:printerr("FAIL: "+error)

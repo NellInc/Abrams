@@ -14,6 +14,12 @@ import json
 from pathlib import Path
 import struct
 
+try:
+    from tools.source_guard import recorded
+except ModuleNotFoundError as error:
+    if error.name != 'tools': raise
+    from source_guard import recorded
+
 ROOT = Path(__file__).resolve().parents[1]
 ROM_HASH = "ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea"
 DIRECTORY = 0x4DC98
@@ -388,7 +394,7 @@ def export_models(rom_path: Path, capture: Path, output: Path) -> dict:
             (output / name).write_text(obj(model, pose, "source-materials.mtl"))
             model["files"].append(name)
         (output / f"shape-{model['index']:03d}.json").write_text(json.dumps(model, indent=2) + "\n")
-    catalog.update(materials=materials, palette_capture=str(capture), palette_bank=3,
+    catalog.update(materials=materials, palette_capture=recorded(capture, ROOT), palette_bank=3,
                    palette_receipt_sha256=hashlib.sha256((capture / "receipt.json").read_bytes()).hexdigest(),
                    material_scope="Ordinary CC6 translation and palette bank 3; other source modes are not selected. OBJ materials average the two native pattern rows.",
                    scope="Local editable source references, not remastered art or live visibility. Original commands and omitted circles retained. No redistribution permission.")

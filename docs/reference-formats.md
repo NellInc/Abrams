@@ -146,9 +146,15 @@ followed by `ffff` at decoded `0178`. The first offset is `017a` (378), exactly 
 end of the directory. Subsequent starts include `0255`, `0330`, `03a6`. The last
 record begins at `8400` (33792) and occupies 38 bytes to EOF (33830).
 
-**Structurally verified:** directory boundaries and record extents. **Unverified:**
-vertex format, polygon commands, color indices, units, and the relation to WLD
-values. A renderer must not interpret these extents as fully decoded meshes.
+**Structurally verified:** directory boundaries and record extents.
+**Original-CPU verified:** vertex decoding (all 1,894 distinct primitive
+references match original routine `0b4d:1a5c`; see
+[shape format](shape-format.md) and [PC world research](pc-world-research.md)),
+and the relation to WLD values: each WLD entry's low seven bits are a SHAPE.TBL
+index (WLD section above). **Unverified:** polygon command, fill and winding
+semantics, colour and material indices, physical units, and extent semantics
+beyond vertex decoding. A renderer must not interpret these extents as fully
+decoded meshes.
 
 `SHAPE.GI` decompresses to 7676 bytes and begins `73 00 00 aa 00 aa 02 00 0e 01`.
 Repeated ten-byte patterns are visible early in the buffer. This observation is
@@ -181,7 +187,8 @@ selection routine. Preserve this distinction in any generated metadata.
 ## Remaining fidelity boundary
 
 Still required for an exact reconstruction: identify scenario field semantics and
-script/waypoint tail, decode shape records, establish world orientation and scale,
+script/waypoint tail, recover shape rendering-command and material semantics,
+establish physical scale (grid orientation is verified in the WLD section),
 recover the original trigger interpreter and dynamics, and compare original
 runtime behavior with the Godot implementation. These inspection tools establish
 an auditable data foundation; they do not establish that the reconstruction plays

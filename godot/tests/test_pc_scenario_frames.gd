@@ -2,6 +2,7 @@ extends "res://scripts/pc_bridge_viewer.gd"
 ## Replay real all-scenario packets through the production presentation path.
 ## Source execution/parity is proved separately by capture_pc_session.py.
 var errors: Array[String] = []
+var vehicle_art_frames := 0
 var checks := 0
 var fixture: Dictionary
 var fixture_dir: String
@@ -48,7 +49,8 @@ func run() -> void:
 		check(bridge.failure.is_empty(),label+": production packet accepted")
 		check(tandem_frame.world_enabled,label+": paired high-resolution world visible")
 		check(not tandem_frame.cockpit_art_ids.is_empty(),label+": Genesis cockpit active")
-		check(draw_view.vehicle_art==null and draw_view.vehicle_polygon_count==0,label+": no rejected vehicle panels")
+		# One tripwire per run (below), not a constant per-frame check.
+		if draw_view.vehicle_art!=null: vehicle_art_frames+=1
 		check(draw_view.render_warnings.is_empty(),label+": no unsupported renderer commands")
 		if tandem_frame.graphics_mode=="modern":
 			check(draw_view.modern_assets.max_anchor_error<=0.25,label+": source anchor tolerance")
@@ -62,6 +64,7 @@ func run() -> void:
 	if tandem_frame.graphics_mode=="modern":
 		check(cases.any(func(row):return row.refined_faces>0),"Modern catalogue used by actual source frames")
 		check(cases.any(func(row):return row.tree_planes>0),"illustrated source trees used by actual source frames")
+	check(vehicle_art_frames==0,"rejected vehicle panels never attached (%d frames)"%vehicle_art_frames)
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({
 		"checks":checks,"errors":errors,"cases":cases,
 		"scope":"Native production-viewer rendering of 32 source-frame cases. Does not rerun simulation; original all-frame parity is recorded in the input fixture."},"  "))

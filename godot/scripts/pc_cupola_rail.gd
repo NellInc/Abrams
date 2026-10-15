@@ -1,16 +1,15 @@
 extends RefCounted
 ## The PC redraws this fixed AA rail without plate tags. Exact source, station,
 ## position and UI proof permit only these pixels; one mismatch rejects it all.
-const SOURCE_SHA256 = "64da0346689f54dd19be2d8dbcab4be1ef39cca8b53b57faae435f84180c1108"
+# Decoded RGB8 pixels of the player's AA.BIN plate, independent of PNG encoder.
+const SOURCE_SHA256 = "93d32ce6fa8b0515fbf27525093ec43bf3c9b9e61c4974f2c3bc70ba3c316d2f"
 const CAMERA = Rect2i(0,0,320,117)
 const ROW_END = [183,206,230,242,264,286]
 var expected: Image
 
 func load_source(root_path: String) -> bool:
-	var path := root_path.path_join("local-art/pc-ui-v2/aa-bin.png")
-	if FileAccess.get_sha256(path)!=SOURCE_SHA256: return false
-	expected = Image.load_from_file(path)
-	return expected!=null and expected.get_size()==Vector2i(320,200)
+	expected = preload("res://scripts/pc_instrument_art.gd").load_plate(root_path.path_join("local-art/pc-ui-v2/aa-bin.png"),SOURCE_SHA256)
+	return expected!=null
 
 static func pixels() -> Array[Vector2i]:
 	var points: Array[Vector2i] = []

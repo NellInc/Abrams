@@ -5,6 +5,7 @@ from pathlib import Path
 from pc_reference_core import PcReferenceCore
 from pc_live_state import SimStateReader,active_program
 from pc_render_trace import Collector
+from source_guard import inside_source
 ROOT=Path(__file__).resolve().parents[1]
 STEPS=[('start',20,[]),('commander-key',3,['f2']),('commander',90,[]),('map-toggle-key',3,['z']),('map-toggle',90,[]),('map-return-key',3,['z']),('map-return',90,[]),('driver-key',3,['f3']),('driver',60,[]),('commander-return-key',3,['f2']),('commander-return',90,[])]
 def run(mode,state,out):
@@ -46,7 +47,8 @@ def verify(trace_path,baseline_path,manifest_path=ROOT/'.runtime/pc-core/abrams-
   'all_stage_states_equal':trace.get('stages')==baseline.get('stages') and set(trace.get('stages',{}))=={stage for stage,_,_ in STEPS},
   'core_pins_distinct_and_match_receipt':trace.get('core_sha256')!=baseline.get('core_sha256') and
    trace.get('core_sha256')==manifest.get('trace_sha256') and baseline.get('core_sha256')==manifest.get('baseline_sha256'),
-  'new_trace_header':trace.get('trace_header_sha256')==baseline.get('trace_header_sha256')==manifest.get('trace_header_sha256'),
+  # Only the trace run carries the header; a reused baseline is pinned by its core alone.
+  'new_trace_header':bool(manifest.get('trace_header_sha256')) and trace.get('trace_header_sha256')==manifest['trace_header_sha256'],
   'both_map_modes_observed':{p['mode'] for p in trace.get('packets',[])}=={0,1},
   'occluded_or_stale_frames_rejected':observer.get('presented',0)>0 and observer.get('frame_mismatch',0)>0}
  return {'checks':checks,'frames':len(trace.get('frames',[])),'observer':observer,
@@ -57,4 +59,5 @@ if __name__=='__main__':
  if a.compare:
   r=verify(*a.compare,a.manifest);print(json.dumps(r,indent=2));raise SystemExit(0 if all(r['checks'].values()) else 1)
  if not a.state or not a.output:p.error('--mode needs --state and --output')
+ if inside_source(a.output,ROOT):p.error('output must be outside original sources')
  a.output.mkdir(parents=True,exist_ok=False);r=run(a.mode,a.state,a.output);print(json.dumps({'frames':len(r['frames']),'observer':r['observer'],'packet_modes':sorted(set(p['mode'] for p in r['packets']))}))

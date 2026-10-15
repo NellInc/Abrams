@@ -6,10 +6,12 @@ import unittest
 
 from tools.inspect_scenarios import decode_resource
 from tools.inspect_shapes import inspect_shapes, cube_geometry, cube_obj, primitive_vertices
+from tests._inputs import requires
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@requires('GAME')
 class ShapeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

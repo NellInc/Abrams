@@ -3,6 +3,7 @@
 import argparse,hashlib,html,json,re,shutil,subprocess,wave
 from pathlib import Path
 import opentimelineio as otio
+from output_guard import guarded_output
 
 ROOT=Path(__file__).resolve().parents[2]
 def run(cmd):subprocess.run([str(x) for x in cmd],check=True)
@@ -21,7 +22,7 @@ def make(out,duration,picture_only=False,base_html=ROOT/'artifacts/promo-2026092
     needed=[out/f'colonel-stills/colonel-{mode}.png' for mode in ['genesis','modern']]+[out/f'model-pairs/pair-{index:03}.png' for index in [125,163,161,155,156]]
     if not picture_only:needed+=[media/n for n in ['narration-dry.wav','narration-pronunciation-v2-ah-only-dry.wav','music-suno.wav','smoke.wav','cannon.wav']]
     missing=[str(p) for p in needed if not p.exists()]
-    if missing:raise SystemExit('Missing revision inputs: '+', '.join(missing))
+    if missing:raise SystemExit('Missing revision inputs: '+', '.join(missing)+('. The ah-only take is a recorded splice, not a TTS action: generate.py narration-pronunciation-v2-phonetic and narration-pronunciation-v2-syllables, then --build-ah-only (derivation: '+AH_ONLY_RECEIPT+').' if any('ah-only' in m for m in missing) else ''))
     base_styles=re.search(r'<style>(.*?)</style>',base_html.read_text(),re.S).group(1)
     if '.logo-bug{' in base_styles:raise SystemExit(f'{base_html} already carries the v2 styles; pass the v1 composition.')
     crew_start=31.4*k;crew_pause=8 if long else 5.4;extra_pause=4 if long else 0
@@ -112,6 +113,42 @@ def make(out,duration,picture_only=False,base_html=ROOT/'artifacts/promo-2026092
     if not picture_only:mix(out,duration,k,crew_pause,extra_pause,crews)
     print('REVISION_COMPOSITION_READY',duration,'seconds',len(shots),'shots')
 
+AH_ONLY_RECEIPT='artifacts/promo-20261002-v8/retained-provenance/promo-20260930-v2/pronunciation-ah-only-edit-receipt.json'
+# The recorded v2 edit, copied from AH_ONLY_RECEIPT. Its sentence filter is verbatim;
+# the receipt records the pickup's trim, tempo and gain but not their filter order.
+AH_ONLY={'sentence':'narration-pronunciation-v2-phonetic-dry.wav','sentence_sha256':'0b1bb00e4e3db572a9779531e8698cbf6f205a3a81621e84fc04d0218348570a',
+         'syllables':'narration-pronunciation-v2-syllables-dry.wav','syllables_sha256':'71a58af76269748ac4bb670262d1c0d91f81b841bb5b87330741ab32d246b453',
+         'pickup_trim':[1.69,2.12],'pickup_tempo':1.8,'pickup_gain':1.3250624806657239,'replaced_middle_range':[1.8,1.94],
+         'sentence_filters':'[0:a]asplit=2[a][b];[a]atrim=end=1.80,asetpts=PTS-STARTPTS[x];[b]atrim=start=1.94,asetpts=PTS-STARTPTS[y];[x][1:a]acrossfade=d=0.02:curve1=tri:curve2=tri[xn];[xn][y]acrossfade=d=0.02:curve1=tri:curve2=tri[n]',
+         'edited_sha256':'60d654bda0b06abf5228154a9a463f41bf5a377d8b51455d331e6bd2fd3361b7'}
+
+def ah_only(out):
+    """Rebuild narration-pronunciation-v2-ah-only-dry.wav: the phonetic sentence with only
+    its middle vowel replaced by the open AH from the syllables pickup. Offline, no paid call."""
+    m=out/'motion/media';sentence,syllables=m/AH_ONLY['sentence'],m/AH_ONLY['syllables']
+    target=m/'narration-pronunciation-v2-ah-only-dry.wav';pickup=m/'narration-pronunciation-v2-ah-pickup.wav'
+    missing=[str(p) for p in (sentence,syllables) if not p.exists()]
+    if missing:raise SystemExit('Missing ah-only inputs: '+', '.join(missing)+'. Generate them with generate.py narration-pronunciation-v2-phonetic and narration-pronunciation-v2-syllables.')
+    proof=out/'pronunciation-ah-only-edit-receipt.json'
+    for existing in (target,proof):
+        if existing.exists():raise SystemExit(f'{existing} already exists; inspect it before deliberately removing it.')
+    recorded=sha(sentence)==AH_ONLY['sentence_sha256'] and sha(syllables)==AH_ONLY['syllables_sha256']
+    (start,end),tempo,gain=AH_ONLY['pickup_trim'],AH_ONLY['pickup_tempo'],AH_ONLY['pickup_gain']
+    prep=f'[0:a]atrim=start={start}:end={end},asetpts=PTS-STARTPTS,atempo={tempo},volume={gain}[p]'
+    run(['ffmpeg','-v','error','-y','-i',syllables,'-filter_complex',prep,'-map','[p]','-c:a','pcm_s16le',pickup])
+    candidate=m/'narration-pronunciation-v2-ah-only-candidate.wav'
+    run(['ffmpeg','-v','error','-y','-i',sentence,'-i',pickup,'-filter_complex',AH_ONLY['sentence_filters'],'-map','[n]','-c:a','pcm_s16le',candidate])
+    matches=sha(candidate)==AH_ONLY['edited_sha256'];pickup_sha=sha(pickup);pickup.unlink()
+    if recorded and not matches:
+        raise SystemExit(f'The recorded takes did not reproduce the recorded edit {AH_ONLY["edited_sha256"]}; {candidate} is kept for listening. See {AH_ONLY_RECEIPT}.')
+    candidate.replace(target)
+    write(proof,{**AH_ONLY,'source_sentence_sha256':sha(sentence),'source_syllables_sha256':sha(syllables),'pickup_filters':prep,
+        'pickup_sha256':pickup_sha,'edited_sentence_sha256':sha(target),'recorded_inputs':recorded,'matches_recorded_edit':matches,'derivation':AH_ONLY_RECEIPT,
+        'pickup_filter_order':'Unverified reconstruction: the recorded receipt gives trim, tempo and gain, not their order.',
+        'splice_points':'Measured on the recorded takes.' if recorded else 'Measured on the recorded takes, not these; listen before use.'})
+    if not recorded:print('AH_ONLY_UNRECORDED_INPUTS: splice points come from the recorded v2 takes; review by ear.')
+    print('AH_ONLY_READY',target,'matches recorded edit' if matches else 'new derivation')
+
 def mix(out,duration,k,pause,extra,crews):
     m=out/'motion/media';fix=m/'narration-pronunciation-v2-ah-only-dry.wav'
     with wave.open(str(fix)) as f:factor=(f.getnframes()/f.getframerate())/3.95
@@ -142,4 +179,6 @@ def mix(out,duration,k,pause,extra,crews):
     write(out/'audio-edit-receipt.json',{'duration':duration,'narration_tempo':tempo,'replacement_sentence':str(fix),'replacement_sha256':sha(fix),'replacement_tempo':factor,'crew_pause':pause,'additional_pause':extra,'crew_showcase':crews,'final_mix_sha256':sha(target),'filters':filters})
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--duration',type=int,choices=[60,75],default=60);p.add_argument('--picture-only',action='store_true');p.add_argument('--base-html',type=Path,default=ROOT/'artifacts/promo-20260929/motion/index.html');a=p.parse_args();make(a.output.resolve(),a.duration,a.picture_only,a.base_html)
+    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--duration',type=int,choices=[60,75],default=60);p.add_argument('--picture-only',action='store_true');p.add_argument('--base-html',type=Path,default=ROOT/'artifacts/promo-20260929/motion/index.html');p.add_argument('--build-ah-only',action='store_true',help='rebuild the recorded ah-only pronunciation splice, then stop');a=p.parse_args();out=guarded_output(p,a.output)
+    if a.build_ah_only:ah_only(out)
+    else:make(out,a.duration,a.picture_only,a.base_html)

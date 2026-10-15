@@ -18,9 +18,15 @@ func _initialize() -> void:
 	create_timer(60).timeout.connect(func():printerr("FAIL: play shortcut fixture deadline");quit(1))
 	run.call_deferred()
 func run() -> void:
+	# Graphics cycling persists by default: prove the player's profile is untouched.
+	var profile:=FileAccess.get_file_as_bytes("user://pc_graphics.cfg")
+	var audio_profile:=FileAccess.get_file_as_bytes("user://pc_audio.cfg")
 	var menu:=Menu.new()
+	# Never touch the player's saved audio or graphics profile.
 	menu.config_path=""
+	menu.quality_config_path=""
 	root.add_child(menu)
+	check(menu.layout_filter==(OS.get_name()=="Windows"),"layout characters are filtered only where AltGr is Ctrl+Alt")
 	var commands:=[]
 	var modes:=[]
 	var notices:=[]
@@ -47,6 +53,20 @@ func run() -> void:
 		menu.handle_shortcut(key(KEY_S,mac,true,false,true))
 		menu.handle_shortcut(key(KEY_S,mac,false))
 		check(commands.size()==before+1,"repeat and release never save again")
+		# Occupancy is visible before saving, and a quick save never silently
+		# replaces an occupied slot: the first press only warns.
+		menu.set_state_status([{"slot":1,"saved_at":"2026-10-15 09:00:00"},{"slot":2,"exists":false}])
+		check(menu.save_popup.get_item_text(menu.save_popup.get_item_index(1)).begins_with("Slot 1 (overwrite 2026-10-15 09:00:00)"),"save menu names the save it replaces")
+		check(menu.save_popup.get_item_text(menu.save_popup.get_item_index(2))=="Slot 2 (empty)","save menu marks empty slots")
+		check(menu.handle_shortcut(key(KEY_S,mac)) and commands.size()==before+1 and not menu.busy,"first quick save onto an occupied slot only warns")
+		check("2026-10-15 09:00:00" in notices[-1] and "again" in notices[-1],"overwrite warning names the existing save")
+		menu.handle_shortcut(key(KEY_S,mac,false))
+		check(menu.handle_shortcut(key(KEY_S,mac)) and commands[-1]==["save_state",1] and commands.size()==before+2,"second quick save confirms the overwrite")
+		menu.set_state_status([{"slot":1},{"slot":0}])
+		menu.handle_shortcut(key(KEY_S,mac))
+		check(commands.size()==before+2,"a completed save disarms the confirmation")
+		menu.handle_shortcut(key(KEY_S,mac,false))
+		menu.overwrite_armed_until=0
 		menu.handle_shortcut(key(KEY_L,mac))
 		check(commands[-1]==["load_state",1],"quick load targets slot 1")
 		menu.set_state_status([{"slot":1},{"slot":0}])
@@ -68,6 +88,36 @@ func run() -> void:
 		check(not menu.handle_shortcut(key(KEY_G,mac,true,true)),"unassigned shifted chord ignored")
 		var wrong:=key(KEY_S,not mac)
 		check(not menu.handle_shortcut(wrong),"other platform modifier is not reserved")
+		if not mac:
+			# A Mac browser keeps Ctrl+Option chords even though Option composes
+			# text there: ß, ¬ and © still save, load and cycle.
+			menu.layout_filter=false
+			menu.set_state_status([])
+			var composed:=key(KEY_S,false);composed.unicode=0xdf
+			check(menu.handle_shortcut(composed) and commands[-1]==["save_state",1],"Mac browser Ctrl+Option+S (ß) still saves")
+			menu.handle_shortcut(key(KEY_S,false,false))
+			menu.set_state_status([{"slot":1}])
+			composed=key(KEY_L,false);composed.unicode=0xac
+			check(menu.handle_shortcut(composed) and commands[-1]==["load_state",1],"Mac browser Ctrl+Option+L (¬) still loads")
+			menu.handle_shortcut(key(KEY_L,false,false))
+			menu.set_state_status([])
+			var cycled:=modes.size()
+			composed=key(KEY_G,false);composed.unicode=0xa9
+			check(menu.handle_shortcut(composed) and modes.size()==cycled+1,"Mac browser Ctrl+Option+G (©) still cycles")
+			menu.handle_shortcut(key(KEY_G,false,false))
+			# AltGr arrives as Ctrl+Alt on Windows; its layout letters are text.
+			menu.layout_filter=true
+			var held_count:=commands.size()
+			for letter in [[KEY_L,0x142],[KEY_S,0x15b]]:
+				var altgr:=key(letter[0],false);altgr.unicode=letter[1]
+				check(not menu.handle_shortcut(altgr) and commands.size()==held_count,"AltGr layout letter is not a chord")
+			var genuine:=key(KEY_L,false,true,true);genuine.unicode=12
+			menu.set_state_status([{"slot":0}])
+			check(menu.handle_shortcut(genuine) and commands[-1]==["load_state",0],"control-character chord still dispatches")
+			menu.set_state_status([])
+			var lettered:=key(KEY_G,false);lettered.unicode="g".unicode_at(0)
+			var mode_count:=modes.size()
+			check(menu.handle_shortcut(lettered) and modes.size()==mode_count+1,"chord carrying its own letter still dispatches")
 		check(menu.game_keys(["s"]).is_empty(),"trailing letter suppressed after modifier releases")
 		menu.game_keys([])
 		check(menu.game_keys(["s","shift","3"])==["s","shift","3"],"fresh original controls return after release")
@@ -181,6 +231,7 @@ func run() -> void:
 	tab.echo=false;tab.pressed=false;menu.handle_shortcut(tab);menu.game_keys([])
 	tab.pressed=true;menu.handle_shortcut(tab)
 	check(menu.speed==1,"released then repressed Tab restores normal after save")
+	check(FileAccess.get_file_as_bytes("user://pc_graphics.cfg")==profile and FileAccess.get_file_as_bytes("user://pc_audio.cfg")==audio_profile,"player's saved settings untouched")
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_PLAY_SHORTCUTS: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)
