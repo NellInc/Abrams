@@ -78,7 +78,7 @@ class StandaloneRuntimeTests(unittest.TestCase):
             path.write_bytes(data)
         self.manifest = {
             'schema': 1, 'originals_included': False, 'build_id': digest(b'build one'),
-            'files': [{'path': str(path.relative_to(self.kit)), 'sha256': digest(path.read_bytes()), 'mode': 0o644}
+            'files': [{'path': path.relative_to(self.kit).as_posix(), 'sha256': digest(path.read_bytes()), 'mode': 0o644}
                       for path in sorted(self.kit.rglob('*')) if path.is_file()],
         }
         self.write_manifest()
