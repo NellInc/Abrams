@@ -124,7 +124,7 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn('["manual_maps","maps","wireframes","models"]', reader)
         self.assertIn('_entries("remaster_controls","Remaster shortcuts",true)', reader)
         self.assertIn('BarlowCondensed-SemiBold.ttf', reader)
-        self.assertIn('host.size-Vector2i(48,48)', reader)
+        self.assertIn('_extent(host)-Vector2i(48,48)', reader)
         self.assertNotIn('_entries("uncertainties"', reader)
         self.assertIn('_spec_row(stack,SPEC_LABELS[field],specs[field])', reader)
         menu = (root/'godot/scripts/pc_play_menu.gd').read_text()
