@@ -964,7 +964,8 @@ func _apply_sample(message: Dictionary) -> void:
 	if (capture or not play_mode) and (changed or picture.texture==null): picture.texture = ImageTexture.create_from_image(image)
 	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
 	# The intro's authored shot is timed by original frames, never by wall clock.
-	tandem_frame.frontend_art.intro_art.source_frame = int(message.get("sequence", -1))
+	var frontend_layer = tandem_frame.get("frontend_art")
+	if frontend_layer != null: frontend_layer.intro_art.source_frame = int(message.get("sequence", -1))
 	if pc_audio:
 		_apply_frontend_music(image,previous_program,message.get("presentation",{}))
 	if not state is Dictionary:
