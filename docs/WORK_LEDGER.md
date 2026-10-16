@@ -4401,3 +4401,23 @@ Nell approved purging the published Web asset parts that carried decoded origina
 
 Working if: `git ls-remote origin` shows `main` at the rewritten head, `git cat-file -e` fails
 for each removed blob in a fresh clone, and `git_boundary --history` passes.
+
+## 16 October 2026: Pre-rule app downloads withdrawn
+
+Nell approved withdrawing the public app builds that predate the 15 October 2026
+distribution rules ("yes please").
+
+- **Evidence:** the Alpha 4 Linux zip ships 209 entries under the paths those rules now
+  exclude: `kit/local-art/genesis/source/` (including `*-original.png` extracts),
+  `kit/local-art/pc-ui-v2/` and `kit/reference/`.
+- **Removed:** the app downloads from `v0.1.0-alpha.2` (macOS) and `v0.1.0-alpha.4`
+  (macOS, Windows, Linux). Their release pages stay, each with a "Withdrawn 16 October
+  2026" note pointing to Alpha 6.
+- **Kept:** the DOSBox Pure corresponding-source archives and the checksum files, for the
+  people who already downloaded those builds (about 46 downloads in all).
+- **Private alpha.3 draft:** 16 superseded port-input kits were removed. Only
+  `port-input-alpha6b-20261016.zip`, the input for the current Windows and Linux builds,
+  remains. The draft still holds its own Alpha 3 app zips, which are not public.
+
+Working if: `gh release view v0.1.0-alpha.4` lists only the three source archives and
+`SHA256SUMS.txt`, and the old Alpha 4 download URL returns 404.
