@@ -4287,7 +4287,7 @@ captures).
 - **Native Genesis captures.** Native apps and the Web edition fall back to original PC
   pixels where captured Genesis screens would be used; this is accepted and recorded in
   `docs/playability-status.md`.
-- **History purge.** Carried out the same day; recorded in the entry that follows.
+- **History purge.** Carried out on 16 October 2026, after Alpha 6; see "16 October 2026: History purge of decoded Web asset parts".
 
 Working if: these three documents carry the decisions, and `tools/generate_crew_voice.py`
 defaults to `GOOGLE_API_KEY` / `nellwatson`.
@@ -4367,3 +4367,37 @@ setup window.
 
 Working if: `gh release view v0.1.0-alpha.6` lists the seven assets with these digests,
 and https://abramsremastered.com/ serves alpha 6 links.
+
+## 16 October 2026: History purge of decoded Web asset parts
+
+Nell approved purging the published Web asset parts that carried decoded original data
+("Ideally, if it's not too difficult"; then "Fix everything according to your best judgment").
+
+- **What changed:** six blobs, the earlier versions of `website/dist/play/.generated/remaster-assets-0*.zip`,
+  were each replaced by a small valid zip holding `REMOVED.txt`. The removed blob IDs are
+  0b4f8178…, 602a5657…, 70e9cb3a…, b00442e3…, c5fc48c7… and e7d049f2…
+- **Method:** `git filter-repo` deadlocked, because kernel pipe memory on this machine is
+  exhausted by other processes, so the rewrite went through files: `git fast-export` to a file,
+  a stream rewrite (`builds/purge-alpha6/` holds the tooling), then `git fast-import` into a
+  fresh repository.
+- **Checks before the push:** trees were identical for `main`, `codex/modern-lowpoly` and
+  both release tags; 160 of 160 commits were present; all six blobs were absent; and
+  `git_boundary --history` passed.
+- **Push:** the managed hook blocks agent force-pushes, so Nell ran the lease-protected push
+  herself (`builds/purge-alpha6/push.sh`).
+  - Branches: `main` and `codex/modern-lowpoly` went from 91959e0 to 718ca81; the two closed
+    Codex branches were rewritten.
+  - Tags: `v0.1.0-alpha.5` went from 162335b to ad8c69b, and `v0.1.0-alpha.6` from 91959e0
+    to 718ca81. Tags alpha.1, .2 and .4 were unaffected.
+- **Local checkout:** realigned with `git reset --mixed origin/codex/modern-lowpoly`; its tree
+  was identical (2474aa94), so no working files changed.
+- **Still open:**
+  - `refs/pull/1/head` and `refs/pull/2/head` are read-only on GitHub and still reach the old
+    commits. Nell is to send `builds/purge-alpha6/github-support-request.txt` to GitHub Support.
+  - The Codex worktree `~/.codex/worktrees/promo-v9-publication/Abrams` (local branch
+    `codex/tactical-site-gallery`) is on the old history and was left to its owner.
+  - The pre-purge backup, `builds/purge-alpha6/backup-before-purge.bundle`, is kept until Nell
+    confirms.
+
+Working if: `git ls-remote origin` shows `main` at the rewritten head, `git cat-file -e` fails
+for each removed blob in a fresh clone, and `git_boundary --history` passes.
