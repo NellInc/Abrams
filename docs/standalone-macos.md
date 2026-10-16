@@ -47,7 +47,7 @@ On verified Gunner, Commander, Cupola, Driver and Systems Status frames, Tactica
   Its SHA-256 is `ff83dc53b33252d42ac624e11a2ce717428b75f48f2e56a20b3d38f78e6ca4ea`.
   You can continue with PC-only play. The importer stores a revision receipt,
   without copying the ROM into the profile.
-* **macOS blocks the app:** Alpha 5, like Alpha 4, is Developer ID signed and notarized by Apple, with its ticket stapled, so Gatekeeper should open it normally. A warning means the download is not the published build or was altered: compare it with the release `SHA256SUMS.txt` and report the warning; do not disable system security. See [the notarization workflow](macos-notarization.md).
+* **macOS blocks the app:** Alpha 6, like Alpha 4 and Alpha 5, is Developer ID signed and notarized by Apple, with its ticket stapled, so Gatekeeper should open it normally. A warning means the download is not the published build or was altered: compare it with the release `SHA256SUMS.txt` and report the warning; do not disable system security. See [the notarization workflow](macos-notarization.md).
 * **Startup error:** keep the displayed message and the profile's `logs/` folder.
   Do not delete the profile or alter integrity receipts to work around an error.
 * **Imported game files changed:** choosing the PC folder again will not repair

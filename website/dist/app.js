@@ -3,7 +3,7 @@
 const graphics = {
   ega: { name: "EGA", description: "The original PC artwork and palette, preserved for the familiar look you remember.", alt: "EGA graphics: the original pixel-art Colonel in his office and original briefing lettering." },
   genesis: { name: "Genesis", description: "Original-resolution Genesis artwork where available, while the PC version remains the gameplay source.", alt: "Genesis graphics: the donor Colonel portrait and office artwork, displaying the same original PC briefing." },
-  upscaled: { name: "Genesis Upscaled", description: "The remastered artwork in high resolution, with carefully rebuilt lettering. Genesis Upscaled was called Upscaled in alpha\u00a04, where it was the default; the Web edition and alpha\u00a05 now open in Tactical.", alt: "Genesis Upscaled graphics: the Colonel in his office, with restored portrait, desk and briefing lettering." }
+  upscaled: { name: "Genesis Upscaled", description: "The remastered artwork in high resolution, with carefully rebuilt lettering. Genesis Upscaled was called Upscaled in alpha\u00a04, where it was the default; the Web edition and the alpha\u00a06 downloads now open in Tactical.", alt: "Genesis Upscaled graphics: the Colonel in his office, with restored portrait, desk and briefing lettering." }
 };
 
 const comparisonImage = document.querySelector("#comparison-image");

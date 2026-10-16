@@ -4291,3 +4291,79 @@ captures).
 
 Working if: these three documents carry the decisions, and `tools/generate_crew_voice.py`
 defaults to `GOOGLE_API_KEY` / `nellwatson`.
+
+## 16 October 2026: Alpha 6 built, notarized and published
+
+**Authorisation.** Nell, 16 October 2026: "get everything formulated for a release, and
+uploaded", then "Get it all live". She chose the authored intro shot ("Animate it") after
+being told the original pops in 7 frames.
+
+**Defects fixed before release** (Nell's reports this session):
+
+1. "The animation of the tank shot is missing from the intro." The original PC draws its
+   four poses in 7 frames and holds the last. Traces from both the cold-boot and neutral
+   routes bind every pose. The fix is the authored shot recorded in
+   `docs/genesis-intro-integration.md`.
+2. "The menu is also very small, small buttons." This was the macOS launcher: fixed
+   760x610 points on a 1728x1117-point display. It now scales from 1x to 2x, and the
+   About panel grows to show its whole text.
+3. "Try to avoid any need for a scrollbar." The portable setup fits its height to its
+   content after the OS window exists. Before, its size was never applied: it opened at
+   the project override. Its reader is laid out in logical units when content-scaled.
+
+**Commits:** `ccdc7fd` (version 0.1.0-alpha.6, bundle 32), `30783d3`, `bc5415c`,
+`146bbfb`. The release commit adds the site and docs.
+
+**Gate.** `./tools/validate.sh` on `146bbfb` completed: `VALIDATION_COMPLETE`, 927
+Python tests OK, 71 skipped.
+* Two earlier runs failed on `test_both_pipes_exceed_pipe_capacity_and_keep_only_tails`
+  (3 s timeout). Kernel pipe memory was exhausted again: pipes held 512 bytes, and
+  `codex` PID 39290 held 1,054 pipe handles. That process is not ours and was left
+  running. The test passes alone.
+* One earlier run caught a real bug, fixed in `146bbfb`: the viewer touched
+  `frontend_art` on the scheduling test's stub frame.
+
+**macOS.**
+* Unsigned build `4e5cd81ae862a4243eb9`, 1,353 files, no originals. Signed build
+  `60b1fe1028a52fabbbc8`, 87 targets, core text unchanged.
+* Smoke with a fresh profile: PC and Genesis import, `source-shapes.json` `3be92319…`,
+  prepare, and a cold boot into the Tactical cupola (no script errors). The launcher was
+  captured on screen at 1064x886 points.
+* Notary submission `c15859b3-4728-449a-a32b-b1495bf7fa10`: Accepted, no issues.
+  Stapled; Gatekeeper accepted the app and the copy extracted from the ZIP.
+* Two earlier signed builds were superseded and deleted: `a633b502…` (notary
+  `136be7c5…`) and `ad7b1699…`.
+
+**Windows and Linux.**
+* Input `port-input-alpha6b-20261016.zip`: asset 645759293,
+  `7968045aacf44246250197d6f20d8b22e7c84f9b4daae62bde2aaa8df8271f5a`. It is on the
+  private alpha.3 draft only. A local copy of the fetch guard passed, and all 1,101
+  tracked members match HEAD.
+* Run 38835631121 passed on both OSes: 147 tests, `PC_BRIDGE_TRANSPORT: 12 checks, 0
+  errors`, `PORTABLE_SETUP_RECOVERY: PASS` and `PORTABLE_SETUP_SMOKE: PASS`. Run
+  38835106352 (input `349c2069…`) was cancelled because it predated the fix.
+* The adapted archive audit (build-id now includes `derived`; secret patterns are tuples)
+  passed for both. Windows: build `36ed23c3f2462e898684`, core `00ce8483…`. Linux: build
+  `692ab6727667978242e0`, core `1589d8d1…`.
+* The Windows core differs in bytes from Alpha 5's `df3bb6ce…`, although the source is
+  the same. Save restore pins the exact core, so Windows Alpha 5 save states need Alpha 5.
+  The release notes and site say so.
+
+**Assets (SHA-256).**
+* `Abrams-0.1.0-alpha.6-macOS-arm64.zip`, 321,920,889 bytes: `c4d77c71eda2a878983ef1ba936e40d568c66dfd9def5f1b46574a0eb601365d`
+* `Abrams-0.1.0-alpha.6-Windows-x86_64.zip`, 324,704,477 bytes: `a57ae05476229f111cc307cdef133c7ea8a2042648493a0491409d5ee7da5387`
+* `Abrams-0.1.0-alpha.6-Linux-x86_64.zip`, 336,642,498 bytes: `859fa531fe22e6915f51356395421e9c07fa92892eb88a6e7e521d28f81c3e6b`
+* macOS source `a9731b3e…` and Linux source `c1f39ad9…` are identical to Alpha 5's.
+  Windows source: `f2332d91ec4d0500bfad5b504467137a812d8bd0eb4076a2540188457771cfcd`.
+
+**Web edition.** Rebuilt the Godot pack (`build_remaster.py`) and the observer/Python
+source (`build_observer.py`, needed for `tools/generate_crew_voice.py`). The asset parts
+are byte-identical, so no new archive blobs. The core was unchanged and not rebuilt.
+Passed: the node core, mission, bridge and map tests, and `website/verify.py`.
+
+**Not verified:** full missions; the Web edition's intro shot in a browser (same code,
+and its worker sends `sequence`); Windows/Linux graphical playback and their scaled
+setup window.
+
+Working if: `gh release view v0.1.0-alpha.6` lists the seven assets with these digests,
+and https://abramsremastered.com/ serves alpha 6 links.

@@ -35,7 +35,7 @@ the checked-out tree; a boundary failure stops the build job, so nothing is
 deployed. Run the same command locally before pushing website changes.
 Project URL: https://abramsremastered.com/.
 Nell authorized making NellInc/Abrams public with the website publication.
-The download block links to the notarized macOS and native Windows/Linux alpha.5 packages, their release notes, checksums and matching DOSBox-Pure source archives. Original PC files and the optional Genesis
+The download block links to the notarized macOS and native Windows/Linux alpha.6 packages, their release notes, checksums and matching DOSBox-Pure source archives. Original PC files and the optional Genesis
 ROM are excluded from both Git and the download package.
 
 The native trailer player has captions, a descriptive transcript (including on-screen text and the end card) and a poster extracted at 2.70 seconds, between the opening captions, so no caption is burned into it. Poster URLs carry the poster file's own hash as their cache token; the movie and caption track keep the movie's hash.

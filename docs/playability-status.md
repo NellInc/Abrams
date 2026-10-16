@@ -5,6 +5,43 @@ Godot renders the supported high-resolution layers and plays event-driven audio.
 The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
+## Alpha 6 release, 16 October 2026
+
+Public pre-release `v0.1.0-alpha.6`, built from `146bbfb`, carries:
+
+* a notarized macOS ARM64 app: signed build 60b1fe1028a52fabbbc8, Apple
+  submission c15859b3-4728-449a-a32b-b1495bf7fa10;
+* native Windows and Linux x86_64 portable apps from portable-alpha run
+  38835631121;
+* the corresponding DOSBox Pure source for each platform.
+
+What it adds:
+
+* the authored intro shot (see `genesis-intro-integration.md`);
+* the Calibration Range title tank and crew remade to match the box cover;
+* setup windows that scale to the display without scrollbars.
+
+Gameplay is unchanged. The macOS and Linux cores are byte-identical to Alpha 5's
+(`37bff087…` and `1589d8d1…`), so Alpha 5 save states load on those platforms.
+The CI-built Windows core differs in bytes (`00ce8483…`, against Alpha 5's
+`df3bb6ce…`). Save restore pins the exact core, so Windows Alpha 5 save states
+need Alpha 5.
+
+Verified:
+
+* the full gate on `146bbfb` (927 Python tests OK, 71 skipped; every Godot check);
+* signed-app PC and Genesis import, prepare, and a cold-boot Tactical cupola
+  capture;
+* the scaled launcher window on screen;
+* Gatekeeper on the copy extracted from the ZIP;
+* Windows and Linux: 147 tests, setup smoke, recovery and the archive audit.
+
+Not verified: full missions, Windows/Linux graphical playback and the scaled
+setup window on those platforms, and the Modern/Tactical 60 fps target.
+
+Working if: the release lists the three app ZIPs, three source archives and a
+`SHA256SUMS.txt` whose hashes match GitHub's asset digests.
+
 ## Alpha 5 release, 15 October 2026
 
 Public pre-release `v0.1.0-alpha.5` carries a notarized macOS ARM64 app (signed

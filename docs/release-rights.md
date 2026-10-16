@@ -67,7 +67,7 @@ unresolved underlying rights. This records her publication decision, not
 rights-holder permission or legal clearance. A rights-holder claim remains a
 material publication risk.
 
-macOS Alpha 4 and Alpha 5 are Developer ID signed and notarized, with their tickets stapled (see
+macOS Alpha 4, Alpha 5 and Alpha 6 are Developer ID signed and notarized, with their tickets stapled (see
 [macOS notarization](macos-notarization.md)); earlier alphas were not notarized.
 Windows and Linux builds are unsigned. Modern's
 consistent 60 fps target and whole-mission human acceptance are still open. Those
