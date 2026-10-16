@@ -12,6 +12,13 @@ The portable alpha bundles Godot, Python/Pillow and a native tracing core. No se
 4. Choose **Choose PC folder…** and select the complete extracted PC game folder containing `ABRAMS.COM`, `SIM.EXE` and its data files.
 5. Optionally choose **Add Genesis ROM…**. Then select **Play**.
 
+From Alpha 6 the setup window scales with your display: up to 62% of its width
+and 85% of its height, from 1x to 3x. Its height then fits the content, so the
+cards and status text show without a scrollbar. Only a screen too short for
+the content shrinks the scale. This was verified in a headed Godot run on macOS
+(the window opened at 1066x972 points with no scrollbar), and was not yet seen
+on Windows or Linux.
+
 The importer verifies the supported editions, leaves source files unchanged, and preserves existing profiles. Genesis alone cannot run the game. PC-only play offers EGA, EGA Upscaled, Genesis Upscaled (with PC graphics where Genesis-based artwork would be used), Modern and Tactical. Importing the Genesis ROM derives the Genesis palette, effect data and the ending newspaper and destroyed-tank plates from your own verified ROM into your player profile. The ROM itself is not copied. This enables the Genesis-based remastered artwork. Native apps built after 15 October 2026 do not include the remastered frontend music (its percussion comes from Genesis samples whose redistribution rights are not established), and Genesis graphics mode, the map frame and the clipboard need captured Genesis screens, so they are not available in native apps yet.
 
 Windows builds target x86_64 Windows 10 or newer. Linux builds target x86_64 with glibc 2.35 or newer and a working graphical desktop/OpenGL driver. These are alpha ports. Native build, frozen setup and synthetic core checks are separate from real-game playtesting on each platform. Consult the release notes for the tested boundaries. Intel Macs and ARM Linux are not included.

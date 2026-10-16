@@ -5,8 +5,9 @@
 The default tandem renderer now restores the title illustration, all four
 observed expanding muzzle-flash poses and all eight original PC credit cards.
 `pc_intro_art.gd` selects each composition using the complete 320x200 RGB frame
-and the active original START executable. There is no presentation animation
-clock, input interception, random effect or authored credit schedule.
+and the active original START executable. There is no wall-clock animation,
+input interception, random effect or authored credit schedule. The one authored
+motion, the shot below, is timed by the original frame sequence.
 
 The original PC controls frame holds, the response to keys, credit wording and
 order, and the transition into the menu. Unknown or altered frames retain the
@@ -95,6 +96,52 @@ first credit card. The muzzle remains registered to the title barrel; the
 original credit panel stays in front. Nell's art acceptance remains separate.
 No ROM or executable was sent to the image tool, and no redistribution rights
 are asserted.
+
+## Authored shot (16 October 2026)
+
+Nell reported that "the animation of the tank shot is missing". It is not
+missing: the original PC draws its four poses in 7 frames (404–411 on the neutral
+route, 421–428 after a cold boot), about 0.1 s, then holds the largest fireball
+under all eight credits. The Genesis shows the same four poses over 16 frames
+(238–254, about 0.27 s) and clears the fireball before its credits. Neither
+source has more animation to restore. Nell chose an authored animation
+(16 October 2026, "Animate it"). It is presentation only:
+
+* **Clock.** `f` counts original frames from the first flash pose. It is the
+  bridge's `sample.sequence` (native and Web), not wall-clock time. The motion
+  pauses with the game, follows fast-forward, and restarts when the title
+  binds again or the sequence moves backwards (a state load). A route that
+  first meets a later pose (fast-forward) or a credit offsets the start by that
+  pose's original frame. With no sequence (`source_frame` −1, as in the pixel
+  oracle), the static PC-pose composition above is unchanged.
+* **Motion** (`pc_intro_art.gd`, `shot_state(f)`, a pure function of `f`):
+  * the four poses at the Genesis cadence, at PC frames 0, 6, 12 and 19, each
+    growing and cross-fading into the next;
+  * an additive muzzle light that fades by frame 16, and a recoil shake of
+    1.6 source pixels that fades by frame 12;
+  * after the last pose, the fireball billows 22% outward from the muzzle and
+    rises 10 source pixels, cross-fades into grey smoke of the same shape (the
+    atlas desaturated and dimmed at load), and thins to nothing by frame 104,
+    just before the first credit (about frame 110).
+* **Unchanged.** PC timing, input, credits, the dedication and the transition
+  to the menu all stay with the PC. A skipped intro (credit at frame 48) shows
+  the credit card over the thinning smoke.
+
+Evidence, 16 October 2026:
+
+* `test_pc_intro_art.gd` checks the schedule (poses only advance, pure,
+  bounded, glow/shake brief, holds then clears) and the start rules (title,
+  fast-forward, credits first, timeline reversal, no sequence). Results: headless
+  8,347 checks, 0 errors; native 2,840,680 checks, 0 errors.
+* The native renders at frames 0, 3, 6, 9, 12, 19, 30, 45, 60, 70, 80, 90 and
+  100 were inspected.
+* A live capture, `./Play.command --capture --capture-intro shot`, lands in
+  the smoke stage (Tactical, `frontend_art` `flash-4`, no script errors); its
+  frame was inspected.
+
+Working if: a cold-booted Play shows the fireball growing over about a third of
+a second, turning to grey smoke and clearing before the first credit, and
+`--capture-intro shot` shows grey smoke at the muzzle.
 
 ## Runtime and validation
 

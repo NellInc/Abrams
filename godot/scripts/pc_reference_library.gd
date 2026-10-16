@@ -99,7 +99,7 @@ func set_hud_style(style: String) -> void:
 		else:
 			_fit_restored()
 			var host := get_parent() as Window
-			if host!=null:position=(host.size-size)/2
+			if host!=null:position=(_extent(host)-size)/2
 
 func _replace_tabs() -> void:
 	var replacement: Container = HFlowContainer.new() if tactical else HBoxContainer.new()
@@ -146,17 +146,24 @@ func _fit_to_host() -> void:
 		# Web changes its canvas aspect after the HUD selection is delivered.
 		# Follow that transition only until this reader is closed or reopened.
 		_fit_restored()
-		position=((get_parent() as Window).size-size)/2
+		position=(_extent(get_parent() as Window)-size)/2
+
+# The scaled setup window (no stretch, content scale above 1) lays embedded
+# windows out in logical units; the game window keeps its pixel extent.
+static func _extent(host: Window) -> Vector2i:
+	if host.content_scale_mode==Window.CONTENT_SCALE_MODE_DISABLED and host.content_scale_factor>1.0:
+		return Vector2i(Vector2(host.size)/host.content_scale_factor)
+	return host.size
 
 func _fit_tactical() -> void:
 	if not tactical or not visible:return
 	var host := get_parent() as Window
 	if host==null:return
 	# Reserve the embedded title bar as well as a clear margin on short canvases.
-	var available := host.size-Vector2i(32,64)
+	var available := _extent(host)-Vector2i(32,64)
 	size=Vector2i(mini(960,maxi(320,available.x)),mini(720,maxi(240,available.y)))
 	column.add_theme_constant_override("separation",8 if size.y<360 else 12)
-	position=(host.size-size)/2
+	position=(_extent(host)-size)/2
 	if _update_narrow_layout():
 		var previous_scroll := scroll.scroll_vertical
 		_render()
@@ -164,7 +171,7 @@ func _fit_tactical() -> void:
 
 func _fit_restored() -> void:
 	var host := get_parent() as Window
-	var available := host.size-Vector2i(48,48) if host!=null else Vector2i(960,720)
+	var available := _extent(host)-Vector2i(48,48) if host!=null else Vector2i(960,720)
 	size=Vector2i(mini(960,maxi(640,available.x)),mini(720,maxi(480,available.y)))
 
 func _read_json(name: String) -> Dictionary:

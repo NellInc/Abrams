@@ -184,12 +184,48 @@ func run() -> void:
 				program_checked=true
 		check(selected==REPLAY_SELECTED[route],"pinned selected intro boundaries: %s %d"%[route,selected])
 		replay_counts[route]={"frames":report.records.size(),"selected":selected}
+	await check_shot(fixture)
 	check(not art.intro_art.load_sources(root_path.path_join("artifacts/missing-intro")),"missing source rejected")
 	check(art.intro_art.active.is_empty() and art.intro_art.catalog.is_empty(),"missing source clears stale animation")
 	if native:
 		var file:=FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
 		file.store_string(JSON.stringify({"checks":checks,"errors":errors,"samples":samples,"replays":replay_counts},"  "))
 	finish()
+
+# The authored shot (Nell, 16 October 2026) is timed only by original frames.
+func check_shot(fixture: String) -> void:
+	var intro=art.intro_art
+	var Intro=preload("res://scripts/pc_intro_art.gd")
+	var last_pose:=0
+	for f in 130:
+		var state: Dictionary=Intro.shot_state(f)
+		check(int(state.pose)>=last_pose and int(state.next)-int(state.pose) in [0,1],"shot poses only advance: %d"%f)
+		last_pose=int(state.pose)
+		check(float(state.blend)>=0.0 and float(state.blend)<=1.0 and float(state.alpha)>=0.0 and float(state.alpha)<=1.0,"shot weights bounded: %d"%f)
+		check(Intro.shot_state(f)==state,"shot is a pure function of the frame: %d"%f)
+	check(Intro.shot_state(0).pose==0 and Intro.shot_state(0).blend==0.0 and Intro.shot_state(0).glow>0.8,"shot opens on the first original pose with muzzle light")
+	check(Intro.shot_state(6).pose==1 and Intro.shot_state(12).pose==2 and Intro.shot_state(19).pose==3,"four original poses at the Genesis cadence")
+	check(Intro.shot_state(16).glow==0.0 and Intro.shot_state(12).shake==0.0,"light and shake are brief")
+	check(Intro.shot_state(55).alpha==1.0 and Intro.shot_state(Intro.SHOT_CLEAR).alpha==0.0,"fireball holds, then clears before the first credit")
+	var images:={}
+	for entry in intro.catalog.entries: images[entry.name]=Image.load_from_file(fixture.path_join(entry.capture_image))
+	var start := {"name":"START"}
+	for row in [[1000,"title",-1],[1001,"flash-1",1001],[1008,"flash-4",1001],[1110,"credit-1",1001],
+			[900,"flash-4",893],[950,"title",-1],[2000,"flash-4",1993],[2001,"title",-1],[3000,"credit-1",3000-Intro.SHOT_CLEAR],
+			[-1,"title",-1],[-1,"flash-1",-1]]:
+		intro.source_frame=row[0]
+		check(intro.set_frame(images[row[1]],start) and intro.shot_start==row[2],"shot start from original frames: %s"%str(row))
+	if native:
+		for f in [0,3,6,9,12,19,30,45,60,70,80,90,100]:
+			intro.source_frame=4999;apply_frame(images.title,start)
+			intro.source_frame=5000;apply_frame(images["flash-1"],start)
+			intro.source_frame=5000+f
+			check(apply_frame(images["flash-4"],start) and intro.shot_start==5000,"shot frame bound through the frontend: %d"%f)
+			backdrop.texture=ImageTexture.create_from_image(images["flash-4"])
+			await process_frame
+			RenderingServer.force_draw(false); RenderingServer.force_sync()
+			check(viewport.get_texture().get_image().save_png(output.path_join("shot-f%03d.png"%f))==OK,"save shot frame")
+	intro.source_frame=-1
 
 func finish() -> void:
 	for error in errors: printerr("FAIL: "+error)

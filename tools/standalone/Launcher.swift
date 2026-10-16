@@ -89,6 +89,17 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let info = Bundle.main.infoDictionary ?? [:]
         return "Version \(info["AbramsReleaseVersion"] as? String ?? info["CFBundleShortVersionString"] as? String ?? "development") · Build \(info["CFBundleVersion"] as? String ?? "local")"
     }
+    // Layout is authored in points for a 760x610 window and scaled to the desktop
+    // (Nell, 16 October 2026: the fixed-size setup window read as very small).
+    var s: CGFloat = 1
+    func R(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) -> NSRect {
+        NSRect(x: x*s, y: y*s, width: width*s, height: height*s)
+    }
+    static func layoutScale(for visible: NSSize) -> CGFloat {
+        // About 85% of the usable height and at most 62% of the width, in 5% steps, from 1x to 2x.
+        let fit = min(visible.width*0.62/760, visible.height*0.85/642)
+        return max(1, min(2, (fit*20).rounded(.down)/20))
+    }
     var setupArgs: [String] {
         let args = CommandLine.arguments
         if let index = args.firstIndex(of: "--data-home"), index+1 < args.count { return ["--data-home", args[index+1]] }
@@ -98,7 +109,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @discardableResult
     func label(_ text: String, frame: NSRect, size: CGFloat = 13, weight: NSFont.Weight = .regular, color: NSColor? = nil, in view: NSView) -> NSTextField {
         let field = NSTextField(wrappingLabelWithString: text)
-        field.font = .systemFont(ofSize: size, weight: weight)
+        field.font = .systemFont(ofSize: size*s, weight: weight)
         field.textColor = color ?? cream
         field.frame = frame
         view.addSubview(field)
@@ -119,6 +130,9 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let button = NSButton(title: title, target: self, action: action)
         button.bezelStyle = .rounded
         button.controlSize = .large
+        button.font = .systemFont(ofSize: 13*s)
+        // The rounded bezel has a fixed height; the flexible push bezel fills a scaled frame.
+        if s > 1 { button.bezelStyle = .flexiblePush }
         button.frame = frame
         button.setAccessibilityLabel(title.replacingOccurrences(of: "…", with: ""))
         view.addSubview(button)
@@ -157,57 +171,59 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.mainMenu = menu
         NSApp.helpMenu = helpMenu
 
+        s = Self.layoutScale(for: (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame.size ?? NSSize(width: 760, height: 642))
         configure(window)
+        window.setContentSize(NSSize(width: 760*s, height: 610*s))
         window.title = appName
         window.delegate = self
         let view = window.contentView!
         backdrop(in: view)
-        let icon = NSImageView(frame: NSRect(x: 30, y: 470, width: 102, height: 102))
+        let icon = NSImageView(frame: R(x: 30, y: 470, width: 102, height: 102))
         icon.image = NSApp.applicationIconImage
         icon.imageScaling = .scaleProportionallyUpOrDown
         icon.setAccessibilityLabel("Abrams remaster cover artwork")
         view.addSubview(icon)
-        label(appName, frame: NSRect(x: 150, y: 511, width: 580, height: 58), size: 25, weight: .bold, in: view)
-        label("Original game by Dynamix · Published by Electronic Arts", frame: NSRect(x: 152, y: 477, width: 575, height: 24), size: 14, color: muted, in: view)
-        label("YOUR GAME FILES", frame: NSRect(x: 32, y: 433, width: 400, height: 18), size: 11, weight: .semibold, color: muted, in: view)
-        let pc = card(NSRect(x: 30, y: 319, width: 700, height: 105), in: view)
-        label("Original PC game", frame: NSRect(x: 18, y: 65, width: 265, height: 24), size: 17, weight: .semibold, in: pc)
-        pcState.frame = NSRect(x: 293, y: 69, width: 170, height: 17)
-        pcState.font = .systemFont(ofSize: 10, weight: .semibold); pcState.textColor = muted; pc.addSubview(pcState)
-        label("Choose the extracted folder containing ABRAMS.COM and SIM.EXE.\nSupported files are verified and copied. Your source stays unchanged.", frame: NSRect(x: 18, y: 15, width: 473, height: 43), size: 12, color: muted, in: pc)
-        pcButton = button("Choose PC folder…", action: #selector(choosePC), frame: NSRect(x: 504, y: 34, width: 179, height: 34), in: pc)
+        label(appName, frame: R(x: 150, y: 511, width: 580, height: 58), size: 25, weight: .bold, in: view)
+        label("Original game by Dynamix · Published by Electronic Arts", frame: R(x: 152, y: 477, width: 575, height: 24), size: 14, color: muted, in: view)
+        label("YOUR GAME FILES", frame: R(x: 32, y: 433, width: 400, height: 18), size: 11, weight: .semibold, color: muted, in: view)
+        let pc = card(R(x: 30, y: 319, width: 700, height: 105), in: view)
+        label("Original PC game", frame: R(x: 18, y: 65, width: 265, height: 24), size: 17, weight: .semibold, in: pc)
+        pcState.frame = R(x: 293, y: 69, width: 170, height: 17)
+        pcState.font = .systemFont(ofSize: 10*s, weight: .semibold); pcState.textColor = muted; pc.addSubview(pcState)
+        label("Choose the extracted folder containing ABRAMS.COM and SIM.EXE.\nSupported files are verified and copied. Your source stays unchanged.", frame: R(x: 18, y: 15, width: 473, height: 43), size: 12, color: muted, in: pc)
+        pcButton = button("Choose PC folder…", action: #selector(choosePC), frame: R(x: 504, y: 34, width: 179, height: 34), in: pc)
         pcButton.keyEquivalent = "i"; pcButton.keyEquivalentModifierMask = [.command]
         pcButton.toolTip = "Import a supported original PC game folder. Source files are never modified."
-        let genesis = card(NSRect(x: 30, y: 201, width: 700, height: 105), in: view)
-        label("Genesis presentation", frame: NSRect(x: 18, y: 65, width: 265, height: 24), size: 17, weight: .semibold, in: genesis)
-        genesisState.frame = NSRect(x: 293, y: 69, width: 170, height: 17)
-        genesisState.font = .systemFont(ofSize: 10, weight: .semibold); genesisState.textColor = muted; genesis.addSubview(genesisState)
-        label("Optional: add a supported original Genesis ROM for its presentation.\nThe PC game is still required. Import it first to enable this option.", frame: NSRect(x: 18, y: 15, width: 473, height: 43), size: 12, color: muted, in: genesis)
-        genesisButton = button("Add Genesis ROM…", action: #selector(chooseGenesis), frame: NSRect(x: 504, y: 34, width: 179, height: 34), in: genesis)
+        let genesis = card(R(x: 30, y: 201, width: 700, height: 105), in: view)
+        label("Genesis presentation", frame: R(x: 18, y: 65, width: 265, height: 24), size: 17, weight: .semibold, in: genesis)
+        genesisState.frame = R(x: 293, y: 69, width: 170, height: 17)
+        genesisState.font = .systemFont(ofSize: 10*s, weight: .semibold); genesisState.textColor = muted; genesis.addSubview(genesisState)
+        label("Optional: add a supported original Genesis ROM for its presentation.\nThe PC game is still required. Import it first to enable this option.", frame: R(x: 18, y: 15, width: 473, height: 43), size: 12, color: muted, in: genesis)
+        genesisButton = button("Add Genesis ROM…", action: #selector(chooseGenesis), frame: R(x: 504, y: 34, width: 179, height: 34), in: genesis)
         genesisButton.toolTip = "Optional. Import the original PC game first."
 
-        progress.style = .spinning; progress.controlSize = .small
-        progress.frame = NSRect(x: 33, y: 160, width: 16, height: 16)
+        progress.style = .spinning; progress.controlSize = s >= 1.5 ? .regular : .small
+        progress.frame = R(x: 33, y: 160, width: 16, height: 16)
         progress.isDisplayedWhenStopped = false; progress.setAccessibilityLabel("Working")
         view.addSubview(progress)
-        status.font = .systemFont(ofSize: 14, weight: .semibold); status.textColor = cream
-        status.frame = NSRect(x: 58, y: 155, width: 665, height: 26); view.addSubview(status)
+        status.font = .systemFont(ofSize: 14*s, weight: .semibold); status.textColor = cream
+        status.frame = R(x: 58, y: 155, width: 665, height: 26); view.addSubview(status)
         status.setAccessibilityLabel("Installation status")
-        detail.font = .systemFont(ofSize: 12); detail.textColor = muted
-        detail.frame = NSRect(x: 32, y: 86, width: 690, height: 64); detail.isSelectable = true
+        detail.font = .systemFont(ofSize: 12*s); detail.textColor = muted
+        detail.frame = R(x: 32, y: 86, width: 690, height: 64); detail.isSelectable = true
         view.addSubview(detail)
         detail.setAccessibilityLabel("Installation details")
-        let aboutButton = button("About", action: #selector(showAbout), frame: NSRect(x: 28, y: 28, width: 82, height: 32), in: view)
+        let aboutButton = button("About", action: #selector(showAbout), frame: R(x: 28, y: 28, width: 82, height: 32), in: view)
         aboutButton.controlSize = .regular
-        let githubButton = button("GitHub ↗", action: #selector(openGitHub), frame: NSRect(x: 112, y: 28, width: 103, height: 32), in: view)
+        let githubButton = button("GitHub ↗", action: #selector(openGitHub), frame: R(x: 112, y: 28, width: 103, height: 32), in: view)
         githubButton.controlSize = .regular
         githubButton.toolTip = "Open the Abrams project in your default browser"
         githubButton.setAccessibilityLabel("Open Abrams on GitHub in your browser")
-        let reference = button("Field guide", action: #selector(openFieldGuide), frame: NSRect(x: 224, y: 28, width: 112, height: 32), in: view)
+        let reference = button("Field guide", action: #selector(openFieldGuide), frame: R(x: 224, y: 28, width: 112, height: 32), in: view)
         reference.controlSize = .regular
         reference.toolTip = "Open the offline scenario and vehicle catalogue"
-        label(version, frame: NSRect(x: 346, y: 34, width: 196, height: 20), size: 10, color: muted, in: view)
-        playButton = button("Play Abrams", action: #selector(play), frame: NSRect(x: 551, y: 25, width: 182, height: 39), in: view)
+        label(version, frame: R(x: 346, y: 34, width: 196, height: 20), size: 10, color: muted, in: view)
+        playButton = button("Play Abrams", action: #selector(play), frame: R(x: 551, y: 25, width: 182, height: 39), in: view)
         playButton.bezelColor = accent; playButton.keyEquivalent = "\r"
         playButton.toolTip = "Launch the simulation after the original PC game has been verified"
         updateControls()
@@ -350,12 +366,12 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let pane = GlassPanel(frame: host.bounds)
         pane.autoresizingMask = [.width, .height]
         host.addSubview(pane)
-        label(name == "keyboard-controls.html" ? "Keyboard controls" : "Field guide", frame: NSRect(x: 24, y: host.bounds.height-51, width: 440, height: 30), size: 22, weight: .semibold, in: pane)
-        let back = button("Back to setup", action: #selector(closeReference), frame: NSRect(x: host.bounds.width-174, y: host.bounds.height-54, width: 150, height: 34), in: pane)
+        label(name == "keyboard-controls.html" ? "Keyboard controls" : "Field guide", frame: R(x: 24, y: host.bounds.height/s-51, width: 440, height: 30), size: 22, weight: .semibold, in: pane)
+        let back = button("Back to setup", action: #selector(closeReference), frame: R(x: host.bounds.width/s-174, y: host.bounds.height/s-54, width: 150, height: 34), in: pane)
         back.autoresizingMask = [.minXMargin, .minYMargin]
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
-        let web = WKWebView(frame: NSRect(x: 16, y: 16, width: host.bounds.width-32, height: host.bounds.height-82), configuration: configuration)
+        let web = WKWebView(frame: R(x: 16, y: 16, width: host.bounds.width/s-32, height: host.bounds.height/s-82), configuration: configuration)
         web.autoresizingMask = [.width, .height]
         web.navigationDelegate = navigation
         web.uiDelegate = navigation
@@ -386,33 +402,42 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     @objc func showAbout() {
         if let aboutWindow { aboutWindow.makeKeyAndOrderFront(nil); return }
-        let panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 620, height: 570), styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        configure(panel); panel.title = "About \(appName)"
-        let view = panel.contentView!
-        backdrop(in: view)
-        _ = card(NSRect(x: 20, y: 73, width: 580, height: 365), in: view)
-        let icon = NSImageView(frame: NSRect(x: 28, y: 435, width: 90, height: 100))
-        icon.image = NSApp.applicationIconImage; icon.imageScaling = .scaleProportionallyUpOrDown; view.addSubview(icon)
-        label(appName, frame: NSRect(x: 140, y: 495, width: 452, height: 34), size: 20, weight: .bold, in: view)
-        label("Independent, unofficial fan remaster", frame: NSRect(x: 142, y: 467, width: 447, height: 25), size: 14, color: muted, in: view)
-        label(version, frame: NSRect(x: 142, y: 443, width: 445, height: 20), size: 12, color: muted, in: view)
-        label("Dedicated to David “Ming” Kenny", frame: NSRect(x: 32, y: 400, width: 555, height: 29), size: 19, weight: .semibold, in: view)
-        label("Original game by Dynamix.", frame: NSRect(x: 32, y: 369, width: 555, height: 22), size: 14, color: muted, in: view)
-        label("Fan Remastered by Nell Watson", frame: NSRect(x: 32, y: 343, width: 555, height: 22), size: 14, weight: .semibold, in: view)
-        label("Original creators", frame: NSRect(x: 32, y: 308, width: 555, height: 27), size: 19, weight: .semibold, color: cream, in: view)
         let rights = "This project asserts no ownership, moral rights or other rights over the original game content. Original copyrights and trademarks remain with their respective rights holders. This independent remaster is not affiliated with or endorsed by them.\n\nRemaster code and asset contributions are free under the licences included with this release. This does not change the rights in the original game content.\n\nA separate, supported copy of the original PC game is required. An original Genesis ROM is optional. Neither is bundled with this application."
-        let scroll = NSScrollView(frame: NSRect(x: 32, y: 83, width: 555, height: 221))
-        scroll.hasVerticalScroller = true; scroll.drawsBackground = false
-        let text = NSTextView(frame: NSRect(x: 0, y: 0, width: 535, height: 620))
+        // Measure the credits first: the panel grows so the whole text shows without a
+        // scrollbar. Only a screen too short for it keeps one.
+        let text = NSTextView(frame: R(x: 0, y: 0, width: 535, height: 620))
         text.isEditable = false; text.isSelectable = true; text.drawsBackground = false
-        text.font = .systemFont(ofSize: 14); text.textColor = cream
+        text.font = .systemFont(ofSize: 14*s); text.textColor = cream
         text.textContainerInset = NSSize(width: 2, height: 6)
         text.isVerticallyResizable = true; text.isHorizontallyResizable = false
         text.textContainer?.widthTracksTextView = true
         text.string = originalCredits() + "\n\nGame content & licensing\n\n" + rights
+        var needed: CGFloat = 221
+        if let layout = text.layoutManager, let container = text.textContainer {
+            layout.ensureLayout(for: container)
+            needed = (layout.usedRect(for: container).height + 12*s)/s + 4
+        }
+        let visible = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame.height ?? 900
+        let extra = max(0, min(needed - 221, (visible*0.94 - 32)/s - 570))
+        let panel = NSWindow(contentRect: R(x: 0, y: 0, width: 620, height: 570 + extra), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        configure(panel); panel.title = "About \(appName)"
+        let view = panel.contentView!
+        backdrop(in: view)
+        _ = card(R(x: 20, y: 73, width: 580, height: 365 + extra), in: view)
+        let icon = NSImageView(frame: R(x: 28, y: 435 + extra, width: 90, height: 100))
+        icon.image = NSApp.applicationIconImage; icon.imageScaling = .scaleProportionallyUpOrDown; view.addSubview(icon)
+        label(appName, frame: R(x: 140, y: 495 + extra, width: 452, height: 34), size: 20, weight: .bold, in: view)
+        label("Independent, unofficial fan remaster", frame: R(x: 142, y: 467 + extra, width: 447, height: 25), size: 14, color: muted, in: view)
+        label(version, frame: R(x: 142, y: 443 + extra, width: 445, height: 20), size: 12, color: muted, in: view)
+        label("Dedicated to David “Ming” Kenny", frame: R(x: 32, y: 400 + extra, width: 555, height: 29), size: 19, weight: .semibold, in: view)
+        label("Original game by Dynamix.", frame: R(x: 32, y: 369 + extra, width: 555, height: 22), size: 14, color: muted, in: view)
+        label("Fan Remastered by Nell Watson", frame: R(x: 32, y: 343 + extra, width: 555, height: 22), size: 14, weight: .semibold, in: view)
+        label("Original creators", frame: R(x: 32, y: 308 + extra, width: 555, height: 27), size: 19, weight: .semibold, color: cream, in: view)
+        let scroll = NSScrollView(frame: R(x: 32, y: 83, width: 555, height: 221 + extra))
+        scroll.hasVerticalScroller = needed > 221 + extra; scroll.autohidesScrollers = true; scroll.drawsBackground = false
         scroll.documentView = text; view.addSubview(scroll)
-        _ = button("View project on GitHub ↗", action: #selector(openGitHub), frame: NSRect(x: 27, y: 26, width: 233, height: 35), in: view)
-        let close = button("Close", action: #selector(closeAbout), frame: NSRect(x: 490, y: 26, width: 102, height: 35), in: view)
+        _ = button("View project on GitHub ↗", action: #selector(openGitHub), frame: R(x: 27, y: 26, width: 233, height: 35), in: view)
+        let close = button("Close", action: #selector(closeAbout), frame: R(x: 490, y: 26, width: 102, height: 35), in: view)
         close.keyEquivalent = "\u{1b}"
         aboutWindow = panel; panel.center(); panel.makeKeyAndOrderFront(nil)
     }

@@ -17,6 +17,11 @@ other OS versions and Intel Macs have not been validated. Windows and Linux use 
    You can add it later through the same launcher.
 4. Once the launcher reports **Ready to play**, click **Play Abrams**.
 
+From Alpha 6 the launcher and its About panel scale with your display, to
+about 85% of the usable height (between 1x and 2x of the 760x610-point layout).
+The About panel grows to show its whole credits text without a scrollbar. On
+this Mac's 1728x1117-point display the launcher opens at 1064x886 points.
+
 You do not need to install Godot, Python or Pillow. The importer leaves your
 source files unchanged. Genesis alone cannot run the game.
 

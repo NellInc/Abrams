@@ -14,14 +14,29 @@ var runtime := OS.get_environment("ABRAMS_PYTHON")
 const InterfaceTheme = preload("res://scripts/pc_interface_theme.gd")
 var pc_state: Label
 var genesis_state: Label
+var layout_scale := 1.0
+var window_fitted := false
+var layout_shell: VBoxContainer
+var layout_column: VBoxContainer
 
 func _initialize() -> void:
     root.title = ProjectSettings.get_setting("application/config/name")
     # Setup uses native-sized controls, independent of the game canvas stretch.
     root.content_scale_size=Vector2i.ZERO
     root.content_scale_mode=Window.CONTENT_SCALE_MODE_DISABLED
-    root.size = Vector2i(820, 700)
-    root.min_size = Vector2i(600, 420)
+    # Layout is authored for 820x700 and scaled to the desktop, as on macOS (Nell,
+    # 16 October 2026: the fixed-size setup window read as very small). Headless
+    # runs report no usable screen and keep 1x.
+    var usable := DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen()).size
+    var scale := 1.0
+    if usable.x>0 and usable.y>0:
+        scale = clampf(floorf(minf(usable.x*0.62/820.0, usable.y*0.85/700.0)*20.0)/20.0, 1.0, 3.0)
+    layout_scale = scale
+    root.content_scale_factor = scale
+    root.min_size = Vector2i(Vector2(600, 420)*scale)
+    # The OS window opens at the project's override size; a size set here is not
+    # applied until it exists, so fit it on the first frame.
+    _fit_window.call_deferred()
     root.close_requested.connect(_close)
     auto_accept_quit = false
     var background := ColorRect.new()
@@ -55,7 +70,11 @@ func _initialize() -> void:
     scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     scroll.follow_focus = true
     shell.add_child(scroll)
+    layout_shell = shell
     var column := VBoxContainer.new()
+    layout_column = column
+    # The window grows to its content, so status and error text never need a scrollbar.
+    column.minimum_size_changed.connect(func(): _fit_height.call_deferred())
     column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     column.add_theme_constant_override("separation", 12)
     scroll.add_child(column)
@@ -109,6 +128,28 @@ func _initialize() -> void:
     dialog.file_selected.connect(func(path): _request(["--genesis", path]))
     root.add_child(dialog)
     _request(["--status"])
+
+func _fit_window() -> void:
+    # Width first: wrapped text takes its height from the final width.
+    root.size = Vector2i(Vector2(820, 700)*layout_scale)
+    await process_frame
+    window_fitted = true
+    _fit_height()
+    root.move_to_center()
+
+# Sizes the window to its whole content (two 28-unit margins, the card column and the
+# button rows), so nothing scrolls. A screen too short for that shrinks the scale.
+func _fit_height() -> void:
+    if not window_fitted: return
+    # Eight units of slack absorb rounding, so the scrollbar never appears for a pixel.
+    var needed := 64.0 + layout_column.get_combined_minimum_size().y + layout_shell.get_combined_minimum_size().y
+    var usable := DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen()).size
+    if usable.y>0 and needed*layout_scale>usable.y*0.92:
+        layout_scale = maxf(0.75, usable.y*0.92/needed)
+        root.content_scale_factor = layout_scale
+        root.min_size = Vector2i(Vector2(600, 420)*layout_scale)
+    var fitted := Vector2i(roundi(820*layout_scale), ceili(maxf(needed, 420.0)*layout_scale))
+    if root.size!=fitted: root.size = fitted
 
 func _card(parent: Node) -> VBoxContainer:
     var panel := PanelContainer.new()
