@@ -151,7 +151,7 @@ Modern buildings use restrained plaster/stone grain over individually authored w
 
 The Play viewer retains one exact successful cockpit composition. Source pixels, complete presentation metadata (apart from unused scanout delivery counters), program, mode, layout and world texture must match. Checkpoint restoration, graphics switching and asset loading invalidate it. Every original reply still reaches input, audio and world processing. Identical source PNG bytes reuse the decoded image and source texture; hidden research labels are no longer laid out during Play. The mesh cache ignores only top-level delivery sequence, RAM-audit digest and EGA storage-page identity, while comparing all camera, geometry, painter ownership and palette data, plus the absolute running-gear phase of each visible object. Off-screen actors continue to simulate without forcing unchanged visible meshes to rebuild.
 
-Play also retains the rendered world texture on exact mesh-cache hits. The final cockpit texture rests only when its input is that production-owned source viewport and its complete composition key matches. Arbitrary mutable textures and animated frontend screens continue to redraw. A new source packet, mode change, resize or fallback requests a fresh render. Native hidden-geometry sentinels verify actual retained pixels, rather than relying on the viewport's update-mode getter.
+Play also retains the rendered world texture on exact mesh-cache hits. The final cockpit texture rests only when its input is that production-owned source viewport and its complete composition key matches. Tactical river flow separately requests a scenery and final-cockpit redraw while retaining those meshes, masks and composition inputs. Arbitrary mutable textures and animated frontend screens continue to redraw. A new source packet, mode change, resize or fallback requests a fresh render. Native hidden-geometry sentinels verify actual retained pixels, rather than relying on the viewport's update-mode getter.
 
 Final surface validation passed 154,494 native renderer checks, 1,260 native compositor checks, 18 material-study checks, and all 32 scenario/station views (195 checks). Material studies separately require identical geometry and zero altered T-62 pixels when surface variation is toggled. Aggregate validation completed at `artifacts/validation-20260929T021804Z`, including 472 Python tests. Native launches used the Dummy audio driver throughout this pass.
 
@@ -166,7 +166,7 @@ coverage remain unchanged. Clouds are static in source-world angular space:
 turning changes the view, translation does not move them, and restoring the
 same packet restores exactly the same image.
 
-Water keeps its original opaque planes, river outline and depth. Existing
+Modern water keeps its original opaque planes, river outline and depth. Existing
 filtered ripples gain a restrained blue-green tint, broad glints and a
 sky-coloured grazing-angle sheen. There is no reflection pass, displacement,
 transparency, clock animation or new bank geometry. Fine detail still fades
@@ -195,6 +195,98 @@ Working if: matched native comparisons preserve all donor RGB bytes, hardware
 contours, live cells and non-Modern frames; driver paint follows both signed
 turret offsets; terrain geometry and actor colours remain identical. Evidence:
 `artifacts/modern-palette-balance-20260929/`.
+
+### Tactical river current
+
+Tactical uses three small, crossing ripple scales with a common decorative
+source-world current, muted green-brown sediment colour, a stronger grazing
+reflection of the existing sky, and subdued glints. The fine normal detail
+fades with its projected footprint. River and coast geometry, opaque coverage,
+source painter ownership and bridge/actor occlusion remain unchanged. There
+is no ocean swell, foam, transparency, scene reflection pass or new texture.
+The current is a visual treatment, with no hydrological or gameplay effect.
+
+`pc_draw_pass.gd.advance_water(delta)` advances an explicit bounded phase only
+when the paired mesh contains an eligible original river and Tactical's surface
+treatment is enabled. Integer phase ratios wrap continuously in approximately
+74.8 seconds. A presentation tick is capped at 0.1 seconds to avoid jumps after
+a stall. The mesh and ownership caches remain valid. The viewer requests
+`UPDATE_ONCE` for both scenery and final cockpit, including while the source
+camera is stationary, without decoding or recomposing the source frame.
+
+The clock rests during captures, source fallback, frontends, other graphics
+modes, state operations, open remaster menus and loss of focus. Checkpoint
+timeline resets return it to phase zero. Captures and standalone renderer tests
+remain deterministic unless they explicitly advance the phase. Modern's static
+water and the other graphics modes retain their preceding treatment.
+
+Local verification on 17 October 2026 passed 419 native river checks, 34 native
+optical-function checks, 15 viewer-hook checks, the surface test and 320 terrain
+checks. The river studies observed 104,627, 27,615 and 24,573 animated pixels
+at ordinary, grazing and compact views respectively, with zero changed pixels
+outside river ownership. Native material-study PNGs and receipts are under
+`artifacts/river-water-20261017/verified/`; these reposition source faces for
+inspection and are not captured mission views or gameplay-performance evidence.
+The final checks include the concurrent vehicle renderer's isolated shader
+boundary, after its common-shader sampler overflow was corrected by its owner.
+
+Broader checks remain separate: the historical cockpit-reuse run cannot load
+`artifacts/pc-live-type-cockpit-02/ui-baseline-frame-00029-mask.png`;
+the native Modern test fails its asset-I/O assertion because its measured
+interval includes explicit catalogue loads in `tree_cutouts()` and
+`crew_head_commands()`. Logs are `presentation-headless.log` and
+`modern-native.log` under the same river evidence directory. Neither larger
+test is recorded as passing, and the aggregate gate was not run.
+
+Working if: `test_pc_presentation_reuse.gd -- --river-animation` checks the real
+viewer hook and its hold conditions; the native
+`test_pc_modern_environment_polish.gd -- --river-flow-gpu` test observes changing
+stationary water and final-compositor pixels, zero changed pixels outside the
+river's ownership, identical geometry/masks/source packets, mesh reuse, a
+seamless phase wrap, static Modern and deterministic phase-zero restoration.
+An optional `--river-before <shader>` adds byte comparisons against the preceding
+Modern and source renderer. Both focused checks are included in `validate.sh`
+in their respective headless/native tiers.
+
+### River redraw performance
+
+Wholly offscreen river triangles no longer wake the scenery and final cockpit
+targets. The source geometry remains in the mesh, and its phase and shader
+uniform advance at the same cadence. A mesh build computes conservative bounds
+from the already near-clipped triangles. The source clip is padded by one source
+pixel plus a full render-target pixel, retaining MSAA and edge-rounding coverage.
+Partially visible rivers, including the padded boundary, keep every redraw.
+Returning to the river resumes its current phase without a clock reset. There
+is no occlusion guess, ownership readback, lower resolution, reduced filtering,
+changed shader, animation throttling or geometry removal.
+
+The native ABBA check at 1280x800 with 4x MSAA and 16x anisotropic filtering
+passed 93 checks, with byte-identical scenery and final-compositor pixels,
+identical phase, geometry and source ownership in all six cases. Each offscreen
+arm removed 32/32 redraw requests; the visible and edge arms retained all 32.
+The four offscreen arms measured 2.96 to 3.68 ms before and 0.93 to 1.20 ms after,
+approximately 66 to 72 percent lower synchronized render-wall time. The visible
+case measured 3.59 versus 3.78 ms; edge timing was approximately 4.10 ms in both
+arms. Headless checks overlapped the run, and individual-arm overlap was not
+recorded. These are local renderer-work samples, with no isolated-GPU,
+idle-host, visible-scene speedup or whole-game FPS claim. The updated viewer
+hook passed 21 checks, including offscreen clock progression and re-entry.
+Evidence: `artifacts/river-performance-20261017/native/river-performance.json`
+and `artifacts/river-performance-20261017/viewer-final.log`.
+
+Integration was checked through `Play.command` with a cold-boot Tactical gunner
+capture: 73 samples reached the original SIM, with the Tactical HUD, composited
+cockpit and terrain detail active, and no script/shader errors. The isolated
+water-only staged source kit passed 210 tests with 22 skips; its Git boundary
+check passed. Receipts are under `artifacts/river-integration-20261017/`.
+The installed app and published browser bundle were not changed.
+
+Working if: `test_pc_modern_environment_polish.gd -- --river-performance` observes
+exact world/final pixels and phase across visible, left/right/above/below and
+padded-edge ABBA cases; only the four wholly offscreen cases suppress redraws;
+the viewer check confirms their clock still advances and re-entry wakes both
+targets. The native performance correctness gate is included in `validate.sh`;
+its timing samples are reported without a machine-dependent pass threshold.
 
 ### Effect ownership boundary
 

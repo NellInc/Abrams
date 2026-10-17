@@ -63,6 +63,9 @@ receipt_for() {
     pc_play_display) echo '^PC_PLAY_DISPLAY: [1-9][0-9]* checks, 0 errors;' ;;
     pc_frame_pacing) echo '^PC_FRAME_PACING: [1-9][0-9]* checks, 0 errors;' ;;
     pc_presentation_reuse) echo '^PC_PRESENTATION_REUSE: [1-9][0-9]* checks, 0 errors;' ;;
+    pc_river_viewer) echo '^PC_RIVER_VIEWER: [1-9][0-9]* checks, 0 errors$' ;;
+    pc_river_flow_gpu) echo '^PC_RIVER_FLOW: [1-9][0-9]* checks, 0 errors$' ;;
+    pc_river_performance_gpu) echo '^PC_RIVER_PERFORMANCE: [1-9][0-9]* checks, 0 errors$' ;;
     pc_live_scheduling) echo '^PC_LIVE_SCHEDULING: [1-9][0-9]* checks, 0 errors$' ;;
     pc_interface_reference) echo '^PC_INTERFACE_REFERENCE: [1-9][0-9]* checks, 0 errors$' ;;
     portable_setup) echo '^PORTABLE_SETUP_RECOVERY: PASS$' ;;
@@ -268,6 +271,7 @@ run_check pc_tactical_effects ./tools/godot.sh --headless --quit-after 1200 --sc
 run_check pc_frame_pacing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_frame_pacing.gd
 run_check pc_live_scheduling ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_live_scheduling.gd
 run_check pc_presentation_reuse ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_presentation_reuse.gd
+run_check pc_river_viewer ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_presentation_reuse.gd -- --river-animation
 run_check pc_optional_genesis ./tools/godot.sh --headless --script res://tests/test_pc_optional_genesis.gd
 run_check pc_play_menu ./tools/godot.sh --headless --script res://tests/test_pc_play_menu.gd
 run_check pc_render_quality ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_render_quality.gd
@@ -363,6 +367,12 @@ if [ "${VALIDATE_NATIVE:-0}" = 1 ] || [ "$LIST" = 1 ]; then
   run_check pc_modern_cupola_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_cupola.gd -- --output "$(fresh native/modern-cupola)"
   # shellcheck disable=SC2086
   run_check pc_environment_polish_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_environment_polish.gd -- --output "$(fresh native/environment-polish)"
+  # Stationary river flow must refresh both retained textures without changing source ownership.
+  # shellcheck disable=SC2086
+  run_check pc_river_flow_gpu ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_environment_polish.gd -- --river-flow-gpu --output "$(fresh native/river-flow)"
+  # Offscreen redraw suppression must preserve exact pixels, phase and source ownership.
+  # shellcheck disable=SC2086
+  run_check pc_river_performance_gpu ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_environment_polish.gd -- --river-performance --output "$(fresh native/river-performance)"
   # The Tactical shader includes compile only in the runtime-patched surface variants.
   for contract in finishgrain diffusion groundlight optics radiance sheen bevel aerial microfinish arbor grounding horizon lighting naturalism; do
     # shellcheck disable=SC2086

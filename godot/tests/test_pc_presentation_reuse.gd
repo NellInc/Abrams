@@ -17,7 +17,8 @@ func _initialize() -> void:
 	tandem_frame.typography.load_sources(directory.path_join("GAME"))
 	tandem_frame.modern_available=true
 	root.size=Vector2i(640,480)
-	run.call_deferred()
+	if "--river-animation" in args:water_animation_contract.call_deferred()
+	else:run.call_deferred()
 
 func _process(_delta: float) -> bool: return false
 
@@ -44,6 +45,69 @@ func equivalent(source: Image, paired: Dictionary, world: Texture2D, program: Di
 		check(actual==(await snapshot()),label+": cached and uncached pixels")
 		pixels_compared+=1
 	check(source.get_data()==original and JSON.stringify(paired)==metadata,label+": immutable input")
+
+func water_animation_contract() -> void:
+	# Exercise the actual viewer hook without depending on historical cockpit
+	# PNGs. The production draw pass still validates the pinned river identity.
+	var directory:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+	audio_menu.config_path="";audio_menu.quality_config_path=""
+	root.add_child(audio_menu)
+	check(draw_view.load_modern_assets(directory),"river viewer loads production catalogue")
+	draw_view.terrain_style=preload("res://scripts/pc_terrain_style.gd").new()
+	check(draw_view.terrain_style.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")),"river viewer loads terrain")
+	var data:={"camera":{"clip":[0,0,319,199],"center":[160,100],"focal_pixels":192,"near_raw":16,
+		"matrix_q14_columns":[16384,0,0,0,16384,0,0,0,16384],"world_position_raw":[0,0,50]},
+		"palette_rgb":preload("res://scripts/pc_modern_assets.gd").PC_PALETTE.duplicate(true),"materials":[],
+		"background":{"kind":"horizon","line":[[0,100],[319,100]],"colors":[5,8]},
+		"objects":[{"shape_index":40,"root":4023,"static_path":true,"dynamic_instance":false,"polygons":[{
+			"primitive":4037,"fill_mode":1,"colors":[4,4],"camera_vertices":[[-320,500,-30],[320,500,-30],[320,900,-30],[-320,900,-30]]}]}]}
+	for index in 32:data.materials.append([index%16,index%16])
+	PcCamera.apply(camera,data.camera,Vector3.ZERO)
+	draw_view.modern_enabled=true;draw_view.tactical_landscape=true;draw_view.apply_pass(data)
+	check(draw_view.render_warnings.is_empty() and draw_view._river_present,"complete source material table admits the pinned river")
+	tandem_frame.set_graphics_mode("tactical");tandem_frame.world_enabled=true;previous_program={"name":"SIM"}
+	var builds:int=draw_view.mesh_build_count
+	world_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+	tandem_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+	_animate_water(0.1)
+	check(draw_view.water_phase>0.0,"viewer advances stationary Tactical river")
+	check(world_viewport.render_target_update_mode==SubViewport.UPDATE_ONCE and tandem_viewport.render_target_update_mode==SubViewport.UPDATE_ONCE,"viewer refreshes both retained targets")
+	for hold in ["capture","closing","state_control_pending","pending_state_command","frontend","fallback","modern","unfocused","menu"]:
+		var phase:float=draw_view.water_phase
+		capture=hold=="capture";closing=hold=="closing";state_control_pending=hold=="state_control_pending"
+		pending_state_command={"op":"load_state"} if hold=="pending_state_command" else {}
+		previous_program={"name":"START" if hold=="frontend" else "SIM"}
+		tandem_frame.world_enabled=hold!="fallback"
+		tandem_frame.graphics_mode="modern" if hold=="modern" else "tactical"
+		audio_menu.window_focused=hold!="unfocused";audio_menu.open_menus={"test":true} if hold=="menu" else {}
+		world_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+		tandem_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+		_animate_water(0.1)
+		check(draw_view.water_phase==phase and world_viewport.render_target_update_mode==SubViewport.UPDATE_DISABLED and tandem_viewport.render_target_update_mode==SubViewport.UPDATE_DISABLED,"river remains retained during "+hold)
+	check(draw_view.mesh_build_count==builds,"viewer animation never rebuilds paired geometry")
+	capture=false;closing=false;state_control_pending=false;pending_state_command={}
+	previous_program={"name":"SIM"};tandem_frame.world_enabled=true;tandem_frame.graphics_mode="tactical"
+	audio_menu.window_focused=true;audio_menu.open_menus={}
+	var outside:=data.duplicate(true)
+	for point:Array in outside.objects[0].polygons[0].camera_vertices:point[0]+=float(point[1])*4.0
+	draw_view.apply_pass(outside)
+	check(draw_view._river_present and not draw_view._river_visible,"offscreen river remains in original geometry")
+	var phase:float=draw_view.water_phase
+	world_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+	tandem_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+	_animate_water(0.1)
+	check(draw_view.water_phase>phase,"offscreen river keeps its exact clock cadence")
+	check(world_viewport.render_target_update_mode==SubViewport.UPDATE_DISABLED and tandem_viewport.render_target_update_mode==SubViewport.UPDATE_DISABLED,"invisible river leaves both retained targets asleep")
+	draw_view.apply_pass(data)
+	check(draw_view._river_visible,"returning river restores visible eligibility")
+	phase=draw_view.water_phase;_animate_water(0.1)
+	check(draw_view.water_phase>phase and world_viewport.render_target_update_mode==SubViewport.UPDATE_ONCE and tandem_viewport.render_target_update_mode==SubViewport.UPDATE_ONCE,"returning river resumes redraw without resetting phase")
+	draw_view.apply_pass({"objects":[]})
+	check(not draw_view._river_visible,"empty original pass clears visibility eligibility")
+	for error in errors:printerr("FAIL: "+error)
+	print("PC_RIVER_VIEWER: %d checks, %d errors"%[checks,errors.size()])
+	quit(0 if errors.is_empty() else 1)
 
 func run() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()

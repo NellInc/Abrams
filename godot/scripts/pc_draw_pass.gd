@@ -22,9 +22,12 @@ var profile_builds := false
 var last_apply_timings_usec: Dictionary = {}
 var mesh_build_count := 0
 var mesh_reuse_count := 0
-# Only the source-paired Play viewport opts in. Its shader has no wall-clock
-# animation; camera, ownership and material changes are in the mesh key.
+# Only the source-paired Play viewport opts in. River animation refreshes pixels
+# separately, retaining the source mesh, ownership mask and composition inputs.
 var retain_render_target := false
+var water_phase := 0.0
+var _river_present := false
+var _river_visible := false
 var _cached_pass: Dictionary = {}
 var _cached_config: Array = []
 # Sustained camera motion misses every frame, so its full deep snapshot is never
@@ -183,6 +186,43 @@ func clear_mesh_cache() -> void:
 	_cached_pass.clear()
 	_cached_config.clear()
 
+func advance_water(delta: float) -> bool:
+	# Only a verified, emitted river in Tactical can wake a retained target.
+	# Captures/tests stay deterministic unless their caller advances this clock.
+	if not is_finite(delta) or delta<=0.0 or not _river_present or not solid_enabled or not modern_enabled or not _modern_active or not tactical_landscape or not camera_basis_ready or not render_warnings.is_empty():return false
+	if mesh_node.mesh==null or mesh_node.mesh.get_surface_count()==0:return false
+	var material:ShaderMaterial=mesh_node.mesh.surface_get_material(0) as ShaderMaterial
+	if material==null or material.get_shader_parameter("modern_environment_polish")!=true or material.get_shader_parameter("modern_surface_variation")!=true:return false
+	if material.get_shader_parameter("modern_active")!=true or material.get_shader_parameter("tactical_landscape")!=true:return false
+	water_phase=fposmod(water_phase+minf(delta,0.1)*0.084,TAU)
+	material.set_shader_parameter("tactical_water_phase",water_phase)
+	# Preserve the exact clock/uniform even off screen. Only the GPU redraw can
+	# rest: these already near-clipped source triangles cannot reach the viewport.
+	if not _river_visible:return false
+	if retain_render_target and get_viewport() is SubViewport:
+		get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
+	return true
+
+func reset_water_animation() -> void:
+	water_phase=0.0
+	if mesh_node.mesh!=null and mesh_node.mesh.get_surface_count()>0:
+		var material:=mesh_node.mesh.surface_get_material(0) as ShaderMaterial
+		if material!=null:material.set_shader_parameter("tactical_water_phase",0.0)
+
+func _river_intersects_view(points:Array,frame:Dictionary) -> bool:
+	# Conservative screen bounds, including a full target pixel plus one source
+	# pixel for MSAA/edge rounding. Never cull a partially visible river, alter
+	# geometry, infer painter occlusion or read the ownership texture back.
+	var extent:=get_viewport().get_visible_rect().size
+	if extent.x<=0.0 or extent.y<=0.0:return true
+	var padding:=Vector2(1.0,1.0)+Vector2(frame.clip[2]-frame.clip[0]+1,frame.clip[3]-frame.clip[1]+1)/extent
+	var lower:=Vector2(INF,INF);var upper:=Vector2(-INF,-INF)
+	for point:Array in points:
+		var screen:=SurfaceGeometry.project(point,frame)
+		if not screen.is_finite():return true
+		lower=lower.min(screen);upper=upper.max(screen)
+	return upper.x>=float(frame.clip[0])-padding.x and lower.x<=float(frame.clip[2])+padding.x and upper.y>=float(frame.clip[1])-padding.y and lower.y<=float(frame.clip[3])+padding.y
+
 func _mesh_config() -> Array:
 	# Loaded presentation assets are immutable between loader revisions. Include
 	# the small mutable configuration arrays and texture references explicitly.
@@ -260,6 +300,8 @@ func apply_pass(pass_data: Dictionary) -> void:
 	_effects_inputs={}
 	_owner = 0
 	_modern_active = false
+	_river_present = false
+	_river_visible = false
 	modern_tree_count = 0
 	modern_running_gear_triangles = 0
 	modern_fallback_polygon_count = 0
@@ -457,6 +499,9 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 				var triangles: Array = SurfaceGeometry.triangle_vertices(points, frame)
 				var kind: int = TerrainStyle.surface_kind(object,polygon,hills) if terrain_active else 0
 				if terrain_active and _modern_active and modern_assets.water_surface(object,polygon): kind=14
+				if kind==14 and not triangles.is_empty():
+					_river_present=true
+					if not _river_visible:_river_visible=_river_intersects_view(triangles,frame)
 				if kind != 0: terrain_polygon_count += 1
 				if kind >= 7 and kind <= 9: hill_polygon_count += 1
 				var panel: Dictionary=vehicle_art.mapping(object,polygon,pass_data.palette_rgb) if vehicle_art else {}
@@ -494,6 +539,7 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 	material.set_shader_parameter("tactical_landscape",_modern_active and tactical_landscape)
 	material.set_shader_parameter("modern_surface_variation",true)
 	material.set_shader_parameter("modern_environment_polish",true)
+	material.set_shader_parameter("tactical_water_phase",water_phase)
 	if _modern_active:
 		material.set_shader_parameter("source_ownership",ownership.get_texture())
 		material.set_shader_parameter("modern_colours",modern_assets.colour_texture)
