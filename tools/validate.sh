@@ -103,6 +103,7 @@ receipt_for() {
     runtime) echo '^RUNTIME_SMOKE_PASS:' ;;
     pc_portrait_art|pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_instrument_lock|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_audio_limiter|pc_tactical_hud|pc_tactical_effects|pc_draw_pass|pc_optional_genesis|pc_play_menu|pc_render_quality|pc_play_shortcuts|pc_bridge_transport|pc_reference_search|pc_genesis_cockpits|pc_portrait_coverage|pc_audio_mix|pc_frontend_music|pc_remaining_audio)
       counted "$1" ;;
+    pc_suno_music) echo '^PC_SUNO_MUSIC: [1-9][0-9]* checks, 0 errors$' ;;
     # Native tier.
     pc_modern_native) echo '^PC_MODERN: PASS; [1-9][0-9]* checks; native=true$' ;;
     pc_modern_startup_native) echo '^PC_MODERN_STARTUP: PASS; entered_before_load=false; native=true; prewarmed=true$' ;;
@@ -332,6 +333,7 @@ run_check pc_radio ./tools/godot.sh --headless --script res://tests/test_pc_radi
 run_check pc_audio_limiter ./tools/godot.sh --headless --quit-after 10000 --script res://tests/test_pc_audio_limiter.gd
 run_check pc_audio_mix ./tools/godot.sh --headless --script res://tests/test_pc_audio_mix.gd
 run_check pc_frontend_music ./tools/godot.sh --headless --script res://tests/test_pc_frontend_music.gd
+run_check pc_suno_music ./tools/godot.sh --headless --script res://tests/test_pc_suno_music.gd
 run_check pc_remaining_audio ./tools/godot.sh --headless --script res://tests/test_pc_remaining_audio.gd
 run_check audio_shutdown ./tools/godot.sh --headless --verbose --script res://tests/test_audio_shutdown.gd
 # The promo capture scripts extend pc_bridge_viewer.gd and call its private

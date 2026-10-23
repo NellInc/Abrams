@@ -128,6 +128,9 @@ func _tint_menu_icon(name: String, tint: Color) -> void:
 func _watch(menu: PopupMenu) -> void:
 	super._watch(menu)
 	menu.about_to_popup.connect(func():
+		# AppKit may populate native menus reentrantly for accessibility.
+		# Native separators already cannot focus; never mutate them here.
+		if menu.is_native_menu(): return
 		# An empty Load menu otherwise focuses its only enabled item: a divider.
 		# Restored receives the incumbent separator flags when reopened.
 		for index in menu.item_count:

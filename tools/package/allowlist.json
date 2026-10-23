@@ -546,7 +546,10 @@
     "web-prototype/build_remaster_assets.py",
     "web-prototype/package_site.py",
     "web-prototype/test_build_remaster.py",
-    "web-prototype/test_package_site.py"
+    "web-prototype/test_package_site.py",
+    "godot/scripts/pc_suno_music.gd",
+    "godot/tests/test_pc_suno_music.gd",
+    "tools/import_suno_score.py"
   ],
   "private": [
     ".runtime/dosbox-pure-source/LICENSE",
@@ -1454,6 +1457,27 @@
     "local-audio/frontend-music-v1/intro.wav",
     "local-audio/frontend-music-v1/manifest.json",
     "local-audio/frontend-music-v1/menu.wav",
-    "reference/genesis/extracted/gunner/palette.gpl"
+    "reference/genesis/extracted/gunner/palette.gpl",
+    "godot/data/pc_suno_score.json",
+    "local-audio/suno-score-v1/manifest.json",
+    "local-audio/suno-score-v1/menu.wav",
+    "local-audio/suno-score-v1/briefing.wav",
+    "local-audio/suno-score-v1/arming.wav",
+    "local-audio/suno-score-v1/idyll.wav",
+    "local-audio/suno-score-v1/battle.wav",
+    "local-audio/suno-score-v1/crisis.wav",
+    "local-audio/suno-score-v1/success.wav",
+    "local-audio/suno-score-v1/failure.wav",
+    "local-audio/suno-score-v1/friendly_fire.wav",
+    "local-audio/suno-score-v1/death.wav",
+    "local-audio/suno-score-v1/ending_victory.wav",
+    "local-audio/suno-score-v1/ending_defeat.wav",
+    "local-audio/suno-score-v1/stinger_success.wav",
+    "local-audio/suno-score-v1/stinger_failure.wav",
+    "local-audio/suno-score-v1/stinger_friendly_fire.wav",
+    "local-audio/suno-score-v1/stinger_death.wav",
+    "local-audio/suno-score-v1/battle_flank.wav",
+    "local-audio/suno-score-v1/battle_pressure.wav",
+    "local-audio/suno-score-v1/aftermath.wav"
   ]
 }

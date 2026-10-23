@@ -1,6 +1,10 @@
 extends RefCounted
 ## Local sample-based authored score. Proprietary percussion never enters res://.
 const CONTEXTS := ["intro", "menu", "briefing", "debrief"]
+var contexts: Array = CONTEXTS.duplicate()
+var independent := false
+var game_enabled := false
+var source_active := false
 const IntroArt = preload("res://scripts/pc_intro_art.gd")
 var directory := ""
 var streams: Dictionary = {}
@@ -13,6 +17,7 @@ var manifest: Dictionary = {}
 # manifest sha plus file size and (1 s resolution) mtime. A same-size replacement
 # within the same second would decode unverified until the next session.
 static var verified: Dictionary = {}
+static var decoded_independent: Dictionary = {}
 var hash_count := 0
 var full_frame_hashes := 0
 
@@ -20,7 +25,7 @@ func _init() -> void:
 	directory = ("/" if OS.has_feature("web") else ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()).path_join("local-audio/frontend-music-v1")
 
 func get_stream(context: String) -> AudioStreamWAV:
-	if context not in CONTEXTS or not failure.is_empty() or failures.has(context): return null
+	if context not in contexts or not failure.is_empty() or failures.has(context): return null
 	if streams.has(context): return streams[context]
 	if manifest.is_empty():
 		var path := directory.path_join("manifest.json")
@@ -41,13 +46,19 @@ func get_stream(context: String) -> AudioStreamWAV:
 		hash_count+=1
 		if FileAccess.get_sha256(path)!=track.sha256: return _fail(context,"Local frontend music hash mismatch: "+context)
 		verified[path]=stamp
+	var decode_stamp: Array=[stamp,track.get("loop",true),track.get("loop_begin",0)]
+	if independent and decoded_independent.has(path) and decoded_independent[path][0]==decode_stamp:
+		streams[context]=decoded_independent[path][1]
+		return streams[context]
 	var stream := AudioStreamWAV.load_from_file(path)
 	if stream==null or stream.mix_rate!=24000 or not stream.stereo:
 		return _fail(context,"Invalid local frontend music PCM: "+context)
-	stream.loop_mode=AudioStreamWAV.LOOP_FORWARD
-	stream.loop_begin=0
+	stream.loop_mode=AudioStreamWAV.LOOP_FORWARD if track.get("loop",true) else AudioStreamWAV.LOOP_DISABLED
+	stream.loop_begin=int(track.get("loop_begin",0))
 	stream.loop_end=roundi(stream.get_length()*stream.mix_rate)
+	if stream.loop_begin<0 or stream.loop_begin>=stream.loop_end: return _fail(context,"Invalid local music loop: "+context)
 	streams[context]=stream
+	if independent: decoded_independent[path]=[decode_stamp,stream]
 	return stream
 
 func prewarm() -> void:
@@ -55,7 +66,7 @@ func prewarm() -> void:
 	# or debrief frame never stalls on a multi-megabyte WAV. Main thread only:
 	# _sync_music reads streams synchronously.
 	_load_intro_fingerprints()
-	for context in CONTEXTS:
+	for context in contexts:
 		get_stream(context)
 		if manifest.is_empty() or not failure.is_empty(): return # optional local assets absent
 
@@ -87,8 +98,14 @@ func context_for_frame(source: Image, program: Dictionary, presentation: Diction
 				_last_start_bytes=bytes
 			if _last_start_intro: return "intro"
 	if presentation.get("frontend_program")!=program: return ""
+	if not verified_text(source,presentation).is_empty():
+		return {"START":"menu","BRIEF":"briefing","END":"debrief"}[name]
+	return ""
+
+func verified_text(source: Image, presentation: Dictionary) -> Array[String]:
+	var found: Array[String] = []
 	var runs= presentation.get("text_runs")
-	if not runs is Array: return ""
+	if not runs is Array: return found
 	for run in runs:
 		if not run is Dictionary or not run.get("text") is String or run.text.strip_edges().is_empty(): continue
 		var box=run.get("rect")
@@ -102,8 +119,29 @@ func context_for_frame(source: Image, program: Dictionary, presentation: Diction
 		var hash := HashingContext.new()
 		hash.start(HashingContext.HASH_SHA256);hash.update(source.get_region(rect).get_data())
 		if hash.finish().hex_encode()!=run.pixel_sha256: continue
-		return {"START":"menu","BRIEF":"briefing","END":"debrief"}[name]
+		found.append(run.text)
+	return found
+
+func gameplay_context(_state: Variant, _program: Dictionary) -> String:
 	return ""
+
+func track_for_context(context: String) -> String:
+	return context
+
+func followup_track(_track: String) -> String:
+	return ""
+
+func update_source(_packet: Dictionary) -> void:
+	pass
+
+func observe_event(_event: Dictionary) -> void:
+	pass
+
+func reset_score() -> void:
+	pass
+
+func rebase_source() -> void:
+	pass
 
 func _load_intro_fingerprints() -> void:
 	if intro_checked: return

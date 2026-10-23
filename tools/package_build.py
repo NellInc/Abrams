@@ -80,7 +80,7 @@ def validate_name(name, kind):
         raise ValueError(f'Forbidden private state: {name}')
     if 'genesis' in parts and not (kind == 'private' and name.startswith(('local-art/genesis/', 'reference/genesis/'))):
         raise ValueError(f'Original ROM directory: {name}')
-    if parts[0] == 'local-audio' and not (kind == 'private' and name.startswith('local-audio/frontend-music-v1/')):
+    if parts[0] == 'local-audio' and not (kind == 'private' and name.startswith(('local-audio/frontend-music-v1/', 'local-audio/suno-score-v1/'))):
         raise ValueError(f'Unreviewed audio working files: {name}')
     if kind == 'source':
         if parts[0] in {'game', 'reference', 'local-art', '.runtime'} or lower.startswith(('godot/assets/', 'godot/data/')):

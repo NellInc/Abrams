@@ -120,7 +120,7 @@ async function prepareIsolation() {
     isolationReady = true;
     input.disabled = false;
     genesisInput.disabled = false;
-    report('Choose your original PC folder to begin. Your optional Genesis ROM unlocks the Genesis remaster artwork and music.');
+    report('Choose your original PC folder to begin. Your optional Genesis ROM unlocks the Genesis remaster artwork.');
     selectionChanged();
     return;
   }
@@ -421,7 +421,7 @@ startButton.addEventListener('click', async () => {
       host.first, engine.init('./.generated/godot/index'),
       engine.preloadFile('./.generated/godot/index.pck', 'index.pck'),
     ]), 300000, 'The original game or remaster engine did not become ready. Reload to retry safely.', () => startup.abort());
-    // Genesis-gated artwork and music download only for a verified ROM. The
+    // Genesis-gated artwork downloads only for a verified ROM. The
     // loader fails on a stalled connection rather than a fixed deadline.
     const megabytes = bytes => (bytes / 1e6).toFixed(0);
     await installRemasterAssets(engine, (done, total, received, size) =>

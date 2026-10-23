@@ -15,14 +15,18 @@ indirect calls elsewhere in the program.
 | Scenario, destroyed class and speed | 50 captions from 54 assignments | 50 takes |
 | Radio | 7 captions | 7 takes |
 | Accepted cannon, smoke and visible READY | 3 qualified event routes | 3 reused authored voices |
-| Frontend music | 4 source-qualified contexts | 4 local authored arrangements |
+| Historical frontend music | 4 source-qualified contexts | 4 local authored arrangements |
+| Independent Suno score | Source-qualified frontend, combat, outcome and ending routes | 12 preserved masters, 19 derivatives: 9 loops, 4 stingers, 6 full one-shots |
 
 There are 345 distinct caption strings in the checked original CPU domains and
 449 installed PC-caption takes. A further nine shared calibration voices are
 installed, three of which have explicit PC event routes. The bank contains 472
 export-tree WAVs: 458 voices and 14 effects/loops. The reload effect is retained
 for the calibration range; PC READY uses its source-visible voice gate. Four
-source-derived local music WAVs remain outside the export tree.
+source-derived local music WAVs remain outside the export tree. The additional
+Suno pack is independently authored from text prompts, uses no uploaded game
+audio, and stays in `local-audio/suno-score-v1/`; production and the 112-check
+focused playback receipt are recorded in `pc-audio-mix.md`.
 
 The 21 original message/radio routing callsites are classified separately from
 caption counts. A caption count alone cannot establish that every caller has

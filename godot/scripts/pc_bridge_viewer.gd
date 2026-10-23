@@ -528,11 +528,11 @@ func _load_cockpit_presentation(directory: String) -> void:
 		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
 	if play_mode: tandem_frame.load_graphics_sources(directory)
 
-func _apply_frontend_music(source: Image, program: Dictionary, presentation: Dictionary) -> void:
-	# The authored frontend arrangements contain Genesis percussion. Generated
-	# voices and synth gameplay samples retain their existing source timing.
-	var context: String = "" if pc_only else pc_audio.music_context_for_frame(source,program,presentation)
-	pc_audio.apply_music_context(context,not pc_only)
+func _apply_frontend_music(source: Image, program: Dictionary, presentation: Dictionary, state: Variant=null) -> void:
+	# Independent score uses no Genesis import and never drives the guest.
+	var allowed: bool=not pc_only or pc_audio.music_bank.independent
+	var context: String=pc_audio.music_context_for_frame(source,program,presentation,state) if allowed else ""
+	pc_audio.apply_music_context(context,allowed)
 
 func _build_ui() -> void:
 	if play_mode:
@@ -610,7 +610,7 @@ func _build_ui() -> void:
 		footer = "Scanout-paired Godot world with original cockpit, reticle and messages. Source-resolution UI is temporary; high-resolution artwork and exact polygon edges remain open."
 		if gunner_art_requested: footer = "Material pilot: verified gunner-surround pixels use high-resolution art. Instruments and other stations remain original. Camera geometry stays authoritative."
 		if cockpit_art_requested: footer = "High-resolution cockpit materials follow original pixel provenance. Live instruments, messages, visibility and controls remain authoritative."
-		if pc_only: footer = "PC-only presentation: high-resolution world and PC typography, original cockpit and effects. Genesis artwork and frontend music require the optional import."
+		if pc_only: footer = "PC-only presentation: high-resolution world and PC typography, original cockpit and effects. Genesis artwork requires the optional import."
 		if wire_mode: footer = "Original wireframe diagnostic. Omit --wire for filled surfaces."
 	stack.add_child(_label(footer,17))
 
@@ -967,7 +967,7 @@ func _apply_sample(message: Dictionary) -> void:
 	var frontend_layer = tandem_frame.get("frontend_art")
 	if frontend_layer != null: frontend_layer.intro_art.source_frame = int(message.get("sequence", -1))
 	if pc_audio:
-		_apply_frontend_music(image,previous_program,message.get("presentation",{}))
+		_apply_frontend_music(image,previous_program,message.get("presentation",{}),state)
 	if not state is Dictionary:
 		previous = {}
 		previous_presentation = message.get("presentation", {})
@@ -1089,7 +1089,9 @@ func _capture() -> void:
 		"hud_style":play_display.hud_style if play_mode and play_display else "restored","fast_forward":fast_forward,
 		"display": play_display.description() if play_mode else {"mode":"comparison"},
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
-		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions} if pc_audio else null,
+		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions,
+			"music_context":pc_audio.music_context,"music_track":pc_audio.music_track,"music_playing":pc_audio.music.playing,
+			"independent_score":pc_audio.music_bank.independent,"music_failure":pc_audio.music_bank.failure} if pc_audio else null,
 		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,
 		"driver_assembly": tandem_frame.driver_assembly_enabled if trace_mode else false,
 		"pc_only": pc_only,

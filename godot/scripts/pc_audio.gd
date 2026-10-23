@@ -26,10 +26,19 @@ var delivered := 0
 var suppressed := 0
 var receipts: Array[Dictionary] = []
 const FrontendMusic = preload("res://scripts/pc_frontend_music.gd")
+const SunoMusic = preload("res://scripts/pc_suno_music.gd")
 var music_bank := FrontendMusic.new()
+var prefer_independent_music := true
+var music_source_program := ""
 var music: AudioStreamPlayer
+var music_tail: AudioStreamPlayer
+var music_completed := false
+var music_started := false
+var music_transition := 0.0
+var music_tail_gain := 0.0
 var music_mix := 70
 var music_context := ""
+var music_track := ""
 var music_allowed := false
 var music_starts := 0
 var music_resume_position := 0.0
@@ -54,7 +63,7 @@ func _create_presentation_bus() -> void:
 	limiter.pre_gain_db=0.0
 	limiter.release=0.1
 	AudioServer.add_bus_effect(index,limiter)
-	for player in [engine,voice,turret,music]+effects:
+	for player in [engine,voice,turret,music,music_tail]+effects:
 		player.bus=presentation_bus
 
 func _exit_tree() -> void:
@@ -110,10 +119,19 @@ func _ready() -> void:
 	turret.stream = stream
 	music=AudioStreamPlayer.new()
 	add_child(music)
+	music.finished.connect(func(): music_completed=true)
+	music_tail=AudioStreamPlayer.new()
+	add_child(music_tail)
 	_create_presentation_bus()
 	set_mix(mix)
 	# Verify and decode local frontend music before the first frontend frame.
+	var independent_bank:=SunoMusic.new()
+	if prefer_independent_music and FileAccess.file_exists(independent_bank.directory.path_join("manifest.json")):
+		music_bank=independent_bank
 	music_bank.prewarm()
+	if not music_bank.failure.is_empty(): push_warning(music_bank.failure)
+	if OS.has_feature("web") and music_bank.independent and music_bank.failure.is_empty() and music_bank.failures.is_empty():
+		print("PC_SCORE_READY: %d verified PCM streams"%music_bank.streams.size())
 
 func _stop_source_audio() -> void:
 	super.stop_all()
@@ -123,6 +141,9 @@ func _stop_source_audio() -> void:
 
 func stop_all() -> void:
 	_stop_source_audio()
+	music_allowed=false
+	if is_instance_valid(music_tail): music_tail.stop()
+	music_transition=0.0
 	if is_instance_valid(music):
 		_remember_playback(music)
 		music.stop()
@@ -134,19 +155,35 @@ func set_music_mix(value: int) -> bool:
 	_sync_music()
 	return true
 
-func music_context_for_frame(source: Image, program: Dictionary, presentation: Dictionary) -> String:
-	return music_bank.context_for_frame(source,program,presentation)
+func music_context_for_frame(source: Image, program: Dictionary, presentation: Dictionary, state: Variant=null) -> String:
+	if source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8: return ""
+	music_source_program=str(program.get("name",""))
+	var context:=music_bank.context_for_frame(source,program,presentation)
+	if context.is_empty() and program.get("name")=="SIM": context=music_bank.gameplay_context(state,program)
+	return context
 
 func apply_music_context(context: String, enabled: bool, paused: bool=false) -> void:
-	# Caller supplies only a currently source-qualified frontend, never guessed
-	# from input, queued text, combat outcome or remaster wall-clock pacing.
-	var selected := context if context in FrontendMusic.CONTEXTS else ""
+	# Source-visible screen or accepted event only, never hidden world state.
+	var selected := context if context in music_bank.contexts else ""
+	if music_bank.independent and music_source_program=="SIM" and not music_bank.game_enabled and (selected!="death" or music_bank.source_active): enabled=false
 	if selected!=music_context:
+		music_tail.stop()
+		music_transition=0.0
+		if music_bank.independent and music.playing and music_allowed and enabled and not transport_muted:
+			music_tail.stream=music.stream
+			music_tail_gain=db_to_linear(music.volume_db)
+			music_tail.volume_db=music.volume_db
+			music_tail.play(music.get_playback_position())
+			_remember_playback(music_tail)
+			music_transition=0.6
 		if is_instance_valid(music):
 			_remember_playback(music)
 			music.stop()
 		music_context=selected
+		music_track=music_bank.track_for_context(selected) if not selected.is_empty() else ""
 		music_resume_position=0.0
+		music_completed=false
+		music_started=false
 	music_allowed=enabled and not paused and not selected.is_empty()
 	_sync_music()
 
@@ -154,19 +191,48 @@ func _sync_music() -> void:
 	if not is_instance_valid(music): return
 	var active := music_allowed and not transport_muted and failure.is_empty() and volume*music_mix>0
 	if not active:
+		music_tail.stop()
+		music_transition=0.0
 		if music.playing:
 			music_resume_position=music.get_playback_position()
+			music_started=false
 			_remember_playback(music)
 			music.stop()
 		return
-	music.volume_db=linear_to_db(maxf(0.00001,volume*float(music_mix)/100.0*0.30))
+	# AudioServer can report stopped before the finished signal is delivered.
+	# Latch a naturally completed one-shot instead of restarting it that frame.
+	if not music.playing and music_started and music.stream is AudioStreamWAV and music.stream.loop_mode==AudioStreamWAV.LOOP_DISABLED:
+		music_completed=true
+	if not music.playing and music_completed:
+		var next:=music_bank.followup_track(music_track)
+		if next.is_empty(): return
+		music_track=next
+		music_completed=false
+		music_started=false
+		music_resume_position=0.0
+		music_transition=0.6
+	var duck:=0.32 if music_bank.independent and voice.playing and volume*voice_volume>0.0 else 1.0
+	var fade:=1.0-music_transition/0.6
+	var attack:=1.0 if music_track.begins_with("stinger_") else fade
+	music.volume_db=linear_to_db(maxf(0.00001,volume*float(music_mix)/100.0*0.30*duck*attack))
+	if music_tail.playing:
+		music_tail.volume_db=linear_to_db(maxf(0.00001,minf(music_tail_gain,volume*float(music_mix)/100.0*0.30)*duck*(1.0-fade)))
 	if music.playing: return
-	var stream := music_bank.get_stream(music_context)
+	var stream := music_bank.get_stream(music_track)
 	if stream==null: return
 	music.stream=stream
 	music.play(fmod(music_resume_position,stream.get_length()))
+	music_started=true
 	_remember_playback(music)
 	music_starts+=1
+	if OS.has_feature("web") and music_bank.independent:
+		print("PC_SCORE_PLAYING: context=%s track=%s playing=%s"%[music_context,music_track,music.playing])
+
+func _process(delta: float) -> void:
+	if not music_bank.independent: return
+	music_transition=maxf(0.0,music_transition-minf(delta,0.05))
+	if music_transition==0.0 and music_tail.playing: music_tail.stop()
+	_sync_music()
 
 func set_transport_muted(value: bool) -> void:
 	if transport_muted==value: return
@@ -193,8 +259,13 @@ func reset_timeline() -> void:
 	current_loops={}
 	muted=true
 	music_context=""
+	music_track=""
 	music_allowed=false
 	music_resume_position=0.0
+	music_completed=false
+	music_started=false
+	music_source_program=""
+	music_bank.reset_score()
 	continuing_timeline=false
 	# A protocol failure remains latched. Restore is not a validation bypass.
 
@@ -211,6 +282,7 @@ func continue_timeline() -> void:
 	receipts.clear()
 	loop_transitions.clear()
 	continuing_timeline=true
+	music_bank.rebase_source()
 
 func play(cue: String) -> void:
 	if not transport_muted: super.play(cue)
@@ -222,8 +294,10 @@ func release_streams() -> void:
 	super.release_streams()
 	if is_instance_valid(turret): turret.stream = null
 	if is_instance_valid(music): music.stream=null
+	if is_instance_valid(music_tail): music_tail.stop();music_tail.stream=null
 	music_allowed=false
 	music_context=""
+	music_track=""
 	music_bank.streams.clear()
 
 func _valid_loops(loops) -> bool:
@@ -414,7 +488,12 @@ func apply_audio(packet: Dictionary) -> bool:
 	# gates (inactive with events, or sound disabled) still stop everything.
 	if (int(packet.epoch) != epoch and not continuing_timeline) or not packet.active or not packet.enabled: _stop_source_audio()
 	if packet.active: continuing_timeline = false
-	if packet.active: apply_music_context("",false) # gameplay remains musically quiet
+	if int(packet.epoch)!=epoch and not continuing_timeline: music_bank.reset_score()
+	music_bank.update_source(packet)
+	if music_bank.independent and packet.active and music_source_program=="SIM":
+		music_allowed=packet.enabled and not music_context.is_empty()
+		_sync_music()
+	if packet.active and not music_bank.independent: apply_music_context("",false)
 	epoch = int(packet.epoch)
 	last_frame = int(packet.frame)
 	muted = not packet.active or not packet.enabled
@@ -428,6 +507,7 @@ func apply_audio(packet: Dictionary) -> bool:
 		elif last_frame - int(event.frame) > MAX_AGE_FRAMES: reason = "stale-diagnostic-step"
 		elif event.kind not in ["readiness_visible", "crew_visible", "radio_visible"] and (event.kind != "sound" or event.get("sample") == null): reason = "unmapped-original-request"
 		if reason.is_empty():
+			music_bank.observe_event(event)
 			if event.get("sample") != null: play(event.sample)
 			if event.get("voice") != null: speak(event.voice)
 			delivered += 1

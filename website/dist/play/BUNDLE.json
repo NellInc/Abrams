@@ -37,8 +37,8 @@
       "sha256": "efb917219f345230545e5fe56ed0df313418e604e1ce42bd5cc3789c4b6bd37f"
     },
     ".generated/godot/index.pck": {
-      "bytes": 13630644,
-      "sha256": "2ce8658c42dca39663d813c63c1093cf3ce4b34d0d250bfba30e6d7517c43217"
+      "bytes": 13660208,
+      "sha256": "abcc309334d3b2d249c648851ae21745482150a319582e0f14cac600db4519d2"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
@@ -69,8 +69,8 @@
       "sha256": "831fd1e535084b972f87c6a35275de3d236efd5166f5e77ce89497710635e73c"
     },
     ".generated/python-source.zip": {
-      "bytes": 430860,
-      "sha256": "55233effcea129d410b33c8905681ae1f0d59d1dc586686ca16c9421f3965ef6"
+      "bytes": 444266,
+      "sha256": "30577e0263fa1d043c6c39b8e1a7cc4b74e5d04bf85bb97e425b57050acb7e93"
     },
     ".generated/remaster-assets-00.zip": {
       "bytes": 29013294,
@@ -85,28 +85,44 @@
       "sha256": "b855416d90d782ca8dbaae95226f667b97b541b9b1edf9643a8d5bea1ae6cf08"
     },
     ".generated/remaster-assets-03.zip": {
+      "bytes": 44410190,
+      "sha256": "7739d8fe81a8ab8f93c5ef1de2ad67da0f5390afc5c41f1c2c6635ca1ff63393"
+    },
+    ".generated/remaster-assets-04.zip": {
+      "bytes": 37824626,
+      "sha256": "01126ac67925252e9e037fbdaab8435893491737fddc01af615c86afd256c119"
+    },
+    ".generated/remaster-assets-05.zip": {
+      "bytes": 47648988,
+      "sha256": "b3fe579bdaceea31d9f79350536c594f48aaadce271e022c97daebe8de4ae36e"
+    },
+    ".generated/remaster-assets-06.zip": {
+      "bytes": 15453828,
+      "sha256": "0da15702a90d6a2b30a7292c81fc772482a5b5ff416bc7bb3c7ec04354068728"
+    },
+    ".generated/remaster-assets-07.zip": {
       "bytes": 11564046,
       "sha256": "27a69ccbf0d8f207c15c67b450af0f0d2cc3f51ffb174e5676227730d921f087"
     },
-    ".generated/remaster-assets-04.zip": {
+    ".generated/remaster-assets-08.zip": {
       "bytes": 46896494,
       "sha256": "55ddcc26b9f31c3a99c19577f07925984a77e857b583fdcd606b004612f633b8"
     },
-    ".generated/remaster-assets-05.zip": {
+    ".generated/remaster-assets-09.zip": {
       "bytes": 16762438,
       "sha256": "52ebd129c4e72732f2e37670be2d315449af13d8e6f7e572b131e14deb758fff"
     },
-    ".generated/remaster-assets-06.zip": {
+    ".generated/remaster-assets-10.zip": {
       "bytes": 16185537,
       "sha256": "11c2c5885350dd94546483dcc863356219d18a3446a43424a8803489430e129e"
     },
-    ".generated/remaster-assets-07.zip": {
+    ".generated/remaster-assets-11.zip": {
       "bytes": 1403953,
       "sha256": "1cd06a3c316bd5891ef40486418f7289d17e7a4754c6fe8ad287ec218b89f8e6"
     },
     ".generated/remaster-assets.json": {
-      "bytes": 28946,
-      "sha256": "7548c3302d70bce9981d6c3af13e8491c4808180224b4114e0d6832a3da5606e"
+      "bytes": 32696,
+      "sha256": "4ec266d8fbb0bdb47f5f66da1e87d808af25eae744cb8adcbc65b32df50d9b57"
     },
     ".generated/web-core-corresponding-source.tar.gz": {
       "bytes": 2311357,
@@ -181,12 +197,12 @@
       "sha256": "7c3173b44bfececa2d77f27f94663e60195434a9542a0f792171086435571f15"
     },
     "remaster.html": {
-      "bytes": 12079,
-      "sha256": "6b27a7e253e9dc586b6c3ea7abd31bd29d442acc15ddfce0728adab201aac957"
+      "bytes": 12058,
+      "sha256": "697b74c5d4b9126da82b48a0177fe9973e46903fba52cc76d5d28af64af069fe"
     },
     "remaster.mjs": {
-      "bytes": 23824,
-      "sha256": "c5e62465a7e082a5676f48999d0c3f192821e2b00442c4b7d0fd02fd12772c6e"
+      "bytes": 23805,
+      "sha256": "ce8a2b5123528bdf63ce2e3164216b7d1d0d58536e19ec0840888a92e2e7d19f"
     },
     "remaster.service.worker.js": {
       "bytes": 4557,
