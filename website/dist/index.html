@@ -417,7 +417,7 @@
         <h2 id="install-title"><span class="kicker">Free download</span> Ready to roll?</h2>
         <p>The fan remaster is free. Bring your own supported copy of the original PC game. A Sega Genesis ROM is optional; neither is included.</p>
         <div class="platform-downloads">
-          <a class="button button-outline download-button" data-platform="macos" href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.6/Abrams-0.1.0-alpha.6-macOS-arm64.zip"><span>Download for macOS</span><span class="dot-list"><span>macOS&nbsp;14+</span><span>Apple&nbsp;Silicon</span><span>alpha&nbsp;6</span><span>322&nbsp;MB&nbsp;ZIP</span></span></a>
+          <a class="button button-outline download-button" data-platform="macos" href="https://github.com/NellInc/Abrams/releases/download/model-menu-preview-20261023/Abrams-model-menu-preview-20261023-macOS-arm64.zip"><span>Download for macOS</span><span class="dot-list"><span>macOS&nbsp;14+</span><span>Apple&nbsp;Silicon</span><span>23&nbsp;Oct&nbsp;preview</span><span>571&nbsp;MB&nbsp;ZIP</span></span></a>
           <a class="button button-outline download-button" data-platform="windows" href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.6/Abrams-0.1.0-alpha.6-Windows-x86_64.zip"><span>Download for Windows</span><span class="dot-list"><span>Windows&nbsp;10+</span><span>x86_64</span><span>alpha&nbsp;6</span><span>325&nbsp;MB&nbsp;ZIP</span></span></a>
           <a class="button button-outline download-button" data-platform="linux" href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.6/Abrams-0.1.0-alpha.6-Linux-x86_64.zip"><span>Download for Linux</span><span class="dot-list"><span>Linux</span><span>x86_64</span><span>glibc&nbsp;2.35+</span><span>alpha&nbsp;6</span><span>337&nbsp;MB&nbsp;ZIP</span></span></a>
           <a class="web-option" href="play/remaster.html"><span>Play in browser <small>Web edition</small></span><span>Bring your original PC game folder. A Genesis ROM is optional.</span></a>
@@ -428,13 +428,15 @@
           <a class="button button-outline download-button" href="assets/guides/field-guide.pdf?v=f3c1f782aec2" download="Abrams-Field-Guide.pdf"><span>Field guide</span><span class="dot-list"><span>31 illustrated pages</span><span>PDF</span><span>4.8&nbsp;MB</span></span></a>
         </div>
         <div class="download-links">
+          <a href="https://github.com/NellInc/Abrams/releases/tag/model-menu-preview-20261023">macOS preview notes</a>
+          <a href="https://github.com/NellInc/Abrams/releases/download/model-menu-preview-20261023/SHA256SUMS-model-menu-preview.txt">Preview checksum</a>
           <a href="https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.6">Alpha 6 release notes</a>
           <a href="https://github.com/NellInc/Abrams/releases/download/v0.1.0-alpha.6/SHA256SUMS.txt">Checksums</a>
           <a href="https://github.com/NellInc/Abrams/issues/new">Report a bug</a>
         </div>
       </div>
       <div class="platform-details">
-        <p><strong>macOS</strong>Apple Silicon, macOS&nbsp;14+<br><span class="nowrap">version 0.1.0-alpha.6</span><br>Signed and notarized by Apple</p>
+        <p><strong>macOS</strong>Apple Silicon, macOS&nbsp;14+<br><span class="nowrap">23 October preview</span><br>Developer ID signed. Not submitted for Apple notarization.</p>
         <p><strong>Windows &amp; Linux</strong>Native x86_64 portable apps<br><span class="nowrap">version 0.1.0-alpha.6</span><br>Linux needs a graphical desktop with working OpenGL</p>
       </div>
       <div class="install-guide">
@@ -444,7 +446,7 @@
           <li><h3>Add Genesis, if you have it</h3><p>Click <strong>Add Genesis ROM…</strong> and choose the raw ROM, not a ZIP. It adds Genesis-based artwork; EGA, EGA Upscaled, Genesis Upscaled, Modern and Tactical work without it. The PC game is still required.</p></li>
           <li><h3>Take command</h3><p>Click <strong>Play Abrams</strong> on macOS or <strong>Play</strong> on Windows and Linux. The original game supplies the simulation; the remaster supplies the presentation.</p></li>
         </ol>
-        <p class="release-note">These are early test builds. Alpha 6 passes automated checks on every platform and the macOS app is notarized by Apple, but full mission playtesting continues, and Modern and Tactical graphics are experimental. On macOS and Linux, alpha 5 save states load in alpha 6; Windows and earlier alphas need their matching build.</p>
+        <p class="release-note">The macOS preview and Web edition include the updated models, animated menu, HUD and 19-track score. Windows and Linux remain alpha 6. Modern and Tactical graphics are experimental; full mission playtesting continues. Keep your previous app for save-state compatibility and rollback.</p>
       </div>
       <div class="source-download">
         <h3>Build, explore, contribute.</h3>
@@ -461,7 +463,7 @@
         <details><summary>Is the original game included?</summary><p>No. The remaster is free, but it runs your own copy of the original PC game, which isn’t included. A Sega Genesis ROM is optional and isn’t included either.</p></details>
         <details><summary>Which copy of the PC game works?</summary><p>The importer checks every file against the one supported release and turns away other versions, changed files and partial folders. Choose the complete extracted game folder (all 68 original files), not a ZIP or the executables alone.</p></details>
         <details><summary>Do I need the Genesis ROM?</summary><p>No. Only Genesis mode needs it. With the PC game alone, the Web edition offers EGA, EGA Upscaled, Genesis Upscaled, Modernized and Tactical, and the alpha&nbsp;6 downloads offer EGA, EGA Upscaled, Genesis Upscaled, Modern and Tactical. The supported raw ROM (not a ZIP) adds Genesis-mode artwork and music in the Web edition and Genesis-based artwork in the downloads; it can’t replace the PC game.</p></details>
-        <details><summary>My computer warns me about the app.</summary><p>The macOS app is signed and notarized by Apple, so it opens normally. The Windows build is unsigned, so Windows may ask you to approve it. Compare your download with the published checksums, and never turn off system-wide security. On Linux, if the launcher won’t start, restore execute permissions as the <a href="https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.6">alpha 6 release notes</a> describe.</p></details>
+        <details><summary>My computer warns me about the app.</summary><p>The macOS preview is Developer ID signed; the earlier alpha 6 is also notarized by Apple. The Windows build is unsigned, so Windows may ask you to approve it. Compare your download with the published checksums, and never turn off system-wide security. On Linux, if the launcher won’t start, restore execute permissions as the <a href="https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.6">alpha 6 release notes</a> describe.</p></details>
         </div>
         <div class="faq-col">
         <details><summary>Upgrading from an earlier alpha?</summary><p>Back up your Abrams profile and keep your previous alpha; save states load only in a compatible build. On macOS and Linux, alpha&nbsp;5 save states load in alpha&nbsp;6. Windows alpha&nbsp;5 states and those from earlier alphas need their matching build; the game’s own campaign saves are separate.</p></details>

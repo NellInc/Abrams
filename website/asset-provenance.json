@@ -282,5 +282,84 @@
         "sha256": "6bae3fcb05734d3e16b58e36e287bf427eb39ce338390acb9adfd2952bf22ce5"
       }
     }
+  },
+  "tactical_roster": {
+    "origin": "Blender-authored Tactical model roster, approved 23 October 2026.",
+    "models": 57,
+    "files": {
+      "local-art/pc-tactical-roster-v1/bridge-albedo.png": {
+        "set": "common",
+        "sha256": "93b3419bc07515df14ded9651a887efdddd16a670c6070eb027bfae4792f1b18"
+      },
+      "local-art/pc-tactical-roster-v1/pair-albedo.png": {
+        "set": "common",
+        "sha256": "5bda7d309b104a896ce8e49bdf0e3bfc21abc56d3a077f1345b3a8fee6c226fc"
+      },
+      "local-art/pc-tactical-roster-v1/wreck-normal.png": {
+        "set": "common",
+        "sha256": "3f95d945f0c9bd6615f9168f780f20cfeb64854e01780f9dfd276306c7e6aa36"
+      },
+      "local-art/pc-tactical-roster-v1/intact-normal.png": {
+        "set": "common",
+        "sha256": "bfb7dfde95f0b4e76bb38b9e2fa2da8758da61cbbd56f09d277612a0d1b6b45b"
+      },
+      "local-art/pc-tactical-roster-v1/scene-normal.png": {
+        "set": "common",
+        "sha256": "0c02c04df50a961c873effed94c463d5443e26ee74a5367a8c945a40e5a1359b"
+      },
+      "local-art/pc-tactical-roster-v1/bridge-orm.png": {
+        "set": "common",
+        "sha256": "ebe1dbe631a2973994bb7d3aa19697d2a5ca846bc98e131876662566f9d6d6ee"
+      },
+      "local-art/pc-tactical-roster-v1/scene-orm.png": {
+        "set": "common",
+        "sha256": "d662ab7433a6a5c8665c08e3018629b8964a185841488eab796fc2560288c7ee"
+      },
+      "local-art/pc-tactical-roster-v1/intact-orm.png": {
+        "set": "common",
+        "sha256": "445f1d6618b4397fa46661b8c387c544e34652aa61c9a8205c871a3a186dc41e"
+      },
+      "local-art/pc-tactical-roster-v1/bridge-normal.png": {
+        "set": "common",
+        "sha256": "c6e96c73c2becdc0d6957c5c6540ec66993c8f1483fb02d11386eac88164d551"
+      },
+      "local-art/pc-tactical-roster-v1/manifest.json": {
+        "set": "common",
+        "sha256": "1fba8c7176de9eb9f80668e5e6f84e7858a5716cb60b10abc097759ed6a87403"
+      },
+      "local-art/pc-tactical-roster-v1/wreck-orm.png": {
+        "set": "common",
+        "sha256": "3a425474c9901d2758750ffe7db16d9610a8e8d6b3da14c8d49edc5b860783d3"
+      },
+      "local-art/pc-tactical-roster-v1/pair-normal.png": {
+        "set": "common",
+        "sha256": "a0dbc336f5887e743f5af3161d9550eb4a97286c38470c5c9ec1fb62e85956d7"
+      },
+      "local-art/pc-tactical-roster-v1/catalog.json": {
+        "set": "common",
+        "sha256": "1b85143907c9787fedfa850cc2121b7e9e1788938293327386964cf2aef07eef"
+      },
+      "local-art/pc-tactical-roster-v1/wreck-albedo.png": {
+        "set": "common",
+        "sha256": "e4c225b886a3ba162b42f61772bf87f55b50afc16e7a6fc79f6c4c754128f4a4"
+      },
+      "local-art/pc-tactical-roster-v1/intact-albedo.png": {
+        "set": "common",
+        "sha256": "eb92d268f65e6dc2e699d8fadc009760c1b435f6141c4854a55f3f5510a7c750"
+      },
+      "local-art/pc-tactical-roster-v1/scene-albedo.png": {
+        "set": "common",
+        "sha256": "637e68a64145223656df5d112a291d2ce2a5b6b53b00f42d3bb0770d16501748"
+      },
+      "local-art/pc-tactical-roster-v1/pair-orm.png": {
+        "set": "common",
+        "sha256": "8d4cc6116ab6357aa7f3539bee5f50766e9f066f42572149c5d1e1cd5a023a56"
+      }
+    }
+  },
+  "animated_menu": {
+    "origin": "Approved Blender tank/crew scene and source-driven menu motion, 23 October 2026.",
+    "mesh_sha256": "61e9507d64a86ba24893a42664566dd895d92d2ce808df0ac799c659641ab670",
+    "packaged_in": "dist/play/.generated/godot/index.pck"
   }
 }
