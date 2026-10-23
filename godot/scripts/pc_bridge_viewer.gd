@@ -833,6 +833,17 @@ func _flush_web_sync() -> void:
 	web_sync_queued=false
 	_sync_web_controls()
 
+func runtime_presentation_status() -> Dictionary:
+	# Read-only delivery diagnostics, also carried by native capture receipts.
+	var vehicles = draw_view.tactical_vehicle_assets if draw_view else null
+	return {"roster_models":vehicles.models.size() if vehicles else 0,
+		"roster_status":vehicles.detail_status if vehicles else "unavailable",
+		"score_cues":pc_audio.music_bank.manifest.get("tracks",{}).size() if pc_audio else 0,
+		"score_independent":pc_audio.music_bank.independent if pc_audio else false,
+		"music_playing":pc_audio.music.playing if pc_audio else false,
+		"music_context":pc_audio.music_context if pc_audio else "",
+		"frontdoor_active":_frontdoor_blocked()}
+
 func _sync_web_controls(message: String = "") -> void:
 	if not OS.has_feature("web") or audio_menu == null or bridge.host == null: return
 	bridge.host.updateControls(JSON.stringify({"modes":audio_menu.available_graphics_modes(),
@@ -841,6 +852,7 @@ func _sync_web_controls(message: String = "") -> void:
 		"speed":audio_menu.speed,"busy":audio_menu.busy or _frontdoor_blocked(),"message":message,
 		"quality":audio_menu.quality,"quality_levels":audio_menu.QUALITY_LEVELS,
 		"audio":audio_menu.settings,"audio_defaults":audio_menu.DEFAULTS,
+		"presentation_runtime":runtime_presentation_status(),
 		"quality_error":audio_menu.quality_error,"audio_error":audio_menu.save_error}))
 
 static func _web_control_integer(value, maximum: int) -> int:
@@ -1195,6 +1207,7 @@ func _capture() -> void:
 		"pc_only": pc_only,
 		"genesis_colours": genesis_colours_requested and not genesis_style.palette.is_empty(),
 		"world_bearing_text": tandem_frame.typography.runs.filter(func(r):return r.get("transparent_world",false)).map(func(r):return r.text) if trace_mode else [],
+		"presentation_runtime":runtime_presentation_status(),
 		"high_resolution_text_runs": tandem_frame.typography.runs.size() if trace_mode else 0,
 		"terrain_detail": draw_view.terrain_active if trace_mode else false,
 		"terrain_polygons": draw_view.terrain_polygon_count if trace_mode else 0,

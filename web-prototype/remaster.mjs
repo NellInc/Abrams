@@ -213,6 +213,7 @@ function updateToolbar(state) {
     return;
   }
   lastControls = state;
+  canvas.dataset.presentationRuntime = JSON.stringify(state.presentation_runtime || {});
   updateExtended(state);
   busy = state.busy === true;
   const modes = new Set(state.modes);
