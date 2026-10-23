@@ -229,10 +229,10 @@
   "media": [
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.mp4",
-      "source": "artifacts/promo-20261014-v10/abrams-promo.mp4",
-      "output_sha256": "90ff3e95abd4c8a153c79cb993f48f2ceceb4c2d9e4af4acf3d0f6be4fc5f631",
-      "origin": "Accepted V10 trailer, exact bytes. Reshot Tactical graphics and HUD, matched original/Tactical model views with the complete Sagger head and helmet. H.264/AAC,1920x1080,58.5seconds.",
-      "source_sha256": "90ff3e95abd4c8a153c79cb993f48f2ceceb4c2d9e4af4acf3d0f6be4fc5f631",
+      "source": "artifacts/promo-20261023-v15/abrams-promo.mp4",
+      "output_sha256": "f5fb8791c7646694f1996aaef43685a438390329b74d98c841d37b9ca2da35b0",
+      "origin": "V15 trailer with corrected draw order for the original Hind windshield. Exact original windshield geometry and blue retained. Charcoal source fills, Tactical models, rotations, approved David Kenny endcard, soundtrack, captions and timing retained. H.264/AAC, 1920x1080, 58.5 seconds.",
+      "source_sha256": "f5fb8791c7646694f1996aaef43685a438390329b74d98c841d37b9ca2da35b0",
       "duration_seconds": 58.5,
       "captions_burned_in": true
     },
