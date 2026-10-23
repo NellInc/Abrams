@@ -1,5 +1,6 @@
 shader_type canvas_item;
 render_mode unshaded;
+#include "res://scripts/pc_tactical_field.gdshaderinc"
 
 uniform bool world_enabled = false;
 uniform bool ega_upscaled = false;
@@ -18,6 +19,7 @@ uniform sampler2D plate_mask : filter_nearest, repeat_disable;
 uniform bool genesis_art = false;
 uniform bool modern_armour_palette = false;
 uniform bool tactical_armour = false;
+uniform bool tactical_interior = false;
 uniform float gunner_pixel_aspect = 1.0;
 uniform bool cupola_rail_verified = false;
 uniform bool status_art_enabled = false;
@@ -42,7 +44,7 @@ float gunner_y(float y) {
 	return y;
 }
 float driver_y(float y) {
-	if (genesis_art) {
+	if (genesis_art || tactical_interior) {
 		if (y < 18.0) return y*1.5/18.0;
 		if (y < 46.0) return mix(1.5,28.0,(y-18.0)/28.0);
 		if (y < 77.0) return mix(28.0,60.0,(y-46.0)/31.0);
@@ -57,7 +59,7 @@ float driver_y(float y) {
 	return mix(122.0,200.0,(y-127.0)/73.0);
 }
 float cupola_y(float y) {
-	if (genesis_art) return y;
+	if (genesis_art || tactical_interior) return y;
 	if (y < 85.0) return y*74.0/85.0;
 	if (y < 114.0) return mix(74.0,101.0,(y-85.0)/29.0);
 	if (y < 159.0) return mix(101.0,146.0,(y-114.0)/45.0);
@@ -65,7 +67,8 @@ float cupola_y(float y) {
 }
 
 vec2 driver_donor(vec2 p) {
-	if (genesis_art && p.y < 18.0) return vec2(50.0,0.5)/vec2(320.0,200.0);
+	if(tactical_interior)return field_driver_uv(p);
+	if ((genesis_art || tactical_interior) && p.y < 18.0) return vec2(50.0,0.5)/vec2(320.0,200.0);
 	return vec2(p.x,driver_y(p.y))/vec2(320.0,200.0);
 }
 
@@ -131,7 +134,9 @@ vec4 commander_metal(vec2 p, vec4 art) {
 // The verified opaque Genesis donor carries contour-derived metal coverage in
 // alpha. Restore opacity in every mode; only Modern applies the olive paint.
 // This keeps the original RGB and avoids a per-fragment loop over loose shapes.
-vec4 armour_paint(vec4 art) {
+vec4 armour_paint(vec4 art,vec2 p) {
+	// Authored RGB is opaque material, never a mask or hardware-alpha channel.
+	if (tactical_interior) return vec4(art.rgb,1.0);
 	if (!genesis_art) return art;
 	float metal = art.a;
 	art.a = 1.0;
@@ -144,7 +149,7 @@ vec4 armour_paint(vec4 art) {
 	if (tactical_armour) {
 		// A smooth matte paint ramp softens black deck seams. Contour-proven
 		// hardware retains its original silver and dark fittings.
-		vec3 finish=vec3(0.065,0.095,0.065)+luminance*vec3(0.63,0.70,0.43);
+		vec3 finish=field_enamel(vec3(luminance),p,0.0);
 		art.rgb=mix(finish,art.rgb,metal);
 	}
 	return art;
@@ -299,17 +304,20 @@ void fragment() {
 			if (genesis_art) donor.y *= 0.5;
 			art = texture(commander_art,donor);
 			if (genesis_art) art = commander_metal(pixel,art);
+			if (tactical_armour) art.rgb=field_enamel(art.rgb,pixel,0.18);
 		} else if (station_art_enabled.y > 0.5 && plate == 3) {
-			vec2 donor = vec2(UV.x,cupola_y(pixel.y)/200.0);
-			art = armour_paint(texture(cupola_art,donor));
-		} else if (genesis_art && cupola_rail_verified && station_art_enabled.y > 0.5 && plate == 0 && cupola_rail_pixel(pixel)) {
+			vec2 donor = tactical_interior ? field_cupola_uv(pixel) : vec2(UV.x,cupola_y(pixel.y)/200.0);
+			art = armour_paint(texture(cupola_art,donor),donor*vec2(320.0,200.0));
+		} else if ((genesis_art || tactical_interior) && cupola_rail_verified && station_art_enabled.y > 0.5 && plate == 0 && cupola_rail_pixel(pixel)) {
 			// Complete the existing raised rail, then use its adjacent clean
 			// deck material for the PC-owned tapered edge. No world pixels qualify.
 			vec2 donor = pixel.x<183.0 ? UV : vec2(190.0/320.0,119.0/200.0);
-			art = armour_paint(texture(cupola_art,donor));
+			if(tactical_interior)donor=field_cupola_uv(donor*vec2(320.0,200.0));
+			art = armour_paint(texture(cupola_art,donor),donor*vec2(320.0,200.0));
 		} else if (station_art_enabled.z > 0.5 && plate == 4 &&
 			!in_box(pixel,vec4(53.0,187.0,267.0,200.0))) {
-			art = armour_paint(texture(driver_art,driver_donor(pixel)));
+			vec2 donor=driver_donor(pixel);
+			art = armour_paint(texture(driver_art,donor),donor*vec2(320.0,200.0));
 		} else if (status_art_enabled && plate==5 && !status_live_cell(pixel)) {
 			vec2 donor = status_donor(pixel);
 			donor.y = 0.5+donor.y*0.5;
@@ -321,7 +329,8 @@ void fragment() {
 		vec3 claim = round(texture(driver_assembly_mask,UV).rgb*255.0);
 		if (claim.b == 255.0) {
 			float offset = claim.r+claim.g*256.0-16384.0;
-			vec4 art = armour_paint(texture(driver_art,driver_donor(vec2(pixel.x-offset,pixel.y))));
+			vec2 donor=driver_donor(vec2(pixel.x-offset,pixel.y));
+			vec4 art = armour_paint(texture(driver_art,donor),donor*vec2(320.0,200.0));
 			result.rgb = mix(result.rgb,art.rgb,art.a);
 		}
 	}

@@ -549,7 +549,9 @@
     "web-prototype/test_package_site.py",
     "godot/scripts/pc_suno_music.gd",
     "godot/tests/test_pc_suno_music.gd",
-    "tools/import_suno_score.py"
+    "tools/import_suno_score.py",
+    "godot/scripts/pc_tactical_panel.gd",
+    "godot/scripts/pc_tactical_field.gdshaderinc"
   ],
   "private": [
     ".runtime/dosbox-pure-source/LICENSE",
@@ -1478,6 +1480,10 @@
     "local-audio/suno-score-v1/stinger_death.wav",
     "local-audio/suno-score-v1/battle_flank.wav",
     "local-audio/suno-score-v1/battle_pressure.wav",
-    "local-audio/suno-score-v1/aftermath.wav"
+    "local-audio/suno-score-v1/aftermath.wav",
+    "local-art/pc-tactical-interior-v1/housing.png",
+    "local-art/pc-tactical-interior-v1/driver.png",
+    "local-art/pc-tactical-interior-v1/cupola.png",
+    "local-art/pc-tactical-interior-v1/provenance.json"
   ]
 }

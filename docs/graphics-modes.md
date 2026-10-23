@@ -2005,3 +2005,36 @@ synchronous.
 
 Working if: on a scroll step, the Tactical map and the original map show the same position
 in the same displayed frame, and `test_pc_tactical_hud.gd` reports `TACTICAL_MAP_SURFACE`.
+
+
+### Tactical Field Instrument concept implementation (23 October 2026)
+
+The Tactical HUD now uses the approved gunner, driver and cupola concepts as
+production material references. Empty, text-free ImageGen extractions retain the
+olive equipment housings, deep rubber seals, machined fasteners and recessed
+instrument wells, with substantially quieter wear. The commander and status
+views use the same equipment components. Cupola keeps its open view and padded
+hatch lip; the driver has an integrated dashboard with a larger speed reading.
+
+The three pinned RGB sheets and their prompts are in
+`local-art/pc-tactical-interior-v1/provenance.json`. They are independent of the
+optional Genesis bank. `pc_tactical_panel.gd` slices only static housing and
+accepted instrument panels. `pc_tactical_field.gdshaderinc` registers the driver
+and cupola materials to the existing source-owned surfaces. Both the primary
+compositor and edge pass select the same current donor and signed driver offset.
+The bitmap sheets contain no live values, scenery or display symbols.
+
+Every camera and source-region rectangle remains unchanged. Destination layout,
+materials and typography change; original visibility, map topology, reticle
+meaning, live readings, crew reports and controls do not. Unknown source UI
+retains the complete 4:3 fallback. Original EGA/Genesis modes bypass the Tactical
+HUD, and the Restored/Modern output remains separate. Missing or corrupt material
+banks fall back without enabling optional source profiles. The original 84 grey
+gunner-corner pixels receive dark rubber in PC-only mode only after their complete
+RGB, UI mask and plate-tag proof; any unknown write cancels that finish.
+
+Working if: gunner, commander, cupola, driver and status share the concept's
+physical equipment language at both tested window sizes, live data remains
+source-derived, and ownership, unknown-UI fallback and mode-restoration checks
+continue to pass. Evidence and verification limits are recorded in
+`artifacts/tactical-field-instrument-20261023/acceptance.json`.

@@ -32,10 +32,13 @@ func run()->void:
 	DirAccess.make_dir_recursive_absolute(output)
 	viewport=SubViewport.new();viewport.size=Vector2i(640,400);viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(viewport)
 	await hud_mode_gate()
+	tactical_material_bank(root_path)
+	if "--tactical-interior-only" in args:finish();return
 	frame=Frame.new();frame.size=viewport.size;viewport.add_child(frame)
 	check(not frame.set_graphics_mode("genesis") and frame.graphics_mode=="upscaled","unavailable whole native bank rejects switch and preserves current mode")
 	check(frame.load_graphics_sources(root_path),"native donor pack prewarmed")
 	check(frame.load_genesis_art(root_path),"remaster pack prewarmed")
+	check(frame.load_tactical_art(root_path),"independent Tactical interior pack prewarmed")
 	frame.typography.load_sources(root_path.path_join("GAME"))
 	if not frame.native_graphics.loaded:finish();return
 	# Independent donor-content contract: captured Genesis instruments may not
@@ -125,10 +128,11 @@ func run()->void:
 		check(frame.set_graphics_mode("modern"),"loaded Modern reuses restored compositor")
 		var modern_image:Image=await snapshot() if native else null
 		check(frame.set_graphics_mode("tactical"),"loaded Tactical reuses restored compositor")
+		check(frame.material.get_shader_parameter("tactical_interior"),"Tactical selects its authored surface bank")
+		check(frame.set_graphics_mode("modern"),"Modern returns after Tactical surface swap")
+		check(not frame.material.get_shader_parameter("tactical_interior"),"Modern never inherits Tactical surface registration")
 		if native:
-			# Modern has deliberate cockpit-edge variants on Driver and Cupola.
-			# Tactical must inherit those, not silently fall back to Upscaled.
-			check((await snapshot()).get_data()==modern_image.get_data(),"Tactical preserves Modern's restored UI and cockpit-edge variants: "+e.label)
+			check((await snapshot()).get_data()==modern_image.get_data(),"Modern restores exactly after Tactical interior swap: "+e.label)
 		frame.modern_available=false
 		check(frame.set_graphics_mode("upscaled"),"Upscaled restores")
 		if native:
@@ -199,6 +203,36 @@ func run()->void:
 	frame.set_frame(null,{},null,{})
 	check(frame.texture==null and frame.native_graphics.texture==null,"missing frame clears native texture instead of showing stale art")
 	finish()
+
+func tactical_material_bank(root_path: String) -> void:
+	var pc=Frame.new()
+	check(pc.load_tactical_art(root_path),"PC-only Tactical bank loads")
+	check(not pc.genesis_art_enabled and not pc.native_graphics.loaded and pc.commander_status_atlas==null and not pc.typography.fixed_labels_enabled,"Tactical art never enables optional Genesis sources or labels")
+	var authored: Dictionary=pc.tactical_art_textures.duplicate()
+	for id in [3,4]:
+		var legacy:=Image.create_empty(640,400,false,Image.FORMAT_RGB8)
+		check(pc.set_cockpit_art(id,legacy),"legacy donor remains available "+str(id))
+		for mode in ["tactical","modern","upscaled","tactical"]:
+			pc.graphics_mode=mode
+			check(pc._cockpit_donor(id)==(authored.get(id) if mode=="tactical" else pc.cockpit_art_textures[id]),"station donor follows current mode "+str(id)+mode)
+	# A missing/corrupt reload clears the complete bank and retains legacy art.
+	var temp:=OS.get_temp_dir().path_join("abrams-field-art-%d"%OS.get_process_id())
+	var folder:=temp.path_join("local-art/pc-tactical-interior-v1")
+	DirAccess.make_dir_recursive_absolute(folder)
+	check(not pc.load_tactical_art(temp) and pc.tactical_art_textures.is_empty(),"absent Tactical bank fails closed")
+	var bad:=folder.path_join("cupola.png")
+	FileAccess.open(bad,FileAccess.WRITE).store_buffer(PackedByteArray([0,1,2]))
+	check(not pc.load_tactical_art(temp) and pc.tactical_art_textures.is_empty() and "hash mismatch" in pc.tactical_art_reason,"corrupt Tactical donor fails closed before decode")
+	check(pc._cockpit_donor(4)==pc.cockpit_art_textures[4],"missing Tactical donor falls back to existing art")
+	DirAccess.remove_absolute(bad)
+	DirAccess.remove_absolute(folder);DirAccess.remove_absolute(temp.path_join("local-art"));DirAccess.remove_absolute(temp)
+	pc.graphics_mode="ega"
+	var ega_source:=Image.create_empty(320,200,false,Image.FORMAT_RGB8)
+	check(pc.set_frame(ega_source,{},null),"EGA remains available before late art import")
+	var ega_texture:Texture2D=pc.texture
+	check(pc.load_tactical_art(root_path),"late Tactical import loads while EGA has no compositor material")
+	check(pc.material==null and pc.texture==ega_texture and pc.graphics_mode=="ega","late import preserves the untouched EGA presentation")
+	pc.free()
 # EGA (exact framebuffer), upscaled EGA and Genesis must bypass the Tactical HUD
 # restyle, plate replacement, olive letterbox and 16:9 reflow (graphics-modes.md).
 func hud_mode_gate()->void:

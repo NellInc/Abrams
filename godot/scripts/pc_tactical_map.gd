@@ -1,5 +1,6 @@
 extends Control
 ## A cartographic finish over the complete verified map, never a new map model.
+const FieldPanel = preload("res://scripts/pc_tactical_panel.gd")
 const Proof = preload("res://scripts/pc_dynamic_map_art.gd")
 var proof = Proof.new()
 var picture := TextureRect.new()
@@ -310,10 +311,10 @@ func _draw() -> void:
 	if packet.is_empty() or in_place: return
 	draw_set_transform(Vector2.ZERO,0,size/Vector2(1600,900))
 	var scale:=maxf(0.01,minf(size.x/1600.0,size.y/900.0))
-	draw_rect(map_box,Color("0c1812"))
-	draw_rect(map_box,Color("61785b"),false,_border_stroke(scale),true)
+	FieldPanel.recess(self,map_box,scale)
 	var mode: String="LOCAL" if int(packet.mode)==1 else "OVERVIEW"
 	var label:=_mode_layout(mode,scale)
+	draw_rect(Rect2(label.key.position-Vector2(4,0),Vector2(map_box.end.x-label.key.position.x+8,label.key.size.y)),Color("101510"))
 	draw_rect(label.key,Color("101e16"))
 	draw_rect(label.key,Color("61785b"),false,maxf(1,1.0/scale),true)
 	draw_string(font,label.key_at,"Z",HORIZONTAL_ALIGNMENT_LEFT,-1,label.key_point,Color("e7b566"))

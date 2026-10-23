@@ -43,7 +43,7 @@ static func fit(heights: PackedFloat32Array) -> PackedVector2Array:
 	return result
 
 func set_frame(ui:Image,tags:Image,camera:Rect2i,donor:Texture2D,assembly:Image,station:int,modern:bool,rail:bool,world:Texture2D,
-		ui_texture:Texture2D=null,tags_texture:Texture2D=null,assembly_texture:Texture2D=null) -> void:
+		ui_texture:Texture2D=null,tags_texture:Texture2D=null,assembly_texture:Texture2D=null,tactical_interior:bool=false) -> void:
 	# Optional textures are the compositor's uploads of these exact images.
 	clear()
 	if station not in [3,4] or donor==null or world==null:return
@@ -97,6 +97,7 @@ func set_frame(ui:Image,tags:Image,camera:Rect2i,donor:Texture2D,assembly:Image,
 	material.set_shader_parameter("world_texture",world)
 	material.set_shader_parameter("station",station)
 	material.set_shader_parameter("modern",modern)
+	material.set_shader_parameter("tactical_interior",tactical_interior)
 	material.set_shader_parameter("rail_verified",rail)
 	material.set_shader_parameter("camera_size",Vector2(camera.size))
 	active=mesh!=null;visible=active

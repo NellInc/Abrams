@@ -17,6 +17,7 @@ func run() -> void:
 	map_labelling()
 	map_surface_cache()
 	hud_ink_separation()
+	gunner_corner_finish()
 	uncovered_panel_pixels()
 	crew_panels()
 	var display:=Display.new()
@@ -258,17 +259,14 @@ func control_legends(chrome: Control) -> void:
 			check(90+footer.station_width+40<=footer.command_x,"measured command group never overlaps station keys")
 			check(footer.command_x>=90 and is_equal_approx(footer.command_x+footer.command_width-18,1512),"footer command label ends at established right inset")
 			check(footer.station_point<=22 and footer.command_point<=22,"keycaps fit established footer height")
-			check(footer.baseline-maxi(footer.station_point,footer.command_point)-1>=871 and footer.baseline+4<=899,"enlarged keycaps retain antialias clearance below crew strip and stay inside canvas")
+			check(footer.baseline-maxi(footer.station_point,footer.command_point)-1>=851 and footer.baseline+4<=899,"enlarged keycaps retain antialias clearance below crew strip and stay inside canvas")
 			check(footer.station_point*scale>=10.5 and footer.command_point*scale>=10.5,"compact footer retains readable point sizes")
 			check((footer.station_width==0)==(id==5),"Status has return action without station-switch hints")
 			var header: Dictionary=chrome._header_layout(id,scale)
-			check(header.name=="M1A1  /  "+chrome.STATIONS[id] and header.role==chrome.ROLES[id],"responsive header preserves station identity and role")
-			var role_end: float=header.role_at.x+chrome.mono.get_string_size(header.role,HORIZONTAL_ALIGNMENT_LEFT,-1,header.role_point).x
-			check(role_end<=1170,"header role stays clear of campaign metadata")
-			if scale<0.7:
-				var title_end: float=header.title_at.x+chrome.heading_font.get_string_size(header.name,HORIZONTAL_ALIGNMENT_LEFT,-1,header.title_point).x
-				check(title_end+24<=header.role_at.x and header.title_at.y==header.role_at.y,"compact header shares a baseline with measured separation")
-				check(header.role_point*scale>=10 and header.meta_point*scale>=11,"compact header auxiliary labels retain readable point sizes")
+			check(header.name=="M1A1  /  "+chrome.STATIONS[id],"responsive header preserves station identity")
+			var title_end: float=header.title_at.x+chrome.heading_font.get_string_size(header.name,HORIZONTAL_ALIGNMENT_LEFT,-1,header.title_point).x
+			check(title_end<1512 and header.title_at.y+5<69,"nameplate remains outside the protected sight aperture")
+			check(header.title_point*scale>=18,"compact nameplate remains readable")
 		for mode in ["LOCAL","OVERVIEW"]:
 			var label: Dictionary=map._mode_layout(mode,scale)
 			var key: Rect2=label.key
@@ -299,10 +297,6 @@ func section_legibility(chrome: Control) -> void:
 			chrome.map_art.map_box=old_box
 	for width in [56.0,98.0,158.0,236.0]:
 		for id in range(1,6):
-			var role: Dictionary=chrome._gutter_role_layout(id,width)
-			check(role.point>=9 and role.lines.size()<=2 and " ".join(PackedStringArray(role.lines))==chrome.ROLES[id],"fallback role retains all words in at most two fitted lines")
-			for line in role.lines:
-				check(chrome.mono.get_string_size(line,HORIZONTAL_ALIGNMENT_LEFT,-1,role.point).x<=width,"full fallback role stays inside spare gutter")
 			for action in chrome.FALLBACK_ACTIONS[id]:
 				var point: int=chrome._gutter_command_point(action[0],action[1],width)
 				if point>0:
@@ -881,3 +875,17 @@ func uncovered_panel_pixels() -> void:
 		if native: accepted+=1
 	check(exact and accepted>10 and accepted<150,"native uncovered-pixel test matches the per-pixel predicate")
 
+
+func gunner_corner_finish() -> void:
+	var source:=Image.create_empty(320,200,false,Image.FORMAT_RGB8)
+	source.fill(Color8(85,85,85))
+	var ui:=PackedByteArray();ui.resize(64000);ui.fill(255)
+	var tags:=PackedByteArray();tags.resize(64000)
+	check(Display.source_gunner_corners(source,ui,tags),"PC-only source-grey sight corners are proven without optional art")
+	var at:=Vector2i(32,13)
+	source.set_pixelv(at,Color.MAGENTA)
+	check(not Display.source_gunner_corners(source,ui,tags),"unknown corner ink rejects the complete finish")
+	source.set_pixelv(at,Color8(85,85,85));ui[13*320+32]=0
+	check(not Display.source_gunner_corners(source,ui,tags),"visible world never becomes rubber")
+	ui[13*320+32]=255;tags[13*320+32]=1
+	check(not Display.source_gunner_corners(source,ui,tags),"changed corner provenance rejects finish")

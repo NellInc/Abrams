@@ -37,8 +37,8 @@
       "sha256": "efb917219f345230545e5fe56ed0df313418e604e1ce42bd5cc3789c4b6bd37f"
     },
     ".generated/godot/index.pck": {
-      "bytes": 13660208,
-      "sha256": "abcc309334d3b2d249c648851ae21745482150a319582e0f14cac600db4519d2"
+      "bytes": 13670516,
+      "sha256": "d43d811ac76fbb8fdf2327d01c769a99a107734de257f21675f46fc40a1a2ca4"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
@@ -101,8 +101,8 @@
       "sha256": "0da15702a90d6a2b30a7292c81fc772482a5b5ff416bc7bb3c7ec04354068728"
     },
     ".generated/remaster-assets-07.zip": {
-      "bytes": 11564046,
-      "sha256": "27a69ccbf0d8f207c15c67b450af0f0d2cc3f51ffb174e5676227730d921f087"
+      "bytes": 15212355,
+      "sha256": "7a8cb0898fcfb13c937a62b0bdbb54fa4dc12e73abdae570b85dd359b4ed495b"
     },
     ".generated/remaster-assets-08.zip": {
       "bytes": 46896494,
@@ -121,8 +121,8 @@
       "sha256": "1cd06a3c316bd5891ef40486418f7289d17e7a4754c6fe8ad287ec218b89f8e6"
     },
     ".generated/remaster-assets.json": {
-      "bytes": 32696,
-      "sha256": "4ec266d8fbb0bdb47f5f66da1e87d808af25eae744cb8adcbc65b32df50d9b57"
+      "bytes": 33185,
+      "sha256": "df91a52f8706d2b1bc970139f959aa9f0b223cea412f70064fddbcbae3611ba7"
     },
     ".generated/web-core-corresponding-source.tar.gz": {
       "bytes": 2311357,

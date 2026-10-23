@@ -265,5 +265,22 @@
     "inventory": "dist/play/BUNDLE.json",
     "asset_manifest": "dist/play/.generated/remaster-assets.json",
     "origin": "The Web remaster bundle is assembled by web-prototype/package_site.py. Its per-file bytes and SHA-256 hashes are recorded in BUNDLE.json, and its remaster asset parts in .generated/remaster-assets.json; website/verify.py checks both instead of listing each bundle file here."
+  },
+  "tactical_hud": {
+    "origin": "Built-in ImageGen equipment-skin extractions from the approved Tactical concepts, 23 October 2026; subtler weathering, all scene and live instrument ink rendered separately.",
+    "files": {
+      "local-art/pc-tactical-interior-v1/housing.png": {
+        "set": "common",
+        "sha256": "f9aa666b1c9556fa20050167d7c8fcf099d79a8d239b8cc0d78b9200b6419c3f"
+      },
+      "local-art/pc-tactical-interior-v1/driver.png": {
+        "set": "common",
+        "sha256": "a76cb48f484a4cb60dfd992c5ffa1c09e176ebc0736882b4cdaf695bb1814854"
+      },
+      "local-art/pc-tactical-interior-v1/cupola.png": {
+        "set": "common",
+        "sha256": "6bae3fcb05734d3e16b58e36e287bf427eb39ce338390acb9adfd2952bf22ce5"
+      }
+    }
   }
 }

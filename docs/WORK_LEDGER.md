@@ -4421,3 +4421,52 @@ distribution rules ("yes please").
 
 Working if: `gh release view v0.1.0-alpha.4` lists only the three source archives and
 `SHA256SUMS.txt`, and the old Alpha 4 download URL returns 404.
+
+
+## 2026-10-23: Tactical HUD and crew views, concept fidelity
+
+Implemented Nell's request to bring the HUD and every crew view close to the
+approved concepts, including the commander, with subtler weathering and no
+gameplay changes. Replaced the first, overly flat pass with concept-derived
+physical skins: continuous olive housings, deep rubber sight seals, recessed
+instrument modules, integrated driver roof/dashboard and an open cupola with
+its padded hatch lip. Commander and status use the same equipment language.
+All lettering and readings remain live, source-verified rendering. Removed
+redundant secondary role labels. Fixed the encountered read-only damage-catalog
+alias by making the renderer's copy explicit.
+
+The independent, hash-pinned RGB bank loads before the PC-only early return and
+never enables Genesis data or labels. Both compositor and edge pass use the
+same selected material and signed driver registration. Missing/corrupt banks
+fall back. All five camera/source-region layouts match the original task
+checkpoint exactly; only destinations and presentation have changed. Unknown
+UI keeps the complete 4:3 view. A final PC-only correction colours only the
+84 exactly proven original grey sight-corner pixels; unknown writes reject it.
+
+Verification: 1,305 HUD checks and 36 focused graphics-mode checks pass. Native
+Compatibility captures cover nine station/variant fixtures at 1600x900 and
+960x540, both with and without the optional bank. Four material comparisons,
+including driver offsets -16, 0 and +16, show zero forbidden changed pixels.
+Four unknown-UI fallback views pass at both sizes. Six Restored/Modern baseline
+pairs remain byte-exact. The final PC-only corner capture passes its pixel
+checks. Source allowlist/closure and diff whitespace checks pass. The installed
+Impeccable detector reports no findings; it does not certify native GDScript
+visuals, so rendered inspection is the primary visual evidence.
+
+Self-review: concepts and implementation were produced in this chat, and the
+implementing lead inspected the resulting native images. These are recorded
+frame checks, not a full live campaign playthrough. Legacy broad compositor
+checks cannot complete because archived PNG fixtures are absent. Private
+resource closure also flags the pre-existing cover-export authoring output
+reference; the separate packaging owner is addressing its classification.
+No aggregate-package pass is claimed. Shared rendering windows were coordinated
+with the model-work chat, and unrelated dirty work was preserved.
+
+Evidence: `artifacts/tactical-field-instrument-20261023/acceptance.json`.
+Asset hashes, original concept references and final ImageGen prompts:
+`local-art/pc-tactical-interior-v1/provenance.json`. Local only; no HUD package,
+install, commit, push or deployment from this chat.
+
+Working if: every crew station uses the concept-derived equipment treatment,
+readings and controls retain their original meaning, and source ownership,
+unknown-UI fallback and mode-restoration checks remain green.

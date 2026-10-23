@@ -1,5 +1,6 @@
 shader_type canvas_item;
 render_mode unshaded;
+#include "res://scripts/pc_tactical_field.gdshaderinc"
 
 // Applied to the completed PC frame, after all source-verified typography,
 // instruments, maps and reticles. Only pixels owned by the paired UI mask move.
@@ -8,6 +9,7 @@ uniform sampler2D panel_mask : filter_nearest, repeat_disable;
 uniform bool panels_verified = false;
 uniform vec4 camera_bounds = vec4(0.0);
 uniform bool camera_verified = false;
+uniform bool source_gunner_corners = false;
 uniform bool map_verified = false;
 uniform int wide_station = 0;
 uniform int layout_count = 0;
@@ -39,6 +41,12 @@ bool live_cell(int plate, vec2 p) {
 	return true; // Cupola and driver hull geometry remains source-shaped.
 }
 
+bool gunner_corner(vec2 p) {
+	vec2 d=min(floor(p)-vec2(32.0,13.0),vec2(287.0,109.0)-floor(p));
+	float run=d.y<1.0?7.0:(d.y<2.0?5.0:(d.y<3.0?3.0:(d.y<5.0?2.0:1.0)));
+	return d.y>=0.0 && d.y<7.0 && d.x>=0.0 && d.x<run;
+}
+
 vec3 neutral_ink(float luma) {
 	// A continuous dark-olive material ramp retains the source's light/dark
 	// ordering. Black lettering on pale metal and pale lettering on black cells
@@ -66,7 +74,7 @@ void fragment() {
 		}
 	}
 	if (!mapped) {
-		vec3 housing=mix(vec3(0.027,0.050,0.041),vec3(0.063,0.099,0.077),smoothstep(0.74,1.0,UV.y));
+		vec3 housing=field_housing(UV);
 		float hairline=1.0-smoothstep(0.0,0.0015,abs(UV.y-0.962));
 		COLOR=vec4(mix(housing,vec3(0.37,0.49,0.34),hairline*0.55),1.0);
 	} else {
@@ -79,6 +87,12 @@ void fragment() {
 		if (wide_station!=0 && p.y>=197.0 && (plate==wide_station || (wide_station==5 && plate==2))) {
 			// Retain live border writes, without copying decorative hull fragments.
 			COLOR=vec4(0.080,0.112,0.083,1.0);
+		} else if (source_gunner_corners && wide_station==1 && gunner_corner(p)) {
+			// Recolour only the 84 proven original grey pixels. No new scenery.
+			COLOR=vec4(0.055,0.067,0.059,1.0);
+		} else if (wide_station==3 && plate==3) {
+			// Authored deck materials have already been finished by the paired compositor.
+			COLOR=source;
 		} else if ((!map_area && texture(hud_mask, source_uv).r < 0.5) ||
 			(camera_verified && inside(p, camera_bounds))) {
 			COLOR = source;
@@ -115,10 +129,7 @@ void fragment() {
 			if ((plate == 1 || plate == 2 || plate == 5) &&
 				(plate == 5 || (camera_verified && !inside(p, camera_bounds))) &&
 				!live_cell(plate, p)) {
-				float lower = smoothstep(112.0, 145.0, p.y);
-				vec3 upper = vec3(0.061, 0.099, 0.073);
-				vec3 lower_panel = vec3(0.105, 0.150, 0.112);
-				colour = mix(upper, lower_panel, lower);
+				colour = field_housing(source_uv);
 				colour += vec3(0.020, 0.031, 0.019) * (1.0 - abs(source_uv.x - 0.5) * 1.2);
 				// Structural joints echo the range's instrument strip rather than the
 				// restored cockpit's rivets and checkerboard. No data marks are added.

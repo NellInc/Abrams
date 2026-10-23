@@ -1,5 +1,6 @@
 shader_type canvas_item;
 render_mode unshaded;
+#include "res://scripts/pc_tactical_field.gdshaderinc"
 uniform sampler2D ui_mask : filter_nearest, repeat_disable;
 uniform sampler2D plate_mask : filter_nearest, repeat_disable;
 uniform sampler2D driver_mask : filter_nearest, repeat_disable;
@@ -9,6 +10,7 @@ uniform bool driver_enabled=false;
 uniform bool rail_verified=false;
 uniform bool modern=false;
 uniform bool tactical=false;
+uniform bool tactical_interior=false;
 uniform int station=3;
 uniform vec2 frame_size;
 uniform vec2 camera_size;
@@ -33,11 +35,12 @@ float driver_y(float y) {
 	if(y<187.0)return mix(112.0,172.0,(y-127.0)/60.0);
 	return mix(172.0,192.0,(y-187.0)/13.0);
 }
-vec3 paint(vec4 art) {
+vec3 paint(vec4 art,vec2 p) {
+	if(tactical_interior)return art.rgb;
 	if(!modern)return art.rgb;
 	float light=dot(art.rgb,vec3(.2126,.7152,.0722));
 	vec3 colour=mix(art.rgb,light*vec3(.65,.70,.46),smoothstep(.10,.30,light)*(1.0-art.a));
-	if(tactical)colour=mix(vec3(.065,.095,.065)+light*vec3(.63,.70,.43),colour,art.a);
+	if(tactical)colour=mix(field_enamel(vec3(light),p,0.0),colour,art.a);
 	return colour;
 }
 void fragment() {
@@ -69,9 +72,11 @@ void fragment() {
 			vec3 claim=round(texture(driver_mask,art_pixel/vec2(320,200)).rgb*255.0);
 			if(claim.b==255.0)sample_p.x-=claim.r+claim.g*256.0-16384.0;
 		}
-		sample_p=sample_p.y<18.0?vec2(50.0,0.5):vec2(sample_p.x,driver_y(sample_p.y));
+		if(!tactical_interior)sample_p=sample_p.y<18.0?vec2(50.0,0.5):vec2(sample_p.x,driver_y(sample_p.y));
 	} else if(rail(p) && p.x>=183.0)sample_p=vec2(190.0,119.0);
-	vec3 art=paint(texture(donor,sample_p/vec2(320,200)));
+	vec2 uv=sample_p/vec2(320,200);
+	if(tactical_interior)uv=station==4 ? field_driver_uv(sample_p) : field_cupola_uv(sample_p);
+	vec3 art=paint(texture(donor,uv),sample_p);
 	vec3 world=texture(world_texture,visible/camera_size).rgb;
 	COLOR=vec4(mix(world,art,coverage),safe?1.0:0.0);
 }
