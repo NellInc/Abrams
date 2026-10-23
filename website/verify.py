@@ -256,9 +256,11 @@ def main():
             if mode not in web_modes or mode not in text:
                 errors.append(f"Gallery caption must name a Web edition mode: {text}")
         # Only Genesis mode needs the ROM; the FAQ names the ROM-free modes of each
-        # edition so Web labels and alpha 6 labels are never mixed unqualified.
+        # edition so Web labels and the current native release are never mixed unqualified.
         faq = re.search(r"<summary>Do I need the Genesis ROM\?</summary><p>(.*?)</p>", html, re.S)
-        if not faq or "Web edition" not in faq[1] or "alpha&nbsp;6" not in faq[1] or any(
+        native_alpha = re.search(r"^VERSION\s*=\s*['\"]0\.1\.0-alpha\.(\d+)['\"]", (ROOT.parent / "tools/standalone/build.py").read_text(), re.M)
+        native_label = f"Alpha&nbsp;{native_alpha[1]}" if native_alpha else None
+        if not faq or not native_label or "Web edition" not in faq[1] or native_label not in faq[1] or any(
                 not re.search(rf"\b{re.escape(mode)}\b(?! Upscaled)", faq[1]) for mode in web_modes - {"Genesis"}):
             errors.append("The Genesis ROM FAQ must name each edition's ROM-free modes")
     for stale in ("Four graphics modes", "of the four graphics modes"):

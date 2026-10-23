@@ -5,6 +5,16 @@ Godot renders the supported high-resolution layers and plays event-driven audio.
 The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
+## Alpha 7, 23 October 2026
+
+Runtime source `969eac16c98883f77441f8086acbc95eb0e442f6` supplies the full 57-model Tactical roster, animated tank-and-crew menu, revised HUD, independent 19-cue score, and stronger ending smoke and flames. Web, Windows and Linux use version `0.1.0-alpha.7`.
+
+The native Windows/Linux builds passed portable-alpha run 40005475073. Their released archives were independently checked for CRC, every manifest hash and size, exact closure, all 1321 common frozen inputs, original-free boundaries and corresponding core source. Full interactive Windows/Linux graphics and audio remain unmeasured.
+
+The Mac Alpha 7 candidate is Developer ID signed (build 592b1b9cf9ba8cd922c5, 87 targets), with 62 native frontdoor checks and 15 normal-viewer ending checks passing. **It is not yet notarized or installed.** Apple submission has not started because the established Keychain credential profile is unavailable. The existing 23 October Mac preview remains separately labelled and unchanged; it must not be described as Alpha 7 or notarized.
+
+Original gameplay, timing and saves remain unchanged. Keep the previous app and profile backup for build-pinned state compatibility.
+
 ## Alpha 6 release, 16 October 2026
 
 Public pre-release `v0.1.0-alpha.6`, built from `146bbfb`, carries:
