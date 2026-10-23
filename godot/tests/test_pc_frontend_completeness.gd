@@ -85,7 +85,7 @@ func run() -> void:
 		var rendered:=await snap("source-map-contours")
 		check(rendered.get_pixel(200*4+1,50*4+1).r>0.9 and rendered.get_pixel(200*4+1,50*4+1).g<0.1,"unknown red mark retains its exact footprint")
 
-	# Native smoke must alter the accepted smoke while the tank and ground stay fixed.
+	# Native smoke and flame colours move; wreck pixels and terrain stay fixed.
 	var ending=art.splash_aftermath_art
 	for row in ending.entries.values():
 		if row.name=="publisher":continue
@@ -98,13 +98,22 @@ func run() -> void:
 		for i in 30:check(ending.advance(0.1),row.name+" ambient phase advances")
 		if native:
 			var moving:=await snap(row.name+"-smoke")
-			var changed:=0;var protected_changed:=0
+			var changed:=0;var protected_changed:=0;var flame_changed:=0;var ground_changed:=0;var hull_changed:=0
 			for y in moving.get_height():
 				for x in moving.get_width():
-					if moving.get_pixel(x,y)==still.get_pixel(x,y):continue
+					var c:=still.get_pixel(x,y)
+					if moving.get_pixel(x,y)==c:continue
 					changed+=1
-					if y>=int(moving.get_height()*(0.57 if row.name=="scene1" else 0.66)):protected_changed+=1
-			check(changed>100 and protected_changed==0,row.name+" smoke moves, hull/terrain remain exact")
+					# GPU linear sampling precedes the 8-bit screenshot quantization.
+					var epsilon:=1.0/255.0
+					var warm:=c.r>=0.65-epsilon and c.r-c.g>=0.10-epsilon and c.g-c.b>=0.08-epsilon
+					var cool:=c.r>=0.28-epsilon and c.g>=c.r-0.02-epsilon and c.b>=c.g-0.03-epsilon
+					if warm:flame_changed+=1
+					if not warm and not cool:protected_changed+=1
+					if y>=int(moving.get_height()*0.68):ground_changed+=1
+					if row.name=="scene1" and y>=int(moving.get_height()*0.625):hull_changed+=1
+			check(changed>100 and protected_changed==0 and ground_changed==0 and hull_changed==0,row.name+" smoke/fire move, wreck/terrain remain exact")
+			check(flame_changed>10,row.name+" authored flames visibly animate")
 		ending.motion_enabled=false
 		var phase:float=ending.smoke_phase
 		check(not ending.advance(1.0) and phase==ending.smoke_phase,row.name+" reduced-motion holds")
