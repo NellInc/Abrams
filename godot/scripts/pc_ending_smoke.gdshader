@@ -40,30 +40,30 @@ void fragment() {
 	} else if (scene_index==2) {
 		if (UV.x>0.51 && UV.x<0.57 && UV.y<0.658) anchor=1.0-smoothstep(0.35,0.658,UV.y);
 		if (UV.x>0.53 && UV.x<0.56 && UV.y>0.64 && UV.y<0.677) {
-			flame_region=1.0; flame_tip=(1.0-smoothstep(0.655,0.675,UV.y))*0.20;
+			flame_region=1.0; flame_tip=(1.0-smoothstep(0.655,0.675,UV.y))*0.40;
 		}
 	}
 	// Travelling curls climb through the plumes; the base remains anchored.
 	// Include both footprints to erase vacated edges, but leave open sky still.
 	vec2 q=UV;
-	q.x+=((sin(UV.y*29.0+smoke_phase*2.2)-sin(UV.y*29.0))*0.012
-		+(sin(UV.y*61.0+smoke_phase*3.1)-sin(UV.y*61.0))*0.003)*anchor;
-	q.y+=(sin(UV.y*23.0+smoke_phase*1.8)-sin(UV.y*23.0))*0.020*anchor;
+	q.x+=((sin(UV.y*29.0+smoke_phase*3.4)-sin(UV.y*29.0))*0.015
+		+(sin(UV.y*61.0+smoke_phase*5.2)-sin(UV.y*61.0))*0.005)*anchor;
+	q.y+=(sin(UV.y*19.0+smoke_phase*3.0)-sin(UV.y*19.0))*0.023*anchor;
 	vec4 moved=texture(TEXTURE,q);
 	float smoke_mask=cool(base.rgb)*cool(moved.rgb)*max(plume(base.rgb),plume(moved.rgb))*step(0.0001,anchor);
 	result=mix(result,moved,smoke_mask);
 	// Animate the authored flame colours, including tips against smoke/sky.
 	// Dark/olive wreck pixels are ineligible, so no hardware can wobble.
 	vec2 f=UV;
-	f.x+=(sin(UV.y*113.0+smoke_phase*8.0)-sin(UV.y*113.0))*0.004*flame_tip;
-	f.y+=(sin(UV.x*139.0+smoke_phase*6.0)-sin(UV.x*139.0))*0.009*flame_tip;
+	f.x+=(sin(UV.y*113.0+smoke_phase*11.0)-sin(UV.y*113.0))*0.0065*flame_tip;
+	f.y+=(sin(UV.x*139.0+smoke_phase*8.0)-sin(UV.x*139.0))*0.014*flame_tip;
 	vec4 flicker=texture(TEXTURE,f);
 	float original_fire=fire(base.rgb);
 	float moved_fire=fire(flicker.rgb);
 	float fire_mask=flame_region*max(original_fire,moved_fire)
 		*max(cool(base.rgb),original_fire)*max(cool(flicker.rgb),moved_fire);
-	float pulse=1.0+0.12*(sin(smoke_phase*13.0+UV.x*53.0)-sin(UV.x*53.0))
-		+0.06*(sin(smoke_phase*21.0+UV.y*87.0)-sin(UV.y*87.0));
+	float pulse=1.0+0.17*(sin(smoke_phase*13.0+UV.x*53.0)-sin(UV.x*53.0))
+		+0.08*(sin(smoke_phase*21.0+UV.y*87.0)-sin(UV.y*87.0));
 	flicker.rgb=mix(flicker.rgb,clamp(flicker.rgb*vec3(pulse,0.98*pulse+0.02,1.0),vec3(0.0),vec3(1.0)),moved_fire);
 	result=mix(result,flicker,fire_mask);
 	COLOR=result*vertex_tint;
