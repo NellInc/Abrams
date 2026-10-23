@@ -551,7 +551,12 @@
     "godot/tests/test_pc_suno_music.gd",
     "tools/import_suno_score.py",
     "godot/scripts/pc_tactical_panel.gd",
-    "godot/scripts/pc_tactical_field.gdshaderinc"
+    "godot/scripts/pc_tactical_field.gdshaderinc",
+    "godot/scripts/pc_ending_smoke.gdshader",
+    "godot/scripts/pc_frontend_contours.gd",
+    "godot/scripts/pc_frontend_contours.gdshader",
+    "godot/scripts/pc_frontend_panels.gd",
+    "godot/tests/test_pc_frontend_completeness.gd"
   ],
   "private": [
     ".runtime/dosbox-pure-source/LICENSE",

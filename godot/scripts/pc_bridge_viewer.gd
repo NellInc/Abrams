@@ -116,7 +116,7 @@ func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, p
 			not tandem_frame.dynamic_map_art.packet.is_empty(),
 			tandem_frame.cockpit_art_ids==[1])
 	var frontend := false
-	if trace_mode and cockpit_art_requested: frontend=tandem_frame.present_frontend(program)
+	if trace_mode and pc_presentation_requested: frontend=tandem_frame.present_frontend(program)
 	# Cache only successful paired compositions. Invalid input always takes the
 	# ordinary fail-closed path, and frontend transitions never reuse cockpit UI.
 	if not key.is_empty() and tandem_frame.world_enabled and not frontend:
@@ -338,6 +338,8 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 	if play_mode:
 		play_display.set_hud_style(audio_menu.hud_style)
 		tandem_frame.typography.set_hud_style(audio_menu.hud_style)
+		tandem_frame.frontend_art.set_hud_style(audio_menu.hud_style)
+		tandem_frame.frontend_art.splash_aftermath_art.motion_enabled=ending_motion_allowed(OS.get_cmdline_user_args())
 		tandem_frame.gunner_trim.set_hud_style(audio_menu.hud_style)
 		# Offer Genesis only when its native pack actually loaded (hash-checked).
 		audio_menu.genesis_available=not pc_only and tandem_frame.native_graphics.loaded
@@ -516,6 +518,7 @@ func _load_cockpit_presentation(directory: String) -> void:
 	invalidate_presentation_cache()
 	if play_display: play_display.tactical_chrome.instruments.load_sources(directory)
 	if play_mode: tandem_frame.load_tactical_art(directory)
+	if trace_mode and pc_presentation_requested and pc_only: tandem_frame.load_pc_presentation(directory)
 	# A PC-only launch must never inspect or load the optional donor pack,
 	# even when those files happen to exist in a developer's checkout.
 	if pc_only: return
@@ -702,6 +705,7 @@ func _choose_hud_style(style: String) -> void:
 		audio_menu.refresh_controls()
 		return
 	tandem_frame.typography.set_hud_style(style)
+	tandem_frame.frontend_art.set_hud_style(style)
 	tandem_frame.gunner_trim.set_hud_style(style)
 	# The instrument round counters follow the HUD inside set_frame. A static
 	# original frame would otherwise hit the cache and keep the old treatment.
@@ -904,10 +908,29 @@ func _process(delta: float) -> bool:
 	if capture and Time.get_ticks_msec() - started > _capture_deadline_msec():
 		bridge.failure = "capture deadline"
 		_close()
+	_animate_ending(delta)
 	return false
+
+static func ending_motion_allowed(args: Array) -> bool:
+	if "--no-ending-motion" in args: return false
+	if OS.has_feature("web"):
+		return not bool(JavaScriptBridge.eval("window.matchMedia('(prefers-reduced-motion: reduce)').matches"))
+	if OS.get_name()=="macOS":
+		var preference: Array=[]
+		# Read the system preference only; never write a player setting.
+		if OS.execute("/usr/bin/defaults",["read","com.apple.universalaccess","reduceMotion"],preference,false)==0 and not preference.is_empty():
+			return str(preference[0]).strip_edges() not in ["1","true"]
+	return true
+
+func _animate_ending(delta: float) -> void:
+	if capture or closing or state_control_pending or not pending_state_command.is_empty() or not play_mode or tandem_frame==null: return
+	if audio_menu and (not audio_menu.window_focused or not audio_menu.open_menus.is_empty()): return
+	if tandem_frame.frontend_art.visible and tandem_frame.frontend_art.splash_aftermath_art.advance(delta):
+		play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 
 func _apply_sample(message: Dictionary) -> void:
 	if message.get("timeline_reset",false):
+		if tandem_frame: tandem_frame.frontend_art.splash_aftermath_art.reset_motion()
 		invalidate_presentation_cache()
 		_reset_audio_timeline()
 	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):

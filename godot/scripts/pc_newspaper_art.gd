@@ -27,9 +27,13 @@ func load_sources(root_path: String) -> bool:
 		loaded[item.name]={}
 		for kind in ["native","art"]:
 			var donor:Dictionary=item[kind];path=root_path.path_join(donor.path)
-			if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=donor.sha256:return false
+			if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=donor.sha256:
+				if kind=="native":continue
+				return false
 			var im:=Image.load_from_file(path)
-			if im==null or im.get_size()!=Vector2i(donor.size[0],donor.size[1]):return false
+			if im==null or im.get_size()!=Vector2i(donor.size[0],donor.size[1]):
+				if kind=="native":continue
+				return false
 			loaded[item.name][kind]=ImageTexture.create_from_image(im)
 	entries=data.entries;images=loaded
 	return true
@@ -46,6 +50,7 @@ func set_frame(source: Image, program: Dictionary) -> bool:
 	var header:=digest(bytes.slice(0,320*72*3))
 	for item in entries:
 		if item.header_sha256!=header:continue
+		if not high_resolution and not images[item.name].has("native"):return false
 		var height:=200 if digest(bytes)==item.rgb_sha256 else 72
 		active={"name":item.name,"height":height,"source":item.source,"whole_plate":height==200}
 		texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR if high_resolution else CanvasItem.TEXTURE_FILTER_NEAREST

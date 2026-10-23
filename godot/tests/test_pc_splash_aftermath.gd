@@ -37,7 +37,19 @@ func run() -> void:
 		var native: Image = art.native_frame(source,{"name":row.program})
 		expect(native.get_size()==Vector2i(320,200),row.name+" native shape")
 		if row.name=="publisher": expect(native==source,"publisher retains PC identity in native mode")
-		else: expect(native.get_data()!=source.get_data(),row.name+" Genesis native donor")
+		elif art.native_images.has(row.name): expect(native.get_data()!=source.get_data(),row.name+" Genesis native donor")
+		else: expect(native==source,row.name+" missing optional donor retains PC pixels")
+		var phase: float=art.smoke_phase
+		expect(art.advance(0.1)==(row.name!="publisher"),row.name+" ending-only motion")
+		if row.name!="publisher":
+			expect(art.smoke_phase>phase,row.name+" smoke advances")
+			var advanced: float=art.smoke_phase
+			art.set_frame(source,{"name":row.program})
+			expect(art.smoke_phase==advanced,row.name+" repeated source does not restart smoke")
+			art.motion_enabled=false
+			expect(not art.advance(0.1) and art.smoke_phase==advanced,row.name+" reduced-motion stops phase")
+			art.motion_enabled=true
+		art.reset_motion()
 		await process_frame
 		await process_frame
 		if DisplayServer.get_name() != "headless":

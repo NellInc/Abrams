@@ -1,7 +1,6 @@
 extends Control
 ## Scalable original PC clipboard, gated by its complete source art and text.
 const CATALOG_SHA := "0189ac8eab74a8bfd9f1d267cebba18cba502df005faf4ae9c28408a5788fb03"
-const GENESIS_SHA := "0382ce25fd1568643e762deac023c43944bcd5bbbd6af6f0efae34777146b8e7"
 const CLIP_RECT := Rect2i(239,87,81,113)
 const PANEL_RECT := Rect2(239,95,81,105)
 const PAPER_RECT := Rect2(243,101,72,94)
@@ -43,11 +42,8 @@ func load_sources(root_path: String) -> bool:
 	var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
 	path=root_path.path_join("GAME/CLIP.BMP")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=data.source_sha256: return false
-	path=root_path.path_join("local-art/genesis/source/motor-pool-original.png")
-	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=GENESIS_SHA: return false
-	var source := Image.load_from_file(path)
-	if source==null or source.get_size()!=Vector2i(320,200): return false
-	if not source.get_pixel(208,112).is_equal_approx(WHITE) or not source.get_pixel(209,120).is_equal_approx(GREY) or not source.get_pixel(209,113).is_equal_approx(Color.BLACK): return false
+	# Clipboard geometry/colours are authored below. The current CLIP.BMP,
+	# complete tag/RGB proof and seven original fields remain authoritative.
 	indices=Marshalls.base64_to_raw(data.indices_base64)
 	if indices.size()!=9944: indices.clear(); return false
 	_build_layout()
