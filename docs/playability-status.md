@@ -7,11 +7,11 @@ HEAT artwork is now restored; target-rate performance and release acceptance rem
 
 ## Alpha 7, 23 October 2026
 
-Runtime source `969eac16c98883f77441f8086acbc95eb0e442f6` supplies the full 57-model Tactical roster, animated tank-and-crew menu, revised HUD, independent 19-cue score, and stronger ending smoke and flames. Web, Windows and Linux use version `0.1.0-alpha.7`.
+Runtime source `969eac16c98883f77441f8086acbc95eb0e442f6` supplies the full 57-model Tactical roster, animated tank-and-crew menu, revised HUD, independent 19-cue score, and stronger ending smoke and flames. macOS, Windows, Linux and Web use version `0.1.0-alpha.7`.
 
 The native Windows/Linux builds passed portable-alpha run 40005475073. Their released archives were independently checked for CRC, every manifest hash and size, exact closure, all 1321 common frozen inputs, original-free boundaries and corresponding core source. Full interactive Windows/Linux graphics and audio remain unmeasured.
 
-The Mac Alpha 7 candidate is Developer ID signed (build 592b1b9cf9ba8cd922c5, 87 targets), with 62 native frontdoor checks and 15 normal-viewer ending checks passing. **It is not yet notarized or installed.** Apple submission has not started because the established Keychain credential profile is unavailable. The existing 23 October Mac preview remains separately labelled and unchanged; it must not be described as Alpha 7 or notarized.
+Mac Alpha 7 is Developer ID signed (build `592b1b9cf9ba8cd922c5`, 87 targets). Apple accepted submission `8d5801d3-fc92-418b-b707-689a4971a7f9`; its ticket is stapled and Gatekeeper reports `Notarized Developer ID`. The candidate passed 62 native frontdoor checks. The final released ZIP passed CRC and complete member equality against the accepted app; its extracted ticket and signature passed. The installed app matches that ZIP, preserves the previous app as rollback and leaves saves/content unchanged. Its actual installed renderer passed 15 normal-viewer ending checks, with independent pixel checks for moving smoke/flames and fixed hardware/terrain. Current signing, stapling and Gatekeeper checks also pass after that runtime check. Live Web passed the corresponding 15 ending checks and a cold menu-to-mission run; these fixture-driven ending checks do not claim a natural gameplay reach-end.
 
 Original gameplay, timing and saves remain unchanged. Keep the previous app and profile backup for build-pinned state compatibility.
 

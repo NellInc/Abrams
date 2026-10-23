@@ -68,7 +68,7 @@ Tactical (`tactical`) with the Tactical HUD is the default view; Genesis Upscale
 
 Standalone packages target **Apple Silicon macOS 14+**, **Windows x86_64** and **Linux x86_64**. Godot and Python are bundled; players do not need to install them.
 
-**Alpha 7 (`0.1.0-alpha.7`) is available for Windows, Linux and browser. macOS Alpha 7 is not yet available.** The separately labelled 23 October macOS preview remains available.
+**Alpha 7 (`0.1.0-alpha.7`) is available for macOS, Windows, Linux and browser.**
 
 **You must supply the original PC game. The Genesis ROM is optional. Neither is bundled.**
 
@@ -79,7 +79,7 @@ Standalone packages target **Apple Silicon macOS 14+**, **Windows x86_64** and *
 
 The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA, EGA Upscaled, Genesis Upscaled, Modern and Tactical remain playable. PC-only sessions include source-verified high-resolution frontend artwork, crew portraits, lettering, animated ending smoke and the independent soundtrack. A Genesis import additionally derives its native palette, effects and original-resolution plates from your own verified ROM into your profile; the ROM itself is not copied. Native app builds made after 15 October 2026 (Alpha 4 predates this) do not offer native Genesis graphics mode or sampled Genesis frontend arrangements. The authored FRAME surround and arming clipboard require only the verified PC sources.
 
-These are alpha packages. macOS Alpha 6 is Developer ID signed and notarized by Apple; the later 23 October preview is signed but not notarized. Windows signing is not supplied. Intel Macs are not supported. See [macOS installation](docs/standalone-macos.md), [Windows/Linux installation](docs/standalone-portable.md) and the release notes for platform testing status.
+These are alpha packages. macOS Alpha 7 is Developer ID signed and notarized by Apple. Windows signing is not supplied. Intel Macs are not supported. See [macOS installation](docs/standalone-macos.md), [Windows/Linux installation](docs/standalone-portable.md) and the release notes for platform testing status.
 
 ## Controls
 
