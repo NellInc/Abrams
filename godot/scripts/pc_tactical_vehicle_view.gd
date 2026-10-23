@@ -182,7 +182,7 @@ func prepare_object(assets:RefCounted,object:Dictionary,frame:Dictionary,owner:i
 			if int(polygon.get("fill_mode",0))!=1 or primitive not in model.faces or primitive not in model.roots[source_root]:return 0
 			var face:Dictionary=model.faces[primitive]
 			if Modern.anchor_frame(face.source,polygon.camera_vertices,frame).is_empty():return 0
-			if not face.triangles.is_empty() and primitive not in assets.gpu_faces[shape]:return 0
+			if assets.face_has_geometry(face) and primitive not in assets.gpu_faces[shape]:return 0
 		flat_admitted[owner]=true
 		return 0
 	for group:Dictionary in assets.gpu_groups[shape].values():
@@ -241,7 +241,7 @@ func submit(assets:RefCounted,object:Dictionary,polygon:Dictionary,frame:Diction
 	assets.max_anchor_error=maxf(assets.max_anchor_error,float(fit.error))
 	# An authored empty face is an intentional void, not permission to restore
 	# the old outer plane over an inset hull or roof fitting.
-	if face.triangles.is_empty():return -1
+	if not assets.face_has_geometry(face):return -1
 	var instance:=acquire()
 	var meshes:Dictionary=assets.gpu_faces[shape][primitive]
 	var piecewise:bool=fit.get("piecewise",false)

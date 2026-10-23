@@ -66,6 +66,8 @@ func run() -> void:
 					for point:Array in facet.points:
 						check(point.size()==5 and point[1]>=data.camera.near_raw,"near-clipped full UV/depth")
 			check(found>(100 if shape in VehicleAssets.ROSTER_SHAPES else 0),"visible attributed model triangles")
+		cpu_geometry_lifetime(vehicles,catalog)
+		vehicles=VehicleAssets.new()
 		var malformed:=fixture()
 		malformed.models[0].triangles[0].uvs=[[0,0],[1,0],[0,1]]
 		check(vehicles.configure(malformed),"optional full UV schema")
@@ -425,7 +427,7 @@ func rigid_groups(vehicles:RefCounted,catalog:Dictionary) -> void:
 		if shape in vehicles.PER_FACE_SHAPES:subject.prepare_object(vehicles,object,data.camera,1,null,{})
 		for polygon:Dictionary in object.polygons:
 			var face:Dictionary=vehicles.models[shape].faces[int(polygon.primitive)]
-			if face.triangles.is_empty() and int(polygon.primitive) not in vehicles.protected_surfaces.get(shape,{}):
+			if not vehicles.face_has_geometry(face) and int(polygon.primitive) not in vehicles.protected_surfaces.get(shape,{}):
 				var result:=subject.submit(vehicles,object,polygon,data.camera,1,null,{})
 				if shape in vehicles.gpu_poses:
 					check(result==0 and subject.active_count==0,"atomic firing pose never admits an individual empty face")
@@ -460,6 +462,34 @@ func rigid_groups(vehicles:RefCounted,catalog:Dictionary) -> void:
 					for point:Array in polygon.camera_vertices:point[0]+=17.0;point[1]+=23.0;point[2]-=9.0
 			var fitted:=VehicleView.rigid_group_fit(model,group,moved,data.camera)
 			check(not fitted.is_empty() and fitted.origin.distance_to(fit.origin+Vector3(17,23,-9))<.001,"group uses its own observed translation")
+
+func cpu_geometry_lifetime(vehicles:RefCounted,catalog:Dictionary) -> void:
+	var model_count:int=vehicles.models.size()
+	var before:Dictionary={}
+	var meshes:Dictionary={}
+	for shape in vehicles.models:
+		for primitive in vehicles.models[shape].faces:
+			var face:Dictionary=vehicles.models[shape].faces[primitive]
+			check(face.has("corners") and not vehicles.cpu_geometry_released,"default loader retains CPU mapping diagnostics")
+			before[[shape,primitive]]=[face.source.duplicate(true),vehicles.face_has_geometry(face)]
+		for primitive in vehicles.gpu_faces[shape]:
+			var gpu:Dictionary=vehicles.gpu_faces[shape][primitive]
+			meshes[[shape,primitive]]=[gpu.affine,gpu.piecewise,gpu.triangles]
+	var poses:Dictionary=vehicles.gpu_poses.duplicate()
+	vehicles.release_cpu_geometry();vehicles.release_cpu_geometry()
+	check(vehicles.cpu_geometry_released and vehicles.models.size()==model_count,"GPU-only retirement is explicit and idempotent")
+	for key:Array in before:
+		var face:Dictionary=vehicles.models[key[0]].faces[key[1]]
+		check(face.source==before[key][0] and vehicles.face_has_geometry(face)==before[key][1],"source anchors and intentional voids survive retirement")
+		check(["triangles","positions","corners","position_coefficients"].all(func(k):return not face.has(k)),"duplicate CPU geometry retired")
+	for key:Array in meshes:
+		var gpu:Dictionary=vehicles.gpu_faces[key[0]][key[1]]
+		check([gpu.affine,gpu.piecewise,gpu.triangles]==meshes[key],"GPU buffers and exact triangle counts survive retirement")
+	check(vehicles.gpu_poses==poses,"ground-crew ownership positions survive retirement")
+	check(vehicles.mapping({},{},{},[])==[],"retired CPU mapping fails closed")
+	rigid_groups(vehicles,catalog)
+	vehicles.clear_detail()
+	check(not vehicles.cpu_geometry_released and vehicles.models.is_empty(),"reload boundary resets CPU lifetime")
 
 func source_line_vertices() -> PackedVector3Array:
 	var result:=PackedVector3Array()

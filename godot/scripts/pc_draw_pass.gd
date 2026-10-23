@@ -169,7 +169,8 @@ func refresh_surface_shader(active:Material) -> void:
 func load_modern_assets(root: String) -> bool:
 	clear_mesh_cache()
 	var loaded: bool = modern_assets.load_assets(root)
-	if loaded:tactical_vehicle_assets.load_detail(root)
+	if loaded and tactical_vehicle_assets.load_detail(root) and OS.has_feature("web"):
+		tactical_vehicle_assets.release_cpu_geometry()
 	tactical_material_textures = modern_assets.material_textures.duplicate()
 	tactical_material_atlas=modern_assets.material_atlas
 	tactical_foliage.set_material_atlas(tactical_material_atlas)

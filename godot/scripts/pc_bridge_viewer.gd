@@ -838,6 +838,7 @@ func runtime_presentation_status() -> Dictionary:
 	var vehicles = draw_view.tactical_vehicle_assets if draw_view else null
 	return {"roster_models":vehicles.models.size() if vehicles else 0,
 		"roster_status":vehicles.detail_status if vehicles else "unavailable",
+		"roster_cpu_geometry_released":vehicles.cpu_geometry_released if vehicles else false,
 		"score_cues":pc_audio.music_bank.manifest.get("tracks",{}).size() if pc_audio else 0,
 		"score_independent":pc_audio.music_bank.independent if pc_audio else false,
 		"music_playing":pc_audio.music.playing if pc_audio else false,

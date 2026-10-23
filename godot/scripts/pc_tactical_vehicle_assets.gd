@@ -10,6 +10,7 @@ var gpu_heads:Dictionary={}
 var gpu_poses:Dictionary={}
 const CrewPose=preload("res://scripts/pc_tactical_crew_pose.gd")
 var grounding_bounds:Dictionary={}
+var cpu_geometry_released:=false
 
 const ROSTER_SHAPES = [115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,159,160,163,164]
 const SCENE_SHAPES = [0,1,45,46,47,108,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164]
@@ -27,10 +28,31 @@ var protected_surfaces:Dictionary={}
 var decoded_texture_bytes:=0
 
 func clear_detail() -> void:
+	cpu_geometry_released=false
 	ready=false;models.clear();gpu_faces.clear();gpu_groups.clear();gpu_heads.clear();gpu_poses.clear();grounding_bounds.clear()
 	clear_position_cache();texture_banks.clear();shape_banks.clear();protected_lines.clear();protected_surfaces.clear()
 	colour_texture=null;colour_indices.clear();terrain_shapes.clear()
 	albedo_atlas=null;normal_atlas=null;orm_atlas=null;decoded_texture_bytes=0
+
+static func face_has_geometry(face:Dictionary) -> bool:
+	return bool(face.has_authored_triangles) if face.has("has_authored_triangles") else not face.triangles.is_empty()
+
+func release_cpu_geometry() -> void:
+	# Explicit GPU-only lifetime boundary, after full load_detail validation.
+	# Working if: Web keeps every mesh and source admission anchor, while the
+	# duplicate triangle/corner dictionaries no longer occupy its 2 GiB heap.
+	# Reload with load_detail before any recompilation or CPU diagnostics.
+	if not ready or cpu_geometry_released:return
+	for model:Dictionary in models.values():
+		for face:Dictionary in model.faces.values():
+			face.has_authored_triangles=not face.triangles.is_empty()
+			for key:String in ["triangles","positions","corners","position_coefficients"]:face.erase(key)
+	clear_position_cache()
+	cpu_geometry_released=true
+
+func mapping(object:Dictionary,polygon:Dictionary,frame:Dictionary,palette:Array,primitive_gate:bool=true,motion_anchor:float=NAN,depth_presort:bool=true) -> Array:
+	if cpu_geometry_released:return []
+	return super.mapping(object,polygon,frame,palette,primitive_gate,motion_anchor,depth_presort)
 
 func load_detail(root: String) -> bool:
 	clear_detail();revision+=1;last_reason=""
