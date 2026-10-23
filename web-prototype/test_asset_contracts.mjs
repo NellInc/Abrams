@@ -75,6 +75,12 @@ try {
     c => ({...c, parts: [{...c.parts[0], bytes: 48_000_001}]}), c => ({...c, files: [{...c.files[0], sha256: 'bad'}]}),
     c => ({...c, schema: 2}), c => ({...c, parts: [{...c.parts[0], set: 'other'}]})])
     await assert.rejects(fixture(valid, mutate), /manifest|part/);
+  // Only the reviewed roster path gets its existing native96MiB expanded cap.
+  const rosterPath = 'local-art/pc-tactical-roster-v1/catalog.json';
+  await assert.rejects(fixture(valid, c => ({...c, files: [{...c.files[0], bytes: 48_000_001}]})), /manifest entry/);
+  await assert.rejects(fixture(valid, c => ({...c, files: [{...c.files[0], path: rosterPath, bytes: 96 * 1024 * 1024 + 1}]})), /manifest entry/);
+  // Accepted large-roster metadata still cannot authenticate a mismatched ZIP member.
+  await assert.rejects(fixture(valid, c => ({...c, files: [{...c.files[0], path: rosterPath, bytes: 99_599_244}]})), /Unexpected authored asset path/);
   // A visitor-derived decode in the served catalog is refused outright.
   await assert.rejects(fixture(valid, c => ({...c, files: [{...c.files[0], path: 'local-art/pc-portraits-v1/faces.json'}]})), /original-derived/);
   for (const flags of [1, 8, 0x40]) {

@@ -52,12 +52,13 @@ class RunLabel extends Control:
 		if not run.get("transparent_world",false): draw_rect(Rect2(Vector2.ZERO,size),Color("15251b") if tactical and crew_styled else run.background)
 		if tactical:
 			var bearing: bool=run.kind=="world_bearing"
-			var face: Font=mono_font if bearing and run.text.is_valid_int() else tactical_font
+			var face: Font=mono_font if (bearing or run.kind=="frontend") and run.text.strip_edges().is_valid_int() else tactical_font
 			var point_size:=fitted_point(face,run.text,size,self)
 			var baseline: float=(size.y-face.get_height(point_size))*0.5+face.get_ascent(point_size)
 			if bearing:
 				draw_string_outline(face,Vector2(0,baseline),run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size,1,Color("e3e4cd") if run.foreground.r<0.5 else Color("15251b"))
-			draw_string(face,Vector2(0,baseline),run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size,Color("e3e4cd") if crew_styled else run.foreground)
+			var x: float=maxf(0.0,(size.x-face.get_string_size(run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size).x)*0.5) if run.get("heading",false) else 0.0
+			draw_string(face,Vector2(x,baseline),run.text,HORIZONTAL_ALIGNMENT_LEFT,-1,point_size,Color("e3e4cd") if crew_styled else run.foreground)
 			return
 		if run.get("outline_font") is Font:
 			var scale: Vector2=size/run.rect.size
@@ -548,6 +549,47 @@ func set_frame(source: Image, ui: Image, presentation: Dictionary, cursor_mask: 
 			labels.append(label)
 	_crew_rect=verified_crew_panel(source,ui,runs)
 	_layout()
+
+func merge_frontend_runs(source: Image, ui: Image) -> void:
+	# Only already verified source glyphs and completely blank, UI-owned gaps.
+	# No text is inferred from RAM, metadata alone, or an unknown/cursor pixel.
+	var ordered: Array = runs.duplicate()
+	ordered.sort_custom(func(a,b):return a.rect.position.y<b.rect.position.y if a.rect.position.y!=b.rect.position.y else a.rect.position.x<b.rect.position.x)
+	var joined: Array[Dictionary]=[]
+	for current in ordered:
+		var run: Dictionary=current.duplicate()
+		run["heading"]=run.font_sha256==FONT_SOURCES["STENCIL.FNT"] and (run.rect.position.y<50 or run.text=="CONFIRMED KILLS" or (run.rect.position.y==96 and run.rect.size.y==8))
+		run["fragment"]=run.kind=="frontend" and run.get("heading",false) and run.text.length()==1 and run.text.to_upper()>= "A" and run.text.to_upper()<= "Z"
+		if hud_style=="tactical" and run.fragment and not joined.is_empty() and joined[-1].get("fragment",false):
+			var prior: Dictionary=joined[-1]
+			var gap: int=roundi(run.rect.position.x-prior.rect.end.x)
+			var compatible: bool=prior.kind==run.kind and prior.rect.position.y==run.rect.position.y and prior.rect.size.y==run.rect.size.y and prior.font_sha256==run.font_sha256 and prior.foreground==run.foreground and prior.background==run.background and gap>=0 and gap<=run.cell_size.x*2 and gap%run.cell_size.x==0
+			if compatible and gap>0:
+				var box:=Rect2i(int(prior.rect.end.x),int(run.rect.position.y),gap,int(run.rect.size.y))
+				compatible=ui.get_region(box).get_data().count(255)==box.size.x*box.size.y
+				if compatible:
+					var empty:=Image.create_empty(box.size.x,box.size.y,false,source.get_format());empty.fill(run.background)
+					compatible=source.get_region(box).get_data()==empty.get_data()
+			if compatible:
+				prior.text+=" ".repeat(gap/run.cell_size.x)+run.text
+				prior.rect.size.x=run.rect.end.x-prior.rect.position.x
+				continue
+		joined.append(run)
+	# Mission-title fragments share a blank blue panel. Increase the fitted
+	# type height only when every added cell is current blank, UI-owned ink.
+	for run in joined:
+		if not run.get("fragment",false) or run.text.length()<2: continue
+		var box: Rect2i=run.rect
+		var expanded:=Rect2i(box.position-Vector2i(0,8),box.size+Vector2i(0,16))
+		if not Rect2i(0,0,320,200).encloses(expanded):continue
+		var safe:=true
+		for y in range(expanded.position.y,expanded.end.y):
+			for x in range(expanded.position.x,expanded.end.x):
+				if box.has_point(Vector2i(x,y)):continue
+				if ui.get_pixel(x,y).r!=1.0 or source.get_pixel(x,y)!=run.background:safe=false;break
+			if not safe:break
+		if safe:run.rect=Rect2(expanded)
+	runs=joined
 
 func _layout() -> void:
 	var scale_to_view := size/Vector2(320,200)

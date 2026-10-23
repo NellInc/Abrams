@@ -31,6 +31,8 @@ var portraits: Array[Texture2D] = []
 var active: Dictionary = {}
 var text_enabled := true
 var splash_aftermath_art = preload("res://scripts/pc_splash_aftermath_art.gd").new()
+var panels = preload("res://scripts/pc_frontend_panels.gd").new()
+var contours = preload("res://scripts/pc_frontend_contours.gd").new()
 var map_art = preload("res://scripts/pc_map_art.gd").new()
 var newspaper_art = preload("res://scripts/pc_newspaper_art.gd").new()
 var intro_art = preload("res://scripts/pc_intro_art.gd").new()
@@ -51,6 +53,10 @@ func _init() -> void:
 	splash_aftermath_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(map_art)
 	map_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(panels)
+	panels.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(contours)
+	resized.connect(func(): contours.fit_to(size))
 	add_child(newspaper_art)
 	newspaper_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(intro_art)
@@ -72,6 +78,8 @@ func clear() -> void:
 	intro_art.clear()
 	newspaper_art.clear()
 	map_art.clear()
+	panels.clear()
+	contours.clear()
 	splash_aftermath_art.clear()
 	information_art.clear()
 	arming_panel.clear()
@@ -82,6 +90,10 @@ func clear() -> void:
 	material.set_shader_parameter("restored_height",0.0)
 	material.set_shader_parameter("motor_enabled",false)
 	material.set_shader_parameter("scene_enabled",false)
+
+func set_hud_style(style: String) -> void:
+	typography.set_hud_style(style)
+	flow_typography.set_hud_style(style)
 
 func load_sources(root_path: String) -> bool:
 	clear()
@@ -313,14 +325,24 @@ func set_frame(source: Image, program: Dictionary, presentation: Dictionary={}, 
 		material.set_shader_parameter("scene_enabled",true)
 		replay=true
 		active.preview="Original START/ANIM draw, high-resolution replay"
-	if not text_enabled: return restored
 	original_cursor.set_frame(source,presentation)
 	flow_typography.set_frame(source,mask,presentation,original_cursor.mask)
 	# Keep previously restored information/office/arming colours and layouts.
 	flow_typography.runs.assign(flow_typography.runs.filter(func(run):
 		return not typography.runs.any(func(old):return old.rect.intersects(run.rect))))
 	for label in flow_typography.labels: label.hide()
-	flow_typography._layout()
+	if text_enabled:
+		flow_typography.merge_frontend_runs(source,panels.title_mask(source,mask,flow_typography.runs))
+		flow_typography._layout()
+	if not map_art.active.is_empty() and not replay:
+		contours.fit_to(size)
+		var protected: Array=[]
+		for run in typography.runs+flow_typography.runs: protected.append(run.rect)
+		contours.set_frame(source,protected,original_cursor.mask)
+	if not text_enabled:
+		flow_typography.clear_runs()
+		original_cursor.clear()
+		return restored
 	if flow_typography.runs.is_empty(): return restored
 	if not restored:
 		_show(source)
@@ -363,6 +385,11 @@ func _set_art_frame(source: Image, program: Dictionary, presentation: Dictionary
 	if map_art.set_frame(source,program,presentation):
 		_show(source)
 		active={"scene":"map_frame","name":"Mission summary frame"}
+		visible=true
+		return true
+	if panels.set_frame(source,program):
+		_show(source)
+		active={"scene":"mission_title","name":"Original mission title"}
 		visible=true
 		return true
 	if program.get("name")=="SIM": return _set_motor_pool(source,presentation)

@@ -64,8 +64,9 @@ func _apply_sample(message: Dictionary) -> void:
 		return
 	if observed_game: return
 	observed_game=true
-	check(not startup_splash.visible and startup_splash.finished,"first valid paired frame immediately replaces cover")
-	check(not status.visible,"loading caption absent over original game")
+	check(not startup_splash.visible and startup_splash.finished,"first valid paired frame finishes startup splash")
+	check(frontdoor_shown and _frontdoor_blocked() and frontdoor.visible,"ordinary Play hands off to interactive cover")
+	check(not status.visible,"loading caption absent over main menu")
 	check(samples==1,"handoff needs no extra guest frame")
 	finish_test.call_deferred()
 

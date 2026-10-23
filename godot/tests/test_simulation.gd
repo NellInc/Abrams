@@ -19,6 +19,7 @@ func _run() -> void:
 	_test_completion()
 	_test_contract_clauses()
 	_test_range_presentation()
+	_test_cover_motion()
 	if failures.is_empty():
 		print("SIMULATION: %d checks passed" % checks)
 		quit(0)
@@ -31,6 +32,62 @@ func check(condition: bool, text: String) -> void:
 	checks += 1
 	if not condition:
 		failures.append(text)
+
+func _test_cover_motion() -> void:
+	var cover = load("res://scripts/cover_scene.gd").new()
+	var hero = load("res://scripts/vehicle.gd").new()
+	hero.cover_detail = true
+	var camera := Camera3D.new()
+	root.add_child(cover);root.add_child(hero);root.add_child(camera)
+	if FileAccess.file_exists(hero.COVER_BLENDER_ASSET):
+		var asset: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(hero.COVER_BLENDER_ASSET))
+		check(hero.authored_cover_batches==asset.batches.size(),"motion retains every authored Blender batch")
+	check(hero.running_rig.get_bone_count()==119 and hero.crew_rig.get_bone_count()==5,"bounded running gear and crew rigs")
+	var bound: Dictionary = {}
+	for child in hero.get_children():
+		if not child is MeshInstance3D or child.skin==null: continue
+		var arrays: Array = child.mesh.surface_get_arrays(0)
+		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+		var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+		for i in bones.size():
+			if weights[i]>0.0: bound[bones[i]]=true
+	for part in hero._running_parts:
+		check(bound.has(part.bone),"every moving wheel/shoe has bound geometry: %d" % part.bone)
+	for person in 2:
+		for hand in hero.CREW_HANDS[person]:
+			for offset in [Vector3.ZERO,Vector3.RIGHT*0.04,Vector3.UP*0.04]:
+				check(hero.crew_weights(hand+offset,person).x==0.0,"crew grip remains fixed in turret space")
+	cover.set_active(true)
+	cover.pose(hero,camera,Vector2(1152,648))
+	for rig in [hero.running_rig,hero.crew_rig]:
+		rig.force_update_all_bone_transforms()
+		for bone in rig.get_bone_count():
+			check(rig.get_bone_global_pose(bone).is_equal_approx(rig.get_bone_global_rest(bone)),"zero-time skin preserves authored rest pose")
+	var initial: Transform3D = hero.transform
+	var turret_start: float = hero.turret_root.rotation.y
+	cover.advance(1.0,true);cover.pose(hero,camera,Vector2(1152,648))
+	check(hero.position.z < initial.origin.z and is_equal_approx(-hero.position.z,cover.TRAVEL_SPEED),"tank actually advances at cover speed")
+	check(hero.basis!=initial.basis and hero.position.y!=initial.origin.y,"suspension has bounded heave and roll")
+	check(hero.turret_root.rotation.y!=turret_start,"turret gently tracks")
+	check((camera.position-hero.position).is_equal_approx(cover.CAMERA_POS),"camera follows at unchanged forward offset")
+	check(camera.basis.is_equal_approx(Basis.from_euler(cover.CAMERA_ROT,EULER_ORDER_YXZ)),"follow camera never orbits")
+	check(cover._lamp_mount.global_transform.is_equal_approx(hero.global_transform),"headlight halos stay attached to moving hull")
+	for person in 2:
+		check(not hero.crew_rig.get_bone_pose_rotation(1+person*2).is_equal_approx(Quaternion.IDENTITY),"both torsos move")
+		check(not hero.crew_rig.get_bone_pose_rotation(2+person*2).is_equal_approx(Quaternion.IDENTITY),"both heads move independently")
+	var still: Transform3D = hero.transform
+	var still_camera: Transform3D = camera.transform
+	var still_time: float = cover.motion_time
+	cover.advance(3.0,false);cover.pose(hero,camera,Vector2(1152,648))
+	check(cover.motion_time==still_time and hero.transform==still and camera.transform==still_camera,"reduced motion freezes body and follow camera exactly")
+	cover.set_active(false);cover.advance(5.0,true)
+	check(cover.motion_time==still_time,"hidden cover never catches up on wall time")
+	hero.update_cover_motion(0.0,0.0)
+	for rig in [hero.running_rig,hero.crew_rig]:
+		rig.force_update_all_bone_transforms()
+		for bone in rig.get_bone_count():
+			check(rig.get_bone_global_pose(bone).is_equal_approx(rig.get_bone_global_rest(bone)),"range restores every motion bone to rest")
+	hero.free();cover.free();camera.free()
 
 func _has_event(events: Array, kind: String) -> bool:
 	for event in events:
@@ -302,8 +359,156 @@ func _test_contract_clauses() -> void:
 		sim.tick({"select_target": true})
 		check(sim.selected_target == case[1], "vertical selection cone elevation %s" % case[0])
 
+# Protect the observed separate-tube shoulder defect using real source topology.
+# Working if each hip and both sleeve ends belong to one connected garment.
+func _check_menu_shirt_connections(hero: Node3D) -> void:
+	var matched := 0
+	for child in hero.crew.get_children():
+		if not child is MeshInstance3D or not child.material_override is ShaderMaterial: continue
+		var colour = child.material_override.get_shader_parameter("base_color")
+		if not colour is Color: continue
+		var commander: bool = colour.is_equal_approx(Color("c9c9ba"))
+		if not commander and not colour.is_equal_approx(Color("b09a76")): continue
+		var arrays: Array = child.mesh.surface_get_arrays(0)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		if vertices.size() < 3000: continue
+		matched += 1
+		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		var links: Dictionary = {}
+		for i in range(0,indices.size(),3):
+			for edge in range(3):
+				var a := vertices[indices[i+edge]].snapped(Vector3.ONE*0.000001)
+				var b := vertices[indices[i+(edge+1)%3]].snapped(Vector3.ONE*0.000001)
+				if not links.has(a): links[a] = {}
+				if not links.has(b): links[b] = {}
+				links[a][b] = true
+				links[b][a] = true
+		var hip := Vector3(0.7,0.98,0.48) if commander else Vector3(-0.72,0.96,0.56)
+		var seed: Vector3 = links.keys()[0]
+		for point in links:
+			if point.distance_squared_to(hip) < seed.distance_squared_to(hip): seed = point
+		var seen := {seed:true}
+		var pending: Array = [seed]
+		while not pending.is_empty():
+			var at: Vector3 = pending.pop_back()
+			for point in links[at]:
+				if not seen.has(point): seen[point] = true; pending.append(point)
+		var contacts := [[Vector3(0.96,1.17,0.58),Vector3(0.98,1.34,0.3)],[Vector3(0.52,1.24,0.02),Vector3(0.74,1.36,0.02)]] if commander else [[Vector3(-0.36,1.04,0.15),Vector3(-0.58,0.858,-0.12)],[Vector3(-1.02,1.035,0.19),Vector3(-0.96,0.858,-0.13)]]
+		for contact in contacts:
+			var target: Vector3 = contact[1]-(contact[1]-contact[0]).normalized()*0.035
+			var nearest: Vector3 = seed
+			for point in links:
+				if point.distance_squared_to(target) < nearest.distance_squared_to(target): nearest = point
+			check(nearest.distance_to(target) < 0.003 and seen.has(nearest),"menu shirt joins hip to sleeve end, commander=%s" % commander)
+	check(matched == 2,"both menu shirts have joined shoulder topology")
+
 func _test_range_presentation() -> void:
 	# Presentation helpers only: none of these feed the simulation.
+	var cover = load("res://scripts/cover_scene.gd").new()
+	root.add_child(cover)
+	check(cover.has_method("advance"), "cover exposes a reduced-motion atmosphere clock")
+	if not cover.has_method("advance"):
+		cover.free()
+		return
+	cover.set_active(true)
+	cover.advance(0.5, false)
+	var still_time: float = cover.atmosphere_time
+	cover.advance(1.0, false)
+	check(cover.atmosphere_time == still_time, "reduced motion freezes cover atmosphere")
+	var particle_budget := 0
+	for particles in cover._particles:
+		particle_budget += particles.amount
+		check(particles.speed_scale == 0.0, "reduced motion freezes cover particles")
+	check(particle_budget <= 10000, "cover particles stay within title-screen budget")
+	var rising_smoke_count := 0
+	for particles in cover._particles:
+		if String(particles.name).begins_with("RisingSmoke"):
+			rising_smoke_count += 1
+			check(particles.direction.y > 0.8 and particles.direction.x > 0.2 and particles.initial_velocity_min >= 0.5,"smoke visibly rises and drifts")
+	check(rising_smoke_count == 2,"both flanks carry rising smoke")
+	cover.advance(0.5, true)
+	check(cover.atmosphere_time > still_time, "cover atmosphere resumes motion")
+	cover.set_active(false)
+	var hidden_time: float = cover.atmosphere_time
+	cover.advance(1.0, true)
+	check(cover.atmosphere_time == hidden_time, "hidden cover does not advance")
+	for particles in cover._particles:
+		check(not particles.emitting and particles.speed_scale == 0.0, "hidden cover suspends particles")
+	cover.free()
+	# Authored-cover input is optional. Malformed or mismatched data preserves source meshes.
+	var hero = load("res://scripts/vehicle.gd").new()
+	hero.cover_detail = true
+	if FileAccess.file_exists(hero.COVER_BLENDER_ASSET):
+		check(not hero._cover_authored_batches().is_empty(),"Blender cover asset loads")
+	else:
+		check(hero._cover_authored_batches().is_empty(),"source-only kit retains optional cover fallback")
+	var probe := ArrayMesh.new()
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3.ZERO,Vector3.RIGHT,Vector3.UP])
+	arrays[Mesh.ARRAY_NORMAL] = PackedVector3Array([Vector3.FORWARD,Vector3.FORWARD,Vector3.FORWARD])
+	probe.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+	var selector: String = hero._cover_batch_selector(probe.surface_get_arrays(0))
+	var valid := {"frame":"hull","count":3,"vertices":[0,0,0,1,0,0,0,1,0],"normals":[0,0,-1,0,0,-1,0,0,-1]}
+	check(hero._authored_cover_mesh(probe,"hull",{selector:valid}) != probe,"valid authored batch replaces source")
+	for malformed in [null,[],"invalid",3]:
+		check(hero._authored_cover_mesh(probe,"hull",{selector:malformed}) == probe,"malformed authored batch falls back")
+	for field in ["vertices","normals","count","frame"]:
+		for bad in [null,"invalid",[],true]:
+			var malformed: Dictionary = valid.duplicate(true)
+			malformed[field] = bad
+			check(hero._authored_cover_mesh(probe,"hull",{selector:malformed}) == probe,"malformed authored %s falls back" % field)
+	for bad in [null,"invalid",true]:
+		var malformed: Dictionary = valid.duplicate(true)
+		malformed.vertices[0] = bad
+		check(hero._authored_cover_mesh(probe,"hull",{selector:malformed}) == probe,"malformed authored component falls back")
+	var malformed_path := OS.get_cache_dir().path_join("abrams-cover-malformed-%d.json" % OS.get_process_id())
+	for malformed in ["{", "[]", '{"schema":1,"batches":[]}', '{"schema":[],"batches":{}}', '{"schema":true,"batches":{}}', '{"schema":"1","batches":{}}']:
+		var file := FileAccess.open(malformed_path,FileAccess.WRITE)
+		file.store_string(malformed)
+		file.close()
+		check(hero._cover_authored_batches(malformed_path).is_empty(),"malformed cover file falls back")
+	DirAccess.remove_absolute(malformed_path)
+	# The loader weapon must have a continuous axial silhouette and a mount
+	# clear of the braced hand. Protect both joins and the nearby contact pose.
+	var weapon_frame := Node3D.new()
+	hero._loader_weapon(weapon_frame)
+	check(hero._batches.size() == 1,"loader weapon is one material/frame assembly")
+	var weapon_mesh: ArrayMesh = hero._batches.values()[0].st.commit()
+	var weapon_faces: PackedVector3Array = weapon_mesh.get_faces()
+	var gun_frame := Transform3D(Basis(Vector3.RIGHT,0.45),Vector3(-0.98,1.25,-0.40))
+	var continuous := true
+	for station in range(107):
+		var point := gun_frame*Vector3(0,0.075,-0.97+station*0.01)
+		var found := false
+		for triangle in range(0,weapon_faces.size(),3):
+			if Geometry3D.segment_intersects_triangle(point+Vector3.RIGHT*0.2,point-Vector3.RIGHT*0.2,weapon_faces[triangle],weapon_faces[triangle+1],weapon_faces[triangle+2]) != null:
+				found = true
+				break
+		continuous = continuous and found
+	check(continuous,"loader barrel and receiver have no axial gap")
+	var hand_clear := true
+	for point in weapon_faces:
+		if point.y < 0.94:
+			hand_clear = hand_clear and Vector2(point.x,point.z).distance_to(Vector2(-0.96,-0.13)) > 0.11
+	check(hand_clear,"loader gun pedestal clears the braced hand")
+	# Use centimetres for this tiny-lip predicate: Godot uses an absolute
+	# determinant epsilon. Uniform scaling preserves every segment and hit.
+	for bore_check in [[0.0,-0.985,-0.955,false],[0.024,-0.985,-0.955,true],[0.0,-0.94,-0.90,true]]:
+		var from := gun_frame*Vector3(bore_check[0],0.075,bore_check[1])
+		var to := gun_frame*Vector3(bore_check[0],0.075,bore_check[2])
+		var hit := false
+		for triangle in range(0,weapon_faces.size(),3):
+			if Geometry3D.segment_intersects_triangle(from*100.0,to*100.0,weapon_faces[triangle]*100.0,weapon_faces[triangle+1]*100.0,weapon_faces[triangle+2]*100.0) != null:
+				hit = true
+				break
+		check(hit == bore_check[3],"loader muzzle has an open centre, solid lip and recessed back: %s" % str(bore_check))
+	weapon_frame.free()
+	hero._batches.clear()
+	hero.set_meta("cover_export_source",true)
+	root.add_child(hero)
+	_check_menu_shirt_connections(hero)
+	hero.free()
 	var main = load("res://scripts/main.gd").new()
 	main.sim.turret = 0.4
 	main.sim.heading = -0.3

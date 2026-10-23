@@ -1,5 +1,11 @@
 extends Node3D
 
+signal game_selected(destination: String)
+signal settings_selected
+signal artwork_selected
+signal quit_selected
+var embedded := false
+
 const Simulation = preload("res://scripts/simulation.gd")
 const Vehicle = preload("res://scripts/vehicle.gd")
 const Landscape = preload("res://scripts/landscape.gd")
@@ -50,7 +56,7 @@ var thermal_overlay_state := -1
 var range_save := "user://range-save.bin"
 
 func _ready() -> void:
-	get_tree().auto_accept_quit = false
+	if not embedded: get_tree().auto_accept_quit = false
 	_setup_world()
 	sound = Sound.new()
 	add_child(sound)
@@ -70,10 +76,13 @@ func _ready() -> void:
 		_smoke_test.call_deferred()
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+	if not embedded and what == NOTIFICATION_WM_CLOSE_REQUEST:
 		request_quit()
 
 func request_quit() -> void:
+	if embedded:
+		quit_selected.emit()
+		return
 	if shutting_down:
 		return
 	shutting_down = true
@@ -151,6 +160,7 @@ func _setup_world() -> void:
 	cover_scene = CoverScene.new()
 	add_child(cover_scene)
 	vehicle = Vehicle.new()
+	vehicle.cover_detail = true
 	add_child(vehicle)
 	camera = Camera3D.new()
 	camera.far = 2800
@@ -217,13 +227,12 @@ func _process(delta: float) -> void:
 	vehicle.update_pose(sim.turret-sim.heading,delta)
 	_apply_mood(screen != "range")
 	if screen != "range":
-		# Box-cover framing: low, front three-quarter view with the gun raised.
+		# Presentation-only travel, independent of the frozen original guest.
 		vehicle.visible = true
-		vehicle.position = Vector3.ZERO
-		vehicle.rotation = Vector3(CoverScene.HULL_PITCH,0,0)
-		vehicle.update_pose(CoverScene.TURRET,delta,CoverScene.ELEVATION,CoverScene.GUN_YAW)
-		CoverScene.frame(camera,get_viewport().get_visible_rect().size)
+		cover_scene.advance(delta,not reduced_motion)
+		cover_scene.pose(vehicle,camera,get_viewport().get_visible_rect().size)
 	else:
+		vehicle.update_cover_motion(0.0,0.0)
 		camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 		camera.near = 0.08
 		var bearing: float = view_bearing()
@@ -252,10 +261,13 @@ func view_bearing() -> float:
 	return (sim.heading if sim.station == 3 else sim.turret) + (scan_angle if sim.station == 1 else 0.0)
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if embedded and not ui.visible: return
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
 	if event.keycode == KEY_ESCAPE:
 		if screen in ["manual","record"]:
+			set_screen("extras" if embedded else "menu")
+		elif screen == "extras":
 			set_screen("menu")
 		elif screen == "range":
 			paused = not paused
@@ -263,9 +275,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if paused:
 				sound.stop_all()
 			ui.rebuild_buttons()
-		return
-	if screen == "menu" and event.keycode == KEY_ENTER:
-		start_range()
 		return
 	if screen != "range" or paused:
 		return
@@ -302,6 +311,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			paused = true
 			ui.rebuild_buttons()
 	get_viewport().set_input_as_handled()
+
+func open_artwork() -> void:
+	if embedded: artwork_selected.emit()
+	else: get_tree().change_scene_to_file("res://scenes/art_review.tscn")
 
 func start_range() -> void:
 	sim.reset()

@@ -22,8 +22,8 @@ var profile_builds := false
 var last_apply_timings_usec: Dictionary = {}
 var mesh_build_count := 0
 var mesh_reuse_count := 0
-# Only the source-paired Play viewport opts in. Its shader has no wall-clock
-# animation; camera, ownership and material changes are in the mesh key.
+# Only the source-paired Play viewport opts in. Source mesh, ownership and
+# composition changes are tracked independently of optional authored models.
 var retain_render_target := false
 var _cached_pass: Dictionary = {}
 var _cached_config: Array = []
@@ -44,7 +44,9 @@ var modern_enabled := false:
 		modern_enabled=value
 var tactical_landscape := false:
 	set(value):
+		if tactical_landscape!=value:clear_mesh_cache()
 		tactical_landscape=value
+		if not value and tactical_vehicle_view!=null:tactical_vehicle_view.clear()
 		if value and _modern_active:
 			tactical_foliage.prepare(_foliage_pass,_foliage_mapping,ownership.get_texture())
 			tactical_effects.prepare(_foliage_pass,_foliage_mapping,ownership.get_texture(),modern_assets,effect_art)
@@ -61,6 +63,8 @@ var tactical_landscape := false:
 				if retain_render_target and get_viewport() is SubViewport:
 					get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
 var modern_assets = ModernAssets.new()
+var tactical_vehicle_assets = preload("res://scripts/pc_tactical_vehicle_assets.gd").new()
+var tactical_vehicle_view = preload("res://scripts/pc_tactical_vehicle_view.gd").new()
 var tactical_material_textures: Dictionary = {}
 var tactical_material_atlas: Texture2D
 var modern_prewarmed := false
@@ -112,6 +116,7 @@ func _init() -> void:
 	add_child(ownership)
 	add_child(tactical_foliage)
 	add_child(tactical_effects)
+	add_child(tactical_vehicle_view)
 
 
 func _groundlight_source() -> String:
@@ -164,6 +169,7 @@ func refresh_surface_shader(active:Material) -> void:
 func load_modern_assets(root: String) -> bool:
 	clear_mesh_cache()
 	var loaded: bool = modern_assets.load_assets(root)
+	if loaded:tactical_vehicle_assets.load_detail(root)
 	tactical_material_textures = modern_assets.material_textures.duplicate()
 	tactical_material_atlas=modern_assets.material_atlas
 	tactical_foliage.set_material_atlas(tactical_material_atlas)
@@ -187,6 +193,7 @@ func _mesh_config() -> Array:
 	# Loaded presentation assets are immutable between loader revisions. Include
 	# the small mutable configuration arrays and texture references explicitly.
 	return [solid_enabled,modern_enabled,presentation_palette,
+		tactical_landscape,tactical_vehicle_assets.revision,tactical_vehicle_assets.ready,
 		get_viewport().get_visible_rect().size,RenderingServer.get_current_rendering_method(),
 		tactical_material_atlas,tactical_material_textures,modern_assets,modern_assets.revision,modern_assets.ready,modern_assets.colour_texture,modern_assets.tree_texture,
 		terrain_style,terrain_style.textures if terrain_style else {},terrain_style.hill_texture if terrain_style else null,
@@ -252,6 +259,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 		get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
 	render_warnings.clear()
 	ownership.clear()
+	tactical_vehicle_view.clear()
 	tactical_foliage.clear()
 	tactical_effects.clear()
 	# Release borrowed snapshots without clearing the caller's dictionary.
@@ -318,6 +326,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 	mesh_node.mesh = mesh
 
 func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
+	tactical_vehicle_view.clear()
 	mesh_node.mesh = null
 	polygon_count = 0
 	dynamic_polygon_count = 0
@@ -330,7 +339,15 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 	_modern_active = modern_enabled and modern_assets.ready and modern_assets.supported_palette(pass_data.palette_rgb)
 	if _modern_active:
 		var owner_started: int=Time.get_ticks_usec() if profile_builds else 0
-		_modern_active = ownership.prepare(pass_data,Vector2i(get_viewport().get_visible_rect().size))
+		var guarded_owners:Dictionary={}
+		var vehicle_masks:bool=tactical_landscape and tactical_vehicle_assets.ready
+		if vehicle_masks:
+			# Original queue IDs, before terrain underpaint reordering. Protect all
+			# nonterrain source pixels, including unsupported/fallback objects.
+			for index in pass_data.objects.size():
+				if not modern_assets.is_terrain(pass_data.objects[index]):guarded_owners[index+1]=true
+		var pose_overrides:Dictionary=tactical_vehicle_view.admit_poses(tactical_vehicle_assets,pass_data) if vehicle_masks else {}
+		_modern_active = ownership.prepare(pass_data,Vector2i(get_viewport().get_visible_rect().size),null,tactical_vehicle_assets.protected_lines if vehicle_masks else {},guarded_owners,tactical_vehicle_assets.protected_surfaces if vehicle_masks else {},pose_overrides)
 		if profile_builds: last_apply_timings_usec.ownership=Time.get_ticks_usec()-owner_started
 	var palette: Array = presentation_palette if presentation_palette.size() == 16 else pass_data.palette_rgb
 	if modern_enabled: palette = ModernAssets.DAY_PALETTE if _modern_active else pass_data.palette_rgb
@@ -342,6 +359,7 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 	terrain_active = not mapping.is_empty()
 	var levels: int = TerrainStyle.LEVELS if terrain_active else 1
 	var hills: bool = terrain_active and terrain_style.hill_texture!=null
+	var vehicle_basis:Dictionary=mapping if terrain_active else TerrainStyle.camera_basis(frame)
 	# Cache the compensated RGB ramps; the original palette/patterns never change.
 	var key := JSON.stringify([palette,pass_data.materials,levels])
 	if key != _pattern_key:
@@ -387,7 +405,20 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 		if not _modern_active or not modern_assets.is_terrain(pass_data.objects[index]): ordered_objects.append(index)
 	for index: int in ordered_objects:
 		var object: Dictionary = pass_data.objects[index]
+		var vehicle_detail:bool=tactical_landscape and tactical_vehicle_assets.ready and int(object.get("shape_index",-1)) in tactical_vehicle_assets.models
 		_owner = index+1 if _modern_active and not modern_assets.is_terrain(object) else 0
+		if _modern_active and _owner in tactical_vehicle_view.pose_admitted:
+			modern_triangle_count+=tactical_vehicle_view.submit_pose(tactical_vehicle_assets,_owner,ownership.get_texture(),vehicle_basis)
+			modern_polygon_count+=object.get("polygons",[]).size()
+			source_round_count+=1
+			for polygon:Dictionary in object.get("polygons",[]):
+				polygon_count+=1
+				if bool(object.get("dynamic_instance",not bool(object.static_path))):dynamic_polygon_count+=1
+				source_points.append_array(polygon.camera_vertices)
+			continue
+		# A pose-bearing model is atomic: failed admission uses only the common
+		# incumbent renderer, never its new geometry inside an old upright mask.
+		if int(object.get("shape_index",-1)) in tactical_vehicle_assets.gpu_poses:vehicle_detail=false
 		if object.get("sprite") is Dictionary:
 			sprite_count += 1
 			var effect: Dictionary = effect_art.mapping(object,frame,pass_data.palette_rgb) if effect_art else {}
@@ -403,12 +434,18 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 		var object_facets: Array = []
 		var source_layer := 0
 		var gear_anchor: float = float(_motion_anchors[index]) if _modern_active and index<_motion_anchors.size() and _motion_anchors[index]!=null else NAN
+		if vehicle_detail and _modern_active:modern_triangle_count+=tactical_vehicle_view.prepare_object(tactical_vehicle_assets,object,frame,_owner,ownership.get_texture(),vehicle_basis)
 		for item: Dictionary in SourceCommands.ordered(object):
 			source_layer += 1
 			if item.kind=="round_form":
 				var runs := SourceCommands.round_runs(item.data,frame)
 				var head:bool=_modern_active and modern_assets.supported_palette(pass_data.palette_rgb) and SourceCommands.crew_head(object,item.data)
 				if not runs.is_empty(): source_round_count += 1
+				if head and vehicle_detail and not runs.is_empty():
+					var head_triangles:int=tactical_vehicle_view.submit_head(tactical_vehicle_assets,object,item.data,frame,_owner,ownership.get_texture(),vehicle_basis)
+					if head_triangles>0:
+						modern_triangle_count+=head_triangles
+						continue
 				for run: Dictionary in runs:
 					var points: Array=[]
 					for point: Vector2 in run.points: points.append(SurfaceGeometry.unproject(point,1024.0,frame))
@@ -430,7 +467,12 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 			var mapping_started: int=Time.get_ticks_usec() if profile_builds else 0
 			# The object sort below breaks depth ties by painter_order, so the
 			# per-face presort would be redundant work.
-			var facets: Array = modern_assets.mapping(object,polygon,frame,pass_data.palette_rgb,false,gear_anchor,false) if fill and _modern_active else []
+			var vehicle_triangles:=0
+			if vehicle_detail and fill and _modern_active:
+				vehicle_triangles=-1 if int(polygon.get("fill_mode",0))==1 and tactical_vehicle_view.covers(_owner,int(polygon.get("primitive",-1))) else tactical_vehicle_view.submit(tactical_vehicle_assets,object,polygon,frame,_owner,ownership.get_texture(),vehicle_basis,source_layer)
+			var facets: Array = modern_assets.mapping(object,polygon,frame,pass_data.palette_rgb,false,gear_anchor,false) if fill and _modern_active and vehicle_triangles==0 else []
+			if vehicle_triangles!=0:
+				modern_polygon_count+=1;modern_triangle_count+=maxi(0,vehicle_triangles)
 			if profile_builds:
 				last_apply_timings_usec.mapping+=Time.get_ticks_usec()-mapping_started
 				mapping_started=Time.get_ticks_usec()
@@ -452,7 +494,7 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 			if not tree.is_empty():
 				modern_tree_count += 1
 				_add_tree(vertices,materials,tree,modern_assets.tree_colour_variant(object,frame))
-			if fill and facets.is_empty() and tree.is_empty():
+			if fill and facets.is_empty() and tree.is_empty() and vehicle_triangles==0:
 				if _modern_active and not modern_assets.is_terrain(object): modern_fallback_polygon_count += 1
 				var triangles: Array = SurfaceGeometry.triangle_vertices(points, frame)
 				var kind: int = TerrainStyle.surface_kind(object,polygon,hills) if terrain_active else 0
@@ -466,7 +508,7 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 					vehicle_polygon_count+=1
 				var road_edges:Array=_road_edge_coordinates(points,triangles) if _modern_active and kind==2 and int(object.get("shape_index",-1)) in [50,51] else []
 				_add_triangles(vertices, materials, triangles, int(polygon.colors[1]), pass_data.materials.size(),kind,road_edges)
-			if (not fill or polygon.colors[0] != polygon.colors[1]) and tree.is_empty() and facets.is_empty():
+			if (not fill or polygon.colors[0] != polygon.colors[1]) and tree.is_empty() and facets.is_empty() and vehicle_triangles==0:
 				var edges: int = points.size() if points.size() > 2 else 1
 				var bridge_colour:int=modern_assets.bridge_line_colour_index(object,polygon,pass_data.palette_rgb) if _modern_active else -1
 				for i in edges:
@@ -666,13 +708,19 @@ func _prewarm_modern() -> bool:
 	arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2(0,20),Vector2(0,20),Vector2(0,20)])
 	arrays[Mesh.ARRAY_TEX_UV2]=PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO])
 	var mesh:=ArrayMesh.new()
-	for shader in [_modern_shader,_groundlight_shader,ModernOwnership.ShaderSource]:
+	var programs:Array=[_modern_shader,_groundlight_shader,ModernOwnership.ShaderSource]
+	if tactical_vehicle_assets.ready:programs.append(preload("res://scripts/pc_tactical_vehicles.gdshader"))
+	for shader in programs:
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 		var material:=ShaderMaterial.new()
 		material.shader=shader
 		if shader==_modern_shader or shader==_groundlight_shader:
 			material.set_shader_parameter("modern_colours",modern_assets.colour_texture)
 			material.set_shader_parameter("modern_colour_count",float(modern_assets.colour_indices.size()))
+		elif shader==preload("res://scripts/pc_tactical_vehicles.gdshader"):
+			material.set_shader_parameter("tactical_vehicle_albedo",tactical_vehicle_assets.albedo_atlas)
+			material.set_shader_parameter("tactical_vehicle_normal",tactical_vehicle_assets.normal_atlas)
+			material.set_shader_parameter("tactical_vehicle_orm",tactical_vehicle_assets.orm_atlas)
 		mesh.surface_set_material(mesh.get_surface_count()-1,material)
 	var instance:=RenderingServer.instance_create()
 	RenderingServer.instance_set_base(instance,mesh.get_rid())

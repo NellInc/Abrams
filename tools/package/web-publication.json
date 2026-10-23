@@ -259,215 +259,215 @@
    "sha256": "b14de0de38209c593f2fcb59463428729ccd51f4af8ba9ccfd5c288307f93d83"
   },
   "local-art/genesis/remastered/aftermath-v1/scene1-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "b8657bd73d0fb120bd3e08fa16796de7c1dc5e0c1a2acbd2ef59394428813080"
   },
   "local-art/genesis/remastered/aftermath-v1/scene2-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "8cc39ddc46ba346c6a72288de15a69ac73507aa4c996466b67e25d26277df00d"
   },
   "local-art/genesis/remastered/armament-v1/weapon-cannon-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "86ddcf38945ca233a274831c95e682681a0ce7401e71a69b150403c540ca675b"
   },
   "local-art/genesis/remastered/armament-v1/weapon-coax-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "9e6c58a91b33167d94b8d9ffe0bfdf53aef103312218fb60f7695faf2e9855c0"
   },
   "local-art/genesis/remastered/armament-v1/weapon-smoke-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "e0997fb64f6862381e55144d461ee26c073f33b50faa3d22f6f8bf20aa1f036c"
   },
   "local-art/genesis/remastered/crew-diagram-v1/crew-diagram-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "8d8cef24742d08cd41bacad379da53c472c725cca80816c40d7f9426ff0aa772"
   },
   "local-art/genesis/remastered/crew-v1/commander-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "5f16b256d211dbdbf4dd6a49bf81e8dedd9000444901e691c7081baa77efbbd6"
   },
   "local-art/genesis/remastered/crew-v1/driver-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "fff88ec76c9455500b6564b1c78be5495b3009e4cee728d582b3fd557db548d1"
   },
   "local-art/genesis/remastered/crew-v1/gunner-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "60428eddc7c59fbdde2bc0f13693f1c2e2c7e8f3fc0dc6f70774b4c3d8be8e96"
   },
   "local-art/genesis/remastered/crew-v1/loader-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "a392fe5714d04c05098eddb17d468f0c41bbdb4d851d67d2ad61742a8819e919"
   },
   "local-art/genesis/remastered/effects-v1/impact-15-native-candidate.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "b931d8f463483d3ff901203351cf553b4fdaa8d0df231f03ae28e9819b4fc7d4"
   },
   "local-art/genesis/remastered/effects-v1/impact-16-native-candidate.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "15e46c62fc8b894b483c46129b9182e8d965284772e18f5f1520571ee79c3a85"
   },
   "local-art/genesis/remastered/effects-v1/smoke-17-candidate-03.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "943bd58dddc59ebd8ed97363de1e545a96226f91d0b5d6bdc46b0511780211f4"
   },
   "local-art/genesis/remastered/effects-v2/effect-00.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "cb40e4da46bba54b257ad55f75209a706cce2a3cc8dae595435725f1a6a8f3c5"
   },
   "local-art/genesis/remastered/effects-v2/effect-01.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "49dc990138bcdf1c3731e1e0d342e6291ccd84bc3766ff09a3ed8bea2f5a69a5"
   },
   "local-art/genesis/remastered/effects-v2/effect-02.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "8fca1bdd093be116ac90a16ac1b5fcada8fc1e711eb1dd37cefca04e53df3042"
   },
   "local-art/genesis/remastered/effects-v2/effect-03.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "f9114d6e2cd4d87609ed7edede0ab94706e802b41eededb1f4b4402b0ef382f9"
   },
   "local-art/genesis/remastered/effects-v2/effect-04.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "8193532a6c21cd255f1e70109d0900e894c3dd1dd59db98986ad1754049787bc"
   },
   "local-art/genesis/remastered/effects-v2/effect-05.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "d82d2157d6fd6f5bd75df5fe24c49fb62efa6f33ee150057ad581b8d3341b124"
   },
   "local-art/genesis/remastered/effects-v2/effect-06.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "c0f34771fd639818479a300c787aabed34e1f28c9b796358dc9c2b3cd09e69a6"
   },
   "local-art/genesis/remastered/effects-v2/effect-07.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "940656c0fef93451ad9f875d6ef4338327e8a42e765bdfd52c08c5886f756757"
   },
   "local-art/genesis/remastered/effects-v2/effect-08.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "d3d8eb51cc13fde9f455d54c5f1985761f7cc24d4a0741981c9ab761f6ad450c"
   },
   "local-art/genesis/remastered/effects-v2/effect-09-r2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "8c1c8890aed38ffdee2867c780f1a970ed0146e12b5800fe3b9edb4404ec8d11"
   },
   "local-art/genesis/remastered/effects-v2/effect-10.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "64a3c48e7109096f71cf1feeeab765d0d1b6598120e5035739765bed0d2baf20"
   },
   "local-art/genesis/remastered/effects-v2/effect-11.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "5a10086527ff0158ecae6110f78d6742651958c29e6011b5ccdc4d2391796d48"
   },
   "local-art/genesis/remastered/effects-v2/effect-12-r2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "4138dca29c239913334c9bf93fb132569f55792e633399dc41f477da88c30b3d"
   },
   "local-art/genesis/remastered/effects-v2/effect-13.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "dd3ac354ed7068180717d2357df88bd34ca5a3074ad2c716b25c2a980ebebe2c"
   },
   "local-art/genesis/remastered/effects-v2/effect-14.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "15501e8244265bb5b8e81d52ba5966703c32da305dc32b8d73202d67ee8f1611"
   },
   "local-art/genesis/remastered/effects-v2/effect-62.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "5da29d5781fac8dfe12c105ccd23642d555cee44541ce0f56d7426941231dd70"
   },
   "local-art/genesis/remastered/effects-v2/effect-63.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "84452aa08453b2ec734ab64f029040fccc0d23f2c521a3531b76d13cab4a3d96"
   },
   "local-art/genesis/remastered/info-v1/ammo-ax-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "663b49625119b175515be1f7a94506fe030df7a6193f20d271681cce6a46368b"
   },
   "local-art/genesis/remastered/info-v1/ammo-heat-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "c0ec2cefdf6198971281c05384b3fb4c2b51a91c920eededba672e5914f40337"
   },
   "local-art/genesis/remastered/info-v1/ammo-sabot-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "cf125f9b32da589217ea9c802803ed710198088abcc21e7e92e6218ac6c7fbb6"
   },
   "local-art/genesis/remastered/information-completion-v1/abrams-caption-v1.ttf": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "aa5eae7d0ce9d6ff47c46d3a5f80b74d3e6732200135bf38b4dce29a32f2dccd"
   },
   "local-art/genesis/remastered/information-completion-v1/cannon-topdown-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "359f5884e71f9c081a1073a5935b0b55f6e4e08d7bce95d4c929a304d59000cf"
   },
   "local-art/genesis/remastered/information-completion-v1/coax-topdown-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "15539f2be5ab2aaeb8acd8e0e8ab73517c7df69161d2d1d66c8ff9e285135a9e"
   },
   "local-art/genesis/remastered/information-completion-v1/m1a1-caption-v1.ttf": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "3d2a93c1372fe8ad9db49a33054717faecc4add1efe11933d11e8635bb944577"
   },
   "local-art/genesis/remastered/information-completion-v1/overhead-m1a1-caption-v1.ttf": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "321aaa970f3255c1e232ba7c252aa1d0bcdd6dabf66ba07d4fd90cc47c2d1170"
   },
   "local-art/genesis/remastered/information-completion-v1/smoke-topdown-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "a3c472ac85d3b724ae0e5f26151abb4bbd2fa677f16c674ecd3b873becbbd4d4"
   },
   "local-art/genesis/remastered/intro-v1/flash-atlas-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "df55f12daf04a9e9dc44663b399c88041665699b699139d863c6e779d517d05c"
   },
   "local-art/genesis/remastered/motor-pool-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "3fb46798b867ca528f96e8bc0a70d6f3a9e7a1016ca87f3e8549562469019c76"
   },
   "local-art/genesis/remastered/newspapers-v1/defeat-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "debf3917aabf2de39ffdddd3949501843f175a27ce08abfb6320c51c9afc404b"
   },
   "local-art/genesis/remastered/newspapers-v1/stalemate-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "5ff53ddb2b5af4d7f357140759611692ef8f1810581a1712d6d3cb56e1156fbe"
   },
   "local-art/genesis/remastered/newspapers-v1/victory-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "1260b4c525036b6daaa8d615d7a4c272e202be0b5ce559149598f09ab84d26ed"
   },
   "local-art/genesis/remastered/office-background-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "6aebd32959fca4eb45dca58bc16532b2df1e5d85634a997f46cff8b8695b628c"
   },
   "local-art/genesis/remastered/terrain-v1/hill.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "116177af6cbf7bed7ed484a9cc44267e239e6dfcba90d99ec41cf8895260d123"
   },
   "local-art/genesis/remastered/title-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "a69c10c3e05782a8b56cd7b974eefddd9bc5db9ed5b73d57200c8bdd844cd1c5"
   },
   "local-art/genesis/remastered/wilson-completion-v1/wilson-arm-lowered-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "83393d91fae4da04a4a93c1e8ecf49b82d50f5cba02d87910475785b40842df1"
   },
   "local-art/genesis/remastered/wilson-completion-v1/wilson-pistol-raised-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "346582a43794c511b9d9f200de14cb373aec2e990ac4e818dbc6e45871f112cf"
   },
   "local-art/genesis/remastered/wilson-completion-v1/wilson-thumbs-up-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "a4175825bff39baa9d446619a1244a4e293673c9405955c958c68d6df8a8c41c"
   },
   "local-art/genesis/remastered/wilson-facepalm-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "11a3b80e2cd92d39c5c6193c4d8534d0f0274243c99dc3dbdb5a91fc8a7209c9"
   },
   "local-art/genesis/remastered/wilson-gesture-v2.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "9a433788ab13858718794eb8617d240f2e6a3b94887bb0cfb997f451f5889e81"
   },
   "local-art/genesis/remastered/wilson-v1.png": {
-   "set": "genesis",
+   "set": "common",
    "sha256": "82d31f8db905605a772ff6aa564a20dc7dc385433e2abacfe92b506511a4e2a9"
   },
   "local-art/genesis/status-damage-v1/damage-0.png": {
@@ -761,6 +761,94 @@
   "local-art/pc-tactical-interior-v1/cupola.png": {
    "set": "common",
    "sha256": "6bae3fcb05734d3e16b58e36e287bf427eb39ce338390acb9adfd2952bf22ce5"
+  },
+  "local-art/pc-tactical-roster-v1/bridge-albedo.png": {
+   "set": "common",
+   "sha256": "93b3419bc07515df14ded9651a887efdddd16a670c6070eb027bfae4792f1b18"
+  },
+  "local-art/pc-tactical-roster-v1/pair-albedo.png": {
+   "set": "common",
+   "sha256": "5bda7d309b104a896ce8e49bdf0e3bfc21abc56d3a077f1345b3a8fee6c226fc"
+  },
+  "local-art/pc-tactical-roster-v1/wreck-normal.png": {
+   "set": "common",
+   "sha256": "3f95d945f0c9bd6615f9168f780f20cfeb64854e01780f9dfd276306c7e6aa36"
+  },
+  "local-art/pc-tactical-roster-v1/intact-normal.png": {
+   "set": "common",
+   "sha256": "bfb7dfde95f0b4e76bb38b9e2fa2da8758da61cbbd56f09d277612a0d1b6b45b"
+  },
+  "local-art/pc-tactical-roster-v1/scene-normal.png": {
+   "set": "common",
+   "sha256": "0c02c04df50a961c873effed94c463d5443e26ee74a5367a8c945a40e5a1359b"
+  },
+  "local-art/pc-tactical-roster-v1/bridge-orm.png": {
+   "set": "common",
+   "sha256": "ebe1dbe631a2973994bb7d3aa19697d2a5ca846bc98e131876662566f9d6d6ee"
+  },
+  "local-art/pc-tactical-roster-v1/scene-orm.png": {
+   "set": "common",
+   "sha256": "d662ab7433a6a5c8665c08e3018629b8964a185841488eab796fc2560288c7ee"
+  },
+  "local-art/pc-tactical-roster-v1/intact-orm.png": {
+   "set": "common",
+   "sha256": "445f1d6618b4397fa46661b8c387c544e34652aa61c9a8205c871a3a186dc41e"
+  },
+  "local-art/pc-tactical-roster-v1/bridge-normal.png": {
+   "set": "common",
+   "sha256": "c6e96c73c2becdc0d6957c5c6540ec66993c8f1483fb02d11386eac88164d551"
+  },
+  "local-art/pc-tactical-roster-v1/manifest.json": {
+   "set": "common",
+   "sha256": "1fba8c7176de9eb9f80668e5e6f84e7858a5716cb60b10abc097759ed6a87403"
+  },
+  "local-art/pc-tactical-roster-v1/wreck-orm.png": {
+   "set": "common",
+   "sha256": "3a425474c9901d2758750ffe7db16d9610a8e8d6b3da14c8d49edc5b860783d3"
+  },
+  "local-art/pc-tactical-roster-v1/pair-normal.png": {
+   "set": "common",
+   "sha256": "a0dbc336f5887e743f5af3161d9550eb4a97286c38470c5c9ec1fb62e85956d7"
+  },
+  "local-art/pc-tactical-roster-v1/catalog.json": {
+   "set": "common",
+   "sha256": "1b85143907c9787fedfa850cc2121b7e9e1788938293327386964cf2aef07eef"
+  },
+  "local-art/pc-tactical-roster-v1/wreck-albedo.png": {
+   "set": "common",
+   "sha256": "e4c225b886a3ba162b42f61772bf87f55b50afc16e7a6fc79f6c4c754128f4a4"
+  },
+  "local-art/pc-tactical-roster-v1/intact-albedo.png": {
+   "set": "common",
+   "sha256": "eb92d268f65e6dc2e699d8fadc009760c1b435f6141c4854a55f3f5510a7c750"
+  },
+  "local-art/pc-tactical-roster-v1/scene-albedo.png": {
+   "set": "common",
+   "sha256": "637e68a64145223656df5d112a291d2ce2a5b6b53b00f42d3bb0770d16501748"
+  },
+  "local-art/pc-tactical-roster-v1/pair-orm.png": {
+   "set": "common",
+   "sha256": "8d4cc6116ab6357aa7f3539bee5f50766e9f066f42572149c5d1e1cd5a023a56"
+  },
+  "local-art/pc-tactical-vehicles-v1/catalog.json": {
+   "set": "common",
+   "sha256": "3272bc673d0f4badb2bd2ed9a290d84acc4ff8c2f5ca053859ea9c6131e0ddf0"
+  },
+  "local-art/pc-tactical-vehicles-v1/manifest.json": {
+   "set": "common",
+   "sha256": "f1c1669bdb606847d33d9f105f8a3d7f7766673808e43e2aa27cc54f6d1fac57"
+  },
+  "local-art/pc-tactical-vehicles-v1/albedo.png": {
+   "set": "common",
+   "sha256": "f62d0b7adddf8e9e2d0a860b7343ff6d6d1190cf1f06bfd327c7713d9a28472a"
+  },
+  "local-art/pc-tactical-vehicles-v1/normal.png": {
+   "set": "common",
+   "sha256": "7ef3361764e28cb947a8ef584a248e056421869c898826330c2a93940fe3bbaa"
+  },
+  "local-art/pc-tactical-vehicles-v1/orm.png": {
+   "set": "common",
+   "sha256": "6d379bc60e7be5c849e9da5cd89231fcd703d1364b32b7a153c5aaee51db5e76"
   }
  },
  "runtime_derived": {

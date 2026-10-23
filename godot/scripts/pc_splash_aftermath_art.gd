@@ -6,11 +6,17 @@ var entries: Dictionary = {}
 var textures: Dictionary = {}
 var native_images: Dictionary = {}
 var active: Dictionary = {}
+var motion_enabled := true
+var smoke_phase := 0.0
+var _motion_scene := ""
+var _smoke := ShaderMaterial.new()
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	resized.connect(queue_redraw)
+	_smoke.shader = preload("res://scripts/pc_ending_smoke.gdshader")
+	material = _smoke
 	clear()
 
 func clear() -> void:
@@ -19,7 +25,7 @@ func clear() -> void:
 	queue_redraw()
 
 func load_sources(root: String) -> bool:
-	clear(); entries.clear(); textures.clear(); native_images.clear()
+	clear(); reset_motion(); entries.clear(); textures.clear(); native_images.clear()
 	var path := root.path_join("local-art/pc-splash-aftermath-v1/catalog.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path) != CATALOG_SHA: return false
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -31,9 +37,13 @@ func load_sources(root: String) -> bool:
 			if not row.has(field): continue
 			var asset: Dictionary = row[field]
 			path = root.path_join(asset.path)
-			if not FileAccess.file_exists(path) or FileAccess.get_sha256(path) != asset.sha256: return false
+			if not FileAccess.file_exists(path) or FileAccess.get_sha256(path) != asset.sha256:
+				if field=="native_asset": continue
+				return false
 			var image := Image.load_from_file(path)
-			if image == null or image.get_size() != Vector2i(asset.size[0],asset.size[1]): return false
+			if image == null or image.get_size() != Vector2i(asset.size[0],asset.size[1]):
+				if field=="native_asset": continue
+				return false
 			if field == "asset": art[row.name] = ImageTexture.create_from_image(image)
 			else:
 				image.convert(Image.FORMAT_RGB8)
@@ -58,9 +68,28 @@ func native_frame(source: Image, program: Dictionary) -> Image:
 func set_frame(source: Image, program: Dictionary) -> bool:
 	clear()
 	var row := match_frame(source,program)
-	if row.is_empty(): return false
+	if row.is_empty():
+		reset_motion()
+		return false
 	active = row.duplicate(true)
+	if _motion_scene != row.name:
+		reset_motion()
+		_motion_scene = row.name
+	_smoke.set_shader_parameter("scene_index",1 if row.name=="scene1" else (2 if row.name=="scene2" else 0))
+	_smoke.set_shader_parameter("smoke_phase",smoke_phase if motion_enabled else 0.0)
 	visible = true
+	queue_redraw()
+	return true
+
+func reset_motion() -> void:
+	smoke_phase = 0.0
+	_motion_scene = ""
+	_smoke.set_shader_parameter("smoke_phase",0.0)
+
+func advance(delta: float) -> bool:
+	if not motion_enabled or not visible or active.get("name","") not in ["scene1","scene2"]: return false
+	smoke_phase = fmod(smoke_phase+clampf(delta,0.0,0.1)*0.8,TAU*10.0)
+	_smoke.set_shader_parameter("smoke_phase",smoke_phase)
 	queue_redraw()
 	return true
 

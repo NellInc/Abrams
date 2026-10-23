@@ -2038,3 +2038,31 @@ physical equipment language at both tested window sizes, live data remains
 source-derived, and ownership, unknown-UI fallback and mode-restoration checks
 continue to pass. Evidence and verification limits are recorded in
 `artifacts/tactical-field-instrument-20261023/acceptance.json`.
+
+## PC-only frontend completeness (23 October 2026)
+
+The authored office, crew portraits, intro, information illustrations, arming
+clipboard, FRAME surround, newspapers and destroyed-tank illustrations load from
+their pinned PC sources in PC-only sessions. Optional original-resolution Genesis
+reference images no longer gate these authored replacements. EGA, EGA Upscaled
+and native Genesis keep their existing presentation. Unknown pixels still fall
+back to the original framebuffer.
+
+Tactical HUD style also selects Barlow Condensed for frontend text and IBM Plex
+Mono for numeric fields. Fragmented mission headings join only after every
+original glyph, intervening blue panel cell and complete surround verifies.
+FRAME contents receive source-colour contour reconstruction on large connected
+surfaces; small marks, text, cursor pixels, checker patterns and multi-colour
+junctions retain their original footprints. The START/ANIM world preview is never
+covered by this map overlay.
+
+The two fully matched destroyed-tank slides have authored ambient smoke motion.
+Their hulls, ground, scene selection, input and duration stay unchanged. Motion
+stops when the ending is absent, a menu opens or the window loses focus. System
+reduced-motion preferences (macOS and Web), `--no-ending-motion` and capture mode
+keep the smoke static. This is presentation motion, not a claim about the
+original smoke cadence.
+
+Working if: PC-only lifecycle fixtures restore the mission title, briefing,
+summary and motor pool, ending motion changes only smoke, overwritten source
+pixels reject the applicable restoration, and original graphics modes bypass it.

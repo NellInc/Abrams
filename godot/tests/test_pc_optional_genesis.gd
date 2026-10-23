@@ -5,9 +5,10 @@ var errors: Array[String] = []
 var checks := 0
 
 class MusicProbe extends Node:
+	var music_bank := {"independent":false}
 	var context_queries := 0
 	var applied: Array = []
-	func music_context_for_frame(_source: Image, _program: Dictionary, _presentation: Dictionary) -> String:
+	func music_context_for_frame(_source: Image, _program: Dictionary, _presentation: Dictionary, _state: Variant=null) -> String:
 		context_queries+=1
 		return "menu"
 	func apply_music_context(context: String, enabled: bool) -> void:
@@ -60,7 +61,9 @@ func run() -> void:
 	check(genesis_style.palette.is_empty(),"Genesis palette never loaded")
 	check(not tandem_frame.genesis_art_enabled and tandem_frame.gunner_art_texture==null and tandem_frame.cockpit_art_textures.is_empty() and tandem_frame.status_art_texture==null,"Genesis cockpits never loaded")
 	check(not tandem_frame.native_graphics.loaded and tandem_frame.native_graphics.load_count==0,"native donor loader never called")
-	check(tandem_frame.frontend_art.catalog.is_empty() and tandem_frame.frontend_art.portraits.is_empty(),"donor frontend never loaded")
+	check(not tandem_frame.frontend_art.catalog.is_empty() and tandem_frame.frontend_art.portraits.size()==6,"source-proved authored PC frontend loads without native donors")
+	check(tandem_frame.frontend_art.flow_typography.fonts.size()==4 and tandem_frame.frontend_art.splash_aftermath_art.entries.size()==3,"frontend fonts and ending scenes loaded independently")
+	check(tandem_frame.portrait_art.templates.size()==4,"source-proved crew portraits load independently")
 	check(draw_view.effect_art==null,"Genesis effects never loaded")
 	check(draw_view.terrain_style!=null and draw_view.terrain_style.textures.size()==2,"authored PC field and road retained")
 	check(draw_view.terrain_style.hill_texture==null,"Genesis hill never loaded")

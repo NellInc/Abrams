@@ -56,7 +56,7 @@ The two run in tandem: the original PC executables run inside DOSBox Pure, while
 * High-resolution cockpits, portraits, briefings, information screens and ending newspapers, retaining the original visual style.
 * Reconstructed typefaces, animated intro credits and a memorial dedication.
 * Instant switching between six graphics modes: **EGA**, **EGA Upscaled**, **Genesis**, **Genesis Upscaled**, and the experimental **Modern** and **Tactical**, with an independent **HUD Style** (Restored or Tactical).
-* Sample-based sound effects, generative crew speech and, with a verified Genesis ROM in source checkouts and the browser edition, new frontend music arrangements, with separate volume controls.
+* Sample-based sound effects, generative crew speech and an independent authored soundtrack, with separate volume controls.
 * Five save-state slots, quick save/load and **Undo last load**, alongside the original campaign saves.
 * **8x fast forward, toggled with Tab**, with sound muted during accelerated play.
 * Resizable windows and fullscreen, preserving the complete 4:3 display.
@@ -75,7 +75,7 @@ Standalone packages target **Apple Silicon macOS 14+**, **Windows x86_64** and *
 3. Optionally choose **Add Genesis ROM…** to enable the Genesis-based remastered artwork.
 4. Click **Play Abrams** (macOS) or **Play** (Windows/Linux).
 
-The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA, EGA Upscaled, Genesis Upscaled (keeping PC graphics where Genesis-based artwork would be used), Modern and Tactical remain playable, with high-resolution lettering and crew speech; Genesis-based artwork stays disabled. A Genesis import derives the Genesis palette, effects, ending newspapers and destroyed-tank plates from your own verified ROM into your profile; the ROM itself is not copied. Native app builds made after 15 October 2026 (Alpha 4 predates this) do not offer Genesis graphics mode, the Genesis map frame or clipboard (these need captured Genesis screens), or the remastered frontend music (its percussion comes from Genesis samples whose redistribution rights are not established).
+The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA, EGA Upscaled, Genesis Upscaled, Modern and Tactical remain playable. PC-only sessions include source-verified high-resolution frontend artwork, crew portraits, lettering, animated ending smoke and the independent soundtrack. A Genesis import additionally derives its native palette, effects and original-resolution plates from your own verified ROM into your profile; the ROM itself is not copied. Native app builds made after 15 October 2026 (Alpha 4 predates this) do not offer native Genesis graphics mode or sampled Genesis frontend arrangements. The authored FRAME surround and arming clipboard require only the verified PC sources.
 
 These are alpha packages. The macOS app is Developer ID signed and notarized by Apple; Windows signing is not supplied. Intel Macs are not supported. See [macOS installation](docs/standalone-macos.md), [Windows/Linux installation](docs/standalone-portable.md) and the release notes for platform testing status.
 

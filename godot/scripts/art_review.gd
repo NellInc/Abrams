@@ -1,4 +1,6 @@
 extends Control
+signal return_requested
+var embedded := false
 ## Local-only visual review. Extracted and derivative art remains outside res://.
 const ART := [
 	{"name":"TITLE", "source":"title-original.png", "remaster":"title-v1.png"},
@@ -34,7 +36,7 @@ var controls: Array[Dictionary] = []
 
 func _ready() -> void:
 	# main.tscn turns auto_accept_quit off for its audio drain; the flag outlives the scene change, so accept close here.
-	get_tree().auto_accept_quit = true
+	if not embedded: get_tree().auto_accept_quit = true
 	var root := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-art/genesis")
 	for entry in ART:
 		_load_art(root.path_join("source/"+entry.source),entry.source)
@@ -45,7 +47,7 @@ func _ready() -> void:
 	_add_button("PREVIOUS",Rect2(32,842,170,40),func(): _change(-1))
 	_add_button("NEXT",Rect2(214,842,150,40),func(): _change(1))
 	_add_button("ORIGINAL / REMASTER  [TAB]",Rect2(390,842,390,40),_toggle)
-	_add_button("RETURN TO GARAGE  [ESC]",Rect2(1212,842,356,40),_back)
+	_add_button("EXTRAS  [ESC]",Rect2(1212,842,356,40),_back)
 	resized.connect(_layout)
 	_layout()
 	if "--capture-art" in OS.get_cmdline_user_args():
@@ -88,7 +90,8 @@ func _toggle() -> void:
 	queue_redraw()
 
 func _back() -> void:
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	if embedded: return_requested.emit()
+	else: get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:

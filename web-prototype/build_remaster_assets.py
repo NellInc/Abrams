@@ -18,6 +18,7 @@ import shutil
 import sys
 import tempfile
 import zipfile
+import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -30,6 +31,9 @@ DEFLATED = {'.json', '.svg'}
 # Git accepts objects up to 100 MB; one part stays near 48 MB so the browser
 # holds a bounded archive in memory while it verifies and installs it.
 MAX_PART_BYTES = 48_000_000
+# The authored roster keeps its existing native96MiB bound; archives stay48MB.
+ROSTER_CATALOG = "local-art/pc-tactical-roster-v1/catalog.json"
+MAX_ROSTER_CATALOG_BYTES = 96 * 1024 * 1024
 # Families smaller than this share pooled parts; larger ones own theirs, so a
 # change re-publishes only its own family's parts.
 FAMILY_POOL_BYTES = 8_000_000
@@ -72,12 +76,13 @@ def family(name):
     return '/'.join(parts[:2]) if len(parts) > 2 else parts[0]
 
 
-def plan_parts(rows):
+def plan_parts(rows, deflated_sizes=None):
     """Group (name, set, size) rows into ordered parts that stay stable.
 
     Each large family owns its parts; small families share one pooled run per
     set. Adding a file only changes parts of its own family (or its pool).
     """
+    deflated_sizes = deflated_sizes or {}
     families = {}
     for name, kind, size in rows:
         families.setdefault((kind, family(name)), []).append((name, size))
@@ -89,9 +94,23 @@ def plan_parts(rows):
     for (kind, _), members in sorted(groups.items(), key=lambda item: (item[0][0] != 'common', item[0][1])):
         current, used = [], 22
         for name, size in sorted(members):
-            estimated = size + 100 + 2 * len(name.encode())
+            stored = size
+            if size > MAX_PART_BYTES:
+                if name != ROSTER_CATALOG or size > MAX_ROSTER_CATALOG_BYTES:
+                    raise SystemExit(f'One authored asset exceeds a Web part: {name}')
+                stored = deflated_sizes.get(name, 0)
+                if not isinstance(stored, int) or not 0 < stored <= MAX_PART_BYTES:
+                    raise SystemExit('Oversize roster requires measured bounded DEFLATE size')
+            estimated = stored + 100 + 2 * len(name.encode())
             if estimated + 22 > MAX_PART_BYTES:
                 raise SystemExit(f'One authored asset exceeds a Web part: {name}')
+            if size > MAX_PART_BYTES:
+                # Keep the one larger expanded member separate. Consumer aggregate
+                # accounting then reserves a full part for its96MiB native bound.
+                if current:
+                    plan.append((kind, current)); current, used = [], 22
+                plan.append((kind, [name]))
+                continue
             if current and used + estimated > MAX_PART_BYTES:
                 plan.append((kind, current)); current, used = [], 22
             current.append(name); used += estimated
@@ -248,7 +267,15 @@ def stage_assets(out):
         if not re.fullmatch(r'[A-Za-z0-9_./-]+', name) or any(p in ('', '.', '..') for p in name.split('/')) or name.startswith(('GAME/', 'GENESIS/')):
             raise SystemExit(f'Unsafe authored asset path: {name}')
         by_name[name] = path
-    plan = plan_parts([(name, asset_set(name, reviewed), identities[path][2]) for name, path in by_name.items()])
+    deflated_sizes = {}
+    if ROSTER_CATALOG in by_name and identities[by_name[ROSTER_CATALOG]][2] > MAX_PART_BYTES:
+        compressor = zlib.compressobj(9, zlib.DEFLATED, -15)
+        size = 0
+        with by_name[ROSTER_CATALOG].open('rb') as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b''):
+                size += len(compressor.compress(block))
+        deflated_sizes[ROSTER_CATALOG] = size + len(compressor.flush())
+    plan = plan_parts([(name, asset_set(name, reviewed), identities[path][2]) for name, path in by_name.items()], deflated_sizes)
     if len(plan) > 100:
         raise SystemExit('Too many authored asset parts')
     # Entry-aligned ZIP parts load one at a time in the browser. Fixed entry

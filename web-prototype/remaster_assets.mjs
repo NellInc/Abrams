@@ -5,6 +5,9 @@ import {crc32, sha256} from './zip_store.mjs';
 import {GENESIS_DERIVED, PC_DERIVED} from './derived_art.mjs';
 
 const MAX_PART_BYTES = 48_000_000; // Same bound as build_remaster_assets.py.
+const ROSTER_CATALOG = 'local-art/pc-tactical-roster-v1/catalog.json';
+const MAX_ROSTER_CATALOG_BYTES = 96 * 1024 * 1024; // Existing native catalogue bound.
+const memberLimit = path => path === ROSTER_CATALOG ? MAX_ROSTER_CATALOG_BYTES : MAX_PART_BYTES;
 const SETS = new Set(['common', 'genesis']);
 // The browser derives these from the visitor's originals; the site never may.
 const DERIVED = new Set([...PC_DERIVED, ...GENESIS_DERIVED]);
@@ -68,8 +71,18 @@ async function download(url, size, {signal, idleMs, onBytes}) {
 
 async function inflate(bytes, expanded) {
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-  const result = new Uint8Array(await new Response(stream).arrayBuffer());
-  if (result.length !== expanded) throw new Error('An authored asset inflated to the wrong size');
+  const result = new Uint8Array(expanded), reader = stream.getReader();
+  let used = 0;
+  for (;;) {
+    const {done, value} = await reader.read();
+    if (done) break;
+    if (used + value.length > expanded) {
+      await reader.cancel();
+      throw new Error('An authored asset inflated to the wrong size');
+    }
+    result.set(value, used); used += value.length;
+  }
+  if (used !== expanded) throw new Error('An authored asset inflated to the wrong size');
   return result;
 }
 
@@ -100,7 +113,7 @@ export async function installRemasterAssets(engine, progress = () => {},
   const seenPaths = new Set();
   let payloadBytes = 0;
   for (const row of catalog.files) {
-    if (!row || !safePath(row.path) || !validBytes(row.bytes) || !validHash(row.sha256) || !SETS.has(row.set))
+    if (!row || !safePath(row.path) || !Number.isSafeInteger(row.bytes) || row.bytes < 0 || row.bytes > memberLimit(row.path) || !validHash(row.sha256) || !SETS.has(row.set))
       throw new Error('Invalid authored asset manifest entry');
     if (DERIVED.has(row.path)) throw new Error('The authored pack must not carry original-derived data');
     if (seenPaths.has(row.path)) throw new Error('Repeated authored asset path');
@@ -109,8 +122,11 @@ export async function installRemasterAssets(engine, progress = () => {},
   }
   const parts = catalog.parts.filter(part => wanted.has(part.set));
   const archiveBytes = parts.reduce((total, part) => total + part.bytes, 0);
-  // Deflated members expand, but never beyond the per-part bound each.
-  if (payloadBytes > parts.length * MAX_PART_BYTES)
+  // Exactly one authenticated roster member can expand to the native96MiB cap.
+  // Every other member and every downloaded archive retain the48MB bound.
+  const roster = expected.get(ROSTER_CATALOG);
+  const rosterExpansion = roster ? Math.max(0, roster.bytes - MAX_PART_BYTES) : 0;
+  if (payloadBytes > parts.length * MAX_PART_BYTES + rosterExpansion)
     throw new Error('Authored asset manifest exceeds its archive parts');
   const totalFiles = expected.size;
   const decoder = new TextDecoder('utf-8', {fatal: true});

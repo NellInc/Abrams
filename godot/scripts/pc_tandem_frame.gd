@@ -192,12 +192,17 @@ static func _texture_updates() -> bool:
 		_update_round_trips=1 if back!=null and back.get_data()==probe.get_data() else 0
 	return _update_round_trips==1
 
+func load_pc_presentation(root: String) -> bool:
+	# These authored restorations are selected by the imported PC sources.
+	# They require neither the optional ROM nor its original-resolution donors.
+	portrait_art.load_sources(root)
+	return frontend_art.load_sources(root)
+
 func load_genesis_art(root: String) -> bool:
 	# Frontend, damage and portrait restorations pin their own sources. A cockpit
 	# donor mismatch must not silently disable them as well.
 	damage_art.load_sources(root)
-	portrait_art.load_sources(root)
-	frontend_art.load_sources(root)
+	load_pc_presentation(root)
 	genesis_art_reason=_load_cockpit_donors(root)
 	if not genesis_art_reason.is_empty():
 		# Absent donors are an ordinary PC-only install; a present but

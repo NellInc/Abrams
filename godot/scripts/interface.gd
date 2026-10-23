@@ -66,13 +66,20 @@ func rebuild_buttons() -> void:
 		remove_child(entry.node)
 		entry.node.queue_free()
 	buttons.clear()
-	if main.screen == "menu":
-		button("01    ENTER THE RANGE",Rect2(90,515,420,54),main.start_range)
-		button("02    FIELD MANUAL",Rect2(90,577,420,54),func(): main.set_screen("manual"))
-		button("03    RECONSTRUCTION RECORD",Rect2(90,639,420,54),func(): main.set_screen("record"))
-		button("04    ORIGINAL / REMASTER ART",Rect2(90,701,420,54),func(): get_tree().change_scene_to_file("res://scenes/art_review.tscn"))
+	if main.screen == "menu" and main.embedded:
+		button("SCENARIO",Rect2(90,515,420,54),func(): main.game_selected.emit("scenario"))
+		button("CAMPAIGN",Rect2(90,577,420,54),func(): main.game_selected.emit("campaign"))
+		button("SETTINGS",Rect2(90,639,420,54),func(): main.settings_selected.emit())
+		button("EXTRAS",Rect2(90,701,420,54),func(): main.set_screen("extras"))
+		button("QUIT",Rect2(90,763,420,54),main.request_quit)
+	elif main.screen in ["menu","extras"]:
+		button("PRACTICE RANGE",Rect2(90,515,420,54),main.start_range)
+		button("COMPARE ARTWORK",Rect2(90,577,420,54),main.open_artwork)
+		button("PRACTICE CONTROLS",Rect2(90,639,420,54),func(): main.set_screen("manual"))
+		button("MISSION GUIDE",Rect2(90,701,420,54),func(): main.set_screen("record"))
+		if main.embedded: button("MAIN MENU",Rect2(90,763,420,54),func(): main.set_screen("menu"))
 	elif main.screen in ["manual","record"]:
-		button("BACK TO GARAGE    [ESC]",Rect2(90,780,420,54),func(): main.set_screen("menu"))
+		button("EXTRAS    [ESC]",Rect2(90,780,420,54),func(): main.set_screen("extras" if main.embedded else "menu"))
 	elif main.paused:
 		button("RESUME",Rect2(588,263,424,52),func(): main.paused=false; rebuild_buttons())
 		button("SAVE RANGE STATE",Rect2(588,325,424,52),main.save_range)
@@ -81,10 +88,10 @@ func rebuild_buttons() -> void:
 		button("CAPTIONS   " + ("ON" if main.subtitles else "OFF"),Rect2(808,449,204,48),func(): main.subtitles = not main.subtitles; rebuild_buttons())
 		button("CAMERA MOTION   " + ("OFF" if main.reduced_motion else "ON"),Rect2(588,507,424,48),func(): main.reduced_motion = not main.reduced_motion; rebuild_buttons())
 		button("SOUND   " + ("OFF" if main.sound.muted else "ON"),Rect2(588,565,424,48),func(): main.sound.muted = not main.sound.muted; main.sound.stop_all(); rebuild_buttons())
-		button("RETURN TO GARAGE",Rect2(588,638,424,52),func(): main.set_screen("menu"))
+		button("EXTRAS",Rect2(588,638,424,52),func(): main.set_screen("extras" if main.embedded else "menu"))
 	elif main.sim.status != "active":
 		button("RESTART RANGE",Rect2(580,540,440,58),main.start_range)
-		button("RETURN TO GARAGE",Rect2(580,612,440,58),func(): main.set_screen("menu"))
+		button("EXTRAS",Rect2(580,612,440,58),func(): main.set_screen("extras" if main.embedded else "menu"))
 	_layout_buttons()
 	if not buttons.is_empty():
 		buttons[0].node.grab_focus()
@@ -139,7 +146,7 @@ func _layout_buttons() -> void:
 func _draw() -> void:
 	draw_set_transform(Vector2.ZERO,0,size/Vector2(1600,900))
 	match main.screen:
-		"menu": _menu()
+		"menu", "extras": _menu()
 		"manual": _manual()
 		"record": _record()
 		"range": _instruments()
@@ -171,10 +178,12 @@ func _menu() -> void:
 	text(Vector2(91,452),"F A N   R E M A S T E R",22,Color(0,0,0,0.35),true)
 	text(Vector2(90,450),"F A N   R E M A S T E R",22,amber,true)
 	line(Vector2(356,443),Vector2(510,443),Color(amber,0.35),1)
-	text(Vector2(90,488),"BACK IN THE COMMANDER'S SEAT.",18,muted)
+
+	if main.screen == "extras" or not main.embedded:
+		text(Vector2(90,488),"EXTRAS",22,amber,true)
 
 func _manual() -> void:
-	_page_header("FIELD MANUAL","KNOW YOUR STATION","Original DOS key layout. The current exercise is an authored calibration range.")
+	_page_header("PRACTICE RANGE","CONTROLS","")
 	var columns := [90,580,1080]
 	var labels := ["01   CREW STATIONS","02   GUNNERY","03   DRIVING & SYSTEMS"]
 	for i in range(3):
@@ -192,10 +201,9 @@ func _manual() -> void:
 			text(Vector2(columns[column],y+21),pair[1],13,muted)
 	line(Vector2(90,710),Vector2(1510,710))
 	text(Vector2(90,745),"RANGE DRILL: Enter, L, Space. Select the next target and choose the appropriate ammunition.",16,green)
-	text(Vector2(580,814),"Manual-derived controls. Numerical behaviour still under comparison.",14,muted)
 
 func _record() -> void:
-	_page_header("RECONSTRUCTION RECORD","EIGHT MISSIONS. ONE STANDARD.","Original data recovered locally. Original campaign play remains unavailable until its rules are verified.")
+	_page_header("MISSION GUIDE","ORIGINAL MISSIONS","")
 	for i in range(MISSIONS.size()):
 		var col := i/4
 		var row := i%4
@@ -205,8 +213,6 @@ func _record() -> void:
 		text(Vector2(x+56,y),MISSIONS[i][0],28,cream,true)
 		text(Vector2(x+56,y+29),MISSIONS[i][1],13,muted)
 		line(Vector2(x,y+53),Vector2(x+680,y+53))
-	text(Vector2(90,745),"REFERENCE: DOS executable + eight scenario/world pairs + original manual.",16,green)
-	text(Vector2(580,814),"Parity requires observed behaviour, repeatable traces and matching outcomes.",14,muted)
 
 func _instruments() -> void:
 	var sim = main.sim
@@ -222,7 +228,7 @@ func _instruments() -> void:
 	line(Vector2(52,88),Vector2(1548,88),muted)
 	line(Vector2(52,730),Vector2(1548,730),muted)
 	text(Vector2(80,39),"M1A1  /  " + STATIONS[sim.station],23,cream,true)
-	text(Vector2(80,66),"CALIBRATION RANGE",13,amber)
+	text(Vector2(80,66),"PRACTICE RANGE",13,amber)
 	text(Vector2(1260,39),"%02d:%02d" % [sim.elapsed_ticks/3600,(sim.elapsed_ticks/60)%60],24,cream)
 	text(Vector2(1260,65),"H  CONTROLS   ESC  PAUSE",13,muted)
 	_compass()

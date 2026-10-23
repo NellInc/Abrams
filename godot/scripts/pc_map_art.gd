@@ -19,8 +19,8 @@ func load_sources(root_path:String)->bool:
 	for name in data.sources:
 		path=root_path.path_join("GAME/"+name)
 		if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=data.sources[name]:return false
-	path=root_path.path_join(data.donor.path)
-	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=data.donor.sha256:return false
+	# The catalog already records motif custody. Runtime authority is the
+	# complete current PC border, not an unpublished Genesis reference image.
 	catalog=data
 	return true
 func set_frame(source:Image,program:Dictionary,presentation:Dictionary={})->bool:

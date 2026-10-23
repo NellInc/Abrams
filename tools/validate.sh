@@ -68,6 +68,10 @@ receipt_for() {
     portable_setup) echo '^PORTABLE_SETUP_RECOVERY: PASS$' ;;
     pc_graphics_modes) echo '^PC_GRAPHICS_MODES: PASS; [1-9][0-9]* checks;' ;;
     pc_modern) echo '^PC_MODERN: PASS; [1-9][0-9]* checks; native=false$' ;;
+    pc_tactical_vehicles_format_6_passthrough|pc_tactical_vehicles_format_6_partial|pc_tactical_vehicles_format_6_scene_bank) printf '^PC_TACTICAL_SCENE_FORMAT: %s; [1-9][0-9]* checks, 0 errors$\n' "${1#pc_tactical_vehicles_format_6_}" ;;
+    pc_tactical_vehicles_native_0_scene|pc_tactical_vehicles_native_0_views) printf '^PC_TACTICAL_NATIVE_PHASE: %s; [1-9][0-9]* checks, 0 errors$\n' "${1#pc_tactical_vehicles_native_0_}" ;;
+    pc_tactical_vehicles|pc_tactical_vehicles_native|pc_tactical_vehicles_format_[0-7]|pc_tactical_vehicles_native_[0-5]) echo '^PC_TACTICAL_VEHICLES: [1-9][0-9]* checks, 0 errors$' ;;
+    pc_ground_crews|pc_ground_crews_native) echo '^PC_GROUND_CREWS: [1-9][0-9]* checks, 0 errors$' ;;
     pc_modern_mapping_reuse) echo '^PC_MODERN_MAPPING_REUSE: PASS; [1-9][0-9]* checks; [1-9][0-9]* facets; ' ;;
     pc_surfaces) echo '^PC_SURFACES: PASS; native=false$' ;;
     pc_colour) echo '^PC_COLOUR: [0-9]+ exact RGB checks; 0 failures$' ;;
@@ -101,7 +105,7 @@ receipt_for() {
     pc_radio) echo '^PC_RADIO: [1-9][0-9]* checks, 0 failures$' ;;
     audio_shutdown) echo '^AUDIO_SHUTDOWN: three live playback instances released before teardown$' ;;
     runtime) echo '^RUNTIME_SMOKE_PASS:' ;;
-    pc_portrait_art|pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_instrument_lock|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_audio_limiter|pc_tactical_hud|pc_tactical_effects|pc_draw_pass|pc_optional_genesis|pc_play_menu|pc_render_quality|pc_play_shortcuts|pc_bridge_transport|pc_reference_search|pc_genesis_cockpits|pc_portrait_coverage|pc_audio_mix|pc_frontend_music|pc_remaining_audio)
+    pc_portrait_art|pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_instrument_lock|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_audio_limiter|pc_tactical_hud|pc_tactical_effects|pc_tactical_world|pc_frontend_completeness|pc_frontdoor|pc_frontdoor_live|pc_draw_pass|pc_optional_genesis|pc_play_menu|pc_render_quality|pc_play_shortcuts|pc_bridge_transport|pc_reference_search|pc_genesis_cockpits|pc_portrait_coverage|pc_audio_mix|pc_frontend_music|pc_remaining_audio)
       counted "$1" ;;
     pc_suno_music) echo '^PC_SUNO_MUSIC: [1-9][0-9]* checks, 0 errors$' ;;
     # Native tier.
@@ -266,11 +270,13 @@ run_check pc_camera ./tools/godot.sh --headless --script res://tests/test_pc_cam
 run_check pc_play_display ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_play_display.gd
 run_check pc_tactical_hud ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_hud.gd
 run_check pc_tactical_effects ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_effects.gd
+run_check pc_tactical_world ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_world.gd
 run_check pc_frame_pacing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_frame_pacing.gd
 run_check pc_live_scheduling ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_live_scheduling.gd
 run_check pc_presentation_reuse ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_presentation_reuse.gd
 run_check pc_optional_genesis ./tools/godot.sh --headless --script res://tests/test_pc_optional_genesis.gd
 run_check pc_play_menu ./tools/godot.sh --headless --script res://tests/test_pc_play_menu.gd
+run_check pc_frontdoor ./tools/godot.sh --headless --script res://tests/test_pc_frontdoor.gd
 run_check pc_render_quality ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_render_quality.gd
 run_check pc_play_shortcuts ./tools/godot.sh --headless --script res://tests/test_pc_play_shortcuts.gd
 run_check pc_bridge_transport ./tools/godot.sh --headless --script res://tests/test_pc_bridge_transport.gd
@@ -280,6 +286,26 @@ run_check portable_setup ./tools/godot.sh --headless --audio-driver Dummy --scri
 run_check pc_graphics_modes ./tools/godot.sh --headless --script res://tests/test_pc_graphics_modes.gd
 run_check pc_draw_pass ./tools/godot.sh --headless --script res://tests/test_pc_draw_pass.gd
 run_check pc_modern ./tools/godot.sh --headless --quit-after 3000 --script res://tests/test_pc_modern.gd
+if [ "$LIST" = 1 ] || [ -f local-art/pc-tactical-roster-v1/manifest.json ]; then
+  run_check pc_ground_crews ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_ground_crews.gd -- --output "$(fresh ground-crews)"
+  # Fixed complete inventory: common/pair, four malformed rosters, maps/size,
+  # all three scene mutations and legacy compatibility. Scene-3 subcases each
+  # start from a valid full roster; their complete union is mandatory. Older
+  # schema-2 installations keep their existing unsplit scene disposition.
+  for shard in 0 1 2 3 4 5 6 7; do
+    if [ "$shard" = 6 ] && { [ "$LIST" = 1 ] || grep -Eq '"schema"[[:space:]]*:[[:space:]]*3([[:space:],}]|$)' local-art/pc-tactical-roster-v1/manifest.json; }; then
+      for kind in passthrough partial scene_bank; do
+        run_check "pc_tactical_vehicles_format_6_$kind" ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_vehicles.gd -- --format-shard 6 --scene-format-kind "$kind" --output "$(fresh tactical-vehicles/format-6-$kind)"
+      done
+    else
+      run_check "pc_tactical_vehicles_format_$shard" ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_vehicles.gd -- --format-shard "$shard" --output "$(fresh tactical-vehicles/format-$shard)"
+    fi
+  done
+elif [ -f local-art/pc-tactical-vehicles-v1/manifest.json ]; then
+  run_check pc_tactical_vehicles ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_vehicles.gd
+else
+  echo 'NOT RUN: optional Blender Tactical vehicle assets are not installed'
+fi
 # Representative rows and one timed round by default; VALIDATE_EXHAUSTIVE=1 restores the full sweeps and benchmarks.
 if [ "${VALIDATE_EXHAUSTIVE:-0}" = 1 ]; then BENCH=--bench; SWEEP=--exhaustive; else BENCH=--sampled; SWEEP=--sampled; fi
 run_check pc_modern_mapping_reuse ./tools/godot.sh --headless --quit-after 12000 --script res://tests/test_pc_modern_mapping_reuse.gd -- "$BENCH"
@@ -312,6 +338,7 @@ run_check pc_gauges ./tools/godot.sh --headless --quit-after 1200 --script res:/
 run_check pc_portrait_coverage ./tools/godot.sh --headless --script res://tests/test_pc_portrait_coverage.gd
 run_check pc_portrait_art ./tools/godot.sh --headless --script res://tests/test_pc_portrait_art.gd
 run_check pc_frontend_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_frontend_art.gd
+run_check pc_frontend_completeness ./tools/godot.sh --headless --script res://tests/test_pc_frontend_completeness.gd
 run_check pc_frontend_scene ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_frontend_scene.gd -- --fixture "$ROOT/artifacts/intro-menu-20260930/trace/report.json"
 run_check pc_newspapers ./tools/godot.sh --headless --script res://tests/test_pc_newspaper_art.gd
 run_check pc_wilson_completion ./tools/godot.sh --headless --script res://tests/test_pc_wilson_completion.gd
@@ -393,6 +420,7 @@ if [ "${VALIDATE_LIVE:-0}" = 1 ] || [ "$LIST" = 1 ]; then
   run_check pc_scenario_frames ./tools/godot.sh --script res://tests/test_pc_scenario_frames.gd -- --fixture "$ROOT/artifacts/pc-all-scenarios-trace-01/report.json" --output "$(fresh live/scenario-frames)" --capture --no-audio --play
   run_check pc_conveniences ./tools/godot.sh --script res://tests/test_pc_conveniences.gd -- --trace --play --frame-audit --capture --output "$(fresh live/conveniences)"
   run_check pc_mix_bridge ./tools/godot.sh --script res://tests/test_pc_mix_bridge.gd -- --play --trace --capture --capture-station gunner --interactive-clock --replay-controls --frame-audit --output "$(fresh live/mix)"
+  run_check pc_frontdoor_live ./tools/godot.sh --script res://tests/test_pc_frontdoor_live.gd -- --play --boot --no-audio --output "$(fresh live/frontdoor)"
   for mode in normal early-close invalid-frame; do
     run_check "pc_startup_viewer_$(printf '%s' "$mode" | tr - _)" ./tools/godot.sh --script res://tests/test_pc_startup_viewer.gd -- --play --boot --no-audio --output "$(fresh "live/startup-$mode")" --startup-test "$mode"
   done

@@ -402,6 +402,14 @@ func configure(data: Dictionary) -> bool:
 				if float(channel)<0 or float(channel)>255: return false
 			for point in vertices:
 				if not vector_ok(point): return false
+			var authored_uv: Array = triangle.get("uvs",[])
+			if triangle.has("uvs"):
+				if authored_uv.size()!=3:return false
+				for uv in authored_uv:
+					if not uv is Array or uv.size()!=2:return false
+					for value in uv:
+						if not (value is int or value is float) or not is_finite(float(value)) or value<0.0 or value>1.0:return false
+				if absf((Vector2(authored_uv[1][0],authored_uv[1][1])-Vector2(authored_uv[0][0],authored_uv[0][1])).cross(Vector2(authored_uv[2][0],authored_uv[2][1])-Vector2(authored_uv[0][0],authored_uv[0][1])))<0.000000000001:return false
 			var motion: Dictionary = triangle.get("motion",{}) if triangle.get("motion",{}) is Dictionary else {}
 			if motion.get("kind","")=="wheel":
 				if not vector_ok(motion.get("center",[])) or not (motion.get("radius",0) is int or motion.get("radius",0) is float) or float(motion.radius)<=0: return false
@@ -423,8 +431,8 @@ func configure(data: Dictionary) -> bool:
 			var equipment:=equipment_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")))
 			var legacy_kind: float=equipment if equipment!=20.0 else GLAZING if shape in GLAZING_SHAPES and triangle.get("material","") in ["glass","cockpit"] else HIND_PAINT if shape in [163,164] and triangle.get("material","") in ["olive","olive_edge"] else ARMOUR_PAINT if shape in TWO_TONE_SHAPES and model.get("paint_style","")=="two_tone_olive" and triangle.get("material","") in ["olive","olive_edge"] else 20.03125 if shape==157 and primitive==28751 else 20.46875 if pitched_roof else 20.4375 if structure and roof else 20.375 if structure else 20.0
 			var structure_kind:=realism_kind(str(triangle.get("material","")),material_detail_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")),architecture_kind(shape,str(triangle.get("material","")),str(triangle.get("component","")),legacy_kind)))
-			faces[primitive].triangles.append({"vertices":vertices,"color":rgb,"motion":motion,
-				"structure_kind":structure_kind,"moving_kind":moving_kind(structure_kind,motion),
+			faces[primitive].triangles.append({"vertices":vertices,"color":rgb,"motion":{} if not authored_uv.is_empty() else motion,"uvs":authored_uv,
+				"structure_kind":28.0 if not authored_uv.is_empty() else structure_kind,"moving_kind":28.0 if not authored_uv.is_empty() else moving_kind(structure_kind,motion),
 				"structure_axis":2 if roof else 0 if absf(normal.x)>absf(normal.y) else 1})
 		# Catalogue-bounded, face-local positions only. A camera fit is computed
 		# unless mapping's exact-keyed position cache already holds its inputs;
@@ -437,7 +445,8 @@ func configure(data: Dictionary) -> bool:
 			for triangle: Dictionary in face.triangles:
 				var indices := PackedInt32Array()
 				var corner_indices := PackedInt32Array()
-				for raw: Array in triangle.vertices:
+				for vertex_index in triangle.vertices.size():
+					var raw: Array=triangle.vertices[vertex_index]
 					var point := vec(raw)
 					if point not in unique:
 						unique[point] = positions.size()
@@ -445,7 +454,8 @@ func configure(data: Dictionary) -> bool:
 					indices.append(unique[point])
 					# Include every attribute input. Shared positions with distinct
 					# paint axes or wheel/track metadata remain distinct corners.
-					var key := var_to_bytes([raw,triangle.structure_kind,triangle.structure_axis,triangle.motion])
+					var authored_uv: Array=triangle.uvs[vertex_index] if not triangle.uvs.is_empty() else []
+					var key := var_to_bytes([raw,triangle.structure_kind,triangle.structure_axis,triangle.motion,authored_uv])
 					if key not in unique_corners:
 						unique_corners[key] = corners.size()
 						# Static surface coordinates are catalogue invariants. Only
@@ -453,7 +463,7 @@ func configure(data: Dictionary) -> bool:
 						var motion_kind := str(triangle.motion.get("kind",""))
 						corners.append({"raw":raw,"position":unique[point],"kind":triangle.structure_kind,
 							"axis":triangle.structure_axis,"motion":triangle.motion,
-							"extras":surface_extras(triangle.structure_kind,raw,triangle.structure_axis,triangle.motion,NAN),
+							"extras":authored_uv if not authored_uv.is_empty() else surface_extras(triangle.structure_kind,raw,triangle.structure_axis,triangle.motion,NAN),
 							"motion_mark":1 if motion_kind=="wheel" else 2 if motion_kind=="track" else 0,
 							"wheel_center":vec(triangle.motion.center) if motion_kind=="wheel" else Vector3.ZERO,
 							"wheel_radius":float(triangle.motion.radius) if motion_kind=="wheel" else 1.0})

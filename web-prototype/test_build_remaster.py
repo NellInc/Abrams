@@ -18,6 +18,21 @@ import build_remaster_assets as assets
 import package_site as package
 
 class GeneratedBuildTests(unittest.TestCase):
+    def test_large_roster_requires_measured_deflate_with_native_bound(self):
+        name = assets.ROSTER_CATALOG
+        row = (name, 'common', 99_599_244)
+        self.assertEqual(assets.plan_parts([row], {name: 9_500_000}), [('common', [name])])
+        before = 'local-art/pc-tactical-roster-v1/bridge-albedo.png'
+        after = 'local-art/pc-tactical-roster-v1/intact-albedo.png'
+        self.assertEqual(assets.plan_parts([(before, 'common', 1_000_000), row,
+                                           (after, 'common', 1_000_000)], {name: 9_500_000}),
+                         [('common', [before]), ('common', [name]), ('common', [after])])
+        for rows, sizes in [([row], {}), ([row], {name: 48_000_001}),
+                            ([(name, 'common', assets.MAX_ROSTER_CATALOG_BYTES + 1)], {name: 1}),
+                            ([('local-art/other/catalog.json', 'common', 48_000_001)], {})]:
+            with self.subTest(rows=rows, sizes=sizes), self.assertRaises(SystemExit):
+                assets.plan_parts(rows, sizes)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name); self.out = self.root / 'generated'; self.out.mkdir()

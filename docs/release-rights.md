@@ -87,3 +87,10 @@ notices accompany the release; archive hashes identify the distributed bytes.
 [CC0 legal terms](https://creativecommons.org/publicdomain/zero/1.0/legalcode.en)
 and [GPLv2 source-distribution guidance](https://www.gnu.org/licenses/old-licenses/gpl-2.0-faq.html)
 provide the governing licence references. This inventory is not legal advice.
+
+On 23 October 2026, the existing authored frontend illustrations and caption
+fonts were moved from the optional Genesis Web download set into the common set.
+The exact existing asset hashes remain pinned. PC-source proof now selects this
+artwork in PC-only sessions; no ROM, original decoded plates, reference captures
+or sampled donor audio was added to the publication set. This changes delivery
+availability under the existing publication decision, not underlying rights.
