@@ -229,10 +229,10 @@
   "media": [
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.mp4",
-      "source": "artifacts/promo-20261023-v16/abrams-promo.mp4",
-      "output_sha256": "7a4225d36f42a5622d2c0ff4a1ae5e6c3e614fda67e4d9d1018acd0c267c2f06",
-      "origin": "V16 trailer with the accepted Tactical HUD in all five gameplay shots. Recorded original-PC action, source-verified cockpit equipment skins and live instruments. Approved model comparisons, rotations, David Kenny endcard, soundtrack, captions and timing retained. H.264/AAC, 1920x1080, 58.5 seconds.",
-      "source_sha256": "7a4225d36f42a5622d2c0ff4a1ae5e6c3e614fda67e4d9d1018acd0c267c2f06",
+      "source": "artifacts/promo-20261024-v18/take-clear-final/abrams-promo.mp4",
+      "output_sha256": "936f96333269cf86024ffaecf5ba8fd44fd3def7b5b438923d438f7d64a990bb",
+      "origin": "V18 trailer with supersampled rotating comparisons, the Spigot/Fagot team and Tactical cupola fast-forward footage. David Kenny endcard, soundtrack, captions and timing retained. H.264/AAC, 1920x1080, 58.5 seconds.",
+      "source_sha256": "936f96333269cf86024ffaecf5ba8fd44fd3def7b5b438923d438f7d64a990bb",
       "duration_seconds": 58.5,
       "captions_burned_in": true
     },
