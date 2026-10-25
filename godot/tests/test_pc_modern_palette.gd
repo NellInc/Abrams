@@ -1,5 +1,5 @@
 extends "res://tests/test_pc_modern_environment_polish.gd"
-## Matched native comparisons against the immutable pre-pass shader.
+## Historical palette comparison with matched metadata transport/tree filtering.
 func _initialize() -> void: run.call_deferred()
 func run() -> void:
 	if DisplayServer.get_name()=="headless":printerr("FAIL: palette tests need native GPU");quit(2);return
@@ -10,12 +10,36 @@ func run() -> void:
 	viewport=SubViewport.new();viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(viewport)
 	camera=Camera3D.new();viewport.add_child(camera);camera.make_current()
 	draw=Draw.new();draw.solid_enabled=true;draw.modern_assets=art;camera.add_child(draw)
+	draw.tactical_landscape=false
 	check(draw.load_modern_assets(directory),"production models loaded")
 	draw.terrain_style=preload("res://scripts/pc_terrain_style.gd").new()
 	check(draw.terrain_style.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")),"terrain loaded")
 	check(draw.terrain_style.load_hills(directory),"hills loaded")
 	var catalog:Dictionary=art.load_catalogue(directory)
-	var old_code:=FileAccess.get_file_as_string(directory.path_join("artifacts/modern-palette-balance-20260929/before/godot/scripts/pc_surface.gdshader"))
+	var baseline_path:=directory.path_join("artifacts/modern-palette-balance-20260929/before/godot/scripts/pc_surface.gdshader")
+	var old_code:=FileAccess.get_file_as_string(baseline_path)
+	# Decode today's material transport into the historical fragment kinds.
+	# Keep every historical colour expression and the alpha cutoff unchanged.
+	var kind_decode := """
+    if (UV.y==20.01171875 || UV.y==20.3125) UV.y=20.0;
+    else if (UV.y==20.3828125 || UV.y==20.34375 || UV.y==20.390625 || UV.y==20.359375) UV.y=20.375;
+    else if (UV.y==20.4140625 || UV.y==20.421875) UV.y=20.4375;
+    if (UV.y>=24.0 && UV.y<28.0) {
+        float basis=floor(UV.y-24.0);
+        UV.y=basis<0.5 ? 20.0 : basis<1.5 ? 20.375 : basis<2.5 ? 20.4375 : 20.46875;
+    } else if (UV.y==20.0625) { UV2.x=floor(UV2.x);UV2.y=0.0; }
+    else if (UV.y==20.25390625) UV.y=20.25;
+"""
+	var transport_anchor:="UV.y = mod(UV.y,32.0);"
+	var sampler_anchor:="uniform sampler2D modern_tree : source_color, filter_linear_mipmap, repeat_disable;"
+	check(old_code.count(transport_anchor)==1,"historical owner/material transport anchor")
+	check(old_code.count(sampler_anchor)==1,"historical tree sampler anchor")
+	if old_code.count(transport_anchor)!=1 or old_code.count(sampler_anchor)!=1:
+		printerr("FAIL: missing or incompatible palette baseline: "+baseline_path)
+		quit(1);return
+	old_code=old_code.replace(transport_anchor,transport_anchor+"\n"+kind_decode)
+	# Keep filtering matched so this comparison isolates palette changes.
+	old_code=old_code.replace(sampler_anchor,"uniform sampler2D modern_tree : source_color, filter_linear_mipmap_anisotropic, repeat_disable;")
 	var old:=Shader.new();old.code=old_code.replace("depth_test_disabled, depth_draw_never","depth_draw_opaque").replace("void fragment() {","void fragment() {\n DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
 	var legacy_old:=Shader.new();legacy_old.code=old_code
 	var specs:=[[49,"road",true],[48,"grass",true],[2,"grass-hill",true],[4,"earth-hill",false],[40,"water",false],[115,"tank",false],[163,"hind",false],[157,"farm",false],[103,"tree",false],[-1,"sky",true]]

@@ -165,11 +165,9 @@ def build(root, output, kind):
 # Historical comparison inputs are optional to playable/native kits. Their
 # specific diagnostic modes still require private baselines and are not claimed
 # runnable without them. All other test/runtime resources remain checked.
-# Working if: only these seven source-qualified diagnostic references may be
+# Working if: only these five source-qualified diagnostic references may be
 # absent; production, inherited test code and explicit loads still fail closed.
 OPTIONAL_COMPARISON_INPUTS = {
-    ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/microfinish-before.gdshaderinc'),
-    ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/radiance-before.gdshader'),
     ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/finishgrain-before-variant.gdshader'),
     ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/diffusion-before-variant.gdshader'),
     ('godot/tests/test_pc_modern_environment_polish.gd', 'tests/groundlight-first-failed.gdshader'),

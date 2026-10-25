@@ -18,6 +18,7 @@ var replay_keys: Array = []
 var replay_held: Array = []
 var sample_hashes: Array = []
 var profile_deadline_ms := 90000
+var profile_setup_deadline_ms := 90000
 var replay_cycles := 1
 var display_intervals: Array[float] = []
 var display_previous := 0
@@ -30,6 +31,7 @@ var mesh_build_begin := 0
 var mesh_reuse_begin := 0
 var awaiting_profile_focus := false
 var profile_focus_since := 0
+var observed_profile_focus := -1
 var minimal_profile := false
 var effects_study := false
 var effect_studies := {}
@@ -165,7 +167,10 @@ func _initialize() -> void:
 	if not interactive_clock:
 		for i in profile_frames: auto_steps.append([1,[]])
 
-func _capture_deadline_msec() -> int: return profile_deadline_ms
+func _capture_deadline_msec() -> int:
+	if profile_begin==0: return profile_setup_deadline_ms
+	# The viewer expects an offset from started, including setup already used.
+	return int(profile_begin/1000.0)-started+profile_deadline_ms
 
 func _advance_live_frame() -> bool:
 	if profile_begin!=0 and process_begin_usec>0 and not capture and not closing and not state_control_pending and pending_state_command.is_empty() and not bridge.pending and bridge.failure.is_empty():
@@ -259,14 +264,23 @@ func _begin_profile(now: int) -> void:
 			if audio_menu: audio_menu.game_keys([])
 			replay_input(replay_keys[0])
 	awaiting_profile_focus=false
+	print("PC_PLAY_PROFILE_STARTED: "+JSON.stringify({"setup_elapsed_ms":int(profile_begin/1000.0)-started,"profile_capture_budget_ms":profile_deadline_ms}))
 
 func _process(delta: float) -> bool:
 	var start := Time.get_ticks_usec()
 	process_begin_usec=start
-	if not closing and Time.get_ticks_msec()-started>profile_deadline_ms: bridge.failure="live profiler deadline"
+	if not closing and bridge.failure.is_empty() and Time.get_ticks_msec()-started>_capture_deadline_msec():
+		bridge.failure="live profiler setup deadline" if profile_begin==0 else "live profiler deadline"
+	# Profiling temporarily clears capture; failures must still close the test,
+	# rather than leaving Play's interactive error window until the watchdog.
+	if not bridge.failure.is_empty(): capture=true
+	var focused:int=int(root.has_focus())
+	if focused!=observed_profile_focus:
+		observed_profile_focus=focused
+		print("PC_PLAY_PROFILE_FOCUS: "+JSON.stringify({"focused":bool(focused),"profile_started":profile_begin!=0,"samples":profile_rows.size(),"elapsed_ms":Time.get_ticks_msec()-started,"menu_focused":audio_menu.window_focused if audio_menu else false,"open_menus":audio_menu.open_menus.size() if audio_menu else 0}))
 	var count := profile_rows.size()
 	var result := super._process(delta)
-	if awaiting_profile_focus:
+	if awaiting_profile_focus and not closing and bridge.failure.is_empty():
 		if not root.has_focus():profile_focus_since=0
 		elif profile_focus_since==0:profile_focus_since=Time.get_ticks_msec()
 		elif Time.get_ticks_msec()-profile_focus_since>=250:_begin_profile(Time.get_ticks_usec())
@@ -307,6 +321,8 @@ func _capture() -> void:
 	var summary := {"samples":profile_rows.size(),"elapsed_ms":elapsed_ms,
 		"minimal_profile":minimal_profile,"packet_hashes_enabled":not minimal_profile,
 		"replay_cycles":replay_cycles,"deadline_ms":profile_deadline_ms,
+		"setup_elapsed_ms":int(profile_begin/1000.0)-started,"setup_deadline_ms":profile_setup_deadline_ms,
+		"total_deadline_ms":_capture_deadline_msec(),
 		"effective_fps":profile_rows.size()*1000.0/elapsed_ms,"advertised_fps":fps,"interactive_clock":interactive_clock,
 		"presentation_builds":presentation_builds,"presentation_reuses":presentation_reuses,"presentation_cache_enabled":presentation_cache_enabled,
 		"focused_samples":focused_samples,"mesh_builds":draw_view.mesh_build_count-mesh_build_begin,"mesh_reuses":draw_view.mesh_reuse_count-mesh_reuse_begin,

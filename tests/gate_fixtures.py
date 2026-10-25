@@ -59,6 +59,7 @@ LIVE_FIXTURES = {
     'artifacts/pc-all-scenarios-trace-01': 'pc_scenario_frames',
     'artifacts/pc-combat-loss-trace-01': 'pc_combat_outcome',
     'artifacts/pc-crew-trace-01': 'pc_crew_bridge',
+    'artifacts/pc-play-final-controls-02/pacing.json': 'pc_mix_bridge',
     'artifacts/pc-radio-trace-01': 'pc_radio_bridge',
     'artifacts/pc-warning-trace-03': 'pc_warning_bridge',
 }

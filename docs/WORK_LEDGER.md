@@ -6975,3 +6975,105 @@ Evidence and retained unsuccessful sight probes:
 retains the coherent aggregate and remote-push gate. Working if: the first-smoke
 transition retains its measured reduction, all required warm-up paths admit real
 fragments, and predecessor timing, ownership and opacity checks stay exact.
+
+## Full repository and opt-in live validation repair, 25 October 2026
+
+This chat implemented these repairs and checked the actual integrated diff.
+Read-only second opinions informed the provenance and historical-rendering
+contracts. The complete original aggregate gate is still pending at this
+checkpoint; diagnostic receipts do not replace it.
+
+The earlier repair commit restores independent complete intro and STATUS
+fixtures, retains published catalog identity, corrects the Office/debrief
+fixture assumption, enforces authoring output boundaries, supplies the missing
+live-scheduling test setter, and preloads test-only catalogue metadata outside
+the renderer's measured zero-I/O interval. Its bulk Git input fix replaces
+pipe-backed stdout with temporary-file capture, preventing both attribute and
+blob-size queries from deadlocking without weakening publication checks.
+
+Additional native/live failures were stale tests or missing reference inputs:
+
+* Same-shape occlusion now retains the original two actors and adds a third
+  same-shape foreground witness. Both original targets and painter orders must
+  encounter decoded foreign owners, retain eligible coverage, and leak zero
+  protected pixels. Independent roster and fallback-model probes pass.
+* Historical palette tests match current material-tag transport and tree
+  filtering while retaining historical colour expressions. This isolates
+  palette changes; it does not claim full historical-renderer identity.
+* Frozen authored pre-radiance and pre-microfinish helpers replace absent local
+  scratch shaders. Provenance identifies the retained source snapshots and
+  their hashes. Source-kit allowlisting includes both helpers, and their two
+  obsolete optional-missing exemptions are removed. No original-game data is
+  added to the source kit.
+* Canvas GPU probes use the pinned Compatibility renderer's true
+  OUTPUT_IS_SRGB value. The microfinish comparison retains all 33 assertions,
+  samples and tolerances. Its three Ground expectations independently account
+  for the intentional broad colour tail using frozen predecessor helpers.
+  This is a near-sample contract, not proof of every distance or renderer.
+* Session and combat checks accept only START's explicitly owned START/ANIM
+  preview outside SIM, while continuing to reject retained SIM state or
+  unattributed geometry. Combat summary checks recognise the restored FRAME
+  surround and retain three exact unlettered-interior RGB probes.
+* The original 1,020-request control-replay pacing reference is now an explicit
+  sixth live-fixture pin. Existing live pins remain unchanged.
+
+Evidence, failed actuals, fixture preimages and diagnostic provenance remain
+under `artifacts/full-suite-20261025/`. Original inputs, cores, snapshots and
+user saves remain separate from source delivery. There is no new binary or
+website release in this task.
+
+Final aggregate: passed on the frozen candidate, with terminal exit 0 and
+`VALIDATION_COMPLETE artifacts/validation-20261025T151153Z`. Main delivery uses
+the commit containing this entry; no binary or website release is included.
+
+Further live-tier repairs at the same checkpoint:
+
+* Empty decoded PNG buffers are rejected before entering Godot's image loader.
+  The existing invalid-first-frame startup test now passes without an engine
+  assertion, while retaining the original failure and visible-cover checks.
+* Endurance uses the supported 1x and 8x menu choices for the same fifteen
+  original frames, and confirms an existing checkpoint with the real second
+  shortcut press. The overwrite guard remains intact. All three checkpoint
+  cycles and 3,600 paced original frames pass.
+* Native resize retains all six exact Restored 4:3 pixel/fullscreen checks and
+  adds source-proven Tactical 16:9 display/chrome/source-extent checks at each
+  size. Tactical's final shader output is not falsely equated with the raw
+  tandem texture; original state, pixels and guest sample counts stay fixed.
+* Profiling requires real native focus, with passive focus-change receipts.
+  Setup/focus acquisition is bounded at 90 seconds. The existing profile/capture
+  allowance starts once at profile_begin, without extension on focus changes;
+  the 1,020-frame route retains its 132-second measured allowance. The inherited
+  deadline uses the same clock calculation, and failures close the diagnostic
+  instead of leaving an interactive error window. The outer validator watchdog
+  is unchanged. These bounds do not assert a sustained FPS improvement.
+* The mix test explicitly requires all samples focused. A fully focused run
+  retains exact 1,020-request controls, complete paired RAM/video and all nine
+  gain changes. Accessibility-only raising was insufficient; the actual native
+  window was activated through an inert content region. Failed attempts remain
+  in the evidence directory.
+
+Diagnostic 19 closes the remaining native/live checks, including 15,221 soak
+checks and 75.198 measured normal-speed seconds for the requested 60-second
+minimum. This is still diagnostic evidence, pending the original aggregate run.
+
+The minimized native setup regression probe exits with the expected failure in
+92.581 seconds wall time, reports the setup deadline, never starts a profile,
+and emits no engine errors. Native window minimization happens after startup
+window setup, rather than substituting a focus flag. The invalid initial probe
+and its unexpected successful profile are retained separately.
+
+Final acceptance evidence: the original, unmodified `tools/validate.sh` completed
+all 104 default, 34 native and 18 live checks. Its exact 156 PASS identities
+match the declared automated set. The Python suite passes 1,019 tests with one
+redundant interpreter-guard skip: this interpreter already runs those oracle
+guards. The final soak passes 16,596 checks, measuring 74.707 normal-speed seconds
+against the requested 60-second minimum. All 2,109 tracked file fingerprints
+and the staged tree remained unchanged throughout the aggregate.
+
+Four declared interactive/research entries remain NOT RUN: human Audio menu
+choices, externally observed native-window interactions, the timing-only
+endurance profiler, and asset-dependent vehicle authoring studies. These are
+separate from the completed automated default/native/live gate. Acoustic-device
+latency, physical listening, a long release soak and a new public runtime
+release are not established by this run. Canonical completion and custody proof:
+`artifacts/full-suite-20261025/final-aggregate-proof.json`.

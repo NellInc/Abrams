@@ -421,6 +421,8 @@ func anisotropic_footprint_contract() -> void:
 	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(viewport)
 	var face:=ColorRect.new();face.size=Vector2(16,16);viewport.add_child(face)
 	var material:=ShaderMaterial.new();face.material=material
+	# Match the pinned spatial Compatibility built-in in this canvas probe.
+	var shared:=FileAccess.get_file_as_string("res://scripts/pc_tactical_materials.gdshaderinc").replace("OUTPUT_IS_SRGB","true")
 	# GPU checks for the observed grazing-road fade, including rotated/sheared
 	# footprints. Hardware mip filtering and gradients remain unchanged.
 	var cases:Array=[
@@ -436,7 +438,7 @@ func anisotropic_footprint_contract() -> void:
 		[Vector2(32,0),Vector2(0,1),5.0,32.0]]
 	for row:Array in cases:
 		var shader:=Shader.new()
-		shader.code="shader_type canvas_item; render_mode unshaded;\n#include \"res://scripts/pc_tactical_materials.gdshaderinc\"\nvoid fragment(){COLOR=vec4(vec3(realism_footprint(vec2(%f,%f)/512.0,vec2(%f,%f)/512.0,%f)/64.0),1.0);}"%[row[0].x,row[0].y,row[1].x,row[1].y,row[2]]
+		shader.code="shader_type canvas_item; render_mode unshaded;\n"+shared+"\nvoid fragment(){COLOR=vec4(vec3(realism_footprint(vec2(%f,%f)/512.0,vec2(%f,%f)/512.0,%f)/64.0),1.0);}"%[row[0].x,row[0].y,row[1].x,row[1].y,row[2]]
 		material.shader=shader
 		check(absf((await capture()).get_pixel(8,8).r-float(row[3])/64.0)<0.005,"anisotropic footprint GPU case %d"%checks)
 	if "--naturalism-gpu" in OS.get_cmdline_user_args():
@@ -449,7 +451,7 @@ func anisotropic_footprint_contract() -> void:
 			var gy:=dy+rate*Vector2(dy.dot(Vector2(0.41,0.19)),dy.dot(Vector2(-0.17,0.37)))
 			var shader:=Shader.new()
 			var setup:="vec2 uv=vec2(%f,%f);vec2 origin=uv;vec2 dx=vec2(0.7,-0.3);vec2 dy=vec2(-0.2,0.8);realism_ground_coordinates(uv,dx,dy);"%[point.x,point.y]
-			var prefix:="shader_type canvas_item; render_mode unshaded;\n#include \"res://scripts/pc_tactical_materials.gdshaderinc\"\nvoid fragment(){"+setup
+			var prefix:="shader_type canvas_item; render_mode unshaded;\n"+shared+"\nvoid fragment(){"+setup
 			shader.code=prefix+"COLOR=vec4((uv-origin)*0.5+0.5,0.0,1.0);}"
 			material.shader=shader
 			var colour:=(await capture()).get_pixel(8,8)
@@ -462,7 +464,7 @@ func anisotropic_footprint_contract() -> void:
 		var responses:=[Vector2(0.70,0.65),Vector2(0.62,0.55),Vector2(0.85,1.0),Vector2(0.72,0.70),Vector2(0.45,0.40),Vector2(0.38,0.35),Vector2(0.70,0.75),Vector2(0.55,0.45),Vector2(0.58,0.40),Vector2(0.66,0.65),Vector2(0.58,0.50),Vector2(0.38,1.0),Vector2(0.18,0.15),Vector2(0.06,0.15)]
 		for i in responses.size():
 			var shader:=Shader.new()
-			shader.code="shader_type canvas_item; render_mode unshaded;\n#include \"res://scripts/pc_tactical_materials.gdshaderinc\"\nvoid fragment(){COLOR=vec4(realism_response(%f),0.0,1.0);}"%float(i+1)
+			shader.code="shader_type canvas_item; render_mode unshaded;\n"+shared+"\nvoid fragment(){COLOR=vec4(realism_response(%f),0.0,1.0);}"%float(i+1)
 			material.shader=shader
 			var colour:=(await capture()).get_pixel(8,8)
 			check(Vector2(colour.r,colour.g).distance_to(responses[i])<0.005,"material-specific contrast and relief family %d"%(i+1))
@@ -858,13 +860,15 @@ func microfinish_gpu_contract() -> void:
 	var face:=ColorRect.new();face.size=Vector2(16,16);viewport.add_child(face)
 	var material:=ShaderMaterial.new();face.material=material
 	var include:=FileAccess.get_file_as_string("res://scripts/pc_tactical_materials.gdshaderinc")
-	var before:=FileAccess.get_file_as_string("res://tests/microfinish-before.gdshaderinc")
+	var before:=FileAccess.get_file_as_string("res://tests/pc_microfinish_preceding_materials.gdshaderinc")
 	before=before.substr(before.find("float realism_mean("))
 	before=before.replace("realism_","before_realism_").replace("tactical_before_realism_atlas","tactical_realism_atlas")
 	var source:=FileAccess.get_file_as_string("res://scripts/pc_surface.gdshader")
 	var begin:=source.find("vec2 tactical_relief_profile(")
 	var helpers:=source.substr(begin,source.find("void vertex()",begin)-begin)
-	var prefix:="shader_type canvas_item;render_mode unshaded;\n"+include+before+helpers
+	# Canvas probes use the pinned Compatibility renderer, whose spatial
+	# OUTPUT_IS_SRGB is true; the built-in itself is unavailable in canvas_item.
+	var prefix:="shader_type canvas_item;render_mode unshaded;\n"+(include+before+helpers).replace("OUTPUT_IS_SRGB","true")
 	# A deterministic test-only ramp supplies nonzero height differences while
 	# comparing the actual preceding and new colour functions on the same GPU.
 	var image:=Image.create(32,32,false,Image.FORMAT_RGBA8)
@@ -874,9 +878,17 @@ func microfinish_gpu_contract() -> void:
 	material.set_shader_parameter("tactical_realism_atlas",ImageTexture.create_from_image(image))
 	for family in range(1,15):
 		var shader:=Shader.new()
-		shader.code=prefix+"void fragment(){vec2 uv=vec2(0.23,0.31);vec2 dx=vec2(0.002,0.0);vec2 dy=vec2(0.0,0.003);float delta=realism_sample(uv,dx,dy,%f,100.0).x-before_realism_gain(uv,dx,dy,%f,100.0);COLOR=vec4(vec3(0.5+delta*8.0),1.0);}"%[float(family),float(family)]
+		var reference:="float preceding=before_realism_gain(uv,dx,dy,%f,100.0);"%float(family)
+		var contract:="preceding atlas colour gain exact for family "
+		if family in [8,10,11]:
+			# Later Ground colour tails intentionally differ from the old cutoff.
+			# At this near sample the old fade is 1 and the range factor is 1.
+			# Keep the original inputs, using only frozen helpers for expectation.
+			reference+="vec2 ref_uv=uv;vec2 ref_dx=dx;vec2 ref_dy=dy;before_realism_ground_coordinates(ref_uv,ref_dx,ref_dy);float footprint=before_realism_footprint(ref_dx,ref_dy,%f);float fade=1.0/(1.0+pow(footprint/8.0,2.0));preceding=1.0+(preceding-1.0)*fade;"%float(family)
+			contract="atlas gain retains the intentional Ground colour tail for family "
+		shader.code=prefix+"void fragment(){vec2 uv=vec2(0.23,0.31);vec2 dx=vec2(0.002,0.0);vec2 dy=vec2(0.0,0.003);"+reference+"float delta=realism_sample(uv,dx,dy,%f,100.0).x-preceding;COLOR=vec4(vec3(0.5+delta*8.0),1.0);}"%float(family)
 		material.shader=shader
-		check(absf((await capture()).get_pixel(8,8).r-0.5)<0.007,"preceding atlas colour gain exact for family "+str(family))
+		check(absf((await capture()).get_pixel(8,8).r-0.5)<0.007,contract+str(family))
 	for args:String in ["vec2(0.23,0.31),vec2(0.05,0.0),vec2(0.0,0.05),1.0,100.0","vec2(0.23,0.31),vec2(0.001,0.0),vec2(0.0,0.001),1.0,9000.0"]:
 		var shader:=Shader.new();shader.code=prefix+"void fragment(){vec3 value=realism_sample("+args+");COLOR=vec4(vec3(value.x-0.5,0.5+value.y*0.1,0.5+value.z*0.1),1.0);}"
 		material.shader=shader
@@ -961,12 +973,10 @@ func radiance_gpu_contract() -> void:
 	var material:=ShaderMaterial.new();face.material=material
 	var include:=FileAccess.get_file_as_string("res://scripts/pc_tactical_materials.gdshaderinc").replace("OUTPUT_IS_SRGB","true")
 	var source:=FileAccess.get_file_as_string("res://scripts/pc_surface.gdshader")
-	var before:=FileAccess.get_file_as_string("res://tests/radiance-before.gdshader")
 	var a:=source.find("float ground_hash(");var helpers:=source.substr(a,source.find("float ground_grain(",a)-a)
 	a=source.find("vec3 tactical_coherent_sky(");helpers+=source.substr(a,source.find("bool tactical_daylight_observed(",a)-a)
-	a=before.find("vec3 tactical_sky_colour(");helpers+=before.substr(a,before.find("bool tactical_daylight_observed(",a)-a).replace("tactical_sky_colour","preceding_sky_colour")
 	a=source.find("vec3 tactical_trunk_fill(");helpers+=source.substr(a,source.find("// Differentiate",a)-a)
-	var prefix:="shader_type canvas_item;render_mode unshaded;uniform bool modern_environment_polish=true;uniform vec3 source_horizon_line=vec3(0,1,0);uniform mat3 camera_to_local;\n"+include+helpers
+	var prefix:="shader_type canvas_item;render_mode unshaded;uniform bool modern_environment_polish=true;uniform vec3 source_horizon_line=vec3(0,1,0);uniform mat3 camera_to_local;\n"+include+helpers+"\n#include \"res://tests/pc_radiance_preceding_sky.gdshaderinc\"\n"
 	var shader:=Shader.new();shader.code=prefix+"uniform vec3 direction;uniform float strength;void fragment(){COLOR=vec4(tactical_environment_tint(direction,strength)*0.5,1.0);}"
 	material.shader=shader
 	for normal:Vector3 in [Vector3.ZERO,Vector3.RIGHT,Vector3.LEFT,Vector3(0,1,0),Vector3(0,-1,0),Vector3(0,0,1),Vector3(0,0,-1),Vector3(-0.58,0.34,0.74),Vector3(0.58,-0.34,-0.74)]:

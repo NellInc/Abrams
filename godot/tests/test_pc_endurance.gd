@@ -76,11 +76,16 @@ func _capture() -> void:
 	check(play_mode and pc_audio!=null,"native Play with production audio required")
 	check(previous_program.get("name")=="SIM","cold boot reaches original SIM")
 	for cycle in 3:
+		if cycle>0:
+			# Existing slots require the production shortcut's second press.
+			await shortcut(KEY_S)
+			check(pending_state_command.is_empty(),"existing checkpoint requires overwrite confirmation")
 		await state_action("save_state",1)
 		for i in 15:await advance(1)
 		var expected:Dictionary=last_packet.get("frame_audit",{}).duplicate(true)
 		await state_action("load_state",1)
-		for multiplier in [1,2,4,8]:await advance(multiplier)
+		# Session exposes only 1x and 8x: replay the same fifteen frames.
+		for multiplier in [1,1,1,1,1,1,1,8]:await advance(multiplier)
 		check(last_packet.get("frame_audit",{})==expected,"repeated normal/accelerated RAM-video equality")
 		await state_action("load_state",1)
 		await paced_segment(cycle)

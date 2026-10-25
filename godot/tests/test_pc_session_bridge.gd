@@ -93,7 +93,10 @@ func _accept(message: Dictionary) -> void:
 	var presentation: Dictionary = message.get("presentation",{})
 	var drawing = presentation.get("draw_pass")
 	var state = message.get("state")
-	if program != "SIM": check(state==null and drawing==null,"stale SIM state/geometry outside SIM")
+	# Match capture_pc_session.no_sim_geometry: START has its own observed
+	# scenario preview. It must never be mistaken for retained SIM geometry.
+	var frontend_scene:bool=program=="START" and drawing is Dictionary and drawing.get("frontend_scene")=="START/ANIM"
+	if program != "SIM": check(state==null and (drawing==null or frontend_scene),"stale SIM state/geometry outside SIM")
 	var enabled := state is Dictionary and drawing is Dictionary
 	if enabled:
 		check(drawing.unsupported.is_empty(),"unsupported original drawing commands")

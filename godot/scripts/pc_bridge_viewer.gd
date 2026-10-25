@@ -1085,7 +1085,8 @@ func _apply_sample(message: Dictionary) -> void:
 			image = Image.create_from_data(320, 200, false, Image.FORMAT_RGB8, raw_rgb)
 		else:
 			image=Image.new()
-			if image.load_png_from_buffer(Marshalls.base64_to_raw(source_encoding)) != OK:
+			var png_bytes:=Marshalls.base64_to_raw(source_encoding)
+			if png_bytes.is_empty() or image.load_png_from_buffer(png_bytes) != OK:
 				bridge.failure = "invalid original framebuffer"
 				return
 		_decoded_png=source_encoding

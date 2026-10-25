@@ -68,10 +68,11 @@ func photograph(label: String) -> void:
 	var rendered := root.get_texture().get_image()
 	check(rendered.save_png(output.path_join(label+".png"))==OK,"native photograph saved: "+label)
 	if label=="combat-debrief":
-		# Summary background and border have no replacement artwork. Outside
-		# verified text their exact original colours must survive the redraw.
+		# The source-matched FRAME surround is restored artwork. Unlettered
+		# summary interior pixels must retain their exact original colours.
+		check(tandem_frame.frontend_art.active.get("scene")=="map_frame","source-matched summary frame restored")
 		var original := picture.texture.get_image()
-		for p in [Vector2(10,80),Vector2(310,180),Vector2(180,90)]:
+		for p in [Vector2(10,80),Vector2(300,175),Vector2(180,90)]:
 			var at := Vector2i((p+Vector2(0.5,0.5))*Vector2(rendered.get_size())/Vector2(320,200))
 			check(rendered.get_pixelv(at).to_rgba32()==original.get_pixelv(Vector2i(p)).to_rgba32(),"original debrief background retained")
 	photographing=false
@@ -93,7 +94,10 @@ func _apply_sample(message: Dictionary) -> void:
 	# One tripwire per run (below), not a constant per-frame check.
 	if draw_view.vehicle_art!=null: vehicle_art_frames+=1
 	if previous_program.get("name")!="SIM":
-		check(previous.is_empty() and not tandem_frame.world_enabled,"no stale world/state outside SIM")
+		# START owns its observed preview, as in capture_pc_session.no_sim_geometry.
+		var drawing=message.get("presentation",{}).get("draw_pass")
+		var frontend_scene:bool=previous_program.get("name")=="START" and drawing is Dictionary and drawing.get("frontend_scene")=="START/ANIM"
+		check(previous.is_empty() and message.get("state")==null and (frontend_scene or (drawing==null and not tandem_frame.world_enabled)),"no stale SIM world/state outside SIM")
 	var sample: Dictionary=boundary_samples.get(frame,{})
 	if sample.is_empty():return
 	boundaries+=1

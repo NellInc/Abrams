@@ -853,7 +853,7 @@ func vehicle_coverage(owner:int,unmasked:bool) -> Image:
 	draw.mesh_node.visible=common_visible
 	return pixels
 
-func visibility_case(data:Dictionary,owner:int,name:String,extension_expected:bool=false,occlusion_expected:bool=false) -> Dictionary:
+func visibility_case(data:Dictionary,owner:int,name:String,extension_expected:bool=false,occlusion_expected:bool=false,foreign_owners:Array=[]) -> Dictionary:
 	var unchanged:=JSON.stringify(data)
 	draw.tactical_landscape=true
 	var appearance:=await render(data,true)
@@ -862,6 +862,7 @@ func visibility_case(data:Dictionary,owner:int,name:String,extension_expected:bo
 	var reference:=await vehicle_coverage(owner,true)
 	var strict:bool=int(data.objects[owner-1].get("shape_index",-1)) not in VehicleAssets.ROSTER_SHAPES
 	var eligible:=0;var extensions:=0;var blocked:=0;var missing:=0;var leaks:=0
+	var blocked_nonterrain_by_owner:Dictionary={}
 	for y in reference.get_height():
 		for x in reference.get_width():
 			var full:=reference.get_pixel(x,y).r>.5
@@ -872,17 +873,23 @@ func visibility_case(data:Dictionary,owner:int,name:String,extension_expected:bo
 				eligible+=1
 				if owner_id(value)!=owner:extensions+=1
 				if not drawn:missing+=1
-			if full and not allowed:blocked+=1
+			if full and not allowed:
+				blocked+=1
+				if roundi(value.b*255)==8:
+					var foreign:=owner_id(value)
+					blocked_nonterrain_by_owner[foreign]=int(blocked_nonterrain_by_owner.get(foreign,0))+1
 			if drawn and (not full or not allowed):leaks+=1
 	check(eligible>100 and missing==0,name+": complete eligible authored silhouette")
 	check(leaks==0,name+": no protected-source overpaint")
 	if extension_expected:check(extensions>0,name+": restored extension coverage exercised")
 	if occlusion_expected:check(blocked>0,name+": forbidden coverage exercised")
+	for foreign:int in foreign_owners:
+		check(int(blocked_nonterrain_by_owner.get(foreign,0))>0,name+": protected same-shape source owner %d exercised"%foreign)
 	check(JSON.stringify(data)==unchanged,name+": original packet unchanged")
 	if name=="brdm-background":
 		appearance.save_png(output.path_join("after-brdm.png"))
 		actual.save_png(output.path_join("brdm-coverage.png"))
-	return {"case":name,"owner":owner,"eligible_pixels":eligible,"extension_pixels":extensions,"blocked_pixels":blocked,"missing_pixels":missing,"forbidden_pixels":leaks}
+	return {"case":name,"owner":owner,"eligible_pixels":eligible,"extension_pixels":extensions,"blocked_pixels":blocked,"blocked_nonterrain_by_owner":blocked_nonterrain_by_owner,"missing_pixels":missing,"forbidden_pixels":leaks}
 
 func visibility_cover(data:Dictionary,terrain:bool) -> Dictionary:
 	var points:Array=[]
@@ -908,11 +915,17 @@ func visibility_coverage(catalog:Dictionary) -> void:
 	var other:Dictionary=base.objects[0].duplicate(true)
 	for polygon:Dictionary in other.polygons:
 		for point:Array in polygon.camera_vertices:point[0]+=50.0;point[1]+=80.0
+	# A later same-shape source actor gives both targets protected pixels,
+	# including models whose authored silhouette fits its own source coverage.
+	var foreground:Dictionary=base.objects[0].duplicate(true)
+	for polygon:Dictionary in foreground.polygons:
+		for point:Array in polygon.camera_vertices:point[0]-=50.0;point[1]-=40.0
 	for reverse:bool in [false,true]:
 		var both:=base.duplicate(true)
 		if reverse:both.objects.push_front(other)
 		else:both.objects.append(other)
-		for owner in [1,2]:evidence.append(await visibility_case(both,owner,"same-shape-%s-owner-%d"%[reverse,owner],false,true))
+		both.objects.append(foreground)
+		for owner in [1,2]:evidence.append(await visibility_case(both,owner,"same-shape-%s-owner-%d"%[reverse,owner],false,true,[2,3] if owner==1 else [3]))
 	for near:bool in [false,true]:
 		var edge:=model_packet(catalog,115,-0.6,.65,.30)
 		edge.camera.clip=[0,0,159,99];edge.camera.center=[80,50];edge.camera.focal_pixels=96.0

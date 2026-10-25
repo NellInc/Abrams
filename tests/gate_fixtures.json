@@ -164,6 +164,12 @@
    "read_by": "pc_crew_bridge",
    "sha256": "4c32e77509a31e199055ae669c64a65bce1312758e867bb295585283d289e8a7"
   },
+  "artifacts/pc-play-final-controls-02/pacing.json": {
+   "files": 1,
+   "kind": "file",
+   "read_by": "pc_mix_bridge",
+   "sha256": "bd1d269e9cf0d8f19d71c1d196e142aa46ee3cd6fec4c15c97ca4d57b9c6cc4e"
+  },
   "artifacts/pc-radio-trace-01": {
    "files": 160,
    "kind": "dir",

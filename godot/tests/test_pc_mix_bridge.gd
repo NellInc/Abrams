@@ -24,6 +24,7 @@ func _capture() -> void:
 	var prior: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(reference))
 	var checks := {"1020_frames":sample_hashes.size()==1020 and prior.sample_hashes.size()==1020,
 		"nine_mix_changes":mix_rows.size()==9,"audio_healthy":pc_audio.failure.is_empty(),
+		"fully_focused":focused_samples==profile_rows.size(),
 		"default_mix_restored":pc_audio.mix==audio_menu.DEFAULTS,
 		"all_current_inputs_equal":bridge.requests.size()==prior.requests.size(),
 		"all_paired_RAM_video_equal":sample_hashes.size()==prior.sample_hashes.size(),

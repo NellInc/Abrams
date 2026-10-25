@@ -26,6 +26,13 @@ func _capture() -> void:
 		bridge.failure="Resize acceptance requires --play"
 		_close()
 		return
+	# This gate checks the un-reflowed 4:3 compositor byte-for-byte. Tactical
+	# HUD intentionally reflows to 16:9 with a separate shader/chrome layer.
+	_choose_hud_style("restored")
+	if play_display.hud_style!="restored":
+		bridge.failure="Resize acceptance could not select the restored HUD"
+		_close()
+		return
 	var original := picture.texture.get_image().get_data()
 	var state: Dictionary=previous.duplicate(true)
 	var presentation: Dictionary=previous_presentation.duplicate(true)
@@ -57,9 +64,27 @@ func _capture() -> void:
 		if not valid: resize_errors.append("resize/fullscreen mismatch "+str(item))
 		var name := "fullscreen" if fullscreen else "%dx%d-%d"%[item[0],item[1],resize_samples.size()]
 		image.save_png(output.path_join("window-"+name+".png"))
-		resize_samples.append({"requested":item,"mode":root.mode,"passed":valid,"letterbox_clean":letterbox_clean,"display":play_display.description()})
+		var restored_display:Dictionary=play_display.description()
+		# Reuse this native size to exercise the source-proven Tactical reflow.
+		# Its shader/chrome output is intentionally different from raw tandem.
+		_choose_hud_style("tactical")
+		await process_frame
+		RenderingServer.force_draw(false);RenderingServer.force_sync()
+		var wide:Rect2i=PlayDisplay.wide_fitted_rect(root.size)
+		var tactical_checks:Dictionary={
+			"proven_station":play_display._wide_station==1,
+			"display_geometry":Rect2i(Vector2i(play_display.display.position),Vector2i(play_display.display.size))==wide,
+			"chrome_geometry":play_display.tactical_chrome.position==Vector2(wide.position) and play_display.tactical_chrome.size==Vector2(wide.size) and play_display.tactical_chrome.frame_rect==Rect2i(Vector2i.ZERO,wide.size),
+			"source_extent":tandem_viewport.size==Vector2i(wide.size.x,wide.size.x*3/4),
+			"original_unchanged":previous==state and previous_presentation==presentation and samples==count and picture.texture.get_image().get_data()==original,
+			"window_unchanged":root.mode==target_mode and (fullscreen or root.size==Vector2i(item[0],item[1]))}
+		var tactical_valid:bool=tactical_checks.values().all(func(value):return value==true)
+		if not tactical_valid:resize_errors.append("Tactical resize/fullscreen mismatch "+str(item)+": "+JSON.stringify(tactical_checks))
+		root.get_texture().get_image().save_png(output.path_join("tactical-"+name+".png"))
+		resize_samples.append({"requested":item,"mode":root.mode,"passed":valid and tactical_valid,"restored_passed":valid,"letterbox_clean":letterbox_clean,"restored_display":restored_display,"tactical_checks":tactical_checks,"display":play_display.description()})
+		_choose_hud_style("restored")
 	var file := FileAccess.open(output.path_join("resize-report.json"),FileAccess.WRITE)
-	file.store_string(JSON.stringify({"samples":resize_samples,"errors":resize_errors,"guest_samples":count,"unchanged_guest_state":previous==state,"scope":"six live window/display transitions at one frozen original frame; no guest step requests"},"  "))
+	file.store_string(JSON.stringify({"samples":resize_samples,"errors":resize_errors,"guest_samples":count,"unchanged_guest_state":previous==state,"scope":"Six actual-window transitions: exact Restored4:3compositor pixels and source-proven Tactical16:9geometry at every size. Tactical final shader pixels are not compared against the unprocessed tandem texture. No guest step requests."},"  "))
 	if not resize_errors.is_empty(): bridge.failure="; ".join(resize_errors)
 	print("PC_PLAY_RESIZE: %d samples, %d errors"%[resize_samples.size(),resize_errors.size()])
 	await super._capture()
