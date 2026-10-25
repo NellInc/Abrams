@@ -567,7 +567,31 @@
     "godot/tests/test_pc_frontend_completeness.gd",
     "godot/tests/test_pc_ground_crews.gd",
     "godot/tests/test_pc_tactical_vehicles.gd",
-    "godot/tests/test_pc_tactical_world.gd"
+    "godot/tests/test_pc_tactical_world.gd",
+    "godot/scripts/pc_tactical_dynamics.gd",
+    "godot/scripts/pc_tactical_dynamics.gdshaderinc",
+    "godot/tests/test_pc_tactical_dynamics.gd",
+    "tools/build_pc_tactical_roster.py",
+    "tools/build_pc_tactical_vehicles.py",
+    "tools/pc_tactical_aircraft.py",
+    "tools/pc_tactical_architecture.py",
+    "tools/pc_tactical_bridges.py",
+    "tools/pc_tactical_cabin.py",
+    "tools/pc_tactical_crew_heads.py",
+    "tools/pc_tactical_crews.py",
+    "tools/pc_tactical_finish.py",
+    "tools/pc_tactical_scene.py",
+    "tools/pc_tactical_tanks.py",
+    "tools/pc_tactical_tracked_vehicles.py",
+    "tools/pc_tactical_wheeled_vehicles.py",
+    "tools/pc_tactical_vehicle_refinement.py",
+    "tools/pc_tactical_wrecks.py",
+    "tools/build_cover_blender.py",
+    "tools/build_cover_export.gd",
+    "tools/build_tactical_world_blender.py",
+    "tools/refine_pc_tactical_exports.py",
+    "tools/sculpt_pc_tactical_crews.py",
+    "tools/pc_tactical_ground_crews.py"
   ],
   "private": [
     ".runtime/dosbox-pure-source/LICENSE",
@@ -1525,6 +1549,7 @@
     "local-art/pc-tactical-vehicles-v1/catalog.json",
     "local-art/pc-tactical-vehicles-v1/manifest.json",
     "local-art/pc-tactical-vehicles-v1/normal.png",
-    "local-art/pc-tactical-vehicles-v1/orm.png"
+    "local-art/pc-tactical-vehicles-v1/orm.png",
+    "local-art/pc-tactical-crew-sculpt-v1/geometry.json.gz"
   ]
 }

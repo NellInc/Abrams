@@ -33,8 +33,10 @@ uniform vec3 source_horizon_line = vec3(0.0);
 uniform float source_focal_pixels = 192.0;
 // Diagnostic A/B switch; ordinary Modern rendering keeps this enabled.
 uniform bool modern_surface_variation = true;
-// Static presentation only: no TIME, new draw calls or cache invalidation.
+// Environment stays source-anchored. Only Tactical river normals have an
+// explicit presentation clock; no engine TIME, displacement or scene sampling.
 uniform bool modern_environment_polish = true;
+uniform float tactical_water_phase = 0.0;
 uniform sampler2D source_ownership : filter_nearest, repeat_disable;
 uniform sampler2D modern_colours : source_color, filter_nearest, repeat_disable;
 uniform float modern_colour_count;
@@ -209,34 +211,39 @@ float tactical_glint_fade(float distance,float eye_pixel) {
 }
 
 vec3 tactical_water(vec2 water, vec2 footprint, vec3 face, vec3 to_eye, float broad, float fine, float eye_pixel, float distance) {
-    // Two oblique ripple fields break up parallel bands. These are stationary
-    // world-space material normals, with no displacement or independent clock.
+    // Small crossing ripples drift in one source-world current. Integer phase
+    // ratios make the bounded presentation clock wrap seamlessly.
     vec2 direction_a=vec2(0.011,0.024);
     vec2 direction_b=vec2(-0.019,0.012);
     vec2 phase=vec2(dot(water,direction_a),dot(water,direction_b));
     phase+=vec2(sin(water.x/230.0),sin(water.y/310.0))*0.65;
+    phase-=vec2(3.0,-2.0)*tactical_water_phase;
     // Include the warp's maximum derivative; radians fade below Nyquist.
     vec2 pixel=vec2(dot(abs(direction_a)+vec2(0.65/230.0,0.0),footprint),
                     dot(abs(direction_b)+vec2(0.0,0.65/310.0),footprint));
     vec2 fade=vec2(1.0)-smoothstep(vec2(0.65),vec2(2.6),pixel);
     vec2 slope=(direction_a+vec2(cos(water.x/230.0)*0.65/230.0,0.0))*cos(phase.x)*fade.x;
     slope+=(direction_b+vec2(0.0,cos(water.y/310.0)*0.65/310.0))*cos(phase.y)*fade.y*0.55;
-    vec3 normal=normalize(face+vec3(-slope*3.8,0.0));
+    vec2 capillary=vec2(0.047,0.0384);
+    float small_fade=1.0-smoothstep(0.65,2.6,dot(capillary,footprint));
+    slope+=capillary*cos(dot(water,capillary)-9.0*tactical_water_phase)*0.22*small_fade;
+    vec3 normal=normalize(face+vec3(-slope*2.6,0.0));
     float facing=clamp(dot(normal,to_eye),0.0,1.0);
-    float reflection=0.12+pow(1.0-facing,5.0)*0.48;
+    float reflection=0.025+pow(1.0-facing,5.0)*0.68;
     vec3 ray=reflect(-to_eye,normal);
     vec3 sky=tactical_daylight_observed() ? tactical_sky_colour(ray) : mix(vec3(0.72,0.80,0.76),vec3(0.40,0.59,0.67),smoothstep(0.0,0.75,max(ray.z,0.0)));
-    vec3 body=vec3(0.15,0.29,0.32)*(1.0+broad*0.18+fine*0.06);
+    vec3 body=mix(vec3(0.12,0.23,0.21),vec3(0.23,0.27,0.18),clamp(0.45+broad*1.6,0.0,1.0));
+    body*=1.0+broad*0.12+fine*0.03;
     vec3 colour=mix(body,sky,reflection);
     // Broken broad wave highlights, modulated by the crossing field. They stay
     // below foam-white and disappear with the same filtered ripple footprint.
     float crest=pow(0.5+0.5*sin(phase.x+sin(phase.y)*0.45),4.0);
-    crest*=0.55+0.45*sin(phase.y*0.63);
-    colour+=vec3(0.035,0.045,0.047)*crest*fade.x*fade.y;
+    crest*=0.55+0.45*sin(phase.y);
+    colour+=vec3(0.014,0.022,0.018)*crest*fade.x*fade.y;
     vec3 halfway=normalize(vec3(-0.58,0.34,0.74))+to_eye;
     halfway/=max(length(halfway),0.0001);
-    float glint=pow(max(dot(normal,halfway),0.0),48.0)*0.055;
-    if(tactical_daylight_observed())glint*=tactical_glint_fade(distance,eye_pixel)*fade.x*fade.y;
+    float glint=pow(max(dot(normal,halfway),0.0),36.0)*0.018;
+    glint*=tactical_glint_fade(distance,eye_pixel)*fade.x*fade.y;
     colour+=vec3(1.0,0.97,0.82)*glint;
     return colour;
 }
@@ -269,36 +276,40 @@ vec3 tactical_optical_environment(vec3 sky,vec3 ray,float roughness) {
 }
 
 vec3 tactical_textured_water(vec2 water,vec2 footprint,vec3 face,vec3 eye,float broad,float fine,float eye_pixel,float distance,float gain) {
-    // Reuse the preceding two world-anchored fields and their conservative
-    // normal filter. Crest/trough colour has a broad tail after fine relief.
+    // Opaque, shallow river treatment: filtered normals, restrained reflection
+    // and sediment colour. No ocean swell, foam, bloom or reflected actors.
     vec2 direction_a=vec2(0.011,0.024);
     vec2 direction_b=vec2(-0.019,0.012);
     vec2 phase=vec2(dot(water,direction_a),dot(water,direction_b));
     phase+=vec2(sin(water.x/230.0),sin(water.y/310.0))*0.65;
+    phase-=vec2(3.0,-2.0)*tactical_water_phase;
     vec2 pixel=vec2(dot(abs(direction_a)+vec2(0.65/230.0,0.0),footprint),
                     dot(abs(direction_b)+vec2(0.0,0.65/310.0),footprint));
     vec2 fade=vec2(1.0)-smoothstep(vec2(0.65),vec2(2.6),pixel);
     vec2 slope=(direction_a+vec2(cos(water.x/230.0)*0.65/230.0,0.0))*cos(phase.x)*fade.x;
     slope+=(direction_b+vec2(0.0,cos(water.y/310.0)*0.65/310.0))*cos(phase.y)*fade.y*0.55;
-    vec3 normal=normalize(face+vec3(-slope*3.8,0.0));
+    vec2 capillary=vec2(0.047,0.0384);
+    float small_fade=1.0-smoothstep(0.65,2.6,dot(capillary,footprint));
+    slope+=capillary*cos(dot(water,capillary)-9.0*tactical_water_phase)*0.22*small_fade;
+    vec3 normal=normalize(face+vec3(-slope*2.6,0.0));
     float facing=clamp(dot(normal,eye),0.0,1.0);
-    float roughness=clamp(0.55+(1.0-gain)*1.5,0.25,0.85);
+    float roughness=clamp(0.46+(1.0-gain)*1.1,0.30,0.80);
     vec3 ray=reflect(-eye,normal);
     vec3 environment=tactical_optical_environment(tactical_sky_colour(ray),ray,roughness);
-    float reflection=tactical_optical_fresnel(facing,0.065,0.62)*(1.0-roughness*0.14);
-    vec3 body=mix(vec3(0.13,0.27,0.29),vec3(0.21,0.30,0.25),clamp(0.5+broad*2.0,0.0,1.0));
-    body*=1.0+broad*0.12+fine*0.05;
+    float reflection=tactical_optical_fresnel(facing,0.025,0.74)*(1.0-roughness*0.14);
+    vec3 body=mix(vec3(0.12,0.23,0.21),vec3(0.23,0.27,0.18),clamp(0.45+broad*1.6,0.0,1.0));
+    body*=1.0+broad*0.12+fine*0.03;
     vec2 colour_fade=vec2(1.0)/(vec2(1.0)+pixel*pixel*0.8);
     float crossing=0.65+0.35*sin(phase.y);
     float wave=sin(phase.x+sin(phase.y)*0.45);
     float crest=pow(max(wave,0.0),3.0)*crossing;
     float trough=max(-wave,0.0)*(1.0-crossing*0.35);
     vec3 colour=mix(body,environment,reflection);
-    colour+=(vec3(0.024,0.038,0.035)*crest-vec3(0.014,0.024,0.021)*trough)*colour_fade.x*colour_fade.y;
+    colour+=(vec3(0.014,0.022,0.018)*crest-vec3(0.009,0.016,0.013)*trough)*colour_fade.x*colour_fade.y;
     vec3 sun=normalize(vec3(-0.58,0.34,0.74));
     vec3 sum=sun+eye;vec3 halfway=sum/max(length(sum),0.0001);
-    vec2 response=tactical_optical_response(gain,48.0,eye_pixel);
-    float glint=pow(max(dot(normal,halfway),0.0),response.y)*response.x*0.055;
+    vec2 response=tactical_optical_response(gain,36.0,eye_pixel);
+    float glint=pow(max(dot(normal,halfway),0.0),response.y)*response.x*0.018;
     glint*=max(dot(normal,sun),0.0)*tactical_glint_fade(distance,eye_pixel)*fade.x*fade.y;
     return colour+vec3(1.0,0.97,0.88)*glint;
 }

@@ -231,6 +231,18 @@ class ValidateGateTests(unittest.TestCase):
         self.assertIn('-- --live', rows['pc_dynamic_map'][3])
         self.assertIn('--native', rows['pc_modern_native'][3])
         self.assertEqual(rows['pc_modern_native'][0], 'native')
+        for shard in (0,1,2,3,4,5,7):self.assertIn(f'pc_tactical_vehicles_format_{shard}',rows)
+        self.assertNotIn('pc_tactical_vehicles_format_6',rows)
+        for kind in ('passthrough','partial','scene_bank'):
+            row=rows[f'pc_tactical_vehicles_format_6_{kind}']
+            self.assertIn(f'--format-shard 6 --scene-format-kind {kind}',row[3])
+            self.assertIn(f'PC_TACTICAL_SCENE_FORMAT: {kind};',row[2])
+        for shard in range(1,6):self.assertIn(f'pc_tactical_vehicles_native_{shard}',rows)
+        self.assertNotIn('pc_tactical_vehicles_native_0',rows)
+        for phase,option in (('scene','--scene-only'),('views','--defer-scene-contracts')):
+            row=rows[f'pc_tactical_vehicles_native_0_{phase}']
+            self.assertIn(f'--view-shard 0 {option}',row[3])
+            self.assertIn(f'PC_TACTICAL_NATIVE_PHASE: {phase};',row[2])
         for contract in ['groundlight', 'diffusion', 'finishgrain']:
             self.assertEqual(rows[f'pc_tactical_{contract}_gpu'][0], 'native')
         self.assertEqual(rows['pc_soak'][0], 'live')

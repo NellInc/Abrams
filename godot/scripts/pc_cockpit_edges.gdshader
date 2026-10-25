@@ -11,6 +11,8 @@ uniform bool rail_verified=false;
 uniform bool modern=false;
 uniform bool tactical=false;
 uniform bool tactical_interior=false;
+uniform vec2 tactical_armour_shift=vec2(0.0);
+#include "res://scripts/pc_tactical_dynamics.gdshaderinc"
 uniform int station=3;
 uniform vec2 frame_size;
 uniform vec2 camera_size;
@@ -66,7 +68,7 @@ void fragment() {
 	}
 	if(!source_ui)visible=p;
 	bool safe=camera(p) && (!source_ui || owned) && art_distance<1e8 && visible_distance<1e8;
-	vec2 sample_p=p;
+	vec2 sample_p=tactical_armour_sample(p,float(station),ui_mask,plate_mask,driver_mask,driver_enabled,tactical ? tactical_armour_shift : vec2(0.0));
 	if(station==4) {
 		if(driver_enabled) {
 			vec3 claim=round(texture(driver_mask,art_pixel/vec2(320,200)).rgb*255.0);

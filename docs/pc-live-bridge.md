@@ -1,8 +1,22 @@
 # Original PC to Godot bridge research
 
 The original PC executable is the intended gameplay authority. Godot consumes
-read-only snapshots and supplies presentation. The authored calibration range
-remains separate and is never instantiated by this bridge.
+read-only snapshots and supplies presentation. Ordinary Play opens a tank-cover
+main menu with Scenario, Campaign, Settings, Extras and Quit. The authored
+practice range and artwork comparison live in Extras, in an isolated viewport.
+The original guest remains frozen while the cover or an Extras screen is open.
+
+Scenario and Campaign send a bounded sequence of normal original keys, verifying
+source-paired menu text before selecting either destination. Campaign stops at
+the original dropdown before any name entry or campaign-save decision. A route
+that cannot be verified stops and offers the original game directly. Cancelling
+an original submenu back to its stable root restores the cover. Capture and
+diagnostic entry points retain their direct original-game routes.
+
+Settings uses the existing graphics and audio controller. Quit drains both
+presentation audio paths and closes the original host. Working if: guest frames
+and checkpoints remain blocked in Extras, held menu keys do not reach gameplay,
+and Scenario/Campaign keep their original setup and save behaviour.
 
 ## What runs locally
 

@@ -484,11 +484,20 @@ static func _driver_mask_claims(values: PackedByteArray, ui_bits: PackedByteArra
 func load_graphics_sources(root: String) -> bool:
 	return native_graphics.load_sources(root)
 
+func set_tactical_dynamics(displacement: Vector2) -> void:
+	var safe:=displacement if graphics_mode=="tactical" and world_enabled and displacement.is_finite() else Vector2.ZERO
+	var changed:bool=_upscaled_material.get_shader_parameter("tactical_armour_shift")!=safe
+	_upscaled_material.set_shader_parameter("tactical_armour_shift",safe)
+	cockpit_edges.material.set_shader_parameter("tactical_armour_shift",safe)
+	if changed and is_inside_tree() and get_viewport() is SubViewport and get_viewport().render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
+		get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
+
 func set_graphics_mode(mode: String) -> bool:
 	if mode not in ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]: return false
 	if mode=="genesis" and not native_graphics.loaded: return false
 	if mode in ["modern","tactical"] and not modern_available: return false
 	graphics_mode=mode
+	set_tactical_dynamics(Vector2.ZERO)
 	if _cached_source!=null:
 		set_frame(_cached_source,_cached_presentation,_cached_world,_cached_program)
 		present_frontend(_cached_program)
@@ -510,6 +519,7 @@ func remember_frame(source: Image, presentation: Dictionary, world: Texture2D, p
 
 func set_frame(source: Image, presentation: Dictionary, world: Texture2D, program: Dictionary={}) -> bool:
 	remember_frame(source,presentation,world,program)
+	if graphics_mode!="tactical":set_tactical_dynamics(Vector2.ZERO)
 	material=_upscaled_material
 	material.set_shader_parameter("ega_upscaled",false)
 	instrument_art.pc_rounds_enabled=typography.hud_style!="tactical"

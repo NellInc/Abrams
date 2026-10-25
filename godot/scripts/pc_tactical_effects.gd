@@ -8,6 +8,8 @@ var node: MeshInstance3D
 var material: ShaderMaterial
 var puffs: Array = []
 var counts: Dictionary = {}
+var _impact_births: Dictionary = {}
+var _dynamics_clock := 0.0
 var _frame: Dictionary
 var _clip: Rect2
 # Persistent GPU resources: one mesh and one fixed-width root table are
@@ -36,6 +38,21 @@ func clear() -> void:
 	puffs.clear()
 	counts={"smoke":0,"missile":0,"exhaust":0,"effect":0}
 	visible=false
+
+func reset_dynamics() -> void:
+	_impact_births={}
+	_dynamics_clock=0.0
+	material.set_shader_parameter("dynamics_time",-1.0)
+
+func advance_dynamics(delta: float) -> bool:
+	if not visible or _impact_births.is_empty() or not is_finite(delta) or delta<=0.0:return false
+	var live:=false
+	for birth in _impact_births.values():
+		if _dynamics_clock-float(birth)<0.55:live=true;break
+	if not live:return false
+	_dynamics_clock+=minf(delta,0.05)
+	material.set_shader_parameter("dynamics_time",_dynamics_clock)
+	return true
 
 static func world_position_ok(value) -> bool:
 	# World positions include streamed cell offsets, exceeding the local mesh
@@ -78,14 +95,14 @@ static func inputs(data: Dictionary) -> Array:
 static func identity_seed(object: Dictionary) -> float:
 	return fposmod(float(int(object.get("pointer",0))&0xffff)*0.618034,1.0)
 
-func _puff(raw: Vector3, radius: float, alpha: float, kind: float, seed: float, owner: int, root: Vector2, restrict: Rect2=Rect2()) -> void:
+func _puff(raw: Vector3, radius: float, alpha: float, kind: float, seed: float, owner: int, root: Vector2, restrict: Rect2=Rect2(), impact_birth: float=-1.0) -> void:
 	if puffs.size()>=MAX_PUFFS or raw.y<=float(_frame.near_raw)+2.0 or radius<=0.0: return
 	var at:=Geometry.project([raw.x,raw.y,raw.z],_frame)
 	var screen_radius:=radius*float(_frame.focal_pixels)/raw.y
 	if screen_radius<0.35 or not _clip.intersects(Rect2(at-Vector2.ONE*screen_radius,Vector2.ONE*screen_radius*2.0)): return
 	# Optical LOD affects opacity, never original geometry or source visibility.
 	alpha*=smoothstep(0.35,1.8,screen_radius)
-	puffs.append([raw.y,at,screen_radius,alpha,kind,seed,owner,(root-_clip.position)/_clip.size,restrict])
+	puffs.append([raw.y,at,screen_radius,alpha,kind,seed,owner,(root-_clip.position)/_clip.size,restrict,impact_birth])
 
 # The screen rectangle the original drew this object into, near-clipped. Fumes
 # are confined to it and, in the shader, to that object's own painted pixels,
@@ -124,7 +141,11 @@ static func engine_anchor(object: Dictionary, assets: RefCounted, frame: Diction
 # effect_mappings, when supplied, holds art.mapping(object,camera,palette) for
 # every pass object in order (the draw pass already computed them this frame).
 func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets: RefCounted, art: RefCounted, effect_mappings: Array = []) -> void:
+	# Mesh clears happen on every moving-camera pass. Only the next original
+	# observation prunes lifetimes; visibility still disappears immediately.
+	var previous_births:=_impact_births
 	clear()
+	_impact_births={}
 	if mapping.is_empty() or ownership==null or not assets.supported_palette(data.get("palette_rgb",[])): return
 	_frame=data.camera
 	_clip=Rect2(Vector2(_frame.clip[0],_frame.clip[1]),Vector2(_frame.clip[2]-_frame.clip[0]+1,_frame.clip[3]-_frame.clip[1]+1))
@@ -175,10 +196,19 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 			# cannot escape its registered footprint or opaque ownership.
 			var target: Rect2=effect.target
 			var root: Vector2=target.get_center()
+			var birth:=-1.0
+			if int(effect.donor) in [0,1]:
+				# Only the two registered impact donors, never every hot/motor puff.
+				# Both impact phases of one source actor share a short burst. A
+				# camera/mask rebuild cannot restart it. Unknown identities stay local.
+				var pointer:=int(object.get("pointer",-1))
+				var key:Array=[pointer] if pointer>=0 else [owner,effect.index,target]
+				birth=float(previous_births.get(key,_dynamics_clock))
+				_impact_births[key]=birth
 			for n in 5:
 				var at:=target.position+target.size*Vector2(0.23+float(n)*0.13,0.35+sin(float(n)*2.1+float(effect.index))*0.22)
 				var raw:=Modern.vec(Geometry.unproject(at,1024.0,_frame))
-				_puff(raw,target.size.x*1024.0/float(_frame.focal_pixels)*0.14,0.17,2.0 if int(effect.donor)!=2 else 0.0,float(n)+float(effect.index)*0.29,owner,root,effect.rect)
+				_puff(raw,target.size.x*1024.0/float(_frame.focal_pixels)*0.14,0.17,2.0 if int(effect.donor)!=2 else 0.0,float(n)+float(effect.index)*0.29,owner,root,effect.rect,birth)
 			counts.effect+=5
 		if actor.is_empty(): continue
 		# AX 0000:2f04 and the enemy guided-launch path 0000:02c6
@@ -218,7 +248,7 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 	# Texels past the current puff count are never addressed by a vertex.
 	for i in puffs.size():
 		var p: Array=puffs[i]
-		_roots.set_pixel(i*2,0,Color(float(p[6]),float(p[4]),float(p[5]),0))
+		_roots.set_pixel(i*2,0,Color(float(p[6]),float(p[4]),float(p[5]),float(p[9])+1.0 if float(p[9])>=0.0 else 0.0))
 		_roots.set_pixel(i*2+1,0,Color(p[7].x,p[7].y,float(p[3]),0))
 		for corner: Vector2 in [Vector2(-1,-1),Vector2(1,-1),Vector2(1,1),Vector2(-1,-1),Vector2(1,1),Vector2(-1,1)]:
 			var at: Vector2=p[1]+corner*float(p[2])

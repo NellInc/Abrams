@@ -1,5 +1,5 @@
 extends "res://tests/test_pc_modern.gd"
-## Static sky/water/foliage regression and bounded native GPU comparisons.
+## Source-bound sky/water/foliage regression and bounded native GPU comparisons.
 var rows:=[]
 func _initialize() -> void: run.call_deferred()
 
@@ -1454,6 +1454,205 @@ func naturalism_materials(catalog:Dictionary,baseline_path:String) -> void:
 	print(("PC_TACTICAL_FINISHGRAIN_MATERIALS" if finishgrain else "PC_TACTICAL_DIFFUSION_MATERIALS" if diffusion else "PC_TACTICAL_GROUNDLIGHT_MATERIALS" if groundlight else "PC_TACTICAL_OPTICS_MATERIALS" if optics else "PC_TACTICAL_RADIANCE_MATERIALS" if radiance else "PC_TACTICAL_SHEEN_MATERIALS" if sheen else "PC_TACTICAL_BEVEL_MATERIALS" if bevel else "PC_TACTICAL_AERIAL_MATERIALS" if aerial else "PC_TACTICAL_MICROFINISH_MATERIALS" if microfinish else "PC_TACTICAL_ARBOR_MATERIALS" if arbor else "PC_TACTICAL_GROUNDING_MATERIALS" if grounding else "PC_TACTICAL_HORIZON_MATERIALS" if horizon else "PC_TACTICAL_LIGHTING_MATERIALS" if lighting else "PC_TACTICAL_NATURALISM_MATERIALS")+": %d checks, %d errors"%[checks,failures.size()])
 	quit(0 if failures.is_empty() else 1)
 
+func river_performance_contract(catalog:Dictionary) -> void:
+	# ABBA uses the same shader, phase, quality and source mesh in both arms.
+	# Forcing visibility in A reproduces the preceding unconditional redraw;
+	# B uses the conservative source-screen bounds. No timed GPU readbacks.
+	viewport.msaa_3d=Viewport.MSAA_4X
+	viewport.anisotropic_filtering_level=Viewport.ANISOTROPY_16X
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	var results:=[]
+	for spec in [["visible",0,0,true],["left",-4,0,false],["right",4,0,false],["above",0,4,false],["below",0,-4,false],["edge",0,0,true]]:
+		var data:=model_packet(catalog,40)
+		data.background={"kind":"horizon","line":[[0,100],[319,100]],"colors":[5,8]}
+		var edge_shift:=0.0
+		if spec[0]=="edge":
+			var rightmost:float=-INF
+			for polygon:Dictionary in data.objects[0].polygons:
+				for point:Array in polygon.camera_vertices:rightmost=maxf(rightmost,Geometry.project(point,data.camera).x)
+			edge_shift=(-0.25-rightmost)/float(data.camera.focal_pixels)
+		for polygon:Dictionary in data.objects[0].polygons:
+			for point:Array in polygon.camera_vertices:
+				point[0]+=float(point[1])*(float(spec[1])+edge_shift)
+				point[2]+=float(point[1])*float(spec[2])
+		var source:=JSON.stringify(data)
+		draw.tactical_landscape=true;draw.reset_water_animation()
+		await render(data,true)
+		check(draw._river_present,str(spec[0])+": original river triangles retained")
+		var visible:bool=draw._river_visible
+		check(visible==bool(spec[3]),str(spec[0])+": conservative visibility classification")
+		var geometry:PackedVector3Array=draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].duplicate()
+		var owners:PackedByteArray=draw.ownership.get_texture().get_image().get_data()
+		var builds:int=draw.mesh_build_count
+		var io_before:int=draw.modern_assets.disk_io_count
+		draw.retain_render_target=true
+		var composite:=SubViewport.new();composite.size=viewport.size;root.add_child(composite)
+		var rect:=TextureRect.new();rect.texture=viewport.get_texture();rect.size=Vector2(viewport.size);composite.add_child(rect)
+		var expected:=PackedByteArray();var expected_world:=PackedByteArray();var expected_phase:float=-1.0
+		var timings:=[];var redraws:=[]
+		for arm in [true,false,false,true]:
+			draw._river_visible=true if arm else visible
+			for warm in 8:
+				if draw.advance_water(1.0/60.0):composite.render_target_update_mode=SubViewport.UPDATE_ONCE
+				RenderingServer.force_draw(false);RenderingServer.force_sync()
+			draw.reset_water_animation()
+			viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+			composite.render_target_update_mode=SubViewport.UPDATE_ONCE
+			RenderingServer.force_draw(false);RenderingServer.force_sync()
+			var count:=0;var begin:=Time.get_ticks_usec()
+			for tick in 32:
+				if draw.advance_water(1.0/60.0):
+					composite.render_target_update_mode=SubViewport.UPDATE_ONCE
+					count+=1
+				RenderingServer.force_draw(false);RenderingServer.force_sync()
+			timings.append(float(Time.get_ticks_usec()-begin)/32000.0);redraws.append(count)
+			var pixels:=composite.get_texture().get_image().get_data()
+			var world_pixels:=viewport.get_texture().get_image().get_data()
+			if expected.is_empty():expected=pixels;expected_world=world_pixels;expected_phase=draw.water_phase
+			else:
+				check(pixels==expected and world_pixels==expected_world,str(spec[0])+": exact world and final-compositor pixels in every ABBA arm")
+				check(draw.water_phase==expected_phase,str(spec[0])+": unchanged animation cadence and phase")
+			check(count==(32 if arm or visible else 0),str(spec[0])+": only impossible-to-see redraws removed")
+		check(draw.mesh_build_count==builds and geometry==draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX],"performance keeps identical source geometry")
+		check(owners==draw.ownership.get_texture().get_image().get_data() and JSON.stringify(data)==source,"performance keeps identical ownership/source inputs")
+		check(draw.modern_assets.disk_io_count==io_before,"animation performs no asset I/O")
+		results.append({"case":spec[0],"ABBA_sync_frame_ms":timings,"ABBA_redraws":redraws,
+			"baseline_mean_ms":(timings[0]+timings[3])*0.5,"candidate_mean_ms":(timings[1]+timings[2])*0.5})
+		composite.queue_free();draw.retain_render_target=false;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	for failure in failures:printerr("FAIL: "+failure)
+	FileAccess.open(output.path_join("river-performance.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":failures,"cases":results,
+		"scope":"Single-process ABBA at 1280x800, 4x MSAA/16x anisotropy; synchronized render-wall time, not gameplay FPS or isolated GPU time."},"\t")+"\n")
+	print("PC_RIVER_PERFORMANCE: %d checks, %d errors"%[checks,failures.size()])
+	quit(0 if failures.is_empty() else 1)
+
+func river_flow_contract(catalog:Dictionary) -> void:
+	var args:=OS.get_cmdline_user_args()
+	var old:Shader
+	if "--river-before" in args:
+		old=Shader.new()
+		var old_code:=FileAccess.get_file_as_string(args[args.find("--river-before")+1])
+		old.code=old_code.replace("depth_test_disabled, depth_draw_never","depth_draw_opaque").replace("void fragment() {","void fragment() {\n DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
+	for spec in [["river",-0.6,4],["grazing",-0.16,4],["compact",-0.6,2]]:
+		var data:=model_packet(catalog,40,float(spec[1]))
+		data.background={"kind":"horizon","line":[[0,100],[319,100]],"colors":[5,8]}
+		# A later original opaque object crosses the water. Its coverage must
+		# remain unchanged when the river's normals and reflections animate.
+		var blocker:Dictionary=packet().objects[0].duplicate(true)
+		blocker.shape_index=-1;blocker.polygons[0].colors=[9,9]
+		blocker.polygons[0].camera_vertices=[[-12,160,-18],[12,160,-18],[12,160,12],[-12,160,12]]
+		data.objects.append(blocker)
+		var source:=JSON.stringify(data)
+		draw.tactical_landscape=true
+		draw.reset_water_animation()
+		await render(data,true)
+		viewport.size=Vector2i(320,200)*int(spec[2]);draw.apply_pass(data)
+		var material:=draw.mesh_node.mesh.surface_get_material(0) as ShaderMaterial
+		var current:Shader=material.shader
+		check(current==draw._groundlight_shader,str(spec[0])+": actual production shader variant")
+		var fresh:=await capture()
+		if old!=null:
+			material.shader=old
+			var before:=await capture()
+			before.save_png(output.path_join(str(spec[0])+"-before.png"))
+			material.shader=current
+		check((await capture()).get_data()==fresh.get_data(),str(spec[0])+": deterministic phase zero")
+		fresh.save_png(output.path_join(str(spec[0])+"-after.png"))
+		var geometry:PackedVector3Array=draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].duplicate()
+		var owners:Image=draw.ownership.get_texture().get_image()
+		var mask:=owners.get_data()
+		var builds:int=draw.mesh_build_count
+		var reused:int=draw.mesh_reuse_count
+		# Retain the actual world target and a final texture compositor. A clock
+		# tick must refresh both while all original inputs remain stationary.
+		var composite:=SubViewport.new();composite.size=viewport.size
+		composite.render_target_update_mode=SubViewport.UPDATE_ONCE;root.add_child(composite)
+		var rect:=TextureRect.new();rect.texture=viewport.get_texture();rect.size=Vector2(viewport.size);composite.add_child(rect)
+		draw.retain_render_target=true
+		viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+		await capture()
+		var composed:=composite.get_texture().get_image().get_data()
+		check(not draw.advance_water(NAN) and not draw.advance_water(-1.0),"invalid river delta cannot advance")
+		for tick in 120:check(draw.advance_water(0.1),"classified river clock advances")
+		draw.apply_pass(data)
+		composite.render_target_update_mode=SubViewport.UPDATE_ONCE
+		var moving:=await capture()
+		check(composed!=composite.get_texture().get_image().get_data(),str(spec[0])+": retained final compositor refreshes")
+		moving.save_png(output.path_join(str(spec[0])+"-flow.png"))
+		var changed:=0;var outside:=0
+		for y in moving.get_height():
+			for x in moving.get_width():
+				if fresh.get_pixel(x,y)!=moving.get_pixel(x,y):
+					changed+=1
+					var owner:=owners.get_pixel(x,y)
+					if roundi(owner.r*255.0)!=1 or roundi(owner.g*255.0)!=0:outside+=1
+		check(changed>100,str(spec[0])+": visible flow on stationary source frame")
+		check(outside==0,str(spec[0])+": zero altered bank/background/opaque actor pixels")
+		check(draw.mesh_build_count==builds and draw.mesh_reuse_count==reused+1,"animation retains exact source mesh")
+		check(geometry==draw.mesh_node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] and draw.ownership.get_texture().get_image().get_data()==mask,"animation preserves geometry and source ownership")
+		check(JSON.stringify(data)==source,"animation never mutates original source packet")
+		draw.reset_water_animation();viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+		check((await capture()).get_data()==fresh.get_data(),"checkpoint clock reset restores exact water")
+		# Full-phase wrap is seamless, rather than snapping a scrolling texture.
+		material.set_shader_parameter("tactical_water_phase",TAU)
+		viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+		var wrap:=await capture()
+		var wrap_error:=0.0
+		for y in wrap.get_height():
+			for x in wrap.get_width():
+				var a:=wrap.get_pixel(x,y);var b:=fresh.get_pixel(x,y)
+				wrap_error=maxf(wrap_error,maxf(absf(a.r-b.r),maxf(absf(a.g-b.g),absf(a.b-b.b))))
+		check(wrap_error<=1.0/255.0,"seamless bounded phase loop")
+		if spec[0]=="river":
+			# The no-atlas fallback has its own shader function and must share
+			# the loop contract, rather than jumping when its clock wraps.
+			draw.reset_water_animation();material.set_shader_parameter("tactical_realism_ready",false)
+			draw.refresh_surface_shader(material);viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+			var fallback:=await capture()
+			material.set_shader_parameter("tactical_water_phase",TAU);viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+			var fallback_wrap:=await capture()
+			var fallback_error:=0.0
+			for y in fallback.get_height():
+				for x in fallback.get_width():
+					var a:=fallback.get_pixel(x,y);var b:=fallback_wrap.get_pixel(x,y)
+					fallback_error=maxf(fallback_error,maxf(absf(a.r-b.r),maxf(absf(a.g-b.g),absf(a.b-b.b))))
+			check(fallback_error<=1.0/255.0,"fallback river shares seamless bounded loop")
+			material.set_shader_parameter("tactical_realism_ready",true);draw.refresh_surface_shader(material)
+		draw.reset_water_animation()
+		material.set_shader_parameter("modern_surface_variation",false)
+		check(not draw.advance_water(0.1),"disabled surface variation never wakes river")
+		material.set_shader_parameter("modern_surface_variation",true)
+		draw.tactical_landscape=false
+		check(not draw.advance_water(0.1),"Modern stays static")
+		viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+		var modern:=await capture()
+		material.set_shader_parameter("tactical_water_phase",1.5);viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+		check((await capture()).get_data()==modern.get_data(),"Modern pixels ignore river phase")
+		if old!=null:
+			material.shader=old;viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+			check((await capture()).get_data()==modern.get_data(),"Modern pixels identical to previous shader")
+		material.shader=current
+		draw.retain_render_target=false
+		viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+		var legacy:=await render(data,false)
+		check(not draw.advance_water(0.1),"source renderer never animates river")
+		if old!=null:
+			var source_material:=draw.mesh_node.mesh.surface_get_material(0) as ShaderMaterial
+			var source_before:=Shader.new();source_before.code=FileAccess.get_file_as_string(args[args.find("--river-before")+1])
+			source_material.shader=source_before
+			check((await capture()).get_data()==legacy.get_data(),"source renderer pixels identical to previous shader")
+		draw.apply_pass({"objects":[]})
+		check(not draw.advance_water(0.1),"missing source clears river animation eligibility")
+		rows.append({"case":spec[0],"animated_pixels":changed,"outside_river":outside,"loop_max_error":wrap_error})
+		composite.queue_free();draw.retain_render_target=false;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	# An ordinary source-owned scene without water must keep its retained target.
+	draw.tactical_landscape=true
+	await render(model_packet(catalog,115),true)
+	check(not draw.advance_water(0.1),"Tactical without a classified river stays static")
+	for failure in failures:printerr("FAIL: "+failure)
+	FileAccess.open(output.path_join("river-flow.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":failures,"cases":rows},"\t")+"\n")
+	print("PC_RIVER_FLOW: %d checks, %d errors"%[checks,failures.size()])
+	quit(0 if failures.is_empty() else 1)
+
 func run() -> void:
 	if "--finishgrain-gpu" in OS.get_cmdline_user_args():
 		await finishgrain_gpu_contract()
@@ -1510,6 +1709,12 @@ func run() -> void:
 	check(draw.terrain_style.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")),"terrain loaded")
 	check(draw.terrain_style.load_hills(directory),"hills loaded")
 	var catalog:Dictionary=art.load_catalogue(directory)
+	if "--river-performance" in args:
+		await river_performance_contract(catalog)
+		return
+	if "--river-flow-gpu" in args:
+		await river_flow_contract(catalog)
+		return
 	if "--finishgrain-materials" in args:
 		await naturalism_materials(catalog,args[args.find("--finishgrain-materials")+1])
 		return

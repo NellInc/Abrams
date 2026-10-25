@@ -5,6 +5,7 @@ uniform sampler2D allowed_terrain : filter_nearest, repeat_disable;
 uniform sampler2D roots : filter_nearest, repeat_disable;
 uniform float owner_count;
 uniform float root_width;
+uniform float dynamics_time=-1.0;
 varying vec4 emitter;
 varying vec4 anchor;
 varying float confined;
@@ -75,6 +76,16 @@ void fragment() {
         colour=tactical_hot_finish(q,coarse,detail,filtered,1.0);
     }
     colour=tactical_particle_volume(colour,q,density,emitter.y);
+    if(dynamics_time>=0.0 && emitter.w>0.0) {
+        // Short ballistic sparks, colour-only inside the incumbent alpha/mask.
+        float age=max(dynamics_time-(emitter.w-1.0),0.0);
+        float energy=1.0-smoothstep(0.16,0.55,age);
+        float angle=emitter.z*7.91;
+        vec2 flight=vec2(cos(angle)*0.95,-0.95-abs(sin(angle))*0.5)*age;
+        flight.y+=2.6*age*age;
+        float spark=1.0-smoothstep(0.025,0.09,length(q-flight));
+        colour=mix(colour,vec3(1.0,0.73,0.28),spark*energy*0.8);
+    }
     ALBEDO=OUTPUT_IS_SRGB ? colour : pow(colour,vec3(2.2));
     ALPHA=density*anchor.z;
 }

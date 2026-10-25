@@ -10,6 +10,8 @@ const PcCamera = preload("res://scripts/pc_camera.gd")
 const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
 const PlayDisplay = preload("res://scripts/pc_play_display.gd")
 const StartupSplash = preload("res://scripts/pc_startup_splash.gd")
+var tactical_dynamics = preload("res://scripts/pc_tactical_dynamics.gd").new()
+var tactical_dynamics_allowed := true
 const Frontdoor = preload("res://scripts/pc_frontdoor.gd")
 const FrontdoorRoute = preload("res://scripts/pc_frontdoor_route.gd")
 var frontdoor: Control
@@ -146,6 +148,9 @@ func _initialize() -> void:
 	started = Time.get_ticks_msec()
 	capture = "--capture" in OS.get_cmdline_user_args()
 	var args := OS.get_cmdline_user_args()
+	tactical_dynamics_allowed="--no-tactical-dynamics" not in args
+	if OS.has_feature("web"):
+		tactical_dynamics.reduced_motion=bool(JavaScriptBridge.eval("window.matchMedia('(prefers-reduced-motion: reduce)').matches"))
 	var graphics_error := graphics_launch_error(args)
 	if not graphics_error.is_empty():
 		printerr(graphics_error)
@@ -748,6 +753,7 @@ func _choose_graphics(mode: String) -> void:
 		play_display.set_hud_frame(previous_presentation,previous_program,tandem_frame._current_plate_mask,
 			not tandem_frame.dynamic_map_art.packet.is_empty(),
 			tandem_frame.cockpit_art_ids==[1])
+	_reset_tactical_dynamics()
 	_choose_graphics_quality(audio_menu.quality.msaa,audio_menu.quality.anisotropy)
 	# Replay the already paired drawing only. No guest frame or audio advances.
 	var drawing=previous_presentation.get("draw_pass")
@@ -990,6 +996,9 @@ func _process(delta: float) -> bool:
 		bridge.failure = "capture deadline"
 		_close()
 	_animate_ending(delta)
+	if not _frontdoor_blocked():
+		_animate_water(delta)
+		_animate_tactical_dynamics(delta)
 	return false
 
 static func ending_motion_allowed(args: Array) -> bool:
@@ -1009,20 +1018,51 @@ func _animate_ending(delta: float) -> void:
 	if tandem_frame.frontend_art.visible and tandem_frame.frontend_art.splash_aftermath_art.advance(delta):
 		play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 
+func _animate_water(delta: float) -> void:
+	if capture or closing or state_control_pending or not pending_state_command.is_empty() or not play_mode or not trace_mode or play_display==null or tandem_frame==null or not tandem_frame.world_enabled or tandem_frame.graphics_mode!="tactical" or previous_program.get("name")!="SIM":return
+	if audio_menu and (not audio_menu.window_focused or not audio_menu.open_menus.is_empty()):return
+	if draw_view.advance_water(delta):
+		# The same world texture changed on the GPU. Refresh the final cockpit
+		# without decoding source pixels or rebuilding its source-owned masks.
+		play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+
+func _reset_tactical_dynamics() -> void:
+	tactical_dynamics.reset()
+	if tandem_frame:tandem_frame.set_tactical_dynamics(Vector2.ZERO)
+	if draw_view:draw_view.tactical_effects.reset_dynamics()
+
+func _animate_tactical_dynamics(delta: float) -> void:
+	if capture or closing or state_control_pending or not pending_state_command.is_empty() or not play_mode or not trace_mode or play_display==null or tandem_frame==null:return
+	if not tactical_dynamics_allowed or tandem_frame.graphics_mode!="tactical" or not tandem_frame.world_enabled or previous_program.get("name")!="SIM" or fast_forward>1:return
+	if audio_menu and (not audio_menu.window_focused or not audio_menu.open_menus.is_empty()):return
+	var armour_changed:bool=tactical_dynamics.advance(delta)
+	if armour_changed:tandem_frame.set_tactical_dynamics(tactical_dynamics.shift)
+	var effects_changed:bool=false
+	if tactical_dynamics.enabled and not tactical_dynamics.paused and not tactical_dynamics.reduced_motion:
+		effects_changed=draw_view.tactical_effects.advance_dynamics(delta)
+	if effects_changed:play_display.world_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+	if armour_changed or effects_changed:play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+
 func _apply_sample(message: Dictionary) -> void:
 	if message.get("timeline_reset",false):
 		if tandem_frame: tandem_frame.frontend_art.splash_aftermath_art.reset_motion()
 		invalidate_presentation_cache()
+		draw_view.reset_water_animation()
+		_reset_tactical_dynamics()
 		_reset_audio_timeline()
 	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.slots)
 		_sync_web_controls()
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
 		pc_audio.set_transport_muted(fast_forward>1 or inflight_fast or _state_load_muted())
+	var dynamics_transport:bool=not inflight_fast and fast_forward<=1 and not _state_load_muted()
 	inflight_fast=false
 	if pc_audio and not pc_audio.apply_audio(message.get("audio", {})):
 		bridge.failure = pc_audio.failure
 		return
+	tactical_dynamics.observe(message,tactical_dynamics_allowed and dynamics_transport and play_mode and trace_mode and not capture and tandem_frame!=null and tandem_frame.graphics_mode=="tactical")
+	# Observation can clear an impulse without an animation tick (station/load).
+	if tandem_frame:tandem_frame.set_tactical_dynamics(tactical_dynamics.shift if tactical_dynamics.enabled else Vector2.ZERO)
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
 		pc_audio.set_transport_muted(fast_forward>1 or _state_load_muted())
 	var state = message.get("state")
@@ -1146,6 +1186,7 @@ func _apply_sample(message: Dictionary) -> void:
 	var frontend := false
 	if trace_mode:
 		frontend = _present_tandem(image, previous_presentation, world_viewport.get_texture(), previous_program)
+		tandem_frame.set_tactical_dynamics(tactical_dynamics.shift if tactical_dynamics.enabled else Vector2.ZERO)
 	previous = state
 	_finish_startup_display()
 	# Hidden research labels cause text shaping/layout even when not displayed.

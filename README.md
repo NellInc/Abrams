@@ -53,6 +53,7 @@ The two run in tandem: the original PC executables run inside DOSBox Pure, while
 
 ## Features
 
+* Tank-cover main menu with **Scenario**, **Campaign**, **Settings**, **Extras** and **Quit**. Extras contains the separate practice range and artwork comparison.
 * High-resolution cockpits, portraits, briefings, information screens and ending newspapers, retaining the original visual style.
 * Reconstructed typefaces, animated intro credits and a memorial dedication.
 * Instant switching between six graphics modes: **EGA**, **EGA Upscaled**, **Genesis**, **Genesis Upscaled**, and the experimental **Modern** and **Tactical**, with an independent **HUD Style** (Restored or Tactical).

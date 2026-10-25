@@ -66,6 +66,35 @@ Working if: Tactical shows rooted near-field shrub and grass meshes on verified
 flat grass, original roads and vehicles remain clear, and matched Modernized
 views remain pixel-identical when switching back.
 
+Tactical also has a presentation-only dynamics pass. The original accepted
+player-cannon dispatch supplies a brief recoil kick, including when sound is
+muted. Original player travel and speed changes supply a restrained spring-damped
+suspension response within the verified Gunner upper housing, Cupola and Driver
+armour artwork.
+The response moves donor material by at most 0.30 horizontal and 1.25 vertical
+original pixels. The aperture, hull silhouette, instruments, sights, camera,
+original framebuffer and world geometry stay fixed. This is a cosmetic weight
+response; it does not simulate suspension travel or change vehicle handling.
+The armour artwork is visible with Restored HUD. The panoramic Tactical HUD
+keeps its existing fixed optics and covers that artwork; impact sparks remain
+visible with either HUD style.
+
+The two registered impact donors receive short ballistic spark colour paths
+inside their existing puff alpha and original ownership coverage. Other hot
+effects and guided-missile motor glows do not acquire impact sparks. Effects
+vanish with their original source footprint, with no persistent debris or new
+collision. Menus, lost focus and the original pause freeze the explicit clocks;
+checkpoint timeline resets, station changes and graphics re-entry discard stale
+armour impulses. Captures remain deterministic unless explicitly advanced.
+Browser reduced-motion preference is honoured at startup; native Play accepts
+`--no-tactical-dynamics`. Other graphics modes, gameplay and save formats are
+unchanged.
+
+Working if: accepted muted shots animate once, rejected/duplicate/stale requests
+cannot kick the armour, the neutral and non-Tactical compositor matches its
+predecessor, protected pixels and effect alpha are exact, and the same focused
+dynamics checks pass on native OpenGL and actual Godot Web.
+
 Graphics mode and **HUD Style** are independent. Choose Tactical in both menus
 for the complete Range-inspired scene and station-specific widescreen interfaces, or combine
 either graphics treatment with the Restored HUD.
@@ -2006,6 +2035,537 @@ synchronous.
 Working if: on a scroll step, the Tactical map and the original map show the same position
 in the same displayed frame, and `test_pc_tactical_hud.gd` reports `TACTICAL_MAP_SURFACE`.
 
+
+### Tactical architecture and crew finishing, 17 October 2026 (revisions 7 and 8)
+
+The local optional Tactical pack now includes rebuilt civilian/military
+buildings and their collapsed states, matching the accepted cottage's joinery,
+roofing and masonry. Original landmark flags, stars and farm courtyard identity
+remain. Crews have richer clothing and equipment materials while retaining the
+original flat poses and source-rendered heads. A restrained lower-body/footing
+shade affects already-admitted model pixels only; it adds no projected shadow
+or new visibility. Aircraft, flat bridges and crews are excluded from that tint.
+Original gameplay, hit regions and Modern rendering are unchanged. This pass
+is local only; installed/browser PCKs have not been updated by this chat.
+
+### Tactical complete roster refinement, 17 October 2026 (revision 9)
+
+All 57 authored Tactical states have further geometry and freshly baked
+materials. The farm adds a static piebald cow, trough and braced gate inside its
+original yard ownership. Buildings have more complete roof/chimney construction;
+vehicles, wrecks and helicopters have additional source-owned fittings and
+mechanical structure. Bridge/hangar surface joints retain exact source coverage.
+
+Sagger and Spigot crews now use closed shallow volumes for bodies, limbs and
+equipment, with cloth folds, webbing and pockets. Original poses, source-rendered
+heads, strict silhouette masks and source hit regions are unchanged. Opaque
+depth handles crew self-occlusion; flat bridges retain painter ordering. The
+lower-body tint remains neutral for crews. No new actor, animation, collision,
+weapon behaviour or gameplay rule is introduced. Existing texture banks and
+runtime limits are retained. Modern uses its unchanged rendering path.
+
+Working if: the farm animal and crew volume are visible in native Tactical
+captures, protected original commands and ownership remain intact, and switching
+back to Modern restores the exact original pixels. Validation evidence is in
+`artifacts/tactical-roster-refinement-20261017/acceptance.json`. Status: local only;
+this pass does not update installed/browser PCKs.
+
+
+### Tactical cow and crew refinement, 17 October 2026 (revision 10)
+
+A focused local update reshapes the cow's body, face, legs and hooves, and
+refines both Sagger/Spigot operators' joint profiles and equipment controls,
+carrying grips and optics. All three models have freshly baked materials and
+editable Blender/GLB masters. The cow remains static yard decoration. Original
+crew poses, independent source heads, strict silhouette masks, hit regions and
+gameplay remain unchanged. The other 54 authored states retain exact entries.
+
+Four focused Python tests and 224 native checks pass. Eighteen Modern captures
+remain byte-exact; all changed Tactical captures stay inside source coverage.
+Both corrected crew depth-order witnesses and original-head/fallback checks
+pass. The full revision-9 timeout remains a separate historical result.
+Evidence: `artifacts/tactical-cow-crews-refinement-20261017/acceptance.json`.
+Status: local only; this pass does not update installed/browser PCKs.
+
+Working if: the cow and crew details improve in native views while source
+coverage, independent heads, fallback and Modern pixels stay unchanged.
+
+
+### Tactical modelled crew heads, 17 October 2026 (revision 11)
+
+Sagger and Spigot now have real textured head meshes in Blender/GLB exports and
+Tactical rendering, replacing the earlier headless exports plus separate 2D
+preview overlay. Helmets, faces, ears, noses and chinstraps are modelled geometry.
+The original head command still controls visibility. Natural head silhouettes
+stay within original head ownership; their cutouts reveal no concealed actors.
+Missing or unsupported head packets retain incumbent rendering. Modern, original
+simulation and hit regions remain unchanged. Existing texture banks and runtime
+limits are retained. Both complete crews use 5,128 triangles.
+
+Four focused Python tests and 267 native checks pass, including the 159-check
+scene phase. Six original/Modern comparison images remain byte-exact. Evidence:
+`artifacts/tactical-modelled-heads-20261017/acceptance.json`. Status: local only;
+this pass does not update installed/browser PCKs. Working if: actual exported
+heads and native Tactical heads are visible, original command/ownership gates
+remain effective, and Modern/fallback restore identical images.
+
+
+### Tactical truck and destroyed farmyard (revision 12)
+
+The optional Tactical pack now replaces the truck's floating lamps and shallow
+front shell with a connected engine bay, radiator apron, seated lamps and front
+wings. The destroyed farmyard contains source-owned masonry, roof fragments and
+snapped timber. Original gameplay, hit regions, groups and visibility boundaries
+are unchanged; intact farm/cow, Sagger/Spigot and the other 55 entries stay exact.
+Eight Python tests and 109 focused native checks pass, with zero forbidden pixels
+and twelve byte-exact Modern baseline PNGs. Fresh local Blender/GLB assets and
+bakes are installed. This pass does not rebuild or publish the web PCK.
+
+
+### Truck and ruined farm finishing (revision 13, 2026-10-18)
+
+Tactical truck has a recessed grille, bevelled apron, smoother tyres with rubber
+chevron tread and matched wheel-nut geometry. Ruined farm has varied rubble,
+fractured roof edges and low-contrast dust around collapse zones. Wear is localized
+to physical edges and lower contact areas. Fresh Blender/GLB assets and bakes are
+installed locally. Original gameplay, registry, hit regions and visibility remain
+unchanged. Eight Python tests and 109 native checks pass, with zero forbidden
+pixels and twelve byte-exact Modern baseline PNGs. No web PCK rebuild or publication.
+
+
+### Remaining Tactical roster finishing (revision 14, 2026-10-18)
+
+All 55 remaining authored Tactical states have fresh finishes, with matched
+track-shoe bakes, smoother wheeled running gear, corrected BTR/BRDM glass,
+quieter paint and cloth, localized wreck wear, fractured ruined roofs, grounded
+building debris, broader hangar panels and muted farm grass with worn paths.
+The previously finished truck and ruined farm stay exact. Original gameplay,
+source ownership, hit regions, linework, flags and command-bound crew heads
+remain unchanged. Existing triangle, catalogue, bank and sampler caps are retained.
+
+21 Python tests and 3,093 native checks pass. The 332 multiview studies have zero
+forbidden pixels. All 334 Modern captures, including both complete crews, remain
+byte-exact. The implementing lead reviewed its own exported GLBs and native
+before/after studies. Evidence:
+`artifacts/tactical-roster-polish-20261018/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: the refined models render within original source visibility,
+concealed actors stay hidden, and Modern restores exact baseline pixels.
+
+
+### Tactical family and collapse quality pass (revision 15, 2026-10-18)
+
+A full 57-state export review led to refinements in 24 states. Wrecks have more
+recognisable vehicle-family silhouettes, smoother damaged running gear and
+matched track-shoe bakes. Five carrier models have fitted vision blocks and rear
+access hardware. Three collapsed buildings have irregular broken slabs, varied
+masonry, timber and tile debris. The other 33 entries and all pixels outside the
+edited atlas slots remain exact, including the crew heads and polished truck/farm.
+Original gameplay, hit regions, commands and visibility boundaries are retained.
+Existing texture-bank, sampler, catalogue and triangle caps remain unchanged.
+
+23 Python tests and 1,304 native after-checks pass. The 144 changed-state native
+views have zero forbidden pixels and byte-exact Modern baselines. The implementing
+lead reviewed its own exported models and native comparisons. Evidence:
+`artifacts/tactical-model-quality-pass-20261018/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: vehicle families remain readable in destroyed states, fragments and
+fittings remain source-owned, and Modern restores identical baseline pixels.
+
+
+### Tactical launcher and attachment polish (revision 16, 2026-10-18)
+
+A complete 57-state GLB review led to seven refined states, using six fresh
+masters and the proven Hind alias. BMP-1 has a channel rail, supported pivot,
+shaped missile and four swept fins. BMP-2 has a separate pedestal, cradle,
+clamped canister, collars and end seals. BTR/BRDM wipers follow their actual
+finished glass; Hind cabin windows face outward and retracted gear doors follow
+the fuselage. The other 50 states and outside-slot atlas pixels remain exact.
+
+Original gameplay, hit regions, source groups, commands, line-only rotor/antenna
+programs and visibility boundaries are unchanged. All existing texture, sampler,
+catalogue and triangle caps remain unchanged. 25 Python tests and 381 native
+after-checks pass; 42 selected-state views have zero forbidden pixels and exact
+Modern baselines. The implementing lead reviewed its own exports and native
+comparisons. Evidence:
+`artifacts/tactical-attachment-polish-20261018/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: BMP launchers read as distinct mounted assemblies, fittings stay
+attached to their finished surfaces, and Modern restores identical pixels.
+
+
+### Tactical service and construction polish (revision 17, 2026-10-18)
+
+All 55 remaining model states were re-reviewed. Eighteen states have refreshed
+masters/maps: nine armoured vehicles receive fitted service hardware and recessed
+grilles; nine building/farm states have corrected exterior/reveal orientation,
+complete gable ends and matched game/master construction stations. The other 39
+entries and outside-slot atlas pixels remain exact, including the recent BMPs.
+All original gameplay, hit regions, source groups, commands, linework and
+visibility boundaries remain unchanged. Existing geometry/texture/sampler caps
+are retained, including the 8,192-triangle model limit.
+
+28 Python tests and 996 native after-checks pass. The 110 selected-state views
+have zero forbidden pixels and exact Modern baselines. The implementing lead
+reviewed its own exports and native comparisons. Evidence:
+`artifacts/tactical-roster-service-polish-20261018/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: service hardware remains attached, construction surfaces shade
+outward with coherent baked joints, and Modern restores identical pixels.
+
+
+### Tactical fitting quality pass (revision 18, 2026-10-19)
+
+A full 57-state export review led to ten refreshed masters/maps. Five tank
+families have exposed, skin-seated searchlight/sight assemblies; three also have
+connected snorkel stays and retaining bands. M113, Bradley and ACRV pedestals now
+meet their supporting surfaces, and the M60 mount has its missing foot. Cottage
+147/149 window reveals face into their recesses. Game/master fitting seats match.
+The other 47 model entries, asset files and outside-slot atlas pixels remain exact.
+
+31 Python tests and 553 native after-checks pass; all 61 selected-state views have
+zero forbidden pixels and exact Modern baselines. The implementing lead reviewed
+its own final exports and native comparisons. All 197 Godot source hashes,
+original gameplay, hit regions, commands, linework and visibility boundaries are
+unchanged. Existing geometry, catalogue, texture and sampler caps remain intact.
+Evidence: `artifacts/tactical-fitting-quality-pass-20261018/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: optical apertures remain exposed, fittings meet their finished skin,
+window reveals shade into their openings, and Modern restores identical pixels.
+
+
+### Tactical running-gear polish (revision 19, 2026-10-19)
+
+A full 57-state export review led to twelve refreshed tracked-vehicle masters
+and PBR map sets. T-62 road-wheel spacing now leaves room for separate smooth
+front idlers; all twelve tracked models have distinct dished idlers and toothed
+drive rims, recessed hubs and end wheels fitted to their actual track shoulders.
+Both sides clear adjacent road wheels. Original source envelopes, pose ownership and
+front/rear drivetrain handedness remain authoritative. The other 45 states,
+recorded asset files and outside-slot atlas pixels remain exact.
+
+34 Python tests and 670 native after-checks pass; all 74 selected-state views
+have zero forbidden pixels and exact Modern baselines. The implementing lead
+reviewed its own final exports/native comparisons and T-62 side views. All 197
+Godot source hashes, gameplay, hit regions, commands, linework and visibility
+boundaries are unchanged. Existing geometry, catalogue, texture and sampler caps
+remain intact. Evidence:
+`artifacts/tactical-running-gear-polish-20261019/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: idlers read as separate smooth wheels, drives retain toothed rims,
+end wheels follow the track shoulders without intersecting road wheels, and
+Modern restores identical pixels.
+
+
+### Tactical remaining-surface polish (revision 20, 2026-10-19)
+
+Review of the remaining 45 states led to six refreshed states through five unique
+Blender/GLB/PBR masters and the existing Hind alias. BTR/BRDM headlamps sit above
+the bow on short feet; both-side doors, periscopes and truck vents face outward
+and follow their actual body skin. Hind fin paint is outward-facing and wing
+camouflage partitions the original upper facets. The other 51 states, including
+all twelve tracked vehicles, retain exact entries, model files and atlas pixels.
+
+80 Python tests and 326 native after-checks pass. All 36 selected-state views have
+zero forbidden pixels and exact Modern baselines. The corrected truck vent fit
+also passes complete panel/skin overlap checks against both supporting shells.
+All 197 Godot source hashes, original gameplay, hit regions, commands, head bindings,
+linework and visibility boundaries remain unchanged. The implementing lead reviewed
+its own final exports and native comparisons. Existing geometry, catalogue, texture
+and sampler caps remain intact. Evidence:
+`artifacts/tactical-remaining-surface-polish-20261019/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: lamp apertures remain exposed, both-side fittings remain visible
+against their finished skin, wing paint has no floating layer, and Modern restores
+identical pixels.
+
+
+### Tactical façade and slate polish (revision 21, 2026-10-19)
+
+All 57 states were reviewed. Six building/farm states have refreshed masters and
+PBR maps. Existing gutters and downpipes now sit outside a slightly recessed
+façade while remaining inside the source footprint; brackets seat into the wall,
+and window/door reveals retain their construction depth. Existing insignia support
+planes are unchanged. Five quiet slate tones distinguish roof pieces, with
+courses parallel to the eaves and lapping downslope on both pitches, including
+the corrected reverse roof on shape 151.
+The other 51 entries, asset files and outside-slot atlas pixels remain exact.
+
+83 asset tests and 326 native after-checks pass. All 36 selected-state views have
+zero forbidden pixels and byte-exact Modern baselines. All 197 Godot source hashes,
+gameplay, hit regions, commands, heads, linework and visibility boundaries remain
+unchanged. Own final exports and native comparisons were reviewed. Existing triangle,
+catalogue, texture and sampler limits remain. Evidence:
+`artifacts/tactical-roster-detail-polish-20261019/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: downpipes remain visibly outside the plaster, brackets reach the wall,
+slate courses read as individual pieces, and Modern restores identical pixels.
+
+
+### Tactical wreck-wheel polish (revision 22, 2026-10-19)
+
+A full 57-state review led to sixteen refreshed wreck states through fifteen
+unique masters and the existing BRDM wreck alias. New dished rims and fitted
+hubs follow the existing flattened wheel profiles; loose-wheel hub caps sit
+beyond both wheel faces to remove coplanar shading. Tyres, wheel/bolt stations,
+suspension, tracks, other wreck parts and all 41 other states remain exact.
+Fresh PBR maps use the existing wreck-bank slots without increasing texture cost.
+
+86 asset tests and 868 native after-checks pass. All 96 selected-state views have
+zero forbidden pixels and byte-exact Modern baselines. All 197 Godot source hashes,
+original gameplay, hit regions, commands, heads, linework and visibility boundaries
+remain unchanged. Own final exports, native comparisons and detail highlights were
+reviewed. Existing geometry, catalogue, texture and sampler caps remain intact.
+Evidence: `artifacts/tactical-wreck-fit-polish-20261019/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: rims/hubs fit the crushed wheel silhouettes, rim wells read as recessed,
+loose-wheel caps shade cleanly, and Modern restores identical pixels.
+
+### Blender crew, roster materials, world and cover (2026-10-19)
+
+Revision 23 rebuilds the Sagger/Spigot operators with joined Blender-sculpted bodies,
+fitted hands and boots, and modelled heads. The round-command projection covers the
+original inclusive pixel cells, closing the neck gap without relaxing ownership.
+Both composed head fixtures have zero missing neck pixels at 2x and 4x and no
+concealed-actor leaks. The original side-on body silhouette remains authoritative.
+
+All 57 roster GLBs now export their baked normal-map tangent frames and contact
+occlusion correctly. All 55 editable Blender masters were updated; the two aliases
+remain exact. This is an export repair, with geometry, UVs and existing bake receipts
+preserved. Tactical daylight/contact shading was adjusted across the roster. The
+runtime catalogue and all five atlas banks are unchanged since the crew installation.
+
+The world uses optional Blender-authored shrubs and curved grass blades inside the
+existing footprint and ownership contract. Plant placement, caches and two-batch
+rendering remain unchanged. The separate calibration-menu tank and both crew use
+Blender-refined surface batches with their existing materials and pivots. Two smoke
+plumes rise and drift behind its flanks, alongside sky advection. Reduced Motion
+freezes the rendered frame; entering the range suspends the menu effects.
+
+Native roster verification covers 344 views and 3,106 checks, with zero forbidden
+pixels, exact Modern restoration and unchanged source packets. Separate head,
+foliage and menu fixtures cover their respective ownership and animation contracts.
+90 asset tests and 12 gate/package tests pass, alongside the focused Godot checks.
+The implementing lead reviewed its own final renders, including both menu crew.
+The result remains stylized; native fixtures do not establish full-mission or
+packaged-build acceptance. Evidence:
+`artifacts/tactical-complete-blender-20261019/acceptance.json`.
+Status: local only; no installed/browser PCK rebuild or publication.
+
+Working if: all exports retain tangent frames and baked occlusion, composed heads
+remain joined, plants never cover actor-owned pixels, Modern restores identical
+pixels, and smoke animates only while the visible menu permits motion.
+
+### Continual Blender goal: connected crew anatomy (revision 24, 2026-10-19)
+
+The first finite pass of the active refinement goal replaces the Sagger/Spigot
+operators' assembled facial features and capped neck with one connected skin
+surface. A rear-view neck ledge found in the first export was repaired before
+acceptance. Fresh head-only Blender bakes leave the body meshes, UVs, maps, other
+55 states and all atlas pixels outside the two head rectangles exact. The original
+round-command binding, source ellipse and ownership logic are unchanged.
+
+Both menu crew have fitted upper sleeves, with lining and stitching following the
+same deformation. Hands and pose anchors remain unchanged, and all 42 authored
+batches pass the existing 1cm displacement limit. Native checks confirm smoke
+motion, exact Reduced Motion freezing and suspension when entering the range.
+
+103 Python tests, 80 native head checks and 1,265 simulation checks pass. There are
+no neck gaps at 2x/4x, outside-head changes or concealed-actor leaks. Original
+inputs and runtime source pins remain exact. The implementing lead reviewed its
+own final Blender/GLB and native results. The art remains stylized; broader rotating
+review continues under the active goal. Evidence:
+`artifacts/tactical-continuous-blender-20261019/acceptance.json`.
+Status: local only; no packaged-build rebuild or publication.
+
+Working if: facial landmarks and neck share a closed mesh, both observed head
+commands remain visible without leaking concealed actors, and the menu retains
+its hand contacts, original batch selectors and motion/accessibility behaviour.
+
+### Connected shrub canopy and final rotating review (2026-10-19)
+
+Tactical shrubs now use 120 slender folded leaves in 60 attached pairs, supported
+by ten connected twigs and the existing rooted branch scaffold. Native review
+rejected sparse horizontal sprays and overly broad blades before accepting the
+final geometry at close and normal-size studies from three angles. The editable
+Blender master and exported resources agree with the current author pin.
+
+The shrub uses 682 triangles within the existing 700-triangle cap. Grass remains
+122 triangles with exact vertex attributes and nine pixel-identical native images.
+Footprints, two batches, planting grids/caches, shader and original source ownership
+are unchanged. Only the author's SHA pin changes in the runtime script.
+
+12 Python tests and 152 focused Godot checks pass, including zero painted actor
+pixels and deterministic multi-size studies. All 68 original inputs and the 57
+accepted Tactical GLBs remain exact. The implementing lead reviewed its own work.
+The rotating model/world/menu sweep found no additional material worthwhile
+refinement after the accepted anatomy/menu and canopy fixes. The art remains
+stylized and source-bounded; fine hangar seams can alias at subpixel sizes.
+
+Evidence: `artifacts/tactical-leaf-canopy-20261019/acceptance.json`, with per-state
+review dispositions in `review.json`. Status: local only. This is fixture/asset-study
+acceptance, without a new live-mission or packaged-build acceptance claim.
+
+Working if: leaves remain readable from the reviewed angles at gameplay-size
+studies, grass and planting stay exact, and original actor ownership always wins.
+
+### Fresh all-roster Blender refinement (revision 25, 2026-10-20)
+
+A new low-angle review covers all 57 Tactical states, with component closeups.
+Twelve intact tracked vehicles now have formed roadwheel shoulders and joined
+tyre/rim shells. Their 20-sided circumference, wheel centres, overall bounds and
+runtime triangle counts remain unchanged. Removing the buried facing caps and
+simplifying the small hubs pays for the shoulder geometry. All other vehicle
+geometry remains exact.
+
+Seven bridge/structure states use continuous, padded UV charts per original
+source plane. The hangar's previously dotted wall joints now read continuously.
+Original planes, surface area, ownership and linework remain exact. Very fine
+roof seams can still alias at subpixel sizes.
+
+All 19 changed states have fresh five-channel Blender bakes, editable masters
+and GLBs with normal-map tangents and baked occlusion. The scoped installation
+preserves the other 38 catalogue entries and exports exactly, together with all
+atlas pixels outside the replaced slots. Foliage and calibration-menu assets
+remain unchanged from the accepted prior pass.
+
+105 Python tests pass. Headless admission passes 1,217,582 checks; 116 native
+views pass 1,049 checks with zero forbidden pixels, exact Modern restoration
+and unchanged source packets. All 68 original inputs and 160 runtime source
+pins remain exact. The implementing lead reviewed its own final exports and
+production renders. Evidence:
+`artifacts/tactical-all-model-refinement-20261019-r2/acceptance.json`.
+Status: local only; no full-mission, aggregate-gate or packaged-build acceptance,
+PCK rebuild or publication.
+
+Working if: wheel shoulders shade as formed surfaces without increasing runtime
+budgets, panel joints remain continuous, retained states and outside-slot pixels
+stay exact, and Modern restores identical pixels without changing source packets.
+
+### Flags and building insignia (revision 26, 2026-10-20)
+
+The hangar flag remains white, matching the original face's palette colour 1.
+Its former lamp material and cladding border are replaced by matte woven cloth
+and a hem on the exact original plane. Flag construction drops from 152 facets
+to 10; the hangar body, bounds, source ownership and original pole line remain
+unchanged. The source flag stays flat.
+
+Eight star-bearing surfaces on buildings 153, 155 and 156 had inward-facing
+authored facets, producing black baked occlusion and a visibly black Army star.
+The Tactical authoring path now reverses those 224 facets before unwrapping and
+baking. Every facet retains its vertices, paint, component and source owner.
+Game and master agree; support clearances and original flags are unchanged.
+Fresh bakes restore the white/red markings with correct outward-facing normals.
+
+The new elevated review covers all 57 states. Four models are updated and the
+other 53 remain exact. 107 Python tests, 1,217,038 headless admission checks and
+24 native views with 218 checks pass. Forbidden pixels are zero, Modern restores
+identically, and source packets remain unchanged. The implementing lead reviewed
+its own finished exports and production renders. Evidence:
+`artifacts/tactical-thin-part-refinement-20261020-r3/acceptance.json`.
+Status: local only; no PCK rebuild, publication, full-mission or aggregate-gate
+acceptance claimed.
+
+Working if: the hangar flag reads as matte white cloth, all star facets face
+outward without black occlusion interiors, unchanged models and outside-slot
+pixels stay exact, and original visibility and Modern restoration remain intact.
+
+
+### Original-facing decks and isolated owner baking (revision 27, 2026-10-20)
+
+A fresh Blender review covers all 57 Tactical states, using the editable masters,
+baked materials and separate original bridge visibility sets. Six bridge states
+(0, 1, 45, 46, 108, 114) now align their finished facet winding with the original
+prefix normals. Upper and underside owners keep their distinct directions.
+Building 151's ten red roof-cap facets also face outward, retaining the original
+red paint, vertex membership and source identity.
+
+Bridges 108 and 114 carry coincident top and underside representations that the
+original selects separately. Their five-channel Blender bakes now use temporary,
+owner-matched game/master subsets with the existing UVs. Each channel clears once,
+then accumulates both sides' islands. The complete original-owner mesh is exported;
+no temporary subset survives in the editable master. The other models keep their
+existing bake path. Source wirework, bridge gaps, per-facet vertices, material roles,
+surface area and runtime triangle budgets are unchanged.
+
+Seven masters, GLBs and their affected atlas slots are updated. The other 50 entries
+and exports remain exact, together with every atlas pixel outside those slots.
+Evidence: `artifacts/tactical-blender-roster-20261020-r4/`.
+
+Working if: upper and underside facets follow their original prefix normals,
+coincident alternatives produce clear occlusion and outward tangent maps when
+baked separately, bridge gaps stay open, and source ownership and Modern restoration
+remain intact in the production renderer.
+
+
+### Molot, Bradley, BRDM and crew feet (revision 28, 2026-10-20)
+
+The F-ST artwork now follows Nell's Object 477A Molot identification: a low, broad
+protected turret, one heavy main gun, side skirts and seven road wheels. Its wreck
+retains the matching collapsed turret and running gear. The M2 has a more compact,
+faceted Bradley turret, fitted mantlet, raised twin TOW enclosure, engine intake
+and folded trim vane. Original source names, group poses and ownership remain intact.
+
+Both BRDM variants follow the supplied [9P148 photograph](https://commons.wikimedia.org/wiki/File:BRDM-2_Anti-tank_vehicle.jpg):
+five enclosed launch canisters on a central pedestal, with saddles and end caps.
+The exposed rail rack and protruding auxiliary wheels are removed. The road-going
+pose shows smooth stowed-wheel side panels and four main wheels. Both wreck states
+retain the corresponding damaged launcher; 144 remains an exact alias of 142.
+
+Sagger and Spigot have Blender-sculpted boot lasts with distinct toes, heels,
+arches, rising insteps and fitted ankles. The complete body-plus-head budgets are
+7,776 and 7,868 triangles. Original per-primitive footprints, shallow relief and
+independently commanded heads are preserved.
+
+Eight editable masters and nine states are updated through the scoped packer.
+The remaining 48 entries and every atlas pixel outside the edited slots across
+all 15 maps stay exact. No runtime implementation or original game input changes.
+Evidence: `artifacts/tactical-blender-roster-20261020-r5/acceptance.json`.
+Status: local only, without a package/PCK rebuild or publication.
+
+Working if: the BRDM has five canisters and stowed auxiliary-wheel side panels,
+Molot and Bradley silhouettes match their specified families, both crews have
+formed feet, and source ownership, head-command isolation and Modern restoration
+remain intact in native checks.
+
+
+### Military vehicle camouflage (revision 29, 2026-10-20)
+
+All 34 military vehicle states now carry family-authored woodland camouflage,
+including tanks, tracked and wheeled carriers, BRDM launchers, the truck, both
+Hind states and matching wrecks. NATO-style green/brown/charcoal covers Abrams,
+M60, M113 and Bradley. Eastern-style olive/khaki/dark-green covers the other ground
+vehicles; the Hind keeps its blue underside and a separate upper-body palette.
+Broad patches use shared physical object coordinates, with stable family seeds.
+Surviving wreck plates retain scorched camouflage, while torn edges, exposed
+engines, collapsed tyres and other damaged hardware keep their previous finish.
+
+Only albedo is rebaked. Existing normal, ambient-occlusion, roughness and metallic
+maps remain exact, retaining the earlier grain, weld detail, wear and material
+response. Rubber, tracks, glazing, lenses, bare metal, true signals and the truck's
+woven cover retain their material identities. All 57 catalogue model entries,
+geometry, UVs and source semantics are identical to the previous accepted pack.
+The other 23 states and every pixel outside vehicle slots across all 15 bank maps
+are exact. Bank sizes, samplers and runtime implementation remain unchanged.
+
+The implementing lead reviewed its own 64 textured Blender master views, the
+2-view Cycles pilot and all 34 native game-scale views. Native verification passes
+315 checks with zero forbidden pixels, exact Modern restoration and unchanged
+source packets. Evidence: `artifacts/tactical-camouflage-20261020-r6/acceptance.json`.
+Status: local only, without a package/PCK rebuild or publication.
+
+Working if: every military vehicle shows its family camouflage, wreck plates
+retain the corresponding palette, excluded materials remain distinct, and source
+ownership, unchanged geometry and Modern restoration pass the texture-only checks.
 
 ### Tactical Field Instrument concept implementation (23 October 2026)
 

@@ -139,7 +139,7 @@ Offer `/diary` when you notice:
 
 A Godot fan remaster of Dynamix's *Abrams Battle Tank* built as a **tandem**: the original PC executables (`ABRAMS.COM`, `SIM.EXE`, …) run unmodified inside a pinned, source-built DOSBox Pure tracing core and own *all* gameplay, menus, timing and disk saves. Godot is a presentation layer. It reads state and draw calls through a read-only bridge, renders high-resolution layers over or instead of the original framebuffer, plays event-driven audio, and forwards original key identities. It never writes guest memory and never substitutes its own simulation.
 
-`godot/scripts/simulation.gd` (the editor's default `main.tscn` scene, documented in `docs/simulation-contract.md`) is a **separate, original-authored calibration range**. The bridge never instantiates it, and it makes no claim to original parity. Don't confuse it with the remaster.
+`godot/scripts/simulation.gd` (the editor's default `main.tscn` scene, documented in `docs/simulation-contract.md`) is a **separate, original-authored calibration range**. Ordinary Play embeds that scene in an isolated viewport for the tank-cover main menu and Extras. Guest-frame delivery is frozen throughout the cover, Settings, artwork viewer and practice range. Scenario and Campaign use bounded ordinary keys to reach verified original menus; the original game still owns all mission and campaign behaviour. Working if: Extras cannot advance or checkpoint the guest, and returning from an original submenu restores the cover without restarting or changing the original game.
 
 Any gameplay departure from the original requires Nell's explicit agreement (`docs/GOAL.md`).
 

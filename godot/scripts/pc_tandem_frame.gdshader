@@ -20,6 +20,8 @@ uniform bool genesis_art = false;
 uniform bool modern_armour_palette = false;
 uniform bool tactical_armour = false;
 uniform bool tactical_interior = false;
+uniform vec2 tactical_armour_shift=vec2(0.0);
+#include "res://scripts/pc_tactical_dynamics.gdshaderinc"
 uniform float gunner_pixel_aspect = 1.0;
 uniform bool cupola_rail_verified = false;
 uniform bool status_art_enabled = false;
@@ -290,6 +292,14 @@ void fragment() {
 			sample_uv = (floor(donor/vec2(320.0,200.0)*dimensions+0.0001)+0.5)/dimensions;
 		}
 		vec4 art = texture(gunner_art,sample_uv);
+		if (tactical_armour && genesis_art && pixel.y<123.0 && any(notEqual(tactical_armour_shift,vec2(0.0)))) {
+			vec2 moving=tactical_armour_sample(pixel,1.0,ui_mask,plate_mask,driver_assembly_mask,false,tactical_armour_shift);
+			if(moving.y<123.0 && !in_box(moving,vec4(camera_rect.xy,camera_rect.xy+camera_rect.zw))) {
+				// Fixed fastener centres and original donor alpha preserve coverage.
+				vec2 moving_uv=gunner_fastener(pixel,gunner_donor(moving))/vec2(320.0,200.0);
+				art.rgb=texture(gunner_art,moving_uv).rgb;
+			}
+		}
 		result.rgb = mix(result.rgb, art.rgb, art.a);
 	}
 	// Other stations may have cockpit occluders inside their view rectangle.
@@ -307,6 +317,10 @@ void fragment() {
 			if (tactical_armour) art.rgb=field_enamel(art.rgb,pixel,0.18);
 		} else if (station_art_enabled.y > 0.5 && plate == 3) {
 			vec2 donor = tactical_interior ? field_cupola_uv(pixel) : vec2(UV.x,cupola_y(pixel.y)/200.0);
+			if(tactical_armour && any(notEqual(tactical_armour_shift,vec2(0.0)))) {
+				vec2 moving=tactical_armour_sample(pixel,3.0,ui_mask,plate_mask,driver_assembly_mask,false,tactical_armour_shift);
+				donor=tactical_interior ? field_cupola_uv(moving) : vec2(moving.x/320.0,cupola_y(moving.y)/200.0);
+			}
 			art = armour_paint(texture(cupola_art,donor),donor*vec2(320.0,200.0));
 		} else if ((genesis_art || tactical_interior) && cupola_rail_verified && station_art_enabled.y > 0.5 && plate == 0 && cupola_rail_pixel(pixel)) {
 			// Complete the existing raised rail, then use its adjacent clean
@@ -316,7 +330,7 @@ void fragment() {
 			art = armour_paint(texture(cupola_art,donor),donor*vec2(320.0,200.0));
 		} else if (station_art_enabled.z > 0.5 && plate == 4 &&
 			!in_box(pixel,vec4(53.0,187.0,267.0,200.0))) {
-			vec2 donor=driver_donor(pixel);
+			vec2 donor=driver_donor(tactical_armour_sample(pixel,4.0,ui_mask,plate_mask,driver_assembly_mask,driver_assembly_enabled,tactical_armour ? tactical_armour_shift : vec2(0.0)));
 			art = armour_paint(texture(driver_art,donor),donor*vec2(320.0,200.0));
 		} else if (status_art_enabled && plate==5 && !status_live_cell(pixel)) {
 			vec2 donor = status_donor(pixel);
@@ -329,7 +343,8 @@ void fragment() {
 		vec3 claim = round(texture(driver_assembly_mask,UV).rgb*255.0);
 		if (claim.b == 255.0) {
 			float offset = claim.r+claim.g*256.0-16384.0;
-			vec2 donor=driver_donor(vec2(pixel.x-offset,pixel.y));
+			vec2 moving=tactical_armour_sample(pixel,4.0,ui_mask,plate_mask,driver_assembly_mask,true,tactical_armour ? tactical_armour_shift : vec2(0.0));
+			vec2 donor=driver_donor(vec2(moving.x-offset,moving.y));
 			vec4 art = armour_paint(texture(driver_art,donor),donor*vec2(320.0,200.0));
 			result.rgb = mix(result.rgb,art.rgb,art.a);
 		}

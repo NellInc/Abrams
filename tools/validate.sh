@@ -63,6 +63,9 @@ receipt_for() {
     pc_play_display) echo '^PC_PLAY_DISPLAY: [1-9][0-9]* checks, 0 errors;' ;;
     pc_frame_pacing) echo '^PC_FRAME_PACING: [1-9][0-9]* checks, 0 errors;' ;;
     pc_presentation_reuse) echo '^PC_PRESENTATION_REUSE: [1-9][0-9]* checks, 0 errors;' ;;
+    pc_river_viewer) echo '^PC_RIVER_VIEWER: [1-9][0-9]* checks, 0 errors$' ;;
+    pc_river_flow_gpu) echo '^PC_RIVER_FLOW: [1-9][0-9]* checks, 0 errors$' ;;
+    pc_river_performance_gpu) echo '^PC_RIVER_PERFORMANCE: [1-9][0-9]* checks, 0 errors$' ;;
     pc_live_scheduling) echo '^PC_LIVE_SCHEDULING: [1-9][0-9]* checks, 0 errors$' ;;
     pc_interface_reference) echo '^PC_INTERFACE_REFERENCE: [1-9][0-9]* checks, 0 errors$' ;;
     portable_setup) echo '^PORTABLE_SETUP_RECOVERY: PASS$' ;;
@@ -102,10 +105,11 @@ receipt_for() {
     geometry) echo '^GEOMETRY: 60000 upward normals and complete range bounds verified$' ;;
     audio) echo '^AUDIO: [1-9][0-9]* generated crew samples loaded with matching format, duration and captions$' ;;
     pc_audio) echo '^PC_AUDIO: [1-9][0-9]* checks, 0 failures$' ;;
+    pc_suno_music) echo '^PC_SUNO_MUSIC: [1-9][0-9]* checks, 0 errors$' ;;
     pc_radio) echo '^PC_RADIO: [1-9][0-9]* checks, 0 failures$' ;;
     audio_shutdown) echo '^AUDIO_SHUTDOWN: three live playback instances released before teardown$' ;;
     runtime) echo '^RUNTIME_SMOKE_PASS:' ;;
-    pc_portrait_art|pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_instrument_lock|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_audio_limiter|pc_tactical_hud|pc_tactical_effects|pc_tactical_world|pc_frontend_completeness|pc_frontdoor|pc_frontdoor_live|pc_draw_pass|pc_optional_genesis|pc_play_menu|pc_render_quality|pc_play_shortcuts|pc_bridge_transport|pc_reference_search|pc_genesis_cockpits|pc_portrait_coverage|pc_audio_mix|pc_frontend_music|pc_remaining_audio)
+    pc_portrait_art|pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_instrument_lock|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_audio_limiter|pc_tactical_hud|pc_tactical_effects|pc_tactical_world|pc_tactical_dynamics|pc_frontend_completeness|pc_frontdoor|pc_frontdoor_live|pc_draw_pass|pc_optional_genesis|pc_play_menu|pc_render_quality|pc_play_shortcuts|pc_bridge_transport|pc_reference_search|pc_genesis_cockpits|pc_portrait_coverage|pc_audio_mix|pc_frontend_music|pc_remaining_audio)
       counted "$1" ;;
     pc_suno_music) echo '^PC_SUNO_MUSIC: [1-9][0-9]* checks, 0 errors$' ;;
     # Native tier.
@@ -116,6 +120,7 @@ receipt_for() {
     pc_modern_driver_native) echo '^PC_DRIVER_PALETTE: 0 errors$' ;;
     pc_modern_cupola_native) echo '^PASS: Modern cupola palette, ownership, fixtures and restoration$' ;;
     pc_environment_polish_native) echo '^PC_ENVIRONMENT_POLISH: [1-9][0-9]* checks, 0 errors$' ;;
+    pc_tactical_dynamics_native) echo '^PC_TACTICAL_DYNAMICS: [1-9][0-9]* checks, 0 errors$' ;;
     pc_tactical_*_gpu) counted "$1" ;;
     pc_startup_splash_native) echo '^PC_STARTUP_SPLASH: [1-9][0-9]* checks, 0 errors$' ;;
     pc_frontend_scene_native) echo '^PC_FRONTEND_SCENE: [1-9][0-9]* checks, 0 errors, [1-9][0-9]* selectors, 8 missions$' ;;
@@ -271,9 +276,11 @@ run_check pc_play_display ./tools/godot.sh --headless --quit-after 1200 --script
 run_check pc_tactical_hud ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_hud.gd
 run_check pc_tactical_effects ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_effects.gd
 run_check pc_tactical_world ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_world.gd
+run_check pc_tactical_dynamics ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_tactical_dynamics.gd -- --output "$(fresh tactical-dynamics)"
 run_check pc_frame_pacing ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_frame_pacing.gd
 run_check pc_live_scheduling ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_live_scheduling.gd
 run_check pc_presentation_reuse ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_presentation_reuse.gd
+run_check pc_river_viewer ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_presentation_reuse.gd -- --river-animation
 run_check pc_optional_genesis ./tools/godot.sh --headless --script res://tests/test_pc_optional_genesis.gd
 run_check pc_play_menu ./tools/godot.sh --headless --script res://tests/test_pc_play_menu.gd
 run_check pc_frontdoor ./tools/godot.sh --headless --script res://tests/test_pc_frontdoor.gd
@@ -377,11 +384,36 @@ run_check runtime ./tools/godot.sh --headless --verbose -- --smoke-test
 TIER=native
 if [ "${VALIDATE_NATIVE:-0}" = 1 ] || [ "$LIST" = 1 ]; then
   NATIVE="--rendering-method gl_compatibility --audio-driver Dummy"
+  # Explicit dynamics clocks must also render on the real native backend.
+  # shellcheck disable=SC2086
+  run_check pc_tactical_dynamics_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_tactical_dynamics.gd -- --gpu --output "$(fresh native/tactical-dynamics)"
   # Modern's concealment guarantee lives in the GPU ownership mask; only these runs exercise it.
   # shellcheck disable=SC2086
   run_check pc_modern_native ./tools/godot.sh $NATIVE --quit-after 1200 --script res://tests/test_pc_modern.gd -- --native --output "$(fresh native/modern)"
   # shellcheck disable=SC2086
   run_check pc_modern_startup_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_startup.gd
+  if [ "$LIST" = 1 ] || [ -f local-art/pc-tactical-roster-v1/manifest.json ]; then
+    # Working if grounded-pose coverage is checked on the real native backend.
+    # shellcheck disable=SC2086
+    run_check pc_ground_crews_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_ground_crews.gd -- --output "$(fresh native/ground-crews)"
+    for shard in 0 1 2 3 4 5; do
+      if [ "$shard" = 0 ] && { [ "$LIST" = 1 ] || grep -Eq '"schema"[[:space:]]*:[[:space:]]*3([[:space:],}]|$)' local-art/pc-tactical-roster-v1/manifest.json; }; then
+        # Both complementary phases are mandatory. The same source/pack is
+        # used; three production-admission assertions and the pooled occluder
+        # witness repeat. The original deadline remains unchanged.
+        # shellcheck disable=SC2086
+        run_check pc_tactical_vehicles_native_0_scene ./tools/godot.sh $NATIVE --quit-after 1200 --script res://tests/test_pc_tactical_vehicles.gd -- --view-shard 0 --scene-only --output "$(fresh native/tactical-vehicles-0-scene)"
+        # shellcheck disable=SC2086
+        run_check pc_tactical_vehicles_native_0_views ./tools/godot.sh $NATIVE --quit-after 1200 --script res://tests/test_pc_tactical_vehicles.gd -- --view-shard 0 --defer-scene-contracts --output "$(fresh native/tactical-vehicles-0)"
+      else
+        # shellcheck disable=SC2086
+        run_check "pc_tactical_vehicles_native_$shard" ./tools/godot.sh $NATIVE --quit-after 1200 --script res://tests/test_pc_tactical_vehicles.gd -- --view-shard "$shard" --output "$(fresh native/tactical-vehicles-$shard)"
+      fi
+    done
+  elif [ -f local-art/pc-tactical-vehicles-v1/manifest.json ]; then
+    # shellcheck disable=SC2086
+    run_check pc_tactical_vehicles_native ./tools/godot.sh $NATIVE --quit-after 1200 --script res://tests/test_pc_tactical_vehicles.gd -- --output "$(fresh native/tactical-vehicles)"
+  fi
   # shellcheck disable=SC2086
   run_check pc_modern_environment_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_environment.gd -- --output "$(fresh native/modern-environment)"
   # shellcheck disable=SC2086
@@ -392,6 +424,12 @@ if [ "${VALIDATE_NATIVE:-0}" = 1 ] || [ "$LIST" = 1 ]; then
   run_check pc_modern_cupola_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_cupola.gd -- --output "$(fresh native/modern-cupola)"
   # shellcheck disable=SC2086
   run_check pc_environment_polish_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_environment_polish.gd -- --output "$(fresh native/environment-polish)"
+  # Stationary river flow must refresh both retained textures without changing source ownership.
+  # shellcheck disable=SC2086
+  run_check pc_river_flow_gpu ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_environment_polish.gd -- --river-flow-gpu --output "$(fresh native/river-flow)"
+  # Offscreen redraw suppression must preserve exact pixels, phase and source ownership.
+  # shellcheck disable=SC2086
+  run_check pc_river_performance_gpu ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_environment_polish.gd -- --river-performance --output "$(fresh native/river-performance)"
   # The Tactical shader includes compile only in the runtime-patched surface variants.
   for contract in finishgrain diffusion groundlight optics radiance sheen bevel aerial microfinish arbor grounding horizon lighting naturalism; do
     # shellcheck disable=SC2086

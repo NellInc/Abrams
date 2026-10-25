@@ -48,7 +48,8 @@ func _run() -> void:
 			canopy_high=maxf(canopy_high,shrub_vertices[i].y)
 		elif materials[i].x<0.75 and shrub_vertices[i].y==0.0: rooted_stems+=1
 	check(canopy_low>=0.0 and canopy_high<=12.5,"shrub crown must remain above ground and below half-height")
-	check(rooted_stems==50,"shorter shrub stems must still meet the ground")
+	var authored:bool=shrubs.mesh.get_meta("author_sha256","")==foliage.WORLD_AUTHOR_SHA
+	check(rooted_stems==(75 if authored else 50),"shrub branches must retain their approved grounded roots")
 	var has_ground:=false
 	var has_stem:=false
 	var lit_tones:=not materials.is_empty()
@@ -59,7 +60,7 @@ func _run() -> void:
 	check(has_ground,"soft contact footprint missing")
 	check(has_stem,"visible shrub stems missing")
 	check(lit_tones,"foliage material UV2 lost its lighting tones")
-	check(mesh_arrays[Mesh.ARRAY_VERTEX].size()<600,"shrub geometry exceeded bounded triangle budget")
+	check(mesh_arrays[Mesh.ARRAY_VERTEX].size()<=(2100 if authored else 600),"shrub geometry exceeded bounded triangle budget")
 	var normals: PackedVector3Array=mesh_arrays[Mesh.ARRAY_NORMAL]
 	var soft_leaf_normals:=false
 	var valid_normals:=true
@@ -68,9 +69,9 @@ func _run() -> void:
 		if i%3==0 and materials[i].x<0.25:
 			soft_leaf_normals=soft_leaf_normals or not normals[i].is_equal_approx(normals[i+1])
 	check(valid_normals and soft_leaf_normals,"rounded shrub normals must remain finite and unit length")
-	check(mesh_arrays[Mesh.ARRAY_VERTEX].size()==441,"rounded shrub exceeded its 147-triangle design")
+	check(mesh_arrays[Mesh.ARRAY_VERTEX].size()==(2046 if authored else 441),"shrub changed its approved authored or fallback triangle design")
 	check(foliage.plants.size()==2,"vegetation added a rendering batch")
-	check(foliage.plants[1].multimesh.mesh.surface_get_array_len(0)==96,"grass changed its 32-triangle budget")
+	check(foliage.plants[1].multimesh.mesh.surface_get_array_len(0) in [96,366],"grass changed its approved authored or fallback triangle budget")
 	var source_before:=JSON.stringify(data)
 	var buffer_before: PackedFloat32Array=shrubs.buffer.duplicate()
 	# The dummy renderer serves no per-instance reads; compare the uploaded buffer.
