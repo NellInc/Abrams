@@ -72,6 +72,29 @@ screens show the Paris-loss newspaper and then reject cold Continue with
 lifecycle, not a victorious career. Evidence:
 `artifacts/finish-abrams-20261025/campaign-tour-01/`.
 
+## Independent baseline-origin mission entry
+
+The 25 October comparison starts both pinned cores from an authentic neutral
+START state produced by the unmodified baseline. Its native format is 8;
+the tracing core's format-9 state is never relabelled or passed to the baseline.
+Both processes use the existing one-frame framebuffer-priming contract and
+identical ordinary menu inputs. Across 3,360 recorded frames, full paused-fence
+RAM, VGA-paired RAM, framebuffer and key rows match exactly. Both reach the
+initialized Mossel gunner state at original position `[79872,141312,50]`.
+The parent processes close successfully. Evidence:
+`artifacts/finish-abrams-20261025/shared-entry-comparison-02.json` and its
+baseline/trace per-frame journals.
+
+This establishes entry parity. It does not transfer a victory from another
+neutral-state origin. A separate replay of the historical Road to Bonn inputs
+from this new origin loses the tank with objective progress zero; its observer
+reports no errors. That failed outcome is retained, not promoted to a winning
+route. Winning exits and victorious career persistence remain open.
+
+Working if: entry claims refer to the exact independent-core journals, native
+state versions remain untouched, and a winning-route claim has its own actual
+surviving outcome and durable-save evidence.
+
 ## Held-control checkpoint gate
 
 ```sh

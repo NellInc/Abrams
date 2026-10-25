@@ -7312,3 +7312,21 @@ standalone rebuild, publication or new aggregate release gate.
 Working if: native and installed-bank proof remain distinct from live listening,
 genuine tilt is distinguished from smoke-only reticle elevation, and the smoke
 hitch stays open until a behavior-preserving fix passes comparable timing.
+
+## 25 October 2026: independent baseline-origin entry comparison
+
+Root directly re-read both 3,360-row journals: all full fence-RAM, paired-RAM,
+framebuffer and key records agree. Both pinned processes exit zero and reach
+fully initialized original Mossel gunner state. The shared state is an authentic
+unmodified-core format-8 neutral START snapshot, with unchanged version bytes
+and the established one-frame restore priming. Evidence is retained under
+`artifacts/finish-abrams-20261025/shared-entry-*-02/`.
+
+The separate historical Bonn input replay is a new outcome attempt from this
+origin. It loses the tank at objective progress zero, then reaches original END
+and START. Its observer retains 4,812 loops, 4,831 passes and no error. It proves
+neither a victory nor winning-route parity. The live Mossel attempt and positive
+mission/campaign outcome coverage remain unfinished. No public delivery occurred.
+
+Working if: independent entry parity and the failed outcome remain separately
+labelled, and neither is used to close a surviving-victory or campaign gate.
