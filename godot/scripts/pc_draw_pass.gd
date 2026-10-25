@@ -71,6 +71,7 @@ var tactical_vehicle_view = preload("res://scripts/pc_tactical_vehicle_view.gd")
 var tactical_material_textures: Dictionary = {}
 var tactical_material_atlas: Texture2D
 var modern_prewarmed := false
+var modern_prewarm_rows:Array=[]
 var modern_status := "Modern assets unavailable"
 var modern_polygon_count := 0
 var modern_triangle_count := 0
@@ -179,6 +180,7 @@ func load_modern_assets(root: String) -> bool:
 	tactical_foliage.set_material_atlas(tactical_material_atlas)
 	modern_status = modern_assets.status
 	modern_prewarmed = false
+	modern_prewarm_rows.clear()
 	if loaded and DisplayServer.get_name()!="headless":
 		modern_prewarmed = _prewarm_modern()
 		if not modern_prewarmed:
@@ -743,7 +745,8 @@ func _prewarm_modern() -> bool:
 	var warm := RenderingServer.viewport_create()
 	var scenario := RenderingServer.scenario_create()
 	var warm_camera := RenderingServer.camera_create()
-	RenderingServer.viewport_set_size(warm,4,4)
+	RenderingServer.viewport_set_size(warm,64,64)
+	RenderingServer.viewport_set_transparent_background(warm,true)
 	RenderingServer.viewport_set_scenario(warm,scenario)
 	RenderingServer.viewport_attach_camera(warm,warm_camera)
 	RenderingServer.camera_set_perspective(warm_camera,75.0,0.05,16.0)
@@ -752,31 +755,81 @@ func _prewarm_modern() -> bool:
 	var arrays:=[]
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX]=PackedVector3Array([Vector3(-1,-1,-2),Vector3(1,-1,-2),Vector3(0,1,-2)])
-	arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2(0,20),Vector2(0,20),Vector2(0,20)])
+	arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2(0,52),Vector2(0,52),Vector2(0,52)])
 	arrays[Mesh.ARRAY_TEX_UV2]=PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO])
 	var mesh:=ArrayMesh.new()
 	var programs:Array=[_modern_shader,_groundlight_shader,ModernOwnership.ShaderSource]
 	if tactical_vehicle_assets.ready:programs.append(preload("res://scripts/pc_tactical_vehicles.gdshader"))
-	for shader in programs:
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-		var material:=ShaderMaterial.new()
-		material.shader=shader
-		if shader==_modern_shader or shader==_groundlight_shader:
-			material.set_shader_parameter("modern_colours",modern_assets.colour_texture)
-			material.set_shader_parameter("modern_colour_count",float(modern_assets.colour_indices.size()))
-		elif shader==preload("res://scripts/pc_tactical_vehicles.gdshader"):
-			material.set_shader_parameter("tactical_vehicle_albedo",tactical_vehicle_assets.albedo_atlas)
-			material.set_shader_parameter("tactical_vehicle_normal",tactical_vehicle_assets.normal_atlas)
-			material.set_shader_parameter("tactical_vehicle_orm",tactical_vehicle_assets.orm_atlas)
-		mesh.surface_set_material(mesh.get_surface_count()-1,material)
+	programs.append(TacticalEffects.ShaderSource)
+	var mask:=Image.create(1,1,false,Image.FORMAT_RGBA8)
+	mask.fill(Color(1.0/255.0,0,8.0/255.0,1))
+	var ownership_texture:=ImageTexture.create_from_image(mask)
+	var roots:=Image.create(2,1,false,Image.FORMAT_RGBAF)
+	roots.set_pixel(0,0,Color(1,0,0.37,0));roots.set_pixel(1,0,Color(0.5,0.5,0.5,-1))
+	var roots_texture:=ImageTexture.create_from_image(roots)
+	var terrain:=Image.create(2,1,false,Image.FORMAT_RGBA8);terrain.fill(Color.WHITE)
+	var terrain_texture:=ImageTexture.create_from_image(terrain)
 	var instance:=RenderingServer.instance_create()
 	RenderingServer.instance_set_base(instance,mesh.get_rid())
 	RenderingServer.instance_set_scenario(instance,scenario)
 	RenderingServer.instance_set_transform(instance,Transform3D.IDENTITY)
-	RenderingServer.force_draw(false)
-	RenderingServer.force_sync()
-	var image:=RenderingServer.texture_2d_get(RenderingServer.viewport_get_texture(warm))
-	var complete:=image!=null and image.get_size()==Vector2i(4,4)
+	var complete:=true
+	for shader in programs:
+		var material:=ShaderMaterial.new()
+		material.shader=shader
+		var label:="ownership"
+		arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2(0,52),Vector2(0,52),Vector2(0,52)])
+		if shader==_modern_shader or shader==_groundlight_shader:
+			label="tactical-daylight" if shader==_groundlight_shader else "tactical-smoke-surface"
+			material.set_shader_parameter("modern_colours",modern_assets.colour_texture)
+			material.set_shader_parameter("modern_colour_count",float(modern_assets.colour_indices.size()))
+			# Exercise the production Tactical controls, not the defaults that
+			# leave modern_active false. Smoke removes the observed blue horizon
+			# and selects the fallback surface program at its first visible frame.
+			material.set_shader_parameter("modern_active",true)
+			material.set_shader_parameter("tactical_landscape",true)
+			material.set_shader_parameter("detail_levels",17.0)
+			material.set_shader_parameter("camera_basis_ready",true)
+			material.set_shader_parameter("camera_to_local",Basis.IDENTITY)
+			material.set_shader_parameter("world_origin",Vector3(0,0,64))
+			material.set_shader_parameter("source_ownership",ownership_texture)
+			material.set_shader_parameter("source_horizon_line",Vector3(0,1,0) if shader==_groundlight_shader else Vector3.ZERO)
+			material.set_shader_parameter("tactical_realism_ready",tactical_material_atlas!=null)
+			if tactical_material_atlas!=null:material.set_shader_parameter("tactical_realism_atlas",tactical_material_atlas)
+			if modern_assets.tree_texture!=null:material.set_shader_parameter("modern_tree",modern_assets.tree_texture)
+			material.set_shader_parameter("tactical_material_ready",tactical_material_textures.size()==3)
+			for name in tactical_material_textures:material.set_shader_parameter("tactical_"+str(name)+"_detail",tactical_material_textures[name])
+		elif shader==preload("res://scripts/pc_tactical_vehicles.gdshader"):
+			label="tactical-vehicle"
+			material.set_shader_parameter("tactical_vehicle_albedo",tactical_vehicle_assets.albedo_atlas)
+			material.set_shader_parameter("tactical_vehicle_normal",tactical_vehicle_assets.normal_atlas)
+			material.set_shader_parameter("tactical_vehicle_orm",tactical_vehicle_assets.orm_atlas)
+			material.set_shader_parameter("source_ownership",ownership_texture)
+			material.set_shader_parameter("instance_owner",1.0)
+			material.set_shader_parameter("camera_basis_ready",true)
+			material.set_shader_parameter("camera_to_local",Basis.IDENTITY)
+			material.set_shader_parameter("world_origin",Vector3(0,0,64))
+			material.set_shader_parameter("source_group",true)
+			material.set_shader_parameter("source_group_basis",Basis(Vector3(64,0,0),Vector3(0,0,64),Vector3(0,-64,0)))
+		elif shader==TacticalEffects.ShaderSource:
+			label="tactical-particles"
+			arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2(-1,-1),Vector2(1,-1),Vector2(0,1)])
+			material.set_shader_parameter("source_ownership",ownership_texture)
+			material.set_shader_parameter("allowed_terrain",terrain_texture)
+			material.set_shader_parameter("owner_count",2.0)
+			material.set_shader_parameter("roots",roots_texture)
+			material.set_shader_parameter("root_width",2.0)
+			material.set_shader_parameter("plume_phase",0.3)
+		else:
+			arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2(1.0/255.0,0),Vector2(1.0/255.0,0),Vector2(1.0/255.0,0)])
+		mesh.clear_surfaces();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+		mesh.surface_set_material(0,material)
+		var begin:=Time.get_ticks_usec()
+		RenderingServer.force_draw(false);RenderingServer.force_sync()
+		var image:=RenderingServer.texture_2d_get(RenderingServer.viewport_get_texture(warm))
+		var admitted:bool=image!=null and image.get_size()==Vector2i(64,64) and image.get_pixel(32,32).a>0.01
+		modern_prewarm_rows.append({"program":label,"render_usec":Time.get_ticks_usec()-begin,"admitted":admitted})
+		complete=complete and admitted
 	RenderingServer.viewport_set_active(warm,false)
 	RenderingServer.free_rid(instance)
 	RenderingServer.free_rid(warm_camera)

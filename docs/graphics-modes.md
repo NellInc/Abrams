@@ -1108,6 +1108,34 @@ motion, rotating the optic keeps the sun world-fixed, the original impact phases
 select their own colour progression, and paired predecessor diagnostics retain
 exact particle opacity and material visibility masks.
 
+### Tactical first-use warm-up and source-root plume flow
+
+Startup now draws the daylight and smoke-fallback surface programs with their
+production Tactical controls. It also draws ownership, vehicle and particle
+programs. Each draw uses an isolated transparent 64-square target and must
+produce admitted fragments. Temporary resources are released without advancing
+the guest, live effect clocks or live ownership masks. This closes the previous
+warm-up gap: submitting a program with `modern_active=false` did not exercise
+its Tactical use when the original smoke background removed the blue horizon.
+
+Rising plume detail follows world-up projected at its observed source root,
+including perspective in pitched and off-centre views. Deployed smoke uses
+each puff's root, exhaust uses the visible vent, and source-smoke embellishment
+uses its registered sprite centre. Flow fades before world-up becomes
+unprojectable, keeping zenith crossings continuous. Original silhouette noise
+and opacity remain in their preceding coordinates.
+
+The moving billow field supplies analytic slopes from its existing four noise
+hashes. Its warp Jacobian and source-root tangent frame orient a bounded lighting
+normal perturbation. All moving colour and fold contributions share the same
+footprint and zenith fade. There are no extra noise samples, post-discard screen
+derivatives, displaced vertices or changed alpha expressions.
+
+Working if: startup admits every required program before play, the first smoke
+surface transition avoids the previous large first-use stall, projected flow
+matches the original camera at pitched/off-centre roots, and moving-fold colour
+retains exact predecessor opacity and ownership.
+
 ## Tactical doors, timber and stone trim
 
 1. Existing doors on the seven admitted intact building shapes gain subtle

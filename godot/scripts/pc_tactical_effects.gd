@@ -167,6 +167,8 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 	# +X is right, +Y down and +Z toward the optic, matching the puff dome.
 	var sun:Vector3=(to_view*Vector3(-0.58,-0.34,0.74)).normalized()
 	material.set_shader_parameter("plume_sun",Vector3(sun.x,-sun.z,-sun.y))
+	material.set_shader_parameter("plume_world_up",(to_view*Vector3(0,0,1)).normalized())
+	material.set_shader_parameter("plume_projection",Vector4(_clip.size.x,_clip.size.y,_clip.position.x-float(_frame.center[0]),float(_frame.center[1])-_clip.position.y)/float(_frame.focal_pixels))
 	var allowed:=Image.create(data.objects.size()+1,1,false,Image.FORMAT_RGBA8)
 	allowed.fill(Color.BLACK)
 	allowed.set_pixel(0,0,Color.WHITE)

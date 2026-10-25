@@ -4,12 +4,14 @@ const Frame=preload("res://scripts/pc_tandem_frame.gd")
 const Effects=preload("res://scripts/pc_tactical_effects.gd")
 const Modern=preload("res://scripts/pc_modern_assets.gd")
 const Camera=preload("res://scripts/pc_camera.gd")
+const Geometry=preload("res://scripts/pc_surface_geometry.gd")
 var checks:=0
 var errors:Array[String]=[]
 var output:="user://tactical-dynamics"
 var images:Dictionary={}
 var baseline_shader:Shader
 var baseline_particles:Shader
+var plume_refinement := false
 
 class ImpactArt extends RefCounted:
 	func mapping(object:Dictionary,_frame:Dictionary,_palette:Array) -> Dictionary:
@@ -92,6 +94,45 @@ func alpha_equal(a:Image,b:Image) -> bool:
 		for x in a.get_width():
 			if a.get_pixel(x,y).a!=b.get_pixel(x,y).a:return false
 	return true
+
+func plume_math_gpu() -> void:
+	var view:=SubViewport.new();view.size=Vector2i(16,16);view.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(view)
+	var face:=ColorRect.new();face.size=Vector2(16,16);view.add_child(face)
+	var material:=ShaderMaterial.new();face.material=material
+	var source:String=Effects.ShaderSource.code
+	var start:=source.find("float hash(")
+	var helpers:=source.substr(start,source.find("float owner_at(",start)-start)
+	start=source.find("vec3 plume_frame_at(")
+	helpers+=source.substr(start,source.find("// Tactical puff colour only.",start)-start)
+	var prefix:="shader_type canvas_item;render_mode unshaded;\nuniform vec3 plume_world_up;uniform vec4 plume_projection;\n"+helpers
+	# Central differences challenge the production value-noise derivative and
+	# complete warp Jacobian, including both axes and different temporal phases.
+	for point:Vector2 in [Vector2(0.23,0.47),Vector2(1.25,-2.4),Vector2(1.999,0.001)]:
+		for phase:float in [0.0,2.0,TAU-0.001]:
+			var shader:=Shader.new()
+			shader.code=prefix+"void fragment(){vec2 p=vec2(%f,%f);float t=%f;float s=0.37;vec3 g=plume_billow(p,t,s);vec2 e=vec2(0.001,0.0);vec2 fd=vec2(plume_billow(p+e,t,s).x-plume_billow(p-e,t,s).x,plume_billow(p+e.yx,t,s).x-plume_billow(p-e.yx,t,s).x)/0.002;vec2 a=t+p.yx*vec2(1.8,1.5);float v=noise(p*3.0+s*7.0+vec2(sin(a.x),cos(a.y))*0.22);COLOR=vec4(vec3(0.5)+vec3(g.yz-fd,g.x-v)*0.1,1.0);}"%[point.x,point.y,phase]
+			material.shader=shader
+			var colour:Color=(await snapshot(view)).get_pixel(8,8)
+			check(Vector3(colour.r,colour.g,colour.b).distance_to(Vector3.ONE*0.5)<0.009,"analytic fold gradient matches finite differences and incumbent noise value")
+	var shader:=Shader.new();shader.code=prefix+"uniform vec2 test_root;void fragment(){vec3 f=plume_frame_at(test_root);COLOR=vec4(f.xy*0.5+0.5,f.z,1.0);}"
+	material.shader=shader
+	var frame:={"center":[160,100],"focal_pixels":192.0}
+	material.set_shader_parameter("plume_projection",Vector4(320,200,-160,100)/192.0)
+	for basis:Basis in [Basis.IDENTITY,Basis(Vector3(0,1,0),PI/2.0),Basis(Vector3.RIGHT,0.65),Basis(Vector3(0,1,0),0.45)*Basis(Vector3.RIGHT,0.6)]:
+		var up:Vector3=(basis*Vector3(0,0,1)).normalized()
+		material.set_shader_parameter("plume_world_up",up)
+		for raw:Vector3 in [Vector3(-120,600,40),Vector3(150,600,-30),Vector3(0,600,0)]:
+			var at:Vector2=Geometry.project([raw.x,raw.y,raw.z],frame)
+			var tip:Vector3=raw+up*0.01
+			var direction:Vector2=(Geometry.project([tip.x,tip.y,tip.z],frame)-at).normalized()
+			material.set_shader_parameter("test_root",at/Vector2(320,200))
+			var colour:Color=(await snapshot(view)).get_pixel(8,8)
+			check(Vector2(colour.r*2.0-1.0,colour.g*2.0-1.0).distance_to(direction)<0.02,"world-up flow matches perspective projection at pitched/rolled off-centre roots")
+	material.set_shader_parameter("test_root",Vector2(0.5,0.5))
+	for x:float in [-0.01,0.0,0.01]:
+		material.set_shader_parameter("plume_world_up",Vector3(x,1,0).normalized())
+		check((await snapshot(view)).get_pixel(8,8).b==0.0,"unprojectable world-up fades flow before an axis flip")
+	view.queue_free();await process_frame
 
 func armour_gpu() -> void:
 	var view:=SubViewport.new();view.size=Vector2i(640,400);view.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(view)
@@ -199,8 +240,9 @@ func impacts_gpu() -> void:
 			effects.material.shader=baseline_particles
 			var incumbent:=await snapshot(view)
 			check(alpha_equal(before,incumbent),"donor %d: predecessor opacity and coverage exact"%donor)
-			if donor in [0,1,2]:
-				check(before.get_data()!=incumbent.get_data(),"donor %d: visible lighting/phase refinement"%donor)
+			var changed_expected:bool=donor==2 if plume_refinement else donor in [0,1,2]
+			check((before.get_data()!=incumbent.get_data())==changed_expected,"donor %d: scoped plume refinement or exact hot-effect control"%donor)
+			if changed_expected:
 				incumbent.save_png(output.path_join("donor-%d-before.png"%donor))
 				before.save_png(output.path_join("donor-%d-after.png"%donor))
 			effects.material.shader=candidate
@@ -242,6 +284,19 @@ func impacts_gpu() -> void:
 			var relit:=await snapshot(view)
 			check(relit.get_data()!=before.get_data() and alpha_equal(relit,before),"camera rotation relights smoke, preserving opacity")
 			check(effects.node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]==geometry,"sun transform never moves plume geometry")
+			var current:Shader=effects.material.shader
+			check(current.code.contains("emitter.y,fold_light)"),"fold-light diagnostic targets the production call")
+			var neutral:=Shader.new();neutral.code=current.code.replace("emitter.y,fold_light)","emitter.y,vec2(0.0))")
+			effects.material.shader=neutral
+			var unlit_folds:=await snapshot(view)
+			check(relit.get_data()!=unlit_folds.get_data() and alpha_equal(relit,unlit_folds),"moving-fold lighting changes colour alone")
+			effects.material.shader=current
+			check(relit.get_data()==(await snapshot(view)).get_data(),"fold lighting restores exactly")
+			effects.material.set_shader_parameter("plume_world_up",Vector3(0,1,0))
+			effects.material.set_shader_parameter("plume_phase",0.0)
+			var zenith:=await snapshot(view)
+			effects.material.set_shader_parameter("plume_phase",2.0)
+			check(zenith.get_data()==(await snapshot(view)).get_data(),"zenith fallback freezes all rotated colour and fold contributions")
 		packet.objects=[];effects.prepare(packet,{"origin":Vector3.ZERO,"inverse":Basis.IDENTITY},ownership,Modern.new(),ImpactArt.new())
 		check(not effects.visible and not effects.advance_dynamics(0.05),"source disappearance removes impact immediately")
 		packet.objects=[{"donor":0,"pointer":99,"polygons":[]}]
@@ -249,6 +304,7 @@ func impacts_gpu() -> void:
 
 func run() -> void:
 	var args:=OS.get_cmdline_user_args()
+	plume_refinement="--plume-refinement" in args
 	if "--output" in args:output=args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	if "--baseline-shader" in args:
@@ -259,7 +315,9 @@ func run() -> void:
 	if "--gpu" in args or OS.has_feature("web"):
 		var gpu:bool=DisplayServer.get_name()!="headless" and RenderingServer.get_current_rendering_method()=="gl_compatibility" and not RenderingServer.get_video_adapter_name().is_empty()
 		check(gpu,"GPU verification requires real OpenGL/WebGL, never dummy rendering")
-		if gpu:await armour_gpu();await impacts_gpu()
+		if gpu:
+			await armour_gpu();await impacts_gpu()
+			if plume_refinement:await plume_math_gpu()
 	print("PC_TACTICAL_DYNAMICS: %d checks, %d errors"%[checks,errors.size()])
 	var report:={"checks":checks,"errors":errors,"backend":DisplayServer.get_name(),"web":OS.has_feature("web"),"renderer":RenderingServer.get_current_rendering_method(),"adapter":RenderingServer.get_video_adapter_name(),"arguments":OS.get_cmdline_args()}
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify(report,"  "))

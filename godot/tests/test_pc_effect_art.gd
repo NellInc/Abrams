@@ -19,6 +19,7 @@ var backdrop: Image
 var modern_contour_pixels := 0
 var retained_source_pixels := 0
 var particle_material_polish := false
+var plume_refinement := false
 var source_material_polish := false
 var surface_baseline := "res://scripts/pc_surface.gdshader"
 var particle_baseline := "res://scripts/pc_tactical_effects.gdshader"
@@ -117,6 +118,7 @@ func run() -> void:
 		if "--baseline-surface" in args:surface_baseline=args[args.find("--baseline-surface")+1]
 		if "--baseline-particles" in args:particle_baseline=args[args.find("--baseline-particles")+1]
 		particle_material_polish = "--particle-materials" in args
+		plume_refinement = "--plume-refinement" in args
 		source_material_polish = "--source-materials" in args
 		await tactical_particles(directory)
 		finish()
@@ -320,14 +322,15 @@ func particle_material_pair(name: String, after: Image, kind: int = -1) -> void:
 	var before := await particle_shader_capture(before_code)
 	var changed := image_difference(before,after)
 	var visible_finish := name != "effect-17"
-	check(changed>10 if visible_finish else changed==0, name+": visible finish or exact hollow-source control")
+	if plume_refinement and name=="effect-15":visible_finish=false
+	check(changed>10 if visible_finish else changed==0, name+": expected colour change or exact unchanged-source control")
 	# Rendering both actual shaders in white exposes their composited opacity.
 	# Identity protects density, feathering, overlap, clipping and ownership.
 	check(before_code.contains(colour) and after_code.contains(colour), name+": opacity diagnostic targets production output")
 	var before_mask := await particle_shader_capture(before_code.replace(colour,"ALBEDO=vec3(1.0);"))
 	var after_mask := await particle_shader_capture(after_code.replace(colour,"ALBEDO=vec3(1.0);"))
 	check(before_mask.get_data()==after_mask.get_data(), name+": particle opacity and coverage exact")
-	if not visible_finish:
+	if name=="effect-17":
 		view.tactical_effects.visible=false
 		await process_frame
 		RenderingServer.force_draw(false)
@@ -341,6 +344,8 @@ func particle_material_pair(name: String, after: Image, kind: int = -1) -> void:
 	RenderingServer.force_draw(false)
 	RenderingServer.force_sync()
 	particle_material_rows.append({"case":name,"changed_pixels":changed,"visible_finish":visible_finish,"opacity_and_coverage_exact":true})
+	before.save_png(output.path_join(name+"-particles-before.png"))
+	after.save_png(output.path_join(name+"-particles-after.png"))
 	JavaScriptBridge.eval("window.particleMaterialImages=window.particleMaterialImages||{};window.particleMaterialImages["+JSON.stringify(name)+"]="+JSON.stringify([Marshalls.raw_to_base64(before.save_png_to_buffer()),Marshalls.raw_to_base64(after.save_png_to_buffer())]))
 
 func source_material_pair(name: String) -> void:
@@ -365,7 +370,8 @@ func source_material_pair(name: String) -> void:
 			else:images.append(image)
 	check(masks[0].get_data()==masks[1].get_data(),name+": source cutout, owner and outside effect exact")
 	var changed:=image_difference(images[0],images[1])
-	check(changed>10 if name in ["effect-15","effect-16"] else changed==0,name+": registered impact phase refined, unrelated source effects exact")
+	var changed_expected:=not plume_refinement and name in ["effect-15","effect-16"]
+	check(changed>10 if changed_expected else changed==0,name+": registered impact phase refined, unrelated source effects exact")
 	if name in ["effect-15","effect-16"]:
 		images[0].save_png(output.path_join(name+"-before.png"));images[1].save_png(output.path_join(name+"-after.png"))
 	material.shader=current

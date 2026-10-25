@@ -72,6 +72,8 @@ func run() -> void:
 	check(effects._plume_phase==0.0 and effects.material.get_shader_parameter("plume_phase")==0.0,"timeline reset clears plume phase")
 	var expected_sun:=Vector3(-0.58,-0.74,0.34).normalized()
 	check(effects.material.get_shader_parameter("plume_sun").is_equal_approx(expected_sun),"world sun maps to the source camera's screen-facing frame")
+	check(effects.material.get_shader_parameter("plume_world_up")==Vector3(0,0,1),"identity source camera retains world-up")
+	check(effects.material.get_shader_parameter("plume_projection")==Vector4(256,97,-127,48)/128.0,"root projection retains inclusive source clip, centre and focal length")
 	# Fumes stay inside the rectangle the original drew this vehicle into; the
 	# shader then admits only its own painted pixels, never sky or a crest.
 	var clip:=Rect2(Vector2(frame.clip[0],frame.clip[1]),Vector2(frame.clip[2]-frame.clip[0]+1,frame.clip[3]-frame.clip[1]+1))

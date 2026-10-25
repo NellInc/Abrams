@@ -6932,3 +6932,46 @@ Evidence: `artifacts/full-suite-20261025/` and
 `artifacts/validation-20261025T105313Z/`. Failed attempts and fixture preimages
 remain retained. Working if: the final coherent candidate completes the unchanged
 default/native/live gate with its completion receipt and terminal exit zero.
+
+## 2026-10-25: Tactical warm-up, projected plume flow and fold lighting
+
+Nell approved all three follow-ups, preserving original timing and visibility.
+The isolated pre-tree warm-up now exercises both Tactical surface programs,
+ownership, vehicles and particles with admitted fragments and production controls.
+It frees its temporary rendering resources without touching live effects, guest
+frames or masks. Source-root perspective projection orients plume colour flow;
+analytic derivatives of the existing billow hashes light moving folds. Bounded
+relief, footprint filtering and zenith fading affect RGB alone.
+
+The baseline reproduced a 721.750 ms display interval at first smoke, sequence
+1321, coincident with the daylight-to-smoke-fallback surface switch. The first
+new-program native process measured 108.012 ms there; a repeat measured 108.147
+ms. Display p95 was 25.303 ms before, 24.696/21.946 ms after. These are bounded
+local measurements, with a residual first-smoke delay. Explicit warm-up took
+2.889/1.233 seconds before play. No shared driver caches were cleared; Compatibility
+pipeline counters returned zero and cannot establish compilation attribution.
+A sustained FPS gain or universally cold driver-cache result is not established.
+
+All 1,020 original packets, RAM/video audits, station/position samples and final
+original PNG bytes match in all three timing runs. Each request remains one
+original frame, fully focused, with exact controls and all four stations. Actual
+1280x960 presentation, 5x world scale, 4x MSAA and 16x filtering are unchanged.
+PNG-producing visual runs are separate from performance acceptance.
+
+Headless checks pass: effects 42, dynamics 167, draw pass 53 and graphics modes
+18,629. Native Compatibility checks pass: dynamics 264, effect art 346 and Modern
+159,125, plus pre-tree startup with every program admitted and untouched effect
+clocks. Paired production-shader renders retain exact opacity/coverage for smoke,
+missile trails and diesel exhaust, and exact source-effect cutouts. Native GPU
+finite differences cover warped gradients and pitched/rolled/off-centre projection.
+Actual-game captures cover smoke, exhaust and impact phases. Additional ordinary
+C/KP8/KP2 routes did not expose a pitched source camera, so live tilted-sight
+reachability is unverified; the controlled GPU projection check is separate.
+Reference inventory remains unchanged.
+
+Evidence and retained unsuccessful sight probes:
+`artifacts/tactical-plume-followup-20261025/`. This is local source work for
+`Play.command`; standalone/web releases are unchanged. The full-suite owner
+retains the coherent aggregate and remote-push gate. Working if: the first-smoke
+transition retains its measured reduction, all required warm-up paths admit real
+fragments, and predecessor timing, ownership and opacity checks stay exact.
