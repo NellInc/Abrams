@@ -38,6 +38,7 @@ var effect_studies := {}
 var display_rows:Array=[]
 var frame_telemetry := false
 var presentation_load_ms := 0.0
+var neutral_sight_y := NAN
 
 func _load_world_presentation(directory:String,args:Array) -> void:
 	var begin:=Time.get_ticks_usec()
@@ -52,7 +53,7 @@ func surface_shader_tag() -> String:
 	return "source-fallback"
 
 func _displayed() -> void:
-	if profile_begin==0 or capture_done:return
+	if profile_begin==0 or capture_done or not bridge.failure.is_empty():return
 	var now := Time.get_ticks_usec()
 	if display_previous>0:
 		var interval:float=(now-display_previous)/1000.0
@@ -73,12 +74,19 @@ func _displayed() -> void:
 		if effects.counts.get("smoke",0)>0:labels.append("screening-smoke")
 		var world_up:Vector3=effects.material.get_shader_parameter("plume_world_up")
 		if effects.counts.get("smoke",0)>0 and absf(world_up.y)>0.03:labels.append("smoke-pitched-up" if world_up.y>0.0 else "smoke-pitched-down")
+		# These gunner probes raised/lowered the verified reticle with a level
+		# observed camera. Keep reticle shift separate from matrix pitch.
+		var reticle:Dictionary=last_profile_message.get("presentation",{}).get("reticle",{}) if last_profile_message.get("presentation",{}).get("reticle") is Dictionary else {}
+		var sight_y:float=float(reticle.get("center_y",-1))
+		if last_profile_message.get("state",{}).get("station")=="gunner" and sight_y>=0:
+			if is_nan(neutral_sight_y):neutral_sight_y=sight_y
+			if effects.counts.get("smoke",0)>0 and absf(sight_y-neutral_sight_y)>4.0:labels.append("smoke-aim-raised" if sight_y<neutral_sight_y else "smoke-aim-lowered")
 		if effects.counts.get("exhaust",0)>0:labels.append("exhaust")
 		for puff:Array in effects.puffs:
 			if float(puff[10])>=0.0:labels.append("impact-%d"%int(puff[10]))
 		for label:String in labels:
 			if effect_studies.has(label):continue
-			effect_studies[label]={"sequence":last_profile_message.get("sequence"),"plume_phase":effects._plume_phase,"counts":effects.counts.duplicate(),"camera_world_up":[world_up.x,world_up.y,world_up.z],"camera_center":effects._frame.center.duplicate()}
+			effect_studies[label]={"sequence":last_profile_message.get("sequence"),"plume_phase":effects._plume_phase,"counts":effects.counts.duplicate(),"camera_world_up":[world_up.x,world_up.y,world_up.z],"camera_center":effects._frame.center.duplicate(),"reticle_center_y":sight_y}
 			root.get_texture().get_image().save_png(output.path_join(label+"-in-game.png"))
 			FileAccess.open(output.path_join(label+"-packet.json"),FileAccess.WRITE).store_string(JSON.stringify(last_profile_message))
 
@@ -198,6 +206,11 @@ func replay_input(keys: Array) -> void:
 	Input.flush_buffered_events()
 
 func _apply_sample(message: Dictionary) -> void:
+	if profile_begin!=0 and interactive_clock and fast_forward!=1:
+		bridge.failure="live profiler requires normal transport speed"
+		capture=true
+		capture_done=false
+		return
 	last_profile_message=message
 	if profile_begin!=0 and not replay_keys.is_empty() and int(message.sequence)>=warmup_sequence:
 		var index := int(message.sequence)-warmup_sequence
@@ -226,7 +239,13 @@ func _apply_sample(message: Dictionary) -> void:
 		else:_begin_profile(end)
 		return
 	if root.has_focus():focused_samples+=1
-	var draw_sequence: int=int(previous_presentation.get("draw_pass",{}).get("sequence",-1))
+	var measured_draw=previous_presentation.get("draw_pass")
+	if not measured_draw is Dictionary:
+		bridge.failure="live profiler lost the original draw-pass context"
+		capture=true
+		capture_done=false
+		return
+	var draw_sequence: int=int(measured_draw.get("sequence",-1))
 	if draw_sequence>=0:distinct_draw_passes[draw_sequence]=true
 	if diagnostic_draws.size()<2 and (diagnostic_draws.is_empty() or diagnostic_draws[-1].sequence!=draw_sequence):
 		diagnostic_draws.append(previous_presentation.get("draw_pass",{}).duplicate(true))
@@ -281,7 +300,7 @@ func _process(delta: float) -> bool:
 	var count := profile_rows.size()
 	var result := super._process(delta)
 	if awaiting_profile_focus and not closing and bridge.failure.is_empty():
-		if not root.has_focus():profile_focus_since=0
+		if not root.has_focus() or fast_forward!=1:profile_focus_since=0
 		elif profile_focus_since==0:profile_focus_since=Time.get_ticks_msec()
 		elif Time.get_ticks_msec()-profile_focus_since>=250:_begin_profile(Time.get_ticks_usec())
 	if profile_rows.size()>count: profile_rows[-1].process_ms=(Time.get_ticks_usec()-start)/1000.0

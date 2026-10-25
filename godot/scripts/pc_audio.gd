@@ -50,6 +50,55 @@ var current_loops: Dictionary = {}
 var continuing_timeline := false
 const LIMITER_CEILING_DB := -1.0
 var presentation_bus := ""
+# Optional private recordings never enter tracked assets or web bundles.
+const RECORDED_EFFECT_FRAMES := {"cannon":115200,"machinegun":10560,"impact":134400,"smoke":62400,"engine":96000,"turret":96000}
+var recorded_effect_directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-recorded-effects-v1")
+var recorded_effect_failure := ""
+var recorded_effect_streams: Dictionary = {}
+var recorded_effects_checked := false
+
+func _recorded_effect_error(reason:String) -> bool:
+	if recorded_effect_failure.is_empty():
+		recorded_effect_failure=reason
+		push_warning("Private effects ignored: "+reason)
+	return false
+
+func _prewarm_recorded_effects() -> bool:
+	if OS.has_feature("web") or recorded_effect_directory.is_empty():return false
+	if recorded_effects_checked:return not recorded_effect_streams.is_empty()
+	recorded_effects_checked=true
+	var manifest_path:=recorded_effect_directory.path_join("manifest.json")
+	if not FileAccess.file_exists(manifest_path):return false
+	if FileAccess.get_size(manifest_path)>65536:return _recorded_effect_error("manifest too large")
+	var parser:=JSON.new()
+	if parser.parse(FileAccess.get_file_as_string(manifest_path))!=OK:return _recorded_effect_error("invalid manifest JSON")
+	var manifest=parser.data
+	if not manifest is Dictionary or manifest.get("schema")!=1 or manifest.get("kind")!="private authored recording effects" or not manifest.get("cues") is Dictionary:
+		return _recorded_effect_error("invalid manifest")
+	if manifest.cues.size()!=RECORDED_EFFECT_FRAMES.size():return _recorded_effect_error("six fixed effects required")
+	for cue in manifest.cues:
+		if cue not in RECORDED_EFFECT_FRAMES:return _recorded_effect_error("unsupported effect")
+	var pending:Dictionary={}
+	for cue:String in RECORDED_EFFECT_FRAMES:
+		var entry=manifest.cues.get(cue)
+		if not entry is Dictionary or entry.get("file")!=cue+".wav" or not entry.get("sha256") is String:
+			return _recorded_effect_error("invalid entry: "+cue)
+		var path:=recorded_effect_directory.path_join(cue+".wav")
+		if not FileAccess.file_exists(path) or FileAccess.get_size(path)>2097152:return _recorded_effect_error("missing or oversized PCM: "+cue)
+		if FileAccess.get_sha256(path)!=entry.sha256:return _recorded_effect_error("hash mismatch: "+cue)
+		var stream:=AudioStreamWAV.load_from_file(path)
+		if stream==null or stream.format!=AudioStreamWAV.FORMAT_16_BITS or stream.mix_rate!=48000 or stream.stereo or stream.data.size()!=int(RECORDED_EFFECT_FRAMES[cue])*2:
+			return _recorded_effect_error("PCM format or duration differs: "+cue)
+		stream.loop_mode=AudioStreamWAV.LOOP_FORWARD if cue in ["engine","turret"] else AudioStreamWAV.LOOP_DISABLED
+		stream.loop_begin=0
+		stream.loop_end=int(RECORDED_EFFECT_FRAMES[cue])
+		pending[cue]=stream
+	# Publish atomically, so a bad last file cannot leave a mixed partial bank.
+	recorded_effect_streams=pending
+	return true
+
+func get_stream(cue:String) -> AudioStream:
+	return recorded_effect_streams[cue] if recorded_effect_streams.has(cue) else super.get_stream(cue)
 
 func _create_presentation_bus() -> void:
 	# Limit only this PC presentation. Never modify Master or the range mixer.
@@ -103,6 +152,7 @@ func set_mix(settings: Dictionary) -> bool:
 
 func _ready() -> void:
 	super._ready()
+	if _prewarm_recorded_effects():engine.stream=recorded_effect_streams.engine
 	radio_catalogue=JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_radio_voice_script.json")).cues
 	crew_catalogue = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_crew_voice_script.json")).cues
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_bearing_voice_script.json")).cues)
@@ -111,7 +161,7 @@ func _ready() -> void:
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_remaining_voice_script.json")).cues)
 	turret = AudioStreamPlayer.new()
 	add_child(turret)
-	var stream := load("res://assets/audio/turret.wav").duplicate() as AudioStreamWAV
+	var stream := (recorded_effect_streams.turret if recorded_effect_streams.has("turret") else load("res://assets/audio/turret.wav").duplicate()) as AudioStreamWAV
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_begin = 0
 	# Imported WAV data can be QOA, so byte count is not a PCM frame count.
@@ -299,6 +349,7 @@ func release_streams() -> void:
 	music_context=""
 	music_track=""
 	music_bank.streams.clear()
+	recorded_effect_streams.clear()
 
 func _valid_loops(loops) -> bool:
 	if not loops is Dictionary: return false

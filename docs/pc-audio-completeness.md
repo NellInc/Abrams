@@ -96,3 +96,42 @@ than hardware round-trip latency, an inter-sample true-peak proof or a human
 intelligibility assessment. The limiter provides sample-domain overload protection
 for the PC bus. Unrelated downstream gain and simultaneous external audio are
 outside that guarantee.
+
+
+## Optional private recording bank, 25 October 2026
+
+The native PC audio player can preload a six-cue bank from
+`local-audio/pc-recorded-effects-v1/manifest.json`. The manifest has schema 1,
+kind `private authored recording effects`, and a `cues` dictionary containing
+exactly `cannon`, `machinegun`, `impact`, `smoke`, `engine` and `turret`. Each entry
+names its fixed `cue.wav` file and SHA-256. Files must decode to 48 kHz, mono,
+16-bit PCM with the incumbent frame counts: 115,200, 10,560, 134,400, 62,400,
+96,000 and 96,000 respectively. Manifest and file sizes are bounded before
+reading or decoding. An absent bank uses stock audio; an invalid bank warns
+once per player and retains the complete stock bank, including when the last
+file fails. Bank errors do not replace source-event validation failures.
+
+Crew voices, music, unknown request identities, event IDs, source onset and
+cadence, audibility, limiter settings, pause/mute/checkpoint rules and motor
+pitch/amplitude remain on the existing paths. Shot streams explicitly disable
+embedded loops. Engine and turret loop over their complete verified PCM;
+source events still own their playback parameters. Private streams are released
+with the existing shutdown drain. Web returns before private-bank discovery.
+
+The existing audio check passes 924 checks, including disposable generated
+fixtures for valid loading, atomic fallback, malformed format/duration and
+shutdown. This verifies the loader contract. No actual recording bank is
+installed yet. Equal file duration does not establish transient alignment,
+seamless loops, loudness balance or an acceptable in-game mix; those remain
+recording preparation and listening requirements.
+
+Licensed originals and derivatives must remain private. The bank is absent
+from the packaging allowlist, and `package_build.py` rejects its directory even
+for private review kits. No packaging permission is granted by loader support.
+Any later outgoing artifact must be inspected for private filenames/hashes.
+Existing stock WAVs remain the recovery source. Evidence:
+`artifacts/tactical-postdelivery-20261025/private-audio-final-test.log`.
+
+Working if: valid local PCM replaces only the six effects, invalid or absent
+banks retain stock playback, source contracts and voices remain unchanged,
+and no private recordings appear in a source or distributable review artifact.

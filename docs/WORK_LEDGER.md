@@ -7077,3 +7077,72 @@ separate from the completed automated default/native/live gate. Acoustic-device
 latency, physical listening, a long release soak and a new public runtime
 release are not established by this run. Canonical completion and custody proof:
 `artifacts/full-suite-20261025/final-aggregate-proof.json`.
+
+
+## 25 October 2026: private effects-bank support and open smoke follow-up
+
+The delivered baseline is `6f5d634766bb99bf497a9a63b5191f543d315b10`.
+Its final default/native/live delivery receipts were inspected before source,
+index and GPU handback was accepted. Subsequent foreign intro/music and
+campaign/outcome work remains separate and preserved.
+
+The free-first sourcing pass retains 463 decoded CC0 audio files across 46 cue
+groups, including the cow and rivers, with source URLs, licence/provenance and
+SHA custody under `artifacts/world-sfx-20261025/`. No paid recordings were
+purchased or downloaded. The refreshed signed-in Chrome account still shows
+zero credits. The five-credit US$20 pack is selected for Nell's own purchase;
+four Abrams recordings are planned and the fifth credit remains reserved.
+An alternate cannon take is also distant and is not an automatic extra buy.
+
+`pc_audio.gd` now supports an optional atomic native-only six-effect private
+bank. Fixed filenames, hashes, decoded 48 kHz mono 16-bit PCM and incumbent
+frame counts are verified before any replacement is published. Invalid banks
+warn separately and retain stock audio. Voices, music, source event routing,
+limiter, transport/state rules and source-owned motor pitch/amplitude are
+unchanged. No bank is installed yet. Existing audio tests use explicit stock
+fixtures, with disposable private-bank cases added to the same test. Final
+checks: PC_AUDIO 924 checks, PC_AUDIO_MIX 138, PC_AUDIO_LIMITER 33, all zero
+failures/errors. The limiter probe has zero clipped frames and output peak
+0.8912613 for input peak 2.9120, with Dummy audio; this is not device latency
+or in-game listening evidence. The asset audit reports 476 WAVs, 345 source
+captions, zero errors/timing advisories. All 472 tracked original WAV hashes
+remain identical to the sourcing seal. Private recordings are absent from
+packaging and are rejected by the existing package path boundary.
+
+The first-smoke hitch remains open. A native baseline records 107.152 ms at
+source sequence 1321, with 89.368 ms between pre/post draw. Matching warm target
+settings, including an owner-zero whitelist path, still gives 108.371 ms and
+90.049 ms pre/post draw in the actual normal-speed route. All 1,020 requests
+and source hashes match; focus, exact route and all-station completion pass.
+That renderer candidate was fully reverted. Isolated first-draw improvements
+were cache/context-confounded on baseline recheck and are not a shipped gain.
+The earlier current-source warm experiment is also inconclusive because its
+camera duplicate could copy presentation children. Shared caches were not
+cleared; sustained FPS gains remain unproven.
+
+The profiler now waits for normal transport before the existing real-focus
+setup dwell and fails cleanly if transport or original draw context changes.
+The 90-second setup guard remains. The observed 8x-contaminated run and its
+nil-context error log are retained as failures. A source-sequence-triggered
+native stack sample completes, but has only three main-thread observations
+and likely trails the stall; it proves no compilation cause. A private
+one-frame particle-child delay diagnostic is parsed and queued, never visual
+or shipping acceptance. New GPU work was deferred with available disk about
+1.4 GB and falling; all task-owned native/sampler jobs have finished and the
+resource slot was explicitly returned. Cleanup retired zero bytes because
+owned originals, controls, recovery clips and evidence remain needed.
+
+Actual raised/lowered-reticle smoke images are retained. Their source camera
+remains level, so they are not physical tilt verification. The original manual
+and camera contract were inspected; no genuine non-level camera has yet been
+observed. No guest state was changed to manufacture one. Actual licensed SFX
+editing, matched-loudness previews, in-game mix/listening, the smoke remedy and
+physical tilt check remain pending. No push, standalone/web rebuild or new
+aggregate release gate was performed under this follow-up.
+
+Evidence: `artifacts/tactical-postdelivery-20261025/`, the sourcing catalogue,
+and `artifacts/tactical-plume-followup-20261025/state.json`.
+
+Working if: optional bank loading preserves the source event/motor/voice
+contracts and stock fallback, original assets remain recoverable, and open
+in-game/performance/listening criteria stay visibly open until actual proof.

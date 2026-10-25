@@ -40,8 +40,68 @@ func crew(id: int, frame: int, assignment: int = 1) -> Dictionary:
 
 func _initialize() -> void: run.call_deferred()
 
+func stock_audio() -> PcAudio:
+	var audio:=PcAudio.new()
+	audio.recorded_effect_directory=""
+	return audio
+
+func write_recorded_fixture(folder:String, bad:String="") -> void:
+	DirAccess.make_dir_recursive_absolute(folder)
+	var cues:Dictionary={}
+	for cue:String in PcAudio.RECORDED_EFFECT_FRAMES:
+		var pcm:=AudioStreamWAV.new()
+		pcm.format=AudioStreamWAV.FORMAT_16_BITS
+		pcm.mix_rate=44100 if bad=="rate" and cue=="turret" else 48000
+		pcm.stereo=bad=="stereo" and cue=="turret"
+		var data:=PackedByteArray()
+		data.resize(int(PcAudio.RECORDED_EFFECT_FRAMES[cue])*2+(2 if bad=="duration" and cue=="turret" else 0))
+		pcm.data=data
+		pcm.loop_mode=AudioStreamWAV.LOOP_FORWARD
+		pcm.loop_begin=1;pcm.loop_end=2
+		var path:=folder.path_join(cue+".wav")
+		check(pcm.save_to_wav(path)==OK,"disposable private PCM saved: "+cue)
+		cues[cue]={"file":cue+".wav","sha256":"0".repeat(64) if bad=="hash" and cue=="turret" else FileAccess.get_sha256(path)}
+	if bad=="unknown":
+		cues.erase("turret");cues["voice_on_the_way"]={"file":"voice_on_the_way.wav","sha256":"0".repeat(64)}
+	FileAccess.open(folder.path_join("manifest.json"),FileAccess.WRITE).store_string("{" if bad=="json" else JSON.stringify({"schema":1,"kind":"private authored recording effects","cues":cues}))
+
+func recorded_bank_contract() -> void:
+	var folder:=OS.get_temp_dir().path_join("abrams-private-sfx-%d-%d"%[OS.get_process_id(),Time.get_ticks_usec()])
+	var absent:=PcAudio.new();absent.recorded_effect_directory=folder
+	root.add_child(absent)
+	check(absent.recorded_effect_streams.is_empty() and absent.recorded_effect_failure.is_empty(),"absent private bank keeps stock without warning")
+	check(await absent.drain_for_shutdown(),"absent bank drains");absent.queue_free();await process_frame
+	write_recorded_fixture(folder)
+	var audio:=PcAudio.new();audio.recorded_effect_directory=folder
+	root.add_child(audio)
+	check(audio.recorded_effect_streams.size()==6 and audio.recorded_effect_failure.is_empty(),"six private PCM streams verified")
+	check(audio.failure.is_empty(),"bank loading does not contaminate source audio failure")
+	for cue:String in PcAudio.RECORDED_EFFECT_FRAMES:
+		var stream:AudioStreamWAV=audio.get_stream(cue)
+		check(stream==audio.recorded_effect_streams.get(cue),"private cue selected: "+cue)
+		check(stream.data.size()==int(PcAudio.RECORDED_EFFECT_FRAMES[cue])*2,"exact private duration: "+cue)
+		check(stream.loop_mode==(AudioStreamWAV.LOOP_FORWARD if cue in ["engine","turret"] else AudioStreamWAV.LOOP_DISABLED),"fixed loop policy: "+cue)
+		if cue in ["engine","turret"]:check(stream.loop_begin==0 and stream.loop_end==96000,"complete source-owned motor loop: "+cue)
+	check(audio.engine.stream==audio.get_stream("engine") and audio.turret.stream==audio.get_stream("turret"),"both motor players use private streams")
+	check(audio.get_stream("voice_on_the_way").resource_path.ends_with("voice_on_the_way.wav"),"private bank cannot replace crew speech")
+	check(audio.get_stream("pc_request_07").resource_path.ends_with("pc_request_07.wav"),"unknown source identity remains stock")
+	check(await audio.drain_for_shutdown(),"private bank drains")
+	check(audio.recorded_effect_streams.is_empty() and audio.engine.stream==null and audio.turret.stream==null,"private playback references released")
+	audio.queue_free();await process_frame
+	for bad:String in ["hash","rate","stereo","duration","unknown","json"]:
+		write_recorded_fixture(folder,bad)
+		var rejected:=PcAudio.new();rejected.recorded_effect_directory=folder
+		root.add_child(rejected)
+		check(not rejected.recorded_effect_failure.is_empty() and rejected.failure.is_empty(),"invalid private bank is separately classified: "+bad)
+		check(rejected.recorded_effect_streams.is_empty(),"late private failure publishes no partial bank: "+bad)
+		check(rejected.engine.stream.resource_path.ends_with("engine.wav") and rejected.get_stream("cannon").resource_path.ends_with("cannon.wav"),"all stock streams retained: "+bad)
+		check(await rejected.drain_for_shutdown(),"rejected bank drains: "+bad)
+		rejected.queue_free();await process_frame
+	for cue:String in PcAudio.RECORDED_EFFECT_FRAMES:DirAccess.remove_absolute(folder.path_join(cue+".wav"))
+	DirAccess.remove_absolute(folder.path_join("manifest.json"));DirAccess.remove_absolute(folder)
+
 func run() -> void:
-	var audio := PcAudio.new()
+	var audio := stock_audio()
 	root.add_child(audio)
 	check(audio.crew_catalogue.size()==442,"24 damage, 360 bearings, eight warnings and 50 remaining source calls")
 	for cue: String in audio.crew_catalogue:
@@ -50,7 +110,7 @@ func run() -> void:
 	for cue: String in warnings.cues:
 		var spec: Dictionary=warnings.cues[cue]
 		for variant: Array in spec.source_variants:
-			var warning_audio := PcAudio.new()
+			var warning_audio := stock_audio()
 			root.add_child(warning_audio)
 			var event := crew(1,10)
 			event.voice=cue;event.text=spec.caption;event.ip=spec.assignment_ip;event.speaker=spec.speaker
@@ -73,7 +133,7 @@ func run() -> void:
 			await process_frame
 	var damage: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_damage_voice_script.json"))
 	for cue: String in damage.cues:
-		var damage_audio := PcAudio.new()
+		var damage_audio := stock_audio()
 		root.add_child(damage_audio)
 		var event := crew(1,10)
 		event.voice=cue
@@ -93,7 +153,7 @@ func run() -> void:
 	fresh_bearing.text="We've been hit! Bearing 059"
 	check(not audio._valid_crew(fresh_bearing),"bearing cannot select another number's performance")
 	for fault in ["ip","return_ip","value","sample","voice","backend"]:
-		var guarded:=PcAudio.new()
+		var guarded:=stock_audio()
 		root.add_child(guarded)
 		var invalid_source:=sound(1,1)
 		match fault:
@@ -132,7 +192,7 @@ func run() -> void:
 	audio.queue_free()
 	await process_frame
 	# A full pool steals the player nearest its end, never a long cannon tail.
-	var pool := PcAudio.new()
+	var pool := stock_audio()
 	root.add_child(pool)
 	pool.play("cannon")
 	check(pool.effects[0].playing and pool.cursor==1,"first cue takes the first idle player")
@@ -148,7 +208,7 @@ func run() -> void:
 	pool.queue_free()
 	await process_frame
 	for mode in ["gap","missing","future","fraction","voice","backwards","overflow"]:
-		var bad := PcAudio.new()
+		var bad := stock_audio()
 		root.add_child(bad)
 		check(bad.apply_audio(packet(1,1,[sound(1,1)])),mode+" initial")
 		var attempt := packet(2,2,[sound(2,2)])
@@ -164,7 +224,7 @@ func run() -> void:
 		check(await bad.drain_for_shutdown(),mode+" drain")
 		bad.queue_free()
 		await process_frame
-	var motors := PcAudio.new()
+	var motors := stock_audio()
 	root.add_child(motors)
 	check(motors.engine.stream.loop_end == 96000,"full engine loop survives compressed WAV import")
 	check(motors.turret.stream.loop_end == 96000,"full turret loop survives compressed WAV import")
@@ -198,7 +258,7 @@ func run() -> void:
 	check(await motors.drain_for_shutdown(),"motor playback drains")
 	motors.queue_free()
 	await process_frame
-	var loader := PcAudio.new()
+	var loader := stock_audio()
 	root.add_child(loader)
 	var up := packet(10,1,[readiness(1,10)])
 	check(loader.apply_audio(JSON.parse_string(JSON.stringify(up))),"visible readiness JSON envelope")
@@ -213,7 +273,7 @@ func run() -> void:
 	loader.queue_free()
 	await process_frame
 	for mode in ["draw_order","delay","caller","pointer","digest","effect","voice","schema"]:
-		var bad := PcAudio.new()
+		var bad := stock_audio()
 		root.add_child(bad)
 		var attempt := packet(10,1,[readiness(1,10)])
 		match mode:
@@ -229,7 +289,7 @@ func run() -> void:
 		check(await bad.drain_for_shutdown(),"loader "+mode+" drain")
 		bad.queue_free()
 		await process_frame
-	var crew_audio := PcAudio.new()
+	var crew_audio := stock_audio()
 	root.add_child(crew_audio)
 	var hit := packet(10,1,[crew(1,10)])
 	check(crew_audio.apply_audio(JSON.parse_string(JSON.stringify(hit))),"visible crew JSON envelope")
@@ -243,7 +303,7 @@ func run() -> void:
 	crew_audio.queue_free()
 	await process_frame
 	for mode in ["identity","speaker","caption","voice","ip","parts","hash","rect","fraction","effect","duplicate"]:
-		var bad := PcAudio.new()
+		var bad := stock_audio()
 		root.add_child(bad)
 		var event := crew(1,10)
 		match mode:
@@ -276,6 +336,7 @@ func run() -> void:
 		check(stream != null and stream.mix_rate == int(entry.sample_rate) and not stream.stereo and not stream.data.is_empty(),"crew imported format "+cue)
 		check(absf(stream.get_length()-float(entry.duration_seconds)) < 0.001,"crew imported duration "+cue)
 		check(entry.text == pc_script.cues[cue].caption and entry.generator == "gemini-3.8-flash-tts","crew caption/provider "+cue)
+	await recorded_bank_contract()
 	print("PC_AUDIO: %d checks, %d failures" % [checks,failures.size()])
 	for failure in failures: printerr(failure)
 	quit(0 if failures.is_empty() else 1)
