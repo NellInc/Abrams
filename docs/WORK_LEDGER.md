@@ -7330,3 +7330,19 @@ mission/campaign outcome coverage remain unfinished. No public delivery occurred
 
 Working if: independent entry parity and the failed outcome remain separately
 labelled, and neither is used to close a surviving-victory or campaign gate.
+
+## 25 October 2026: original-core recording mix evidence
+
+The installed six-effect bank has now passed the existing original-core audio
+route: 1,712 frames, 128 events, 3,426 source-loop checks, zero errors, correct
+cannon/MG/smoke/impact, crew/readiness and F5/pause/muted-shot counts. Actual
+post-limiter Godot PCM is retained privately, -6.8 dBTP with no full-scale
+samples. A 32.5-second excerpt is presented for human crew-clarity/balance
+review. This is Dummy-driver headless original-core/mixer proof, no visual,
+device-latency or healthy-host pacing claim. Recorded sample and wall clocks
+differ: the initial wall-offset silence assertion failed and was discarded;
+two long PCM zero runs and direct source-player gates remain valid evidence.
+The smoke fix/comparable timing and human mix judgment remain open.
+
+Working if: actual source-contract proof is retained, human listening is not
+invented, and loaded-host recordings are not reported as timing acceptance.

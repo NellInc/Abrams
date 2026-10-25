@@ -190,3 +190,25 @@ renderer comparison. No paid audio is tracked, packaged, rebuilt or published.
 Working if: native controls reach the correct gains without changing user
 preferences during QA, the private loader accepts all six actual recordings,
 and installed-bank tests are not mislabelled as device or in-game listening.
+
+### Installed recordings through original source events
+
+A CPU-only original-core run now exercises 1,712 guest frames and 128 source
+events through the installed bank and production Godot mixer: zero event
+errors, 3,426 loop checks, two audible cannon shots, one MG, one smoke, one
+impact, one source-muted cannon and all four F5/pause gate events. Crew barks
+and four original engine periods are retained. Post-limiter PCM measures
+-6.8 dB true peak with no full-scale samples. Two long exact-zero PCM runs
+correspond in order to the two source mute intervals.
+
+The Dummy-driver recording clock differs from logged wall offsets on this
+loaded host. A first wall-offset silence assertion failed and was discarded;
+no exact temporal alignment or device-latency claim is made. The full private
+recording is 180.094 seconds; a 32.5-second excerpt is offered for human crew
+clarity and balance review. Only 10 ms excerpt-edge fades were applied, with
+no gameplay asset, gain or pitch edits. Human mix review remains pending.
+Evidence: artifacts/tactical-audio-options-20261025/original-mix/.
+
+Working if: actual source event/motor/gate checks pass with the installed bank,
+the mix retains headroom, and recorded proof and human clarity judgment remain
+distinct from healthy-host cadence or device acceptance.
