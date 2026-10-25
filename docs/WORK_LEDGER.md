@@ -7346,3 +7346,16 @@ The smoke fix/comparable timing and human mix judgment remain open.
 
 Working if: actual source-contract proof is retained, human listening is not
 invented, and loaded-host recordings are not reported as timing acceptance.
+
+## 25 October 2026: listening accepted
+
+Nell confirms “Crew clear, balance comfortable” for the original-core mix
+excerpt. The approved private balance is retained unchanged. This completes
+the requested subjective mix check alongside the original-core source/motor/
+gate checks; the documented Dummy-driver, capture-clock and host-pacing limits
+remain. A fresh finite smoke attribution admission sampled 2% and 4% CPU idle,
+so it returned unused before any native launch or bank exclusion. No failed
+capacity guard was relaxed. The first-smoke fix/comparable timing remains open.
+
+Working if: accepted audio is left stable, no unqualified performance claim is
+made, and the remaining renderer experiment runs only with actual capacity.

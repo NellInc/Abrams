@@ -206,7 +206,8 @@ loaded host. A first wall-offset silence assertion failed and was discarded;
 no exact temporal alignment or device-latency claim is made. The full private
 recording is 180.094 seconds; a 32.5-second excerpt is offered for human crew
 clarity and balance review. Only 10 ms excerpt-edge fades were applied, with
-no gameplay asset, gain or pitch edits. Human mix review remains pending.
+no gameplay asset, gain or pitch edits. Nell accepted this mix: “Crew clear, balance comfortable.”
+No further level or asset changes were made after that feedback.
 Evidence: artifacts/tactical-audio-options-20261025/original-mix/.
 
 Working if: actual source event/motor/gate checks pass with the installed bank,
