@@ -17,7 +17,8 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from tools.build_pc_tactical_vehicles import (ROSTER_SHAPES,REGISTRY_FIELDS,build_geometry,
-    load_catalog,make_object,bake,guard,sha,bounds,SCALE)
+    load_catalog,make_object,bake,sha,bounds,SCALE)
+from tools.source_guard import inside_source
 PAIR=ROOT/'local-art/pc-tactical-vehicles-v1'
 OUT=ROOT/'local-art/pc-tactical-roster-v1'
 INTACT=(117,119,121,123,127,129,131,133,135,137,139,141,143,159,163)
@@ -308,7 +309,9 @@ def guard_atlas_uvs(obj,model,index,head=False):
 def main():
     args=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else sys.argv[1:]
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,default=OUT);p.add_argument('--shapes');p.add_argument('--pack',action='store_true');p.add_argument('--patch-cabin',action='store_true');p.add_argument('--patch-scene',action='store_true');p.add_argument('--patch-models',action='store_true');p.add_argument('--preview',action='store_true');p.add_argument('--resume',action='store_true');a=p.parse_args(args)
-    out=guard(a.output);out.mkdir(parents=True,exist_ok=True)
+    out=a.output.resolve()
+    if inside_source(out,ROOT):p.error('Output must be outside original game inputs')
+    out.mkdir(parents=True,exist_ok=True)
     if a.patch_cabin:patch_cabin(out);return
     if a.patch_scene:patch_scene(out,tuple(int(x) for x in a.shapes.split(',')) if a.shapes else tuple(i for i in SCENE if i!=147));return
     if a.patch_models:patch_models(out,tuple(int(x) for x in a.shapes.split(',')) if a.shapes else ());return

@@ -24,13 +24,21 @@ class FrontendCatalogTests(unittest.TestCase):
         fixtures=ROOT/'artifacts/pc-live-type-lifecycle-01'
         if not fixtures.exists():self.skipTest('requires local original lifecycle capture')
         # Independent complete RGB prefix equality, not a similarity metric.
-        cases=[('boot-15',2,187),('boot-17',0,167),('boot-19',1,167),('debrief',1,147)]
-        for name,pose,height in cases:
+        # Debrief can be a mission-summary map. These three actual Office
+        # captures cover all poses and every declared prefix they contain.
+        cases=[('boot-15',2,187),('boot-17',0,167),('boot-19',1,167)]
+        compared=0
+        for name,pose,border in cases:
             with self.subTest(name=name):
-                im=Image.open(fixtures/(name+'.png')).convert('RGB')
-                prefix=im.tobytes()[:height*320*3]
-                self.assertEqual(hashlib.sha256(prefix).hexdigest(),data['templates'][pose]['hashes'][str(height)])
-                self.assertTrue(all(im.getpixel((x,height))==(255,255,255) for x in range(320)))
+                with Image.open(fixtures/(name+'.png')) as source:im=source.convert('RGB')
+                self.assertEqual(im.size,(320,200))
+                self.assertTrue(all(im.getpixel((x,border))==(255,255,255) for x in range(320)))
+                for height,fingerprint in data['templates'][pose]['hashes'].items():
+                    if int(height)>border:continue
+                    prefix=im.tobytes()[:int(height)*320*3]
+                    self.assertEqual(hashlib.sha256(prefix).hexdigest(),fingerprint,(name,height))
+                    compared+=1
+        self.assertEqual(compared,14)
         self.assertEqual(len(data['templates']),3)
         self.assertEqual(PALETTE[6],(255,85,85))
 

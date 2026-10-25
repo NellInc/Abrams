@@ -43,6 +43,7 @@ class TestDraw extends Node3D:
 class TestFrame extends TextureRect:
 	var events: Array
 	var world_enabled := true
+	func set_tactical_dynamics(_shift: Vector2) -> void: pass
 	func set_frame(_source: Image, _presentation: Dictionary, _world: Texture2D, _program: Dictionary={}) -> bool:
 		events.append("frame")
 		return false

@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from tools.build_pc_tactical_roster import ALIASES, expand_glb_alias
 from tools.build_pc_tactical_vehicles import attach_occlusion
+from tools.source_guard import inside_source
 
 
 def sha(path):
@@ -56,9 +57,11 @@ def main():
     parser.add_argument('--output', required=True, type=Path)
     options = parser.parse_args(args)
     output = options.output.resolve()
-    assert output.is_relative_to(ROOT / 'artifacts')
+    if inside_source(output,ROOT):parser.error('output must be outside original sources')
+    if not output.is_relative_to((ROOT / 'artifacts').resolve()):
+        parser.error('output must be inside artifacts')
     source = ROOT / 'local-art/pc-tactical-roster-v1'
-    assert not output.exists(), 'Use a fresh candidate directory'
+    if output.exists():parser.error('Use a fresh candidate directory')
     output.mkdir(parents=True)
     models = json.loads((source / 'catalog.json').read_text())['models']
     by_id = {m['shape_index']: m for m in models}

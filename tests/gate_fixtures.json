@@ -36,6 +36,12 @@
    "read_by": "pc_frontend_scene",
    "sha256": "63875a7b4e02baa8d0def42fcceb32e7504e6af5ca346af65fd109eccf0e6b21"
   },
+  "artifacts/pc-cockpit-trace-05": {
+   "files": 64,
+   "kind": "dir",
+   "read_by": "pc_effect_modes, pc_effect_inventory",
+   "sha256": "ce76513957233160dbb9900ab8f8cdd19a8eb65d71a88ce7fc99f6d07878cc3b"
+  },
   "artifacts/pc-driver-assembly-trace-03": {
    "files": 60,
    "kind": "dir",
@@ -54,17 +60,29 @@
    "read_by": "pc_information_art, pc_frontend_art, pc_graphics_modes, pc_portrait_coverage",
    "sha256": "12a8bee7679ae52afa995fe44a434182af6ecf08e47302bf5b1aeb6d72cfca79"
   },
+  "artifacts/pc-intro-baseline-02": {
+   "files": 370,
+   "kind": "dir",
+   "read_by": "pc_intro_catalog",
+   "sha256": "a4670a1994e7ef31a829b429e736239680069a021b40d53c42adf0f03861a49a"
+  },
+  "artifacts/pc-intro-skip-baseline-01": {
+   "files": 14,
+   "kind": "dir",
+   "read_by": "pc_intro_catalog",
+   "sha256": "3ee0b191fe10ad46a4c02fd48d22fa1941bf2e3bd5468dd5be313aecd1663b0f"
+  },
   "artifacts/pc-intro-skip-trace-01": {
    "files": 14,
    "kind": "dir",
-   "read_by": "pc_intro_art",
-   "sha256": "f92e7936c7c08f412f133e54bfc61ba62f135763de7880c702c6693a67ab10bb"
+   "read_by": "pc_intro_art, pc_intro_catalog",
+   "sha256": "cc6ec1da96f5e9faf5a34b00b6af190add4dd73687365222b7910321a7d9bec6"
   },
   "artifacts/pc-intro-trace-01": {
    "files": 370,
    "kind": "dir",
-   "read_by": "pc_intro_art, pc_graphics_modes, pc_frontend_music",
-   "sha256": "4221fd85b5b3d4e68d7e4a6530fe7ce3739ea61b2285277747726b2f6508f4b4"
+   "read_by": "pc_intro_art, pc_intro_catalog, pc_graphics_modes, pc_frontend_music",
+   "sha256": "5e6b7b386babd956af01e6f41324f21eec75b1c1e91c0dfe5d014c2a03e2e819"
   },
   "artifacts/pc-live-type-cockpit-02": {
    "files": 66,
@@ -129,34 +147,34 @@
  },
  "live": {
   "artifacts/pc-all-scenarios-trace-01": {
-   "files": 1121,
+   "files": 1122,
    "kind": "dir",
    "read_by": "pc_scenario_frames",
-   "sha256": "8af178f4df068fb437aaf1f2f705a479788e847927501a93fe43ad259574dd42"
+   "sha256": "6abd196c83796dceb5d332a1ba856cea43a3f0c6b0b13768473cd1931a321de5"
   },
   "artifacts/pc-combat-loss-trace-01": {
-   "files": 491,
+   "files": 495,
    "kind": "dir",
    "read_by": "pc_combat_outcome",
-   "sha256": "29d27f6b089cbacaff7c355cf4094106b079a241a32200b15e5852e6ee73b539"
+   "sha256": "5eb343575086afaba608670428a2502f8161faadea13d42213c6109a3ae65e15"
   },
   "artifacts/pc-crew-trace-01": {
-   "files": 31,
+   "files": 33,
    "kind": "dir",
    "read_by": "pc_crew_bridge",
-   "sha256": "5aacae0e6545fae4d3e1e54488a8639d17b3b4cf96edcb977f98089490c87791"
+   "sha256": "4c32e77509a31e199055ae669c64a65bce1312758e867bb295585283d289e8a7"
   },
   "artifacts/pc-radio-trace-01": {
    "files": 160,
    "kind": "dir",
    "read_by": "pc_radio_bridge",
-   "sha256": "bd786fa776e406601a2907beb22ad3e13f1849bca1637d1a96f2030fdb4c7564"
+   "sha256": "933ef3c0cda0583aab61f32f78f166c49e85edd04158087710bdccb64f210508"
   },
   "artifacts/pc-warning-trace-03": {
    "files": 23,
    "kind": "dir",
    "read_by": "pc_warning_bridge",
-   "sha256": "2cfcee2016187fb1689d2a53c656ef18a2ed8ba91640d2ae1ca667838f13c300"
+   "sha256": "66057ed2cd4a96d4c05c10c8a3a250abdd4786afae87b86ff22ad7cab91eb915"
   }
  },
  "schema": 1,

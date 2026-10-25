@@ -152,6 +152,16 @@ class OutputGuardTests(unittest.TestCase):
                     self.assertRaises(exc):
                 runpy.run_path(str(ROOT / 'tools' / script), run_name='__main__')
 
+    @unittest.skipUnless(HAS_PIL, 'Pillow required')
+    def test_tactical_authoring_tools_reject_source_aliases_before_writing(self):
+        for out in self.aliases('GAME', 'GENESIS'):
+            with self.subTest(tool='roster', out=out):
+                self.rejects('build_pc_tactical_roster', ['--output', out],
+                             'Output must be outside original game inputs')
+            with self.subTest(tool='refinement', out=out):
+                self.rejects('refine_pc_tactical_exports', ['--', '--output', out],
+                             'output must be outside original sources')
+
 
 # Every tool with a caller-chosen output path must call inside_source(). Exempt only with a reason.
 OUTPUT_OPTIONS = {'--output', '--out', '--output-dir', '--out-dir', '--dest', '--destination', 'output'}

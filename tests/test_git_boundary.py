@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -142,6 +143,32 @@ class GitBoundaryTests(unittest.TestCase):
             reasons.setdefault(name, set()).add(reason)
         self.assertIn('Git LFS attribute; real bytes would bypass inspection', reasons['.gitattributes'])
         self.assertIn('Git LFS attribute; real bytes would bypass inspection', reasons['notes.dat'])
+
+    def test_bulk_git_input_exceeds_pipe_capacity_without_losing_results(self):
+        self.add('.gitattributes', b'*.lfs filter=lfs\n')
+        # Effective attributes must come from the staged tree, not this edit.
+        (self.root / '.gitattributes').write_text('*.lfs filter=clean\n')
+        names={f'nested/{"path-"*12}{i:04d}'+('.lfs' if i%127==0 else '.txt')
+               for i in range(2048)} | {'space and ünicode/positive.lfs'}
+        self.assertGreater(len('\0'.join(names).encode()),131072)
+        self.add('first.txt',b'first')
+        self.add('last.txt',b'last sentinel')
+        first=self.git('rev-parse',':first.txt').decode().strip()
+        last=self.git('rev-parse',':last.txt').decode().strip()
+        inventory={'paths':sorted(names),'oids':[first]*4096+[last]}
+        (self.root/'bulk-inputs.json').write_text(json.dumps(inventory))
+        # Bound the caller itself: a blocked pipe write can prevent its own
+        # subprocess timeout from running.
+        code=('import json,sys;from pathlib import Path;'
+              'from tools.package.git_boundary import lfs_attributes,git_sizes;'
+              'root=Path(sys.argv[1]);'
+              'data=json.loads((root/"bulk-inputs.json").read_text());'
+              'print(json.dumps({"lfs":sorted(lfs_attributes(root,data["paths"])),"sizes":git_sizes(root,data["oids"])}))')
+        result=subprocess.run([sys.executable,'-c',code,str(self.root)],cwd=ROOT,
+                              capture_output=True,check=True,timeout=10)
+        actual=json.loads(result.stdout)
+        self.assertEqual(set(actual['lfs']),{name for name in names if name.endswith('.lfs')})
+        self.assertEqual(actual['sizes'],{first:5,last:13})
 
     def test_deleted_historical_violation_is_still_rejected(self):
         self.add('GENESIS/old.md')

@@ -10,6 +10,7 @@ import re
 import stat
 import subprocess
 import sys
+import tempfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -311,8 +312,16 @@ def historical_archive_problem(data, known_hashes, publication=None):
     return None
 
 
-def git(root, *args):
-    return subprocess.check_output(['git', '-C', str(root), *args])
+def git(root, *args, input=None):
+    command=['git', '-C', str(root), *args]
+    if input is None:
+        return subprocess.check_output(command)
+    # Bulk Git commands can fill stdout while consuming the inventory.
+    # Keep the complete response without bidirectional pipe back-pressure.
+    with tempfile.TemporaryFile() as output:
+        subprocess.run(command,input=input,stdout=output,stderr=subprocess.PIPE,check=True)
+        output.seek(0)
+        return output.read()
 
 
 def name_class(name):
@@ -325,9 +334,9 @@ def lfs_attributes(root, names):
     """Paths whose effective Git attributes route them through Git LFS."""
     if not names:
         return set()
-    result = subprocess.run(['git', '-C', str(root), 'check-attr', '--cached', '-z', '--stdin', 'filter'],
-                            input='\0'.join(sorted(names)).encode() + b'\0', capture_output=True, check=True)
-    fields = result.stdout.split(b'\0')
+    result=git(root,'check-attr','--cached','-z','--stdin','filter',
+               input='\0'.join(sorted(names)).encode()+b'\0')
+    fields = result.split(b'\0')
     return {fields[i].decode('utf-8', 'surrogateescape') for i in range(0, len(fields) - 2, 3)
             if fields[i + 2] == b'lfs'}
 
@@ -402,10 +411,10 @@ def check(root, history=False, known_hashes=None, publication=None):
 
 
 def git_sizes(root, blobs):
-    result = subprocess.run(['git', '-C', str(root), 'cat-file', '--batch-check=%(objectname) %(objecttype) %(objectsize)'],
-                            input='\n'.join(blobs) + '\n', text=True, capture_output=True, check=True)
+    result=git(root,'cat-file','--batch-check=%(objectname) %(objecttype) %(objectsize)',
+               input=('\n'.join(blobs)+'\n').encode()).decode()
     sizes = {}
-    for line in result.stdout.splitlines():
+    for line in result.splitlines():
         oid, kind, size = line.split()
         if kind != 'blob':
             raise ValueError('Git object is not a blob')
@@ -422,9 +431,9 @@ def generated_growth(root):
     if not oids:
         return 0
     # The listing also names trees under the prefix; count only blobs.
-    result = subprocess.run(['git', '-C', str(root), 'cat-file', '--batch-check=%(objecttype) %(objectsize)'],
-                            input='\n'.join(sorted(oids)) + '\n', text=True, capture_output=True, check=True)
-    return sum(int(size) for kind, size in (line.split() for line in result.stdout.splitlines()) if kind == 'blob')
+    result=git(root,'cat-file','--batch-check=%(objecttype) %(objectsize)',
+               input=('\n'.join(sorted(oids))+'\n').encode()).decode()
+    return sum(int(size) for kind, size in (line.split() for line in result.splitlines()) if kind == 'blob')
 
 
 def main():

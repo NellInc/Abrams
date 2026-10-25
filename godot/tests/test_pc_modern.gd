@@ -192,15 +192,18 @@ func run() -> void:
 	check(draw.load_modern_assets(directory),"production catalogue failed preload: "+art.status)
 	if art.ready:
 		if native: check(draw.modern_prewarmed,"Modern GPU programs not prewarmed")
+		# Fixture construction explicitly reads the source registry. Complete
+		# that setup before measuring production rendering/mode-switch I/O.
+		var native_catalog:Dictionary=art.load_catalogue(directory) if native else {}
 		var io_before: int=art.disk_io_count
 		material_variation_contract()
 		await production_views()
 		if native:
-			await tree_cutouts()
+			await tree_cutouts(native_catalog)
 			await observed_round_fixture()
-			await crew_head_commands()
+			await crew_head_commands(native_catalog)
 			await bridge_line_pixels()
-		check(art.disk_io_count==io_before,"frame rendering or mode switching performed asset I/O")
+		check(art.disk_io_count==io_before,"frame rendering or mode switching performed asset I/O (%d -> %d)"%[io_before,art.disk_io_count])
 	check(not art.load_assets(directory.path_join("missing")) and art.models.is_empty(),"failed reload kept assets")
 	for failure in failures: printerr("FAIL: "+failure)
 	print("PC_MODERN: %s; %d checks; native=%s"%["PASS" if failures.is_empty() else "FAIL",checks,native])
@@ -314,10 +317,9 @@ func ownership_ids(data: Dictionary) -> void:
 		var actual := roundi(pixel.r*255)+256*roundi(pixel.g*255)
 		check(actual==id,"GPU source ownership ID %d decoded %d"%[id,actual])
 
-func tree_cutouts() -> void:
+func tree_cutouts(catalog: Dictionary) -> void:
 	check(art.tree_texture!=null,"illustrated tree failed preload")
 	if art.tree_texture==null: return
-	var catalog: Dictionary = art.load_catalogue(directory)
 	var model: Dictionary = catalog.models.filter(func(m):return int(m.shape_index)==103)[0]
 	var sample := packet()
 	sample.objects.clear()
@@ -568,12 +570,11 @@ func observed_round_fixture() -> void:
 			var actual:=image.get_pixel((x-int(sample.camera.clip[0]))*4+2,(y-int(sample.camera.clip[1]))*4+2)
 			check(actual==Color8(int(rgb[0]),int(rgb[1]),int(rgb[2])),"original CPU round-form color/coverage differs at %d,%d"%[x,y])
 
-func crew_head_commands() -> void:
+func crew_head_commands(catalog: Dictionary) -> void:
 	var path:=directory.path_join("local-art/pc-modern/round-span-proof.json")
 	check(FileAccess.file_exists(path),"original CPU crew-head proof exists")
 	if not FileAccess.file_exists(path):return
 	var proof:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
-	var catalog:Dictionary=art.load_catalogue(directory)
 	var exercised:=0
 	for witness:Dictionary in proof.cases:
 		if int(witness.shape_index) not in [161,162] or witness.center[0]!=160:continue

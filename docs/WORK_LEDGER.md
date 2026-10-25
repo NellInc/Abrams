@@ -6892,3 +6892,43 @@ Working if: the original source packets and masks remain exact, permitted plume
 colour moves without mesh rebuilds, registered impact donors select the colour
 phase, and the retained native route measurements remain distinguishable from
 aggregate release validation and the isolated first-use stall.
+
+## 2026-10-25 Full-suite repair checkpoint
+
+Recovered five complete live-tier captures and independent full/early-skip intro
+controls. Current pinned trace and unchanged baseline cores agree on all 90,991
+RAM/video/input records, session states/transitions and dialogue final states.
+Historical neutral captures are retained separately; current parity does not
+claim historical calendar-dependent RAM identity. The fixture preflight now pins
+24 default inputs and five live inputs, including the previously omitted intro
+controls and STATUS capture. All 63 STATUS PNGs were recovered from an exact
+2,214-frame replay; its original report and selected image/mask hashes match
+without changing the historical effect-mode pins. Originals and cores are unchanged.
+
+Intro validation separates fresh capture provenance from exact published-catalog
+reproduction, retaining the runtime catalog hash and every other serialized byte.
+Office validation covers all three actual poses and 14 exact prefixes; debrief is
+a mission-summary map in this capture. Authoring tools call the source guard
+explicitly, and refinement boundaries remain enforced under Python optimization.
+The scheduling test double now implements the production dynamics setter.
+
+Bulk Git attribute and object-size queries could deadlock through bidirectional
+pipes. The existing Git helper now retains complete output in a temporary file.
+A bounded regression covers more than 131 KB of cached attributes, Unicode/space
+paths, scattered LFS positives and 4,097 object-size responses. All size, LFS,
+original-content, archive and credential checks remain. The actual index/history
+boundary passes, and clean stdlib-only source CI passes 211 tests (22 intentional
+private-input/optional-authoring skips).
+
+Aggregate attempt 03 passed all 104 default checks, including 1,019 Python tests
+with one redundant interpreter-check skip. Native dynamics passed 221 checks.
+The next native Modern check found fixture-setup reads inside its rendering-I/O
+measurement. Its metadata is now preloaded outside that interval; the unchanged
+zero-I/O assertion and all 159,125 native checks pass. Full native/live aggregate
+closure is still pending, together with the separately assigned graphics follow-up.
+No public binary release, website rebuild or remote push is part of this checkpoint.
+
+Evidence: `artifacts/full-suite-20261025/` and
+`artifacts/validation-20261025T105313Z/`. Failed attempts and fixture preimages
+remain retained. Working if: the final coherent candidate completes the unchanged
+default/native/live gate with its completion receipt and terminal exit zero.
