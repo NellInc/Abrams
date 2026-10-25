@@ -169,3 +169,24 @@ actual in-game mix verification. No stock WAV or crew/music asset was changed.
 Working if: each cue can be reduced or muted without changing another cue or
 source authority, choices survive restart, defaults retain the original mix,
 and native/browser delivery claims require their applicable runtime evidence.
+
+### Native completion and private integration, 25 October 2026
+
+The native in-game Settings-only check now passes 33 checks with zero errors.
+Wide, compact and scrolled individual-control screenshots were inspected;
+engine 0%, cannon 40% and turret 40% reached the corresponding practice gains.
+User audio/graphics preferences remained absent and unchanged; test choices
+were saved only under the isolated output directory. This is automated native
+UI proof, separate from manual menu navigation and listening.
+
+After the two fixed native windows closed, the approved balanced-v3 six-file
+bank was atomically installed privately at local-audio/pc-recorded-effects-v1.
+The production loader accepts all six actual clips, and the installed-bank mix
+check passes 262 checks. Original stock assets, licensed originals and accepted
+preview packs remain recoverable. Actual in-game recorded mix/listening is
+still open. The bank must be reversibly excluded for a future bank-absent
+renderer comparison. No paid audio is tracked, packaged, rebuilt or published.
+
+Working if: native controls reach the correct gains without changing user
+preferences during QA, the private loader accepts all six actual recordings,
+and installed-bank tests are not mislabelled as device or in-game listening.

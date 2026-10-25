@@ -7268,3 +7268,47 @@ and actual-tilt-source-case.json. Foreign intro/music/campaign work is preserved
 Working if: six independent controls preserve event/motor/mute contracts,
 preview acceptance is distinct from actual in-game mix, and smoke/tilt/native
 UI outcomes remain open until their direct runtime evidence is obtained.
+
+## 25 October 2026, 23:22 UTC: direct Tactical completion checkpoint
+
+Nell requested an end to cross-chat messaging. No further coordination messages
+are sent. The two scheduled jobs are terminal: Settings launched at 23:03:00,
+exited 0 at 23:03:50 with 33 checks, zero errors and unchanged user preferences;
+the shader diagnostic launched at 23:06:30, reached focused setup at 63.909 s,
+then failed the original 132-second measured guard. No smoke row was reached
+or retained, so it supplies no first-smoke timing or shader-cause conclusion.
+The private diagnostic now preserves failure progress at the close boundary,
+with no additional successful-frame I/O or relaxed guard. It parses cleanly.
+
+The accepted six-clip recording bank is now atomically installed privately,
+after both fixed windows ended. All actual clips pass production loader format,
+frame count and SHA checks. Installed-bank mix: 262 checks, zero errors. Stock
+WAVs, voices/music, limiter and source-event authority remain unchanged. Actual
+in-game recorded mix/listening remains open. No public assets were replaced.
+
+The genuine approximately 2.809-degree source-camera case was replayed through
+the native production Tactical world with Restored HUD. Terminal 0, exact
+source packet retained, source/material unchanged, world 1280x485, MSAA4 and
+anisotropy16, no renderer warnings. Native sight/world/original screenshots
+were inspected. Reticle and visible effect/actor cluster align in this thermal
+red-background case. There is no visible skyline from which to judge slope.
+This source contains seven exhaust and five other effects, no smoke; the
+separate raised/lowered-reticle smoke checks are not relabelled as tilted smoke.
+This is a genuine captured-source native visual check, not a fresh live replay.
+
+The remaining smoke remedy is still open. A finite retained-first-smoke packet
+probe is prepared and parsed: one fully bound duplicate Groundlight draw, then
+exact Modern restoration plus two unchanged Modern draws at the real target.
+It has not run for timing. Current iostat records 0% CPU idle and about 35 GiB
+swap use, so no new performance claim is admissible; that later observation
+does not retrospectively prove the failed live run's cause. No third equivalent
+full-route retry, shared-cache clearing or production renderer change occurred.
+
+Evidence: artifacts/tactical-audio-options-20261025/;
+artifacts/tactical-postdelivery-20261025/natural-tilt-native-2320/;
+actual-tilt-source-case.json and retained-source-parse.log. No push, web or
+standalone rebuild, publication or new aggregate release gate.
+
+Working if: native and installed-bank proof remain distinct from live listening,
+genuine tilt is distinguished from smoke-only reticle elevation, and the smoke
+hitch stays open until a behavior-preserving fix passes comparable timing.
