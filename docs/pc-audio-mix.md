@@ -1,11 +1,157 @@
 # Presentation audio controls
 
+## Suno score production, 23 October 2026
+
+Nell requested original Suno music across the menu and every game-screen family,
+including battles, quiet travel, mission results, friendly-fire consequences,
+briefings, ammunition selection and endings. The authoring catalogue is
+`godot/data/pc_suno_score.json`. It contains twelve complete instrumental prompts,
+arrangement directions, a common five-note motif and the intended screen roles:
+
+| Master | Screen or event family |
+|---|---|
+| Iron on the Horizon | Publisher, intro/credits, menus, scenario/name/joystick selection, information, help and settings |
+| Maplight | Briefings, orders and mission maps |
+| Before the Breech | Motor pool and ammunition choice |
+| Fields Beyond the Armour | Quiet travel and campaign rest |
+| Tracks into Fire | Confirmed contact and sustained battle |
+| Hull Down | Visible damage and urgent combat |
+| The Ground We Held | Mission success, commendation and promotion |
+| Orders Unfulfilled | Confirmed abort, failure and poor results |
+| Blue on Blue | Confirmed friendly-fire consequences and disciplinary scenes |
+| Four Empty Stations | Destroyed tank, crew loss and aftermath |
+| Home by First Light | Campaign victory |
+| The Last Dispatch | Campaign defeat |
+
+Production status: **twelve Suno v6 masters generated, downloaded and integrated
+locally**, with 24 takes retained in the dedicated Suno workspace. The selected
+masters total approximately 25.6 minutes. The account used 120 existing credits
+and twelve included downloads; 2,270 credits remained at completion. No purchase,
+audio upload, public publication or installed-app update was performed.
+
+`local-audio/suno-score-v1/masters/` preserves all twelve 48 kHz stereo WAV
+exports unchanged. `manifest.json` binds those hashes, alternate song links and
+separate 24 kHz game derivatives. The authored-order M3U8 in the same directory
+plays the full masters. The polished game edits use -18 LUFS / -2 dBTP
+normalization, fitted musical pulse and whole 8/16/24/32-bar phrases. Their loop
+tails blend into a matching earlier phrase over one fitted beat, with a smooth
+64-frame endpoint bridge. The cold opening is retained for the six original
+sustained themes. Estimated tempo, source cuts, phrase length, tonal/onset
+similarity and seam level differences are recorded in the manifest. These are
+signal-based musical edits; listening acceptance and motif fidelity remain open.
+
+The seven additions are arrangements of the preserved Suno masters, with no
+extra generation, export purchase or upload:
+
+| Addition | Source and use |
+|---|---|
+| Objective Secured | Short success stinger from The Ground We Held |
+| Orders Broken | Short failure/abort stinger from Orders Unfulfilled |
+| Wrong Side | Short disciplinary stinger from Blue on Blue |
+| Four Stations Silent | Short destruction stinger from Four Empty Stations |
+| Flanking Movement | Separate first-half battle passage, softened upper spectrum |
+| Sustained Pressure | Separate second-half battle passage, full voicing |
+| When the Turbines Fall Quiet | Subdued, band-limited minor-key aftermath loop |
+
+The four stingers last 2 to 6 seconds and retain their opening attacks. The
+original full result compositions remain available in the master playlist.
+Battle passages keep their original pitch and tempo. Three battle arrangements
+rotate in authored order when a fresh encounter begins after the previous
+900-frame hold expires; continued fire never changes arrangements. Crisis
+interrupts temporarily, then returns to the same encounter arrangement.
+
+`python3 -m tools.import_suno_score --polish local-audio/suno-score-v1 --output
+<new-empty-directory>` rebuilds the edits from hash-verified originals. This
+offline command additionally needs NumPy and SciPy, already available on the
+production machine; neither dependency is needed by the game. The command
+refuses existing output directories. Previous derivatives are retained under
+`local-audio/suno-score-v1/previous-edit/` when promoting the polished pack.
+
+`pc_suno_music.gd` reuses the existing bank loader. It selects original publisher,
+information, motor-pool, destroyed-tank and newspaper pixels through source-bound
+fingerprints; other frontends use current pixel-qualified original text. Confirmed
+player fire/impact holds combat music for 900 source frames, visible damage
+holds crisis music for 600, and quiet release returns to the idyll. Visible
+original radio completion/abort messages select result cues. END's visible
+friendly-fire verdict selects the Wrong Side stinger. Each result stinger plays
+once, then releases to the aftermath loop without a redraw replay. Neutral
+debrief, partial success and stalemate use aftermath directly. Campaign endings
+retain their complete compositions, then release to aftermath. Screen changes crossfade
+for 600 ms, voices duck music by approximately 10 dB, and completed stingers and
+ending tracks do not restart on redraw. Stingers retain a crisp attack while
+the previous bed fades away. The independent score also works in
+PC-only mode without a Genesis import. Restoring a checkpoint clears outcome
+and combat holds; restarting the save worker retains their remaining duration.
+
+Focused local checks: `PC_SUNO_MUSIC: 68 checks, 0 errors`, including twelve actual
+PCM streams, source screen fixtures/reconstructions, combat release, friendly-fire
+pixel rejection, voice ducking, source mute, natural one-shot completion, restore
+and shutdown. The historical frontend bank still passes 61 checks, the mixer 138,
+and original audio dispatch 829. The shutdown check releases its three actual
+playback instances. A fresh native cold-boot capture reached the original motor
+pool with `music_context=arming`, `music_playing=true`, `independent_score=true`
+and no music failure, in PC-only EGA mode. The ten gate-registration checks pass.
+These checks are separate from whole-campaign listening and
+from a published release. Receipts are in `artifacts/suno-score-20261023/`.
+
+
+### Polished arrangement acceptance
+
+This chat authored the edits and performed these machine checks; they are
+self-verification, separate from independent listening:
+
+* `PC_SUNO_MUSIC: 112 checks, 0 errors`, with all nineteen actual PCM streams,
+  whole-bar loop lengths, four short stingers, stable encounter rotation,
+  stinger-to-aftermath completion without redraw replay, mute/unmute, source F5,
+  destruction after SIM detaches, restore and shutdown.
+* 36 focused Python checks passed, including master/derivative hashes, loop
+  phrase durations, non-overlapping battle passages, packaging and gate tests.
+* Historical frontend 61 checks, PC mixer 138 and original audio dispatch 829
+  still pass. Shutdown releases its three live playback instances.
+* A fresh native cold boot reached the original ammunition-choice screen with
+  `music_context=arming`, `music_track=arming`, playback active and no score
+  failure. This is a real game capture, separate from the headless classifiers.
+* Package selection includes all nineteen derivatives and the manifest, while
+  excluding masters and previous edits. Source-code closure passes. Full private
+  resource closure currently reports the concurrent cover export's
+  `res://../local-art/cover-blender-v1/source.json` path as missing; the model
+  owner has the finding. No installed application or website bundle was rebuilt.
+
+The initial new Godot bar-count assertion failed because parsed JSON numbers
+were floats; its corrected integer comparison passes. No runtime or asset defect
+was hidden by that change. The preserved original WAV hashes are unchanged.
+Receipts and nine short seam auditions are in
+`artifacts/suno-score-polish-20261023/`. The game-edit playlist is
+`local-audio/suno-score-v1/Abrams - Game edits.m3u8`; the full-master playlist
+remains unchanged. Machine seams and playback are accepted locally; perceptual
+continuity, generated motif accuracy and full-campaign mix listening remain open.
+
+The source boundary remains unchanged: score selection must use the displayed
+original scene or an already validated original visible/audio event. Hidden
+world objects, queued messages and guessed campaign outcomes must never select
+music. In particular, a generic kill report cannot establish friendly fire, and
+a facepalm alone cannot establish disciplinary guilt. Original F5/pause,
+transport mute, restore and shutdown retain priority. Sustained combat needs
+paced transitions and speech ducking. Pause should retain the current cue's
+cursor, rather than starting a new track. Original downloads must remain
+unchanged beside separately normalized, loop-edited game derivatives.
+
+Working if: all twelve masters have actual Suno song identities and preserved
+downloads; each requested screen family has a source-qualified playback route;
+focused runtime checks demonstrate the mute, restore, transition and speech
+priority contracts; no hidden tactical information or simulation change is
+introduced. The polished local machine gate is complete; listening and full-campaign acceptance remain open.
+
+## Mixer and historical fallback
+
 Play's **Audio** menu has five independent levels: master, sound effects, crew
-voices, engine/turret motors, and frontend music. Each offers Off and 10% steps through 100%. A saved or browser-selected level between those steps appears as one exact checked entry, removed when the level changes.
+voices, engine/turret motors, and music. Each offers Off and 10% steps through 100%. A saved or browser-selected level between those steps appears as one exact checked entry, removed when the level changes.
 Restore default mix returns the original four levels to 100% and music to 70%,
 preserving the authored gains (including the existing 0.65 overall gain).
-Frontend music plays only in source-qualified title, menu, briefing and debrief
-contexts. In-mission gameplay remains musically quiet.
+When the independent Suno pack is absent, the historical donor bank still plays
+only in source-qualified title, menu, briefing and debrief contexts, with quiet
+in-mission gameplay. A damaged independent pack is reported and remains silent;
+it does not silently substitute donor music.
 
 macOS uses the system menu bar, leaving the game image untouched. The non-native
 fallback reserves a small header above the largest complete 4:3 game view. No

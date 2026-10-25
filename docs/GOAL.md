@@ -4,7 +4,9 @@ Reconstruct and remaster Dynamix's **Abrams Battle Tank** in Godot, preserving t
 
 Preserve the PC missions, objectives, controls, crew stations, movement, targeting, ammunition, enemy behaviour, damage, repairs, fuel, difficulty, scoring, campaign progression, timing and meaningful quirks. Add new sound effects and crew voices, clear captions, scalable interfaces and presentation-only accessibility options without changing simulation outcomes or revealing additional tactical information.
 
-Current priority (Nell, 28 September 2026): retain original flat-colour vehicle models. Rejected APC/tank texture panels stay out of live Play; replacement models are deferred. Prioritize complete playable flows, correct existing graphics, sound and TTS before further vehicle beautification.
+Current Tactical model scope (Nell, 17 October 2026): polish all 57 authored scene states, including the 34 vehicle states, seven bridge/structure definitions, fourteen architecture states and two weapon crews. Refine the original-attributed models and bake material-specific textures without changing hit regions, targeting, movement, damage, input or simulation. Static models retain strict source coverage; vehicle outlines retain the accepted earlier-background extension rule. Original command/line/flag pixels remain protected, and flat crews/bridges preserve observed primitive order. Modern retains the incumbent catalogue; existing terrain/foliage textures and unresolved aircraft placeholders retain their original-authoritative paths. Local source and asset integration is approved; no publication or installed-app update is implied.
+
+Working if: all 57 admitted states have validated geometry/maps and rendered proof, original inputs and simulation remain untouched, Modern restores exactly, native source-pixel/painter-order tests pass, and invalid expanded packs clear completely into independently valid fallback assets.
 
 Completion requires:
 

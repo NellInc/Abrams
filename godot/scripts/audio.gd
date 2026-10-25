@@ -3,6 +3,7 @@ extends Node
 var muted := false
 var voice_enabled := true
 var volume := 0.65
+var engine_volume := 1.0
 var effects_volume := 1.0
 var voice_volume := 1.0
 var engine: AudioStreamPlayer
@@ -85,11 +86,11 @@ func speak(cue: String) -> void:
 	_remember_playback(voice)
 
 func update_engine(speed: float, active: bool) -> void:
-	if muted or not active:
+	if muted or not active or volume*engine_volume<=0:
 		engine.stop()
 		return
 	engine.pitch_scale = 0.85 + absf(speed)*0.032
-	engine.volume_db = linear_to_db(volume*(0.055+minf(absf(speed)*0.003,0.09)))
+	engine.volume_db = linear_to_db(volume*engine_volume*(0.055+minf(absf(speed)*0.003,0.09)))
 	if not engine.playing:
 		engine.play()
 		_remember_playback(engine)

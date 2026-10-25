@@ -10,6 +10,14 @@ const PcCamera = preload("res://scripts/pc_camera.gd")
 const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
 const PlayDisplay = preload("res://scripts/pc_play_display.gd")
 const StartupSplash = preload("res://scripts/pc_startup_splash.gd")
+var tactical_dynamics = preload("res://scripts/pc_tactical_dynamics.gd").new()
+var tactical_dynamics_allowed := true
+const Frontdoor = preload("res://scripts/pc_frontdoor.gd")
+const FrontdoorRoute = preload("res://scripts/pc_frontdoor_route.gd")
+var frontdoor: Control
+var frontdoor_route = FrontdoorRoute.new()
+var frontdoor_shown := false
+var route_started := 0
 var startup_splash: Control
 var startup_ready := false
 var web_viewer_ready := false
@@ -140,6 +148,9 @@ func _initialize() -> void:
 	started = Time.get_ticks_msec()
 	capture = "--capture" in OS.get_cmdline_user_args()
 	var args := OS.get_cmdline_user_args()
+	tactical_dynamics_allowed="--no-tactical-dynamics" not in args
+	if OS.has_feature("web"):
+		tactical_dynamics.reduced_motion=bool(JavaScriptBridge.eval("window.matchMedia('(prefers-reduced-motion: reduce)').matches"))
 	var graphics_error := graphics_launch_error(args)
 	if not graphics_error.is_empty():
 		printerr(graphics_error)
@@ -360,6 +371,16 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 			var shown: String="Tactical" if audio_menu.graphics_mode=="tactical" else "Genesis Upscaled"
 			audio_menu.quality_error="Saved graphics are unavailable with this import. Showing "+shown+"; preference retained."
 			audio_menu.refresh_controls()
+	if frontdoor_enabled():
+		frontdoor=Frontdoor.new()
+		frontdoor.menu=audio_menu
+		root.add_child(frontdoor)
+		frontdoor.game_selected.connect(_frontdoor_select)
+		frontdoor.quit_selected.connect(_close)
+		frontdoor.original_selected.connect(_frontdoor_continue)
+		_choose_graphics_quality(audio_menu.quality.msaa,audio_menu.quality.anisotropy)
+		audio_menu.frontdoor_active=true
+		audio_menu.hide()
 	var python := Bridge.default_python()
 	var state_path := "artifacts/pc-source-boot-01/mission-entry/reference.state" if trace_mode else "reference/pc-live/mission-entry/reference.state"
 	var startup_state := "" if boot_mode else directory.path_join(state_path)
@@ -387,9 +408,53 @@ func _finish_startup_display() -> void:
 	if not startup_splash.finished and not genesis_art_note.is_empty(): _show_control_notice(genesis_art_note)
 	status.hide()
 	startup_splash.finish()
+	if frontdoor and not frontdoor_shown:
+		frontdoor_shown=true
+		_set_frontdoor(true)
 	if OS.has_feature("web") and not web_viewer_ready and bridge.host != null:
 		bridge.host.presentationReady()
 		web_viewer_ready=true
+
+# Capture/trace tools keep their original direct-entry contract. Ordinary Play,
+# packaged apps and Web share this frontdoor through the same viewer.
+func frontdoor_enabled() -> bool:
+	return play_mode and boot_mode and not capture
+
+func _frontdoor_blocked() -> bool:
+	return frontdoor!=null and audio_menu.frontdoor_active
+
+func _set_frontdoor(active: bool) -> void:
+	frontdoor.set_active(active)
+	play_display.visible=not active
+	audio_menu.visible=not active
+	audio_menu.frontdoor_active=active
+	audio_menu.release_keys=true
+	audio_menu.shortcut_keys.clear()
+	elapsed=0.0
+	if active and pc_audio:
+		pc_audio.apply_music_context("menu",not pc_only or pc_audio.music_bank.independent)
+	_sync_web_controls()
+
+func _frontdoor_select(destination: String) -> void:
+	if not _frontdoor_blocked() or frontdoor.busy: return
+	if frontdoor_route.begin(destination):
+		route_started=Time.get_ticks_msec()
+		frontdoor.show_route(frontdoor_route.failure if frontdoor_route.phase=="fallback" else "Opening "+destination.capitalize()+"...",frontdoor_route.phase=="fallback")
+
+func _frontdoor_continue() -> void:
+	frontdoor_route.phase="playing"
+	frontdoor.clear_route()
+	_set_frontdoor(false)
+
+func _advance_frontdoor() -> bool:
+	if frontdoor_route.phase in ["idle","fallback"]:return false
+	if Time.get_ticks_msec()-route_started>120000:
+		frontdoor_route._fail()
+	var step: Array=frontdoor_route.next_step()
+	if not step.is_empty():return bridge.step(step[0],step[1])
+	if frontdoor_route.phase=="playing":_frontdoor_continue()
+	elif frontdoor_route.phase=="fallback":frontdoor.show_route(frontdoor_route.failure,true)
+	return false
 
 ## True if path is, or lies under, root/GAME or root/GENESIS, in any case.
 static func output_inside_source(root: String, path: String) -> bool:
@@ -515,6 +580,7 @@ func _load_world_presentation(directory: String, args: Array) -> void:
 func _load_cockpit_presentation(directory: String) -> void:
 	invalidate_presentation_cache()
 	if play_display: play_display.tactical_chrome.instruments.load_sources(directory)
+	if play_mode: tandem_frame.load_tactical_art(directory)
 	# A PC-only launch must never inspect or load the optional donor pack,
 	# even when those files happen to exist in a developer's checkout.
 	if pc_only: return
@@ -528,11 +594,12 @@ func _load_cockpit_presentation(directory: String) -> void:
 		if FileAccess.file_exists(art_path): tandem_frame.set_gunner_art(Image.load_from_file(art_path))
 	if play_mode: tandem_frame.load_graphics_sources(directory)
 
-func _apply_frontend_music(source: Image, program: Dictionary, presentation: Dictionary) -> void:
-	# The authored frontend arrangements contain Genesis percussion. Generated
-	# voices and synth gameplay samples retain their existing source timing.
-	var context: String = "" if pc_only else pc_audio.music_context_for_frame(source,program,presentation)
-	pc_audio.apply_music_context(context,not pc_only)
+func _apply_frontend_music(source: Image, program: Dictionary, presentation: Dictionary, state: Variant=null) -> void:
+	# The independent Suno score needs no Genesis import. The historical donor
+	# arrangements retain their PC-only exclusion. Neither path drives the guest.
+	var allowed: bool=not pc_only or pc_audio.music_bank.independent
+	var context: String = pc_audio.music_context_for_frame(source,program,presentation,state) if allowed else ""
+	pc_audio.apply_music_context(context,allowed)
 
 func _build_ui() -> void:
 	if play_mode:
@@ -610,7 +677,7 @@ func _build_ui() -> void:
 		footer = "Scanout-paired Godot world with original cockpit, reticle and messages. Source-resolution UI is temporary; high-resolution artwork and exact polygon edges remain open."
 		if gunner_art_requested: footer = "Material pilot: verified gunner-surround pixels use high-resolution art. Instruments and other stations remain original. Camera geometry stays authoritative."
 		if cockpit_art_requested: footer = "High-resolution cockpit materials follow original pixel provenance. Live instruments, messages, visibility and controls remain authoritative."
-		if pc_only: footer = "PC-only presentation: high-resolution world and PC typography, original cockpit and effects. Genesis artwork and frontend music require the optional import."
+		if pc_only: footer = "PC-only presentation: high-resolution world and PC typography, original cockpit and effects. Genesis artwork requires the optional import."
 		if wire_mode: footer = "Original wireframe diagnostic. Omit --wire for filled surfaces."
 	stack.add_child(_label(footer,17))
 
@@ -650,8 +717,10 @@ static func frame_remainder(elapsed_seconds: float, source_fps: float) -> float:
 	return fmod(elapsed_seconds,1.0/source_fps)
 
 func _advance_live_frame() -> bool:
-	if capture or closing or state_control_pending or not pending_state_command.is_empty() or bridge.pending or not bridge.failure.is_empty() or elapsed<1.0/fps:
+	if capture or closing or state_control_pending or not pending_state_command.is_empty() or bridge.pending or not bridge.failure.is_empty():
 		return false
+	if _frontdoor_blocked():return _advance_frontdoor()
+	if elapsed<1.0/fps:return false
 	elapsed=frame_remainder(elapsed,fps)
 	# Sample current original keys once, never queue a second outstanding frame.
 	var held := Keyboard.held()
@@ -682,6 +751,7 @@ func _choose_graphics(mode: String) -> void:
 		play_display.set_hud_frame(previous_presentation,previous_program,tandem_frame._current_plate_mask,
 			not tandem_frame.dynamic_map_art.packet.is_empty(),
 			tandem_frame.cockpit_art_ids==[1])
+	_reset_tactical_dynamics()
 	_choose_graphics_quality(audio_menu.quality.msaa,audio_menu.quality.anisotropy)
 	# Replay the already paired drawing only. No guest frame or audio advances.
 	var drawing=previous_presentation.get("draw_pass")
@@ -716,6 +786,9 @@ func _choose_hud_style(style: String) -> void:
 			tandem_frame.cockpit_art_ids==[1])
 
 func _choose_graphics_quality(samples: int, anisotropy: int) -> void:
+	if frontdoor:
+		frontdoor.stage.msaa_3d=PlayDisplay.MSAA_LEVELS[samples]
+		frontdoor.stage.anisotropic_filtering_level=PlayDisplay.ANISOTROPY_LEVELS[anisotropy]
 	if play_display:
 		play_display.set_graphics_quality(tandem_frame.graphics_mode,samples,anisotropy)
 		invalidate_presentation_cache()
@@ -729,7 +802,7 @@ func _choose_speed(multiplier: int) -> void:
 		root.title=app_name if multiplier==1 else "%s (%dx fast forward)"%[app_name,multiplier]
 
 func _request_state(operation: String, slot: int) -> void:
-	if closing or state_control_pending or not pending_state_command.is_empty(): return
+	if _frontdoor_blocked() or closing or state_control_pending or not pending_state_command.is_empty(): return
 	pending_state_command={"op":operation,"slot":slot}
 	# A save neither advances nor rewinds the guest: a reply already in flight
 	# is real play and keeps its sound. A load discards what follows it.
@@ -768,7 +841,7 @@ func _sync_web_controls(message: String = "") -> void:
 	bridge.host.updateControls(JSON.stringify({"modes":audio_menu.available_graphics_modes(),
 		"graphics":audio_menu.graphics_mode,"hud_styles":audio_menu.HUD_STYLES,
 		"hud_style":audio_menu.hud_style,"slots":audio_menu.state_slots,
-		"speed":audio_menu.speed,"busy":audio_menu.busy,"message":message,
+		"speed":audio_menu.speed,"busy":audio_menu.busy or _frontdoor_blocked(),"message":message,
 		"quality":audio_menu.quality,"quality_levels":audio_menu.QUALITY_LEVELS,
 		"audio":audio_menu.settings,"audio_defaults":audio_menu.DEFAULTS,
 		"quality_error":audio_menu.quality_error,"audio_error":audio_menu.save_error}))
@@ -851,6 +924,9 @@ func _process(delta: float) -> bool:
 		if message.type=="state_result": _state_result(message)
 		else: _apply_sample(message)
 	if not bridge.failure.is_empty():
+		if frontdoor:
+			frontdoor.set_active(false)
+			play_display.show()
 		status.text = "Game stopped: " + bridge.failure + "\nClose this window to exit."
 		status.show()
 		if play_mode: startup_splash.show_error(status.text)
@@ -903,7 +979,9 @@ func _process(delta: float) -> bool:
 	if capture and Time.get_ticks_msec() - started > _capture_deadline_msec():
 		bridge.failure = "capture deadline"
 		_close()
-	_animate_water(delta)
+	if not _frontdoor_blocked():
+		_animate_water(delta)
+		_animate_tactical_dynamics(delta)
 	return false
 
 func _animate_water(delta: float) -> void:
@@ -914,20 +992,42 @@ func _animate_water(delta: float) -> void:
 		# without decoding source pixels or rebuilding its source-owned masks.
 		play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 
+func _reset_tactical_dynamics() -> void:
+	tactical_dynamics.reset()
+	if tandem_frame:tandem_frame.set_tactical_dynamics(Vector2.ZERO)
+	if draw_view:draw_view.tactical_effects.reset_dynamics()
+
+func _animate_tactical_dynamics(delta: float) -> void:
+	if capture or closing or state_control_pending or not pending_state_command.is_empty() or not play_mode or not trace_mode or play_display==null or tandem_frame==null:return
+	if not tactical_dynamics_allowed or tandem_frame.graphics_mode!="tactical" or not tandem_frame.world_enabled or previous_program.get("name")!="SIM" or fast_forward>1:return
+	if audio_menu and (not audio_menu.window_focused or not audio_menu.open_menus.is_empty()):return
+	var armour_changed:bool=tactical_dynamics.advance(delta)
+	if armour_changed:tandem_frame.set_tactical_dynamics(tactical_dynamics.shift)
+	var effects_changed:bool=false
+	if tactical_dynamics.enabled and not tactical_dynamics.paused and not tactical_dynamics.reduced_motion:
+		effects_changed=draw_view.tactical_effects.advance_dynamics(delta)
+	if effects_changed:play_display.world_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+	if armour_changed or effects_changed:play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+
 func _apply_sample(message: Dictionary) -> void:
 	if message.get("timeline_reset",false):
 		invalidate_presentation_cache()
 		draw_view.reset_water_animation()
+		_reset_tactical_dynamics()
 		_reset_audio_timeline()
 	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.slots)
 		_sync_web_controls()
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
 		pc_audio.set_transport_muted(fast_forward>1 or inflight_fast or _state_load_muted())
+	var dynamics_transport:bool=not inflight_fast and fast_forward<=1 and not _state_load_muted()
 	inflight_fast=false
 	if pc_audio and not pc_audio.apply_audio(message.get("audio", {})):
 		bridge.failure = pc_audio.failure
 		return
+	tactical_dynamics.observe(message,tactical_dynamics_allowed and dynamics_transport and play_mode and trace_mode and not capture and tandem_frame!=null and tandem_frame.graphics_mode=="tactical")
+	# Observation can clear an impulse without an animation tick (station/load).
+	if tandem_frame:tandem_frame.set_tactical_dynamics(tactical_dynamics.shift if tactical_dynamics.enabled else Vector2.ZERO)
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
 		pc_audio.set_transport_muted(fast_forward>1 or _state_load_muted())
 	var state = message.get("state")
@@ -966,6 +1066,12 @@ func _apply_sample(message: Dictionary) -> void:
 			"179660660519b1e466871e94b9bae9ecae5c35ce22a92a1b19d9f7b2c36ecfba":"continue",
 			"dd261b967d88052666983f1d36607c8935192ef56ed2bc2e9f0e406487662433":"rest"
 		}.get(digest.finish().hex_encode(),"")
+	if frontdoor:
+		var program: Dictionary=message.get("program",{}) if message.get("program") is Dictionary else {}
+		frontdoor_route.observe(image,program,message.get("presentation",{}),int(message.get("sequence",0)))
+		if not _frontdoor_blocked() and frontdoor_route.return_ready and Keyboard.held().is_empty() and not state_control_pending and pending_state_command.is_empty():
+			frontdoor_route.rest()
+			_set_frontdoor(true)
 	# The completed packet owns its pixels and metadata. Once validated, the
 	# original host may compute the next frame while we build this presentation.
 	# All Godot scene work remains on the main thread; capture never prefetches.
@@ -977,7 +1083,7 @@ func _apply_sample(message: Dictionary) -> void:
 	var frontend_layer = tandem_frame.get("frontend_art")
 	if frontend_layer != null: frontend_layer.intro_art.source_frame = int(message.get("sequence", -1))
 	if pc_audio:
-		_apply_frontend_music(image,previous_program,message.get("presentation",{}))
+		_apply_frontend_music(image,previous_program,message.get("presentation",{}),state)
 	if not state is Dictionary:
 		previous = {}
 		previous_presentation = message.get("presentation", {})
@@ -1045,6 +1151,7 @@ func _apply_sample(message: Dictionary) -> void:
 	var frontend := false
 	if trace_mode:
 		frontend = _present_tandem(image, previous_presentation, world_viewport.get_texture(), previous_program)
+		tandem_frame.set_tactical_dynamics(tactical_dynamics.shift if tactical_dynamics.enabled else Vector2.ZERO)
 	previous = state
 	_finish_startup_display()
 	# Hidden research labels cause text shaping/layout even when not displayed.
@@ -1099,7 +1206,9 @@ func _capture() -> void:
 		"hud_style":play_display.hud_style if play_mode and play_display else "restored","fast_forward":fast_forward,
 		"display": play_display.description() if play_mode else {"mode":"comparison"},
 		"ui_composited": tandem_frame.world_enabled if trace_mode else false,
-		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions} if pc_audio else null,
+		"audio": {"delivered": pc_audio.delivered, "suppressed": pc_audio.suppressed, "receipts": pc_audio.receipts, "loop_transitions": pc_audio.loop_transitions,
+			"music_context":pc_audio.music_context,"music_track":pc_audio.music_track,"music_playing":pc_audio.music.playing,
+			"independent_score":pc_audio.music_bank.independent,"music_failure":pc_audio.music_bank.failure} if pc_audio else null,
 		"gunner_materials": tandem_frame.gunner_art_enabled if trace_mode else false,
 		"driver_assembly": tandem_frame.driver_assembly_enabled if trace_mode else false,
 		"pc_only": pc_only,
@@ -1127,7 +1236,8 @@ func _capture() -> void:
 	_close()
 
 func _drain_audio() -> void:
-	if not await pc_audio.drain_for_shutdown(): bridge.failure = "Original-event audio did not drain"
+	if frontdoor and not await frontdoor.drain_for_shutdown(): bridge.failure="Practice audio did not drain"
+	if pc_audio and not await pc_audio.drain_for_shutdown(): bridge.failure = "Original-event audio did not drain"
 	audio_drained = true
 
 func _close() -> void:
@@ -1136,7 +1246,7 @@ func _close() -> void:
 		closing=true
 		quit(0 if bridge.failure.is_empty() else 1)
 		return
-	if pc_audio:
+	if pc_audio or frontdoor:
 		audio_drained = false
 		_drain_audio.call_deferred()
 	if not closing and not bridge.failure.is_empty(): printerr("PC_VIEW_FAILED: " + bridge.failure)

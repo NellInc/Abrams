@@ -126,7 +126,7 @@ func _draw() -> void:
 	# Enclose the old donor's rim; the shader clips all visible world pixels.
 	# The dark inner lip absorbs the PC's coarse grey corner steps.
 	_rounded(Rect2(29.5,11.0,261,101.8),Color("0c101a"),8)
-	_rounded(Rect2(30.2,11.7,259.6,100.4),Color("79916a") if hud_style=="tactical" else Color("ff1025"),7.3)
+	_rounded(Rect2(30.2,11.7,259.6,100.4),Color("161b18") if hud_style=="tactical" else Color("ff1025"),7.3)
 	_rounded(Rect2(32,13,256,97),Color("12141b"),7)
 	# Three straight machined panels replace the rubber-sheeted donor margins.
 	# The outline follows the existing outer metal diagonals at row 123.

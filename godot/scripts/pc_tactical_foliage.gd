@@ -21,7 +21,7 @@ func _init() -> void:
 	material = ShaderMaterial.new()
 	material.shader = ShaderSource
 	material.render_priority = 1
-	var meshes := [_shrub(),_grass()]
+	var meshes := [_authored_mesh("shrub"),_authored_mesh("grass")]
 	for layer in 2:
 		var node := MultiMeshInstance3D.new()
 		node.multimesh = MultiMesh.new()
@@ -41,6 +41,45 @@ func _init() -> void:
 		add_child(node)
 		plants.append(node)
 	visible = false
+
+# Optional Blender-authored presentation meshes. Every absent or malformed asset
+# falls back independently, without changing the source admission/planting path.
+const WORLD_AUTHOR_SHA := "76788548500753d8f38fa4eb925544f38c237adb1c4439b9dd505d9f44512e9f"
+static func _authored_mesh(name: String) -> ArrayMesh:
+	var path := "res://assets/tactical_world_v1/"+name+".tres"
+	if ResourceLoader.exists(path):
+		var candidate: Resource = load(path)
+		if candidate is ArrayMesh and _valid_authored_mesh(candidate,name): return candidate
+	return _shrub() if name=="shrub" else _grass()
+
+static func _valid_authored_mesh(mesh: ArrayMesh, name: String) -> bool:
+	if mesh.get_meta("tactical_world_revision",0)!=1 or mesh.get_meta("author_sha256","")!=WORLD_AUTHOR_SHA: return false
+	if mesh.get_surface_count()!=1 or mesh.surface_get_primitive_type(0)!=Mesh.PRIMITIVE_TRIANGLES: return false
+	var arrays:=mesh.surface_get_arrays(0)
+	if not arrays[Mesh.ARRAY_VERTEX] is PackedVector3Array or not arrays[Mesh.ARRAY_NORMAL] is PackedVector3Array or not arrays[Mesh.ARRAY_TEX_UV] is PackedVector2Array or not arrays[Mesh.ARRAY_TEX_UV2] is PackedVector2Array: return false
+	if arrays[Mesh.ARRAY_INDEX]!=null and not arrays[Mesh.ARRAY_INDEX].is_empty(): return false
+	var vertices: PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array=arrays[Mesh.ARRAY_NORMAL]
+	var uv: PackedVector2Array=arrays[Mesh.ARRAY_TEX_UV]
+	var tags: PackedVector2Array=arrays[Mesh.ARRAY_TEX_UV2]
+	if vertices.size()<6 or vertices.size()>(2100 if name=="shrub" else 480) or vertices.size()%3!=0: return false
+	if normals.size()!=vertices.size() or tags.size()!=vertices.size() or uv.size()!=vertices.size(): return false
+	var radius:=25.0 if name=="shrub" else 5.0
+	var height:=12.5 if name=="shrub" else 11.0
+	var footprint: Array[Vector3]=[Vector3(-radius,.08,-radius),Vector3(radius,.08,-radius),Vector3(radius,.08,radius),Vector3(-radius,.08,-radius),Vector3(radius,.08,radius),Vector3(-radius,.08,radius)]
+	for i in vertices.size():
+		var p:=vertices[i];var n:=normals[i];var tag:=tags[i]
+		if not p.is_finite() or not n.is_finite() or not uv[i].is_finite() or not tag.is_finite(): return false
+		if absf(p.x)>radius+.001 or absf(p.z)>radius+.001 or p.y<-.001 or p.y>height: return false
+		if n.length_squared()<.90 or n.length_squared()>1.10: return false
+		var kind:=floorf(tag.x*2.0)/2.0
+		if kind not in [0.0,0.5,1.0] or tag.y<.7 or tag.y>1.1: return false
+		var axis:float=(tag.x-kind)*16.0
+		if not is_equal_approx(axis,roundf(axis)) or axis<0.0 or axis>2.0: return false
+		if i<6:
+			if not p.is_equal_approx(footprint[i]) or kind!=1.0: return false
+		elif kind==1.0:return false
+	return true
 
 func set_material_atlas(atlas: Texture2D) -> void:
 	material.set_shader_parameter("tactical_realism_ready",atlas!=null)

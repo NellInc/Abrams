@@ -35,23 +35,23 @@ const TACTICAL_LAYOUTS := {
 	1: {"camera":Vector4(32,13,288,110), "source":[
 		Vector4(32,13,288,110),Vector4(11,139,94,174),Vector4(11,176,94,194),
 		Vector4(124,136,194,197),Vector4(224,139,265,193),Vector4(269,139,310,193),Vector4(0,197,320,200)],
-		"destination":[Vector4(0.055,0.077,0.945,0.742),Vector4(0.055,0.795,0.255,0.950),
-		Vector4(0.277,0.795,0.477,0.950),Vector4(0.499,0.795,0.665,0.950),
-		Vector4(0.690,0.795,0.815,0.950),Vector4(0.835,0.795,0.960,0.950),Vector4(0.055,0.957,0.945,0.965)]},
+		"destination":[Vector4(0.057,0.105,0.943,0.670),Vector4(0.065,0.760,0.247,0.920),
+		Vector4(0.276,0.760,0.461,0.920),Vector4(0.489,0.760,0.647,0.920),
+		Vector4(0.674,0.760,0.812,0.920),Vector4(0.839,0.760,0.952,0.920),Vector4(0.055,0.937,0.945,0.945)]},
 	2: {"camera":Vector4(0,10,320,53), "source":[
 		Vector4(0,10,320,53),Vector4(15,62,161,160),Vector4(14,176,94,194),
 		Vector4(102,176,163,194),Vector4(207,81,289,143),Vector4(207,143,289,187),Vector4(0,197,320,200)],
-		"destination":[Vector4(0.055,0.085,0.945,0.340),Vector4(0.055,0.405,0.425,0.950),
-		Vector4(0.465,0.837,0.685,0.950),Vector4(0.715,0.837,0.945,0.950),
-		Vector4(0.465,0.405,0.685,0.735),Vector4(0.715,0.405,0.945,0.735),Vector4(0.055,0.957,0.945,0.965)]},
+		"destination":[Vector4(0.057,0.105,0.943,0.330),Vector4(0.065,0.405,0.425,0.920),
+		Vector4(0.465,0.820,0.685,0.920),Vector4(0.715,0.820,0.945,0.920),
+		Vector4(0.465,0.405,0.685,0.735),Vector4(0.715,0.405,0.945,0.735),Vector4(0.055,0.937,0.945,0.945)]},
 	3: {"camera":Vector4(0,0,320,117), "source":[Vector4(0,0,320,146),Vector4(0,197,320,200)],
-		"destination":[Vector4(0.055,0.085,0.945,0.950),Vector4(0.055,0.957,0.945,0.965)]},
+		"destination":[Vector4(0.0,0.067,1.0,0.900),Vector4(0.055,0.937,0.945,0.945)]},
 	4: {"camera":Vector4(0,0,320,136), "source":[Vector4(0,0,320,136),Vector4(60,187,258,198),Vector4(0,198,320,200)],
-		"destination":[Vector4(0.055,0.085,0.945,0.870),Vector4(0.220,0.893,0.780,0.950),Vector4(0.055,0.957,0.945,0.965)]},
+		"destination":[Vector4(0.033,0.067,0.967,0.842),Vector4(0.155,0.860,0.850,0.925),Vector4(0.055,0.937,0.945,0.945)]},
 	5: {"camera":Vector4.ZERO, "source":[Vector4(18,37,105,100),Vector4(123,37,305,100),
 		Vector4(9,107,313,184),Vector4(0,197,320,200)],
 		"destination":[Vector4(0.650,0.130,0.850,0.440),Vector4(0.055,0.105,0.550,0.470),
-		Vector4(0.055,0.520,0.945,0.950),Vector4(0.055,0.957,0.945,0.965)]}}
+		Vector4(0.055,0.520,0.945,0.920),Vector4(0.055,0.937,0.945,0.945)]}}
 const MSAA_LEVELS := {0:Viewport.MSAA_DISABLED,2:Viewport.MSAA_2X,4:Viewport.MSAA_4X,8:Viewport.MSAA_8X}
 const ANISOTROPY_LEVELS := {0:Viewport.ANISOTROPY_DISABLED,2:Viewport.ANISOTROPY_2X,4:Viewport.ANISOTROPY_4X,8:Viewport.ANISOTROPY_8X,16:Viewport.ANISOTROPY_16X}
 
@@ -260,7 +260,17 @@ func _set_wide_station(station: int) -> void:
 	tactical_chrome.queue_redraw()
 	_resize_targets()
 
+static func source_gunner_corners(source: Image, ui: PackedByteArray, tags: PackedByteArray) -> bool:
+	# The same finite source shape as the existing optical trim. An unknown
+	# write at any corner rejects the entire finish, including that new ink.
+	if source==null or source.get_size()!=Vector2i(320,200) or ui.size()!=64000 or tags.size()!=64000: return false
+	for p in preload("res://scripts/pc_gunner_trim.gd").corner_pixels():
+		var index: int=p.y*320+p.x
+		if ui[index]!=255 or tags[index]!=0 or source.get_pixelv(p).to_rgba32()!=Color8(85,85,85).to_rgba32(): return false
+	return true
+
 func _update_hud_material() -> void:
+	tactical_material.set_shader_parameter("source_gunner_corners",_wide_station==1 and _fallback_pair_verified and not tandem_frame.genesis_art_enabled and source_gunner_corners(tandem_frame._cached_source,_hud_mask_data,_panel_mask_bytes))
 	tactical_material.set_shader_parameter("hud_mask",_hud_mask_texture)
 	tactical_material.set_shader_parameter("panel_mask",_panel_mask_texture)
 	tactical_material.set_shader_parameter("panels_verified",_panel_mask_texture!=null)

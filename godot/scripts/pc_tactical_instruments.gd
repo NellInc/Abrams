@@ -1,11 +1,12 @@
 extends Control
 ## Output-resolution Tactical instruments. Only current, source-proven cells
 ## may replace a panel; unknown ink keeps the complete original panel visible.
+const FieldPanel = preload("res://scripts/pc_tactical_panel.gd")
 const Ink = preload("res://scripts/pc_instrument_art.gd")
 const CREAM = Color("e3e4cd")
 const MUTED = Color("c1ccba")
 const RULE = Color("526b58")
-const FIELD = Color("101e19")
+const FIELD = Color("0c1612")
 const GREEN = Color("a6cf8b")
 const AMBER = Color("e7b566")
 const RED = Color("ed9271")
@@ -38,6 +39,7 @@ class PanelInk extends Control:
 
 func _init() -> void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
+	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	resized.connect(_place_panels)
 	font.changed.connect(_invalidate_paint)
 	title.changed.connect(_invalidate_paint)
@@ -45,12 +47,13 @@ func _init() -> void:
 	verifier.hide()
 
 func load_sources(root_path: String) -> void:
+	FieldPanel.load_sources(root_path)
 	verifier.load_pc_sources(root_path)
 	damage_catalog.clear()
 	var catalog=preload("res://scripts/pc_tactical_damage_states.gd")
 	for name in catalog.SOURCE_HASHES:
 		if FileAccess.get_sha256(root_path.path_join("GAME/"+name))!=catalog.SOURCE_HASHES[name]: return
-	damage_catalog=catalog.STATES
+	damage_catalog=catalog.STATES.duplicate(true)
 
 func _damage_state(source: Image, mask: Image, tags: Image) -> int:
 	var box:=Rect2i(123,37,184,63)
@@ -327,8 +330,8 @@ func _row(box: Rect2, label: String, value: String, colour: Color=CREAM, selecte
 		_ink.draw_rect(box.grow(-2),Color("3c241d") if colour==RED else Color("342d1b"))
 		_ink.draw_line(box.position+Vector2(3,4),Vector2(box.position.x+3,box.end.y-4),colour,_diagram_stroke(2),true)
 	if selected:
-		_ink.draw_rect(box.grow(-2),Color("304332"))
-		_ink.draw_rect(box.grow(-2),Color("6c7950"),false,_diagram_stroke(1),true)
+		_ink.draw_rect(box.grow(-2),Color("343323"))
+		_ink.draw_rect(box.grow(-2),AMBER,false,_diagram_stroke(1),true)
 		var at:=Vector2(box.position.x+6,box.get_center().y)
 		var marker:=Vector2(maxf(6,4.0/_output_scale()),maxf(4,3.0/_output_scale()))
 		_ink.draw_colored_polygon(PackedVector2Array([at+Vector2(0,-marker.y),at+Vector2(marker.x,0),at+Vector2(0,marker.y)]),AMBER)
@@ -579,10 +582,7 @@ func _paint_panel(panel: Dictionary, painter: CanvasItem) -> void:
 	_ink.draw_set_transform(-painter.get_parent().position,0,factor)
 	var box: Rect2=panel.rect
 	var index: int=panel.index
-	_ink.draw_rect(box,FIELD)
-	_ink.draw_rect(box.grow(-1),Color("354c3d"),false,1,true)
-	_ink.draw_line(box.position+Vector2(2,2),Vector2(box.end.x-2,box.position.y+2),Color("4a6250"),1,true)
-	_ink.draw_line(Vector2(box.position.x+2,box.end.y-2),box.end-Vector2(2,2),Color("07130e"),2,true)
+	if station!=4: FieldPanel.recess(_ink,box,_output_scale())
 	if station==1:
 		if index==1:
 			var height:=box.size.y/3
@@ -608,10 +608,15 @@ func _paint_panel(panel: Dictionary, painter: CanvasItem) -> void:
 			_tank(Rect2(box.position,Vector2(box.size.x,box.size.y*0.36)),0)
 			_systems(Rect2(box.position+Vector2(0,box.size.y*0.39),Vector2(box.size.x,box.size.y*0.61)),true)
 	elif station==4:
+		var stops: Array[float]=[0.0,0.21,0.54,0.81,1.0]
 		for i in 4:
-			var r:=Rect2(box.position+Vector2(i*box.size.x/4,0),Vector2(box.size.x/4,box.size.y))
-			if i==3: _lamp(r,"TEMP",_gauge("driver_temperature"))
-			else: _row(r,["HDG","SPD","FUEL"][i],_value([90,132,186][i],191))
+			var r:=Rect2(box.position+Vector2(stops[i]*box.size.x,0),Vector2((stops[i+1]-stops[i])*box.size.x,box.size.y)).grow(-4)
+			FieldPanel.recess(_ink,r,_output_scale())
+			var inner:=Rect2(r.position+Vector2(8,1),r.size-Vector2(16,2))
+			if i==3: _lamp(inner,"TEMP",_gauge("driver_temperature"))
+			else:
+				_text(["HDG","SPD","FUEL"][i],Rect2(inner.position,Vector2(inner.size.x*0.4,inner.size.y)),22,MUTED,false,true)
+				_text(_value([90,132,186][i],191),Rect2(inner.position+Vector2(inner.size.x*0.4,0),Vector2(inner.size.x*0.6,inner.size.y)),44 if i==1 else 29,CREAM,false,i==1,true)
 	elif station==5:
 		if index==0:
 			for i in 6: _row(Rect2(box.position+Vector2(0,i*box.size.y/6),Vector2(box.size.x,box.size.y/6)),["HEAT","SABOT","AX","MG ROUNDS","SMOKE GRN","FUEL GALS"][i],_value(83,52+i*8))

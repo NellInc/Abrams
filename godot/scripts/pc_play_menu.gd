@@ -33,6 +33,7 @@ var presentation_note := ""
 var modern_available := false
 var speed := 1
 var busy := false
+var frontdoor_active := false
 var graphics_popup: PopupMenu
 var hud_popup: PopupMenu
 var session_popup: PopupMenu
@@ -128,6 +129,9 @@ func _tint_menu_icon(name: String, tint: Color) -> void:
 func _watch(menu: PopupMenu) -> void:
 	super._watch(menu)
 	menu.about_to_popup.connect(func():
+		# AppKit may populate native menus reentrantly for accessibility.
+		# Native separators already cannot focus; never mutate them here.
+		if menu.is_native_menu(): return
 		# An empty Load menu otherwise focuses its only enabled item: a divider.
 		# Restored receives the incumbent separator flags when reopened.
 		for index in menu.item_count:
@@ -308,6 +312,7 @@ func _input(event: InputEvent) -> void:
 	if handle_shortcut(event):get_viewport().set_input_as_handled()
 
 func handle_shortcut(event: InputEvent) -> bool:
+	if frontdoor_active: return false
 	if not event is InputEventKey:return false
 	var code: int=event.keycode if event.keycode!=0 else event.physical_keycode
 	if code==KEY_TAB:
@@ -411,7 +416,7 @@ func choose_graphics(mode: String, persist: bool=true) -> bool:
 	return graphics_mode==mode
 
 func choose_speed(multiplier: int) -> bool:
-	if busy or multiplier not in [1,8]: return false
+	if frontdoor_active or busy or multiplier not in [1,8]: return false
 	speed=multiplier
 	speed_selected.emit(multiplier)
 	refresh_controls()
@@ -419,7 +424,7 @@ func choose_speed(multiplier: int) -> bool:
 	return true
 
 func request_state(operation: String, slot: int) -> bool:
-	if busy or operation not in ["save_state","load_state","load_previous"]: return false
+	if frontdoor_active or busy or operation not in ["save_state","load_state","load_previous"]: return false
 	if operation=="save_state" and (slot<1 or slot>5): return false
 	if operation=="load_state" and not _has_slot(slot): return false
 	# Only a host that lists the archive accepts the operation.

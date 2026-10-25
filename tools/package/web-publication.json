@@ -669,6 +669,86 @@
   "local-audio/frontend-music-v1/menu.wav": {
    "set": "genesis",
    "sha256": "7c979c7517d7766531bb872c480ffec6652ee26184fcee601187c0a214883874"
+  },
+  "local-audio/suno-score-v1/manifest.json": {
+   "set": "common",
+   "sha256": "92cfc70e000b67326c0a34388f04c8a617792411b044edc03647a3a9626c2f19"
+  },
+  "local-audio/suno-score-v1/menu.wav": {
+   "set": "common",
+   "sha256": "0ba863de81dcc8bf2b179a85554ed1f93cc749a6481b0938242c76b499c354cb"
+  },
+  "local-audio/suno-score-v1/briefing.wav": {
+   "set": "common",
+   "sha256": "13d0276933660f291b2a360fb8b4fb73bcb39ba8bedad9ddf4a1f73e4e1bd924"
+  },
+  "local-audio/suno-score-v1/arming.wav": {
+   "set": "common",
+   "sha256": "038026e28fd3767c0578bc16a31c2277cde447690a55fd1892a132d748210e03"
+  },
+  "local-audio/suno-score-v1/idyll.wav": {
+   "set": "common",
+   "sha256": "861e5eabe98760d9eccfbce9b473507bea4f48f9279429ad8925d9eff70e53f5"
+  },
+  "local-audio/suno-score-v1/battle.wav": {
+   "set": "common",
+   "sha256": "3f6cde03ea6a234801632b8d33d83207655b55051a024afc92dbc5df3e1c04bb"
+  },
+  "local-audio/suno-score-v1/crisis.wav": {
+   "set": "common",
+   "sha256": "a643f25d9e1155e20b8135d43dd131f45aa9958a1b9235520415319bc47756bc"
+  },
+  "local-audio/suno-score-v1/success.wav": {
+   "set": "common",
+   "sha256": "1dbc837273d0077105b9175dd10ff95b18b79b438ab802637a062bafc5914a0d"
+  },
+  "local-audio/suno-score-v1/failure.wav": {
+   "set": "common",
+   "sha256": "9e633a3614d133b1099b30dc3ba1ecdfe16b56d1af83dba3ef6202dea0224982"
+  },
+  "local-audio/suno-score-v1/friendly_fire.wav": {
+   "set": "common",
+   "sha256": "d8d3c5b13d15da0eca21fd97c9cf1663b305a1b0091a111d3d554c0388ec8e4e"
+  },
+  "local-audio/suno-score-v1/death.wav": {
+   "set": "common",
+   "sha256": "5c22487cc887c268e7cda6f1c5458289f17b9a10e1ef8c894f876e5eae8f4fc4"
+  },
+  "local-audio/suno-score-v1/ending_victory.wav": {
+   "set": "common",
+   "sha256": "a5ba37456ef4ed0e934a5512a995aa561c21175996cee03dd049638d0c8711ed"
+  },
+  "local-audio/suno-score-v1/ending_defeat.wav": {
+   "set": "common",
+   "sha256": "ccf24c489d63d7b327086cfa96cf3cbe2d5aa3a3cd325bf33c140dbce4d0f3f9"
+  },
+  "local-audio/suno-score-v1/stinger_success.wav": {
+   "set": "common",
+   "sha256": "24f3e9c3b50f504beab7af35b27c70f0cc2b9e58d09a517d6312345674a43c21"
+  },
+  "local-audio/suno-score-v1/stinger_failure.wav": {
+   "set": "common",
+   "sha256": "9b1ec814fa9b0ad1c56dd0a7e4a13646bfc0bbb17a33826380eec9544c289bfb"
+  },
+  "local-audio/suno-score-v1/stinger_friendly_fire.wav": {
+   "set": "common",
+   "sha256": "c093a72c3ed4a1d24ab2f1f0867a2f55dd66f8daad8d0b8de77b987a363e7bd8"
+  },
+  "local-audio/suno-score-v1/stinger_death.wav": {
+   "set": "common",
+   "sha256": "78e9fc829b9e1470d0e52bec4b28b94c59306b09a934e6324c96c700b12f7718"
+  },
+  "local-audio/suno-score-v1/battle_flank.wav": {
+   "set": "common",
+   "sha256": "5465617931025d65d3d13f6858f8e031ddfeb6c7270aef13acc1989c2d0c56cf"
+  },
+  "local-audio/suno-score-v1/battle_pressure.wav": {
+   "set": "common",
+   "sha256": "596335bc87b76f425551c1580fe5d74d2483d801eec78c8499209a8eddbff9a1"
+  },
+  "local-audio/suno-score-v1/aftermath.wav": {
+   "set": "common",
+   "sha256": "9d8939b8c400edf7a34a32f0d7f2fbc800d9516961fc6cc69d66bdf788b39b30"
   }
  },
  "runtime_derived": {

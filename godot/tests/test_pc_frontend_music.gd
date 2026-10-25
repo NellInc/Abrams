@@ -15,11 +15,13 @@ func run()->void:
 	# below does not depend on this being the first Audio in the process.
 	Music.verified.clear()
 	var audio=Audio.new()
+	audio.prefer_independent_music=false # This test retains the historical donor-bank contract.
 	root.add_child(audio)
 	var local_music:=FileAccess.file_exists(audio.music_bank.directory.path_join("manifest.json"))
 	if local_music:
 		check(audio.music_bank.streams.size()==4 and audio.music_bank.hash_count==4,"startup prewarm verifies and decodes every local track once")
 		var second=Audio.new()
+		second.prefer_independent_music=false
 		root.add_child(second)
 		check(second.music_bank.streams.size()==4 and second.music_bank.hash_count==0,"verified tracks are hashed once per session")
 		second.free()
@@ -111,7 +113,7 @@ func run()->void:
 	# One bad local track silences only its own context and records why.
 	var bank=preload("res://scripts/pc_frontend_music.gd").new()
 	check(bank.IntroArt.CATALOG_SHA==preload("res://scripts/pc_intro_art.gd").CATALOG_SHA,"intro music shares the intro art pin")
-	var folder:=OS.get_user_data_dir().path_join("frontend-music-latch")
+	var folder:=project_root.path_join("artifacts/pc-frontend-music-latch")
 	DirAccess.make_dir_recursive_absolute(folder)
 	var pcm:=AudioStreamWAV.new()
 	pcm.format=AudioStreamWAV.FORMAT_16_BITS;pcm.stereo=true;pcm.mix_rate=24000

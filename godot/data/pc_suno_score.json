@@ -1,0 +1,327 @@
+{
+  "schema": 1,
+  "title": "Abrams: Iron on the Horizon",
+  "provider": "Suno",
+  "status": "polished_arrangements_local",
+  "direction": "Original instrumental armour-combat score: low French horns, analogue sequencer, dark cello ostinati, dry military snare, warm electric piano, acoustic space. A human crew inside a formidable machine. Distinctive, restrained, late-Cold-War electronic-orchestral character. No artist imitation, sampled game music, vocals, chants, speech, gunshots or radio effects.",
+  "motif": "Five notes D A F E D, shaped long-short-short-short-long. Assertive in the menu, fragmented in combat, softened in idylls, distorted after friendly fire, resolved in the final homecoming. This is a composition request; generated pitch fidelity requires listening verification.",
+  "generation_policy": "Use existing account credits only. Twelve masters, choose one of each generated pair. No subscription change, extra credit purchase, audio upload or public publishing. Preserve original downloads unchanged; create game-ready derivatives separately.",
+  "tracks": [
+    {
+      "id": "menu",
+      "title": "01 Iron on the Horizon",
+      "contexts": [
+        "publisher",
+        "intro",
+        "menu",
+        "name",
+        "joystick",
+        "scenario",
+        "information",
+        "help",
+        "settings",
+        "credits"
+      ],
+      "bpm": 96,
+      "loop": true,
+      "prompt": "Instrumental main-menu theme for Abrams, an M1 tank game. Original cinematic late-Cold-War electronic-orchestral score, D minor, 96 BPM, 4/4. Memorable five-note French-horn hook D A F E D, long-short-short-short-long. Solid analogue bass pulse, dry snare, deep toms, cello eighth notes, burnished horns and a thin glassy synth line. Weight, discipline, danger and the humanity of four crew members. Strong identifiable melody within the first ten seconds, elegant B section, return to the hook. Three-minute game soundtrack, clear inner detail, controlled bass, no huge trailer drops. Instrumental only, no voices, no choir, no combat sound effects. Begin on the pulse and end on a sustained dominant suitable for an edited loop.",
+      "arrangement": "[Instrumental]\n[Intro: low pulse, horn motif]\n[A: strings join, disciplined snare]\n[B: open space, electric piano answers]\n[A: full warm horns, controlled lift]\n[Loop tail: dominant pedal, no final crash]",
+      "song_url": "https://suno.com/song/6a45fb59-3685-4d49-a170-6f07829c0f43",
+      "alternates": [
+        "https://suno.com/song/1250cf0a-041b-4694-aa1d-f3f9f71cdc53"
+      ]
+    },
+    {
+      "id": "briefing",
+      "title": "02 Maplight",
+      "contexts": [
+        "briefing",
+        "mission_map",
+        "orders",
+        "debrief"
+      ],
+      "bpm": 76,
+      "loop": true,
+      "prompt": "Instrumental military mission briefing underscore, D minor, 76 BPM. Amber-lit map table before an armoured mission. Muted electric-piano intervals, restrained cello pizzicato, dark analogue pulse, sparse brushed snare, a distant French horn stating fragments of D A F E D. Intelligent, deliberate, quietly consequential. Spacious midrange leaves room for reading and crew dialogue. Patient two-to-three-minute development with a gentle B section; no climax, ticking clock, voices, choir, radio, gunfire or sound effects. A real melody in miniature, dry detail, small-room intimacy. Continuous pulse, even ending for an edited loop.",
+      "arrangement": "[Instrumental]\n[Map table: piano and low pulse]\n[Orders: muted strings, horn fragment]\n[Consideration: warm suspended chords]\n[Return: piano, unchanged pulse]",
+      "song_url": "https://suno.com/song/fe0035ad-c614-4fe8-bf73-e5c87c3a7a97",
+      "alternates": [
+        "https://suno.com/song/87be16e6-7ecc-4e1d-ba64-741447f7fc79"
+      ]
+    },
+    {
+      "id": "arming",
+      "title": "03 Before the Breech",
+      "contexts": [
+        "motor_pool",
+        "ammo_choice",
+        "loadout"
+      ],
+      "bpm": 104,
+      "loop": true,
+      "prompt": "Instrumental tank motor-pool and ammunition-selection music, D minor, 104 BPM, 4/4. Precise interlocking analogue sequencers, muted bass guitar, mallet accents, tight dry snare, short low-string figures, muted brass with the five-note D A F E D motif. Tangible workshop craft, methodical preparation, latent power. Playful mechanical precision without comedy. Moderate dynamics, a clean rhythmic pocket, airy middle so interface sounds remain distinct. Two-to-three-minute continuous game cue, small harmonic changes and a contrasting sixteen-bar phrase. No metallic factory recordings, gun-loading effects, vocals, choir, speech or EDM drop. Loop-friendly steady pulse and open ending.",
+      "arrangement": "[Instrumental]\n[Preparation: sequencer and muted bass]\n[Selection: mallets, low strings]\n[Readiness: brief brass phrase]\n[Return: precise pocket, open ending]",
+      "song_url": "https://suno.com/song/5568a6bd-49a3-4355-a200-db11dfc21b98",
+      "alternates": [
+        "https://suno.com/song/e8259ce4-be5e-4842-8df1-a975c3800d38"
+      ]
+    },
+    {
+      "id": "idyll",
+      "title": "04 Fields Beyond the Armour",
+      "contexts": [
+        "idyll",
+        "quiet_travel",
+        "pause",
+        "campaign_rest",
+        "stalemate"
+      ],
+      "bpm": 68,
+      "loop": true,
+      "prompt": "Instrumental quiet-travel idyll for a late-Cold-War tank game, D minor opening into F major, 68 BPM. Fields at first light seen through a hatch, four people between orders. Felt electric piano, a tender solo cello, warm analogue pads, very light bass, occasional wooden percussion. The horn theme D A F E D becomes a small piano melody. Pastoral and observant, with a trace of unease. Beautiful specific tune, emotional restraint, no syrupy uplift. Three minutes, gentle variation, little percussion, clear space for engine and dialogue. No vocals, wordless singing, choir, nature recordings or cinematic booms. Quiet even ending suitable for an edited continuous loop.",
+      "arrangement": "[Instrumental]\n[Dawn: piano theme]\n[Travel: solo cello, warm pad]\n[Stillness: reduced texture]\n[Return: piano, open suspended chord]",
+      "song_url": "https://suno.com/song/8c82391b-37ad-4c2d-bfcb-075332b75906",
+      "alternates": [
+        "https://suno.com/song/7c93997a-8956-40a8-a28d-abb894f2c3ae"
+      ]
+    },
+    {
+      "id": "battle",
+      "title": "05 Tracks into Fire",
+      "contexts": [
+        "battle",
+        "contact",
+        "sustained_combat"
+      ],
+      "bpm": 124,
+      "loop": true,
+      "prompt": "Instrumental sustained tank-battle game score, D minor, 124 BPM, 4/4. Low cello sixteenths, taut analogue bass, syncopated dry toms and snare, sharply articulated low brass. Original five-note D A F E D hook broken into purposeful rhythmic cells. Heavy tracked momentum, coordinated crew effort, pressure and forward motion. Three minutes of evolving combat groove with alternating dense and lean sections. Preserve headroom and a clear speech band; moderate high-frequency percussion. No trailer risers, huge drops, dubstep, guitar solos, choir, vocals, radio, explosions or gunfire. Musically driven tension, consistent pulse, end in motion for an edited loop.",
+      "arrangement": "[Instrumental]\n[Contact: immediate low-string drive]\n[Engagement: brass cells, tom pattern]\n[Manoeuvre: thinner sequencer passage]\n[Renewed pressure: full rhythm]\n[Loop tail: moving ostinato]",
+      "song_url": "https://suno.com/song/96b38654-56be-44c0-9369-756f723147ba",
+      "alternates": [
+        "https://suno.com/song/6e88deec-fcc5-466c-8c32-b7551b37cf1e"
+      ]
+    },
+    {
+      "id": "crisis",
+      "title": "06 Hull Down",
+      "contexts": [
+        "crisis",
+        "visible_damage",
+        "urgent_combat"
+      ],
+      "bpm": 132,
+      "loop": true,
+      "prompt": "Instrumental high-pressure armoured combat underscore, D minor, 132 BPM. Tight low strings, clipped brass clusters, dark analogue bass, irregular tom accents over a steady 4/4 drive. The D A F E D motif compressed into urgent three-note fragments. Cornered but competent, a crew solving a crisis. Tension from counterpoint and harmony rather than loudness. Two-to-three-minute game cue with brief breathing spaces, controlled bass and open midrange for warning speech. No alarm sounds, sirens, radio, gunfire, explosions, voices, choir or trailer drop. No triumphant resolution. Begin in motion, end on a stable pulse suitable for an edited loop.",
+      "arrangement": "[Instrumental]\n[Pressure: urgent ostinato]\n[Response: brass, dry toms]\n[Breathing space: bass and strings]\n[Hold: unresolved steady pulse]",
+      "song_url": "https://suno.com/song/0e78b24d-a9ae-4902-865c-ac32480a00d3",
+      "alternates": [
+        "https://suno.com/song/0c6a9aee-8837-42f5-a768-cf5bd72c9fba"
+      ]
+    },
+    {
+      "id": "success",
+      "title": "07 The Ground We Held",
+      "contexts": [
+        "mission_success",
+        "promotion",
+        "commendation"
+      ],
+      "bpm": 96,
+      "loop": false,
+      "prompt": "Instrumental successful-mission result music for an M1 tank game, D minor moving to D major, 96 BPM. A concise warm horn statement of D A F E D, dignified dry snare, steady cellos and luminous restrained strings. Earned relief, professional pride, the crew made it back. A clear six-second opening recognition, then a warm reflective middle and a complete graceful cadence. Aim for sixty to ninety seconds, suitable for a results screen. Human-scale triumph, musical detail and headroom. No stadium anthem, bombastic trailer crescendo, choir, vocals, speech, gunshots or medal sound effects.",
+      "arrangement": "[Instrumental]\n[Recognition: six-second horn fanfare]\n[Relief: warm strings and piano]\n[Reflection: quiet motif]\n[End: clear D-major cadence]",
+      "song_url": "https://suno.com/song/e353e60f-6121-432d-ad49-aedb50b15d83",
+      "alternates": [
+        "https://suno.com/song/d31dbe3f-3f50-4c40-84f2-da46208a72e7"
+      ]
+    },
+    {
+      "id": "failure",
+      "title": "08 Orders Unfulfilled",
+      "contexts": [
+        "mission_failure",
+        "abort",
+        "poor_result"
+      ],
+      "bpm": 64,
+      "loop": false,
+      "prompt": "Instrumental failed-mission debrief music, D minor, 64 BPM. Low cello, spare electric-piano chords, a subdued French horn attempting the first three notes D A F of an unfinished theme, very light brushed military snare then silence between phrases. Exhaustion, accountability and unfinished work. Grave, thoughtful and unsentimental. Sixty to ninety seconds, immediate short falling phrase, a restrained middle, quiet unresolved close. No melodramatic funeral march, triumphant turn, vocals, choir, speech, gunfire or cinematic impacts. Leave space for the commanding officer's words.",
+      "arrangement": "[Instrumental]\n[Result: low falling phrase]\n[Debrief: cello and piano]\n[Unfinished: broken horn motif]\n[End: quiet unresolved chord]",
+      "song_url": "https://suno.com/song/48587c71-4f1d-4ed4-bb26-e7840e8d350c",
+      "alternates": [
+        "https://suno.com/song/9a6bfec3-ea35-417a-be83-89a8772046d5"
+      ]
+    },
+    {
+      "id": "friendly_fire",
+      "title": "09 Blue on Blue",
+      "contexts": [
+        "friendly_fire",
+        "disciplinary",
+        "doom"
+      ],
+      "bpm": 52,
+      "loop": false,
+      "prompt": "Instrumental friendly-fire consequence cue for a tank game. Bleak doom-laden orchestral judgement, D minor with a flattened second, 52 BPM. One immediate low brass dissonance, bowed contrabass, a single dark tolling bell, slow heavy tom heartbeat, fractured descending D A F E D theme. Shock, guilt, dread, irreversible harm to one's own side. Accusatory and human, with cold empty space. Sixty seconds: ominous recognition, spare development, dying unresolved final chord. This is a consequence, never a reward. No triumphant action groove, metal riff, vocals, choir, spoken verdict, gunfire, scream or film sound effects. Powerful low register at controlled volume.",
+      "arrangement": "[Instrumental]\n[Judgement: low brass dissonance and one bell]\n[Weight: bowed bass, slow tom]\n[Reckoning: broken descending motif]\n[End: cold unresolved silence]",
+      "song_url": "https://suno.com/song/87c32aab-5b30-4b61-8e0e-17f91bf29fe4",
+      "alternates": [
+        "https://suno.com/song/724838d0-f7c2-495f-90be-481eb894c2ac"
+      ]
+    },
+    {
+      "id": "death",
+      "title": "10 Four Empty Stations",
+      "contexts": [
+        "tank_destroyed",
+        "crew_loss",
+        "game_over",
+        "aftermath"
+      ],
+      "bpm": 56,
+      "loop": false,
+      "prompt": "Instrumental destroyed-tank and crew-loss game-over cue, D minor, 56 BPM. A low cello harmonic, sparse piano notes, distant muted horn, slowly thinning analogue pad. Four empty crew stations after the noise stops. The five-note D A F E D melody stated once simply, then missing its last note on the return. Intimate loss and stillness, restrained dignity, no sentimental swell. Sixty to ninety seconds with an immediate short sombre opening and a complete quiet ending. No horror jump scare, combat sounds, voices, breath, choir or military funeral quotation. Keep low-level detail audible without loudness maximisation.",
+      "arrangement": "[Instrumental]\n[Aftermath: low harmonic and piano]\n[Absence: single muted horn phrase]\n[Memory: incomplete piano motif]\n[End: long quiet decay]",
+      "song_url": "https://suno.com/song/30ee211f-54b3-4e9a-a94c-0c2aee9e6426",
+      "alternates": [
+        "https://suno.com/song/5edf0680-a499-482a-94a0-f9a6f52ad036"
+      ]
+    },
+    {
+      "id": "ending_victory",
+      "title": "11 Home by First Light",
+      "contexts": [
+        "campaign_victory",
+        "victory_newspaper"
+      ],
+      "bpm": 84,
+      "loop": false,
+      "prompt": "Instrumental campaign-victory ending and credits theme for an M1 tank game, D minor to F major then a quiet D-major homecoming, 84 BPM. Full lyrical French-horn reprise of D A F E D, expressive solo cello, warm strings, electric piano, restrained analogue bass and dignified soft snare. The combat rhythm relaxes into a journey home. Relief, comradeship, earned hope with memory of the cost. Three-minute composed arc, memorable opening, contrasting tender cello bridge, broad final theme, beautiful complete quiet cadence. No generic trailer uplift, stadium beat, choir, vocals, speech or war sound effects. Original melody and orchestration.",
+      "arrangement": "[Instrumental]\n[Homecoming: lyrical horn theme]\n[Cost: intimate cello and piano]\n[Reprise: warm strings and horns]\n[Credits: pulse relaxes]\n[End: quiet complete D-major cadence]",
+      "song_url": "https://suno.com/song/fdd262e9-9c92-4050-9cd4-4774b048bfe2",
+      "alternates": [
+        "https://suno.com/song/41f73306-1ae5-4c0c-a41c-018e1f8559ed"
+      ]
+    },
+    {
+      "id": "ending_defeat",
+      "title": "12 The Last Dispatch",
+      "contexts": [
+        "campaign_defeat",
+        "defeat_newspaper",
+        "campaign_loss"
+      ],
+      "bpm": 60,
+      "loop": false,
+      "prompt": "Instrumental campaign-defeat ending for a late-Cold-War tank game, D minor, 60 BPM. Lonely muted French horn over low strings, dry electric-piano intervals, faint analogue pulse gradually stopping. The main motif D A F E D becomes a slow elegy, with a small unresolved rising answer. Worn maps, bad news, an exhausted crew; sober historical weight, no spectacle. Two-to-three-minute composed arc: immediate solemn theme, spare middle, last fragile reprise, complete quiet minor cadence. No victorious harmonic turn, funeral quotation, choir, voices, newsreader, radio, gunfire or cinematic sound effects. Emotion through melody, space and restraint.",
+      "arrangement": "[Instrumental]\n[Dispatch: solitary horn theme]\n[Exhaustion: piano, low strings]\n[Last reprise: pulse disappears]\n[End: quiet minor cadence]",
+      "song_url": "https://suno.com/song/a046871f-9320-49ef-a9f5-45948ee98e3e",
+      "alternates": [
+        "https://suno.com/song/47477a78-2dc5-4191-9f45-56d6873fcd9a"
+      ]
+    }
+  ],
+  "production": {
+    "date": "2026-10-23",
+    "model": "v6",
+    "workspace_url": "https://suno.com/create?wid=177ad4e4-3be0-4c61-a47d-19f6b1ddad0a",
+    "generated_takes": 24,
+    "downloaded_wav_masters": 12,
+    "credits_used": 120,
+    "credits_remaining_at_completion": 2270,
+    "downloads_used": 12,
+    "listening_acceptance": "pending"
+  },
+  "edits": [
+    {
+      "id": "stinger_success",
+      "title": "Objective Secured",
+      "kind": "stinger",
+      "source_master": "success",
+      "loop": false,
+      "contexts": [
+        "confirmed mission success"
+      ],
+      "arrangement": "One-bar opening statement from The Ground We Held, clear attack and a short shaped decay."
+    },
+    {
+      "id": "stinger_failure",
+      "title": "Orders Broken",
+      "kind": "stinger",
+      "source_master": "failure",
+      "loop": false,
+      "contexts": [
+        "confirmed abort",
+        "confirmed mission failure"
+      ],
+      "arrangement": "One-bar minor statement from Orders Unfulfilled, falling into silence."
+    },
+    {
+      "id": "stinger_friendly_fire",
+      "title": "Wrong Side",
+      "kind": "stinger",
+      "source_master": "friendly_fire",
+      "loop": false,
+      "contexts": [
+        "visible original disciplinary verdict"
+      ],
+      "arrangement": "The opening dissonant statement from Blue on Blue, long enough for the consequence to land."
+    },
+    {
+      "id": "stinger_death",
+      "title": "Four Stations Silent",
+      "kind": "stinger",
+      "source_master": "death",
+      "loop": false,
+      "contexts": [
+        "original destroyed tank screen"
+      ],
+      "arrangement": "One-bar opening from Four Empty Stations with a rounded decay."
+    },
+    {
+      "id": "battle_flank",
+      "title": "Tracks into Fire: Flanking Movement",
+      "kind": "battle_variation",
+      "source_master": "battle",
+      "loop": true,
+      "source_window_seconds": [
+        10,
+        67
+      ],
+      "contexts": [
+        "second confirmed engagement"
+      ],
+      "arrangement": "First-half pulse-led passage, softened upper spectrum, same pitch and tempo. Whole-phrase loop."
+    },
+    {
+      "id": "battle_pressure",
+      "title": "Tracks into Fire: Sustained Pressure",
+      "kind": "battle_variation",
+      "source_master": "battle",
+      "loop": true,
+      "source_window_seconds": [
+        67,
+        126
+      ],
+      "contexts": [
+        "third confirmed engagement"
+      ],
+      "arrangement": "Separate second-half passage with the full original voicing and unchanged pitch and tempo. Whole-phrase loop."
+    },
+    {
+      "id": "aftermath",
+      "title": "When the Turbines Fall Quiet",
+      "kind": "aftermath",
+      "source_master": "failure",
+      "loop": true,
+      "contexts": [
+        "debrief after result stinger",
+        "neutral debrief",
+        "campaign ending tail"
+      ],
+      "arrangement": "Quiet phrase from Orders Unfulfilled, reduced bass and upper-spectrum energy, six dB below the source arrangement. Reflective aftermath bed."
+    }
+  ],
+  "edit_policy": "Preserve the twelve Suno masters. Derive six phrase-matched loops, four 2-6 second stingers, two contrasting battle passages and one subdued aftermath loop locally. No additional paid generation or export. Original master playlist remains in authored order."
+}

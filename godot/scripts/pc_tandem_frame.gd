@@ -24,6 +24,13 @@ const GENESIS_ART = {
 	3:["cupola","6daec85d79914aedbb28233c021beeaa2f478ea0db643b71625dc6bc3314ab0b"],
 	4:["driver","7429042e9b42eb89e340cf87e80632894d6d9f7a83a37c1bde99041190ecf1b2"],
 	5:["systems-status","b14de0de38209c593f2fcb59463428729ccd51f4af8ba9ccfd5c288307f93d83"]}
+# Authored RGB sheets use the established driver/cupola registration, without
+# enabling the optional Genesis atlas or its instrument/label substitutions.
+const TACTICAL_ART = {
+	3:["cupola","6bae3fcb05734d3e16b58e36e287bf427eb39ce338390acb9adfd2952bf22ce5",Vector2i(1672,941)],
+	4:["driver","a76cb48f484a4cb60dfd992c5ffa1c09e176ebc0736882b4cdaf695bb1814854",Vector2i(1672,941)]}
+var tactical_art_textures: Dictionary = {}
+var tactical_art_reason := "Tactical interior donors not loaded"
 var graphics_mode := "upscaled"
 var modern_available := false
 var native_graphics = preload("res://scripts/pc_native_graphics.gd").new()
@@ -256,6 +263,37 @@ func set_cockpit_art(plate_id: int, image: Image) -> bool:
 	cockpit_art_textures[plate_id] = ImageTexture.create_from_image(image)
 	return true
 
+func load_tactical_art(root: String) -> bool:
+	tactical_art_textures.clear()
+	# A late asset import may finish while EGA is showing its unmodified frame.
+	# That mode has no compositor material; its next mode switch rebinds art.
+	if material==_upscaled_material: _disable_art("Tactical interior donors reloading")
+	var loaded := {}
+	for id in TACTICAL_ART:
+		var entry: Array = TACTICAL_ART[id]
+		var path := root.path_join("local-art/pc-tactical-interior-v1/"+entry[0]+".png")
+		if not FileAccess.file_exists(path):
+			tactical_art_reason = "Tactical interior donor missing: "+entry[0]
+			return false
+		if FileAccess.get_sha256(path)!=entry[1]:
+			tactical_art_reason = "Tactical interior donor hash mismatch: "+entry[0]
+			return false
+		var image := Image.load_from_file(path)
+		if image==null or image.get_size()!=entry[2]:
+			tactical_art_reason = "Tactical interior donor unreadable or wrong size: "+entry[0]
+			return false
+		image.convert(Image.FORMAT_RGB8)
+		loaded[id] = ImageTexture.create_from_image(image)
+	tactical_art_textures = loaded
+	tactical_art_reason = ""
+	cupola_rail.load_source(root)
+	return true
+
+func _cockpit_donor(station: int) -> Texture2D:
+	if graphics_mode=="tactical" and tactical_art_textures.has(station):
+		return tactical_art_textures[station]
+	return cockpit_art_textures.get(station)
+
 func _disable_art(reason: String) -> void:
 	_current_plate_mask = null
 	_current_driver_mask = null
@@ -292,7 +330,7 @@ func _art_palette_matches(palette: Variant) -> bool:
 
 func _set_art(presentation: Dictionary, ui: Image) -> void:
 	_disable_art("material pilot disabled")
-	if gunner_art_texture == null and cockpit_art_textures.is_empty() and status_art_texture==null: return
+	if gunner_art_texture == null and cockpit_art_textures.is_empty() and status_art_texture==null and (graphics_mode!="tactical" or tactical_art_textures.is_empty()): return
 	gunner_art_reason = "no supported plate provenance"
 	if not _art_palette_matches(presentation.get("palette_rgb")):
 		gunner_art_reason = "palette differs from material study"
@@ -344,6 +382,7 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 		_plate_ids=present
 		_plate_row_ids=row_ids
 	var available := cockpit_art_textures.duplicate()
+	if graphics_mode=="tactical": available.merge(tactical_art_textures,true)
 	if gunner_art_texture != null: available[1] = gunner_art_texture
 	if status_art_texture != null: available[5] = status_art_texture
 	for id in available:
@@ -372,7 +411,8 @@ func _set_art(presentation: Dictionary, ui: Image) -> void:
 	gunner_art_reason = "" if gunner_art_enabled else "no surviving gunner plate pixels"
 
 func _set_driver_assembly(presentation: Dictionary, ui: Image) -> void:
-	if not cockpit_art_textures.has(4) or not _art_palette_matches(presentation.get("palette_rgb")): return
+	var donor := _cockpit_donor(4)
+	if donor==null or not _art_palette_matches(presentation.get("palette_rgb")): return
 	var overlay = presentation.get("driver_overlay")
 	if not overlay is Dictionary or overlay.get("width") != 320 or overlay.get("height") != 200: return
 	if overlay.get("source") != "SIM.EXE:5ba1..5da3" or overlay.get("source_sha256") != "9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099": return
@@ -390,7 +430,7 @@ func _set_driver_assembly(presentation: Dictionary, ui: Image) -> void:
 		_driver_ui=ui_bits
 		_driver_nonempty=any
 	if not any: return
-	material.set_shader_parameter("driver_art", cockpit_art_textures[4])
+	material.set_shader_parameter("driver_art", donor)
 	material.set_shader_parameter("driver_assembly_mask", _mask_texture("driver"))
 	material.set_shader_parameter("driver_assembly_enabled", true)
 	_current_driver_mask=mask
@@ -439,11 +479,20 @@ static func _driver_mask_claims(values: PackedByteArray, ui_bits: PackedByteArra
 func load_graphics_sources(root: String) -> bool:
 	return native_graphics.load_sources(root)
 
+func set_tactical_dynamics(displacement: Vector2) -> void:
+	var safe:=displacement if graphics_mode=="tactical" and world_enabled and displacement.is_finite() else Vector2.ZERO
+	var changed:bool=_upscaled_material.get_shader_parameter("tactical_armour_shift")!=safe
+	_upscaled_material.set_shader_parameter("tactical_armour_shift",safe)
+	cockpit_edges.material.set_shader_parameter("tactical_armour_shift",safe)
+	if changed and is_inside_tree() and get_viewport() is SubViewport and get_viewport().render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
+		get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
+
 func set_graphics_mode(mode: String) -> bool:
 	if mode not in ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]: return false
 	if mode=="genesis" and not native_graphics.loaded: return false
 	if mode in ["modern","tactical"] and not modern_available: return false
 	graphics_mode=mode
+	set_tactical_dynamics(Vector2.ZERO)
 	if _cached_source!=null:
 		set_frame(_cached_source,_cached_presentation,_cached_world,_cached_program)
 		present_frontend(_cached_program)
@@ -465,11 +514,14 @@ func remember_frame(source: Image, presentation: Dictionary, world: Texture2D, p
 
 func set_frame(source: Image, presentation: Dictionary, world: Texture2D, program: Dictionary={}) -> bool:
 	remember_frame(source,presentation,world,program)
+	if graphics_mode!="tactical":set_tactical_dynamics(Vector2.ZERO)
 	material=_upscaled_material
 	material.set_shader_parameter("ega_upscaled",false)
 	instrument_art.pc_rounds_enabled=typography.hud_style!="tactical"
 	material.set_shader_parameter("modern_armour_palette",graphics_mode in ["modern","tactical"])
 	material.set_shader_parameter("tactical_armour",graphics_mode=="tactical")
+	var tactical_interior := graphics_mode=="tactical" and not tactical_art_textures.is_empty()
+	material.set_shader_parameter("tactical_interior",tactical_interior)
 	cockpit_edges.material.set_shader_parameter("tactical",graphics_mode=="tactical")
 	reticle_art.material.set_shader_parameter("tactical",graphics_mode=="tactical")
 	for child in [damage_art,dynamic_map_art,gunner_trim,commander_trim,cockpit_edges,instrument_art,reticle_art,target_box_art,portrait_art,typography]:child.visible=graphics_mode in ["upscaled","modern","tactical"]
@@ -535,20 +587,21 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	_set_art(presentation,mask)
 	_set_driver_assembly(presentation,mask)
 	typography.status_numbers_enabled = genesis_art_enabled and 5 in cockpit_art_ids
-	if genesis_art_enabled and not cockpit_art_ids.is_empty():
+	if (genesis_art_enabled or tactical_interior) and not cockpit_art_ids.is_empty():
 		var tags := _current_plate_mask
 		if tags!=null:
 			material.set_shader_parameter("cupola_rail_verified",cupola_rail.verify(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),3 in cockpit_art_ids))
 			for station in [3,4]:
 				if station in cockpit_art_ids:
-					cockpit_edges.set_frame(mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),cockpit_art_textures[station],_current_driver_mask,station,graphics_mode in ["modern","tactical"],bool(material.get_shader_parameter("cupola_rail_verified")),world,
-							_mask_texture("ui"),_mask_texture("plate"),_mask_texture("driver") if _current_driver_mask!=null else null)
-			if 1 in cockpit_art_ids:
+					cockpit_edges.set_frame(mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),_cockpit_donor(station),_current_driver_mask,station,graphics_mode in ["modern","tactical"],bool(material.get_shader_parameter("cupola_rail_verified")),world,
+							_mask_texture("ui"),_mask_texture("plate"),_mask_texture("driver") if _current_driver_mask!=null else null,tactical_interior)
+			if genesis_art_enabled and 1 in cockpit_art_ids:
 				gunner_trim.set_frame(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),world)
-			if 2 in cockpit_art_ids:
+			if genesis_art_enabled and 2 in cockpit_art_ids:
 				commander_trim.set_frame(source,mask,tags,Rect2i(clip[0],clip[1],clip[2]-clip[0]+1,clip[3]-clip[1]+1),world)
-			instrument_art.set_frame(source,mask,tags,presentation.get("orientation",{}))
-			damage_art.set_frame(source,mask,tags)
+			if genesis_art_enabled:
+				instrument_art.set_frame(source,mask,tags,presentation.get("orientation",{}))
+				damage_art.set_frame(source,mask,tags)
 	# Portraits pin their own sources and gate on their own loaded templates
 	# (none on a PC-only install), independent of the cockpit donor set.
 	portrait_art.set_frame(source,mask,presentation)

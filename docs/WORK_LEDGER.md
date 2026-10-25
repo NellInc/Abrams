@@ -4421,3 +4421,2370 @@ distribution rules ("yes please").
 
 Working if: `gh release view v0.1.0-alpha.4` lists only the three source archives and
 `SHA256SUMS.txt`, and the old Alpha 4 download URL returns 404.
+
+## 17 October 2026: Local Blender Tactical vehicle pair
+
+Nell approved the first M1A1/T-62 pair after asking for higher-quality Tactical
+models and textures. The editable packed master is
+`local-art/pc-tactical-vehicles-v1/vehicles.blend`; the same folder holds GLBs,
+master bakes and the three runtime atlases. The source-bound builder and an
+optional, atomic loader are in source. Persistent GPU face meshes replace only
+actually observed source primitives in Tactical. Original simulation, ownership,
+incumbent models and the other modes remain authoritative.
+
+Native pair: 27,410 checks, zero errors, fourteen views and zero outside-owner
+pixels. Additional near/edge/overlap run: 27,301 checks, zero errors. An original
+game gunner approach completed using the existing mission snapshot, with two
+upgraded T-62 actors. Clean-source kit: 210 tests, 22 skips, 551 files. All 68
+original pins and the incumbent catalogue/builder match their starting hashes.
+Full evidence and limits are in `docs/modern-asset-register.md` and
+`artifacts/tactical-vehicles-20261017/`.
+
+The broader graphics-mode check remains incomplete because an old cockpit
+fixture mask is absent. Focused native Modern restoration passed independently.
+The models retain the source's coarse proportions. No other catalogue model,
+standalone app or published build was replaced. Local only.
+
+Working if: the optional pair appears only in Tactical, missing optional files
+retain incumbent rendering, and the documented native checks report zero errors.
+
+### Silhouette and proportion revision
+
+Nell then asked for much more realistic silhouettes and proportions while
+preserving original gameplay. Rebuilt the M1A1/T-62 hulls, turret profiles,
+running gear and fittings in Blender; the former roof-gun sheets are replaced.
+The original engine retains hit regions, targeting, movement and damage, and
+the original owner mask still limits outward coverage. Each complete visual
+part requires a near-rigid pose validated against all observed vertices in its
+own source group; otherwise the per-face GPU fallback remains available.
+
+Final local assets: 7,122 T-62 and 7,814 M1A1 runtime triangles. Native gate:
+59,634 checks, zero errors; fourteen Modern views remained pixel-identical,
+with zero visible pixels outside original ownership. GPU readback and actual
+captured integer poses passed. Final source kit: 210 tests, 22 skips, 551 files;
+three final authoring checks passed. The viewer completed a new 36-sample
+snapshot-based gunner capture with the revised pair. All 68 original pins and
+the incumbent catalogue/builder are unchanged. Evidence:
+`artifacts/tactical-proportions-20261017/`, especially `accepted/`,
+`original-approach/` and `completion.json`.
+
+Same author performed the modelling and mechanical review. Outward fittings
+can still be trimmed by original visibility, and the visual hull does not
+replace the original hit regions. Water commit `9bd2914` was made by its owning
+chat during this work; its hunks are preserved. Vehicle edits remain unstaged.
+No installed app or published build was updated. Local only.
+
+Working if: independently observed parts follow their own original poses,
+original owner coverage is respected, Modern images remain unchanged and the
+native receipt above is reproducible with the installed local pair.
+
+
+## Tactical full vehicle roster, 17 October 2026
+
+Nell approved extending the accepted M1A1/T-62 detail and realism to the rest
+of the tactical vehicle models while preserving original gameplay. Completed
+all 34 renderable vehicle/state definitions: 115 through 144, 159/160 and
+163/164. Weapon crews and unresolved A-10/MiG placeholders stay incumbent.
+
+Implemented five source-owned geometry families, a resumable per-model Blender
+bake/export builder and a complete three-bank runtime bundle. Accepted pair
+triangles/UVs/map bytes remain exact. New tanks/carriers/scouts/truck/Hind and
+collapsed wreck families have independent forms and original group custody.
+Baked aliases are expanded only after ordered source/owner/root and authored
+geometry/UV-basis proof. The loader atomically selects the complete roster,
+independently validated legacy pair, or incumbent rendering; pooled group and
+face paths bind their own bank without extra shader samplers.
+
+Native review caught and fixed a real transverse Hind rotor overpaint. Only
+observed two-point primitives from the admitted model registry receive the
+optional compensated ownership blue byte 64. Round writes remain 255, ordinary
+fill stays 0, and source painter order remains authoritative. The dedicated
+vehicle shader rejects protected writes; common surface/water shader bytes and
+Modern's default masks remain unchanged.
+
+Proof: 49 Python tests, 680,246 headless checks and 682,193 native checks passed.
+The final native sweep covers 206 views across all 34 states with zero owner
+escape, exact Modern restoration and unchanged packets. Both original Hind
+rotor states retain every measured line pixel (873/1,198) with zero loss and
+sampled exact byte 64. Original source lines, group motion and round-command
+precedence remain tested independently of authored body geometry. Headless
+format fixtures and native pixel checks are split by backend; the existing
+120-second deadline remains enabled.
+
+Evidence: `artifacts/tactical-roster-20261017/acceptance.json`,
+`accepted-headless.log`, `verified-native.log`, `python-final.log`,
+`verified-native/report.json` and `roster-native-contact.png`. Editable masters,
+GLBs and baked maps remain under the two local Tactical asset directories.
+No simulation/input/bridge changes, original file writes, installed-app update,
+commit, push or publication was performed. Status: local only.
+
+
+## 2026-10-17: Tactical proportion quality pass
+
+Nell requested a quality pass after the full roster, identifying the Bradley as
+too squat. Eleven intact models now have corrected reference-led proportions:
+Bradley/M113 tall troop bodies and smaller circular running gear, Bradley twin
+TOW housing and infantry fittings, M60 casting/cupola and fender-mounted storage,
+BMP roof-adjacent ATGM equipment, narrower BTR/BRDM bodies and shorter Soviet tank
+gun overhang. BRDM has a longer boat hull and an open rack under its source-pinned
+roof equipment. Native inspection caught and corrected a roof-equipment mask
+slicing regression before acceptance. The strict source mask still trims small
+tyre/fitting edges in some views; original gameplay/hit regions stay unchanged.
+
+Revision4 contains 171,594 triangles in the same 34 states. The 23 unaffected
+catalogue entries and accepted pair maps remain exact. All 68 original inputs,
+Modern catalogue/builder and common surface/water shader retain prior hashes.
+Editable Blender masters, GLBs and baked maps are installed in the local roster
+bundle; original and first-quality bundles are retained under the evidence folder.
+
+Proof: 50 asset tests and 10 validation-runner tests passed. All six format cases
+passed under the unchanged 120-second guard. Two native partitions passed with
+685,591/685,573 checks, zero errors; their exact union covers all 206 expected
+views, unchanged packets, zero owner escape and exact Modern restoration. Both
+Hind states retain all 873/1,198 original line pixels. The validator runs the
+complete fixed case inventory and validates exact success receipts. Earlier
+monolithic/combined-format deadline failures are retained, with no false green.
+
+Evidence: `artifacts/tactical-quality-20261017/acceptance.json`,
+`dimensions.json`, `quality-notes.md`, `format-0.log` through `format-5.log`,
+`native/aggregation.json`, `native/report.json`, `bradley-before-after.png`
+and the three fleet contact sheets. Status: local only. No installed-app update,
+commit, push or publication performed.
+
+
+## 2026-10-17: Tactical visibility-mask correction
+
+Nell approved fixing the remaining mask trimming while retaining original
+gameplay. The old final-owner equality test clipped new tyres and roof fittings
+against the legacy outline. The BRDM reproduction measured 1,657 missing pixels.
+
+The optional Tactical mask now distinguishes guarded nonterrain pixels (8),
+ordinary terrain/background (0), protected original lines (64) and round writes
+(255). The four-sampler vehicle shader accepts its own ordinary coverage or
+earlier background, rejecting all other original target pixels and later owners.
+Source command order, original queue/group admission and fitted poses remain
+unchanged. Default Modern/fallback masks and the common surface shader remain
+exact. No new viewport, CPU triangle traversal, gameplay readback or asset rebake.
+
+The protection is pixel-local: the improved outline can occupy empty pixels
+beyond an old occluder footprint, and overlapping authored-only extensions use
+native mesh depth. Whole-object old-raster visibility parity is not claimed.
+Hit regions, targeting, movement, damage, input and original simulation code
+were not changed. GOAL and the asset register now state this boundary explicitly.
+
+Proof: both native partitions passed under the unchanged 120-second guard,
+685,591/685,652 checks, 206 distinct views over all 34 states, zero forbidden
+pixels. Twelve unmasked-geometry coverage comparisons have zero missing eligible
+pixels or protected-pixel leaks. All 1,657 BRDM pixels are restored. Every prior
+Modern screenshot (206) is byte-identical. Both original rotor sets retain all
+873/1,198 pixels. Headless partition 0 passed 684,536 checks, 60 Python tests
+passed, original reference inventory and authored bundle hashes are unchanged.
+Two initial focused runs failed on malformed/sample-edge test fixtures; logs
+are retained, the corrected native partition passes those same cases. The
+implementing chat also performed final visual inspection; the independent
+advisor was read-only and did not replace root verification.
+
+Evidence: `artifacts/tactical-visibility-20261017/acceptance.json`,
+`aggregation.json`, `native-1/visibility.json`, both native logs and the before/
+after and full-roster contact sheets. Status: local only. No installed-app update,
+commit, push or publication performed.
+
+
+## 2026-10-17: Tactical cosmetic dynamics
+
+Nell requested a Tactical dynamics pass preserving gameplay, saves and other
+modes, with native and browser verification. Added a bounded spring response
+from original travel/speed and accepted cannon dispatches, including muted shots.
+Gunner upper housing, Cupola and Driver sample their own verified armour only;
+world camera, aperture, silhouette, instruments, fastener cores and aiming stay
+fixed. The registered impact donors 0/1 receive short ballistic colour paths
+inside their unchanged alpha/ownership, with no collision, debris or guest state.
+Explicit clocks freeze on focus/menu/original pause and reset across loads,
+stations and mode changes. Browser startup reduced motion and the native
+`--no-tactical-dynamics` opt-out keep the presentation static.
+
+Armour motion is visible with Restored HUD. The existing panoramic Tactical HUD
+covers that armour and retains its fixed optics; impact sparks work with either.
+This is cosmetic weight response, with no physical suspension or ragdoll solver.
+
+Native OpenGL and actual windowed Chromium WebGL each passed 217 focused checks,
+including predecessor-exact neutral/five other modes, fixed Gunner aperture and
+lower panel, rigid fastener cores, Driver instruments, unchanged impact alpha
+and protected occluders. Both platforms ran two matched 947-frame original
+routes from the same platform-local checkpoint: zero state/framebuffer hash
+differences with dynamics disabled/enabled, successful save/two loads, accepted
+normal and muted cannon events, and zero stale station uniforms. Gameplay/save/
+input sources and original files remain exact across 77 recorded hashes.
+
+Native live motion was rendered using a private Window.focus_entered signal
+fixture, peak 0.840 original pixels. A separate actual unfocused native run
+correctly retained impulses without advancing the clock. Browser live motion
+used actual focused window events, peak 0.873 pixels, and its normal importer,
+save/load controls and reduced-motion startup path. Initial failures are retained:
+headless Chromium lacked WebGL, a private route originally fired from Cupola,
+and a retained/continuous viewport policy error was fixed before final checks.
+No failing attempt is counted as an aggregate pass.
+
+Evidence: `artifacts/tactical-dynamics-20261017/delivery.json`, native-final,
+native-play-final, native-motion-focused, browser-contract-report.json,
+browser-report.json and browser-pack.json. Both local normal browser PCKs now
+carry only the eight production resources; every other payload stays exact and
+all 51 served-bundle records were checked. The source/native checkout launcher
+uses the same implementation. Existing vehicle/roster work was preserved.
+Status: local only. No installed-app update, commit, push or publication.
+
+
+## 2026-10-17: Complete Tactical scene model and texture pass
+
+Nell explicitly selected all Tactical scene models, including architecture,
+bridges and weapon crews alongside the 34 vehicle states. Revision 5 refreshes
+all 57 authored states with newly baked albedo, tangent normal, AO, roughness and
+metallic maps. Painted steel, tracks, rubber, canvas, timber, plaster, masonry,
+roofing, skin/leather, optics and burnt wreckage have distinct finishes. High
+master welds and fasteners bake into the unchanged runtime geometry. Fifty
+unique editable Blender masters and seven proven aliases supply 57 GLBs and
+five bounded runtime PBR banks. Existing textured terrain/foliage and unresolved
+A-10/MiG placeholders retain their existing original-authoritative paths; the
+188-definition inventory records every disposition.
+
+Schema 3 preserves exact source topology/status, independently observed groups,
+bridge lines, original flags and command-only heads. Static source coverage is
+strict; vehicle extensions keep the accepted earlier-background rule. Flat
+bridges and crew sheets follow original primitive painter order, with complete
+common fallback for unsupported faces or priority overflow. Schema-2 and legacy
+pair admission remain independently verified. No simulation, input, targeting,
+hit-region or original-file changes belong to this pass.
+
+Proof: 53 asset tests and 10 validator tests passed; the six-partition validator
+passed its ten tests again after registration changed. All eight headless cases
+passed 708,413 checks. All six native partitions passed 3,992 checks and cover
+exactly 344 distinct views across 57 states, with zero forbidden pixels and
+exact packet/mode restoration. Every prior Modern vehicle image (206) is
+byte-identical. Twelve coverage studies have zero missing eligible pixels or
+protected leaks, flags have zero changed protected pixels, and both original
+rotor sets retain all 873/1,198 pixels. Crew painter witnesses in both orders
+exercise 5,477 overlapping pixels each with zero mismatches; original round/head
+pixels and whole-object fallback remain exact.
+
+The unchanged 120-second guard rejected earlier combined format and two-partition
+native attempts. Those failures remain in the evidence folder. Backend-independent
+mapping assertions remain in the required headless gate; six smaller fixed native
+partitions cover the same complete view inventory. The native witness's clear-
+background mistake was fixed by comparing against an actual empty GPU capture,
+retaining overlap/order assertions. The implementing chat visually reviewed the
+native captures; independent advice was read-only. Concurrent Tactical dynamics
+work was coordinated separately and preserved, not claimed as this task's work.
+
+Evidence: `artifacts/tactical-scene-polish-20261017/acceptance.json`,
+`aggregation.json`, `format-acceptance.json`, `accepted-native-0.log` through
+`accepted-native-5.log`, `source-pins-final.log`, the complete contact sheet and
+matching-camera before/after images. Runtime hashes and all 50 current finish
+receipts match; original inputs, Modern, common shader, standalone pair maps and
+the deadline retain their prior bytes. Decoded new-pack texture use is 480 MiB
+with mipmaps. Source checkout only, no installed-app update, commit, push or
+publication. Status: local only.
+
+Working if: every authored state uses its approved bank, exact 344-view coverage
+and protected-command witnesses remain green, original gameplay stays owned by
+the pinned engine, and source-only delivery is distinguished from app deployment.
+
+
+## 2026-10-17: Cabin 147 substantial rebuild
+
+Nell identified the cubic cabin in her screenshot as inadequate. Shape 147 now
+has a properly pitched clay-tile roof, physical tile lips/ridge caps, window
+openings with deep reveals and multi-pane timber sashes, projecting sills,
+louvred gable vents, a panelled door with hardware, steps, stonework, eaves,
+gutters and downpipes. Native inspection caught aliasing on the first slatted
+door; the final continuous four-panel leaf is rebaked and reads cleanly. The
+implementing chat reviewed its own actual native captures.
+
+The new cottage has 6,116 runtime triangles (previously 230), inside the unchanged
+8,192 limit and original source envelope. Source primitive/root/group identity,
+original hit regions and gameplay remain authoritative. Runtime renderer,
+visibility masks, Modern and the test deadline remain byte-identical. All five
+PBR master channels were rebaked at 2048 square. Editable Blender/GLB/maps are in
+the existing local asset directory. A guarded `--patch-cabin` operation changes
+only shape 147 and its existing 1024-square atlas tile. All other 56 catalogue
+entries, other banks and every pixel outside that tile remain exact; no new
+runtime map or sampler. Mixed bake provenance is recorded explicitly rather
+than claiming older bakes use the new recipe.
+
+Final proof: 731,764 headless checks, 615 checks over 54 native views, and 14
+focused native checks over four matching-camera studies and one observed-wall
+pose. Zero protected-pixel leaks, 54 Modern images and 48 unaffected Tactical
+images byte-identical to the accepted previous pack. Native runs finished in
+40.71 and 14.58 seconds under the original 120-second guard. The initial 64-test
+Python suite passed; five focused geometry/pack tests passed again after the
+final door repair and completed pack write. A provisional result that overlapped
+the write was discarded. Original reference inventory remains unchanged.
+
+Evidence: `artifacts/tactical-cabin-20261017/acceptance.json`, `scope-proof.json`,
+`headless-final.log`, `native.log`, `after-views.log`, `python-final-stable.log`,
+`source-pins.log` and the native before/after image. Existing concurrent dynamics
+and local browser PCK work was preserved. No installed-app/browser PCK update,
+commit, push or publication was performed by this cabin pass. Status: local only.
+
+Working if: the cabin reads as constructed architecture at Tactical zoom, its
+source-owned poses and protected visibility remain valid, and unchanged models,
+Modern and original gameplay keep their preceding behaviour.
+
+
+## 2026-10-17: Remaining Tactical architecture, ruins, crews and grounding
+
+Nell approved all four proposed follow-ons. Thirteen further building/ruin
+states now use source-owned construction, including matching collapsed cabin
+materials, real apertures/joinery, individual slate/clay courses, masonry and
+exposed/broken structure. Crews 161/162 have tailored clothing and equipment
+partitions while preserving original flat poses, outlines, painter ordering and
+separate source head commands. The initial rendered review caught erased stars,
+communications flags, the 151 red ridge and farm yard; these were restored before
+acceptance. A float32 atlas-sliver check repairs one final tiny insignia UV
+without changing source geometry or weakening runtime validation.
+
+The pack contains 250,108 definition triangles and 77,069,055 catalogue bytes.
+The bounded roster-only cap increases to 96 MiB; the original 32 MiB source reader,
+8,192 per-model cap, 57-state/five-bank admission and four samplers remain.
+Recipes remain explicit: 13 architecture states at 8, crews at 7, cabin 147 at 6,
+other states at 5. All 42 retained catalogue entries, non-scene banks and pixels
+outside the 15 changed scene tiles remain exact. Scoped patching still requires
+fresh selected receipts; full packing rejects old recipes.
+
+Lower-body/footing shading supplements local AO inside the unchanged ownership
+discard. Authored whole-model height occupies UV2.y on group/affine/piecewise
+meshes; exact flags are excluded from bounds. Aircraft/flat crews/bridges and
+zero-height geometry remain neutral. There is no projected terrain shadow,
+new visibility or guest-state access. Original game inventory, hit regions,
+Modern catalogue/common shader, draw pass, pose view and 120-second test deadline
+remain unchanged. The implementing lead reviewed its own and delegated renders.
+
+Accepted locally: 66 Python tests, 988,804 full headless geometry/binding checks,
+and the catalogue-size/scene-mutation/compatibility partitions pass. All six
+native partitions finish under the unchanged 120-second guard, covering 344 views
+and 4,010 checks with zero forbidden pixels. All 344 Modern images are byte-exact
+against the preceding accepted matrix; 54 unchanged bridge/aircraft Tactical
+images are also byte-exact. Four ordered crew composites have zero mismatches
+across 5,477 overlap pixels each. Flag pixels remain exact at near/far scales.
+Grounding on/off studies change no exterior or coverage pixels and remain
+neutral for aircraft/flat crews. Texture allocation remains 503,316,477 bytes
+including mipmaps. Representative synchronized Tactical renderer samples are
+0.98 to 2.70 ms on this Mac; native process maximum RSS is 2.68 to 3.65 GB. These are
+native diagnostic measurements, not browser/WASM or general gameplay benchmarks.
+
+Evidence:
+`artifacts/tactical-scene-finish-20261017/acceptance.json`, `scope-proof.json`,
+`source-invariants.json`, `python.log`, `headless-{0,5,6,7}.log`, the six
+`native-*.log`/reports, `after-views.log` and `scene-before-after.png`. Status:
+local only. No installed/browser PCK update, commit, push or publication.
+
+
+Concurrent dynamics and cover-menu work were preserved. Task-owned completed
+rejection fixtures and SHA-identical staging/backup duplicates were removed
+under the separate authorised storage cleanup. Detailed receipts retain paths,
+logical sizes and before/after APFS free-space observations; concurrent volume
+activity prevents attributing net physical recovery to this chat alone.
+
+
+## 2026-10-17: Farm animal and complete Tactical roster refinement
+
+Nell requested a further farm upgrade and another pass across all models,
+explicitly including Sagger and Spigot. Revision 9 refines all 57 authored states.
+The farm has a static source-owned piebald cow, trough and braced gate; the
+destroyed farm retains broken fittings without animal remains. Architecture,
+vehicles, wrecks, helicopters and bridge/hangar surfaces receive construction
+and mechanical refinements. All 50 unique editable masters and their PBR maps
+were freshly baked, with seven source-proven aliases.
+
+Crews now have closed shallow body/limb/equipment volumes, integrated garment
+relief and real opaque self-occlusion. Original round heads and strict source
+silhouettes remain. Final native review caught reversed-facing details and
+material projection misses. The lead corrected the facing and arm depth, baked
+crew material maps directly from the runtime shell, enlarged the normal cage,
+and installed only the two corrected entries/tiles through recorded scoped
+patches. The other 55 entries and all pixels outside those tiles remain exact.
+The implementing lead reviewed its own and delegated native captures.
+
+The final catalogue is 83,749,195 bytes and 271,204 definition triangles; the
+largest state is 8,178 triangles. The existing 8,192 per-model limit, 96 MiB
+catalogue cap, five banks and four samplers remain. Decoded texture allocation
+including mipmaps remains 503,316,477 bytes. Original game inputs, hit regions,
+simulation, source draw path, Modern catalogue/common shader and native deadline
+remain unchanged. No new actor or collision is added by the cow.
+
+Evidence: `artifacts/tactical-roster-refinement-20261017/acceptance.json`,
+`scope-proof.json`, `crew-final-proof.json`, `source-invariants.json`, native
+captures and terminal-result logs. Concurrent dynamics, cover-menu and browser
+bundle work is preserved. Status: local only. No installed/browser PCK update,
+commit, push or publication belongs to this pass.
+
+Working if: all 57 authored states retain source ownership, the cow and crew
+volume read correctly in native captures, corrected crew textures have no
+interior projection misses, protected commands stay exact, and Modern restores
+without a pixel change.
+
+Validation status: 59 asset tests, 10 runner tests, 1,071,530 headless checks,
+maps/size rejection, three mandatory scene mutation cases and legacy
+compatibility pass. The 344-view current-equivalent matrix has exact Modern
+pixels and zero protected-pixel leaks. Initial final-pack native scene/common
+phases passed 155/691 checks; shard 5 passed 646. Review then found a broken
+foreground filter: the Compatibility clear colour is grey. The witness now
+compares against its captured empty frame. Its completed first crew has 38,548
+actual foreground-interior samples and zero ordering mismatches, but the full
+corrected scene follow-up hit the unchanged deadline twice during severe CPU
+contention (131.47 and 126.43 seconds). The final follow-up remains pending a
+quieter resource window, coordinated with JANUS without interrupting its active
+job. No aggregate acceptance is claimed for this last follow-up. Continuation
+commands and evidence are saved in this pass's `CONTINUE.md`.
+
+
+## 2026-10-17: Focused cow and Sagger/Spigot follow-up
+
+Revision 10 revises only states 157, 161 and 162. The cow receives a continuous
+body and face profile, tapered jointed legs and split grounded hooves. Crews
+receive joint-aligned limb sections and clearer equipment grips, catches,
+controls and recessed optics. All three Blender/GLB/five-channel sets are fresh.
+Farm/crew runtime triangle counts are 7,862/2,904/2,904. Original poses, heads,
+source ownership, hit regions and gameplay remain authoritative; no runtime
+visibility policy changes. The implementing lead reviewed its own captures.
+
+Scoped installation proves 54 other entries, 12 non-scene maps, and every
+scene-bank pixel outside the three selected tiles exact. Farm building/yard
+geometry is unchanged. The catalogue is 83,920,408 bytes and 271,640 definition
+triangles; all existing runtime limits remain. A documented offline repair to
+24 tiny nostril-cap UVs preserves geometry/maps and keeps strict transport checks.
+Cow texture QA samples all safely interior texel centres, rather than demanding
+the crew-sized percentage of large UV triangles from a small farm decoration.
+
+Four focused Python tests and 224 native checks pass. All 18 Modern comparison
+PNGs are byte-exact; Tactical forbidden pixels are zero. Both corrected crew
+foreground witnesses have 32,371 interior samples and zero ordering mismatches,
+with effective depth-disabled negative controls. Original heads, head removal
+and unsupported-primitive fallback pass. The older full revision-9 scene timeout
+remains historical; these are focused revision-10 results, not a new full gate.
+
+Evidence: `artifacts/tactical-cow-crews-refinement-20261017/acceptance.json`,
+`scope-proof.json`, `comparison.json`, before/after sheets and terminal logs.
+Status: local only. No PCK update, commit, push or publication by this pass.
+Concurrent dirty work was preserved; no foreign process was signalled.
+
+Working if: the requested three models visibly improve within original source
+coverage, the independent original heads and fallback stay exact, and Modern
+restores byte-identical images.
+
+
+## 2026-10-17: Complete Sagger/Spigot head review
+
+Nell flagged the headless crew previews. The prior material-study fixtures used
+only polygon bodies and omitted the separate original head commands. The lead
+apologised for accepting incomplete visual studies, then reused the established
+original-CPU head witnesses with the installed Tactical meshes. Both complete
+crews now have inspected helmet/face captures. All 22 native checks pass,
+including exact original head coverage, visible face/helmet, mode restoration
+and rejection of unsupported/missing commands. No renderer, model, texture,
+source registry or gameplay change was necessary; the runtime pack hashes remain
+exact. The source-bound body GLBs still require their independent head layer.
+
+Evidence: `artifacts/tactical-crew-head-review-20261017/acceptance.json`, native
+captures and terminal log. The implementing lead reviewed its own work. Status:
+local only, no PCK update or publication. Working if: crew quality review shows
+the complete body plus witnessed original helmet/face, with source coverage
+unchanged.
+
+
+## 2026-10-17: Actual modelled Sagger/Spigot heads
+
+Nell repeated that the crews had no heads. The preceding correction verified a
+separate 2D head overlay and did not complete the 3D assets. Revision 11 fixes
+both actual Blender/GLB models and the Tactical renderer: 2,224-triangle textured
+heads, 5,128 triangles per complete crew. Original root/command pins, observed
+spans and ownership control admission; ambiguous or unsupported packets retain
+exact incumbent fallback. Natural head cutouts retain original actor occlusion.
+
+Two fresh bake sets were followed by deletion-only backing removal and a strict
+stored-float32 iris-UV repair. Original/derived producer hashes and all-map exactness
+are recorded. Existing crew slots now have padded body/head regions. The five
+banks, four samplers, decoded allocation and source body bounds stay unchanged.
+All 55 other entries, 12 other-bank maps, and scene pixels outside two tiles are
+exact. Catalogue size is 85,833,523 bytes, within the existing 96 MiB limit.
+
+Four Python tests and 267 native checks pass. The 159-check scene phase completes
+in 105.49 seconds under the existing 120-second guard. Both heads have zero
+forbidden pixels and zero concealed-actor leaks; the negative control changes
+1,924 pixels per crew. Six original/Modern comparison PNGs remain byte-exact.
+Failed fixture, numeric-array loader and provisional full-ellipse opacity checks
+are retained in logs and were not counted as passes. Numeric validation fixes
+JSON-type admission; natural head silhouettes are tested through retained source
+ownership and explicit actor-occlusion controls. The implementing lead reviewed
+its own actual GLB/native captures and reconciled independent read-only advice.
+
+Evidence: `artifacts/tactical-modelled-heads-20261017/acceptance.json`,
+`scope-proof.json`, finishing receipts and terminal logs. Gameplay/hit regions
+remain original. Status: local only; no PCK, commit, push or publication. Concurrent
+dirty work was preserved. Working if: both exported and rendered crew heads are
+real geometry, source command visibility remains authoritative, concealed actors
+stay hidden, and rejected/Modern views restore exactly.
+
+
+## 2026-10-17: Tactical truck front and destroyed farmyard
+
+- Rebuilt truck 159 cab/front integration: enclosed engine bay, upright split
+  glass, rounded roof shoulders, rolled mudguards, front wings and seated lamps.
+- Added 47 masonry chunks, fallen roof sections and snapped rafters to ruined
+  farm 158, all owned by original yard primitive 29245. Retained original roof
+  tile/hole topology; reallocated foundation/frame tessellation within the cap.
+- Fresh editable Blender files, textured GLBs and five-map bakes installed.
+  Truck: 5,820 triangles. Ruined farm: 7,990. Catalogue: 85,946,167 bytes.
+- Verified 55 other entries, nine bank maps and atlas pixels outside two slots
+  exact. Eight Python tests and 109 native checks pass; zero forbidden pixels;
+  twelve Modern baseline captures byte-exact. Original gameplay is untouched.
+- Export review caught inward glass normals in an intermediate bake, corrected
+  before delivery. A premature installation was rejected by manifest hashes
+  before any writes; the final install followed terminal packing and fresh-model
+  equality checks. Intermediate failed/superseded logs are retained.
+- Local only. No PCK rebuild, commit, push or publication by this pass.
+  Receipt: `artifacts/tactical-truck-farmyard-20261017/acceptance.json`.
+
+
+## 2026-10-18: Truck and ruined farm finishing
+
+- Recessed truck grille with an actual open throat, inset slats and chamfered
+  apron. Removed the engine-bay cap that would otherwise occlude the recess.
+- Authored rubber chevron tyre tread, smooth 48-segment game tyres, 64-segment
+  baking masters and matching six wheel nuts. Restrained paint mottling and
+  localized contact dust and edge wear.
+- Varied ruined-yard rubble counts, scale, orientation and profiles. Chipped
+  fallen roof pieces and 466 matching game/master roof-fracture triangles.
+  Source-unit collapse centres also anchor irregular low-contrast ground dust.
+- Fresh Blender files, textured GLBs and five-map bakes installed. Truck: 7,600
+  triangles; ruined farm: 7,776; catalogue: 86,432,229 bytes. Existing caps retained.
+- Verified 55 other entries, nine untouched maps and atlas pixels outside two
+  slots exact. Runtime/gameplay source unchanged. Eight Python tests and 109 native
+  checks pass; zero forbidden pixels; twelve Modern PNGs byte-exact.
+- Implementing lead reviewed own GLBs, tyre close-up and native captures. Pale
+  dust and wheel-nut projection mismatch corrected before final installation.
+  Supported escalated native/baking runs succeeded after sandbox startup failures.
+- Local only. No PCK rebuild, commit, push or publication by this pass.
+  Receipt: `artifacts/tactical-truck-farm-polish-20261018/acceptance.json`.
+
+
+## 2026-10-18: Remaining Tactical roster finishing
+
+- Finished all 55 remaining authored states: 48 fresh unique Blender/GLB/map
+  masters and seven proven geometry aliases. Truck 159 and ruined farm 158
+  catalogue entries and atlas pixels remain exact; their asset directories were
+  excluded from installation.
+- Matched track-shoe stations; refined BTR/BRDM tyres/hubs and outward glass;
+  restrained paint, cloth, masonry and wreck wear; smoother Hind baking masters.
+  Added original-floor-owned rubble, fractured roof breaches, broader hangar
+  panels and worn farm paths. Existing crew poses and command-bound heads retained.
+- Fixed mesh-selection isolation after pilot GLB review proved all 2,904 body
+  UVs had been re-unwrapped when the later head was created. Saved corrected body
+  and head UVs now match baked receipts; the actual GLB no longer has black patches.
+- Installed catalogue: 87,956,917 bytes; maximum complete model: 8,178 triangles.
+  Existing five-bank, four-sampler and decoded-allocation limits remain unchanged.
+- 21 Python tests and 3,093 native after-checks pass. All 332 multiview studies
+  have zero forbidden pixels; 334 Modern captures including both complete crews
+  are byte-exact. Head hidden-actor/fallback contracts pass with zero leaks.
+- Corrected a broken artifact install preflight which had applied texture UV
+  validation to the two pinned source-rendered flags. Runtime exclusions, source
+  flags and the strict textured body/head gate remain unchanged. Failure retained
+  in `install-invalid-passthrough-preflight.log`; no live files changed on rejection.
+- Implementing lead reviewed own 110 actual GLB renders and ten native comparison
+  sheets. Runtime/gameplay source hashes remain exact. Native model studies do
+  not claim a live-mission or full-simulation gate.
+- Local only. No PCK rebuild, commit, push or publication by this pass.
+  Receipt: `artifacts/tactical-roster-polish-20261018/acceptance.json`.
+
+
+## 2026-10-18: Tactical family and collapse quality pass
+
+- Reviewed all 57 authored states in 114 actual GLB views. Refined 24 states with
+  23 fresh masters and one verified alias; retained 33 entries and all atlas
+  pixels outside selected slots exactly. No runtime/gameplay source changes.
+- Authored distinct wreck-family profiles and fittings, including angular Abrams
+  cheeks, cast-turret variants, F-ST pod remnants, M113 cargo structure, Bradley
+  and BMP remnants. Smoother damaged wheels and matched game/master track stations.
+  Five former aliases now have distinct masters within the existing wreck bank.
+  Canonical alias metadata now describes the actual pack; old scoped proof remains.
+- Fitted hull-owned driver vision coamings/glass and rear access hardware on five
+  carriers. Replaced tent-like long ruin panels with chipped short slabs, staggered
+  spacing/yaw, 15 grounded chunks, fallen rafters and tile fans on three ruins.
+- First ruin pilot was still too regular. Preserved it under rejected-regular-slabs
+  and corrected the layout before final baking. Initial baseline launch raced its
+  snapshot and exited127 without starting an engine; retried after snapshot exit0.
+- Installed catalogue: 93,714,174 bytes. Complete pack: 294,840 body plus 4,448 head
+  triangles. Maximum model: 8,178. Existing 96 MiB/8,192 caps, five banks, four
+  samplers and decoded allocation remain unchanged.
+- 23 Python tests and 1,304 native after-checks pass. All 144 changed-state views
+  have zero forbidden pixels and byte-exact Modern PNGs. All Godot source hashes
+  remain exact. No new head run or full57 native/simulation gate is claimed;
+  crew entries, maps and runtime are among the exact retained surfaces.
+- Implementing lead reviewed own 48 final GLB views and all four native comparison
+  sheets. Local only. No PCK rebuild, commit, push or publication by this pass.
+  Receipt: `artifacts/tactical-model-quality-pass-20261018/acceptance.json`.
+
+
+## 2026-10-18, Tactical launcher and attachment polish (revision 16)
+
+- Reviewed all 57 current GLBs in 114 views. Refined seven states through six
+  fresh Blender/GLB/PBR masters and the proven Hind alias; retained 50 entries,
+  their asset files and all outside-slot pixels exactly.
+- Rebuilt BMP-1 channel rail, mounted finned missile and pivot; BMP-2 pedestal,
+  pivot, cradle and clamped/sealed canister. Original ATGM owner retained.
+- Fitted BTR/BRDM wipers to post-scale glass, corrected left Hind window/frame
+  normals and replaced flat retracted gear doors with skin-following panels.
+- 25 Python tests, 381 native after-checks, zero forbidden pixels and 42 exact
+  Modern captures pass. All 197 Godot source hashes remain unchanged.
+- Catalogue 94,283,653 bytes; 296,620 body plus 4,448 head triangles; max 8,178.
+  Existing geometry/texture/sampler limits unchanged. Own-work visual review
+  completed; rejected pre-bake evidence retained. No live-mission/full57 native
+  matrix or new head-contract/simulation gate claimed.
+- Evidence: `artifacts/tactical-attachment-polish-20261018/acceptance.json`.
+  Local only, no PCK rebuild, commit, push or publication.
+
+
+## 2026-10-18, Tactical service and construction polish (revision 17)
+
+- Re-reviewed all55 remaining states in110 exact-GLB-verified export views.
+  Refined18 states with18 fresh Blender/GLB/PBR masters; retained39 entries,
+  recorded asset files and all outside-slot atlas pixels exactly.
+- Nine armoured vehicles have recessed engine-grille beds/painted slats and
+  surrounds; five tank families have fitted case lids, hinges and latches.
+- Nine architectural states have outward façades/glazing/roofs, inward-facing
+  opening reveals and restored valid gable ends. Roof, rafter and foundation
+  bake stations now match game construction. Flat-wall subdivision reduction
+  keeps large base156 under the unchanged geometry limit.
+- 28 Python tests,996 native after-checks,zero forbidden pixels and110 exact
+  Modern captures pass.197 Godot source hashes remain exact. Own final36 GLB
+  views and5 native sheets personally reviewed; pre-bake failures retained.
+- Catalogue94,587,389bytes;298,108body+4,448head triangles;max8,190. Existing
+ 8192/96MiB/five-bank/four-sampler caps retained. No live-mission/full57 native
+  matrix, new head-contract or simulation gate claimed.
+- Evidence: `artifacts/tactical-roster-service-polish-20261018/acceptance.json`.
+  Local only; no PCK rebuild, commit, push or publication.
+
+
+## 2026-10-19, Tactical fitting quality pass (revision 18)
+
+- Reviewed all 57 states in 114 exact-current-GLB-verified views. Refined ten
+  states with ten fresh Blender/GLB/PBR masters; retained 47 entries, model files
+  and outside-slot atlas pixels exactly.
+- Seated searchlight/sight assemblies against finished turret casting, refitted
+  guards, added connected searchlight stems and snorkel stays/retaining bands.
+  Three carrier weapon pedestals and the M60 mount now contact their supports.
+  Weapons/aim remain fixed; game and bake masters share game-skin fitting seats.
+- Cottage 147/149 window reveals face into their recesses, correcting 48 of 64
+  misoriented triangles each, without changing geometry bounds or source owners.
+- 31 focused Python tests, 553 native after-checks, zero forbidden pixels and 61
+  exact Modern captures pass. All 197 Godot source hashes remain exact. Own four
+  pilots, 20 fresh GLB views and three native comparison sheets reviewed.
+- Catalogue 94,715,182 bytes; 298,436 body plus 4,448 head triangles; max 8,190.
+  Existing 8192/96MiB/five-bank/four-sampler caps retained. No live-mission or
+  full57 native matrix claimed. Evidence:
+  `artifacts/tactical-fitting-quality-pass-20261018/acceptance.json`.
+- Local only; no PCK rebuild, commit, push or publication. All task jobs finished.
+
+
+## 2026-10-19, Tactical running-gear polish (revision 19)
+
+- Reviewed all 57 states in 114 exact-current-GLB views. Refined twelve tracked
+  models with twelve fresh Blender/GLB/PBR masters; retained 45 catalogue entries,
+  model files and outside-slot atlas pixels exactly.
+- Fixed T-62 front-idler/road-wheel overlap and misplaced idler teeth; tightened
+  road-wheel station span while retaining the already-correct front/rear gap
+  ordering. No spacing reversal was required. All twelve tracked states have
+  closed dished smooth idlers, integral-tooth drives and recessed hubs. End-wheel
+  centres/radii follow actual track shoulders, with both-side road-wheel clearance.
+- New checks protect clearance, closed topology, idler/drive distinction, exact
+  game/master tooth stations and diagonal-track contact. Initial assertion message
+  typo fixed; original failed log retained, no geometry guard weakened.
+- 34 focused Python tests, 670 native after-checks, zero forbidden pixels and 74
+  exact Modern captures pass. All 197 Godot source hashes remain exact. Own five
+  final pilots, 24 fresh GLB views, three native sheets and T-62 side views reviewed.
+- Catalogue 95,073,533 bytes; 299,524 body plus 4,448 head triangles; max 8,158.
+  Existing 8192/96MiB/five-bank/four-sampler caps retained. No live-mission or full57
+  native matrix claimed. Evidence:
+  `artifacts/tactical-running-gear-polish-20261019/acceptance.json`.
+- Local only; no PCK rebuild, commit, push or publication. All task jobs finished.
+
+
+## 2026-10-19, Tactical remaining-surface polish (revision 20)
+
+- Reviewed the remaining 45 states in 90 exact-current-GLB views. Refreshed six
+  states through five unique BTR/BRDM/truck/Hind Blender/GLB/PBR masters and the
+  proven Hind alias; retained 51 entries, model files and outside-slot pixels.
+- Corrected inward side panels, exposed buried BTR/BRDM headlamp apertures with
+  seated feet, and replaced hovering Hind wing paint with actual facet partitions.
+  All twelve previously polished tracked vehicles remain exact.
+- Additional truck shell occlusion rejected an incomplete bake. Read-only advice
+  derived the limiting vent height; root independently reran full-surface checks
+  on all vent triangles against both shells, game/master. Minimum clearance
+  .0211473 raw units. Failed logs and rejected receipts remain preserved.
+- 80 focused Python tests, 326 native after-checks, zero forbidden pixels and
+  36 exact Modern captures pass. All 197 Godot source hashes remain exact. Own
+  final pilots, twelve fresh GLB views, two native sheets and highlights reviewed.
+- Catalogue 95,120,082 bytes; 299,644 body plus
+  4,448 head triangles; max 8,158.
+  Existing 8192/96MiB/five-bank/four-sampler caps retained. No live-mission or full57
+  native matrix claimed. Evidence:
+  `artifacts/tactical-remaining-surface-polish-20261019/acceptance.json`.
+- Local only; no PCK rebuild, commit, push or publication. All task jobs finished.
+
+
+## 2026-10-19, Tactical façade and slate polish (revision 21)
+
+- Reviewed all 57 states in 114 hash-verified GLB views. Refreshed states 145,
+  151, 153, 155, 156 and 157 through six unique Blender/GLB/PBR masters. The
+  other 51 entries, model files and outside-slot pixels remain exact, including
+  all vehicles, crews/heads, bridges and ruins. Cow geometry and placement remain
+  exact inside the refreshed farm.
+- Exposed buried drainage through coherent façade setbacks within original bounds.
+  Joinery/reveals move together; existing decorated support planes stay exact.
+  Brackets embed into walls. Five restrained slate tones follow the original roof
+  planes; corrected courses run along the eaves and lap downslope on both pitches.
+- Three regressions cover observed drainage, slate and course-direction defects.
+  Initial bracket depth failed and was corrected explicitly. A completed first
+  candidate was superseded after reverse-view course-direction review; its
+  receipts, renders and failed logs are retained. Five pre-bake checks pass.
+  All seven other architecture recipes and other family sources remain exact.
+- 83 asset tests, 326 native after-checks, zero forbidden pixels, 36 exact Modern
+  captures and 197 exact Godot source hashes. Own drainage/roof pilots, twelve
+  fresh GLB views, both native sheets and highlights reviewed. No live-mission
+  or full 57-state native matrix claimed.
+- Catalogue 95,200,533 bytes; 299,758 body plus 4,448 head triangles; max 8,158.
+  Existing 8192/96MiB/five-bank/four-sampler caps retained. Evidence:
+  `artifacts/tactical-roster-detail-polish-20261019/acceptance.json`.
+- Local only; no PCK rebuild, commit, push or publication. All task jobs finished.
+
+
+## 2026-10-19, Tactical wreck-wheel polish (revision 22)
+
+- Reviewed all 57 states in 114 hash-current GLB views. Refreshed all sixteen
+  wreck states through fifteen unique Blender/GLB/PBR masters and the verified
+  BRDM wreck alias. The other 41 entries, model files and outside-slot pixels
+  remain exact, including all intact vehicles, scenes, crews/heads and bridges.
+- Replaced round plates with seated, lipped, recessed rim profiles matching the
+  existing wheel squash; hubs follow the same deformation. Loose-wheel caps
+  clear both wheel-end planes. Tyres, axle/bolt stations, suspension, tracks,
+  other wreck parts and original source/pose metadata remain exact.
+- Three regressions reproduced the defects; four pre-bake checks pass. Own three
+  initial pilots, corrected loose-hub pilot, 32 fresh GLB views, four native
+  comparison sheets and detail highlights reviewed.
+- 86 asset tests, 868 native after-checks, zero forbidden pixels, 96 exact Modern
+  captures and 197 exact Godot source hashes. No live-mission or full 57-state
+  native matrix claimed. Shared capacity sequencing and fresh fail-closed guards
+  preceded the one scoped four-thread bake batch; no foreign process control.
+- Catalogue 96,399,853 bytes; 303,694 body plus
+  4,448 head triangles; max 8,158.
+  Existing geometry/96MiB/five-bank/four-sampler caps retained. Evidence:
+  `artifacts/tactical-wreck-fit-polish-20261019/acceptance.json`.
+- Local only; no PCK rebuild, commit, push or publication. All task jobs finished.
+
+## 2026-10-19, Blender crew, complete roster, world and animated cover
+
+- Installed revision 23 Sagger/Spigot Blender sculpts and fresh PBR bakes, with
+  joined anatomy, fitted hands and boots, and modelled heads. The original
+  round-command mapping now includes the full source pixel cells. The two native
+  head fixtures pass 80 checks with no neck gaps at 2x/4x, no changes outside the
+  head ownership, and no concealed-actor leaks.
+- Reopened all 55 editable roster masters in Blender and repaired tangent-frame
+  and baked occlusion export across all 57 GLBs, including the two verified aliases.
+  Geometry, UVs, bake receipts, catalogue and atlas pixels are unchanged by this
+  export pass. A separate `export-polish.json` records it. Runtime daylight and
+  contact shading have stronger shape separation; source ownership remains exact.
+- Added Blender-authored shrub and grass meshes (582/122 triangles) with the
+  original footprints, planting grids and two draw batches. Missing optional
+  assets retain the original fallback. No foliage ownership shader changes.
+- Refined the cover tank and both crew in an editable Blender master, preserving
+  pivots, indices, UVs, vertex colours and materials. Added two rising, drifting
+  smoke plumes and sky advection. Native checks prove isolated smoke motion,
+  pixel-identical Reduced Motion frames, and suspension on entering the range.
+- Verification: 90 asset tests and 12 gate/package tests pass. The initial missing
+  world-test gate registration and malformed cover-loader type checks were fixed;
+  failed logs remain. Root checks: simulation 1,265; world 15; draw pass 53;
+  effects 34. The full 57-state native matrix passes 3,106 checks over 344 views,
+  with zero forbidden pixels, identical Modern restores and unchanged packets.
+- Implementing lead reviewed its own 114 GLB views, all native roster sheets,
+  separate composed crew-head renders, world studies, and wide/compact menu with
+  both crew close-ups. The body-only roster fixture omits separate head commands;
+  head visibility is covered by the dedicated composed fixtures. These are native
+  fixture results, not a full mission or packaged-build acceptance.
+- 156 of 160 pinned runtime files remain exact; the four changed scripts are
+  presentation-only. Source/private package lists and the world gate are updated.
+  Optional Impeccable lint was unavailable offline (`ENOTCACHED`); no installation
+  was attempted. Evidence: `artifacts/tactical-complete-blender-20261019/acceptance.json`.
+- Local only; no installed/browser PCK rebuild, commit, push or publication.
+
+Working if: composed crews retain connected heads, original visibility ownership
+and Modern pixels remain exact, both menu smoke plumes move, Reduced Motion freezes
+them, and the editable Blender masters match the installed exports.
+
+## 2026-10-19, active continual Blender goal, human-anatomy pass (revision 24)
+
+- Nell activated the continual refinement goal, retaining original gameplay and
+  visibility boundaries. This is its first finite pass; the broader goal remains
+  active. A 57-state rotating review/action roster is saved with the evidence.
+- Rebuilt both command-bound operator faces as continuous skin, nasal bridge,
+  sockets and lips. Matched Blender studies exposed the old disconnected features.
+  A rear GLB study then exposed a neck ledge, so the first candidate was rejected.
+  The accepted neck and face share one closed surface and smooth bake normals;
+  cheek straps follow the new surface. The topology regression fails the old mesh.
+- Fresh Blender head-only PBR bakes preserve both accepted body meshes, UVs and
+  maps exactly. Both editable masters and GLBs are updated. The other 55 states,
+  original head bindings and all pixels outside the two head rectangles remain
+  exact. Complete crew budgets are 7,947/8,039 triangles; roster maximum 8,158.
+- Fitted 4,469 menu-garment vertices across both crew, including lining and trim.
+  Elbow/wrist anchors, hands and non-crew batches remain unchanged. Maximum
+  displacement stays below the existing 1cm loader limit. All 42 authored batches
+  are admitted in the native scene, with no silent fallback.
+- Root verification: 103 Python tests, 80 native head checks and 1,265 simulation
+  checks pass. Neck gaps at 2x/4x, outside-head changes and concealed-actor leaks
+  are zero. Menu native acceptance covers wide/compact layout, both crew, smoke,
+  exact Reduced Motion freezing and range lifecycle. The implementing lead
+  reviewed its own final exports and native composed/head/crew/hand captures.
+- All 68 pinned original inputs and all pinned Godot runtime files remain exact.
+  No full-mission, aggregate repository gate or packaged-build acceptance claimed.
+  Local only; no PCK rebuild, commit, push or publication. All finite-phase jobs
+  are terminal and the shared native slot is released. Evidence:
+  `artifacts/tactical-continuous-blender-20261019/acceptance.json`.
+
+Working if: the face, nose and neck form one closed surface, rear views have no
+neck ledge, original head ownership/concealment and Modern pixels remain exact,
+and menu garment refinement leaves the pose contacts and smoke lifecycle intact.
+
+## 2026-10-19, connected shrub canopy and completed rotating Blender review
+
+- Replaced the five closed shrub crown volumes with 120 slender folded leaves in
+  60 attached pairs on ten connected twigs. Blender masters and bounded Godot
+  resources are installed reproducibly. Two intermediate appearances were rejected:
+  sparse horizontal shelves, then overly broad square blades. The accepted version
+  stays at 682 triangles, inside the unchanged 700-triangle shrub cap.
+- Grass remains 122 triangles with the exact incumbent vertex, normal, UV and tag
+  stream. Nine native grass image buffers are pixel-exact. Both footprint streams,
+  two batches, planting grids/caches, shader and source admission/ownership logic
+  are unchanged. Reversing the single author SHA pin restores all of Foliage.gd.
+- Root checks: 12 Python tests and 152 focused Godot checks pass. The native asset
+  studies cover close views and three sizes at 0/90/180 degrees, with deterministic
+  images and zero actor-owned painted pixels. The final smallest studies retain at
+  least 217 green pixels. All 68 original input hashes and 57 current GLBs are exact.
+- Completed the rotating review of all 57 Tactical states, world presentation and
+  the current wide/compact menu. Current revision 24 head views supersede the old
+  head cells. The implementing lead self-reviewed its own work. No additional
+  material worthwhile refinement was found after the accepted fixes, satisfying
+  this continual goal's stop criterion. Fine hangar seam aliasing at subpixel sizes
+  and strict original source silhouettes/planes remain explicit limits.
+- Blender's first sandbox invocation crashed at Metal startup before authoring;
+  scoped native access succeeded. An invalid unittest method invocation was fixed;
+  the actual gate module passes. Failed logs and rejected candidates are retained.
+- Local only: no full mission or aggregate gate claim, package/PCK rebuild, Git
+  mutation or publication. All finite-phase jobs are terminal and the native slot
+  is returned. Evidence: `artifacts/tactical-leaf-canopy-20261019/acceptance.json`;
+  the 57-state dispositions are in its adjacent `review.json`.
+
+Working if: authored leaves remain connected and readable at the reviewed sizes,
+all source-owned actor pixels remain uncovered, grass/planting stay exact, and
+further changes require a newly evidenced material defect rather than cosmetic churn.
+
+## 2026-10-20, fresh all-roster Blender refinement (revision 25)
+
+- Nell assigned a fresh refinement pass after the previous continual goal closed.
+  Reviewed all 57 Tactical states in 114 new low-angle GLB captures, plus component
+  closeups and the retained world/menu inputs. The final disposition is 19 changed
+  states and 38 retained states, recorded individually in `review.json`.
+- Rebuilt roadwheel shoulders on 12 intact tracked states as joined tyre/rim
+  shells. An initial 16-sided candidate was rejected for a worse faceted outline.
+  The accepted design keeps 20 circumferential sides, original centres/extrema
+  and exact runtime triangle counts. Removing two buried caps and reducing the
+  small hub by one side funds the extra shoulder section. Non-roadwheel geometry
+  and original registry bindings remain exact. The new regression covers closed
+  joined shells, three sections, shared mounting rings and per-wheel budgets.
+- Re-baked seven bridge/structure states with continuous padded UV charts per
+  original physical source plane. Matched native exports show continuous hangar
+  wall joints; all world triangles, bounds, surface area and original lines remain
+  exact. Fine distant roof-seam aliasing remains a limit. A second regression
+  protects shared-point UV continuity. All incumbent test-method ASTs are exact.
+- All 19 fresh five-channel bakes, masters and tangent/AO-equipped GLBs are
+  installed through the existing scoped packer. Verified 164 installed files,
+  38 exact retained catalogue entries/exports and exact pixels outside the changed
+  slots in all 15 bank maps. All 171 rollback files remain authenticated. Shrub,
+  grass and calibration-menu art are unchanged from the accepted prior pass.
+- Root verification: 105 Python asset/gate/package tests pass with no skips.
+  Headless admission passes 1,217,582 checks. Five serial native batches cover
+  116 views at 4x, passing 1,049 checks with zero forbidden pixels, exact Modern
+  restoration and unchanged source packets. The implementing lead reviewed its
+  own final textured exports, matched wheel closeups and all changed production
+  states. All 68 original inputs, 160 runtime source pins and 121 untouched art
+  pins remain exact.
+- Retained failures honestly: a 900-second batch guard stopped after completing
+  state 129; later single-state jobs completed its unstarted peers. State 139
+  reached three maps before its separate 1,200-second guard. Channel timestamps
+  showed progress rather than a demonstrated stall. Independent read-only advice
+  supported a newly declared 2,400-second single-state budget, with recipe,
+  samples, resolution, CPU/RSS/disk limits unchanged. That fresh run completed
+  naturally in 209 seconds; the earlier throughput difference remains unverified.
+  Both guard failures remain recorded. Two capture wrappers failed after writing
+  complete images; file/receipt checks verified those captures without re-rendering.
+  Sandbox-only Godot log-write errors made the first admission wrapper fail;
+  scoped native access passed the unchanged check. No failing assertion was removed.
+- Local only: no full-mission or aggregate repository gate claim, package/PCK
+  rebuild, Git mutation or publication. All phase jobs are terminal. No new
+  discretionary CPU-heavy authoring phase is planned; the resource coordinator
+  has the actual terminal state. Evidence:
+  `artifacts/tactical-all-model-refinement-20261019-r2/acceptance.json`.
+
+Working if: the 12 wheel assemblies retain their original runtime budgets and
+source bindings, the seven structures retain exact geometry with continuous UVs,
+all retained art stays exact, and native ownership/Modern/source-packet checks pass.
+
+## 2026-10-20, another Blender pass, flags and insignia (revision 26)
+
+- Nell requested another pass and asked whether the hangar flag should be white.
+  Freshly decoded the pinned original SHAPE.TBL: shape 47, primitive 4915 has
+  prefix `[27,1,1]`; observed original palettes and the supported art palette map
+  colour 1 to white. Its original black pole is primitive 4909. The existing
+  Tactical flag incorrectly used a glossy lamp field and mechanical cladding.
+- Replaced that construction with matte white cloth and a restrained hem on the
+  original plane, preserving its full area, bounds, source owner and pole line.
+  The flag drops from 152 facets to 10, and the complete hangar from 3,416 to
+  3,274. All 3,264 non-flag facets remain exact. Baked field samples are neutral
+  near-white, nonmetallic and rough; no faction emblem or motion was added.
+- Reviewed all 57 current GLBs from two new elevated opposing angles, with
+  focused flag and building-marking captures. This exposed a black Army star on
+  building 155. Eight star-bearing surfaces across 153/155/156 had inward-facing
+  facets and systematic black occlusion. Independent read-only advice confirmed
+  the winding diagnosis and the need to repair it before UV/bake generation.
+- Reversed only the 224 inward facets in the Tactical authoring path, for game
+  and master. Each individual facet retains its vertices, material, colour,
+  component, position in the facet list and source ownership. All other facets,
+  original registry, markings, flags and support setbacks remain exact. Modern
+  generation/assets and runtime code were not changed. Fresh bakes remove the
+  systematic zero-occlusion interiors; native captures restore the white Army
+  stars and retain the red/gold markings.
+- The prior exact-order decoration assertion pinned the defective winding. It
+  now checks per-facet vertex membership and unchanged metadata, together with
+  outward normals in game/master. Exact flag-passthrough assertions remain.
+  Added two observed-defect regressions: white matte cloth on the original flag
+  plane, and absence of systematic black painted-star occlusion. The old bake
+  fails the latter at shape 153/27027; the installed corrected bakes pass.
+- Four finite Blender jobs completed naturally within their original CPU4,
+  4 GiB RSS and 900/1,200-second limits. All four editable masters and GLBs have
+  fresh PBR maps, normal tangents and occlusion. The existing scoped packer
+  installs 40 files, preserving 53 catalogue entries/exports and every pixel
+  outside the four changed slots across all 15 maps. All 51 rollback files are
+  authenticated. The phase's revised 1.5 GiB all-in forecast replaces its initial
+  1 GiB estimate after the three building defects were found.
+- Root verification: 107 Python tests pass with no skips, alongside 1,217,038
+  headless admission checks and 24 native views at 4x with 218 checks. Forbidden
+  pixels are zero, Modern restoration is exact and original packets are unchanged.
+  All 68 original files, 160 runtime source pins and 170 untouched art pins remain
+  exact. A fresh original decode reproduces the current source-registry pin.
+  The implementing lead reviewed its own final GLB closeups, complete models
+  and source-bound production renders.
+- An initial focused-test command named the wrong class and ran no source tests;
+  the corrected command passes. A camera-preparation syntax typo failed before
+  execution and was corrected. The intentionally red old-bake regression is
+  retained separately from the green final suite. No assertion, cap or gate was
+  removed to obtain a pass. Cross-chat coordination tools were unavailable in
+  this runtime; no foreign process was controlled or signalled.
+- Local only: all phase jobs are terminal, with no package/PCK rebuild, commit,
+  push or publication. No full-mission or aggregate repository gate claim.
+  Evidence: `artifacts/tactical-thin-part-refinement-20261020-r3/acceptance.json`.
+
+Working if: the white flag retains its original plane and source identity, the
+corrected star facets keep their original paint and vertices while facing outward,
+black occlusion interiors disappear, and the source/Modern/retained-art checks pass.
+
+
+## 2026-10-20, whole-roster Blender material and source-normal pass (revision 27)
+
+- Nell assigned another pass across the complete roster, explicitly using Blender.
+  Reviewed all 57 states in 114 new editable-master geometry views and 57 Cycles
+  baked-material views. Two exact aliases retain their donor master basis. Thirteen
+  final before/after renders separately inspect original bridge top/underside sets
+  and the seven corrected masters. The implementing lead reviewed its own output.
+- Reoriented finished facets for six bridge states to match the freshly decoded
+  original prefix normals. Top and underside owners retain distinct signs. Corrected
+  the ten inward red roof-cap facets on building 151, preserving its deliberate red
+  colour. Every affected facet keeps its exact vertex membership, material, colour,
+  component and original ownership. Bounds, surface area, source wirework, bridge
+  gaps and all runtime triangle counts remain unchanged.
+- Cycles exposed false occlusion and inverted normal-map patches where bridge
+  108/114 top and underside owners were baked together. Fresh original decoding and
+  the existing static-face selector confirm that these coincident owners are
+  alternatives, despite sharing a root. Read-only Astra advice was independently
+  checked. A 256px winding-only pilot still produced median AO 0. Owner-matched,
+  temporary low/master subsets fixed all six owners to AO 255 and normal-blue 255.
+  Five-channel baking clears once per channel and retains both sides' UV islands.
+  Complete original-owner meshes are exported, with no temporary subsets saved.
+- Seven full Blender rebakes completed naturally under CPU4, 4 GiB RSS and the
+  declared 1,200-second aggregate budget (517 seconds, peak 1.43 GB RSS). The actual
+  masters, normal/tangent/AO-equipped GLBs and affected atlas slots are installed
+  through the existing scoped packer. All full-resolution sampled deck/cap interiors
+  have median AO 255 and outward tangent normals. The other 50 catalogue entries
+  and exports, and every pixel outside the seven slots across all 15 maps, are exact.
+- Root verification: 110 Python asset/gate/package tests pass with no skips.
+  Headless admission passes 1,217,162 checks. Four serial native batches pass
+  382 checks across 42 views at 4x, with zero forbidden pixels, exact Modern
+  restoration and unchanged source packets. Original 68 inputs, 160 runtime source
+  pins and 156 untouched art pins remain exact. A fresh original decode reproduces
+  the source-registry pin. All 80 rollback files are authenticated; 95 incumbent
+  test-method ASTs are unchanged, with three observed-defect regressions added.
+- Retained failures and corrections: an initial helper assumed a dictionary where
+  the catalogue supplies a list and made no asset writes. An initial all-up bridge
+  hypothesis was corrected from the actual original normals before production
+  baking. The first admission wrapper incorrectly applied the native 120-second
+  outer guard to headless admission. A subsequent run completed all assertions but
+  failed the inherited 120-second watchdog. Neither is recorded as PASS. After
+  independent timing review, the unchanged gate completed naturally in 104.90 real
+  seconds (31.89 user, 2.21 system), within the same watchdog. All failure logs and
+  the timing receipt are retained; no assertion, sample setting or deadline was
+  removed or raised. Severe host contention was observed; its exact contribution
+  to the earlier failure remains an inference.
+- Local only: no PCK/package rebuild, commit, push or publication, and no full
+  mission or aggregate repository gate claim. All task-owned heavy jobs are
+  terminal. Cross-chat messaging tools were unavailable; no foreign process was
+  controlled or signalled. Evidence:
+  `artifacts/tactical-blender-roster-20261020-r4/acceptance.json`.
+
+Working if: each bridge side follows its original normal and visibility owner,
+separate bakes eliminate false coincident occlusion and inverted tangent patches,
+the original red cap and source geometry remain intact, and production ownership,
+Modern restoration and the unchanged admission deadline all pass.
+
+
+## 2026-10-20, Molot, Bradley, BRDM and crew feet (revision 28)
+
+- Nell requested stronger BRDM weapon detail, formed Sagger/Spigot feet, Object
+  477A Molot identity for F-ST and a more recognisable Bradley. Her subsequent
+  9P148 photograph corrected the BRDM launcher arrangement and road-going pose.
+  Both variants now have five enclosed canisters on a central pedestal, saddles
+  and end caps, with smooth stowed-auxiliary-wheel panels and four main wheels.
+  The earlier exposed rack and belly wheels were an inaccurate combination for
+  this reference pose. Corresponding wrecks are updated; 144 remains a 142 alias.
+- Molot has a connected low, broad turret, single heavy gun, skirts and seven road
+  wheels, with matching wreck structure. Bradley has a compact faceted turret,
+  fitted mantlet, raised twin TOW enclosure, intake and trim vane. Both crews have
+  Blender-sculpted toes, heels, arches, insteps and fitted ankles. Complete
+  body-plus-head counts are 7,776/7,868, below the unchanged 8,192 cap.
+- Eight editable Blender masters, their normal/tangent/AO-equipped GLBs and nine
+  states are installed through the existing scoped packer, 79 changed files.
+  Final geometry fingerprints match current source recipes. Actual bake-recipe
+  hashes remain recorded per model, including the separate corrections; older
+  bakes have not been relabelled as fresh. The implementing lead inspected its own
+  Blender material renders. All 48 other entries and every outside-slot pixel
+  across all 15 maps stay exact.
+- Root validation: the initial 37-test asset run had 36 passes and one Molot
+  sprocket/road-wheel clearance failure. Corrected wheel stations pass that exact
+  incumbent regression; a fresh Molot bake then passes six affected export,
+  ownership, geometry and material checks. The failed log is retained. There are
+  37 distinct asset contracts closed, rather than an all-green initial run.
+- Headless admission completes naturally with 1,219,370 checks in 112.79 seconds,
+  inside the unchanged internal 120-second watchdog. Five serial native batches
+  pass 491 checks over 54 views, with zero forbidden pixels, exact Modern
+  restoration and unchanged source packets. These angular crew views are
+  body-only; independently commanded heads are tested by the established scene
+  contracts. No complete-mission claim is made.
+- The initial crew scene run failed two per-order negative-control assertions:
+  depth-disabled forward order differs from proper depth by only nine pixels,
+  while reverse differs by 342. Proper depth images are byte-identical in both
+  orders. A read-only independent review and root pixel comparison identified the
+  invalid assumption that every painter order must visibly disagree with depth.
+  The fixture now requires depth-disabled forward/reverse images to disagree by
+  >20 uniform-interior pixels, while proper-depth interior mismatch remains zero.
+  Both crews produce 154 negative-control interior differences, with 520 overlap
+  samples each. Filled-area, opaque shader/priority, coverage, restoration and
+  head-command checks remain. The corrected native scene run passes 113 checks
+  naturally in 95.43 seconds under the unchanged 120-second outer limit. This is
+  one explicit test-fixture repair; all 160 pinned runtime source files stay exact.
+- Original 68 inputs, source-registry fresh decoding and 328 retained pins remain
+  exact. All 96 art rollback files and the fixture preimage are authenticated.
+  Ninety-six incumbent Python test methods are exact; two are updated for the
+  authorised redesign and four observed-feature regressions are added.
+- Retained authoring failures: the initial eight-model aggregate bake reached its
+  1,200-second deadline after two completions, and an isolated Bradley bake reached
+  900 seconds with advancing channels. Timing evidence and read-only advice led
+  to serial per-model 1,800-second authoring budgets. CPU4, 4 GiB RSS, 2 GiB phase
+  cap, original bake resolutions and 12 samples were retained. Runtime/test
+  deadlines were unchanged. A baseline scene diagnostic lacked the old runtime
+  dependencies and failed admission; it is retained as inconclusive, not evidence
+  of baseline depth behaviour. No foreign process was controlled or signalled.
+- Local only: all task-owned jobs are terminal. No package/PCK rebuild, commit,
+  push or publication. Evidence:
+  `artifacts/tactical-blender-roster-20261020-r5/acceptance.json` and
+  `finished-models.png` in that directory.
+
+Working if: the supplied BRDM launcher and stowed-wheel pose are recognisable,
+Molot and Bradley have their specified silhouettes, both crews have formed boots,
+and unchanged source ownership, head isolation, budgets and Modern restoration
+pass the finite asset/native checks.
+
+
+## 2026-10-20, complete military vehicle camouflage (revision 29)
+
+- Nell requested camouflage/textures for all tanks and related vehicles. Applied
+  family-authored woodland finishes to all 34 vehicle states through 32 masters,
+  including every tank, carrier, BRDM, truck, Hind state and matching wreck. The
+  existing 144/142 and 164/163 aliases keep their exact donor basis. NATO-style
+  green/brown/charcoal and Eastern-style olive/khaki/dark-green use stable physical
+  object coordinates. The Hind retains its blue underside. Surviving wreck plates
+  retain scorched family paint; tyres, tracks, glazing, optics, bare metal, true
+  signals and woven truck cover retain their material identities.
+- Rebaked albedo only in Blender, retaining 2048px intact/1024px wreck sources and
+  12 samples. The 128 source normal/AO/roughness/metallic files are byte-exact.
+  All 34 GLB exports preserve every mesh attribute and index byte-for-byte, and
+  exported non-colour map pixels are exact. Every one of the 57 catalogue model
+  entries remains identical, including geometry, UVs and source ownership. All
+  23 nonvehicle states and every outside-slot pixel across all 15 maps are exact.
+  Installed 136 authenticated file deltas through the established scoped packer.
+- Root inspected its own 64 front/rear textured Blender views, the two Cycles
+  Abrams pilot views and all 34 native game-scale colour witnesses. Six Python
+  checks pass: three new camouflage eligibility/family regressions, the incumbent
+  material-profile check and two existing baked export/alias checks. A direct
+  Blender smoke check exercises the changed component-aware material-slot API
+  for both intact armour and surviving wreck plates, preserving source IDs.
+- Nine serial native batches pass 315 checks over all 34 states, with zero
+  forbidden pixels, exact Modern restoration and unchanged source packets.
+  Each finishes naturally within the unchanged 120-second guard. Geometry, UVs
+  and other maps are independently exact, so this colour-only witness uses one
+  readable game-scale pose per state with all inherited per-view assertions.
+  No aggregate repository or full-mission gate claim is made.
+- Original 68 inputs and all 160 runtime source pins remain exact. All 472 art
+  preimages and the four source/test backups are authenticated. The 102 incumbent
+  Python test methods remain exact; three camouflage regressions are added.
+  Actual per-model colour-refresh and prior non-colour recipe provenance remain
+  recorded rather than treating retained maps as fresh bakes.
+- Retained pilot failures: the first geometry fingerprint incorrectly included
+  deliberate material-slot changes. A diagnostic isolates `material_index` as
+  its only changed field. The revised guard still checks positions, polygons,
+  UVs and source/component IDs; the completed colour image was authenticated and
+  retained before finishing export. Source-bound GLB identity is independently
+  verified for every final state.
+- Several accepted Blender files retain older hidden donor masters. The first
+  refresh selector used the first `_MASTER` name, and five completed candidate
+  bakes were disqualified: 118, 119, 120, 121 and 122. They are quarantined and
+  never installed. The 124 eligibility failure stopped before its bake. A full
+  32-file inventory established exact source-shape selection for both GAME and
+  MASTER objects. Corrected bakes and every final receipt use the requested ID.
+- BTR 137 reached the initial 900-second authoring bound before output. Host
+  pressure was observed at load 470 on 10 logical CPUs with 27.5 GiB swap used;
+  a task-only CPU readback also shows severely reduced scheduling throughput.
+  A proposed emission-colour shortcut failed its comparison, up to 85 RGB units
+  and mean 11 to 13 per channel. It was rejected, and 116's original diffuse
+  colour image was restored exactly before export. No emission result is installed.
+- Remaining authoring budgets were explicitly bounded at 1,800 seconds, keeping
+  CPU4, RSS4 GiB, original resolution, samples and runtime deadlines unchanged.
+  Short wreck jobs ran first, with BTR last. All completed naturally; BTR's final
+  accepted run took 595.6 seconds. The phase stays below its 4 GiB artifact cap;
+  managed authoring jobs retained at least 40 GiB free space. No foreign process
+  was controlled or signalled.
+- Local only: all task-owned jobs are terminal. No PCK/package rebuild, commit,
+  push or publication. Final receipt and full front/rear/native contact sheets:
+  `artifacts/tactical-camouflage-20261020-r6/acceptance.json`.
+
+Working if: all 34 vehicle states show coherent camouflage in Blender and the
+native renderer, surviving wreck paint matches its family, all source/geometry/
+non-colour invariants pass, and no invalid pilot or shortcut reaches the installed
+pack.
+
+
+## 2026-10-20: Further Blender model refinement, revision 30
+
+- Completed the requested model pass on eight masters and nine states. Molot
+  receives a broader low turret and weapon hood, heavier gun root and fuller
+  seven-wheel running gear. Bradley receives a tapered mantlet, fitted race
+  and hatch collars, chamfered twin TOW enclosure and connected pivots. BRDM
+  receives longer closed canisters, dust covers, bands, saddles and a seated
+  central mount, with belly wheels stowed. Matching wrecks retain those family
+  cues. Both crews receive lower toes, formed insteps, raised narrow arches
+  and distinct heels through the shared editable Blender sculpt.
+- Fresh full-resolution five-channel Blender bakes are installed through the
+  existing scoped packer: 83 authenticated file deltas. All 48 other states,
+  all outside-slot pixels across 15 maps, original source commands and all
+  160 runtime source pins remain exact. Original 68 inputs and fresh SHAPE.TBL
+  registry decoding pass. All 105 incumbent Python test methods remain exact;
+  two focused geometric regressions are added. Eighteen focused checks pass.
+- The author reviewed its own 18 PBR views and all 42 native vehicle angles.
+  Four native batches pass 382 checks, with zero forbidden pixels, exact Modern
+  restoration and unchanged input packets. Each returns naturally within its
+  unchanged 120-second bound. Exact per-batch elapsed values were not persisted
+  before a later scene timeout; the terminal results and reports are retained.
+- Two CPU BRDM bakes reached their finite authoring limits under severe host
+  pressure. A real production five-channel Metal smoke comparison passed,
+  with normal/AO/roughness/metallic exact and at most 1/255 albedo deviation
+  on three probe pixels. Full fresh Metal BRDM retries completed; no partial
+  channels or invalid candidate maps were installed. Four masters use CPU and
+  four use Metal, with actual device provenance recorded only for executed
+  bakes. Resolution, samples, cages, material recipe and runtime guards remain
+  unchanged. Historical failures remain in the phase evidence.
+- Runtime acceptance is INCOMPLETE. Initial admission prints 1,223,094 checks
+  and zero content errors, then fails the unchanged watchdog with exit 2. One
+  timestamped warm retry also fails, at 189.3 seconds process elapsed: load
+  finishes at 99.8 seconds engine time, mapping at 148.4, and all checks at
+  176.8. Removing timestamp prints from the diagnostic copies recovers the
+  original run and grounding functions byte-for-byte. No third equivalent
+  admission retry or watchdog change was made.
+- The initial complete native scene prints 113 checks and zero content errors
+  but misses its external 120-second deadline, so it fails. The first warm
+  native diagnostic exits 0 at 54.1 seconds without completion markers and is
+  correctly rejected. Godot help confirms its separate --quit-after 1200
+  setting counts iterations, not seconds. One discriminating retry omits that
+  iteration cap while retaining both actual 120-second guards and all scene
+  assertions. It times out after loading and grounding 115, during grounding
+  163, before the crew scene. Thus removal of the cap does not close acceptance.
+  Exact host/GPU delay cause is unverified; observed load was 826 to 893 on ten
+  logical CPUs during these checks. No foreign process was controlled.
+- Local model delivery is complete; full runtime sign-off remains blocked by
+  the failed timing checks. Closing it requires natural completion of both
+  complete checks with their required markers inside the existing deadlines.
+  No PCK/package rebuild, commit, push or deployment was performed. All owned
+  authoring and validation jobs are terminal. Evidence and actual preview:
+  `artifacts/tactical-model-refinement-20261020-r7/acceptance.json` and
+  `artifacts/tactical-model-refinement-20261020-r7/finished-models.png`.
+
+Working if: the requested model forms and camouflage are present in editable
+Blender masters and installed art, untouched source and atlas regions stay exact,
+and no incomplete or over-deadline runtime run is presented as accepted.
+
+
+## 2026-10-21: Focused Sagger and Spigot Blender refinement, revision 31
+
+- Nell requested another pass to perfect the two operators. Reworked the shared
+  sculpt with slimmer shoulders/elbows, less bulky hands and fitted cuffs.
+  Seated the independent heads further over the jacket neck and eased the neck
+  profile. Added a standing collar, folded collar leaves, fitted twin pockets
+  and flaps, placket, belt loops and a buckle at the actual belt height. The
+  held cases have chamfered edges and retain distinct manual/optical controls.
+  Boot toe creases are integrated into the continuous leather last. The source
+  pose envelopes, ownership, command offsets and head bindings remain intact.
+- Retained pilot failures and rejected candidates. The first sculpt stopped on
+  my incorrect helper import before export. Subsequent inspection and tests
+  caught a missing cuff, pocket/body intersections and a reversed collar cap.
+  Those are corrected in the final source and protected by the added fitted
+  tailoring regression and retained visual evidence. Raised wire-like toe
+  seams were discarded in favour of an integrated leather crease.
+- The first full bake revealed a broad dark armpit patch. An AO-only bypass
+  leaves it unchanged; removing only the normal-map link removes it. A real
+  2048px/12-sample normal pilot with cage 0.012 and max ray distance 0.04 removes
+  the broad patch, with 4,270 unambiguous normal interiors and no black misses.
+  Applied that projection only to crew bodies, retaining independent-head and
+  other-family recipes. Fresh full five-channel bakes replace both candidates.
+  No pilot map or disabled normal link is installed.
+- Both final Metal bakes complete naturally, in 36.1 and 34.4 seconds. They use
+  the retained validated device-only backend path, full 2048px body/512px head
+  sources and 12 samples. Geometry totals including heads are 7,999 and 8,091.
+  The author inspected its own ten final PBR views: front, rear, side, equipment
+  and boot detail for each. The Blender preview uses actual baked game meshes.
+- Installed 32 authenticated deltas through the existing scoped packer. All
+  55 other states, every outside-slot pixel across all 15 maps, original 68
+  inputs and 382 runtime-directory pins remain exact. Fresh SHAPE.TBL registry
+  decoding matches. All 107 incumbent Python test methods remain exact and
+  one focused regression is added. Thirteen focused tests pass, including
+  installed export, tangent, contact-occlusion and bake-interior contracts.
+- Native scoped crew verification passes 69 checks in 35.35 seconds. It copies
+  the complete incumbent crew block verbatim and retains its positive and
+  depth-disabled negative controls, fallback/restoration checks, independent
+  heads and subsequent pooled-vehicle occluder. Material and visibility
+  restoration remain intact. Fixed synthetic head anchors prove binding and
+  occupancy rather than a complete natural mission pose.
+- Measured full-roster loading improved to 24.5 seconds from the prior 99.8.
+  This new evidence justified one retry of the two historical open checks.
+  Complete headless admission now passes 1,225,006 checks in 38.58 seconds.
+  The complete native scene passes 113 checks in 40.83 seconds. Both exit 0
+  naturally within unchanged inherited 120,000ms and external 120-second wall
+  guards. The separate --quit-after iteration cap is omitted because it can
+  prematurely terminate awaited tests; no assertion or wall guard is changed.
+  These fresh results close the old timing gaps for the current installed pack.
+- Local only. All task-owned jobs are terminal. No PCK rebuild, commit, push or
+  deployment. Evidence: `artifacts/tactical-crew-refinement-20261021-r8/acceptance.json`;
+  final actual render recap: `artifacts/tactical-crew-refinement-20261021-r8/finished-crews.png`.
+
+Working if: the two revised operators retain their original source and command
+contracts, fitted garment and boot forms remain visible with normal maps active,
+all 55 retained states stay exact, and every recorded acceptance run has a
+natural successful terminal result inside its unchanged wall-clock bound.
+
+
+## 2026-10-21: Sagger and Spigot formed-grip pass, revision 32
+
+- Refined both operators in Blender: explicit separated fingers, curved tips,
+  mirrored opposed thumbs, smaller balanced heads/helmets and directional cloth
+  folds. Kept the accepted boots and original pose, owner and head-command
+  contracts. Game-plus-head counts are 8,033 and 8,125, within 8,192 each.
+- Corrected open finger joins and inconsistent winding before baking. An
+  incumbent depth check rejected an overly shallow resized head; restored its
+  depth without relaxing the assertion. All 108 incumbent test methods remain
+  exact; one new grip topology/proportion regression is added.
+- Actual full-quality PBR inspection exposed black finger slivers. Disconnecting
+  only the normal link removed them. Matched per-part normal projection and
+  shared knuckle vertices correct the bake with normal maps active. Twelve grip
+  parts use cage 0.002/max ray 0.008, the remaining body retains 0.012/0.04,
+  independent heads retain their recipe, and contact AO uses the complete shell.
+  The Sagger pilot has 4,610 unambiguous albedo/normal interiors, including 510
+  hand interiors, with no black misses. The installed test covers both operators.
+- Final five-channel Metal bakes retain 2048px body, 512px head and 12 samples.
+  The implementing author inspected ten actual baked Blender views. A render
+  aborted in native Metal shader-cache allocation; the macOS stack is recorded,
+  and one fresh-process retry completed naturally with unchanged quality.
+- Recovered required disk headroom by converting 474 byte-identical private R8
+  staging copies to independently verified APFS clones. No path or data bytes
+  were lost, and no master, backup, unique output or evidence was removed. All
+  original memory, disk, artifact and wall-clock guards remain unchanged.
+- Installed 32 authenticated deltas through the existing scoped packer. All
+  55 other states, outside-slot pixels across 15 maps, 68 original inputs and
+  382 runtime-directory pins remain exact. Fresh source-registry decoding agrees.
+- Fourteen focused Python tests pass. Original headless admission passes
+  1,227,614 checks in 21.85 seconds. The complete native scene passes
+  113 checks in 30.53 seconds. Both exit 0 naturally within inherited
+  120,000ms and external 120-second guards, with original assertions unchanged.
+  Native synthetic head anchors prove binding/occupancy rather than a natural
+  full-mission pose. No aggregate repository or package gate is claimed.
+- Local only. No PCK rebuild, commit, push or deployment. Evidence and actual
+  recap: `artifacts/tactical-crew-refinement-20261021-r9/acceptance.json` and
+  `artifacts/tactical-crew-refinement-20261021-r9/finished-crews.png`.
+
+Working if: the installed grips show separated fingers and opposed thumbs with
+active corrected normal maps, original pose/source/head contracts and 55 retained
+states remain exact, and acceptance logs have natural successful terminal results
+inside their unchanged guards.
+
+
+## 2026-10-21: Complete Sagger/Spigot body, boot and hand refinement, revision 34
+
+- Completed the requested Blender pass, integrating the earlier disk-blocked
+  R10 body and boots. Raised the waist 3.5 raw units and shortened the pelvis;
+  softened shoulder/knee volumes and retained tapered limbs and a connected
+  raised thigh. Formed boots are about 14 percent shorter than installed R9,
+  with asymmetric rounded toes, narrower heels, closer ankles and grounded
+  toe/heel contacts. Original independent heads and source pose envelopes remain.
+- Reformed palms and opposing thumbs. Fingers have graded lengths/radii and
+  eight-sided game sections, with articulated distal pads seated near the held
+  case front at Y1.2. Planar caps retain closed outward topology while allocating
+  the existing polygon budget to curvature. Four source-only low/master cases
+  and the actual geometry checks pass. Final combined totals are 8,073/8,165.
+- Fresh full-quality five-channel Metal bakes and editable masters replace both
+  states, with 2048px body/512px head sources and 12 samples. Matched per-grip
+  normal projection and complete-shell contact AO remain active. The implementing
+  author reviewed ten actual baked Blender views. No partial prior channels or
+  quality-reduced map is installed.
+- Nell answered the storage question: "Proceed anyway. Do not stop." Recorded a
+  task-specific two-model reserve of 16GiB at launch and 12GiB while running,
+  based on prior measured RSS/output and retained guard margins. All 4GiB RSS
+  and phase-output caps, full bake quality, 1800s authoring and 120s runtime
+  guards remain. Native jobs run serially. No foreign process, unique master,
+  rejected candidate, rollback or source evidence is removed. The active scope
+  and resource record reflect this explicit case-specific choice.
+- Installed 26 authenticated deltas through the existing scoped packer. All
+  55 other states, outside-slot pixels across 15 maps, 68 original inputs and
+  382 runtime-directory pins remain exact. Original head geometry is exact.
+  Six freshly baked head maps are byte-identical to the prior maps; a recursive
+  before/after comparison proves the complete 26-file delta, instead of the
+  anticipated 32. No map or state is omitted.
+  All 111 immediate-baseline methods remain unchanged; one fingertip-contact
+  regression is added. Relative to accepted R9, 107 incumbent methods remain
+  exact, two authoring expectations follow the shorter boots/higher belt, and
+  three focused regressions protect joined anatomy, UV slivers and fingertip fit.
+- Seventeen focused Python tests pass. Complete original admission passes
+  1,228,006 checks in 101.04 seconds. The complete native scene passes
+  113 checks in 43.20 seconds. Both exit 0 naturally within inherited
+  120,000ms and external 120-second guards; no runtime assertion is changed.
+- R11 closes the outstanding requested model delivery. R10 remains a preserved
+  historical incomplete candidate, superseded by the verified R11 pair. Native
+  fixed head anchors prove binding/occupancy rather than a full-mission pose.
+  Local only, no PCK rebuild, commit, push or publication. Evidence and actual
+  recap: `artifacts/tactical-crew-refinement-20261021-r11/acceptance.json` and
+  `artifacts/tactical-crew-refinement-20261021-r11/finished-crews.png`.
+
+Working if: both final operators are installed with joined anatomy, natural
+boot and grip forms, full-quality active normal/AO maps and original head/source
+contracts, while 55 retained states and all untouched atlas pixels stay exact
+and the complete native checks finish successfully inside their original limits.
+
+
+## Fuller Sagger/Spigot anatomy, Blender revision 35
+
+Both operators receive fuller thighs, knees and calves, with a continuous taper
+into wider boot shafts. The sculpt increases calf radii by roughly 25 to 30
+percent and gives the thighs fuller width and depth. Rounded toe boxes and fuller heels/instep transitions retain planted
+contacts and the existing foot length. The new palms carry more metacarpal volume;
+thicker fingers taper gently to broad pads, and fuller opposed thumbs keep the
+control grip readable. Individual graded fingers and original hand ownership
+remain intact. Body/head totals are 8,064/8,156, within 8,192 each.
+
+Both editable Blender masters and exports have fresh full five-channel bakes at
+2048px body, 512px head and 12 samples, with matched grip normal projection and
+full-shell contact AO active. The implementing author reviewed its own ten actual
+PBR views. A concave source-boundary opening found in the rear view was
+corrected by keeping seam Z fixed and projecting newly sliced seam vertices.
+Normal and AO maps stay active. This remains a stylized, source-bound game pose.
+
+The scoped install changes 26 authenticated files. All 55 other states,
+outside-slot pixels across 15 maps, 68 original inputs, 382 runtime pins and the
+independent head geometry remain exact. All 112 immediate-baseline test methods
+are unchanged; one regression protects fleshy digit/palm and calf volume,
+plus entering-ray coverage at the source thigh seam in both low and master meshes.
+Eighteen focused tests pass. Original admission passes 1,227,806
+checks in 31.91s; the complete native scene passes
+113 in 41.11s, naturally inside unchanged 120s guards.
+
+The existing 4GiB RSS/output caps, 16GiB launch/12GiB running disk reserve and
+1800s authoring limits are retained. No prior master, rollback or evidence is
+removed. Local only: no PCK rebuild, commit, push or publication. Evidence:
+`artifacts/tactical-crew-refinement-20261021-r12/acceptance.json`.
+
+Working if: both operators visibly show fuller hands and legs with fitting boots,
+original source/head contracts and all other states remain exact, and the final
+full-quality Blender bakes and original complete admission/scene checks pass.
+
+
+## Photograph-referenced ground crews, Blender revision 36
+
+Nell explicitly selected the real firing setup. This supersedes revision 35's
+upright per-face crew silhouette for Sagger 161 and Spigot 162 only. The new
+kneeling crews have joined clothed anatomy, full thighs and calves, shaped
+boots and closed graded fingers with opposed thumbs. The grounded Sagger
+controller carries a joystick and tall periscope, beside a separate finned
+missile on its case lid. Spigot has a horizontal container, guidance housing,
+attached ocular and three grounded tripod feet. The controller and tripod
+clear the boots. Both full five-channel bakes retain 2048 px body, 512 px head
+and 12 samples. Complete body/head totals are 6,630 and 6,332, below 8,192.
+The implementing lead authored and inspected ten actual PBR Blender views.
+
+References retained with source metadata: US DoD DD-ST-85-01240 and 01242,
+14 November 1984, public domain per their Commons pages; Dmitry Shutov/Mil.ru,
+12 May 2021, CC BY 4.0. The 2021 photograph informs equipment and firing posture,
+not era-exact uniform reproduction. Unmodified photographs are packed as
+non-rendering references in the shared editable sculpt, with no photographic
+pixels incorporated into the model textures.
+
+Only these two Modern models advertise the optional ground-atgm-v1 pose.
+A single admitted rigid transform drives body and attached head, real depth,
+and the replacement ownership mask at the original painter slot. Any missing
+or inconsistent source/head witness selects the complete incumbent path.
+The original normalized head geometry and command identity remain exact.
+A pose-only dynamic Q14-context candidate handles independently rounded
+original anchors, rechecking every vertex under unchanged 2.0001 raw / .25 pixel
+limits; malformed, reflected, sheared or inconsistent context fails closed.
+Classic, gameplay, registry, roots, bounds and original input bytes remain.
+
+Eighteen focused Python checks pass. The complete asset admission gate passes
+1,215,064 checks; the adapted native scene gate passes 51; the
+focused native pose gate passes 236, including near-plane
+crossing, bidirectional mask coverage, vacated upright pixels, real-depth
+negative control, mode/cache restoration and later-occluder protection.
+Nine Python expectations and the obsolete upright scene branches are explicitly
+dispositioned, rather than reported unchanged. 104 incumbent Python methods
+remain exact. A genuine unmodified scenario 3 packet admits one of two Sagger
+candidates; the other has no visible head span. Fourteen negative context
+mutations reject. In that capture, foreground terrain hides the lower pose; the old upright
+head pixels correctly vacate while all noncrew coverage remains exact. This
+is admission and occlusion evidence, not a visible live-mission crew demonstration.
+
+The scoped install changes 28 authenticated files. All 55 other catalogue entries,
+outside-slot pixels across 15 maps, 68 original inputs, 377 untouched runtime pins
+and all 869 backup pins remain exact. Existing 16 GiB start / 12 GiB running disk
+reserves, 4 GiB RSS/output caps, 1800 s authoring and 120 s runtime guards remain.
+No prior master or rollback was deleted. Local only, without PCK rebuild,
+commit, push or publication. Evidence:
+`artifacts/tactical-crew-refinement-20261021-r13/acceptance.json`.
+
+Working if: both correct low firing setups appear in the actual Blender and
+native model studies, their masks contain no upright ghost silhouette, rejected
+witnesses and original foreground remain authoritative, and unrelated states
+and source data stay exact.
+
+
+## Ground-crew finishing polish, Blender revision 37
+
+The approved kneeling Sagger and Spigot firing setups remain. Leather/cloth and
+sole material changes now follow actual cut planes, removing the sawtooth rims
+from centroid-coloured triangles. The folded rear calf also has a straight
+shaft boundary and a correctly leather-coloured heel. Small sewn cuffs surround the sleeve/wrist
+joints. The Spigot near hand and Sagger far hand are reseated on their controls;
+all four index-to-control vertex distances are below .5 raw units, with the
+closed graded fingers and opposed thumbs preserved.
+
+Controller, missile-case and guidance-housing edges have small physical bevels.
+Sagger fins have tapered profiles; Spigot container bands have chamfered edges.
+Microscopic hinge relief belongs to the bake master; small game sockets use
+an efficient eight-sided profile. The first pilot failed the unchanged 85 percent
+interior-texel coverage check. Its full assets and views remain under the R14
+pilot directory. The corrected geometry passes that check without a threshold,
+map-resolution, sample-count or normal/AO reduction. A native pilot also
+caught one ownership pixel at a redundant forearm subdivision. Belt-only
+material cuts now stay within the belt region; the runtime and zero-mismatch
+coverage assertion remain unchanged. The failed assets and reports are retained.
+
+Both editable masters, GLBs and five-channel maps are freshly baked at 2048 px
+body, 512 px head and 12 samples. Complete body/head totals are 7,866 and
+7,614, within 8,192 each. The implementing lead inspected its own ten
+actual PBR views, including unobstructed boot profiles and control close-ups.
+Twenty focused Python tests pass. All 113 immediate-baseline Python methods and
+all 416 runtime pins remain exact; two new regressions cover rim/cuff geometry,
+hand contact and shaped equipment profiles. Fresh installed-art gates pass
+48 pose-admission checks, 236 native-pose
+checks, 1,225,044 format-shard-0 asset-admission checks and 51 native-scene
+checks. The retained genuine R13 source packet is exercised against these new
+assets, preserving its noncrew foreground and correctly vacating the old head.
+This does not claim a visible live-mission crew demonstration.
+
+The scoped install changes 28 authenticated files. All 55
+other entries, every outside-slot pixel across 15 maps, 68 original inputs and
+the raw head geometry/pose remain exact. Existing 4 GiB RSS/output caps,
+16 GiB start / 12 GiB running disk reserve, 1800 s authoring and 120 s runtime guards
+remain. R13 masters and all 913 preimages are retained. Local only, without
+package rebuild, commit, push or publication. Evidence:
+`artifacts/tactical-crew-refinement-20261021-r14/acceptance.json`.
+
+Working if: the final Blender close-ups show clean boot rims, seated cuffs and
+control grips, finer launcher profiles, unchanged firing/head poses and source
+data, while unrelated assets remain exact and full-quality native checks pass.
+
+
+## Kneeling crew anatomy refinement, Blender revision 38
+
+Sagger and Spigot retain their approved ground-supported equipment and rigid
+head pose. The clothed pelvis and tunic are rebalanced, shoulder/elbow masses
+reduced, and the forward shin's authored centreline increased from about 9 to
+14 raw units. The raised knee remains distinct from the weight-bearing rear
+knee, which now reaches -89.878 against the -90 ground plane. The rear boot
+is rebuilt around the horizontal calf: lowered toe, lifted heel and a folded
+ankle, replacing the upright duplicate front boot. The front shoe has a softer
+toe box, shallower arch and less blocky heel.
+
+Palms gain depth, opposed thumbs are less erect, and each curled finger ends
+in a shallow rounded pad. All twelve closed palm/digit parts remain, with
+consistent winding and four distinct graded fingers per hand. All four grips
+remain within the existing .7-raw-unit control-contact limit. Pockets now fit
+the revised tunic surface explicitly, excluding neighbouring sleeves.
+
+Twenty-one focused Python checks pass. Two previous rear-boot expectations
+were revised because they required an upright shaft and grounded rear heel;
+the new checks require the intended raised heel and grounded toe. All 113
+other immediate-baseline methods remain exact. A new regression checks closed
+rounded hand pads, cushioned palms and the grounded rear knee. The first
+anatomy trial and its three test failures remain in the R15 evidence: two old
+rear-heel expectations and the real pocket-fit defect corrected in source.
+
+Fresh Blender masters, GLBs and all five channels retain 2048 px body / 512 px
+head and 12 samples. Body/head totals are 7,730 and 7,480, within
+8,192 each. Albedo and normal interior-texel coverage passes the unchanged
+85 percent floor, with zero black interior misses. The lead inspected its own
+ten final PBR views, including both boot profiles and control close-ups.
+Installed-art gates pass 48 headless pose checks,
+236 native pose checks, 1,223,972
+format-shard-0 admission checks and 51 native-scene checks.
+The twelve native pose studies have zero ownership mismatches, stale pixels
+or unexplained mask pixels. The retained genuine gameplay packet preserves
+all noncrew foreground and vacates the old upright head; its lower crew is
+occluded, so this is not a visible live-mission crew demonstration.
+
+All 55 unrelated entries, outside-slot pixels across 15 maps, 68 original
+inputs, raw head/pose, launcher geometry and 416 runtime pins remain exact.
+The scoped install contains 29 authenticated deltas;
+R14 masters and all 913 preimages are retained. Existing 4 GiB RSS/output,
+16 GiB start / 12 GiB running disk and 1800 s authoring / 120 s runtime guards
+remain unchanged. Local only, without package rebuild, commit or publication.
+Evidence: `artifacts/tactical-crew-refinement-20261021-r15/acceptance.json`.
+The supplemental kneeling anatomy photograph and inspection record are linked
+in `references/kneeling-anatomy.json`; its pixels are not used in textures.
+
+Working if: side/rear Blender views show continuous folded calves and ankles,
+weight-bearing knees, proportioned trousers and rounded working grips, while
+source data, launchers, runtime and unrelated assets remain unchanged.
+
+
+## Kneeling crew proportion polish, Blender revision 39
+
+Sagger and Spigot receive a bounded anatomy pass over revision 38. Lower,
+flattened shoulder masses merge into a sloping tunic transition; waist and
+seat volumes are fuller. Thighs and calves gain proximal fullness rather
+than uniform cylindrical thickness. Leg joint centres and the approved
+grounded-knee, folded-ankle firing setups are retained. The front boot gains
+rounded toe/heel end stations, and the rear boot has a smoother
+instep transition and narrower rounded toe. Four distinct finger curls vary
+across each grip, and opposed thumbs gain closed rounded terminal pads.
+Pocket faces now follow the curved tunic in the clear medial chest region.
+This corrects the old fit query mistaking upper arms for jacket and the
+flat faces cutting through the tunic. Both rejected trials are retained
+under `pilots/`.
+
+All 116 incumbent test methods remain unchanged. One regression now checks
+pocket ray ambiguity and face-interior clearance; 22 focused Python checks
+pass. Both fresh editable Blender masters retain 2048 px body / 512 px head,
+12 samples and all five channels. Body/head totals are 7,892 and
+7,644, below 8,192 each. The unchanged interior-texel check exceeds
+85 percent on albedo/normal maps with zero black misses. The lead authored
+this pass and inspected its own ten actual baked PBR views against revision
+38 and the retained equipment photographs.
+
+Installed-art gates pass 48 headless pose checks,
+236 native pose checks, 1,225,252
+format-shard-0 checks and 51 native-scene checks. Twelve
+native pose cases have zero ownership mismatch, stale or unexplained mask
+pixels. The retained genuine gameplay packet preserves noncrew foreground
+and vacates the old upright head. Its lower crew is occluded, so it does
+not demonstrate a visible live-mission crew.
+
+All 55 unrelated entries, outside-slot pixels across 15 maps, 68 original
+inputs, independent raw head/pose, launcher geometry and 416 runtime pins
+remain exact. All 913 R15 preimages are authenticated and retained. The
+scoped install contains 28 exact deltas. Existing memory,
+output, time and disk guards remain unchanged. Local only, without package
+rebuild, commit or publication.
+Evidence: `artifacts/tactical-crew-refinement-20261021-r16/acceptance.json`.
+
+Working if: side/rear views show sloping shoulders, contoured clothed limbs,
+rounded boot ends and differentiated working grips, while source, head,
+equipment, runtime and unrelated assets stay unchanged.
+
+
+## Crew head proportion polish, Blender revision 40
+
+Sagger and Spigot receive a head-only pass over the accepted revision 39
+bodies. Helmet lateral width is reduced by 12.5 percent while its
+front-to-back clearance and command depth contract are retained. The chin
+and lower jaw gain depth and breadth; the occiput tapers into a continuous
+nape. Thin, elongated cupped ears replace the raised oval volumes, with a
+rolled helix and inset concha. The neck root, eye/iris geometry, complete
+body meshes, launchers and rigid firing poses remain exact.
+A normal-map-off diagnostic identified cross-surface projection seams.
+One inward cheek-strap winding is corrected. The complete head donor and
+receiver retain global UV padding, with shorter head-only normal rays
+(.006 cage/.018 maximum ray distance). Contact AO and non-head bakes are
+unchanged. Rejected donor-isolation trials and their artifacts are retained.
+
+All 117 incumbent test methods remain unchanged. One new regression
+reproduced the inward strap before repair; 23 focused Python checks pass. Both fresh editable Blender masters retain 2048 px body / 512 px head,
+12 samples and all five channels. Body/head totals are 7,636 and
+7,388, below 8,192 each. The unchanged body interior-texel check
+exceeds 85 percent on albedo/normal maps with zero black misses. The lead
+authored this pass and inspected its own thirteen actual baked PBR views,
+including front/profile/rear head closeups. Earlier diagnostic profiles are
+retained and are not the installed result. The retained real Spigot photo
+supports the equipment/posture reference; its obscured face does not supply
+head-anatomy evidence. No reference pixels enter the textures.
+
+Installed-art gates pass 48 headless pose checks,
+236 native pose checks, 1,225,252
+format-shard-0 checks and 51 native-scene checks. Twelve
+native pose cases have zero ownership mismatch, stale or unexplained mask
+pixels. The retained genuine gameplay packet preserves noncrew foreground
+and vacates the old upright head. Its lower crew is occluded, so it does
+not demonstrate a visible live-mission crew.
+
+All 55 unrelated entries, outside-slot pixels across 15 maps, 68 original
+inputs and 416 runtime pins remain exact. The accepted body sculpt cache,
+its authoring scene and body recipe are retained unchanged; the canonical
+updated complete models are the two roster vehicle.blend files. All 913
+preimages are authenticated and retained. The scoped install contains
+28 exact deltas. Existing memory, output, time and disk
+guards remain unchanged. Local only, without package rebuild or publication.
+Evidence: `artifacts/tactical-crew-refinement-20261022-r17/acceptance.json`.
+
+Working if: head closeups show a fitted helmet, elongated cupped ears and a
+continuous jaw/nape transition, while eye-to-sight contact, body, equipment,
+runtime and unrelated assets remain unchanged.
+
+
+## Crew jaw and neck proportion correction, Blender revision 41
+
+Nell rejected the revision 40 head proportions. Revision 41 narrows the
+head and helmet around unchanged eye landmarks, lowers the crown, raises
+the mouth and chin, and replaces horizontal jaw rings with an ascending
+mandible. The fitted neck enters behind the chin with a visible throat
+recess. Three transition rings soften the chin underside. The posterior
+jaw deformation is monotonic; the former reversal that compressed the
+lower occiput into a shelf is removed. The lowest three neck insertion
+rings, eyes, body geometry, launchers and rigid firing poses remain exact.
+
+Reference inspection used the public Anatomy For Sculptors head/skull
+illustration at https://anatomy4sculptors.com/product/head-anatomy-course/
+and Jilai's SSh-68 photograph at
+https://commons.wikimedia.org/wiki/File:SSh-68.jpg (CC BY 4.0).
+The reference images supplied visual guidance only; none of their pixels
+enter the models or textures. The previously retained real firing-setup
+references remain unchanged.
+
+The lead authored and reviewed this work. A read-only independent advisor
+rejected an intermediate profile and identified the heavy chin/throat
+connector and folded occiput rows. Root reproduced the geometric fault,
+implemented the correction and inspected the final actual baked views.
+The result remains a stylized low-poly model with close-up faceting and
+fine normal-map seams. Source inspection confirms flat shading is retained
+through the bake, matching the unchanged runtime tangent-frame contract.
+No seam-free or photorealistic result is claimed.
+
+All 118 incumbent test methods remain exact. A new jaw-angle regression
+fails revision 40 and passes this correction; 24 focused installed Python
+checks pass. Both fresh editable masters retain 2048 px body / 512 px head,
+12 samples, all five channels, the existing head-normal projection and
+complete-shell contact AO. Triangle totals are 7,920 and
+7,672, both within 8,192. Body interior-texel coverage remains above
+85 percent; head and body checks find no black albedo/normal interior misses.
+
+The four inherited 120-second runtime gates pass 48
+headless pose checks, 236 native pose checks,
+1,225,252 format-shard-0 checks and 51
+native-scene checks. The initial native-pose attempt timed out at 120
+seconds after nine cases. Its logs and partial images remain intact. A
+single retry, after normal timing in the separate native-scene gate,
+completed in 97.383 seconds with the same
+120-second limit. Twelve synthetic native pose cases have no ownership
+mismatch, stale or unexplained mask pixels. The retained genuine gameplay
+packet preserves noncrew foreground but occludes the lower crew; it does
+not prove a visible live-mission crew.
+
+All 55 unrelated entries, outside-slot pixels across 15 maps, 68 original
+inputs and 416 runtime pins remain exact. All 913 preimages and rejected
+prototype evidence are retained. The scoped install contains
+28 exact deltas. Existing time, memory, output and disk
+guards remain; authoring additionally checks the live shared disk forecast
+and a 512 MiB next-write allowance. Local only, no package rebuild or
+publication. Evidence:
+`artifacts/tactical-crew-refinement-20261022-r18/acceptance.json`.
+
+Working if: front and profile views show a balanced head, ascending jaw and
+clear throat recess without a lower-skull shelf, while sight contact,
+jacket insertion, body, equipment and unrelated assets remain unchanged.
+
+
+## Crew collar and head bake finishing, Blender revision 42
+
+Nell requested completion of the Sagger/Spigot polish. Both editable masters
+now have a fitted, closed cloth collar and a curved rear jaw/neck transition.
+Eye positions, firing poses, body geometry, hands, boots and launchers remain
+exact. The independent head UV layout splits larger tangent-frame bends;
+only hidden closure disks are down-weighted. The visible underside brim and
+helmet top cap retain their charts.
+
+The first split-UV trial improved the grid-like seams but introduced black
+marks. Root reproduced 281 unpainted head-triangle samples, including eight
+skin triangles and the helmet top cap. Independent read-only advice identified
+zero pixel-centre coverage on the implicated tiny charts. Whole-chart minimum
+footprints before packing removed the marks. Four barycentric samples on every
+head triangle now have no black albedo/roughness misses at either the 512 px
+master size or the actual 232 px packed-head size. Earlier interior-only
+sampling missed this defect; a new regression covers those small triangles.
+
+The lead authored and personally reviewed all 13 final baked views. Both
+models retain stylized low-poly silhouettes and fine close-up shading seams;
+this is no claim of photorealism or literal perfection. The collar covers the
+ragged insertion strip, and the rear neck transition is less abrupt.
+
+The 26 focused installed checks pass; all 119 incumbent methods remain exact.
+The new collar and subpixel-bake regressions are additive. Fresh body2048/head512
+five-channel bakes retain 12 samples, full-shell AO and existing normal rays.
+Triangle totals are 8,080 and 7,832, below the 8,192 cap.
+An initial headless gate timed out under host contention. Its evidence is
+retained; one retry followed a normal-timing native scene result.
+Runtime checks pass 48, 236,
+1,225,252 and 51 assertions within the unchanged
+120-second guards. Native pose fixtures have no ownership-mask mismatch.
+The retained genuine gameplay capture is partially occluded and does not
+establish a visible live-mission crew.
+
+All 55 unrelated entries, 15 outside-slot atlas regions, 68 original inputs
+and 416 runtime pins remain exact. All 913 fresh preimages and rejected
+candidate evidence remain retained, including the first prototype abort
+and geometry-test failures. Those failures were repaired, never removed.
+Local only: no package rebuild, commit, push or publication.
+Evidence: `artifacts/tactical-crew-refinement-20261023-r19/acceptance.json`.
+
+Working if: the collar closes the exposed join, the rear neck is continuous,
+and head maps have no unpainted subpixel islands while original ownership,
+firing setups and unrelated roster assets stay intact.
+
+
+## Crew head proportions, Blender revision 43
+
+Nell requested a slightly larger head on the Sagger and Spigot crews. Both
+skulls now have approximately eight percent more height and depth. Facial
+width increases about eight percent and the fitted helmet width about ten
+percent. The deformation fades smoothly into the unchanged collar. Eyes,
+irises and their end caps remain exact, preserving the approved sight contact.
+Body geometry, hands, boots, launchers and firing poses remain exact.
+
+The lead authored this pass and personally inspected all 13 final baked
+Blender views. The models retain the intended low-poly style. Full-resolution
+body2048/head512 five-channel bakes retain 12 samples, full-shell contact AO
+and the existing normal projection settings. Four samples per head triangle
+show no black albedo or roughness misses at 512 px and 232 px packed sizes.
+Triangle totals remain 8,080 and 7,832, below the 8,192 cap.
+
+All 26 focused tests pass, with all 121 incumbent test methods unchanged.
+The four runtime gates pass 48, 236,
+1,225,252 and 51 assertions within the
+unchanged 120-second limits. Native pose fixtures have no ownership-mask
+mismatch. The inherited gameplay capture remains partially occluded and does
+not establish a visible live-mission crew.
+
+All 55 unrelated roster entries, 15 outside-slot atlas regions, 68 original
+inputs and 416 runtime pins remain exact. All 913 fresh preimages are retained.
+Local only: no package rebuild, commit, push or publication.
+Evidence: `artifacts/tactical-crew-refinement-20261023-r20/acceptance.json`.
+
+Working if: full-body and profile views show larger, fitted heads while the
+closed neck join, eye-to-sight contact and all non-head geometry stay intact.
+
+
+## Whole-roster and menu polish, Blender revision 44
+
+Reviewed paired views of all 57 roster states, the menu Abrams and both crew,
+and the grass/shrub masters. The lead authored this pass and personally
+reviewed its final images. Six roster states were refined; 51 remain exact.
+
+The truck canopy now sags gently between its retained support bows, with
+shaped skirts and closed ends. Five building states (145, 146, 154, 155,
+158) have corrected non-metallic roof bakes. The three surviving ruin roofs
+also have correctly oriented overlapping tile courses and narrower joints.
+All 19,024 sampled roof interiors have zero metalness. Full 2048 px,
+five-channel, 12-sample bakes retain normal projection and full-shell AO.
+Both menu crew have softer neck and elbow transitions. Armour, faces,
+helmets, gloves and pose contacts are retained; the maximum deformation
+remains below one centimetre. Editable Blender masters are installed.
+
+All 124 asset tests pass. Native checks pass: simulation 1,265, foliage 17,
+complete-roster admission with format shard 0 1,226,248, scene 51, and
+view shard 0 671. The menu also passes wide/compact rendering, reduced
+motion, menu actions and range lifecycle. These are the named scoped gates,
+not a claim that every rejection or view shard was rerun.
+
+All 928 fresh backup pins verify, together with the separately reconstructed
+and geometry-authenticated truck-source preimage. The 51 retained states,
+15 outside-slot atlas regions, original GAME manifest, source registry and
+121 incumbent test methods remain exact. Failed pilots and two incomplete
+test-supervisor runs remain recorded; the Python launch-identity fault was
+reproduced and repaired before the successful suite. Resource guards were
+retained. Local only: no package rebuild, commit, push or publication.
+Evidence: `artifacts/tactical-all-model-refinement-20261023-r21/acceptance.json`.
+
+Working if: all models have a fresh review disposition, the truck and roofs
+render cleanly, menu crew joints are softer, and original source ownership,
+pose contacts and every untouched asset stay intact.
+
+
+## Whole-roster review and crew refinement, Blender revision 45
+
+Reviewed all 57 current roster states, foliage, the menu Abrams and both menu
+crew. This is a self-review of work authored by this chat. Fifty-five roster
+states are retained byte-exact; Sagger and Spigot have fuller shoulder/collar
+transitions, cheeks, lower jaws, palms and articulated fingers. The approved
+kneeling poses, launchers and knee contact heights remain exact. Boot recipes
+are unchanged; shared-body remeshing changes some tessellation while silhouette
+bounds stay within 0.01 source units. Eyes follow the cheek surface by less
+than 0.00011 normalized head units in depth, retaining size and orientation.
+
+The floating menu barrel is repaired as one overlapping receiver/barrel/cradle
+assembly on a visible roof pedestal. An initial native close-up caught the
+pedestal crowding the loader's braced hand; its final position clears both
+hands. Wide/compact menu views and three complete-assembly angles verify the
+connection. Both crew have fitted helmet assemblies, slimmer sleeves, fuller
+palms and staggered finger lengths. The unchanged one-centimetre Blender
+replacement limit remains enforced, with maximum displacement 0.0095001m.
+
+Editable Blender masters and the matching runtime assets are installed.
+All 13 final crew PBR views were inspected. Five-channel body2048/head512
+bakes retain 12 samples, existing normal projection and full-shell AO.
+Triangle totals are 8,074 and 7,826, below the 8,192 cap.
+UV interior and four-samples-per-head-triangle checks show no black misses.
+
+All 124 asset tests pass, unchanged from the fresh preimage. Three focused
+native assertions protect gun continuity and hand clearance; the simulation
+check passes 1,268 assertions. Pose admission/native,
+world admission, full roster admission with format shard0, native scene and
+view shard0 pass 48, 257,
+17, 1,226,212,
+51 and 671 checks.
+The native pose test now ends raw-schema parsing before compiled assets load,
+and uses one production renderer load for admission and pixels. Two earlier
+runs reached the unchanged 4GiB bound; their uninstrumented logs do not locate
+the precise allocation. A bounded read-only second opinion supported the
+test-lifetime repair. All schema, mutation, protected-pixel, stale-silhouette, depth-negative and
+immutability checks remain exact, including restoration of published poses
+after the optional synthetic smoke.
+The final phase-instrumented gate passes within the original memory and time
+limits. A focused diagnostic reproduced one background boundary pixel at (411,355)
+in the Sagger rear view. Actual appearance is black there; the production
+shader clips it correctly. The prior test implemented its one-pixel boundary
+allowance in only one direction. The corrected check permits at most one
+background-only gap per view, touching both silhouette boundaries, and adds
+strict masked-coverage equality to the eligible triangle intersection. All
+12 fixtures have zero leaked or missing eligible rendered pixels; boundary
+disagreement counts are retained separately. These are scoped
+checks, without a new claim of visible live-mission footage or every shard.
+The native menu also passes reduced motion, actions and range lifecycle.
+
+All 929 fresh preimages, 68 original inputs, the source
+registry and all 15 outside-slot atlas regions verify. The launch sequencing
+incident is retained: an early shell precheck did not gate two successful
+jobs. Remaining Blender supervisors were corrected to fail closed before
+launch; memory, disk, thread, output and time bounds remained in force.
+No foreign process was controlled. Cleanup pass6 removed zero bytes.
+Local only: no package rebuild, commit, push or publication.
+Evidence: `artifacts/tactical-all-model-refinement-20261023-r22/acceptance.json`.
+
+Working if: crew proportions and hands read naturally, knee/boot/grip contacts
+remain coherent, the menu weapon has a visible continuous mount, and retained
+assets and original ownership remain intact.
+
+
+## Base and truck proportion correction, Blender revision 46
+
+Nell rejected Base155 and Truck159 in the previous roster review. This pass
+corrects those two assets; it is a self-review of work authored by this chat.
+The base now reads as two storeys, with a normal-height door, two window rows
+and a sealed recessed flat roof. Its footprint and original stars are exact.
+The truck body is 25 percent narrower; its canvas crown is lowered from 69.6
+to 46.5 source units, just above the cab. All six wheel Y/Z profiles and ground
+contacts are exact. The fittings follow the complete width adjustment.
+M35 photo references and attribution are retained in the phase references.
+
+Both editable Blender masters and matching runtime exports are installed.
+Five-channel 2048 px bakes retain 12 samples. Eight final Blender PBR views
+and eight native GLB views were inspected. The production renderer also
+passes admission (1,223,508 checks), truck view
+partition 3 (617) and base view partition
+5 (626). Four production close-ups were
+inspected; the base close-ups intentionally extend outside the test viewport.
+These are scoped gates, without a claim that every mission or partition ran.
+
+Sixteen focused asset checks pass. Initial test-class selection errors were
+corrected, and one truck fitting assertion now converts the narrowed width
+back to the original scale, preserving its relative-clearance threshold.
+The failed intermediate logs are retained. Nine geometry expectations were
+updated, two proportion regressions added, and 115 incumbent methods remain
+unchanged. The full 126-test suite was not rerun.
+
+All 897 fresh backups authenticate, with 866 protected live files, 68 original
+inputs, 55 peer model entries and all 15 outside-slot atlas maps unchanged.
+No menu or crew assets changed. All jobs completed within the existing
+resource guards. No cleanup, package rebuild, commit, push or publication.
+Local only. Evidence: `artifacts/tactical-base-truck-refinement-20261023-r23/acceptance.json`.
+
+Working if: the door and windows read at human scale, the truck cover sits
+close to the cab, wheels remain round, and source ownership stays intact.
+
+
+## Whole-roster polish, Blender revision 47
+
+All 57 roster states were reviewed from front and reverse, together with the
+menu tank, both menu crew and foliage. This is self-review of this chat's work.
+Bradley131 now has seated commander/gunner roof optics and the early-M2 side
+and rear port arrangement. The other 56 roster entries are retained, including
+the corrected base, truck and grounded Sagger/Spigot crews.
+
+Both menu crew have lower sleeve roots, untwisted sleeve sections and slimmer
+cuffs. An intermediate chest change intersected the collar and was rejected;
+the final version preserves the previous chest, heads, grips and pose anchors.
+The menu tank and its continuous weapon mount are unchanged. Editable Blender
+masters and matching runtime assets are installed. Bradley retains five-channel
+2048 px, 12-sample bakes and 7,452 triangles. Menu refinement stays below 1 cm.
+
+Five focused asset tests pass. All 130 incumbent test/helper methods are exact,
+with one added Bradley regression; the full 127-test suite was not rerun.
+Full roster admission passes 1,224,048 checks, native view partition5 passes
+626, and the final menu simulation passes 1,268. Final native menu checks pass
+wide/compact views, two pixel-identical frozen intervals, actions and range
+lifecycle. The failed intermediate and diagnostic corrections remain recorded.
+
+All 918 fresh backups and 68 original inputs authenticate. The 56 peer model
+entries, 15 outside-slot atlas regions and menu armour/gun batches are exact.
+Four concurrent audio-owned files were preserved and excluded from unchanged
+claims. No cleanup or package rebuild. Local only, with no R24 commit, push or
+publication. Evidence: `artifacts/tactical-all-model-refinement-20261023-r24/acceptance.json`.
+
+Working if: crew shoulders flow into the shirt, sleeves follow the bent arms,
+Bradley optics read clearly, and retained contacts and source ownership hold.
+
+R24 closeout also registers the existing ground-crew test in the headless and
+native gate tiers, with its exact success receipt and source-kit dependency.
+All 10 gate-coverage tests pass; the aggregate validation gate was not rerun.
+
+
+## 2026-10-23: R25 whole-roster and menu polish
+
+Reviewed all 57 roster models and retained their current assets. Joined both
+menu crew shirts through real armholes and corrected garment winding; added
+the loader gun's recessed muzzle. Blender master and matching runtime export
+installed. Heads, hands, contacts, poses, tank hull and main gun are unchanged.
+
+1,276 simulation/presentation checks and native wide/compact menu, reduced-motion,
+action and range-lifecycle checks pass. Final native views were self-reviewed.
+All 474 roster files and 68 original GAME inputs are exact. No aggregate-gate
+or all-mission claim. No cleanup or publication; local only. Full evidence and
+retained diagnostic failures: `artifacts/tactical-all-model-refinement-20261023-r25/acceptance.json`.
+
+Concurrent audio and Tactical HUD edits were preserved and classified separately
+in the R25 closeout. Native evidence covers the model candidate at capture time;
+validation of later audio/HUD work remains with its owning chats.
+
+## 2026-10-23: Plain-language practice menu
+
+Nell found the main-menu terms cryptic. Renamed its four actions to Practice
+Range, Controls, Mission Guide and Compare Artwork. Return buttons now say
+Main Menu, including the artwork viewer. The guide headings and range HUD use
+the same vocabulary. Removed the menu tagline and internal development notes,
+including the obsolete statement that original campaign play was unavailable.
+Mission objectives, layout, actions and gameplay are unchanged.
+
+Both edited scripts pass headless parsing. Native checks pass at 1920x1080 and
+1152x648, including label fit, controls and mission-guide navigation, all eight
+mission summaries, range entry and pause-menu return. The artwork viewer's
+return label also fits. Self-review: the author of these copy edits inspected
+all five resulting captures. No material layout change or web surface was
+edited, so the web design detector and aggregate gate were not run.
+Evidence: `artifacts/menu-copy-20261023/`. The initial sandboxed native launch
+aborted during macOS app registration; a temporary preview-script type error
+was then corrected before the passing native run. Local only; no package,
+install, commit, push or deployment from this chat. Concurrent work preserved.
+
+Working if: players can identify each destination from its label, with no
+clipped text or change to the actions those buttons perform.
+
+## 2026-10-23: Tactical HUD and crew views, concept fidelity
+
+Implemented Nell's request to bring the HUD and every crew view close to the
+approved concepts, including the commander, with subtler weathering and no
+gameplay changes. Replaced the first, overly flat pass with concept-derived
+physical skins: continuous olive housings, deep rubber sight seals, recessed
+instrument modules, integrated driver roof/dashboard and an open cupola with
+its padded hatch lip. Commander and status use the same equipment language.
+All lettering and readings remain live, source-verified rendering. Removed
+redundant secondary role labels. Fixed the encountered read-only damage-catalog
+alias by making the renderer's copy explicit.
+
+The independent, hash-pinned RGB bank loads before the PC-only early return and
+never enables Genesis data or labels. Both compositor and edge pass use the
+same selected material and signed driver registration. Missing/corrupt banks
+fall back. All five camera/source-region layouts match the original task
+checkpoint exactly; only destinations and presentation have changed. Unknown
+UI keeps the complete 4:3 view. A final PC-only correction colours only the
+84 exactly proven original grey sight-corner pixels; unknown writes reject it.
+
+Verification: 1,305 HUD checks and 36 focused graphics-mode checks pass. Native
+Compatibility captures cover nine station/variant fixtures at 1600x900 and
+960x540, both with and without the optional bank. Four material comparisons,
+including driver offsets -16, 0 and +16, show zero forbidden changed pixels.
+Four unknown-UI fallback views pass at both sizes. Six Restored/Modern baseline
+pairs remain byte-exact. The final PC-only corner capture passes its pixel
+checks. Source allowlist/closure and diff whitespace checks pass. The installed
+Impeccable detector reports no findings; it does not certify native GDScript
+visuals, so rendered inspection is the primary visual evidence.
+
+Self-review: concepts and implementation were produced in this chat, and the
+implementing lead inspected the resulting native images. These are recorded
+frame checks, not a full live campaign playthrough. Legacy broad compositor
+checks cannot complete because archived PNG fixtures are absent. Private
+resource closure also flags the pre-existing cover-export authoring output
+reference; the separate packaging owner is addressing its classification.
+No aggregate-package pass is claimed. Shared rendering windows were coordinated
+with the model-work chat, and unrelated dirty work was preserved.
+
+Evidence: `artifacts/tactical-field-instrument-20261023/acceptance.json`.
+Asset hashes, original concept references and final ImageGen prompts:
+`local-art/pc-tactical-interior-v1/provenance.json`. Local only; no HUD package,
+install, commit, push or deployment from this chat.
+
+Working if: every crew station uses the concept-derived equipment treatment,
+readings and controls retain their original meaning, and source ownership,
+unknown-UI fallback and mode-restoration checks remain green.
+
+## 2026-10-23: Tank-cover main menu and isolated Extras
+
+Nell approved making the cover the real Play entry point: Scenario, Campaign,
+Settings, Extras and Quit. Scenario and Campaign now use bounded ordinary keys
+to open verified original menus. Cancelling back to the stable original root
+returns to the cover. A failed route stops and offers the original game directly.
+The original executable retains all mission and campaign/save decisions.
+
+Extras contains Practice Range, Compare Artwork, Practice Controls and Mission
+Guide. Its viewport owns a separate 3D world. Cover, Settings and Extras freeze
+guest frames and block original checkpoints and fast-forward. Settings reuses
+the existing graphics/audio controller, including cover/range viewport quality.
+Embedded scenes no longer replace the tree or own shutdown. Capture tools keep
+the direct original-game path; the editor's default scene stays range-focused.
+
+Final native acceptance passes 58 checks, including real pointer/keyboard input,
+held-Enter quarantine, both original menu routes, campaign-name cancellation,
+return navigation, frozen guest, shared settings and clean host/audio shutdown.
+Route unit checks pass 63, play-menu 290, shortcuts 158, and nine generated audio
+samples validate. Native startup/early-close/invalid-frame checks pass 12/5/10.
+Gate coverage passes 10 tests. Browser-shell checks pass 15 with 7 skipped.
+The private Web export verifies all six required files; all eight integrated
+scripts match final source after the normal Web class-prefix transform.
+
+Self-review: the integration author inspected final wide/compact cover, Settings,
+Extras, artwork and original-menu captures. A read-only advisor found no source
+blocker. Browser runtime remains unverified because the browser file-chooser
+API did not select the local originals. Populated campaign continuation and
+exhaustive transient-root coverage were not exercised by this new check. The
+optional design detector failed with npm registry ENOTFOUND. No aggregate gate
+or package/release claim. Intermediate test-input and sandbox-export failures
+are retained in the evidence directory.
+
+Evidence: `artifacts/frontdoor-20261023/acceptance.json`, final native captures
+and logs in `native-final/`, final private export in `web-final/`. Concurrent
+model/audio work is preserved; the audio chat's native-menu crash guard remains.
+Local only: this chat did not install, commit, push or deploy the menu.
+
+Working if: Play opens the five-action tank cover, original Scenario/Campaign
+setup remains authoritative, Extras cannot advance or checkpoint the guest,
+and return/quit work without replacing or restarting the original session.
+
+
+## 2026-10-23: R26 convoy truck and complete-roster review
+
+Nell requested another all-model pass, especially the convoy truck wheels and
+cab, then specified a broader nose, boarding platforms and a rear entry flap.
+The truck was rebuilt against M35 reference photographs in Blender. Its bonnet
+and grille are broader, the cab sits farther aft with rounded corners and
+framed glazing, and its front axle sits beneath the longer bonnet. Both doors
+have supported treaded steps. The rear canvas has a real opening with a rolled
+flap and straps; the tailgate stays closed in the transport pose.
+
+The ten tyres use hollow annular rubber, rear dual-wheel spacing, recessed
+vented steel dishes and distinct front/rear hubs. Weathering follows the moved
+front axle. The editable master, GLB and five-channel 2048 px, 12-sample bake are
+installed locally. Runtime geometry is 8,150 triangles, within the existing
+8,192 limit and original source bounds/groups. Four source files and 14 asset
+files changed. All other 56 roster entries and all 15 outside-slot atlas regions
+remain exact. The 57-model roster, menu tank and both crew were visually reviewed
+using hash-bound current-asset views. This is self-review of this chat's work;
+the menu assets were retained without another bake.
+
+Six source checks and two baked-asset checks pass. Four Blender finished views,
+four native GLB views and three production-renderer truck views were inspected.
+Production native view partition 3 passes 617 checks. Positive full-roster
+admission, mapping and pair-format rejection pass 1,225,308 checks in 49.20 s.
+Two earlier admission attempts reached the unchanged 120 s wall limit and are
+retained as failures. The successful diagnostic copy adds only 11 timestamp
+print statements; removing those lines reproduces the original test byte for
+byte, including every assertion and its order. It keeps the 120 s and 4 GiB
+guards. No production renderer or test change was needed. The timeouts' precise
+cause is unproven. Other format shards, the full repository gate and all-mission
+runtime were not rerun.
+
+Preservation verifies 920 pins, 33 scoped backups, 879 protected live files and
+all 68 original inputs. Twenty-one concurrent audio, HUD and main-menu deltas
+were owner-classified and preserved, not counted as unchanged. Earlier bakes,
+failed logs and rollback assets remain intact. No cleanup, package rebuild,
+commit, push or publication. This local candidate is excluded from the separate
+frozen soundtrack app/Web delivery.
+
+Evidence: `artifacts/tactical-all-model-refinement-20261023-r26/acceptance.json`.
+Reference attribution: the same directory's `references/sources.json`; reference
+photos informed geometry and were not used as texture pixels.
+
+Working if: the nose fills the cab width, both boarding steps remain visible,
+the rolled rear flap exposes cargo space, wheel dishes read as recessed, and
+retained source ownership and asset checks remain green.
+
+
+## 2026-10-23: Animated main-menu tank (R27)
+
+Nell requested a moving tank, subtle crew/turret movement, undulating smoke
+and the existing forward camera following the hull. The cover now advances
+at 0.85 m/s with rolling shoes and road wheels, moving earth, small suspension
+heave/roll, independently moving heads and breathing torsos. Hand weights stay
+fixed at the existing grips and hatch contacts. Turret tracking stays inward
+to retain the muzzle in frame. The camera keeps the exact authored offset and
+orientation while following hull translation; headlight halos stay attached.
+
+Runtime skinning is applied after all 42 Blender batch matches. Authored vertex
+buffers and all Blender masters/assets remain unchanged. Reduced Motion freezes
+the complete image, hidden/artwork lifecycle suspends animation, and practice
+entry restores the rigs to rest. The original guest and practice simulation
+do not advance during the animated cover. Existing frontend routes are intact.
+
+Final checks pass: 1,668 simulation/presentation, 63 frontend route unit, 151
+native lifecycle and 299 native preview assertions. Wide/compact menu views and
+crew close-ups were self-reviewed. The first combined capture reached its
+unchanged 120 s guard after 176 frames; recording and lifecycle checks were
+separated and pass within the same bounds. A later suffix typo was rejected
+before spawning, then corrected. Both failure records are retained. The design
+detector returned no findings, but native renders provide the Godot visual proof.
+
+All 484 protected live files and 68 original inputs remain exact. Six-second
+24 fps H.264 preview: `artifacts/menu-motion-20261023-r27/menu-animation.mp4`.
+Acceptance: `artifacts/menu-motion-20261023-r27/acceptance.json`. Local only,
+with no package rebuild, installation, commit, push, deployment or notarization.
+Browser runtime, full repository gate and all-mission runtime were not rerun.
+
+Working if: the tank visibly drives beneath a steady forward-follow camera,
+crew contacts stay seated, and every motion freezes when the menu is paused.
+
+
+## 2026-10-23: Slightly stronger main-menu turret and crew motion
+
+Nell requested slightly more turret and personnel movement. Four production
+lines increase turret/gun and crew head/torso amplitudes by 40%, preserving the
+existing pace, camera, hull, tracks, smoke, menu lifecycle and rig weights.
+All nine scoped controller/artwork hash pins remain exact.
+
+Final checks pass: 1,668 simulation/presentation, 151 native lifecycle and 299
+native preview assertions. The first sandboxed simulation had a fixture-write
+script error and was rejected; the permitted rerun completed cleanly. The first
+native lifecycle had one reduced-motion pixel-equality failure. An unchanged-
+assertion diagnostic rerun retained both frames and passed, with exact RGBA
+equality independently confirmed. That first discrepancy remains unexplained.
+
+Self-review of this chat's amplitude adjustment to the existing peer-authored
+rig inspected crew close-ups and the wide frame. Crew contacts remain seated
+and the muzzle stays in frame. The bundled design detector returned no findings;
+its GDScript coverage is unestablished, so native renders are the visual proof.
+
+The six-second, 144-frame H.264 preview decodes completely without errors:
+`artifacts/menu-motion-20261023-more/menu-animation.mp4`. Acceptance evidence:
+`artifacts/menu-motion-20261023-more/acceptance.json`. Local only; no package
+rebuild, installation, commit, push, deployment or Apple submission.
+
+
+## 2026-10-23: More pronounced main-menu turret and crew movement
+
+Nell found the previous adjustment still too subtle. The same four amplitude
+lines now give 70% more turret/gun and crew head/torso movement than that preview.
+Timing, follow camera, hull/tracks, smoke, rig weights and menu routes are unchanged.
+Nine scoped controller/artwork hash pins remain exact.
+
+Checks pass on this candidate: 1,668 simulation, 151 native lifecycle and 299
+native preview assertions. Reduced Motion matched exact RGBA on the first run.
+Self-review covered crew close-ups, the wide view near maximum inward turret
+sweep and the final preview frame: hands stay planted and the barrel stays in
+frame. The bundled design detector returned no findings; its GDScript coverage
+is unestablished, so the native renders remain the visual proof.
+
+The six-second, 24 fps H.264 preview fully decodes without errors:
+`artifacts/menu-motion-20261023-stronger/menu-animation.mp4`. Evidence:
+`artifacts/menu-motion-20261023-stronger/acceptance.json`. Local only; no package
+rebuild, installation, commit, push, deployment or Apple submission. The full
+repository gate was not rerun for this bounded amplitude adjustment.
+
+
+## 2026-10-23: Molot and convoy-truck reference polish, R28
+
+Nell requested Object 477A wheel, turret-fitting and periscope refinement, then a
+softer truck bonnet, large cargo crates, mostly closed ajar rear flap and better
+front/rear lamps. The two supplied images guide geometry only.
+
+Molot 123 has fuller seven-station running gear with recessed rims, raised sloped
+periscope glass, two seated smoke banks, protected lights and connected turret
+fittings. Truck 159 retains its broad nose and boarding steps, adds rolled bonnet
+shoulders, three large bound crates behind a narrow flap slit, convex headlamps
+and separate red/amber rear lenses. Runtime counts are 7,648 and 8,166 triangles,
+inside the 8,192 cap and original source bounds/groups. Editable Blender masters
+and five-channel 2,048 px, 12-sample bakes are installed locally. The authenticated
+Metal device override retains the bake recipe and retained comparison evidence.
+
+Final checks: 11 source tests, 4 baked tests, 1,230,784 headless admission/mapping
+and pair-format checks, plus 617 checks in each native view partition 3 and 4.
+Partition 3 covers both changed models; partition 4 covers retained peers. Native
+runs retain the 120-second/4 GiB guards. Admission adds only 11 timestamp prints;
+stripping them restores the original test exactly. Other format/native shards,
+the full repository gate and all-mission runtime were not rerun.
+
+Self-review of this chat's work inspected 11 selected final Blender PBR, culled
+GLB and production Tactical images. The first geometry failed ground/louvre
+checks and was repaired. A black flap projection triangle and inward Molot rim
+faces were caught visually, corrected and rebaked; direct regressions now pass.
+All failed/intermediate candidates remain. Final preservation confirms 43 exact
+backups, 1,043 live hash pins accounted for, 55 untouched roster states, 15 unchanged
+outside-tile atlas regions and 68 original inputs. Concurrent menu source edits
+remain owned by the menu chat and are untouched. No cleanup or package rebuild.
+
+Evidence: `artifacts/molot-truck-refinement-20261023-r28/acceptance.json`.
+Local only; no commit, push, publication or Apple submission.
+
+Working if: the fuller Molot wheels and raised sight read correctly in Godot,
+and the truck has a crowned broad bonnet, narrow loaded-bed glimpse and distinct
+lamps while peer artwork and original source custody remain exact.
+
+
+## 2026-10-23: Clearly visible main-menu scan and crew movement
+
+Nell found the amplitude-only adjustments still too subtle. The previous
+six-second native preview recorded only 1.977 degrees of turret travel. The
+cover now scans through 12 degrees in an 11.4-second cycle, with distinct crew
+head turns, torso rotation and body shifts. Camera, hull/tracks, smoke, planted
+hand weights and original-guest lifecycle are unchanged. Nine scoped protected
+controller/artwork files remain exact.
+
+This candidate passes 1,668 simulation, 151 native lifecycle and 587 native
+preview checks. Reduced Motion retained frames match exact RGBA. The recorded
+12-second native preview spans 12.000 degrees of turret motion. Self-review of
+this chat's changes inspected crew close-ups and wide start/peak frames: hands
+and necks remain connected, with visible muzzle travel inside the composition.
+The bundled design detector returned no findings; GDScript coverage remains
+unestablished. The 288-frame H.264 clip fully decodes without errors.
+
+Preview: `artifacts/menu-motion-20261023-visible/menu-animation.mp4`. Evidence:
+`artifacts/menu-motion-20261023-visible/acceptance.json`. Local only; no package
+rebuild, installation, commit, push, deployment or Apple submission. Full
+repository gate not rerun for this bounded presentation change.
+
+Working if: a brief visit shows a broad inward turret scan and crew looking
+around, while Reduced Motion freezes the image and crew grips stay planted.
+
+
+## 2026-10-23: Main-menu animation selected by Nell
+
+Nell approved the visible-motion preview: "Much better! Please use this version
+for the main menu animation." The current production motion sources still match
+that candidate, and the embedded main menu calls those functions directly.
+Retain the 12-degree turret scan and stronger crew head/body movement. The
+approved preview is `artifacts/menu-motion-20261023-visible/menu-animation.mp4`.
+No source change or repeat runtime gate was necessary to select the already
+installed local implementation. Packaged builds and deployment are unchanged.
+
+Working if: ordinary local Play uses the approved scan and crew motion, while
+subsequent geometry polishing preserves those animation functions.
+
+
+## 2026-10-23: Whole-roster polish and inset truck lamps, R29
+
+Nell requested another pass across the roster, especially the truck and Molot,
+then asked to move the truck headlights inward and narrow the grille. All 57
+states were reviewed in 114 fresh opposed native GLB views; 55 were retained.
+This chat authored and self-reviewed the refinements, without independent
+artistic approval.
+
+Molot 123 receives deeper recessed wheel discs, seated shouldered hub castings
+and bolt circles seated on the recessed discs, retaining seven road wheels per
+side. Truck 159 receives painted wheel-vent returns and a softly curved rear
+entry flap. Both headlamp/indicator assemblies move inward by six raw lateral
+units; grille half-width falls from 29 to 23 with 11 closer-spaced bars. Broad
+bonnet, apron and cab widths remain unchanged. Runtime counts are 7,928/8,190,
+inside the 8,192 cap and original source owners/bounds. Editable Blender masters,
+five 2,048 px maps and the 12-sample bake recipe remain in place.
+
+Menu-crew shoulder cloth has smoother joins in four batches. All 42 batch
+contracts, 16 noncrew batches, topology, pivots and material selectors remain
+exact. The 11,703 checked grip/contact vertices change by at most 0.000007775 m
+from the previous sculpt. The approved 12-degree turret scan and stronger crew
+movement sources remain byte-identical; reduced-motion RGBA remains exact.
+
+Final evidence: 11 source tests, four baked tests, 1,231,984 headless admission,
+mapping and pair-format checks, and 617 production native checks in partition 3.
+The current menu artwork retains its 1,668 simulation and 151 native lifecycle
+checks. Blender PBR, installed GLB and selected Tactical frames were inspected.
+The admission helper adds only 11 timestamp prints; removing them restores the
+original test exactly. The menu test-only reporting fallback retains the exact
+existing assertions and report block; no production reporting code was changed.
+
+An earlier admission timed out at 120 seconds under observed host pressure;
+the final fresh-boundary run passes in 51.43 seconds with the same time/RSS
+limits. Installer-overlap checks, an incomplete menu receipt, the initial source
+test typo and the user-interrupted headlight bake are excluded from acceptance
+and retained. The explicitly resumed, sealed replacement bake passes. No
+quality, resource or source-custody guard was relaxed.
+
+Preservation accounts for all 1,043 pins, 49 exact scoped backups, 55 retained
+catalogue entries, 15 outside-tile atlas maps and all 68 original inputs.
+No cleanup or R29 app/Web package rebuild. Other format/native partitions,
+all-mission runtime and the aggregate repository gate were not rerun. Separate
+HUD delivery remains outside this pass. Evidence:
+`artifacts/roster-polish-20261023-r29/acceptance.json`. Local only; no R29 commit,
+push, publication or Apple submission.
+
+Working if: the inset truck lamps frame the narrower grille without shrinking
+its broad nose, Molot wheel castings read correctly, and the menu crew retain
+natural shoulder transitions, planted grips and the approved motion.
