@@ -6,6 +6,8 @@ var volume := 0.65
 var engine_volume := 1.0
 var effects_volume := 1.0
 var voice_volume := 1.0
+const EFFECT_CUES := ["cannon", "machinegun", "impact", "smoke", "engine", "turret"]
+var cue_volumes: Dictionary = {}
 var engine: AudioStreamPlayer
 var voice: AudioStreamPlayer
 var effects: Array[AudioStreamPlayer] = []
@@ -40,16 +42,32 @@ func get_stream(cue: String) -> AudioStream:
 	return cache[cue]
 
 func play(cue: String) -> void:
-	if muted or volume*effects_volume<=0:
+	var level := effect_gain(cue)
+	if muted or level<=0:
 		return
 	var stream := get_stream(cue)
 	if stream == null:
 		return
 	var p := effects[_effect_slot()]
 	p.stream = stream
-	p.volume_db = linear_to_db(volume * effects_volume * 0.6)
+	p.set_meta("effect_cue",cue)
+	p.volume_db = linear_to_db(level)
 	p.play()
 	_remember_playback(p)
+
+func cue_gain(cue: String) -> float:
+	return float(cue_volumes.get(cue,1.0))
+
+func effect_gain(cue: String) -> float:
+	return volume*effects_volume*0.6*cue_gain(cue)
+
+func refresh_effect_gains() -> void:
+	for player in effects:
+		var level := effect_gain(str(player.get_meta("effect_cue","")))
+		player.volume_db=linear_to_db(maxf(0.00001,level))
+		if level<=0:
+			_remember_playback(player)
+			player.stop()
 
 func _effect_slot() -> int:
 	# Prefer an idle player. When all are sounding, end the one closest to its
@@ -86,11 +104,11 @@ func speak(cue: String) -> void:
 	_remember_playback(voice)
 
 func update_engine(speed: float, active: bool) -> void:
-	if muted or not active or volume*engine_volume<=0:
+	if muted or not active or volume*engine_volume*cue_gain("engine")<=0:
 		engine.stop()
 		return
 	engine.pitch_scale = 0.85 + absf(speed)*0.032
-	engine.volume_db = linear_to_db(volume*engine_volume*(0.055+minf(absf(speed)*0.003,0.09)))
+	engine.volume_db = linear_to_db(volume*engine_volume*cue_gain("engine")*(0.055+minf(absf(speed)*0.003,0.09)))
 	if not engine.playing:
 		engine.play()
 		_remember_playback(engine)

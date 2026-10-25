@@ -68,9 +68,13 @@ func run_test()->void:
 	await shot("04-settings-compact")
 	check(frontdoor.settings_columns.columns==1,"compact settings scroll in one column")
 	var sliders=frontdoor.settings_page.find_children("*","HSlider",true,false)
-	check(sliders.size()==5,"all existing mix channels accessible")
+	check(sliders.size()==11,"all group and individual mix channels accessible")
 	sliders[0].value=31
 	check(audio_menu.settings.master==31 and is_equal_approx(frontdoor.main.sound.volume,0.65*0.31),"settings and practice share master volume")
+	for channel in ["cannon","engine","turret"]:
+		var percent := 0 if channel=="engine" else 40
+		sliders[audio_menu.DEFAULTS.keys().find(channel)].value=percent
+		check(audio_menu.settings[channel]==percent and is_equal_approx(frontdoor.main.sound.cue_gain(channel),float(percent)/100.0),"settings and practice share individual gain: "+channel)
 	var options=frontdoor.settings_page.find_children("*","OptionButton",true,false)
 	var old_mode:String=audio_menu.graphics_mode
 	options[0].item_selected.emit(0)
@@ -82,6 +86,14 @@ func run_test()->void:
 	audio_menu.choose_quality("msaa",old_msaa)
 	root.size=Vector2i(1152,648);await shot("05-settings-wide")
 	check(frontdoor.settings_columns.columns==2,"wide settings uses two columns")
+	if "--settings-only" in OS.get_cmdline_user_args():
+		var scroll: ScrollContainer=frontdoor.settings_columns.get_parent()
+		scroll.scroll_vertical=int(scroll.get_v_scroll_bar().max_value)
+		await shot("06-settings-individual")
+		check(bridge.next_id==id,"individual settings never advance original guest")
+		test_done=true
+		frontdoor.main.request_quit()
+		return
 	frontdoor.close_settings()
 	await click(frontdoor.main.ui.buttons[3].node)
 	check(frontdoor.main.screen=="extras","pointer reaches embedded Extras button")

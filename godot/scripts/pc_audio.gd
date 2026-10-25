@@ -122,14 +122,16 @@ func _exit_tree() -> void:
 	presentation_bus=""
 
 func set_mix(settings: Dictionary) -> bool:
-	if settings.keys().size() not in [4,5]: return false
-	for key in settings:
-		if key not in ["master","effects","voice","motors","music"]: return false
 	for key in ["master","effects","voice","motors"]:
-		if not _integer(settings.get(key)) or settings[key]<0 or settings[key]>100: return false
-	if settings.has("music") and (not _integer(settings.music) or settings.music<0 or settings.music>100): return false
+		if not settings.has(key): return false
+	for key in settings:
+		if key not in ["master","effects","voice","motors","music"] and key not in EFFECT_CUES: return false
+		if not _integer(settings[key]) or settings[key]<0 or settings[key]>100: return false
 	if settings.has("music"): music_mix=int(settings.music)
-	mix=settings.duplicate()
+	# Legacy four/five-channel callers retain individual choices already made.
+	# Old preference files acquire 100% cue defaults in pc_audio_menu.gd.
+	for key in settings: mix[key]=int(settings[key])
+	for cue in EFFECT_CUES: cue_volumes[cue]=float(mix.get(cue,100))/100.0
 	volume=0.65*float(mix.master)/100.0
 	effects_volume=float(mix.effects)/100.0
 	voice_volume=float(mix.voice)/100.0
@@ -137,11 +139,7 @@ func set_mix(settings: Dictionary) -> bool:
 	if voice==null or turret==null: return true # launch preferences precede _ready
 	# Adjust existing streams immediately, without replaying consumed events or
 	# changing the original mute gate, frame sequence, source channels or clocks.
-	for player in effects:
-		player.volume_db=linear_to_db(maxf(0.00001,volume*effects_volume*0.6))
-		if volume*effects_volume==0:
-			_remember_playback(player)
-			player.stop()
+	refresh_effect_gains()
 	voice.volume_db=linear_to_db(maxf(0.00001,volume*voice_volume*0.8))
 	if volume*voice_volume==0:
 		_remember_playback(voice)
@@ -368,7 +366,7 @@ func _sync_loops(loops: Dictionary) -> void:
 	for name in ["engine", "turret"]:
 		var player: AudioStreamPlayer = engine if name == "engine" else turret
 		var source: Dictionary = loops.get(name,{})
-		var active := not muted and not transport_muted and volume*motor_volume>0 and bool(source.get("active",false))
+		var active := not muted and not transport_muted and volume*motor_volume*cue_gain(name)>0 and bool(source.get("active",false))
 		if active != bool(loop_states[name]):
 			loop_transitions.append({"name":name,"active":active,"frame":last_frame,"epoch":epoch})
 			if loop_transitions.size() > 64: loop_transitions.pop_front()
@@ -381,7 +379,7 @@ func _sync_loops(loops: Dictionary) -> void:
 		# never speed, input keys, tank pose or substitute acceleration rules.
 		player.pitch_scale = clampf(float(source.idle_period)/float(source.period),0.25,4.0)
 		var level := clampf(float(source.amplitude)/float(source.amplitude_reference),0.0,1.0)
-		player.volume_db = linear_to_db(maxf(0.00001,volume*motor_volume*level*(0.08 if name == "engine" else 0.10)))
+		player.volume_db = linear_to_db(maxf(0.00001,volume*motor_volume*cue_gain(name)*level*(0.08 if name == "engine" else 0.10)))
 		if not player.playing:
 			player.play()
 			_remember_playback(player)

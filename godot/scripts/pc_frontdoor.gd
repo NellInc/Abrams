@@ -45,6 +45,8 @@ func _apply_mix() -> void:
 	main.sound.effects_volume=float(menu.settings.effects)/100.0
 	main.sound.voice_volume=float(menu.settings.voice)/100.0
 	main.sound.engine_volume=float(menu.settings.motors)/100.0
+	for cue in main.sound.EFFECT_CUES:main.sound.cue_volumes[cue]=float(menu.settings[cue])/100.0
+	main.sound.refresh_effect_gains()
 
 func set_active(active: bool) -> void:
 	visible=active

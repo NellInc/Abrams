@@ -135,3 +135,37 @@ Existing stock WAVs remain the recovery source. Evidence:
 Working if: valid local PCM replaces only the six effects, invalid or absent
 banks retain stock playback, source contracts and voices remain unchanged,
 and no private recordings appear in a source or distributable review artifact.
+
+## Individual sound options (25 October 2026)
+
+The Audio menu and Settings panel now expose Cannons, Machine gun, Impacts,
+Smoke, Engine and Turret, each from Off to 100%. They multiply the existing
+master/group gain; all six default to 100%, preserving the incumbent mix.
+Crew voices and music retain their separate controls. Preferences persist,
+including individual mute and intermediate integer percentages. Old configs
+receive 100% cue defaults; legacy four/five-channel API updates retain any
+individual choices already made.
+
+Live shot gain changes use the cue of each active player. Muting one cue stops
+only that cue; restoring its gain cannot replay a consumed shot. Motor gains
+multiply the original source amplitude without changing source pitch, events
+or clocks. Only a source-active motor can resume, and original/transport mute
+still wins. Motor unmute restarts the sample, as the existing group mute did.
+The practice range uses the same individual settings.
+
+Focused checks: PC_AUDIO 924, PC_AUDIO_MIX 262, PC_AUDIO_LIMITER 33,
+PC_PLAY_MENU 326 and PC_FRONTDOOR 63, all passing. Base audio samples load,
+and the live settings script parses. These are machine checks; native panel
+interaction/layout acceptance remains pending a coordinated runtime window.
+Browser HTML/JavaScript exposes the same six keys but requires a matching
+rebuilt Godot pack before publication. No web or standalone rebuild occurred.
+The optional UI detector is not installed; no dependency was added for it.
+
+Nell accepted the balanced-v3 recording preview as a single MG shot with clean
+motor sections and said it sounds okay. This qualifies preview listening only.
+The private bank remains absent pending matched renderer qualification and
+actual in-game mix verification. No stock WAV or crew/music asset was changed.
+
+Working if: each cue can be reduced or muted without changing another cue or
+source authority, choices survive restart, defaults retain the original mix,
+and native/browser delivery claims require their applicable runtime evidence.

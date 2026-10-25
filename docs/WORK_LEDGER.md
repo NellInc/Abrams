@@ -7221,3 +7221,50 @@ and `artifacts/tactical-plume-followup-20261025/state.json`.
 Working if: optional bank loading preserves the source event/motor/voice
 contracts and stock fallback, original assets remain recoverable, and open
 in-game/performance/listening criteria stay visibly open until actual proof.
+
+## 25 October 2026, 22:35 UTC: recording preview accepted, individual sound options
+
+This supersedes the earlier same-day open-status notes, without changing the
+delivered 6f5d634 baseline or claiming a new release. Four licensed Abrams
+recordings are now held privately (241,068,580 bytes, verified provenance and
+hashes), using four of Nell's five credits; one remains reserved. Balanced-v3
+private edits and matched comparisons retain exact incumbent frame lengths.
+Nell confirms a single MG shot, clean motor sections and an acceptable preview.
+No recording bank is installed yet; actual in-game mix/listening remains open.
+
+Nell additionally requested sound options because repeated effects may annoy.
+The existing Audio/Settings controls now include six saved individual gains:
+cannon, machine gun, impact, smoke, engine and turret. Off mutes a cue, defaults
+are 100%, and crew/music and original group gains stay separate. Legacy configs
+and API callers remain supported. The same gains reach practice and browser
+controls; browser publication must pair the controls with the rebuilt pack.
+Focused checks pass: audio 924, mix 262, limiter 33, play menu 326, frontdoor 63,
+base sample loading and live-script parse. Read-only Astra review found no
+blocking contract defect; its simultaneous-shot isolation gap is now checked.
+No source events, source motor authority, renderer, stock WAVs or limiter
+settings changed. Native UI acceptance remains open; no rebuild or push.
+
+Smoke attribution progressed: with particles still visible, hiding only the
+surface gives 7.096 ms pre/post draw; restoring it gives 99.672 ms. All 716
+focused diagnostic samples match baseline source hashes AND requests. Pixels
+were deliberately altered for attribution and cannot establish visual/shipping
+acceptance. The first source smoke selects Modern fallback, following an
+already-used Groundlight surface. The first shader-only attempt failed its
+unchanged 90-second setup guard because this task focused it too late. It
+produced no measured rows and is not a performance result. A corrected, fixed-
+clock early-focus attempt awaits a new explicit native window. No production
+renderer fix or compilation-cause claim is retained.
+
+A genuine approximately 2.809-degree original camera tilt was captured after
+ordinary reversing by the campaign owner. Paired JSON/PNG support that source
+case; the adjacent raw dump is later and differs. Raised/lowered reticle checks
+remain separately valid. Native acceptance of the genuine tilt remains open.
+
+Evidence: artifacts/tactical-audio-options-20261025/,
+artifacts/sfx-recorded-candidate-20261025-balanced-v3/,
+artifacts/tactical-postdelivery-20261025/surface-isolation-verification.json
+and actual-tilt-source-case.json. Foreign intro/music/campaign work is preserved.
+
+Working if: six independent controls preserve event/motor/mute contracts,
+preview acceptance is distinct from actual in-game mix, and smoke/tilt/native
+UI outcomes remain open until their direct runtime evidence is obtained.

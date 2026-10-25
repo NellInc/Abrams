@@ -23,6 +23,65 @@ func packet(frame: int, enabled: bool=true, event: bool=false) -> Dictionary:
 			"turret":{"active":true,"channel":2,"ticks":20,"program":0xc4c,"period":8500,
 			"amplitude":3,"idle_period":8500,"amplitude_reference":3}}}
 
+func individual_controls() -> void:
+	var audio := Audio.new()
+	audio.recorded_effect_directory=""
+	root.add_child(audio)
+	var menu := Menu.new()
+	menu.config_path="";menu.audio=audio
+	root.add_child(menu)
+	var source := packet(10,true,true)
+	source.loops.engine.amplitude=1
+	source.loops.turret.period=17000
+	var original := JSON.stringify(source)
+	check(audio.apply_audio(source),"individual mixer uses accepted original audio")
+	var sequence := [audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed]
+	var pitches := [audio.engine.pitch_scale,audio.turret.pitch_scale]
+	for cue in ["cannon","machinegun","impact","smoke"]:
+		if cue!="cannon":audio.play(cue)
+		var player: AudioStreamPlayer=audio.effects.filter(func(p):return p.playing and p.get_meta("effect_cue","")==cue)[0]
+		var other: AudioStreamPlayer
+		if cue=="cannon":
+			audio.play("machinegun");other=audio.effects[audio.cursor-1]
+		menu.choose(cue,40)
+		gain(player,0.65*0.6*0.4,"individual gain: "+cue)
+		gain(audio.voice,0.65*0.8,"individual effect leaves crew gain intact: "+cue)
+		check(audio.voice.playing and audio.engine.playing and audio.turret.playing,"individual effect leaves crew and motors playing: "+cue)
+		menu.choose(cue,0)
+		check(not player.playing,"individual effect stops immediately: "+cue)
+		if other!=null:
+			check(other.playing,"cannon mute leaves simultaneous machine gun playing")
+			gain(other,0.65*0.6,"cannon gain leaves simultaneous machine gun gain unchanged")
+			other.stop()
+		menu.choose(cue,100)
+		check(not player.playing,"individual effect unmute never replays a consumed shot: "+cue)
+		var cursor := audio.cursor
+		menu.choose(cue,0);audio.play(cue)
+		check(audio.cursor==cursor and audio.effects.all(func(p):return not p.playing),"muted effect cannot start or steal a player: "+cue)
+		menu.choose(cue,100)
+	menu.choose("engine",40);menu.choose("turret",30)
+	gain(audio.engine,0.65*0.08/3.0*0.4,"engine user gain multiplies original amplitude")
+	gain(audio.turret,0.65*0.10*0.3,"turret user gain independent of engine")
+	check(pitches==[audio.engine.pitch_scale,audio.turret.pitch_scale],"individual gains preserve original motor pitch")
+	menu.choose("engine",0)
+	check(not audio.engine.playing and audio.turret.playing,"engine off leaves turret active")
+	menu.choose("engine",67)
+	check(audio.engine.playing and audio.turret.playing,"only source-active engine resumes")
+	menu.choose("turret",0)
+	check(audio.engine.playing and not audio.turret.playing,"turret off leaves engine active")
+	check(audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100}),"legacy API still accepted")
+	check(audio.mix.engine==67 and audio.mix.turret==0,"legacy mix updates preserve individual choices")
+	check(sequence==[audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed] and JSON.stringify(source)==original,"individual settings never mutate or advance source events/loops")
+	for bad in [NAN,1.5,-1,101,"loud"]:
+		var invalid := menu.settings.duplicate();invalid.engine=bad
+		var before := audio.mix.duplicate()
+		check(not audio.set_mix(invalid) and audio.mix==before,"invalid individual gain rejected atomically")
+	check(audio.apply_audio(packet(11,false)),"source mute closes individual motors")
+	menu.choose("engine",100);menu.choose("turret",100)
+	check(audio.muted and not audio.engine.playing and not audio.turret.playing,"individual unmute cannot bypass source mute")
+	check(await audio.drain_for_shutdown(),"individual audio shuts down cleanly")
+	menu.queue_free();audio.queue_free()
+
 func run() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	output=directory.path_join("artifacts/pc-audio-mix-unit")
@@ -41,7 +100,7 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==5,"one external Audio menu, five gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==11,"one external Audio menu, eleven gain groups")
 	check(menu.get_menu_title(0)=="Audio","menu title")
 	for child in [menu.popup]+menu.menus.values():
 		for i in child.item_count:
@@ -62,7 +121,9 @@ func run() -> void:
 	var sequence := [audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed]
 	for choice in [["master",50],["effects",20],["voice",70],["motors",30],["music",60]]:
 		menu.menus[choice[0]].id_pressed.emit(choice[1])
-	check(menu.settings=={"master":50,"effects":20,"voice":70,"motors":30,"music":60},"every callback controls its own channel")
+	var expected := Menu.DEFAULTS.duplicate()
+	expected.merge({"master":50,"effects":20,"voice":70,"motors":30,"music":60},true)
+	check(menu.settings==expected,"every callback controls its own channel")
 	check(notifications.size()==5 and notifications[-1]==menu.settings,"native mixer emits the complete current mix for browser synchronization")
 	gain(audio.effects[0],0.65*0.5*0.2*0.6,"existing effect gain updates")
 	gain(audio.voice,0.65*0.5*0.7*0.8,"existing voice gain updates")
@@ -101,7 +162,7 @@ func run() -> void:
 	check(menu.settings==Menu.DEFAULTS and audio.muted and not audio.engine.playing and not audio.voice.playing,"default reset cannot override source mute")
 	var reset_sequence := [audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed]
 	menu.choose("music",20)
-	check(menu.reset_mix() and menu.settings==Menu.DEFAULTS and audio.mix==Menu.DEFAULTS,"direct reset shares native menu defaults for all five gains")
+	check(menu.reset_mix() and menu.settings==Menu.DEFAULTS and audio.mix==Menu.DEFAULTS,"direct reset shares native menu defaults for all eleven gains")
 	check(audio.muted and not audio.engine.playing and not audio.voice.playing and reset_sequence==[audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed],"direct reset preserves source mute and event sequence")
 	check(audio.apply_audio(packet(12)),"source gate reopens")
 	check(audio.engine.playing and not audio.voice.playing and audio.delivered==1,"source resumes motors without stale one-shots")
@@ -116,6 +177,12 @@ func run() -> void:
 	reload.config_path=menu.config_path
 	check(reload.load_settings() and reload.settings.effects==40,"cold settings load retains preference")
 	check(menu.reset_mix() and reload.load_settings() and reload.settings==Menu.DEFAULTS,"reset persists every default gain")
+	menu.choose("engine",0);menu.choose("cannon",67);menu.choose("turret",20)
+	check(reload.load_settings() and reload.settings.engine==0 and reload.settings.cannon==67 and reload.settings.turret==20,"individual settings persist, including Off and irregular gains")
+	var legacy := ConfigFile.new()
+	legacy.set_value("audio","effects",40);legacy.set_value("audio","motors",30)
+	legacy.save(menu.config_path)
+	check(reload.load_settings() and reload.settings.effects==40 and reload.settings.motors==30 and Audio.EFFECT_CUES.all(func(cue):return reload.settings[cue]==100),"old preferences keep original mix and acquire unchanged individual defaults")
 	var malformed := ConfigFile.new()
 	malformed.set_value("audio","effects","loud")
 	malformed.save(menu.config_path)
@@ -150,6 +217,7 @@ func run() -> void:
 	check(resumed.apply_audio(packet(1,true,true)) and resumed.failure.is_empty(),"load reset accepts a fresh timeline")
 	check(await resumed.drain_for_shutdown(),"resumed audio drains without residual playback")
 	check(await audio.drain_for_shutdown(),"audio drains without residual playback")
+	await individual_controls()
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"native_menu":menu.is_native_menu()},"  "))
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_AUDIO_MIX: %d checks, %d errors"%[checks,errors.size()])
