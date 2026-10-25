@@ -92,7 +92,9 @@ def running_gear(out, src, shape, master):
                     t=j*math.tau/8;yy=y+radius*.54*math.cos(t);zz=z+radius*.54*math.sin(t)
                     a,b=(-.71,-.55) if shape==123 else (.27,.43)
                     tube(out,src,[xx+side*a,yy,zz],[xx+side*b,yy,zz],radius*.045,'steel',f'roadwheel_{i}_bolt',6)
-        rr=(top-bottom)*(.32 if shape==123 else .25)
+        # Molot's seven full-size road wheels leave less end clearance.
+        # Working if both end wheels clear the tyres and still seat inside the track.
+        rr=(top-bottom)*(.28 if shape==123 else .25)
         for y,name in ((rear+rr+.6,'drive_sprocket'),(front-rr-.6,'track_idler')):
             end_wheel(out,src,side,inside,xx,y,end_wheel_height(loop,y,rr),rr,name,master)
         if shape!=123:

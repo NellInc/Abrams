@@ -24,9 +24,13 @@ func snap(label: String) -> Image:
 func run() -> void:
 	var directory:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	var args:=OS.get_cmdline_user_args()
-	if not "--fixture" in args:
-		printerr("Supply --fixture from tools.capture_pc_menu_text --mode trace --route lifecycle");quit(2);return
-	var fixture: String=args[args.find("--fixture")+1]
+	var fixture: String=directory.path_join("artifacts/pc-live-type-lifecycle-01/report.json")
+	if "--fixture" in args:
+		if args.find("--fixture")+1>=args.size():
+			printerr("FAIL: --fixture requires a report path");quit(2);return
+		fixture=args[args.find("--fixture")+1]
+	if not FileAccess.file_exists(fixture):
+		printerr("FAIL: frontend lifecycle fixture missing: "+fixture);quit(2);return
 	native="--native" in args
 	out=args[args.find("--output")+1] if "--output" in args else fixture.get_base_dir().path_join("rendered")
 	if native: DirAccess.make_dir_recursive_absolute(out)
@@ -40,7 +44,10 @@ func run() -> void:
 	var samples:=0
 	for entry in data.samples:
 		if entry.label not in ["second-title","second-briefing","debrief","second-motor-pool"]: continue
-		var source:=Image.load_from_file(fixture.get_base_dir().path_join(entry.image));source.convert(Image.FORMAT_RGB8)
+		var image_path: String=fixture.get_base_dir().path_join(entry.image)
+		if not FileAccess.file_exists(image_path):
+			printerr("FAIL: frontend fixture image missing: "+image_path);quit(2);return
+		var source:=Image.load_from_file(image_path);source.convert(Image.FORMAT_RGB8)
 		var bytes:=source.get_data();var packet: Dictionary=entry.presentation.duplicate(true)
 		original.texture=ImageTexture.create_from_image(source)
 		check(art.set_frame(source,entry.program,entry.presentation),"source frontend restores: "+entry.label)

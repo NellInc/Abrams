@@ -345,7 +345,7 @@ run_check pc_gauges ./tools/godot.sh --headless --quit-after 1200 --script res:/
 run_check pc_portrait_coverage ./tools/godot.sh --headless --script res://tests/test_pc_portrait_coverage.gd
 run_check pc_portrait_art ./tools/godot.sh --headless --script res://tests/test_pc_portrait_art.gd
 run_check pc_frontend_art ./tools/godot.sh --headless --quit-after 300 --script res://tests/test_pc_frontend_art.gd
-run_check pc_frontend_completeness ./tools/godot.sh --headless --script res://tests/test_pc_frontend_completeness.gd
+run_check pc_frontend_completeness ./tools/godot.sh --headless --script res://tests/test_pc_frontend_completeness.gd -- --fixture "$ROOT/artifacts/pc-live-type-lifecycle-01/report.json"
 run_check pc_frontend_scene ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_frontend_scene.gd -- --fixture "$ROOT/artifacts/intro-menu-20260930/trace/report.json"
 run_check pc_newspapers ./tools/godot.sh --headless --script res://tests/test_pc_newspaper_art.gd
 run_check pc_wilson_completion ./tools/godot.sh --headless --script res://tests/test_pc_wilson_completion.gd

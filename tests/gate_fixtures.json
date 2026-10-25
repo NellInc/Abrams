@@ -31,58 +31,64 @@
    "sha256": "0b73985f83fb74464d2a61731e82cf086cde1e67e1fdd67b2f19fe3a0c6f77ab"
   },
   "artifacts/intro-menu-20260930/trace": {
-   "files": 84,
+   "files": 83,
    "kind": "dir",
    "read_by": "pc_frontend_scene",
-   "sha256": "0423db2f58454ee89cf7014fdfb944457f86725983614778a1a55f0f49e9318e"
+   "sha256": "63875a7b4e02baa8d0def42fcceb32e7504e6af5ca346af65fd109eccf0e6b21"
+  },
+  "artifacts/pc-driver-assembly-trace-03": {
+   "files": 60,
+   "kind": "dir",
+   "read_by": "pc_cursor_struts, pc_cockpit_refinement",
+   "sha256": "a91cdce09a3116f4571b65f7d38e96db9fbe22efa12df5b763477f7777180d32"
   },
   "artifacts/pc-genesis-arming-allocations-trace-01": {
    "files": 152,
    "kind": "dir",
    "read_by": "pc_motor_pool_arming_art",
-   "sha256": "a9506ef16dd7fe8052fb47ec1c3c2a3329350294119bed299e08455193a28113"
+   "sha256": "fe170ec27e93b093b0889a6b804b2ca22f32dcede97c641e38697ffe41e0554e"
   },
   "artifacts/pc-information-baseline-02": {
    "files": 80,
    "kind": "dir",
    "read_by": "pc_information_art, pc_frontend_art, pc_graphics_modes, pc_portrait_coverage",
-   "sha256": "168076dbdeb9c17a8ea2fb4b48c68e60cdc50aa81eee7948252b724d24d3d836"
+   "sha256": "12a8bee7679ae52afa995fe44a434182af6ecf08e47302bf5b1aeb6d72cfca79"
   },
   "artifacts/pc-intro-skip-trace-01": {
    "files": 14,
    "kind": "dir",
    "read_by": "pc_intro_art",
-   "sha256": "0a6f4a554950f48c8dd4e8952fb728a0e63c7251d79267bc38fbce1bbf2e654f"
+   "sha256": "f92e7936c7c08f412f133e54bfc61ba62f135763de7880c702c6693a67ab10bb"
   },
   "artifacts/pc-intro-trace-01": {
    "files": 370,
    "kind": "dir",
    "read_by": "pc_intro_art, pc_graphics_modes, pc_frontend_music",
-   "sha256": "fe0d838d7fa5a98d4f082d91578ae1e7b24e89ee59b5c777f5171d5602f69ac3"
+   "sha256": "4221fd85b5b3d4e68d7e4a6530fe7ce3739ea61b2285277747726b2f6508f4b4"
   },
   "artifacts/pc-live-type-cockpit-02": {
    "files": 66,
    "kind": "dir",
    "read_by": "pc_tandem_frame, pc_cockpit_mask_reuse, pc_cockpit_refinement, pc_commander_trim, pc_graphics_modes, pc_presentation_reuse",
-   "sha256": "bffa1cff57b9e7c5457380286a567021f9d3ce0ffd8b67d6785c1fbe687217fe"
+   "sha256": "71b20cb18ebabacc0ac95de324c4a5a5688df51854ecaeb7770e0744fa7aadb0"
   },
   "artifacts/pc-live-type-crew-02": {
    "files": 108,
    "kind": "dir",
    "read_by": "pc_portrait_art",
-   "sha256": "af1b05cff1f1472047988f96c7a749b355614df5d0fa0b584a7a4d145848a9e4"
+   "sha256": "0290c803ba18c5af7813ec4a7b105ac4581010eb7d0cebb285e83da153d4f975"
   },
   "artifacts/pc-live-type-lifecycle-01": {
-   "files": 54,
+   "files": 86,
    "kind": "dir",
-   "read_by": "pc_frontend_art, pc_graphics_modes",
-   "sha256": "62ff96f63dcc389af7bf487e97fde824e5ad68e1be3f0b35bdcc431b051695f2"
+   "read_by": "pc_frontend_art, pc_graphics_modes, pc_frontend_completeness",
+   "sha256": "07a57236a2c2d4e149ee984da6bfcd269f30fd46cfbb707f77a834ba6c1e26fa"
   },
   "artifacts/pc-menu-text-trace-04": {
    "files": 83,
    "kind": "dir",
    "read_by": "pc_menu_text, pc_cursor_struts, pc_frontend_art",
-   "sha256": "aee0197e8ed4fc3392caa97df0716003e75ab37b11357d54b6f8248ee56cf549"
+   "sha256": "63875a7b4e02baa8d0def42fcceb32e7504e6af5ca346af65fd109eccf0e6b21"
   },
   "artifacts/pc-motor-pool-baseline-01/mission-summary.png": {
    "files": 1,
@@ -94,25 +100,25 @@
    "files": 104,
    "kind": "dir",
    "read_by": "pc_motor_pool_controls_art",
-   "sha256": "57d1260a9fcfb12c55389d41a5d533cbb19bf69ca796266c69825389498350b9"
+   "sha256": "eb79a9e4172fa118d5228785fadb417036a94243afb2efe99b302f342d8e9b77"
   },
   "artifacts/pc-motor-pool-trace-03": {
    "files": 86,
    "kind": "dir",
    "read_by": "pc_motor_pool_art",
-   "sha256": "a257af9af78623bc10d8b565737dbe92440154408d0c9e7fcd4c501b74bce5c7"
+   "sha256": "07a57236a2c2d4e149ee984da6bfcd269f30fd46cfbb707f77a834ba6c1e26fa"
   },
   "artifacts/pc-portrait-lifecycle-trace-01": {
-   "files": 453,
+   "files": 449,
    "kind": "dir",
    "read_by": "pc_portrait_coverage",
-   "sha256": "861a46809404ce99e51274890194572d18154fb83acb72951cb5aa40205f114c"
+   "sha256": "0d864e059df2e3d34c37435b5cf2d5fbae7854fc39affd1bc7fab29ebc4eb19e"
   },
   "artifacts/pc-sprite-controls-02": {
    "files": 6,
    "kind": "dir",
    "read_by": "pc_effect_art, pc_hill_art, pc_vehicle_art, pc_modern, pc_modern_mapping_reuse",
-   "sha256": "a1278f7eb9dcf1012ea36340c11967a78b430abc0a35a12f125eec95cfe1da11"
+   "sha256": "2b98e5aeeb18c55e0d6ea95649b128a4c9cb483e737c18567e55ec87623b133f"
   },
   "artifacts/performance-60fps-20260929/optimized-canvas/diagnostic-draws.json": {
    "files": 1,

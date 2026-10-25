@@ -201,6 +201,14 @@ class ValidateGateTests(unittest.TestCase):
                 with self.subTest(check=name):
                     self.assertIn('--headless', command)
 
+    def test_frontend_completeness_supplies_its_pinned_lifecycle_fixture(self):
+        from tests.gate_fixtures import FIXTURES
+        command = next(row[3] for row in self.table if row[1] == 'pc_frontend_completeness')
+        fixture = 'artifacts/pc-live-type-lifecycle-01'
+        self.assertIn('-- --fixture ' + str(ROOT / fixture / 'report.json'), command)
+        self.assertIn('pc_frontend_completeness', FIXTURES[fixture])
+        self.assertIn(fixture + '/report.json', (TESTS / 'test_pc_frontend_completeness.gd').read_text())
+
     def test_every_godot_receipt_matches_a_print_in_its_script(self):
         for tier, name, receipt, command in self.table:
             script = re.search(r'--script res://(tests/[\w]+\.gd)', command)

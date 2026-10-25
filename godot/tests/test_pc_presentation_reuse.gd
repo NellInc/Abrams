@@ -112,7 +112,13 @@ func water_animation_contract() -> void:
 func run() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	var path := directory.path_join("artifacts/pc-live-type-cockpit-02/report.json")
+	if not FileAccess.file_exists(path):
+		printerr("FAIL: presentation reuse fixture missing: "+path);quit(2);return
 	var report: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
+	for entry in report.ui_presentations:
+		for field in ["image","mask","plate_mask"]:
+			if entry.get(field) and not FileAccess.file_exists(path.get_base_dir().path_join(entry[field])):
+				printerr("FAIL: presentation reuse fixture file missing: "+str(entry[field]));quit(2);return
 	var program := {"name":"SIM"}
 	for e in report.ui_presentations:
 		var paired: Dictionary=report.presentations[int(e.frame_index)].duplicate(true)

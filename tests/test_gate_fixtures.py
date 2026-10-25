@@ -94,6 +94,10 @@ class GateFixtureTests(unittest.TestCase):
                      'artifacts/intro-menu-20260930/trace']:
             self.assertIn(name, gate)
             self.assertIn(name, gate_fixtures.FIXTURES)
+        # The cursor/roof JSON names PNGs in this separate capture directory.
+        # Pinning the JSON alone did not catch their removal.
+        driver = 'artifacts/pc-driver-assembly-trace-03'
+        self.assertIn('pc_cockpit_refinement', gate_fixtures.FIXTURES[driver])
 
     def test_refuses_to_write_inside_original_sources(self):
         with tempfile.TemporaryDirectory() as directory:

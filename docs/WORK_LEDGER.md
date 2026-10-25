@@ -6788,3 +6788,62 @@ push, publication or Apple submission.
 Working if: the inset truck lamps frame the narrower grille without shrinking
 its broad nose, Molot wheel castings read correctly, and the menu crew retain
 natural shoulder transitions, planted grips and the approved motion.
+
+
+## 2026-10-25: Wheel clearance, retained validation inputs and local release cleanup
+
+Nell requested fixes for the wheel-authoring and fixture-dependent failures,
+with commit/push to main and removal of local releases already live on GitHub.
+The implementing chat authored and reviewed this bounded source/test change.
+
+Molot's end-wheel radius falls from 3.76 to 3.29 raw units. Its seven road
+wheels, their spacing, source ownership and the existing 0.25 clearance assertion
+remain unchanged. All 131 modern-asset tests pass. Existing baked model packs,
+installed apps and published native/Web releases were not rebuilt.
+
+Thirteen pinned default capture directories had lost images. A further driver
+capture, referenced indirectly by the cursor/roof JSON, was also incomplete and
+was absent from the fixture registry. Fourteen complete captures were regenerated
+with the existing capture tools. Every referenced PNG was checked before the
+intentional repin. Seven unaffected default fixtures and the complete live-tier
+pin set remain byte-identical. The default preflight now verifies 21 inputs with
+zero problems. Historical partial directories and their reports remain under
+`artifacts/wheel-fixture-fix-20261025/previous-fixtures/`; capture payloads stay
+local and gitignored.
+
+The neutral research snapshot is version 8 and does not restore the DOS calendar.
+Fresh neutral replays therefore are not asserted to reproduce the historical
+full-RAM/mission recordings. Current trace captures instead match independent
+unchanged-baseline runs for every RAM/video/input record, sampled state and
+program boundary in all three mission-bearing routes (22,263 frames). A further
+1,800-frame intro control matches records, images and transitions. Historical
+input/video hashes remain exact for menus, information and both intro captures.
+The five mission-entry captures, including the driver capture, retain exact
+historical input/RAM/video sequences. No host clock or guest RAM was modified.
+
+The frontend test now defaults to the pinned lifecycle capture, and validate.sh
+supplies that path explicitly. Missing reports/images return a clear nonzero
+failure rather than dereferencing a null image. Regression checks cover the
+frontend invocation and the indirect driver input. Eighteen fixture/gate tests
+pass. Restored Godot receipts: presentation reuse 840, commander trim 27, cockpit
+mask reuse 2,995, graphics modes 18,629 and portrait coverage 328 checks. Frontend
+completeness passes 91 headless and 96 native checks; native cockpit refinement
+passes 94. The first native run's missing-driver error and partial receipt are
+retained and excluded from acceptance. Original reference inventory is unchanged.
+The aggregate repository gate and opt-in live tier were not rerun.
+
+Seven local release archives (2,306,915,689 logical bytes) were deleted only
+after matching their SHA-256/size to published GitHub assets, confirming HTTP 200
+at the public downloads and checking they were not open. These are the Alpha 7
+macOS/Windows/Linux archives, their three source archives, and the model-menu
+preview archive. Public releases remain live; unpublished intermediates, working
+apps, source inputs and unrelated files were retained. Before/after filesystem
+free space and exact paths are in the local release audit.
+
+Evidence: `artifacts/wheel-fixture-fix-20261025/` (replay plan/results, baseline
+parity, preserved reports, native receipts and local-release audit).
+
+Working if: the unchanged wheel-clearance assertion passes, fixture preflight
+rejects missing input images before the gate, standalone and gated frontend
+checks complete, and deleted local packages remain recoverable from identical
+live GitHub assets.
