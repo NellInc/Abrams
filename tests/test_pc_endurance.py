@@ -3,10 +3,38 @@ import tempfile
 import unittest
 from unittest.mock import patch, call
 
-from tools.verify_pc_endurance import BoundedClient, percentile, native_rss_kib, source_hashes
+from tools.verify_pc_endurance import BoundedClient, campaign_record, percentile, native_rss_kib, source_hashes
 
 
 class EnduranceGateTests(unittest.TestCase):
+    def test_campaign_record_keeps_played_markers_separate_from_victory(self):
+        import hashlib, struct
+        raw = struct.pack('<HBB', 55, 1, 0) + bytes([0, 0, 1, 0, 0, 0, 0, 0]) + bytes(38)
+        record = campaign_record(raw)
+        self.assertEqual(record['mission_count'], 1)
+        self.assertEqual(record['career_status'], 0)
+        self.assertEqual(record['played_markers'], [0, 0, 1, 0, 0, 0, 0, 0])
+        self.assertEqual(record['sha256'], hashlib.sha256(raw).hexdigest())
+        self.assertNotIn('victory', record)
+
+    def test_campaign_terminal_status_is_not_an_objective_verdict(self):
+        import struct
+        raw = struct.pack('<HBB', 0, 8, 3) + bytes([1]*8) + bytes(38)
+        record = campaign_record(raw)
+        self.assertEqual(record['mission_count'], 8)
+        self.assertEqual(record['career_status'], 3)
+        self.assertEqual(record['score_raw_u16'], 0)
+        self.assertNotIn('victory', record)
+
+    def test_campaign_record_refuses_incomplete_and_invalid_fields(self):
+        import struct
+        malformed = [bytes(49), bytes(51), struct.pack('<HBB', 0, 9, 0) + bytes(46),
+                     struct.pack('<HBB', 0, 1, 4) + bytes(46),
+                     struct.pack('<HBB', 0, 1, 0) + bytes([2]) + bytes(45)]
+        for raw in malformed:
+            with self.subTest(raw=raw.hex()), self.assertRaises(ValueError):
+                campaign_record(raw)
+
     def test_percentiles_are_defined_for_empty_and_small_sets(self):
         self.assertIsNone(percentile([], .95))
         self.assertEqual(percentile([3], .95), 3)

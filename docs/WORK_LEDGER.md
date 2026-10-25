@@ -7078,6 +7078,81 @@ latency, physical listening, a long release soak and a new public runtime
 release are not established by this run. Canonical completion and custody proof:
 `artifacts/full-suite-20261025/final-aggregate-proof.json`.
 
+## 25 October 2026: installed specialist skills and eight-mission campaign lifecycle
+
+Nell assigned installation/use of the researched skills, performance and complete
+mission/campaign coverage, plus direct coordination with Improve Tactical lighting
+and FX. Five previously absent skills are installed under ~/.codex/skills from
+pinned upstream snapshots: performance-optimization, godot-debugging-profiling,
+godot-shaders, reverse-engineer-anything and hyperframes. Installation hashes and
+authority are retained in artifacts/finish-abrams-20261025/state.json. Main skill
+guidance was loaded directly; no additional framework, emulator or paid service
+was installed. Tactical owns the lighting/FX/profile/SFX lane; this chat preserves
+its experimental candidate and the six concurrent intro/music edits.
+
+This chat implemented and reviewed an opt-in --campaign-tour extension to the
+existing endurance runner, with three small record-classification regressions.
+The twelve focused endurance tests pass. Retained REA END assembly was checked
+against a freshly unpacked original END: load image, entry/stack and every
+relocation match the independent retained executable. Read-only Astra advice
+challenged the outcome contract; the root independently inspected its source.
+
+Actual native campaign tour passes 956 checks, zero failures, in 96.51 seconds.
+Eight original incomplete exits visit all distinct scenario indexes, seven original
+R&R saves survive cooperative process closure and fresh Continue, and the eighth
+record has count8, all played markers and original status3. A final cold Continue
+rejects the completed career without changing its exact fifty-byte record. The
+root independently reread all eight record files and the closed overlay and
+inspected the original Paris-loss ending and no-active-player screen. Played
+markers and tour termination do not establish objective victories. No guest RAM,
+original disk input, objective or career bytes were authored; no RAM checkpoint
+was loaded by the campaign tour.
+
+The existing host CPU diagnostic was adapted to an ordinary current cold boot,
+removing its stale snapshot dependency rather than weakening core pins. Its
+1020-frame/four-station run measures mean6.4966ms and p95 8.7880ms including
+cProfile and audit overhead. This is CPU diagnosis, not native FPS acceptance.
+No speculative frame-fence or simulation optimization was made.
+
+Clean stdlib source-kit validation also exits0:211 tests,22 intentional/private
+skips and593 packaged files. This does not substitute for native/full validation.
+
+Separate ordinary-control combat research has reached original Mossel Defense
+progress7/14, integrity100 and exit-mobility conditions85/100/100. Exact source
+ID-cell, nonzero source box and LOCKED-cell guards are independently checked.
+The rect-qualified controller's6402-frame neutral-START replay and subsequent
+reload-corrected11279-frame replay each matched all655360 RAM bytes exactly.
+No combat-state restore occurred. Two HEAT shots at2398/2662m exposed another
+pilot policy error: the original manual's HEAT maximum is2000m. A range-aware
+correction passes17 focused cases. Its15343-frame neutral ordinary-input replay
+then matches all655360 RAM bytes and the revised controller resumes play. These
+are private playtest helpers, no replacement
+simulation or runtime gameplay changes.
+
+The Tactical owner rejected its warm-target candidate after a matched normal-speed
+run showed108.371ms first smoke versus107.152ms baseline. Renderer changes were
+reverted; no speedup is claimed. A later atomic-receipt diagnostic delays the
+visible particle child for the first smoke draw. Its first pre/post draw remains
+142.436ms with child hidden; the next, restored draw is7.219ms. The root read
+both rows and checked the renderer source remains unchanged. This rules out the
+visible child draw as necessary for the stall, without identifying a cause.
+The717-sample altered-pixel diagnostic explicitly rejects full1020-route
+acceptance. The preceding132s timeout and lost attribution receipt are retained
+as an incomplete attempt, never a passing performance result.
+
+Actual ENOSPC temporarily halted all runtime writers. The needed pilot and
+unique evidence were preserved; no safely disposable owned data was identified.
+After free space recovered to23.39GB, a small atomic handoff checkpoint succeeded
+and bounded CPU-only functional work resumed. Heavy native experiments remain
+coordinated separately; no free-space recovery is attributed to this chat.
+
+Evidence: artifacts/finish-abrams-20261025/. Successful mission objectives,
+surviving victorious saves, independent winning-route parity and whole-game
+performance qualification remain open. No standalone/web rebuild or publication
+was performed. Working if: each new campaign receipt retains exact original
+record custody and outcome labels, and remaining victory/performance gates stay
+open until their own native evidence exists.
+
 
 ## 25 October 2026: private effects-bank support and open smoke follow-up
 

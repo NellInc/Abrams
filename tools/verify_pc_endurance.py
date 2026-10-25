@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import select
+import struct
 import subprocess
 import time
 import zipfile
@@ -98,6 +99,151 @@ def native_rss_kib(pid):
             break
         owned.update(added)
     return sum(rss for child, _, rss in entries if child in owned)
+
+
+def campaign_record(raw):
+    """Read END's original 50-byte record, without treating played as won.
+
+    END 0000:06aa increments the count and played marker after incomplete
+    missions too. Status 3 means the original eight-mission tour ended; it is
+    not proof of eight objective victories. See pc-executable-research.md.
+    """
+    if len(raw) != 50:
+        raise ValueError('original campaign record must contain exactly 50 bytes')
+    score, count, status = struct.unpack_from('<HBB', raw)
+    played = list(raw[4:12])
+    if count > 8 or status > 3 or any(value not in (0, 1) for value in played):
+        raise ValueError('invalid original campaign count, status or played markers')
+    return {'sha256': hashlib.sha256(raw).hexdigest(), 'bytes': len(raw),
+            'score_raw_u16': score, 'mission_count': count, 'career_status': status,
+            'played_markers': played, 'category_totals': list(struct.unpack_from('<14H', raw, 12))}
+
+
+def run_campaign_tour(output):
+    """Exercise all eight original campaign handoffs and cold disk continuations.
+
+    Uses ordinary incomplete mission exits deliberately. Objective victories,
+    combat survival and independent baseline-core parity remain separate gates.
+    No RAM checkpoint is loaded or campaign record authored by this route.
+    """
+    before = source_hashes()
+    routes = json.loads((ROOT/'godot/tests/fixtures/pc_campaign_steps.json').read_text())
+    quit_route = json.loads((ROOT/'godot/tests/fixtures/pc_reentry_steps.json').read_text())[:8]
+    choices = {'179660660519b1e466871e94b9bae9ecae5c35ce22a92a1b19d9f7b2c36ecfba': 'continue',
+               'dd261b967d88052666983f1d36607c8935192ef56ed2bc2e9f0e406487662433': 'rest'}
+    checks, missions, stages, visited = {}, [], [], set()
+    client, error = None, None
+    started = time.monotonic()
+    log = (output/'native.log').open('w')
+
+    def check(label, passed):
+        checks[label] = bool(passed)
+        if not passed:
+            raise AssertionError(label)
+
+    def step(label, frames, keys=()):
+        packet = client.step(frames, keys)
+        audit = packet.get('frame_audit', {})
+        check(label+':audit', audit.get('ram_bytes') == 655360 and audit.get('video_bytes') == 256000)
+        check(label+':outside-SIM-ownership', (packet.get('program') or {}).get('name') == 'SIM' or no_sim_geometry(packet))
+        stages.append({'label': label, 'frames': frames, 'keys': list(keys),
+                       'sequence': packet['sequence'], 'program': (packet.get('program') or {}).get('name'),
+                       'frame_audit': audit})
+        return packet
+
+    def photograph(packet, label):
+        picture = Image.open(io.BytesIO(base64.b64decode(packet['png']))).convert('RGB')
+        picture.save(output/(label+'.png'))
+        return hashlib.sha256(picture.tobytes()).hexdigest()
+
+    try:
+        previous_raw = None
+        for mission in range(1, 9):
+            prefix = f'mission-{mission}'
+            # Every mission uses a NEW native process and the same original
+            # disk overlay. Neither ready nor Continue restores guest RAM.
+            client = BoundedClient(output/'campaign-saves', log)
+            if previous_raw is not None:
+                with zipfile.ZipFile(output/'campaign-saves/abrams-ref.pure.zip') as archive:
+                    check(prefix+':cold-disk-unchanged', archive.read(campaign_member) == previous_raw)
+            route = routes['new'][:43] if mission == 1 else routes['continue']
+            for index, (frames, keys) in enumerate(route):
+                packet = step(prefix+f':entry-{index}', frames, keys)
+            check(prefix+':original-SIM', packet['program']['name'] == 'SIM' and bool(packet.get('state')))
+            scenario = packet['state']['scenario_resource_index']
+            check(prefix+':unplayed-scenario', scenario in range(8) and scenario not in visited)
+            visited.add(scenario)
+            photograph(packet, prefix+'-battle')
+            for item in quit_route:
+                packet = step(prefix+':'+item['label'], item['frames'], item['keys'])
+            check(prefix+':original-END', packet['program']['name'] == 'END')
+            photograph(packet, prefix+'-debrief')
+            for page in range(12):
+                if (packet.get('program') or {}).get('name') == 'START':
+                    break
+                check(prefix+f':review-{page}-END', packet['program']['name'] == 'END')
+                choice = choices.get(photograph(packet, prefix+f'-review-{page}'))
+                if choice:
+                    check(prefix+':no-rest-after-final', mission < 8)
+                    if choice == 'continue':
+                        step(prefix+':choose-rest', 10, ['left'])
+                        step(prefix+':choose-rest-release', 90)
+                    step(prefix+':rest-confirm', 10, ['return'])
+                    packet = step(prefix+':rest-return', 600)
+                else:
+                    step(prefix+f':review-{page}-press', 10, ['space'])
+                    packet = step(prefix+f':review-{page}-release', 600)
+            check(prefix+':original-START', packet['program']['name'] == 'START')
+            photograph(packet, prefix+'-main-menu')
+            client.close(); client = None
+            with zipfile.ZipFile(output/'campaign-saves/abrams-ref.pure.zip') as archive:
+                members = [name for name in archive.namelist() if name.upper().endswith('.TC')]
+                check(prefix+':one-original-career', len(members) == 1)
+                campaign_member = members[0]
+                previous_raw = archive.read(campaign_member)
+            record = campaign_record(previous_raw)
+            (output/(prefix+'.TC')).write_bytes(previous_raw)
+            if missions:
+                check(prefix+':same-career-identity', previous_raw[40:] == identity_tail)
+            else:
+                identity_tail = previous_raw[40:]
+            check(prefix+':durable-count', record['mission_count'] == mission)
+            check(prefix+':durable-markers', {i for i, mark in enumerate(record['played_markers']) if mark} == visited)
+            check(prefix+':career-status', record['career_status'] == (3 if mission == 8 else 0))
+            missions.append({'mission': mission, 'scenario_resource_index': scenario, 'record': record,
+                             'outcome': 'ordinary incomplete exit; no objective-victory claim'})
+            print(f'PC_CAMPAIGN_TOUR_STAGE: {mission}/8, scenario {scenario}, status {record["career_status"]}', flush=True)
+        check('all-eight-original-scenarios', visited == set(range(8)))
+        client = BoundedClient(output/'campaign-saves', log)
+        for index, (frames, keys) in enumerate(routes['continue'][:18]):
+            packet = step(f'completed-career:continue-{index}', frames, keys)
+        photograph(packet, 'completed-career-cold-continue')
+        text = ' '.join(run.get('text', '') for run in packet.get('presentation', {}).get('text_runs', []))
+        check('completed-career:original-START', packet['program']['name'] == 'START')
+        check('completed-career:original-cold-rejection', 'NO ACTIVE PLAYERS TO CHOOSE FROM' in ' '.join(text.upper().split()))
+        client.close(); client = None
+        with zipfile.ZipFile(output/'campaign-saves/abrams-ref.pure.zip') as archive:
+            check('completed-career:cold-record-unchanged', archive.read(campaign_member) == previous_raw)
+    except Exception as exception:
+        error = f'{type(exception).__name__}: {exception}'
+    finally:
+        if client:
+            try:
+                client.close()
+            except Exception as exception:
+                error = (error+'; ' if error else '')+str(exception)
+        log.close()
+        checks['original-sources-unchanged'] = source_hashes() == before
+        report = {'passed': error is None and len(missions) == 8 and all(checks.values()),
+                  'error': error, 'checks': checks, 'missions': missions, 'stages': stages,
+                  'wall_seconds': time.monotonic()-started, 'source_hashes': before,
+                  'core_manifest': json.loads((ROOT/'.runtime/pc-core/abrams-trace.json').read_text()),
+                  'scope': 'Eight original campaign missions with ordinary incomplete exits, debriefs and disk saves; seven fresh-process Continues, original career status 3, and fresh-process rejection of the completed career. No objective victories, surviving combat, RAM restores or baseline-core parity claimed.'}
+        (output/'report.json').write_text(json.dumps(report, indent=2)+'\n')
+    print(f'PC_CAMPAIGN_TOUR: {len(checks)} checks, {sum(not value for value in checks.values())} failed, {len(missions)}/8 missions, {"PASS" if report["passed"] else "FAIL"}', flush=True)
+    if error:
+        print(error, flush=True)
+    return 0 if report['passed'] else 1
 
 
 def run(output):
@@ -248,12 +394,13 @@ def run(output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--campaign-tour', action='store_true', help='eight original incomplete campaign exits, durable saves and cold continuations; no objective-victory claim')
     args = parser.parse_args()
     target = args.output.resolve()
     if inside_source(target, ROOT):
         parser.error('output must be outside original source directories')
     target.mkdir(parents=True, exist_ok=False)
-    return run(target)
+    return run_campaign_tour(target) if args.campaign_tour else run(target)
 
 
 if __name__ == '__main__':

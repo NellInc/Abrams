@@ -39,6 +39,39 @@ Checkpoint replay compares the trace core to itself; independent unmodified-core
 RAM/video parity remains a separate gate. Acoustic drift, long campaign outcomes,
 other hardware and other operating systems remain outside this gate.
 
+## Eight-mission campaign lifecycle tour
+
+```sh
+python3 tools/verify_pc_endurance.py --campaign-tour --output artifacts/campaign-tour-NEW
+```
+
+This opt-in route uses an isolated career and ordinary incomplete mission exits.
+It checks eight distinct original scenario indexes, original END debriefs,
+seven R&R saves followed by fresh-process Continue, and the eighth mission's
+terminal career status. Each closed overlay retains the exact fifty-byte
+original career record, accumulating played markers and count. A final cold
+Continue must show the original no-active-player response without changing
+that record. No RAM checkpoint is restored or career data authored.
+
+END increments the mission count and played marker even for incomplete exits.
+Its terminal status 3 therefore establishes a completed administrative tour,
+without establishing objective victories or a surviving victorious handoff.
+Those outcomes and independent unmodified-core parity remain separate gates.
+The original outcome contract is in `pc-executable-research.md`.
+
+Working if: a native run reaches all eight distinct missions, validates every
+closed record and cold continuation, observes the terminal original response,
+leaves original inputs unchanged, and never labels played markers as victories.
+
+Native evidence, 25 October 2026: the first full tour passes 956 checks with
+zero failures in 96.51 seconds. Its observed scenario order is 6, 0, 5, 1, 4, 7,
+2, 3. Independent rereading of all eight raw records confirms exact counts,
+marker accumulation, identity and the final closed-overlay bytes. Original
+screens show the Paris-loss newspaper and then reject cold Continue with
+"NO ACTIVE PLAYERS TO CHOOSE FROM". This closes the incomplete-exit campaign
+lifecycle, not a victorious career. Evidence:
+`artifacts/finish-abrams-20261025/campaign-tour-01/`.
+
 ## Held-control checkpoint gate
 
 ```sh
