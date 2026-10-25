@@ -1046,9 +1046,12 @@ Tactical adds source-bound smoke and particles in one transparent mesh batch:
   embellishment and missile glow are also confined to their original registered
   sprite rectangle. Smoke deployment may tint only observed terrain and
   background.
-* Particles reconstruct from the current source snapshot. There is no wall-clock
-  timer, accumulated history, emitter simulation or replay of an old launch.
-  Repeated, paused and restored packets reproduce the same image. Switching
+* Particle placement and lifetimes reconstruct from the current source snapshot.
+  Interior colour uses a bounded explicit presentation phase, advanced only by
+  the existing Tactical dynamics caller. Original pause, focus loss, open menus,
+  reduced motion and capture hold that phase; timeline resets clear it. There
+  is no emitter simulation or replay of an old launch. Repeated packets at the
+  same phase reproduce the same image. Switching
   away clears the particle batch. A finite 512-puff ceiling, one batch and
   derivative-filtered detail bound the additional work. A smoke-timer change
   updates only the small particle batch; actor speed, heading and position never
@@ -1070,6 +1073,40 @@ projectile has a motor glow inside its flare, a visible vehicle shows the same
 fumes inside its own silhouette whether moving, reversing or parked, terrain or
 actors painted over a vent hide its fumes, covered emitters stay silent, and
 matching Modernized views remain exact.
+
+### Tactical lighting and plume motion, 25 October 2026
+
+Smoke and diesel interiors have slow periodic billow flow and rising colour
+detail. Their density noise, opacity, geometry, source ownership and lifetime
+expressions are unchanged. The colour phase wraps continuously and does not
+extend the separate short impact-spark clock. Only admitted plume geometry
+requests animation; an empty source frame stops it.
+
+Plume hemispheres receive the same fixed world-space sun as terrain and armour,
+transformed through the observed camera basis. Shaded folds have a restrained
+cool fill, with warm sunward shoulders and thin backlit rims. No scene light,
+shadow, depth sample or additional draw pass is introduced.
+
+The two registered impact donors select a warm-white initial core followed by
+orange cooling edges and subdued soot. The original bitmap selects each phase
+and its duration, including the repeated original indices that use those same
+donors. Other source-effect phases retain their preceding colour treatment.
+
+Existing baked material occlusion now also damps roughness-dependent specular
+inside recesses. Lower-body and building-footing shade varies with the observed
+face normal. Aircraft and independently observed flat pieces retain neutral
+footing shade. Material changes stay inside existing coverage.
+
+Native Compatibility verification, performance measurements and actual
+four-station captures are retained in
+`artifacts/tactical-light-particles-20261025/`. This is a local source change,
+available through the repository's `Play.command`; standalone release packages
+and the hosted browser edition are unchanged.
+
+Working if: smoke interiors roll only while the existing dynamics caller permits
+motion, rotating the optic keeps the sun world-fixed, the original impact phases
+select their own colour progression, and paired predecessor diagnostics retain
+exact particle opacity and material visibility masks.
 
 ## Tactical doors, timber and stone trim
 

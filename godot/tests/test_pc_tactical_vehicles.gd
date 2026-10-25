@@ -109,6 +109,9 @@ func run() -> void:
 	_posed_shapes=draw.tactical_vehicle_assets.gpu_poses.keys()
 	check(draw.tactical_vehicle_assets.ready,"production detail assets available")
 	check(draw.tactical_vehicle_assets.models.keys().size()==shapes.size() and shapes.all(func(id):return id in draw.tactical_vehicle_assets.models),"exact approved production roster admitted")
+	if "--lighting-only" in args:
+		await grounding_pixels(catalog)
+		finish();return
 	FileAccess.open(output.path_join("allocation.json"),FileAccess.WRITE).store_string(JSON.stringify({"decoded_texture_bytes_with_mips":draw.tactical_vehicle_assets.decoded_texture_bytes,"driver_texture_bytes_total":RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED),"driver_video_bytes_total":RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED)},"  "))
 	draw.profile_builds=true
 	if scene_roster and not defer_scene and ("--view-shard" not in args or args[args.find("--view-shard")+1]=="0"):
@@ -262,12 +265,42 @@ func grounding_pixels(catalog:Dictionary) -> void:
 		data.camera.focal_pixels=144.0
 		draw.tactical_landscape=true
 		var shaded:=await render(data,true)
+		if "--baseline-material" in OS.get_cmdline_user_args():
+			var path:String=OS.get_cmdline_user_args()[OS.get_cmdline_user_args().find("--baseline-material")+1]
+			var original_materials:Array=[]
+			for node:MeshInstance3D in draw.tactical_vehicle_view.instances:
+				if not node.visible:continue
+				var material:ShaderMaterial=node.material_override
+				original_materials.append([material,material.shader])
+				var shader:=Shader.new();shader.code=FileAccess.get_file_as_string(path)
+				if material.shader.code.contains("depth_test_disabled"):shader.code=shader.code.replace("depth_draw_opaque","depth_test_disabled,depth_draw_never")
+				material.shader=shader
+			var predecessor:=await capture()
+			var difference:=0
+			for y in shaded.get_height():
+				for x in shaded.get_width():
+					if shaded.get_pixel(x,y)!=predecessor.get_pixel(x,y):difference+=1
+			# RGB black is not a visibility mask: dark antialiased texels can
+			# quantize to zero. White outputs expose actual discard/depth coverage.
+			var coverage_masks:Array[Image]=[]
+			for candidate in [false,true]:
+				for pair:Array in original_materials:
+					var code:String=pair[1].code if candidate else pair[0].shader.code
+					var white:=Shader.new();white.code=code.insert(code.rfind("}"),"\n ALBEDO=vec3(1.0);\n")
+					pair[0].shader=white
+				coverage_masks.append(await capture())
+			check(coverage_masks[0].get_data()==coverage_masks[1].get_data(),"material AO/roughness refinement preserves predecessor visibility mask exactly")
+			check(difference>0,"baked local occlusion visibly refines admitted model")
+			predecessor.save_png(output.path_join("material-%d-before.png"%shape));shaded.save_png(output.path_join("material-%d-after.png"%shape))
+			for pair:Array in original_materials:pair[0].shader=pair[1]
+			check(shaded.get_data()==(await capture()).get_data(),"paired material comparison restores candidate exactly")
 		var originals:Array=[]
 		for node:MeshInstance3D in draw.tactical_vehicle_view.instances:
 			if not node.visible:continue
 			var material:ShaderMaterial=node.material_override
 			var original:Shader=material.shader;originals.append([material,original])
-			var neutral:=Shader.new();neutral.code=original.code.replace("0.06*(1.0-smoothstep","0.0*(1.0-smoothstep")
+			check(original.code.contains("1.0-footing*mix"),"grounding negative control targets the production expression")
+			var neutral:=Shader.new();neutral.code=original.code.replace("1.0-footing*mix","1.0-0.0*mix")
 			material.shader=neutral
 		var plain:=await capture()
 		var changed:=0;var exterior:=0;var coverage:=0

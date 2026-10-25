@@ -62,6 +62,16 @@ func run() -> void:
 	var data:=vehicle(directory)
 	var moving:=queued(effects,data,mapping,ownership,assets,art)
 	check(effects.counts.exhaust==7 and not effects.counts.has("dust"),"visible engine face queues idle fumes and no motion dust")
+	var original_puffs:=var_to_str(effects.puffs)
+	var original_roots:PackedByteArray=effects.material.get_shader_parameter("roots").get_image().get_data()
+	check(effects.advance_dynamics(0.05) and effects._plume_phase>0.0 and effects._dynamics_clock==0.0,"idle exhaust advances only the bounded plume clock")
+	check(var_to_str(effects.puffs)==original_puffs and effects.material.get_shader_parameter("roots").get_image().get_data()==original_roots,"plume animation cannot change geometry, alpha, roots or source phase")
+	var held_phase:float=effects._plume_phase
+	check(not effects.advance_dynamics(NAN) and not effects.advance_dynamics(INF) and not effects.advance_dynamics(-1.0) and effects._plume_phase==held_phase,"invalid plume deltas cannot advance")
+	effects.reset_dynamics()
+	check(effects._plume_phase==0.0 and effects.material.get_shader_parameter("plume_phase")==0.0,"timeline reset clears plume phase")
+	var expected_sun:=Vector3(-0.58,-0.74,0.34).normalized()
+	check(effects.material.get_shader_parameter("plume_sun").is_equal_approx(expected_sun),"world sun maps to the source camera's screen-facing frame")
 	# Fumes stay inside the rectangle the original drew this vehicle into; the
 	# shader then admits only its own painted pixels, never sky or a crest.
 	var clip:=Rect2(Vector2(frame.clip[0],frame.clip[1]),Vector2(frame.clip[2]-frame.clip[0]+1,frame.clip[3]-frame.clip[1]+1))
@@ -146,6 +156,7 @@ func run() -> void:
 	check(effects.counts.missile==0,"impact starburst cannot become a missile")
 	effects.prepare(sample([]),mapping,ownership,assets,art)
 	check(effects.puffs.is_empty() and not effects.visible,"empty frame clears all particles")
+	check(not effects._plumes_live and not effects.advance_dynamics(0.05),"empty source frame stops continuous plume redraws")
 	effects.free()
 	finish()
 

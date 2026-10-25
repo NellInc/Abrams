@@ -9,6 +9,7 @@ var errors:Array[String]=[]
 var output:="user://tactical-dynamics"
 var images:Dictionary={}
 var baseline_shader:Shader
+var baseline_particles:Shader
 
 class ImpactArt extends RefCounted:
 	func mapping(object:Dictionary,_frame:Dictionary,_palette:Array) -> Dictionary:
@@ -84,6 +85,13 @@ func snapshot(view:SubViewport) -> Image:
 func save_image(label:String,image:Image) -> void:
 	image.save_png(output.path_join(label+".png"))
 	images[label]=Marshalls.raw_to_base64(image.save_png_to_buffer())
+
+func alpha_equal(a:Image,b:Image) -> bool:
+	if a.get_size()!=b.get_size():return false
+	for y in a.get_height():
+		for x in a.get_width():
+			if a.get_pixel(x,y).a!=b.get_pixel(x,y).a:return false
+	return true
 
 func armour_gpu() -> void:
 	var view:=SubViewport.new();view.size=Vector2i(640,400);view.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(view)
@@ -182,17 +190,28 @@ func impacts_gpu() -> void:
 	var mask:=Image.create(view.size.x,view.size.y,false,Image.FORMAT_RGB8);mask.fill(Color(1.0/255.0,0,0));mask.fill_rect(Rect2i(300,145,10,75),Color(2.0/255.0,0,0))
 	var ownership:=ImageTexture.create_from_image(mask)
 	var packet:={"camera":frame,"palette_rgb":Modern.PC_PALETTE.duplicate(),"objects":[{"donor":0,"pointer":99,"polygons":[]}],"world":{}}
-	for donor in [0,1,3,18]:
+	for donor in [0,1,2,3,18]:
 		packet.objects[0].donor=donor;effects.reset_dynamics()
 		effects.prepare(packet,{"origin":Vector3.ZERO,"inverse":Basis.IDENTITY},ownership,Modern.new(),ImpactArt.new())
 		var before:=await snapshot(view)
+		if baseline_particles:
+			var candidate:Shader=effects.material.shader
+			effects.material.shader=baseline_particles
+			var incumbent:=await snapshot(view)
+			check(alpha_equal(before,incumbent),"donor %d: predecessor opacity and coverage exact"%donor)
+			if donor in [0,1,2]:
+				check(before.get_data()!=incumbent.get_data(),"donor %d: visible lighting/phase refinement"%donor)
+				incumbent.save_png(output.path_join("donor-%d-before.png"%donor))
+				before.save_png(output.path_join("donor-%d-after.png"%donor))
+			effects.material.shader=candidate
+			check(before.get_data()==(await snapshot(view)).get_data(),"predecessor comparison restores exact candidate")
 		var animated:=effects.advance_dynamics(0.05)
 		var after:=await snapshot(view)
 		if donor in [0,1]:
 			effects.clear();effects.prepare(packet,{"origin":Vector3.ZERO,"inverse":Basis.IDENTITY},ownership,Modern.new(),ImpactArt.new())
 			check(effects._impact_births.values()[0]==0.0,"moving-camera mesh rebuild cannot restart an impact burst")
-		check(animated==(donor in [0,1]),"only registered impact donors animate")
-		check((before.get_data()!=after.get_data())==(donor in [0,1]),"impact colour motion visible, other effects exact")
+		check(animated==(donor in [0,1,2]),"registered impacts and smoke animate, unrelated hot effects stay static")
+		check((before.get_data()!=after.get_data())==(donor in [0,1,2]),"impact/plume colour motion visible, other effects exact")
 		var alpha_exact:=true
 		for y in after.get_height():
 			for x in after.get_width():
@@ -201,7 +220,28 @@ func impacts_gpu() -> void:
 		check(before.get_region(Rect2i(300,145,10,75)).get_data()==after.get_region(Rect2i(300,145,10,75)).get_data(),"protected occluder exact")
 		if donor==0:save_image("impact-neutral",before);save_image("impact-response",after)
 		for tick in 14:effects.advance_dynamics(0.05)
-		check(not effects.advance_dynamics(0.05),"spark burst terminates")
+		check(effects.advance_dynamics(0.05)==(donor==2),"spark burst terminates independently of continuing smoke")
+		if donor==2:
+			var rolling:=await snapshot(view)
+			check(alpha_equal(before,rolling) and before.get_data()!=rolling.get_data(),"sustained rolling smoke changes colour alone")
+			save_image("smoke-neutral",before);save_image("smoke-rolling",rolling)
+			check(rolling.get_data()==(await snapshot(view)).get_data(),"no caller advance means exact frozen smoke")
+			effects.material.set_shader_parameter("plume_phase",TAU-0.00001)
+			var wrap_before:=await snapshot(view)
+			effects.material.set_shader_parameter("plume_phase",0.00001)
+			var wrap_after:=await snapshot(view)
+			var max_delta:=0.0
+			var a_bytes:=wrap_before.get_data();var b_bytes:=wrap_after.get_data()
+			for i in b_bytes.size():max_delta=maxf(max_delta,absf(float(b_bytes[i])-float(a_bytes[i])))
+			check(max_delta<=1.0,"periodic plume clock has no visible wrap discontinuity")
+			effects.reset_dynamics()
+			check(before.get_data()==(await snapshot(view)).get_data(),"reset restores exact neutral plume colour")
+			var geometry:PackedVector3Array=effects.node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+			var rotated:=Basis(Vector3(0,0,1),PI/2.0)
+			effects.prepare(packet,{"origin":Vector3.ZERO,"inverse":rotated.inverse()},ownership,Modern.new(),ImpactArt.new())
+			var relit:=await snapshot(view)
+			check(relit.get_data()!=before.get_data() and alpha_equal(relit,before),"camera rotation relights smoke, preserving opacity")
+			check(effects.node.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]==geometry,"sun transform never moves plume geometry")
 		packet.objects=[];effects.prepare(packet,{"origin":Vector3.ZERO,"inverse":Basis.IDENTITY},ownership,Modern.new(),ImpactArt.new())
 		check(not effects.visible and not effects.advance_dynamics(0.05),"source disappearance removes impact immediately")
 		packet.objects=[{"donor":0,"pointer":99,"polygons":[]}]
@@ -213,6 +253,8 @@ func run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	if "--baseline-shader" in args:
 		baseline_shader=Shader.new();baseline_shader.code=FileAccess.get_file_as_string(args[args.find("--baseline-shader")+1])
+	if "--baseline-particles" in args:
+		baseline_particles=Shader.new();baseline_particles.code=FileAccess.get_file_as_string(args[args.find("--baseline-particles")+1])
 	contracts()
 	if "--gpu" in args or OS.has_feature("web"):
 		var gpu:bool=DisplayServer.get_name()!="headless" and RenderingServer.get_current_rendering_method()=="gl_compatibility" and not RenderingServer.get_video_adapter_name().is_empty()

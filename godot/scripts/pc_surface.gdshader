@@ -1181,6 +1181,7 @@ void fragment() {
             // Sparse hot fragments stay within the approved burst footprint.
             float spark=smoothstep(0.94,0.995,fine)*heat*effect_fine_filter;
             result=mix(result,vec3(1.0,0.86,0.45),spark*0.35);
+            if(UV.x>0.5 && UV.x<2.5)result=tactical_impact_phase(result,q,step(1.5,UV.x));
             result=clamp(result,vec3(0.0),vec3(1.0));
             ALBEDO=OUTPUT_IS_SRGB ? result : pow(result,vec3(2.2));
         }

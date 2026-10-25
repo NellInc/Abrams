@@ -60,7 +60,8 @@ vec3 tactical_vehicle_response(vec2 uv,vec2 dx,vec2 dy,vec3 face,vec3 eye,vec3 p
             normal=normalize(tangent*map.x-bitangent*map.y+face*max(map.z,0.05));
         }
     }
-    vec3 lit=tactical_daylight(base,normal,eye,0.0)*mix(0.56,1.0,orm.r);
+    float occlusion=clamp(orm.r,0.0,1.0);
+    vec3 lit=tactical_daylight(base,normal,eye,0.0)*mix(0.50,1.0,occlusion);
     vec3 light=normalize(vec3(-0.58,0.34,0.74));
     vec3 sum=light+eye;
     vec3 halfway=sum/max(length(sum),0.0001);
@@ -77,6 +78,9 @@ vec3 tactical_vehicle_response(vec2 uv,vec2 dx,vec2 dy,vec3 face,vec3 eye,vec3 p
     vec3 f0=mix(vec3(0.04),base,orm.b);
     vec3 fresnel=f0+(1.0-f0)*pow(1.0-vdh,5.0);
     vec3 spec=distribution*geometry*fresnel*ndl/max(4.0*ndv*ndl,0.0001);
+    // Existing baked cavities also soften reflected sun. Open paint/metal
+    // keeps its authored roughness and highlight; recesses cannot glitter.
+    spec*=mix(1.0,occlusion,0.45+0.35*rough);
     return lit+min(spec,vec3(0.22))*vec3(1.0,0.97,0.91);
 }
 
@@ -130,7 +134,8 @@ void fragment() {
     // come from whole admitted model bounds, never per-group camera fits.
     // This affects only pixels admitted above, with no projected terrain shadow.
     if(camera_basis_ready) {
-        float grounding=1.0-0.06*(1.0-smoothstep(0.0,0.25,authored_height));
+        float footing=1.0-smoothstep(0.0,0.25,authored_height);
+        float grounding=1.0-footing*mix(0.035,0.11,1.0-clamp(face.z*0.5+0.5,0.0,1.0));
         ALBEDO*=OUTPUT_IS_SRGB ? grounding : pow(grounding,2.2);
     }
     if(camera_basis_ready && world_origin.z>0.0) {

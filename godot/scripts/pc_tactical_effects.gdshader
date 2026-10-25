@@ -6,6 +6,8 @@ uniform sampler2D roots : filter_nearest, repeat_disable;
 uniform float owner_count;
 uniform float root_width;
 uniform float dynamics_time=-1.0;
+uniform float plume_phase=0.0;
+uniform vec3 plume_sun=vec3(-0.58,-0.74,0.34);
 varying vec4 emitter;
 varying vec4 anchor;
 varying float confined;
@@ -39,6 +41,14 @@ vec3 tactical_particle_volume(vec3 colour, vec2 q, float density, float kind) {
         // existing smoke or diesel palette. No opacity-derived new coverage.
         float cool=core*(1.0-crown)*0.65;
         colour*=mix(vec3(1.01,1.0,0.98),vec3(0.975,0.995,1.025),cool);
+        // The visible hemisphere receives the same world-fixed sun as armour.
+        // Lighting changes RGB only, including the thin, backlit shoulders.
+        vec3 normal=normalize(vec3(q*0.75,max(dome,0.12)));
+        float direct=max(dot(normal,plume_sun),0.0);
+        float back=max(-plume_sun.z,0.0);
+        float rim=pow(1.0-dome,2.0)*(1.0-core)*back;
+        vec3 fill=mix(vec3(0.91,0.955,1.025),vec3(1.075,1.045,0.965),direct);
+        colour=colour*fill+vec3(0.065,0.055,0.035)*rim;
     }
     return clamp(colour,vec3(0.0),vec3(1.0));
 }
@@ -68,7 +78,19 @@ void fragment() {
     float detail=noise(q*7.0+emitter.z*11.0);
     float edge=length(q)+coarse*0.18-0.09;
     float density=(1.0-smoothstep(0.30,0.98,edge))*(0.70+coarse*0.30);
-    vec3 colour=tactical_plume_finish(q,coarse,detail,density,filtered,emitter.y);
+    // Preserve the two incumbent noise fields above for exact opacity. A
+    // periodic, rising colour flow rolls within that stationary footprint.
+    // Derivative filtering removes unresolved interior detail while panning.
+    float billow=coarse;
+    float grain=detail;
+    if(emitter.y<1.5) {
+        float phase=plume_phase+emitter.z*0.73;
+        vec2 flow=vec2(sin(phase+q.y*1.8),cos(phase+q.x*1.5))*0.22;
+        vec2 rolling=q*3.0+emitter.z*7.0+flow;
+        billow=mix(coarse,noise(rolling),filtered*0.85);
+        grain=mix(detail,0.5+0.5*sin(q.y*7.0+q.x*2.5+phase*2.0),filtered*0.35);
+    }
+    vec3 colour=tactical_plume_finish(q,billow,grain,density,filtered,emitter.y);
     if (emitter.y>1.5 && emitter.y<2.5) {
         colour=tactical_hot_finish(q,coarse,detail,filtered,0.0);
     }
@@ -76,6 +98,7 @@ void fragment() {
         colour=tactical_hot_finish(q,coarse,detail,filtered,1.0);
     }
     colour=tactical_particle_volume(colour,q,density,emitter.y);
+    if(anchor.w>=0.0 && anchor.w<=1.0)colour=tactical_impact_phase(colour,q,anchor.w);
     if(dynamics_time>=0.0 && emitter.w>0.0) {
         // Short ballistic sparks, colour-only inside the incumbent alpha/mask.
         float age=max(dynamics_time-(emitter.w-1.0),0.0);

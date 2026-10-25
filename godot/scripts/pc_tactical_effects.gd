@@ -10,6 +10,8 @@ var puffs: Array = []
 var counts: Dictionary = {}
 var _impact_births: Dictionary = {}
 var _dynamics_clock := 0.0
+var _plume_phase := 0.0
+var _plumes_live := false
 var _frame: Dictionary
 var _clip: Rect2
 # Persistent GPU resources: one mesh and one fixed-width root table are
@@ -36,23 +38,32 @@ func _init() -> void:
 func clear() -> void:
 	node.mesh=null
 	puffs.clear()
+	_plumes_live=false
 	counts={"smoke":0,"missile":0,"exhaust":0,"effect":0}
 	visible=false
 
 func reset_dynamics() -> void:
 	_impact_births={}
 	_dynamics_clock=0.0
+	_plume_phase=0.0
 	material.set_shader_parameter("dynamics_time",-1.0)
+	material.set_shader_parameter("plume_phase",0.0)
 
 func advance_dynamics(delta: float) -> bool:
-	if not visible or _impact_births.is_empty() or not is_finite(delta) or delta<=0.0:return false
+	if not visible or not is_finite(delta) or delta<=0.0:return false
 	var live:=false
 	for birth in _impact_births.values():
 		if _dynamics_clock-float(birth)<0.55:live=true;break
-	if not live:return false
-	_dynamics_clock+=minf(delta,0.05)
-	material.set_shader_parameter("dynamics_time",_dynamics_clock)
-	return true
+	var elapsed:=minf(delta,0.05)
+	if live:
+		_dynamics_clock+=elapsed
+		material.set_shader_parameter("dynamics_time",_dynamics_clock)
+	if _plumes_live:
+		# A separate periodic colour clock cannot wrap or prolong impact ages.
+		# The viewer alone advances it, under its pause/focus/menu/motion gates.
+		_plume_phase=fposmod(_plume_phase+elapsed*0.8,TAU)
+		material.set_shader_parameter("plume_phase",_plume_phase)
+	return live or _plumes_live
 
 static func world_position_ok(value) -> bool:
 	# World positions include streamed cell offsets, exceeding the local mesh
@@ -95,14 +106,15 @@ static func inputs(data: Dictionary) -> Array:
 static func identity_seed(object: Dictionary) -> float:
 	return fposmod(float(int(object.get("pointer",0))&0xffff)*0.618034,1.0)
 
-func _puff(raw: Vector3, radius: float, alpha: float, kind: float, seed: float, owner: int, root: Vector2, restrict: Rect2=Rect2(), impact_birth: float=-1.0) -> void:
+func _puff(raw: Vector3, radius: float, alpha: float, kind: float, seed: float, owner: int, root: Vector2, restrict: Rect2=Rect2(), impact_birth: float=-1.0, impact_phase: float=-1.0) -> void:
 	if puffs.size()>=MAX_PUFFS or raw.y<=float(_frame.near_raw)+2.0 or radius<=0.0: return
 	var at:=Geometry.project([raw.x,raw.y,raw.z],_frame)
 	var screen_radius:=radius*float(_frame.focal_pixels)/raw.y
 	if screen_radius<0.35 or not _clip.intersects(Rect2(at-Vector2.ONE*screen_radius,Vector2.ONE*screen_radius*2.0)): return
 	# Optical LOD affects opacity, never original geometry or source visibility.
 	alpha*=smoothstep(0.35,1.8,screen_radius)
-	puffs.append([raw.y,at,screen_radius,alpha,kind,seed,owner,(root-_clip.position)/_clip.size,restrict,impact_birth])
+	puffs.append([raw.y,at,screen_radius,alpha,kind,seed,owner,(root-_clip.position)/_clip.size,restrict,impact_birth,impact_phase])
+	if kind<1.5:_plumes_live=true
 
 # The screen rectangle the original drew this object into, near-clipped. Fumes
 # are confined to it and, in the shader, to that object's own painted pixels,
@@ -151,6 +163,10 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 	_clip=Rect2(Vector2(_frame.clip[0],_frame.clip[1]),Vector2(_frame.clip[2]-_frame.clip[0]+1,_frame.clip[3]-_frame.clip[1]+1))
 	var origin: Vector3=mapping.origin
 	var to_view: Basis=mapping.inverse.inverse()
+	# The source-local basis reverses world Y. In screen-facing coordinates,
+	# +X is right, +Y down and +Z toward the optic, matching the puff dome.
+	var sun:Vector3=(to_view*Vector3(-0.58,-0.34,0.74)).normalized()
+	material.set_shader_parameter("plume_sun",Vector3(sun.x,-sun.z,-sun.y))
 	var allowed:=Image.create(data.objects.size()+1,1,false,Image.FORMAT_RGBA8)
 	allowed.fill(Color.BLACK)
 	allowed.set_pixel(0,0,Color.WHITE)
@@ -208,7 +224,7 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 			for n in 5:
 				var at:=target.position+target.size*Vector2(0.23+float(n)*0.13,0.35+sin(float(n)*2.1+float(effect.index))*0.22)
 				var raw:=Modern.vec(Geometry.unproject(at,1024.0,_frame))
-				_puff(raw,target.size.x*1024.0/float(_frame.focal_pixels)*0.14,0.17,2.0 if int(effect.donor)!=2 else 0.0,float(n)+float(effect.index)*0.29,owner,root,effect.rect,birth)
+				_puff(raw,target.size.x*1024.0/float(_frame.focal_pixels)*0.14,0.17,2.0 if int(effect.donor)!=2 else 0.0,float(n)+float(effect.index)*0.29,owner,root,effect.rect,birth,float(effect.donor) if int(effect.donor) in [0,1] else -1.0)
 			counts.effect+=5
 		if actor.is_empty(): continue
 		# AX 0000:2f04 and the enemy guided-launch path 0000:02c6
@@ -249,7 +265,7 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 	for i in puffs.size():
 		var p: Array=puffs[i]
 		_roots.set_pixel(i*2,0,Color(float(p[6]),float(p[4]),float(p[5]),float(p[9])+1.0 if float(p[9])>=0.0 else 0.0))
-		_roots.set_pixel(i*2+1,0,Color(p[7].x,p[7].y,float(p[3]),0))
+		_roots.set_pixel(i*2+1,0,Color(p[7].x,p[7].y,float(p[3]),float(p[10])))
 		for corner: Vector2 in [Vector2(-1,-1),Vector2(1,-1),Vector2(1,1),Vector2(-1,-1),Vector2(1,1),Vector2(-1,1)]:
 			var at: Vector2=p[1]+corner*float(p[2])
 			if p[8].has_area(): at=at.clamp(p[8].position,p[8].end)

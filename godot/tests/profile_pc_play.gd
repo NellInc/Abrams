@@ -31,12 +31,26 @@ var mesh_reuse_begin := 0
 var awaiting_profile_focus := false
 var profile_focus_since := 0
 var minimal_profile := false
+var effects_study := false
+var effect_studies := {}
 
 func _displayed() -> void:
 	if profile_begin==0 or capture_done:return
 	var now := Time.get_ticks_usec()
 	if display_previous>0:display_intervals.append((now-display_previous)/1000.0)
 	display_previous=now
+	if effects_study and draw_view:
+		var effects=draw_view.tactical_effects
+		var labels:Array=[]
+		if effects.counts.get("smoke",0)>0:labels.append("screening-smoke")
+		if effects.counts.get("exhaust",0)>0:labels.append("exhaust")
+		for puff:Array in effects.puffs:
+			if float(puff[10])>=0.0:labels.append("impact-%d"%int(puff[10]))
+		for label:String in labels:
+			if effect_studies.has(label):continue
+			effect_studies[label]={"sequence":last_profile_message.get("sequence"),"plume_phase":effects._plume_phase,"counts":effects.counts.duplicate()}
+			play_display.tandem_viewport.get_texture().get_image().save_png(output.path_join(label+"-in-game.png"))
+			FileAccess.open(output.path_join(label+"-packet.json"),FileAccess.WRITE).store_string(JSON.stringify(last_profile_message))
 
 func distribution(values: Array) -> Dictionary:
 	if values.is_empty():return {"count":0}
@@ -80,6 +94,7 @@ func _initialize() -> void:
 	RenderingServer.frame_post_draw.connect(_displayed)
 	var args := OS.get_cmdline_user_args()
 	minimal_profile="--minimal-profile" in args
+	effects_study="--effects-study" in args
 	transport_probe="--transport-probe" in args or "--replay-controls" in args
 	late_dispatch="--late-dispatch" in args
 	if transport_probe: bridge=ProbeBridge.new()
@@ -186,6 +201,8 @@ func _apply_sample(message: Dictionary) -> void:
 		"world_position_raw":previous.get("world_position_raw",[]),"station":previous.get("station","unknown"),
 		"program":previous_program.get("name",""),"audio_failure":pc_audio.failure if pc_audio else ""})
 	profile_previous=end
+	profile_rows[-1].effects_counts=draw_view.tactical_effects.counts.duplicate()
+	profile_rows[-1].plume_phase=draw_view.tactical_effects._plume_phase
 	if interactive_clock and profile_rows.size()==profile_frames:
 		capture=true
 		capture_done=true
@@ -264,6 +281,7 @@ func _capture() -> void:
 		"display_frame_intervals":distribution(display_intervals),"source_reply_intervals":distribution(profile_rows.map(func(row):return row.interval_ms)),
 		"memory_begin_bytes":profile_memory_begin,"memory_end_bytes":OS.get_static_memory_usage(),
 		"route_stations":route_stations.keys(),"window_origins":route_origins.keys(),
+		"effects_study":effects_study,"effect_studies":effect_studies,
 		"rows":profile_rows,"display":play_display.description() if play_mode else {"mode":"comparison"},
 		"scope":"Bounded sequential single-frame requests (capture-neutral or the actual interactive keyboard path) in the real capture pipeline, including native rendering; no claim of historical CPU speed calibration"}
 	if "--components" in OS.get_cmdline_user_args(): summary.component_mean_ms=components()

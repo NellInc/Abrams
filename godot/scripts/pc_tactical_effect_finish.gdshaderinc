@@ -34,3 +34,15 @@ vec3 tactical_hot_finish(vec2 q, float coarse, float detail, float filtered, flo
     colour*=0.94+coarse*0.06+(detail-0.5)*0.035*filtered*heat;
     return clamp(colour,vec3(0.0),vec3(1.0));
 }
+
+// Only registered impact donors 0 and 1 call this. The original bitmap owns
+// phase selection and duration; there is no independent explosion timeline.
+vec3 tactical_impact_phase(vec3 colour,vec2 q,float phase) {
+    float radius=length(q);
+    float core=1.0-smoothstep(0.12,0.65,radius);
+    float shoulder=smoothstep(0.30,0.95,radius);
+    vec3 flash=mix(colour,vec3(1.0,0.95,0.78),core*0.24);
+    vec3 cooling=colour*vec3(1.0,0.89,0.77);
+    cooling=mix(cooling,vec3(0.28,0.265,0.24),shoulder*0.25);
+    return clamp(mix(flash,cooling,clamp(phase,0.0,1.0)),vec3(0.0),vec3(1.0));
+}

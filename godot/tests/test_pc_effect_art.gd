@@ -20,6 +20,8 @@ var modern_contour_pixels := 0
 var retained_source_pixels := 0
 var particle_material_polish := false
 var source_material_polish := false
+var surface_baseline := "res://scripts/pc_surface.gdshader"
+var particle_baseline := "res://scripts/pc_tactical_effects.gdshader"
 var frame := {"clip":[32,13,287,109],"center":[159,61],"near_raw":16,"focal_pixels":128,
 	"matrix_q14_columns":[16384,0,0,0,16384,0,0,0,16384],"world_position_raw":[0,0,0]}
 
@@ -112,6 +114,8 @@ func run() -> void:
 	check(style.load_assets(directory),"pinned source/art unavailable")
 	if not style.loaded: finish(); return
 	if "--tactical-particles" in args:
+		if "--baseline-surface" in args:surface_baseline=args[args.find("--baseline-surface")+1]
+		if "--baseline-particles" in args:particle_baseline=args[args.find("--baseline-particles")+1]
 		particle_material_polish = "--particle-materials" in args
 		source_material_polish = "--source-materials" in args
 		await tactical_particles(directory)
@@ -304,7 +308,7 @@ func particle_material_pair(name: String, after: Image, kind: int = -1) -> void:
 	# Same production puff mesh and ownership textures, only the finish differs.
 	var material: ShaderMaterial = view.tactical_effects.material
 	var current: Shader = material.shader
-	var before_code := FileAccess.get_file_as_string("res://tests/particle-material-before.gdshader")
+	var before_code := FileAccess.get_file_as_string(particle_baseline)
 	var after_code := current.code
 	var colour := "ALBEDO=OUTPUT_IS_SRGB ? colour : pow(colour,vec3(2.2));"
 	if kind>=0:
@@ -343,7 +347,7 @@ func source_material_pair(name: String) -> void:
 	# Both actual Tactical surface shaders, with identical puffs disabled.
 	var material: ShaderMaterial=view.mesh_node.mesh.surface_get_material(0)
 	var current: Shader=material.shader
-	var old_code := FileAccess.get_file_as_string("res://tests/effects-before.gdshader").replace("depth_test_disabled, depth_draw_never","depth_draw_opaque").replace("void fragment() {","void fragment() {\n DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
+	var old_code := FileAccess.get_file_as_string(surface_baseline).replace("depth_test_disabled, depth_draw_never","depth_draw_opaque").replace("void fragment() {","void fragment() {\n DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
 	var images: Array[Image]=[]
 	var masks: Array[Image]=[]
 	var puff_visible: bool=view.tactical_effects.visible
@@ -361,7 +365,9 @@ func source_material_pair(name: String) -> void:
 			else:images.append(image)
 	check(masks[0].get_data()==masks[1].get_data(),name+": source cutout, owner and outside effect exact")
 	var changed:=image_difference(images[0],images[1])
-	check(changed>10,name+": source material visibly refined")
+	check(changed>10 if name in ["effect-15","effect-16"] else changed==0,name+": registered impact phase refined, unrelated source effects exact")
+	if name in ["effect-15","effect-16"]:
+		images[0].save_png(output.path_join(name+"-before.png"));images[1].save_png(output.path_join(name+"-after.png"))
 	material.shader=current
 	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
 	check(images[1].get_data()==viewport.get_texture().get_image().get_data(),name+": source shader restoration exact")
@@ -387,7 +393,7 @@ func particle_pair(data: Dictionary,name: String,positive: bool) -> void:
 	var material: ShaderMaterial=view.mesh_node.mesh.surface_get_material(0)
 	var current: Shader=material.shader
 	var old:=Shader.new()
-	old.code=FileAccess.get_file_as_string("res://tests/effects-before.gdshader").replace("depth_test_disabled, depth_draw_never","depth_draw_opaque").replace("void fragment() {","void fragment() {\n DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
+	old.code=FileAccess.get_file_as_string(surface_baseline).replace("depth_test_disabled, depth_draw_never","depth_draw_opaque").replace("void fragment() {","void fragment() {\n DEPTH = UV.y > 19.5 && UV.y < 21.5 ? FRAGCOORD.z : 0.0;\n if (UV.y > 20.04 && UV.y < 20.08) DEPTH = 0.5 + min(UV2.x,1024.0)/4096.0;")
 	material.shader=old
 	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
 	check(modern_image.get_data()==viewport.get_texture().get_image().get_data(),name+": Modernized pixel identity")
@@ -480,7 +486,7 @@ func tactical_particles(directory: String) -> void:
 	await particle_pair(invalid,"smoke-immersed",true)
 	check(view.tactical_effects.counts.smoke==0,"Modernized switchback clears immersed smoke")
 	# Real catalogued M113 source anchors, repositioned only for GPU inspection.
-	var catalog: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-modern/catalog.json")))
+	var catalog: Dictionary=view.modern_assets.load_catalogue(directory)
 	var model: Dictionary=catalog.models[129]
 	var vehicle:=sample(cover(Rect2(32,13,1,1)))
 	var object: Dictionary={"shape_index":129,"root":int(model.roots[0].offset),"dynamic_instance":true,"static_path":false,"pointer":99,"polygons":[]}
@@ -552,6 +558,7 @@ func tactical_particles(directory: String) -> void:
 	invalid=sample(object_for(15,[300,120]));await particle_pair(invalid,"outside-clip",false)
 	view.apply_pass({"objects":[]});check(view.tactical_effects.puffs.is_empty() and not view.tactical_effects.visible,"empty frame clears all particles")
 	JavaScriptBridge.eval("window.effectReport="+JSON.stringify(particle_rows))
+	FileAccess.open(output.path_join("particle-studies.json"),FileAccess.WRITE).store_string(JSON.stringify({"effects":particle_rows,"particle_materials":particle_material_rows,"source_materials":source_material_rows},"  "))
 	if particle_material_polish:
 		check(particle_material_rows.size()==(6 if source_material_polish else 5),"all particle material studies completed")
 		JavaScriptBridge.eval("window.particleMaterialReport="+JSON.stringify(particle_material_rows))

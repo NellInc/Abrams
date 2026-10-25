@@ -6847,3 +6847,48 @@ Working if: the unchanged wheel-clearance assertion passes, fixture preflight
 rejects missing input images before the gate, standalone and gated frontend
 checks complete, and deleted local packages remain recoverable from identical
 live GitHub assets.
+
+## 2026-10-25: Tactical lighting and particle motion
+
+Implemented Nell's four approved presentation changes: periodic rolling smoke
+and exhaust interiors, world-sun-relative plume shading, source-donor impact
+colour progression, and baked-occlusion/specular plus lower-body grounding
+refinement. Density/opacity, source cutouts, geometry, ownership rejection and
+original event lifetimes remain unchanged. Motion uses the existing guarded
+Tactical dynamics caller and a separate bounded colour phase. Existing pause,
+focus/menu, reduced-motion and timeline-reset controls remain authoritative.
+
+Native Compatibility checks passed: dynamics 234, paired particles/source donors
+346, material/grounding 55. Predecessor opacity and white visibility masks are
+byte-exact. The new black-RGB material diagnostic initially flagged one green
+1/255 antialiased texel that rounded to black; replacing that invalid coverage
+proxy with actual white-mask outputs passed all six model studies. Headless
+checks passed: particle queue 40, dynamics 167, draw pass 53, graphics modes
+18,629. The old effect-mode test initially failed because two STATUS fixture
+PNGs were missing. The validation-owner chat recovered the exact pinned bytes;
+the unchanged test then passed 271 checks. Reference inventory is unchanged.
+
+Three completed actual keyboard routes exercised four stations, driving,
+cannon impacts and screening smoke. The two no-readback candidate routes each
+match all 1,020 baseline packet hashes, RAM/video audits, station/position paths
+and final original framebuffer bytes. Both retained full native focus and exact
+one-frame ordinary-key requests. At unchanged 5x world scale, 4x MSAA and 16x
+anisotropy, baseline source handoff throughput was 21.473 FPS; candidates were
+21.327 and 23.402. Display p95 was 20.109 ms before, then 17.677 and 19.395 ms.
+These bounded measurements establish no sustained regression or speed gain.
+One 725.802 ms display stall at first smoke in the first candidate did not recur
+in the second no-readback run (maximum 113.374 ms). Its cause is unverified.
+The separate screenshot-producing route is excluded from performance acceptance.
+
+Evidence: `artifacts/tactical-light-particles-20261025/verification.json`, paired
+native images, actual in-game effect captures, complete logs and owned source
+hashes. An initial native run expired waiting for focus and is excluded. All
+task-owned engines and original hosts closed normally. Source/GPU handback went
+to the full-suite owner; that chat owns the aggregate gate and publication.
+Repository `Play.command` uses the changed source. Standalone applications and
+the hosted browser bundle were not rebuilt or deployed by this task.
+
+Working if: the original source packets and masks remain exact, permitted plume
+colour moves without mesh rebuilds, registered impact donors select the colour
+phase, and the retained native route measurements remain distinguishable from
+aggregate release validation and the isolated first-use stall.
