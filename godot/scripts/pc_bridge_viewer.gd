@@ -426,6 +426,7 @@ func _frontdoor_blocked() -> bool:
 	return frontdoor!=null and audio_menu.frontdoor_active
 
 func _set_frontdoor(active: bool) -> void:
+	if active and pc_audio: pc_audio.world_audio.stop()
 	frontdoor.set_active(active)
 	play_display.visible=not active
 	audio_menu.visible=not active
@@ -734,6 +735,7 @@ func _advance_live_frame() -> bool:
 	return sent
 
 func _choose_graphics(mode: String) -> void:
+	if pc_audio: pc_audio.world_audio.stop()
 	invalidate_presentation_cache()
 	if play_display: play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
 	if mode in ["modern","tactical"] and not tandem_frame.modern_available:
@@ -1188,6 +1190,11 @@ func _apply_sample(message: Dictionary) -> void:
 	if trace_mode:
 		frontend = _present_tandem(image, previous_presentation, world_viewport.get_texture(), previous_program)
 		tandem_frame.set_tactical_dynamics(tactical_dynamics.shift if tactical_dynamics.enabled else Vector2.ZERO)
+		if pc_audio and dynamics_transport and tandem_frame.world_enabled and not frontend and draw_view._modern_active and draw_view.render_warnings.is_empty():
+			var world_drawing: Dictionary = previous_presentation.get("draw_pass", {})
+			var world_ui: Dictionary = previous_presentation.get("ui_overlay", {})
+			pc_audio.world_audio.observe(world_drawing, draw_view.ownership, tandem_frame._decoded_mask("ui", str(world_ui.get("mask_png", ""))), int(message.audio.frame), int(message.audio.epoch),
+				func(): return tandem_frame.world_enabled and draw_view.modern_enabled and not _frontdoor_blocked() and audio_menu.window_focused and root.has_focus() and audio_menu.open_menus.is_empty())
 	previous = state
 	_finish_startup_display()
 	# Hidden research labels cause text shaping/layout even when not displayed.

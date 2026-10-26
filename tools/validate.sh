@@ -105,6 +105,7 @@ receipt_for() {
     geometry) echo '^GEOMETRY: 60000 upward normals and complete range bounds verified$' ;;
     audio) echo '^AUDIO: [1-9][0-9]* generated crew samples loaded with matching format, duration and captions$' ;;
     pc_audio) echo '^PC_AUDIO: [1-9][0-9]* checks, 0 failures$' ;;
+    pc_world_audio) echo '^PC_WORLD_AUDIO: [1-9][0-9]* checks, 0 errors$' ;;
     pc_suno_music) echo '^PC_SUNO_MUSIC: [1-9][0-9]* checks, 0 errors$' ;;
     pc_radio) echo '^PC_RADIO: [1-9][0-9]* checks, 0 failures$' ;;
     audio_shutdown) echo '^AUDIO_SHUTDOWN: three live playback instances released before teardown$' ;;
@@ -366,6 +367,7 @@ run_check pc_audio ./tools/godot.sh --headless --script res://tests/test_pc_audi
 run_check pc_radio ./tools/godot.sh --headless --script res://tests/test_pc_radio.gd
 run_check pc_audio_limiter ./tools/godot.sh --headless --quit-after 10000 --script res://tests/test_pc_audio_limiter.gd
 run_check pc_audio_mix ./tools/godot.sh --headless --script res://tests/test_pc_audio_mix.gd
+run_check pc_world_audio ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_world_audio.gd -- --output "$(fresh world-audio)"
 run_check pc_frontend_music ./tools/godot.sh --headless --script res://tests/test_pc_frontend_music.gd
 run_check pc_suno_music ./tools/godot.sh --headless --script res://tests/test_pc_suno_music.gd
 run_check pc_remaining_audio ./tools/godot.sh --headless --script res://tests/test_pc_remaining_audio.gd

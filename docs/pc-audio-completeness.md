@@ -280,7 +280,7 @@ The six accepted effects and their saved volume controls remain unchanged. Every
 
 | Cue | Intended character | Obtained material | State and binding |
 |---|---|---|---|
-| Stream and broader flowing-river bed | Quiet stream and broader flowing-water beds with useful looping material. | [Small Stream #4](https://bigsoundbank.com/small-stream-4-s1354.html); [Watercourse 5.2](https://bigsoundbank.com/watercourse-5-2-s3137.html) | **STOCK / V**. Recorded sources obtained. River source ownership and audio eligibility must be verified before integration. |
+| Stream and broader flowing-river bed | Quiet stream and broader flowing-water beds with useful looping material. | [Small Stream #4](https://bigsoundbank.com/small-stream-4-s1354.html); [Watercourse 5.2](https://bigsoundbank.com/watercourse-5-2-s3137.html) | Native stream loop integrated locally behind rendered source-ownership admission. Live mix acceptance remains open; see the native world-audio section below. Broad-flow source remains stock. |
 | Riverbank lapping and small waves | Riverbank lapping and small waves | [oga-sea-and-river-wave-sounds](https://opengameart.org/content/sea-and-river-wave-sounds) | **STOCK / V**. Recorded on the Vistula; choose a calm matching section. |
 | Small river ripple and bank waves | A quieter small-wave layer under a visible river. | [oga-sea-and-river-wave-sounds](https://opengameart.org/content/sea-and-river-wave-sounds) | **STOCK / V**. Vistula recording; final looping and take selection pending. |
 | Water splash texture | Water splash texture | [Splash, Big #3](https://bigsoundbank.com/splash-big-3-s1521.html) | **STOCK / P**. Actual source is a stone dropped into a water tank. Do not invent a vehicle-water entry event. |
@@ -313,7 +313,7 @@ The six accepted effects and their saved volume controls remain unchanged. Every
 
 | Cue | Intended character | Obtained material | State and binding |
 |---|---|---|---|
-| Mi-24 engine and rotor material | Steady engine/rotor layers for a verified visible Hind | [SoundFX Studio Hind pack](https://soundfx.studio/shop/sfx-for-games/aviation/mi-24-hind-sfx/), purchased privately; generic CC0 helicopter sources retained separately | **STOCK / V**. Hind engine preview accepted and purchased masters fully decoded. No runtime binding or purchased-master listening claim. Vendor identifies Hind field inputs and also declares internet-sourced components. |
+| Mi-24 engine and rotor material | Steady engine/rotor layers for a verified visible Hind | [SoundFX Studio Hind pack](https://soundfx.studio/shop/sfx-for-games/aviation/mi-24-hind-sfx/), purchased privately; generic CC0 helicopter sources retained separately | Private native engine loop integrated locally behind rendered source-ownership admission. A fresh live Hind encounter/mix is still unverified. Separate rotor/flyby files remain stock. Vendor identifies Hind field inputs and also declares internet-sourced components. |
 | Helicopter flyby component | A restrained pass for an observed source actor. | [Helicopter (Transition)](https://bigsoundbank.com/helicopter-transition-s0113.html) | **STOCK / V**. Recorded stereo path cannot create new positional information; source matching or neutral rendering required. |
 | Helicopter rotor body | Rotor rhythm appropriate to a verified visible helicopter. | Private Hind `Rotor_Loop.wav` and `Rotor2_Loop.wav`; [generic CC0 Helicopter #2](https://bigsoundbank.com/helicopter-2-s0264.html) retained | **STOCK / V**. Purchased Hind layers are available; generic source retains its unverified-model label. Visibility, source motor authority and in-game balance remain required before binding. |
 | Generic military jet flyby | Short recorded jet flyby derivative, with restrained level. | [Jet flyby, AltSFX59 recording derivative](https://github.com/ALEX11BR/AltSFX) | **STOCK / V**. Free CC-BY3.0 derivative obtained at44.1kHz/16bit mono. Exact aircraft unverified; not labelled MiG. |
@@ -467,7 +467,7 @@ applies.
 |---|---:|---|
 | [Sound Ideas Mi-24 exterior pass-by, individual file](https://www.pond5.com/sound-effects/item/266294141-mi-24-military-attack-helicopter-exterior-pass-1) | $4.75 live | **Rejected for the active-engine cue:** this is a pass-by. No purchase or download. |
 | [SoundFX Studio T-72 small pack](https://soundfx.studio/shop/sfx-for-games/vehicles/t-72-tank-sfx/) | $12.99 live | Prepared engine/track/action clips. Original recording provenance and clean take suitability still need confirmation. |
-| [SoundFX Studio Hind pack](https://soundfx.studio/shop/sfx-for-games/aviation/mi-24-hind-sfx/) | $39.99 purchased | Engine preview accepted; private masters acquired and fully decoded. Vendor's own/internet-source declaration remains explicit. No runtime installation. |
+| [SoundFX Studio Hind pack](https://soundfx.studio/shop/sfx-for-games/aviation/mi-24-hind-sfx/) | $39.99 purchased | Edited engine master accepted and privately integrated with a saved control. Captured-source visibility checks pass; fresh live Hind mix remains unverified. Vendor's own/internet-source declaration remains explicit. |
 
 A historical nonbinding cart containing one of each SoundFX pack totalled $52.98 before
 any checkout-specific tax. It applies no advertised mixed-product discount.
@@ -559,3 +559,103 @@ does not permit another paid purchase.
 Working if: the purchased bank resolves to its retained archive/receipt/licence,
 every audio file decodes, a steady engine replaces the rejected pass-by only in
 stock selection, and runtime timing/visibility/audibility remain unchanged.
+
+## Native visible-world audio integration (26 October 2026)
+
+The accepted six-cue recording bank remains unchanged. A second, optional private
+bank at `local-audio/pc-world-effects-v1` now contains two mono 48 kHz/16-bit loops:
+19.8 seconds of CC0 stream and 17.9906875 seconds of the purchased Hind engine.
+A 200 ms complementary seam avoids a silent loop boundary. Original masters
+remain recoverable. Final measured levels are -29.73 LUFS / -7.00 dBTP (river)
+and -24.00 LUFS / -12.36 dBTP (Hind), before the deliberately quiet runtime gain.
+The river peak constraint takes precedence over its louder normalization target.
+No accepted Abrams motor or weapon level was changed.
+
+`pc_world_audio.gd` preloads only these fixed filenames with bounded manifests,
+SHA-256 and PCM validation. Invalid/absent stock leaves this entire optional bank
+silent; existing source audio keeps working. Both players route through the
+existing PC limiter. Rivers and Hind engine have separate saved Off-to-100%
+controls, multiplied by master/effects gain. Browser discovery returns before
+private files are read, and browser menus do not offer these native-only controls.
+Paid originals/derivatives remain outside Git and every package allowlist.
+
+Admission uses the current production painter-ownership target after an explicit
+single draw, plus the original scanout-paired binary UI mask. It requires two
+separated original-pixel witnesses for one owner. IDs, mesh, camera, dimensions,
+source audio frame/epoch and current visibility are checked again at consumption.
+No new ownership texture, shader, geometry or guest state is authored. No disk
+reads occur while admitting a frame. The bounded pixel grid can conservatively
+miss small visible fragments; it never extrapolates an occluded actor.
+
+River admission requires a pinned water-only object. Hind admission requires
+intact shape 163, a unique actor in the paired draw-start world snapshot and a
+nonzero finite integer source speed. This is an authored visible-flight ambience
+policy, not an original rotor/RPM decoder. A single centred, fixed-pitch bed never
+encodes distance, direction, allegiance or actor count. Existing source-owned
+Abrams motor pitch/amplitude is untouched. Compatibility is the qualified backend;
+other rendering backends stay silent. Source/transport mute, old replies, the last
+fast-forward reply, restore, frontend/graphics changes and hidden windows cannot
+borrow old admission or restart a queued bed.
+
+Focused source/mixer checks pass: audio 924, mix 289, limiter 33, play menu 338,
+frontdoor 63. Native generated-owner admission has 56 checks; native Settings has
+35 checks and inspected wide/compact/scrolled screenshots. The bounded mask grid
+replaces projected-centroid probes because a long river's centroids can all lie
+offscreen. Eight generated-owner grid reads/probes measured 0.787 to 1.698 ms;
+the final retained original scene measured 1.955 ms for its 1600 by 585 target.
+These measure read/probe cost, with no sustained-FPS claim.
+Exact-input reuse now removes repeated GPU readback: eight unchanged source
+packets require one read and seven postdraw cache hits. UI-only changes reclassify
+the immutable mask; replacement geometry, camera/extent changes, mute, reset and
+invalid presentation invalidate it. Cached admission still waits for postdraw and
+fresh source/visibility checks. The actual retained river case likewise records
+one read (1.818 ms) and one cache hit, with decoded world/composite pixels still
+identical. Zero cached readback time means no GPU read, not zero CPU work.
+The optional skill linter's pre-existing dynamic `voice_%s.wav` false positive
+remains; no new production-script finding was introduced.
+
+Fresh live Hind acceptance is still open: the neutral road-facing run reached 1,480
+samples with no admitted world cue; the changed turret-sweep attempt hit its outer
+140-second deadline without a completion receipt. Neither is a positive audio
+pass, and no cause is attributed to CPU load or compilation. A finite retained
+original-frame check distinguishes source visibility from live-route problems;
+its evidence must remain separate from live motion/device playback.
+
+The final retained check accepted 301 authentic original audio envelopes, then
+admitted the river through the production native viewer/mixer with actual window
+focus. Source frame 29314 / epoch 5 and its source/material remain unchanged;
+no guest starts. Both the 1600 by 585 world image and 1440 by 810 composed game
+image are byte-identical in decoded RGBA before/after world admission. Its
+post-limiter capture is 5.851429 seconds, 44.1 kHz stereo16, -36.24 LUFS and
+-23.21 dBTP. This establishes captured-source river playback and visual
+equivalence, not fresh live motion or a Hind/crew encounter. Evidence is in
+`artifacts/world-audio-integration-20261026/retained-final`,
+`pixel-equivalence.json` and `retained-mix-meter.log`.
+
+Nell reviewed the edited purchased Hind master and answered: "Clean, loop sounds
+good." This closes master cleanliness/loop listening separately from the older
+accepted core mix and the unobserved live Hind case.
+An existing genuine Hind snapshot now independently passes native visibility
+admission (`hind-visible-native`); another non-visible Hind snapshot is correctly
+excluded (`hind-native`). Both are captured-source tests. Their snapshots omit
+audio envelopes, so no source audio gate or live mix was fabricated. Separate
+later loop/RAM diagnostics are explicitly unpaired and are not substituted.
+
+The complete 89-role disposition is in
+`artifacts/world-audio-integration-20261026/cue-dispositions.json`. Remaining
+cow, wind, fire, vehicle, mechanical, weather and footstep stock is deliberately
+unbound where its actual source action/visibility is missing. In particular the
+cow is authored detail on intact Farm 157, yard primitive 28751; a visible yard
+alone does not prove that its cow is visible. No farm-wide moo shortcut or guessed
+meaning for requests 7/9/10/15/16 was introduced. Clean actual Soviet-tank engine
+acquisition is still open; the latest paid authority covers the Hind pack only.
+No web/standalone rebuild, publication or new purchase was performed.
+
+Working if: the optional bank cannot change an original request or motor, hidden
+owners remain silent, saved individual mute stops its own bed, private recordings
+never enter a distributable tree, and incomplete live checks remain labelled open.
+
+The final same-process disk admission refused the additional native rerun before
+launch:8,221,691,904 bytes free, below the unchanged8GiB requirement. Earlier
+functional results remain recorded; they are not relabelled a uniformly
+capacity-qualified benchmark. No repeated native route was started.

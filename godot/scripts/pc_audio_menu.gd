@@ -2,9 +2,9 @@ extends MenuBar
 signal mix_changed
 ## Presentation-only gains. No bridge, source state, key binding or pause command.
 const DEFAULTS := {"master":100,"effects":100,"voice":100,"motors":100,"music":70,
-	"cannon":100,"machinegun":100,"impact":100,"smoke":100,"engine":100,"turret":100}
+	"cannon":100,"machinegun":100,"impact":100,"smoke":100,"engine":100,"turret":100,"river":100,"hind":100}
 const TITLES := {"master":"Master volume","effects":"Sound effects","voice":"Crew voices","motors":"Engine and turret","music":"Music",
-	"cannon":"Cannons","machinegun":"Machine gun","impact":"Impacts","smoke":"Smoke","engine":"Engine","turret":"Turret"}
+	"cannon":"Cannons","machinegun":"Machine gun","impact":"Impacts","smoke":"Smoke","engine":"Engine","turret":"Turret","river":"Rivers","hind":"Hind engine"}
 var settings: Dictionary = DEFAULTS.duplicate()
 var config_path := "user://pc_audio.cfg"
 var audio: Node
@@ -16,6 +16,10 @@ var focus_release_keys := false
 var window_focused := true
 var save_error := ""
 
+func audio_channels() -> Array:
+	# Private native recordings are never a browser feature or bundled asset.
+	return DEFAULTS.keys().filter(func(key):return not OS.has_feature("web") or key not in ["river","hind"])
+
 func _ready() -> void:
 	set_disable_shortcuts(true)
 	get_window().focus_exited.connect(_focus_exited)
@@ -24,7 +28,7 @@ func _ready() -> void:
 	popup.name="Audio"
 	add_child(popup)
 	_watch(popup)
-	for key: String in DEFAULTS:
+	for key: String in audio_channels():
 		var menu := PopupMenu.new()
 		menu.name=key
 		popup.add_child(menu)

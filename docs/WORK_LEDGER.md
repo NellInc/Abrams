@@ -7618,3 +7618,106 @@ open; the current paid authority is Hind-only.
 Working if: originals remain recoverable, every supplied audio file decodes,
 paid stock stays private, and acquisition cannot alter original audio events
 or reveal a hidden actor.
+
+## 26 October 2026, private world-audio integration checkpoint
+
+Nell asked to get the acquired sounds in place. Added a separate optional native
+bank with quiet mono stream and actual purchased Hind engine loops; the accepted
+six core recordings, stock WAVs, crew and music assets remain unchanged. Fixed
+private filenames/hash/PCM bounds and atomic optional fallback reuse the existing
+PC bus/limiter. Saved Rivers/Hind engine controls are independent; Web skips the
+private bank and hides these two native-only controls. No paid media enters Git,
+source/private kits or public packaging. No purchase, publication or rebuild.
+
+Admission reads the existing production ownership target after an explicit draw,
+checks its same-frame mesh/camera/extent and original binary UI mask, and requires
+two separated original-pixel witnesses of one owner. Only pinned water-only
+objects and a unique moving intact Hind163 from the paired draw-start world can
+qualify. Fixed centred mono beds convey no range/direction/count or hidden actor.
+All original requests/onsets/voices and source-owned Abrams motor parameters stay
+on their existing paths. New mute/reset/focus/frontend/graphics/menu guards clear
+pending admission. Bounded read-only Astra contract review found old-reply and
+last-fast-reply gaps; both were corrected before acceptance. Sol owns this code.
+
+Focused checks: source audio924, mix289, limiter33, play menu338, frontdoor63;
+Python audio9 and package contracts16. Native Settings35 passed; wide, compact
+and bottom-scrolled screenshots were visually inspected. A generated-owner
+native test covers visibility IDs/UI masks, atomic bank failure, private bus,
+source/transport mute, stale replies, resize and shutdown. Its current receipt
+is artifacts/world-audio-integration-20261026/native-grid. Production-script
+skill lint has zero errors and four pre-existing warnings; the whole-project
+linter additionally flags its pre-existing dynamic voice_%s.wav test path.
+
+The neutral native live attempt reached1480 samples with no admitted world cue.
+The changed turret-sweep run hit its fixed140-second outer cap, without a terminal
+receipt. Neither is a positive playback/performance pass, and no CPU/compilation
+cause is asserted. A different finite retained-source check now admits river:
+301 authentic original audio envelopes accepted; original source frame29314,
+epoch5; source/material unchanged; no guest starts. Final window-focus guard
+passes with actual root/menu focus. World1600x585 and composed1440x810 decoded
+RGBA pixels are exactly identical before/after admission. Post-limiter capture:
+5.851429s,44.1kHz stereo16,-36.24LUFS,-23.21dBTP. Eight generated mask grid reads
+cost0.787 to1.698ms; one actual retained target read/probe cost1.955ms. These are
+local read/probe observations, not sustained-FPS or device-pacing proof.
+
+Nell explicitly heard the edited Hind master and answered "Clean, loop sounds
+good." Fresh live Hind occurrence/mix remains unobserved; master approval is not
+relabeled an encounter. The complete89-role disposition records which stock is
+ready and which actions remain unbound. Cow is authored Farm157/yard28751 detail,
+not a separate original actor; a yard-wide moo could announce an occluded cow,
+so it remains dormant. Weather, footsteps, hatches, extra weapon actions and
+unknown requests7/9/10/15/16 are likewise never guessed. Clean actual Soviet-tank
+recordings remain missing; current paid authority is Hind-only. All private
+originals, aliases and rejected drafts remain recoverable.
+
+Current authority/evidence: artifacts/world-audio-integration-20261026/state.json,
+cue-dispositions.json, protected-assets.json, pixel-equivalence.json,
+retained-final, native-grid and settings-native. Foreign intro/music edits and
+untracked godot/godot plus the web build lock remain untouched. No messages to
+other chats or control of foreign processes. Old completed smoke/tilt follow-up
+and its paused heartbeat remain unchanged.
+
+Working if: native visible-source beds and individual saved mute work, private
+stock stays private, originals/voices/motor authority/masks remain intact, and
+reserved bindings plus unverified live Hind acceptance remain explicit.
+
+Final qualification addendum: 34 portable world checks and56 native world checks
+pass. Exact-input ownership reuse now needs one GPU read for eight unchanged
+source packets, with seven delayed/postdraw cache hits. Changed UI reclassifies
+without a read; a new occluder forces a new read and silence; queued cached
+proofs cannot survive mute or reset. Bounded read-only Astra challenge confirmed
+the immutable-mesh dependency and required delayed cached admission. The genuine
+retained river records one1.818ms read and one cached reuse, no repeated readback;
+its world and composed RGBA images remain exactly identical to the before case.
+This is work elimination, not a healthy-host sustained-FPS claim.
+
+Existing owner captures were searched read-only, with no campaign execution.
+A paired visible Hind case (guarded-armour-30-1792991410536) now admits Hind in
+the native production mask; the earlier non-visible case correctly excludes it.
+Positive source PNG BGRX bytes exactly match its recorded VGA SHA. Both JSONs
+omit audio envelopes; their later loop diagnostics explicitly are not video
+paired. No substitute audio gate or RAM-derived manufactured pass was made.
+A wider18-case visual batch timed out after ten source applications without a
+terminal receipt; it is not counted as a passing check. The independent positive
+and negative single-case receipts are retained. Fresh live Hind mix remains open.
+The completed source dependency-closure check excludes the private bank from
+both kit kinds; no kit was built. All 472 stock WAVs and accepted private clips
+remain unchanged. Current focused test receipts and source hashes are recorded
+in verification.json before the local checkpoint.
+
+Capacity custody correction: some intermediate native launch shells used set+e,
+so a failed separate disk assertion would not have stopped the subsequent command;
+later calls also lacked individual admission receipts. Those are functional
+observations, not a uniformly capacity-qualified benchmark series. The final
+native checker uses a same-process disk decision followed by exec, and exits
+before Godot on a below8GiB result. Its admission/terminal receipt is retained in
+final-guarded-native. No CPU/compilation cause or healthy-host FPS claim follows
+from any of these observations. This correction changes no source timing or
+qualification assertions.
+
+Final guarded launch outcome: admission recorded8,221,691,904 free bytes against
+the unchanged8,589,934,592-byte floor and exited1 before Godot. This is a correct
+refusal, not a failed audio assertion or a native test pass. The existing56-check
+functional cache receipt remains valid within its documented capacity limits;
+no equivalent native retry was started. All472 tracked WAVs and both installed
+private-bank manifests were rechecked unchanged before the local checkpoint.

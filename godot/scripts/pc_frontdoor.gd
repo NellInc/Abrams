@@ -101,7 +101,7 @@ func open_settings() -> void:
 	_choice(display,"Antialiasing",menu.QUALITY_LEVELS.msaa,["Off","2x","4x","8x"],menu.quality.msaa,func(value):menu.choose_quality("msaa",value))
 	_choice(display,"Texture filtering",menu.QUALITY_LEVELS.anisotropy,["Off","2x","4x","8x","16x"],menu.quality.anisotropy,func(value):menu.choose_quality("anisotropy",value))
 	var audio := _settings_group("AUDIO")
-	for channel in menu.DEFAULTS:
+	for channel in menu.audio_channels():
 		var row := VBoxContainer.new()
 		audio.add_child(row)
 		var title := _label(menu.TITLES[channel]+": %d%%"%menu.settings[channel])

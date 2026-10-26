@@ -56,6 +56,8 @@ var recorded_effect_directory := ProjectSettings.globalize_path("res://").trim_s
 var recorded_effect_failure := ""
 var recorded_effect_streams: Dictionary = {}
 var recorded_effects_checked := false
+const WorldAudio = preload("res://scripts/pc_world_audio.gd")
+var world_audio = WorldAudio.new()
 
 func _recorded_effect_error(reason:String) -> bool:
 	if recorded_effect_failure.is_empty():
@@ -125,7 +127,7 @@ func set_mix(settings: Dictionary) -> bool:
 	for key in ["master","effects","voice","motors"]:
 		if not settings.has(key): return false
 	for key in settings:
-		if key not in ["master","effects","voice","motors","music"] and key not in EFFECT_CUES: return false
+		if key not in ["master","effects","voice","motors","music"] and key not in EFFECT_CUES and key not in WorldAudio.CUES: return false
 		if not _integer(settings[key]) or settings[key]<0 or settings[key]>100: return false
 	if settings.has("music"): music_mix=int(settings.music)
 	# Legacy four/five-channel callers retain individual choices already made.
@@ -146,6 +148,7 @@ func set_mix(settings: Dictionary) -> bool:
 		voice.stop()
 	_sync_loops(current_loops)
 	_sync_music()
+	world_audio.refresh()
 	return true
 
 func _ready() -> void:
@@ -171,6 +174,7 @@ func _ready() -> void:
 	music_tail=AudioStreamPlayer.new()
 	add_child(music_tail)
 	_create_presentation_bus()
+	world_audio.setup(self)
 	set_mix(mix)
 	# Verify and decode local frontend music before the first frontend frame.
 	var independent_bank:=SunoMusic.new()
@@ -182,6 +186,7 @@ func _ready() -> void:
 		print("PC_SCORE_READY: %d verified PCM streams"%music_bank.streams.size())
 
 func _stop_source_audio() -> void:
+	world_audio.stop()
 	super.stop_all()
 	if is_instance_valid(turret):
 		_remember_playback(turret)
@@ -277,6 +282,7 @@ func _sync_music() -> void:
 		print("PC_SCORE_PLAYING: context=%s track=%s playing=%s"%[music_context,music_track,music.playing])
 
 func _process(delta: float) -> void:
+	world_audio.maintain()
 	if not music_bank.independent: return
 	music_transition=maxf(0.0,music_transition-minf(delta,0.05))
 	if music_transition==0.0 and music_tail.playing: music_tail.stop()
@@ -339,6 +345,7 @@ func speak(cue: String) -> void:
 	if not transport_muted: super.speak(cue)
 
 func release_streams() -> void:
+	world_audio.release()
 	super.release_streams()
 	if is_instance_valid(turret): turret.stream = null
 	if is_instance_valid(music): music.stream=null
@@ -464,6 +471,7 @@ func _reject(reason: String) -> bool:
 	return false
 
 func apply_audio(packet: Dictionary) -> bool:
+	world_audio.begin_packet()
 	if not failure.is_empty(): return false
 	# Validate the entire envelope before allowing any audible side effect.
 	for key in ["schema", "frame", "epoch", "last_id"]:
