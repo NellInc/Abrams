@@ -400,3 +400,48 @@ Existing six per-effect Off-to100% controls remain in place. Ambience and Mechan
 * Provenance and verification: `artifacts/world-sfx-20261026/verification.json` and `pages/`.
 
 Working if: every listed acquisition has a verified local file and rights record, the existing mix remains byte-identical, and acquired stock is clearly distinguished from installed or subjectively accepted audio.
+
+## Authentic Hind and Soviet vehicle supplement (26 October 2026)
+
+Nell requested actual Hind and Soviet tank recordings after the general stock
+inventory. Three free, attribution-licensed field-video soundtracks have now
+been obtained, with recoverable original videos and audio extracts:
+
+| Named vehicle | Audio duration | Source and licence |
+|---|---:|---|
+| Mi-24 Hind, Czech Air Force air-show display | 325.660 seconds | [LEJ.approach/dvldi, ILA Berlin 2016](https://commons.wikimedia.org/wiki/File:Mi-24_Hind_at_ILA_Berlin_Air_Show_2016.ogv), CC-BY3.0 |
+| T-72B mod. 1989 | 48.041 seconds | [Mil.ru field footage](https://commons.wikimedia.org/wiki/File:%D0%A2-72B_mod._1989.webm), CC-BY4.0 |
+| T-80U | 68.513 seconds | [Mil.ru exercise footage](https://commons.wikimedia.org/wiki/File:T-80U_tanks_exercise.webm), CC-BY4.0 |
+
+These model identities are documented by the retained source pages. Sampled
+frames were visually inspected and show live-action aircraft/tank footage.
+The exact Hind subvariant is not established. These are 44.1 kHz stereo video
+soundtracks, with possible wind, speech, music, editing or other-vehicle
+contamination. Clean isolated takes, loopability and subjective sound quality
+remain unverified. They are source candidates, with no new runtime bindings.
+Existing generic helicopter files retain their unverified-model labels.
+
+All three originals and extracts fully decode. Two audio streams were copied
+without re-encoding. The initial T-80 Ogg remux failed decoded-sample equality
+and was quarantined; its lossless float WAV replacement passes. All three
+active extracts have identical decoded PCM hashes to their original videos.
+Original/extract/page SHA-256s, licence snapshots and required attribution
+are retained under `artifacts/soviet-sfx-20261026/` and
+`local-audio/soviet-sfx-20261026/`. Downloaded originals total 211,478,137 bytes;
+active audio totals 38,318,984 bytes. No money or credits were spent.
+
+Recommendation: audition/select the Hind, T-72B and T-80U material before buying
+another library. Exact-model T-62 and T-64 clean sources remain gaps; neither is
+silently represented by a T-72 recording. Pole Position's dedicated T-72
+recording library is a documented paid fallback at the currently listed $119,
+outside the existing spending cap. Rabbit Ears REA010 has an authentic historical
+recordist announcement, but its current official availability/price could not
+be verified. No paid library or preview was downloaded.
+
+All 485 protected audio/pipeline files, including the accepted private effects
+bank, remain byte-identical. No new in-game mix, device listening, public
+release, packaging, web/standalone rebuild or push is claimed.
+
+Working if: named-vehicle candidates resolve to retained originals and licences,
+attribution follows any use, clean take selection precedes integration, and
+the accepted mix and source-qualified audibility remain unchanged.

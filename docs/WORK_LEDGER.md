@@ -7471,3 +7471,32 @@ unchanged. No cross-chat messages were sent.
 Working if: the list resolves to verified, rights-documented local material,
 acquired stock remains distinct from installed sound, and new source material
 cannot silently change the accepted mix or expose hidden actors.
+
+## 26 October 2026, authentic Hind and Soviet tank source acquisition
+
+Nell requested actual Hind and Soviet tank sounds. Obtained three free
+attribution-licensed field videos and extracted their audio: Mi-24 Hind at ILA
+Berlin 2016 (CC-BY3.0), T-72B mod. 1989 and T-80U exercise footage (CC-BY4.0).
+The retained source pages identify the vehicles; sampled live-action frames
+were inspected. Audio is 44.1 kHz stereo, 442.214 seconds total. All originals
+and extracts fully decode, and the three active extracts match original
+decoded PCM hashes. An initial T-80 Ogg remux failed sample equality and is
+quarantined; a lossless float WAV replacement passes. No cause is inferred.
+
+Originals total 211,478,137 bytes, active audio 38,318,984 bytes. Provenance,
+formats, hashes, extraction commands, contact sheets, CSV and selection notes
+are in `artifacts/soviet-sfx-20261026/`; originals, audio, attribution and a
+three-source playlist are in `local-audio/soviet-sfx-20261026/`.
+Cost $0, paid account untouched, no credits redeemed. No cross-chat messages.
+
+These are source candidates rather than isolated studio samples or accepted
+game audio. Listening must still reject speech/music/wind or unrelated sounds
+and select appropriate takes. Exact Hind subvariant and clean exact-model
+T-62/T-64 sources remain unverified. The primary Pole Position T-72 page lists
+a dedicated $119 recording library, outside the existing cap; no purchase.
+All 485 protected audio/pipeline files are unchanged. No new event/actor
+binding, native run, publication, rebuild, packaging or push.
+
+Working if: each candidate retains its original, licence and attribution,
+extracted audio matches the source, and stock acquisition cannot alter the
+accepted mix or disclose hidden source actors.
