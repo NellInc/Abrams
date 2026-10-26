@@ -7403,3 +7403,28 @@ measured improvement concerns the first-smoke render transition only.
 Working if: original source packets, opacity and ownership remain identical,
 the finite first-smoke transition is improved without presenting warm pixels,
 and local acceptance is kept distinct from any later release gate.
+
+## Independent combat parity and root performance reconciliation (26 October 2026)
+
+The root independently compared all 19,214 Hannover control frames against the
+unmodified baseline. Current RAM, paired RAM, original framebuffer and keys
+match on every frame; final full RAM also matches at original frame 19,455.
+The route includes an actual AX shot and original "SAGGER destroyed." message.
+Its objective remains 0/2. This is combat parity, with no winning-exit claim.
+The original surviving incomplete Mossel SIM.OUT is `[0,14,12]`, so outcome
+zero is also kept separate from objective victory.
+
+The root read the actual finite smoke A/B receipts and render-boundary rows,
+compared all sixteen source sample hashes and requests, verified byte-identical
+first-smoke packets, and independently compared both world/composition RGBA
+image pairs. Both native receipts exit zero. The unchanged first-smoke source
+packet renders in 8.580 ms versus 122.578 ms, with the 523.285 ms warm cost
+moved into preparation. These loaded-host samples establish a finite transition
+improvement. Sustained FPS and full-route/all-station performance remain unproven.
+Root reruns pass all 53 draw-pass and 42 Tactical effects checks, both exit zero.
+
+Proofs are private under `artifacts/finish-abrams-20261025/`:
+`hannover-independent-combat-prefix-proof.json` and
+`root-smoke-performance-reconciliation.json`. Gameplay and winning campaign
+coverage continue independently. No outgoing cross-chat coordination, public
+rebuild, deployment or push was performed by this root after Nell's stop request.

@@ -95,6 +95,19 @@ Working if: entry claims refer to the exact independent-core journals, native
 state versions remain untouched, and a winning-route claim has its own actual
 surviving outcome and durable-save evidence.
 
+The independent comparison now also covers 19,214 ordinary-control combat
+frames through Hannover original frame 19,455. Every current RAM, video-paired
+RAM, framebuffer and key row matches the unmodified baseline, as do all final
+655,360 RAM bytes. This includes an original guided AX shot and the original
+"SAGGER destroyed." message. The objective remains incomplete at 0/2, so this
+extends combat parity without closing the winning-exit gate. Evidence:
+`artifacts/finish-abrams-20261025/hannover-independent-combat-prefix-proof.json`.
+
+An actual surviving incomplete Mossel exit also confirms that SIM.OUT outcome
+zero alone does not establish victory: its original bytes begin `[0,14,12]`,
+with twelve kills and score 384. Objective completion must be established
+separately from survival, played markers and career retirement.
+
 ## Held-control checkpoint gate
 
 ```sh
