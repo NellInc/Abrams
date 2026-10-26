@@ -380,4 +380,7 @@ func _capture() -> void:
 	var file := FileAccess.open(output.path_join("pacing.json"),FileAccess.WRITE)
 	file.store_string(JSON.stringify(summary,"  "))
 	print("PC_PLAY_PROFILE: %d samples, %.3f effective fps"%[profile_rows.size(),summary.effective_fps])
+	if "--timing-only" in OS.get_cmdline_user_args():
+		_close()
+		return
 	await super._capture()

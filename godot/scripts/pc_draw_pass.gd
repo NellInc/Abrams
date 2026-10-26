@@ -72,6 +72,9 @@ var tactical_material_textures: Dictionary = {}
 var tactical_material_atlas: Texture2D
 var modern_prewarmed := false
 var modern_prewarm_rows:Array=[]
+var source_surface_warm_attempted := false
+var source_surface_prewarmed := false
+var source_surface_warm_material:ShaderMaterial
 var modern_status := "Modern assets unavailable"
 var modern_polygon_count := 0
 var modern_triangle_count := 0
@@ -181,6 +184,9 @@ func load_modern_assets(root: String) -> bool:
 	modern_status = modern_assets.status
 	modern_prewarmed = false
 	modern_prewarm_rows.clear()
+	source_surface_warm_attempted=false
+	source_surface_prewarmed=false
+	source_surface_warm_material=null
 	if loaded and DisplayServer.get_name()!="headless":
 		modern_prewarmed = _prewarm_modern()
 		if not modern_prewarmed:
@@ -653,6 +659,45 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 			if profile_builds: last_apply_timings_usec.effects=Time.get_ticks_usec()-prepare_started
 			# apply_pass already walked these inputs for its cache check.
 			_effects_inputs=effects_input.duplicate(true)
+	_prewarm_source_surface(material)
+
+func _prewarm_source_surface(material:ShaderMaterial) -> void:
+	# The generic warm target misses the actual source target's first-use
+	# fallback work. Exercise it once before smoke, without presenting altered
+	# pixels or changing the live source mesh/material, camera or effect clock.
+	if source_surface_warm_attempted or not retain_render_target:return
+	if DisplayServer.get_name()=="headless" or not is_inside_tree():return
+	if material.shader!=_groundlight_shader or mesh_node.material_override!=null:return
+	var view:=get_viewport() as SubViewport
+	if view==null or view.size.x<1 or view.size.y<1:return
+	source_surface_warm_attempted=true
+	var begin:=Time.get_ticks_usec()
+	var original_mode:=view.render_target_update_mode
+	var composition:=view.get_parent() as SubViewport
+	var composition_mode:SubViewport.UpdateMode=composition.render_target_update_mode if composition!=null else SubViewport.UPDATE_DISABLED
+	var phase:float=tactical_effects._plume_phase
+	source_surface_warm_material=material.duplicate(false) as ShaderMaterial
+	source_surface_warm_material.shader=_modern_shader
+	source_surface_warm_material.set_shader_parameter("source_horizon_line",Vector3.ZERO)
+	mesh_node.material_override=source_surface_warm_material
+	view.render_target_update_mode=SubViewport.UPDATE_ONCE
+	RenderingServer.force_draw(false) # No window-buffer swap or guest step.
+	var image:=view.get_texture().get_image()
+	source_surface_prewarmed=image!=null and image.get_size()==view.size
+	mesh_node.material_override=null
+	# Put both retained targets back before returning to the normal compositor.
+	# The temporary fallback image can never become a later retained frame.
+	view.render_target_update_mode=SubViewport.UPDATE_ONCE
+	if composition!=null:composition.render_target_update_mode=SubViewport.UPDATE_ONCE
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
+	view.render_target_update_mode=original_mode
+	if composition!=null:composition.render_target_update_mode=composition_mode
+	modern_prewarm_rows.append({"program":"source-context-modern-fallback",
+		"render_usec":Time.get_ticks_usec()-begin,"admitted":source_surface_prewarmed,
+		"width":view.size.x,"height":view.size.y,
+		"source_restored":mesh_node.mesh.surface_get_material(0)==material and mesh_node.material_override==null,
+		"phase_unchanged":tactical_effects._plume_phase==phase})
 
 
 static func _road_edge_coordinates(original:Array,triangles:Array) -> Array:

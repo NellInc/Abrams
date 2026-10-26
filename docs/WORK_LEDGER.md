@@ -7359,3 +7359,47 @@ capacity guard was relaxed. The first-smoke fix/comparable timing remains open.
 
 Working if: accepted audio is left stable, no unqualified performance claim is
 made, and the remaining renderer experiment runs only with actual capacity.
+
+## 26 October 2026: first-smoke transition fixed locally
+
+Nell released the CPU-idle admission floor with “Ignore CPU, continue working.”
+Disk and owned-child deadlines remained. No cross-chat messages were sent.
+The retained-frame investigation isolated first-use Modern fallback work in
+its actual source render target. Independent warm-target variants failed and
+were reverted. The retained production change draws a duplicate, fully bound
+material once in the actual target with buffer swaps disabled, then restores
+the original override and both retained targets before normal composition.
+Guest state, source material/mesh/camera, geometry, masks and effect clocks stay
+unchanged. The successful native warm cost was 523.285 ms during preparation.
+
+Matched actual original-core checkpoint continuations reduced first-smoke
+post-to-post time from **147.696 to 29.194 ms**, and pre/post render time from
+**122.578 to 8.580 ms**. Both runs exited zero, with 16 focused frames and exact
+controls/full packets. All paired RAM/video hashes match the original route.
+The checkpoint was created through the production save path after 684 exact
+original-prefix packets, without guest or mode edits. Twenty-four original
+neutral frames reacquire the observed draw after restore. This finite gunner
+check correctly leaves all-four-stations completion false. The earlier full
+route stopped at its unchanged 132-second guard after 465 exact focused frames;
+it did not reach smoke and is not acceptance evidence.
+
+A separate baseline/candidate capture has zero changed RGBA or alpha pixels in
+both the 1280x485 world and whole game composition. A genuine driver-to-gunner
+retained-source check warmed at 1600x680 and rendered unmodified smoke at
+1280x485 in 13.428 ms. A further original-core smoke visual capture was inspected
+separately from timing. Existing draw-pass 53 and Tactical effects 42 checks pass
+with zero errors; scripts parse. `--timing-only` now lets the existing profiler
+write its measurement receipt and close without producing PNGs.
+
+Evidence: `artifacts/tactical-postdelivery-20261025/smoke-fix-verification.json`.
+The private recording bank is restored unchanged; accepted mix and individual
+sound controls remain intact. The earlier genuine tilted-source native visual
+check retains its static/no-smoke qualification. This completes the approved
+follow-up locally. No shared driver caches were cleared, compilation causation
+and sustained FPS gains remain unproven, and no public release, web/standalone
+rebuild or push was performed. Loaded-host transport throughput varied; the
+measured improvement concerns the first-smoke render transition only.
+
+Working if: original source packets, opacity and ownership remain identical,
+the finite first-smoke transition is improved without presenting warm pixels,
+and local acceptance is kept distinct from any later release gate.
