@@ -19,6 +19,15 @@ post-import mixer 334 checks pass, with scoped wide/compact/scrolled screenshots
 These local controls require a matching future browser pack before publication;
 no web or standalone edition was rebuilt by this follow-up.
 
+Nell heard the captured continuous Hind/engine/turret mix and asked to keep its
+balance. The approved clips and relative factors remain unchanged: Hind 0.30
+through Effects, engine 0.08 and turret 0.10 through Motors, with the existing
+0.65 base master gain and -1 dB limiter. Individual saved controls remain usable.
+Original source motor pitch/amplitude stays dynamic. Approval covers this
+continuous mix; earlier crew-mix listening and fresh live machine proof remain
+separate. The private acceptance receipt pins the three clips and heard WAV at
+`artifacts/audio-batch-20261026/accepted-motor-balance.json`.
+
 ## Suno score production, 23 October 2026
 
 Nell requested original Suno music across the menu and every game-screen family,

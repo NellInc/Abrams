@@ -7790,3 +7790,16 @@ visually inspected the native live image. This closes the former fresh live
 Hind execution/playback gap. The Dummy driver and host pacing are documented;
 device hearing and human combined-balance feedback are separate. Evidence:
 artifacts/audio-batch-20261026/hind-proof/live-native/verification.json.
+
+
+## 26 October 2026: accepted Hind/tank-motor balance
+
+Nell replayed the native captured-source continuous mix and said: "That sounds
+good. Keep the Hind and tank motors balanced like that please." Recorded this
+acceptance with the heard WAV hash, private Hind/engine/turret hashes and
+unchanged baseline factors in artifacts/audio-batch-20261026/accepted-motor-balance.json.
+No runtime sample, gain, preference, limiter or source motor parameter changed.
+Individual saved controls remain usable. This closes combined continuous-balance
+listening, while whole historical mix/device hearing are not newly claimed.
+The existing fresh live machine proof remains separate and passing. No native
+rerun, purchase, publication or foreign-file/process changes were necessary.

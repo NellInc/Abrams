@@ -2,7 +2,8 @@
 
 Current 26 October checkpoint: the approved switch and 15 native controls are
 installed locally. Genuine moving-Hind playback now passes in the production
-native viewer/mixer. Combined-balance listening feedback is pending. The latest
+native viewer/mixer. Nell accepted the combined Hind/tank-motor balance; its
+levels remain unchanged. The latest
 parallel-batch section supersedes earlier Hind-open checkpoint notes below.
 
 The finite source audit now accounts for every relative-near-call candidate in
