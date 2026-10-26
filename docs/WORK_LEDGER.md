@@ -7544,3 +7544,77 @@ spending gates; this research is not completion of that outcome.
 Working if: rejected video audio cannot appear as usable stock, no expensive
 library or recurring plan is bought, and every economical candidate keeps its
 unresolved model/rights/cleanliness checks beside its price.
+
+
+## 26 October 2026, preferred Hind engine preview
+
+Nell approved a US$25 additional, tax-inclusive cap. She correctly rejected the
+selected Mi-24 pass-by as an active-engine cue, and cancelled the proposed
+vendor inquiry. No inquiry sent, no contact email collected. Played the official
+SoundFX T-72 idle (10s) and Hind Engine (15s) SoundCloud previews through native
+player controls. Correct track titles/Pause states observed. Unrelated autoplay
+was stopped; Hind reselected and paused for replay. No audio stream downloaded.
+Nell accepted the Hind preview: “That last one sounded good.”
+
+At this preview checkpoint, the $39.99 pack exceeded the then-current cap.
+Asked whether to replace US$25 additional with US$50 including tax for the Hind
+pack alone. No purchase or agreement acceptance occurred at this checkpoint.
+The supplier's own/internet-source declaration remains explicit; no claim every
+file is an original field master. Rights allow game synchronization and restrict
+raw sharing. All 485 protected audio/pipeline hashes rechecked unchanged. Foreign
+files/processes untouched, no cross-chat communication or publication.
+
+Working if: accepted preview character and current spending authority remain
+separate, and a wrong pass-by selection never enters the engine-loop bank.
+
+
+## 26 October 2026, Hind-only cap and checkout handoff
+
+Nell approved US$50 additional including tax for the preferred SoundFX Studio
+Hind pack alone, replacing US$25 and excluding other purchases/subscriptions.
+Verified one pack, quantity1, $39.99 in regular Chrome checkout. Final tax/payment
+await billing. Auto-review rejected attempted billing-name entry/PayPal selection
+for missing specific billing-data permission. No workaround or equivalent retry.
+Private billing/payment and licence acceptance are handed to Nell in the existing
+Chrome checkout; no payment details requested in chat. No agent order submission,
+payment, new agreement acceptance, audio download or runtime change.
+
+Working if: only one approved pack is ordered within the tax-inclusive cap,
+private billing stays in the merchant/payment UI, and a purchase receipt precedes
+licensed download or any acquisition-complete claim.
+
+
+## 26 October 2026, Hind pack acquired and verified privately
+
+Nell completed the purchase and download, then supplied the archive password.
+Order 6997 shows one pack, $39.99 total, Processing, with licensed download
+enabled. No second purchase or agent agreement acceptance. The original ZIP has
+182,757,232 bytes. Its SHA-256 is
+e74dab5eec5b6b8daae0bc21a2c0779ab2b2ebcb3286463e725c0856f373c507.
+A private copy is retained, with the user download untouched. Safe path/size/symlink
+checks and extraction succeeded. All 158 audio files fully decode: 79 WAVs and
+79 OGGs, plus a manual. There are 79 named cues with 78 distinct WAV PCM payloads,
+including one supplied cockpit gun-stop alias. All are 44.1 kHz stereo;
+67 WAVs are 24-bit and 12 impact WAVs are 16-bit.
+
+The steady Engine_Loop master is 18.190680 seconds and 24-bit. Source level is
+about -8.6 LUFS and 0 dBTP. A separate private audition copy, attenuated 12 dB,
+measures -20.6 LUFS and -12 dBTP, with
+unchanged duration/rate/channels. Existing audio skill dry-run, render/probe and
+focused check passed; generic subtitle warning is inapplicable to this wordless
+audio-only file. No denoise, EQ or master modification. Actual-master listening
+is not claimed beyond Nell's accepted web preview.
+
+Media/original/provenance/playlist are in local-audio/soundfx-hind-20261026;
+158-row metadata, file/PCM hashes, public licence snapshots and verification are
+in artifacts/soundfx-hind-20261026. Vendor identifies real Hind inputs and also
+internet-sourced components; no claim all 79 cues are original field recordings.
+Paid files remain private, excluded from Git/packages and never uploaded to a
+model. No runtime binding or simulator recipes applied. All 485 protected audio
+and pipeline hashes remain unchanged. No source/GPU work, other purchase, push,
+web/standalone build or cross-chat message. Clean Soviet tank engines remain
+open; the current paid authority is Hind-only.
+
+Working if: originals remain recoverable, every supplied audio file decodes,
+paid stock stays private, and acquisition cannot alter original audio events
+or reveal a hidden actor.

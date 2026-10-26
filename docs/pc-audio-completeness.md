@@ -313,9 +313,9 @@ The six accepted effects and their saved volume controls remain unchanged. Every
 
 | Cue | Intended character | Obtained material | State and binding |
 |---|---|---|---|
-| Rotor and flyby material | Rotor and flyby material | [Helicopter #2](https://bigsoundbank.com/helicopter-2-s0264.html); [Helicopter (Transition)](https://bigsoundbank.com/helicopter-transition-s0113.html) | **STOCK / V**. Exact helicopter type is unverified, so no claim of a recorded Mi-24. Loopability needs editing. |
+| Mi-24 engine and rotor material | Steady engine/rotor layers for a verified visible Hind | [SoundFX Studio Hind pack](https://soundfx.studio/shop/sfx-for-games/aviation/mi-24-hind-sfx/), purchased privately; generic CC0 helicopter sources retained separately | **STOCK / V**. Hind engine preview accepted and purchased masters fully decoded. No runtime binding or purchased-master listening claim. Vendor identifies Hind field inputs and also declares internet-sourced components. |
 | Helicopter flyby component | A restrained pass for an observed source actor. | [Helicopter (Transition)](https://bigsoundbank.com/helicopter-transition-s0113.html) | **STOCK / V**. Recorded stereo path cannot create new positional information; source matching or neutral rendering required. |
-| Helicopter rotor body | Rotor rhythm appropriate to a verified visible helicopter. | [Helicopter #2](https://bigsoundbank.com/helicopter-2-s0264.html) | **STOCK / V**. Exact helicopter model is unverified; no Mi-24 authenticity claim. |
+| Helicopter rotor body | Rotor rhythm appropriate to a verified visible helicopter. | Private Hind `Rotor_Loop.wav` and `Rotor2_Loop.wav`; [generic CC0 Helicopter #2](https://bigsoundbank.com/helicopter-2-s0264.html) retained | **STOCK / V**. Purchased Hind layers are available; generic source retains its unverified-model label. Visibility, source motor authority and in-game balance remain required before binding. |
 | Generic military jet flyby | Short recorded jet flyby derivative, with restrained level. | [Jet flyby, AltSFX59 recording derivative](https://github.com/ALEX11BR/AltSFX) | **STOCK / V**. Free CC-BY3.0 derivative obtained at44.1kHz/16bit mono. Exact aircraft unverified; not labelled MiG. |
 | Jet-flyby recording derivative | Short restrained flyby with required attribution. | [Jet flyby, AltSFX59 recording derivative](https://github.com/ALEX11BR/AltSFX) | **STOCK / V**. CC-BY3.0 derivative,44.1kHz/16bit mono. Exact airframe is not verified. |
 | Generic truck idle/reversing body | Stationary diesel body and restrained load changes. | [Truck Engine #2](https://bigsoundbank.com/truck-engine-2-s1443.html); [Truck engine #1](https://bigsoundbank.com/truck-engine-1-s1442.html); [Truck engine, small accelerations](https://bigsoundbank.com/truck-engine-small-accelerations-s1146.html) | **STOCK / V**. Generic truck and identified Iveco Daily source; no Cold-War military-model accuracy claim. |
@@ -377,7 +377,7 @@ The six accepted effects and their saved volume controls remain unchanged. Every
 * The AltSFX jet derivative requires CC-BY3.0 attribution. Its underlying recording is credited to qubodup; the derivative is not relabelled CC0.
 * The four purchased Abrams originals and the accepted private bank remain local and recoverable. Their raw/edited stock does not enter public Git or packaging.
 * Generic chain, lid, lock, compressor, twig and glass components are labelled as such. They are not represented as recordings of specific Abrams mechanisms, shell strikes or smoke launchers.
-* The diesel acceleration source is an Iveco Daily recording. Helicopter and jet airframes remain unverified. These are stock sources, without claims of original-game model accuracy.
+* The diesel acceleration source is an Iveco Daily recording. Generic free helicopter and jet airframes remain unverified. The separately purchased Hind pack is publisher-identified, with its mixed-source declaration retained. None of these stock acquisitions establishes an original-game audio binding.
 * One original shot must remain one apparent shot. Voices/music, event cadence, source motor authority, mute/pause/checkpoint gates and the limiter are preserved.
 * New actor sounds require verified visible source ownership, including occlusion. Weather/walking/mechanical events stay reserved until established. Unclassified original requests remain unclassified.
 
@@ -451,28 +451,31 @@ acceptance.
 
 The new requirement is isolated vehicle audio with documented model identity,
 usable rights and an audition free of unrelated speech, music and vehicles.
-No replacement has yet passed all three checks, and no new audio was purchased
-or installed during this search.
+Initial research produced price leads rather than accepted clean sources.
+The subsequently purchased Hind bank is documented below. No new runtime
+audio binding follows from this acquisition.
 
 The official Rabbit Ears Hind library currently lists $139; Pole Position's
 T-72 library lists $119. Both document dedicated recording sessions. Nell
 declined the proposed $350 total budget as excessive, so neither library is
-approved for purchase. The earlier $30 total authority remains the only
-numerical spending cap; her willingness to consider a smaller increase is
-not an unlimited budget.
+approved for purchase. Nell first approved US$25 additional including tax, then replaced that with
+US$50 additional including tax solely for the preferred SoundFX Studio Hind pack,
+excluding other purchases and subscriptions. Preview/rights suitability still
+applies.
 
 | Economical lead | Listed price | Qualification remaining |
 |---|---:|---|
-| [Sound Ideas Mi-24 exterior pass-by, individual file](https://www.pond5.com/sound-effects/item/266294141-mi-24-military-attack-helicopter-exterior-pass-1) | $4.75 in indexed primary listing | Official Sound Ideas catalogue identifies the Mi-24 session. Pond5's live browser presents a device check, so current checkout price, preview cleanliness and applicable game licence remain unverified. No automated challenge attempt or download. |
+| [Sound Ideas Mi-24 exterior pass-by, individual file](https://www.pond5.com/sound-effects/item/266294141-mi-24-military-attack-helicopter-exterior-pass-1) | $4.75 live | **Rejected for the active-engine cue:** this is a pass-by. No purchase or download. |
 | [SoundFX Studio T-72 small pack](https://soundfx.studio/shop/sfx-for-games/vehicles/t-72-tank-sfx/) | $12.99 live | Prepared engine/track/action clips. Original recording provenance and clean take suitability still need confirmation. |
-| [SoundFX Studio Hind small pack](https://soundfx.studio/shop/sfx-for-games/aviation/mi-24-hind-sfx/) | $39.99 live | Vendor claims real Hind recordings and also declares internet-sourced components. Per-file source provenance and clean take suitability remain open. |
+| [SoundFX Studio Hind pack](https://soundfx.studio/shop/sfx-for-games/aviation/mi-24-hind-sfx/) | $39.99 purchased | Engine preview accepted; private masters acquired and fully decoded. Vendor's own/internet-source declaration remains explicit. No runtime installation. |
 
-A nonbinding cart containing one of each SoundFX pack totals $52.98 before
+A historical nonbinding cart containing one of each SoundFX pack totalled $52.98 before
 any checkout-specific tax. It applies no advertised mixed-product discount.
-The comparison cart was cleared afterward. No checkout, payment, account
-creation or EULA acceptance occurred. These are
-price leads, not accepted clean recordings. The Hind pack remains a reserve
-rather than a recommended purchase while its provenance is unresolved.
+The comparison cart was cleared afterward, without checkout or purchase at that
+stage. Nell later purchased the Hind pack alone for an order total of $39.99,
+within the replacement US$50 cap. Its vendor declares
+actual Hind field inputs and internet-sourced components; the entire pack is
+not represented as original field masters.
 
 The finite free search checked six Sonniss annual CSV tracklists and the 2015
 PDF, with no exact Hind/T-62/T-64/T-72/T-80 match. This is not a claim that no
@@ -484,11 +487,75 @@ credit was not redeemed. Soundsnap has individual Pole Position T-72 takes,
 but the displayed minimum subscription is $135 per six months, so it is outside
 this economical selection. No subscription was started.
 
-Recommendation: buy only selected individual takes or a small qualified pack,
-after a modest explicit spending cap and the relevant audition/licence checks.
-Keep the existing accepted mix unchanged. Full research records, price evidence
+No other paid purchase is covered by the Hind-only cap. Keep the existing
+accepted mix unchanged. Full research records, price evidence
 and unresolved qualifications are in `artifacts/soviet-sfx-clean-20261026/`.
 
 Working if: purchase authority remains bounded, every proposed file has a
 specific model/rights/cleanliness disposition, and rejected or unqualified
 audio cannot enter the accepted bank.
+
+
+### Engine-preview selection
+
+Nell corrected the Hind requirement to a steady active engine/rotor sound. The
+Pond5 pass-by is excluded for that cue. Played the official SoundCloud T-72 idle
+preview (10 seconds) and Mi-24 Hind Engine preview (15 seconds). Native player
+Pause states and the correct track titles were observed. SoundCloud's unrelated
+automatic next track was stopped, and the Hind engine was reselected and paused
+for replay. No preview stream was scraped or installed. The publisher specifies
+music-free purchased files; these public previews have background music.
+
+Nell's response to the Hind engine was “That last one sounded good.” This accepts
+the preview's character, without claiming inspection of undownloaded masters.
+The Hind pack was listed at $39.99. Nell approved the replacement US$50 additional
+cap including tax for this pack alone. A safety check rejected automated billing-name
+entry and PayPal selection without separate data-sharing permission. No retry
+or workaround: Nell completed the secure billing/payment/licence step and
+downloaded the archive herself. No agent order submission or new agreement
+acceptance occurred.
+Nell cancelled the proposed vendor inquiry; no message was sent or email
+collected. No runtime bank, gain, binding or original event changed.
+
+Working if: a pass-by cannot substitute for a steady loop, preview feedback is
+preserved without becoming a master-quality claim, and no purchase exceeds
+the current explicit cap.
+
+### Purchased Hind bank
+
+Order 6997 shows one Hind pack, total $39.99, status Processing and an enabled
+licensed download. Nell confirmed purchase/download and supplied the ZIP
+password. Her original download remains untouched; the private archive copy
+and extracted vendor files are under `local-audio/soundfx-hind-20261026/`.
+
+All 158 audio representations fully decode: 79 WAVs and 79 OGGs, plus a PDF
+manual. There are 79 named cues and 78 distinct WAV PCM payloads; the supplied
+high/low-rate cockpit gun-stop files are identical. WAVs total 704.566 seconds,
+all 44.1 kHz stereo. Of those, 67 are 24-bit and 12 impact files are 16-bit.
+The vendor originals and aliases are preserved rather than silently converted
+or removed. File/decoded hashes, formats and roles are in
+`artifacts/soundfx-hind-20261026/inventory.csv` and `assets.json`.
+
+Preferred `Engine_Loop.wav` is an 18.190680-second, 24-bit stereo source.
+Its raw level is about -8.6 LUFS and 0 dBTP; it must not be blindly installed at
+existing motor gains. The separate private audition copy has only -12 dB gain,
+retains the duration/rate/channels, and measures -20.6 LUFS/-12.0 dBTP. Its check
+has zero failures; the generic subtitle warning is inapplicable to a wordless
+audio effect. The 24-bit master is unchanged.
+
+The licence allows game synchronization/editing and restricts raw sharing and
+standalone redistribution. Paid files remain private, outside Git and packages;
+no paid raw audio was sent to a model. The vendor's mixed-source declaration is
+retained. Human acceptance covers the web engine preview; purchased-master
+listening, runtime audibility qualification and in-game mix acceptance are not
+claimed. The manual's optional simulation variables, radii, fly-bys and weapon
+layering recipes were not applied to the original game.
+
+All 485 protected audio/pipeline hashes remain unchanged. The accepted six-cue
+mix, crew/music, settings and original event/motor authority are untouched.
+Clean actual Soviet tank engine sources remain open; the Hind-only authority
+does not permit another paid purchase.
+
+Working if: the purchased bank resolves to its retained archive/receipt/licence,
+every audio file decodes, a steady engine replaces the rejected pass-by only in
+stock selection, and runtime timing/visibility/audibility remain unchanged.
