@@ -7428,3 +7428,46 @@ Proofs are private under `artifacts/finish-abrams-20261025/`:
 `root-smoke-performance-reconciliation.json`. Gameplay and winning campaign
 coverage continue independently. No outgoing cross-chat coordination, public
 rebuild, deployment or push was performed by this root after Nell's stop request.
+
+## 26 October 2026: ordered free-first whole-game sound bank
+
+Nell requested a long detailed list and acquisition, free first. The existing
+463-file bank was reused and 76 additional audio files were obtained, including
+recorded mechanical/wood/glass/water/bird components, verified stationary and
+load-changing truck sources, the 56-file prepared Free Firearm Sound Library,
+and an openly redistributed jet-flyby derivative. All new audio fully decodes;
+all 539 free file hashes and all 49 original source/archive hashes verify.
+Three pre-existing byte-identical aliases are retained for custody and omitted
+from playback lists, leaving 536 distinct file hashes in 11 free playlists.
+A twelfth playlist references the six accepted private runtime clips.
+
+The detailed inventory contains 89 cue/component roles in 14 categories,
+with source pages, licences, representative files, acquisition/runtime states,
+and original-event/visibility requirements. It is appended to
+`docs/pc-audio-completeness.md`; the full per-file CSV, cue CSV, catalogue,
+source snapshots and verification are under `artifacts/world-sfx-20261026/`.
+New originals/media, category playlists and attribution are under
+`local-audio/world-sfx-20261026/`. Old originals and archive licence notes remain
+in the prior bank. A proposed truck URL resolved to a cartoon effect; that
+candidate is quarantined and excluded from the active inventory/playlists.
+Correctly identified truck recordings replaced it.
+
+The free inventory has 538 CC0 files and one CC-BY3.0 jet derivative. Its pinned
+source-tree licence/README and required attribution are retained; the derivative
+is not relabelled CC0. Aircraft models remain unverified. Generic chain, lock,
+lid and compressor recordings are labelled as components, without claims of
+recorded Abrams hatch/breech/suspension or smoke-launcher authenticity. The
+firearm library remains a source reserve, without substituting mismatched
+weapons or changing shot counts.
+
+The four previously licensed Abrams originals verify and remain private.
+No new money or paid credits were spent. All 485 protected audio/runtime-pipeline
+files, including the accepted six-clip bank, remain byte-identical. No new
+runtime cue binding, subjective audition/mix acceptance, native/GPU run,
+publication, web/standalone rebuild, packaging or push is claimed. Unknown
+original requests7/9/10/15/16, crew/music and all existing audio gates remain
+unchanged. No cross-chat messages were sent.
+
+Working if: the list resolves to verified, rights-documented local material,
+acquired stock remains distinct from installed sound, and new source material
+cannot silently change the accepted mix or expose hidden actors.
