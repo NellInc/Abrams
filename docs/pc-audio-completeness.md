@@ -401,7 +401,12 @@ Existing six per-effect Off-to100% controls remain in place. Ambience and Mechan
 
 Working if: every listed acquisition has a verified local file and rights record, the existing mix remains byte-identical, and acquired stock is clearly distinguished from installed or subjectively accepted audio.
 
-## Authentic Hind and Soviet vehicle supplement (26 October 2026)
+## Rejected field-video supplement (26 October 2026)
+
+Nell rejected these acquisitions: “That's no good, we need clean sources
+please.” All three are excluded from the usable sound bank. Originals and
+extracts remain recoverable references only; none was installed. The technical
+custody checks below do not establish clean, isolated sound effects.
 
 Nell requested actual Hind and Soviet tank recordings after the general stock
 inventory. Three free, attribution-licensed field-video soundtracks have now
@@ -418,30 +423,72 @@ frames were visually inspected and show live-action aircraft/tank footage.
 The exact Hind subvariant is not established. These are 44.1 kHz stereo video
 soundtracks, with possible wind, speech, music, editing or other-vehicle
 contamination. Clean isolated takes, loopability and subjective sound quality
-remain unverified. They are source candidates, with no new runtime bindings.
+remain unverified. They are rejected references, with no runtime bindings.
 Existing generic helicopter files retain their unverified-model labels.
 
 All three originals and extracts fully decode. Two audio streams were copied
 without re-encoding. The initial T-80 Ogg remux failed decoded-sample equality
 and was quarantined; its lossless float WAV replacement passes. All three
-active extracts have identical decoded PCM hashes to their original videos.
+retained extracts have identical decoded PCM hashes to their original videos.
 Original/extract/page SHA-256s, licence snapshots and required attribution
 are retained under `artifacts/soviet-sfx-20261026/` and
 `local-audio/soviet-sfx-20261026/`. Downloaded originals total 211,478,137 bytes;
-active audio totals 38,318,984 bytes. No money or credits were spent.
+retained audio totals 38,318,984 bytes. No money or credits were spent.
 
-Recommendation: audition/select the Hind, T-72B and T-80U material before buying
-another library. Exact-model T-62 and T-64 clean sources remain gaps; neither is
-silently represented by a T-72 recording. Pole Position's dedicated T-72
-recording library is a documented paid fallback at the currently listed $119,
-outside the existing spending cap. Rabbit Ears REA010 has an authentic historical
-recordist announcement, but its current official availability/price could not
-be verified. No paid library or preview was downloaded.
+Exact-model T-62 and T-64 clean sources remain gaps; neither is silently
+represented by a T-72 recording. The replacement search below supersedes the
+earlier recommendation to audition these videos.
 
 All 485 protected audio/pipeline files, including the accepted private effects
 bank, remain byte-identical. No new in-game mix, device listening, public
 release, packaging, web/standalone rebuild or push is claimed.
 
-Working if: named-vehicle candidates resolve to retained originals and licences,
-attribution follows any use, clean take selection precedes integration, and
-the accepted mix and source-qualified audibility remain unchanged.
+Working if: these rejected files remain outside usable playlists and runtime
+banks, while their retained custody evidence cannot be mistaken for clean-source
+acceptance.
+
+## Clean-source replacement and economical shortlist (26 October 2026)
+
+The new requirement is isolated vehicle audio with documented model identity,
+usable rights and an audition free of unrelated speech, music and vehicles.
+No replacement has yet passed all three checks, and no new audio was purchased
+or installed during this search.
+
+The official Rabbit Ears Hind library currently lists $139; Pole Position's
+T-72 library lists $119. Both document dedicated recording sessions. Nell
+declined the proposed $350 total budget as excessive, so neither library is
+approved for purchase. The earlier $30 total authority remains the only
+numerical spending cap; her willingness to consider a smaller increase is
+not an unlimited budget.
+
+| Economical lead | Listed price | Qualification remaining |
+|---|---:|---|
+| [Sound Ideas Mi-24 exterior pass-by, individual file](https://www.pond5.com/sound-effects/item/266294141-mi-24-military-attack-helicopter-exterior-pass-1) | $4.75 in indexed primary listing | Official Sound Ideas catalogue identifies the Mi-24 session. Pond5's live browser presents a device check, so current checkout price, preview cleanliness and applicable game licence remain unverified. No automated challenge attempt or download. |
+| [SoundFX Studio T-72 small pack](https://soundfx.studio/shop/sfx-for-games/vehicles/t-72-tank-sfx/) | $12.99 live | Prepared engine/track/action clips. Original recording provenance and clean take suitability still need confirmation. |
+| [SoundFX Studio Hind small pack](https://soundfx.studio/shop/sfx-for-games/aviation/mi-24-hind-sfx/) | $39.99 live | Vendor claims real Hind recordings and also declares internet-sourced components. Per-file source provenance and clean take suitability remain open. |
+
+A nonbinding cart containing one of each SoundFX pack totals $52.98 before
+any checkout-specific tax. It applies no advertised mixed-product discount.
+The comparison cart was cleared afterward. No checkout, payment, account
+creation or EULA acceptance occurred. These are
+price leads, not accepted clean recordings. The Hind pack remains a reserve
+rather than a recommended purchase while its provenance is unresolved.
+
+The finite free search checked six Sonniss annual CSV tracklists and the 2015
+PDF, with no exact Hind/T-62/T-64/T-72/T-80 match. This is not a claim that no
+free source exists. A Freesound T-80 sampler is CC-BY-NC, so it is not silently
+added to the commercially reusable free bank. Simulator mods and generic
+engines are not substitutes for rights-qualified original vehicle recordings.
+Current public PSE searches returned no exact Mi-24 or T-72 result; the reserved
+credit was not redeemed. Soundsnap has individual Pole Position T-72 takes,
+but the displayed minimum subscription is $135 per six months, so it is outside
+this economical selection. No subscription was started.
+
+Recommendation: buy only selected individual takes or a small qualified pack,
+after a modest explicit spending cap and the relevant audition/licence checks.
+Keep the existing accepted mix unchanged. Full research records, price evidence
+and unresolved qualifications are in `artifacts/soviet-sfx-clean-20261026/`.
+
+Working if: purchase authority remains bounded, every proposed file has a
+specific model/rights/cleanliness disposition, and rejected or unqualified
+audio cannot enter the accepted bank.

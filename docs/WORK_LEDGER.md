@@ -7500,3 +7500,47 @@ binding, native run, publication, rebuild, packaging or push.
 Working if: each candidate retains its original, licence and attribution,
 extracted audio matches the source, and stock acquisition cannot alter the
 accepted mix or disclose hidden source actors.
+
+
+## 26 October 2026, clean-source rejection and economical replacement search
+
+Nell rejected the three field-video acquisitions as unsuitable clean sources.
+They are now explicitly excluded in the source state, CSV/JSON inventory and
+playlist name. Originals, extracts and decode/hash evidence remain recoverable;
+none was ever installed. The active usable count for this supplement is zero.
+The audio completeness document corrects the previous audition recommendation.
+
+Verified current primary product pricing: Rabbit Ears Hind $139, Pole Position
+T-72 $119. Both document original recording sessions. Nell declined the proposed
+$350 total cap as excessive. No new numerical cap, purchase, credit redemption,
+subscription, account or agreement acceptance follows from that refusal.
+
+Economical research found an indexed Sound Ideas Mi-24 single exterior pass-by
+at $4.75, backed by the manufacturer's Mi-24 catalogue. Pond5's live device
+check prevents current price, audition and licence verification in this browser;
+no challenge bypass, streaming scrape or download was attempted. SoundFX Studio
+lists a $12.99 T-72 pack and $39.99 Hind pack. Their live nonbinding two-item cart
+showed $52.98, with no mixed-product discount. It was a comparison only, without
+checkout/payment, then both task-added items were removed and the empty cart
+verified. Provenance and acoustic cleanliness are still unqualified:
+the Hind product explicitly mentions both its own and internet-sourced samples.
+Neither cheaper pack is declared an accepted original field-recording bank.
+
+The finite free search checked six annual Sonniss CSVs plus its 2015 PDF, with
+no exact requested Hind/T-62/T-64/T-72/T-80 match. The CC-BY-NC T-80 Freesound
+sampler remains outside the commercially reusable bank. PSE public exact
+Mi-24/T-72 searches had no result; no reserved credit used. Soundsnap's actual
+Pole Position T-72 clips are available, but its displayed six-month minimum
+$135 subscription is uneconomical here. No subscription started. SoundDogs
+searches and their exact scope are retained, without a global no-source claim.
+
+Evidence is in `artifacts/soviet-sfx-clean-20261026/`. A fresh SHA-256 comparison
+of all 485 protected audio/pipeline files passed, with zero changes or missing
+files. The accepted six-clip bank and levels remain unchanged. No native/GPU
+job, cross-chat message, push, packaging or web/standalone rebuild occurred.
+Clean replacement acquisition remains open at source-quality, access and bounded
+spending gates; this research is not completion of that outcome.
+
+Working if: rejected video audio cannot appear as usable stock, no expensive
+library or recurring plan is bought, and every economical candidate keeps its
+unresolved model/rights/cleanliness checks beside its price.
