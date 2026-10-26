@@ -7721,3 +7721,72 @@ refusal, not a failed audio assertion or a native test pass. The existing56-chec
 functional cache receipt remains valid within its documented capacity limits;
 no equivalent native retry was started. All472 tracked WAVs and both installed
 private-bank manifests were rechecked unchanged before the local checkpoint.
+
+
+## 26 October 2026: Sol6.1 xhigh audio batch
+
+Nell explicitly requested batching with Sol 6.1 xhigh subagents. Five finite
+lanes investigated original-visible ambience, qualified source actions, clean
+Soviet recording sources, radio/switch candidates and the missing Hind audio
+pair. Their files stay under artifacts/audio-batch-20261026; no cross-chat
+messages, foreign process control or new spending. Root retains integration.
+
+Nell selected "New switch only". The approved Kenney CC0/authored switch is
+installed at the incumbent 120 ms/5,760-frame request 14 asset, with old radio
+unchanged and recovery copies retained. Its event loudness matches stock
+(-33.85 LUFS), true peak -10.75 dBTP; no blanket gain increase. tools/build_audio.py
+checks/copies the approved master exactly, without refading or requiring
+NumPy/SciPy/FFmpeg at rebuild. The binary master is only in the existing
+asset-bearing kit allowlist, preserving the code-only source guard. CC0 licence
+text, source/member hashes, recipe and provenance are tracked. The accepted six
+private cues, Hind/river bank and 471 other stock WAVs are unchanged.
+
+Added saved independent Radio alerts and Switches gains via the existing
+individual-control path. They preserve source delivery, speech and motor
+parameters. Post-import mixer 334, source audio 924, remaining samples 172, Python
+remaining audio 7, event tests 6 and package contracts 16 pass. Native Settings 37
+checks pass; compact/scrolled images inspected, no manual Audio-menu selection
+claim. The sandboxed initial GUI process aborted before logging; desktop retry
+passed with fresh 8 GiB admission. Source reimport updated the approved asset;
+editor-settings save was denied by the sandbox. That log is not called a clean
+editor pass. Generated unreferenced UID sidecars were preserved in recovery and
+pre-import absence restored; existing foreign work remains.
+
+Source-pair investigation found 343 unchanged audio envelopes, contiguous IDs
+1..2498, matching the prior visible Hind's exact presentation and VGA PNG. The
+first proposed replay could collapse historical tails; root rejected that mix
+claim. Corrected native replay consumes the prefix silently and captures only
+current original engine/turret plus source-visible Hind. It passed with actual
+focus, frame 14362/epoch 1, zero transient onsets, one fresh owner read and one
+cache reuse. World/composed RGBA images equal the existing same-source images;
+source/material unchanged. Capture5.851429s,44.1k stereo16,-33.8LUFS/-25.0dBTP,
+no clipping. No whole-mix, source-loop-phase, live-motion or performance claim
+is inferred. Separate listening question asks combined continuous balance.
+
+A new exact ordinary-input replay then executed 343 segments/14,121 frames from
+the authentic neutral checkpoint, under 90 s setup and 8 GiB admission. It completed
+in 50.845 s and matched all 343RAM/video boundaries, producing an authentic native
+state/observer/disk-overlay checkpoint at14362. Observed core FPS 59.468765; no
+recorded historical cadence was invented. Root verified state/observer/overlay
+hashes. This enables a short fresh native case without repeating long
+unsuccessful neutral routes or doing new campaign discovery.
+
+Remaining stock bindings stay silent where source action/component visibility
+is unproven. No guessed weather, hidden cow or semantic mapping for requests
+7/9/10/15/16. Clean Soviet recording search obtained 0 files/$0; qualifications
+remain open. Source closure and paid/private exclusions pass without a build.
+No push, package rebuild or publication.
+
+Fresh live Hind closure: the newly authentic checkpoint resumed through the
+unchanged production host. Ordinary neutral step(1) produced 255 consecutive
+focused original samples, source frames 14364..14618, with complete paired VGA/RAM
+audits. Actual actor motion supplied 27 different Hind positions during recording
+and 227 admitted native draws. Source enabled/active gates, event IDs and production
+owner masks were not injected. Native receipt passed, audio drained, original
+host exit 0, no renderer/audio/bridge failures. The 5.665669 s stereo capture has
+no clipping and true peak -21.8 dBTP. Root verified first/final PNG/VGA pair hashes,
+source-event continuity, disk admission and frozen source/bank hashes, and
+visually inspected the native live image. This closes the former fresh live
+Hind execution/playback gap. The Dummy driver and host pacing are documented;
+device hearing and human combined-balance feedback are separate. Evidence:
+artifacts/audio-batch-20261026/hind-proof/live-native/verification.json.

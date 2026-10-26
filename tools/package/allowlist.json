@@ -395,6 +395,8 @@
     "tools/audit_pc_portrait_coverage.py",
     "tools/bootstrap_pc_source.py",
     "tools/build_audio.py",
+    "tools/audio/Kenney-Interface-License.txt",
+    "tools/audio/switch-approved-provenance.json",
     "tools/build_frontend_music.py",
     "tools/build_genesis_vehicle_studies.py",
     "tools/build_pc_frontend_catalog.py",
@@ -1554,6 +1556,7 @@
     "local-art/pc-tactical-vehicles-v1/manifest.json",
     "local-art/pc-tactical-vehicles-v1/normal.png",
     "local-art/pc-tactical-vehicles-v1/orm.png",
-    "local-art/pc-tactical-crew-sculpt-v1/geometry.json.gz"
+    "local-art/pc-tactical-crew-sculpt-v1/geometry.json.gz",
+    "tools/audio/switch-approved-master.wav"
   ]
 }

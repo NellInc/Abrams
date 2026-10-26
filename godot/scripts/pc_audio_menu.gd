@@ -2,9 +2,9 @@ extends MenuBar
 signal mix_changed
 ## Presentation-only gains. No bridge, source state, key binding or pause command.
 const DEFAULTS := {"master":100,"effects":100,"voice":100,"motors":100,"music":70,
-	"cannon":100,"machinegun":100,"impact":100,"smoke":100,"engine":100,"turret":100,"river":100,"hind":100}
+	"cannon":100,"machinegun":100,"impact":100,"smoke":100,"engine":100,"turret":100,"river":100,"hind":100,"radio":100,"switch":100}
 const TITLES := {"master":"Master volume","effects":"Sound effects","voice":"Crew voices","motors":"Engine and turret","music":"Music",
-	"cannon":"Cannons","machinegun":"Machine gun","impact":"Impacts","smoke":"Smoke","engine":"Engine","turret":"Turret","river":"Rivers","hind":"Hind engine"}
+	"cannon":"Cannons","machinegun":"Machine gun","impact":"Impacts","smoke":"Smoke","engine":"Engine","turret":"Turret","river":"Rivers","hind":"Hind engine","radio":"Radio alerts","switch":"Switches"}
 var settings: Dictionary = DEFAULTS.duplicate()
 var config_path := "user://pc_audio.cfg"
 var audio: Node

@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "asset": "Single switch/contact cue for existing original request14 only",
+  "approval": "Nell selected New switch only. Original radio retained.",
+  "master": {
+    "bytes": 11564,
+    "sha256": "ba16a80749510afda5595766f7fccbe09290cc86abd1b822e3a92294b3244c8b",
+    "sample_rate": 48000,
+    "channels": 1,
+    "sample_width_bytes": 2,
+    "frames": 5760,
+    "duration_seconds": 0.12,
+    "compression": "NONE",
+    "repo_path": "tools/audio/switch-approved-master.wav"
+  },
+  "rights": {
+    "author": "Kenney interface sound plus project-authored mechanical synthesis",
+    "license": "CC0-1.0",
+    "source_page": "https://kenney.nl/assets/interface-sounds",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "license_file": "tools/audio/Kenney-Interface-License.txt",
+    "license_sha256": "1a2d0f1e2926b1de6f90c843c27a3101cf212ec29fb07d563cbc339a2329ea81",
+    "scope": "Designed interface contact, not a tank field recording. No game-original audio, paid recording, voice or music."
+  },
+  "source": {
+    "download_url": "https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip",
+    "archive_bytes": 834536,
+    "archive_sha256": "f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232",
+    "member": {
+      "name": "Audio/click_002.ogg",
+      "bytes": 4275,
+      "sha256": "adcd1f4adc35f1b41bc1b5bbefeff7aa44f2f3f0d96d3199b544140c7c1e761c"
+    },
+    "used_interval": "Entire short click_002.ogg decoded to 558 mono frames at 48000 Hz. One contact, no repeat.",
+    "source_license_sha256": "f7966c773bbed0eca6a9c75081c44a178b38eae112724dbb5fdfbd4192d118a9"
+  },
+  "authored_inputs": {
+    "legacy_switch_pcm_sha256": "0230e063790d6b7a660470ad2bb0d488c15ef774ff1026526862aa897523bf84",
+    "legacy_generator_path": "tools/build_audio.py",
+    "legacy_generator_sha256": "598f7b278e2061b4955001df2f393ccd3a0af8924ce40fb59d314bf9651f3d3d",
+    "legacy_recipe": "effect(switch, 0.12, 1993), existing pcm() attack/tail fade and int16 conversion. Reconstructed exactly in the private replay proof; no original game audio read.",
+    "noise": "NumPy default_rng PCG64 seed 202610261114. Consume 31200 standard-normal values for the preceding radio experiment, then draw 5760 for the switch. No radio audio enters the switch."
+  },
+  "design_recipe": [
+    "Band-limit decoded CC0 contact 320 to 6500 Hz, second-order SciPy Butterworth SOS; normalize its absolute peak.",
+    "Band-limit switch noise 600 to 5600 Hz, normalize its standard deviation. Envelope exp(-t*100)*min(1,t/0.001).",
+    "Body: (0.10*sin(2*pi*790*t)+0.055*sin(2*pi*1310*t))*envelope. Texture: 0.055*noise*envelope. Contact: normalized input*0.095, aligned t=0, first 48 samples ramped i/48.",
+    "Sum legacy PCM*0.30, body, texture and contact. Subtract mean, apply final 256-frame fade i=255..0 divided by256; set sample0 to zero.",
+    "Match whole-event RMS to legacy PCM; apply recorded loudness refinement gain 1.2999999999999972 dB; round x*32768 to little-endian int16."
+  ],
+  "build": "tools/build_audio.py hash-checks and copies the approved master unchanged using only the standard library. The master is the reproducible build input; no ignored paths, synthesis dependencies or network access are required.",
+  "acceptance_metrics": {
+    "frames": 5760,
+    "seconds": 0.12,
+    "rate": 48000,
+    "channels": 1,
+    "bits": 16,
+    "event_lufs": -33.85,
+    "true_peak_dbtp": -10.75,
+    "sample_peak_dbfs": -10.80312039207023,
+    "rms_dbfs": -30.09778973164778,
+    "dc_mean": 1.2185838487413194e-06,
+    "first_nonzero_frame": 1,
+    "last_nonzero_frame": 5456,
+    "clipping_samples": 0,
+    "sha256": "ba16a80749510afda5595766f7fccbe09290cc86abd1b822e3a92294b3244c8b"
+  }
+}

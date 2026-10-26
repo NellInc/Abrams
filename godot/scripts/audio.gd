@@ -6,7 +6,7 @@ var volume := 0.65
 var engine_volume := 1.0
 var effects_volume := 1.0
 var voice_volume := 1.0
-const EFFECT_CUES := ["cannon", "machinegun", "impact", "smoke", "engine", "turret"]
+const EFFECT_CUES := ["cannon", "machinegun", "impact", "smoke", "engine", "turret", "radio", "switch"]
 var cue_volumes: Dictionary = {}
 var engine: AudioStreamPlayer
 var voice: AudioStreamPlayer

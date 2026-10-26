@@ -21,6 +21,8 @@ import wave
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "godot/assets/audio"
 RATE = 48000
+SWITCH_MASTER = ROOT / "tools/audio/switch-approved-master.wav"
+SWITCH_MASTER_SHA256 = "ba16a80749510afda5595766f7fccbe09290cc86abd1b822e3a92294b3244c8b"
 LINES = {
     "ready": ("Commander", "Crew ready. Range is clear. Move out.", "en-us+m3"),
     "on_the_way": ("Gunner", "On the way!", "en-us+m2"),
@@ -45,6 +47,26 @@ def pcm(path: Path, samples: list[float], loop: bool = False) -> None:
     with wave.open(str(path), "wb") as stream:
         stream.setparams((1, 2, RATE, 0, "NONE", "not compressed"))
         stream.writeframes(struct.pack(f"<{len(samples)}h", *values))
+
+
+def write_approved_switch(path: Path) -> dict:
+    """Preserve the auditioned CC0/authored master without another PCM fade.
+
+    Working if: rebuilding copies the approved bytes; a changed source fails
+    before touching the destination. No external libraries or downloads.
+    """
+    raw = SWITCH_MASTER.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != SWITCH_MASTER_SHA256:
+        raise ValueError("Approved switch master hash mismatch")
+    with wave.open(str(SWITCH_MASTER), "rb") as stream:
+        if stream.getparams()[:4] != (1, 2, RATE, 5760):
+            raise ValueError("Approved switch master format differs")
+    path.write_bytes(raw)
+    return {"sha256": SWITCH_MASTER_SHA256,
+            "source": "Kenney CC0 interface contact with project-authored mechanical synthesis",
+            "license": "CC0-1.0",
+            "master": "tools/audio/switch-approved-master.wav",
+            "provenance": "tools/audio/switch-approved-provenance.json"}
 
 
 def effect(kind: str, seconds: float, seed: int) -> list[float]:
@@ -116,6 +138,9 @@ def main() -> None:
     manifest["effects_sample_rate"] = RATE
     for i, (kind, duration) in enumerate({"cannon":2.4,"impact":2.8,"machinegun":0.22,"reload":0.85,"smoke":1.3,"switch":0.12,"engine":2.0,"turret":2.0,"radio":0.65}.items()):
         path = OUT / f"{kind}.wav"
+        if kind == "switch":
+            manifest["effects"][kind] = write_approved_switch(path)
+            continue
         pcm(path, effect(kind, duration, 1988+i), loop=kind in ("engine", "turret"))
         manifest["effects"][kind] = {"sha256":hashlib.sha256(path.read_bytes()).hexdigest(), "source":"original mathematical synthesis, tools/build_audio.py"}
     if args.scratch_voices:

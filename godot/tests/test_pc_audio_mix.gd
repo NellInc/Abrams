@@ -37,7 +37,7 @@ func individual_controls() -> void:
 	check(audio.apply_audio(source),"individual mixer uses accepted original audio")
 	var sequence := [audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed]
 	var pitches := [audio.engine.pitch_scale,audio.turret.pitch_scale]
-	for cue in ["cannon","machinegun","impact","smoke"]:
+	for cue in ["cannon","machinegun","impact","smoke","radio","switch"]:
 		if cue!="cannon":audio.play(cue)
 		var player: AudioStreamPlayer=audio.effects.filter(func(p):return p.playing and p.get_meta("effect_cue","")==cue)[0]
 		var other: AudioStreamPlayer
@@ -82,6 +82,30 @@ func individual_controls() -> void:
 	check(await audio.drain_for_shutdown(),"individual audio shuts down cleanly")
 	menu.queue_free();audio.queue_free()
 
+func auxiliary_source_controls() -> void:
+	var audio: Node = Audio.new()
+	audio.recorded_effect_directory = ""
+	root.add_child(audio)
+	var menu: MenuBar = Menu.new()
+	menu.config_path = ""; menu.audio = audio
+	root.add_child(menu)
+	var id: int = 0
+	for cue: String in ["radio", "switch"]:
+		id += 1
+		menu.choose(cue, 0)
+		var source: Dictionary = packet(100 + id)
+		source.last_id = id
+		source.events = [{"id":id,"frame":100 + id,"epoch":1,"kind":"sound","ip":0x9107,
+			"return_ip":0x3c97 if cue == "radio" else 0x15e4,"value":11 if cue == "radio" else 14,
+			"backend":0,"enabled":true,"sample":cue,"voice":null}]
+		check(audio.apply_audio(source), "muted qualified auxiliary event accepted: " + cue)
+		check(audio.effects.all(func(player): return not player.playing), "muted auxiliary has no audible side effect: " + cue)
+		var delivered: int = audio.delivered
+		menu.choose(cue, 100)
+		check(audio.apply_audio(source) and audio.delivered == delivered and audio.effects.all(func(player): return not player.playing), "unmute cannot replay consumed auxiliary request: " + cue)
+	check(await audio.drain_for_shutdown(), "auxiliary source controls drain")
+	menu.queue_free(); audio.queue_free()
+
 func run() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	output=directory.path_join("artifacts/pc-audio-mix-unit")
@@ -100,7 +124,7 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==13,"one external Audio menu, thirteen gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==15,"one external Audio menu, fifteen gain groups")
 	check(menu.get_menu_title(0)=="Audio","menu title")
 	for child in [menu.popup]+menu.menus.values():
 		for i in child.item_count:
@@ -162,7 +186,7 @@ func run() -> void:
 	check(menu.settings==Menu.DEFAULTS and audio.muted and not audio.engine.playing and not audio.voice.playing,"default reset cannot override source mute")
 	var reset_sequence := [audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed]
 	menu.choose("music",20)
-	check(menu.reset_mix() and menu.settings==Menu.DEFAULTS and audio.mix==Menu.DEFAULTS,"direct reset shares native menu defaults for all eleven gains")
+	check(menu.reset_mix() and menu.settings==Menu.DEFAULTS and audio.mix==Menu.DEFAULTS,"direct reset shares every native menu gain default")
 	check(audio.muted and not audio.engine.playing and not audio.voice.playing and reset_sequence==[audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed],"direct reset preserves source mute and event sequence")
 	check(audio.apply_audio(packet(12)),"source gate reopens")
 	check(audio.engine.playing and not audio.voice.playing and audio.delivered==1,"source resumes motors without stale one-shots")
@@ -179,8 +203,8 @@ func run() -> void:
 	check(menu.reset_mix() and reload.load_settings() and reload.settings==Menu.DEFAULTS,"reset persists every default gain")
 	menu.choose("engine",0);menu.choose("cannon",67);menu.choose("turret",20)
 	check(reload.load_settings() and reload.settings.engine==0 and reload.settings.cannon==67 and reload.settings.turret==20,"individual settings persist, including Off and irregular gains")
-	menu.choose("hind",0);menu.choose("river",37)
-	check(reload.load_settings() and reload.settings.hind==0 and reload.settings.river==37,"private world controls persist independent mute and intermediate gain")
+	menu.choose("hind",0);menu.choose("river",37);menu.choose("radio",23);menu.choose("switch",0)
+	check(reload.load_settings() and reload.settings.hind==0 and reload.settings.river==37 and reload.settings.radio==23 and reload.settings.switch==0,"world and auxiliary controls persist independent mute and intermediate gain")
 	var legacy := ConfigFile.new()
 	legacy.set_value("audio","effects",40);legacy.set_value("audio","motors",30)
 	legacy.save(menu.config_path)
@@ -220,6 +244,7 @@ func run() -> void:
 	check(await resumed.drain_for_shutdown(),"resumed audio drains without residual playback")
 	check(await audio.drain_for_shutdown(),"audio drains without residual playback")
 	await individual_controls()
+	await auxiliary_source_controls()
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"native_menu":menu.is_native_menu()},"  "))
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_AUDIO_MIX: %d checks, %d errors"%[checks,errors.size()])

@@ -1,9 +1,23 @@
-import json,struct,unittest,wave,hashlib
+import json,struct,unittest,wave,hashlib,tempfile
+from unittest.mock import patch
 from pathlib import Path
 from tools.pc_audio_events import AudioEvents,SAMPLES
 from tools.pc_crew_voice import CrewBarks
 ROOT=Path(__file__).resolve().parents[1]
 class RemainingAudioTests(unittest.TestCase):
+ def test_approved_switch_rebuild_is_exact_and_bad_master_cannot_replace_output(self):
+  from tools import build_audio
+  with tempfile.TemporaryDirectory() as folder:
+   destination=Path(folder)/'switch.wav'
+   receipt=build_audio.write_approved_switch(destination)
+   self.assertEqual(destination.read_bytes(),build_audio.SWITCH_MASTER.read_bytes())
+   self.assertEqual(hashlib.sha256(destination.read_bytes()).hexdigest(),receipt['sha256'])
+   with wave.open(str(destination)) as wav:self.assertEqual(wav.getparams()[:4],(1,2,48000,5760))
+   invalid=Path(folder)/'changed.wav';invalid.write_bytes(b'changed')
+   before=destination.read_bytes()
+   with patch.object(build_audio,'SWITCH_MASTER',invalid):
+    with self.assertRaisesRegex(ValueError,'hash mismatch'):build_audio.write_approved_switch(destination)
+   self.assertEqual(destination.read_bytes(),before)
  def test_every_source_call_is_exactly_mapped_without_speech(self):
   rows=json.loads((ROOT/'godot/tests/fixtures/pc_request_sound_oracle.json').read_text())['rows']
   self.assertEqual(len(rows),7)

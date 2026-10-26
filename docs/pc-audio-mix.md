@@ -1,5 +1,24 @@
 # Presentation audio controls
 
+## Current saved controls, 26 October 2026
+
+Native Settings and Audio expose five groups (Master volume, Sound effects,
+Crew voices, Engine and turret, Music) and ten independent controls: Cannons,
+Machine gun, Impacts, Smoke, Engine, Turret, Rivers, Hind engine, Radio alerts
+and Switches. Every control supports Off through 100%. Existing group defaults
+and individual 100% defaults are retained. Rivers/Hind stay native-only because
+their optional local banks are excluded from browser discovery and packaging.
+
+Radio alerts and Switches now have the same immediate gain/mute and durable
+preference behavior as the earlier individual controls. Muting consumes an
+original request; unmuting never replays it. It neither changes crew gain nor
+the original source-driven motor pitch/amplitude. The approved switch is one
+120 ms CC0/authored contact at the same original request 14; the original radio
+attention signal and all speech remain unchanged. Native Settings 37 checks and
+post-import mixer 334 checks pass, with scoped wide/compact/scrolled screenshots.
+These local controls require a matching future browser pack before publication;
+no web or standalone edition was rebuilt by this follow-up.
+
 ## Suno score production, 23 October 2026
 
 Nell requested original Suno music across the menu and every game-screen family,

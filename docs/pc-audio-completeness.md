@@ -1,5 +1,10 @@
 # PC audio coverage and machine QA
 
+Current 26 October checkpoint: the approved switch and 15 native controls are
+installed locally. Genuine moving-Hind playback now passes in the production
+native viewer/mixer. Combined-balance listening feedback is pending. The latest
+parallel-batch section supersedes earlier Hind-open checkpoint notes below.
+
 The finite source audit now accounts for every relative-near-call candidate in
 SIM's first 64 KiB code segment targeting the known original sound and message
 routines. The fingerprinted original executable is decoded afresh. Unclassified
@@ -328,7 +333,7 @@ The six accepted effects and their saved volume controls remain unchanged. Every
 | Radio squelch/static texture | Radio squelch/static texture | [Crackling Radio #2](https://bigsoundbank.com/crackling-radio-2-s0313.html) | **STOCK / P**. Retain existing attention signal and all crew speech; inspect candidate for unwanted broadcast voices before use. |
 | Radio open/close texture | Short restrained contact/noise edges, without new speech. | [Crackling Radio #2](https://bigsoundbank.com/crackling-radio-2-s0313.html); [Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds) | **STOCK / P**. Design components rather than a dedicated squelch field recording. Preserve message onsets and intelligibility. |
 | Radio static component | Very low static beneath a qualified radio event. | [Crackling Radio #2](https://bigsoundbank.com/crackling-radio-2-s0313.html) | **STOCK / P**. Audition for unwanted voices/broadcasts; accepted crew speech stays unchanged. |
-| Switch or control click | Switch or control click | [Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds); [oga-equipment-click](https://opengameart.org/content/equipment-click) | **STOCK / P**.  |
+| Switch or control click | Single tactile switch contact | [Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds), with project-authored mechanical body | **INSTALLED / P**. Nell selected the new switch only. Exactly 5,760 frames and the incumbent request14 callsites/onsets; separate saved Switches gain. Original radio retained. |
 | Heavy industrial switch | A short, tactile, substantial switch. | [Industrial switch #1](https://bigsoundbank.com/industrial-switch-1-s3061.html) | **STOCK / R**. Real industrial-switch recording; no hidden or newly invented combat feedback. |
 | Small mechanical switch | A quiet close click. | [Old switch](https://bigsoundbank.com/old-switch-s0540.html); [oga-equipment-click](https://opengameart.org/content/equipment-click) | **STOCK / R**. Original qualified action or actual frontend action only. |
 ### 10 Frontend interface
@@ -659,3 +664,70 @@ The final same-process disk admission refused the additional native rerun before
 launch:8,221,691,904 bytes free, below the unchanged8GiB requirement. Earlier
 functional results remain recorded; they are not relabelled a uniformly
 capacity-qualified benchmark. No repeated native route was started.
+
+## Parallel completion batch, 26 October 2026
+
+Five Sol 6.1 xhigh lanes covered visible-component eligibility, original sound
+semantics, clean Soviet-tank sourcing, matched radio/switch authoring, and a
+Hind source-pair/live-route investigation. Sol integrated and checked the actual
+results. No other chats were contacted. Nell chose "New switch only": the
+original radio stays byte-identical. Only switch.wav changes among 472 stock
+WAVs. The accepted six-cue recording bank and private Hind/river bank remain
+unchanged. The approved 120 ms switch is Kenney CC0 contact plus authored mechanical
+detail, with exact onset/frame count, matched event loudness(-33.85 LUFS) and
+-10.75dBTP. The pinned 11,564-byte source master regenerates by stdlib hash-check
+and copy; no synthesis dependencies, network or voice regeneration are needed.
+
+Radio alerts and Switches have separate saved Off-to-100% controls, increasing
+native controls to 15. Focused checks now pass: source audio 924, post-import
+mix 334, additional source samples 172, Python remaining audio 7, source events 6,
+package contracts 16; production-script lint has 0 errors and 4 existing warnings.
+Native Settings 37 checks pass with compact/wide/scrolled images inspected.
+One sandboxed GUI launch aborted before engine initialization; the bounded
+desktop-access retry passed. Source import updated switch's source MD5. Its
+editor-preference save was blocked by the filesystem sandbox; this is not
+counted as a clean editor run. Subsequent actual mixer/resource checks pass.
+Eighteen new unreferenced UID sidecars from that import were identified between
+its start/exit receipts, copied byte-for-byte to ignored recovery evidence, and
+removed to restore their pre-import absence. No foreign sidecar was removed.
+
+The Hind investigation found 343 authentic audio envelopes matching the existing
+visible Hind's original presentation/video hashes, frame 14362/epoch 1. Fresh
+native captured-source replay accepted all 343 under transport mute, with zero
+historical onsets. It then restored only current original engine/turret channels
+and admitted the Hind through the production ownership mask. The 5.851429-second
+recording is deliberately a partial continuous mix: voices/music/historical
+shots are excluded, so their tails cannot be collapsed by instantaneous prefix
+application. Its world 1280x485 and composed 1440x810 RGBA images are exactly equal
+to the prior same-source images; no renderer warnings or source/material edits.
+Recorded level is -33.8 LUFS/-25.0 dBTP, with no clipping. A fresh live moving-guest
+encounter and whole-mix/device hearing remain separate evidence.
+
+The scene audit found no original wind/weather authority, sustained-fire
+identity, or separately observable cow component. Whole-farm and tree-plane
+ownership cannot prove restored cow/alpha-cutout visibility. Those sounds and
+unqualified hatch/breech/reload phases remain reserved rather than inventing
+actions. Requests7/9/10/15/16 remain unclassified. The new finite clean-tank
+search downloaded 0 files and spent US$0. T-55 steady-idle catalogue leads have
+unresolved individual entitlement/cleanliness; no paid T-72 purchase is
+authorized. No absence-of-free-sources claim is made.
+
+Evidence: artifacts/audio-batch-20261026, especially each lane's findings,
+controls, hind-proof/source-pair-proof.json and retained-native/verification.json.
+The existing source/asset-bearing kit separation remains enforced, including
+private-audio exclusions; no guards were relaxed or kit rebuilt. No push,
+standalone/web build or publication was performed.
+
+Fresh live Hind closure: the newly authentic checkpoint resumed through the
+unchanged production host. Ordinary neutral step(1) produced 255 consecutive
+focused original samples, source frames 14364..14618, with complete paired VGA/RAM
+audits. Actual actor motion supplied 27 different Hind positions during recording
+and 227 admitted native draws. Source enabled/active gates, event IDs and production
+owner masks were not injected. Native receipt passed, audio drained, original
+host exit 0, no renderer/audio/bridge failures. The 5.665669 s stereo capture has
+no clipping and true peak -21.8 dBTP. Root verified first/final PNG/VGA pair hashes,
+source-event continuity, disk admission and frozen source/bank hashes, and
+visually inspected the native live image. This closes the former fresh live
+Hind execution/playback gap. The Dummy driver and host pacing are documented;
+device hearing and human combined-balance feedback are separate. Evidence:
+artifacts/audio-batch-20261026/hind-proof/live-native/verification.json.

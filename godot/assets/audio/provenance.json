@@ -21,8 +21,11 @@
       "source": "original mathematical synthesis, tools/build_audio.py"
     },
     "switch": {
-      "sha256": "0230e063790d6b7a660470ad2bb0d488c15ef774ff1026526862aa897523bf84",
-      "source": "original mathematical synthesis, tools/build_audio.py"
+      "sha256": "ba16a80749510afda5595766f7fccbe09290cc86abd1b822e3a92294b3244c8b",
+      "source": "Kenney CC0 interface contact with project-authored mechanical synthesis",
+      "license": "CC0-1.0",
+      "master": "tools/audio/switch-approved-master.wav",
+      "provenance": "tools/audio/switch-approved-provenance.json"
     },
     "engine": {
       "sha256": "d248c5aa34fd2359b9b4fd0e6fb986262b5167fda515fefe0d239bd2278b33ab",
