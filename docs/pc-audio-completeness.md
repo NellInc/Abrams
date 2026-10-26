@@ -732,3 +732,46 @@ visually inspected the native live image. This closes the former fresh live
 Hind execution/playback gap. The Dummy driver and host pacing are documented;
 device hearing and human combined-balance feedback are separate. Evidence:
 artifacts/audio-batch-20261026/hind-proof/live-native/verification.json.
+
+
+## 26 October 2026: cow and visible-field binding preparation
+
+Nell approved source-qualified cow/environment bindings and a free-first Soviet
+recording search while preserving the accepted motor balance. The three motor
+WAV hashes and existing Hind/river factors remain unchanged. New saved Field air
+and Animals controls bring native Settings to 17 controls. Root ran the actual
+Settings-only route: 39 checks, zero errors; compact, wide and scrolled images
+were inspected. All changes remain local, without a new edition build.
+
+The field predicate now accepts exact JSON numeric leaves without treating
+fractional/coerced identities as source evidence. A genuine original field is a
+one-pixel strip, so only this new cue adds exact owner-texel fallback sampling.
+The current field candidate, mask, gate and sparse-cow scheduler suite passes
+135 checks. A focused native original-scene replay passes seven checks, including
+postdraw field playback, opaque original UI stop and unchanged world/source/
+ownership bytes. Its generated PCM is silent and its music preload is explicitly
+disabled. This is source-qualified native execution, separate from device hearing.
+Earlier two 90-second renderer/audio setup timeouts remain recorded; their cause
+is unproved. The initial storm-like tall-grass preview was rejected. Nell accepted
+a gentler CC0 tree-air-derived edit at field factor 0.08 alongside the unchanged
+motors. This is authored air for visible fields, without an original-weather claim.
+
+Cow preparation retains 1266 explicitly labelled component triangles among the
+7938-triangle full farm catalog. Private proof meshes copy production arrays;
+complete actual group snapshots preserve independently rounded source fits.
+The private opaque companion retains every original ownership discard and all
+farm occluders, with pessimistic depth and original UI clearance. Whole-yard
+visibility never qualifies a moo. Portable component checks pass 71; asset and
+snapshot checks pass 76. Final generated native depth/UI/occlusion/MSAA checks pass 114,
+including bounded search and the private premultiplied-alpha search copy. Genuine distant/offscreen farm
+cases remain silent. A positive sufficiently large original cow case and final
+native acceptance are still open; source frames and controlled replay evidence
+are retained without guest/camera overrides. No tiny cow is relabelled audible.
+
+The Soviet search found the clean steady T-55 front-idle single by Sound Ideas,
+Stockmusic item 22935298, US$1.99. Nell auditioned it and approved a total up to
+US$3. Sign-in is complete, but Work browser control is disabled; no payment,
+download or licence entitlement is claimed. The purchase remains an external
+prerequisite. It is T-55 provenance, without a T-62/T-72 identity claim or any
+new enemy-audio binding. No paid recordings enter public Git or package assets.
+Evidence and remaining gates: artifacts/environment-bindings-20261026/state.json.

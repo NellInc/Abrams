@@ -3,10 +3,10 @@
 ## Current saved controls, 26 October 2026
 
 Native Settings and Audio expose five groups (Master volume, Sound effects,
-Crew voices, Engine and turret, Music) and ten independent controls: Cannons,
+Crew voices, Engine and turret, Music) and twelve independent controls: Cannons,
 Machine gun, Impacts, Smoke, Engine, Turret, Rivers, Hind engine, Radio alerts
-and Switches. Every control supports Off through 100%. Existing group defaults
-and individual 100% defaults are retained. Rivers/Hind stay native-only because
+Switches, Field air and Animals. Every control supports Off through 100%. Existing group defaults
+and individual 100% defaults are retained. Rivers, Hind, Field air and Animals stay native-only because
 their optional local banks are excluded from browser discovery and packaging.
 
 Radio alerts and Switches now have the same immediate gain/mute and durable
@@ -27,6 +27,36 @@ Original source motor pitch/amplitude stays dynamic. Approval covers this
 continuous mix; earlier crew-mix listening and fresh live machine proof remain
 separate. The private acceptance receipt pins the three clips and heard WAV at
 `artifacts/audio-batch-20261026/accepted-motor-balance.json`.
+
+## Cow and field bindings, local preparation
+
+Field air follows the exact original static field shape 48/root 5109, primitive
+5123, filled palette [8,8]. It is authored visible-scene air, without an original
+weather or vegetation-contact claim. Ordinary owner texels and the original UI
+mask control audibility. The new narrow-field path leaves existing Hind/river
+admission unchanged. The field factor is 0.08, below the existing river factor.
+The initial tall-grass preview was rejected as storm-like; it is not installed.
+Nell accepted the gentler replacement alongside the unchanged motors at the
+0.08 field factor. Recording/runtime gates remain separate.
+
+Animals uses a single sparse cow call, eligible only when the actual restored
+cow component is visible. Whole-farm ownership is insufficient. The private
+companion copies complete submitted farm groups and the production shader's
+source discard rules, applies pessimistic depth, then requires separated opaque
+cow interiors with original UI clearance. It never edits production geometry,
+materials, ownership targets or guest state. Unsupported or ambiguous input is
+silent. The first call waits 180 accepted source frames; repeats require 2400
+source frames. Held frames, mute, lost visibility and checkpoint resets cannot
+create catch-up calls. One centred fixed-level voice reveals no count or range.
+
+The separate optional local environment bank is independently atomic, so an
+invalid cow/field bank cannot disable the accepted Hind/river bank. Native
+Settings exposes saved Off-to-100% controls for both cues. Their source and
+native acceptance evidence is kept in artifacts/environment-bindings-20261026.
+The separate private bank is installed locally. Production loader/mixer checks
+pass; the sufficiently visible natural cow case remains open. Field level
+acceptance and native source-mask admission are recorded separately.
+No browser or standalone edition has been rebuilt or published.
 
 ## Suno score production, 23 October 2026
 

@@ -299,6 +299,7 @@ func set_transport_muted(value: bool) -> void:
 func reset_timeline() -> void:
 	# Use only after a successful host restore, before applying its first packet.
 	stop_all()
+	world_audio.reset_source_timeline()
 	last_event_id=0
 	last_frame=-1
 	epoch=0

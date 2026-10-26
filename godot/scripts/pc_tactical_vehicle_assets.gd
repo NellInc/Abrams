@@ -8,6 +8,9 @@ var gpu_faces:Dictionary={}
 var gpu_groups:Dictionary={}
 var gpu_heads:Dictionary={}
 var gpu_poses:Dictionary={}
+## Optional diagnostic meshes only: live group meshes/materials are never edited.
+var cow_proof_groups:Dictionary={}
+var cow_proof_status:="cow proof unavailable"
 const CrewPose=preload("res://scripts/pc_tactical_crew_pose.gd")
 var grounding_bounds:Dictionary={}
 var cpu_geometry_released:=false
@@ -30,6 +33,7 @@ var decoded_texture_bytes:=0
 func clear_detail() -> void:
 	cpu_geometry_released=false
 	ready=false;models.clear();gpu_faces.clear();gpu_groups.clear();gpu_heads.clear();gpu_poses.clear();grounding_bounds.clear()
+	cow_proof_groups.clear();cow_proof_status="cow proof unavailable"
 	clear_position_cache();texture_banks.clear();shape_banks.clear();protected_lines.clear();protected_surfaces.clear()
 	colour_texture=null;colour_indices.clear();terrain_shapes.clear()
 	albedo_atlas=null;normal_atlas=null;orm_atlas=null;decoded_texture_bytes=0
@@ -247,8 +251,11 @@ func grounding_height(shape:int,point:Vector3) -> float:
 func compile_gpu_groups(data:Dictionary) -> void:
 	# Rigid group meshes contain authored positions, independent of a particular
 	# source face. Runtime admission validates every observed group anchor.
+	cow_proof_groups.clear();cow_proof_status="Farm157 not present"
 	for model:Dictionary in data.models:
 		var shape:=int(model.shape_index)
+		var proof:Dictionary=cow_proof_plan(model) if shape==157 else {}
+		if shape==157:cow_proof_status=proof.reason
 		gpu_groups[shape]={}
 		for group:Dictionary in model.groups:
 			if shape in PER_FACE_SHAPES:continue
@@ -272,6 +279,49 @@ func compile_gpu_groups(data:Dictionary) -> void:
 			arrays[Mesh.ARRAY_VERTEX]=positions;arrays[Mesh.ARRAY_TEX_UV]=uv;arrays[Mesh.ARRAY_TEX_UV2]=heights
 			var mesh:=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 			gpu_groups[shape][int(group.offset)]={"mesh":mesh,"candidates":candidates,"primitives":primitives,"triangles":positions.size()/3}
+			if shape==157 and proof.get("ok",false):
+				var tagged:=cow_proof_group(group,mesh,proof)
+				if tagged.is_empty():proof.ok=false;cow_proof_status="farm triangle/UV proof alignment failed"
+				else:cow_proof_groups[mesh]=tagged
+		if shape==157 and not proof.get("ok",false):cow_proof_groups.clear()
+
+static func cow_proof_plan(model:Dictionary) -> Dictionary:
+	var result:Dictionary={"ok":false,"reason":"invalid cow component labels","records":{}}
+	if int(model.get("shape_index",-1))!=157 or not model.get("triangles") is Array:return result
+	var cows:=0
+	for i in model.triangles.size():
+		var triangle:Dictionary=model.triangles[i]
+		var pid:=int(triangle.get("source_primitive",-1))
+		var cow:bool=str(triangle.get("component","")).begins_with("architecture_cow_")
+		if cow and (pid!=28751 or not str(triangle.get("material","")).begins_with("architecture_cow_")):return result
+		if pid not in result.records:result.records[pid]=[]
+		result.records[pid].append({"triangle":triangle,"cow":cow})
+		if cow:cows+=1
+	if cows==0:result.reason="validated cow labels absent";return result
+	result.ok=true;result.reason="optional farm group proof ready"
+	return result
+
+func cow_proof_group(group:Dictionary,mesh:ArrayMesh,plan:Dictionary) -> Dictionary:
+	var colors:=PackedColorArray();var cows:=0
+	for pid in group.primitive_pointers:
+		if int(pid) in protected_surfaces.get(157,{}):continue
+		var face:Dictionary=models[157].faces[int(pid)]
+		if face.source.size()<3:continue
+		var records:Array=plan.records.get(int(pid),[])
+		if records.size()!=face.triangles.size():return {}
+		for i in face.triangles.size():
+			var raw:Dictionary=records[i].triangle;var compiled:Dictionary=face.triangles[i]
+			if raw.vertices!=compiled.vertices or raw.get("uvs",[])!=compiled.uvs:return {}
+			var cow:bool=records[i].cow
+			if cow:cows+=1
+			for _vertex in 3:colors.append(Color(1,1,1,1) if cow else Color(0,0,0,1))
+	var arrays:Array=mesh.surface_get_arrays(0)
+	if colors.size()!=arrays[Mesh.ARRAY_VERTEX].size():return {}
+	# Separate array publication; neither the source mesh nor its arrays are set.
+	var tagged_arrays:Array=arrays.duplicate(true);tagged_arrays[Mesh.ARRAY_COLOR]=colors
+	var tagged:=ArrayMesh.new();tagged.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,tagged_arrays)
+	# Ambiguity is resolved pessimistically in the private GPU proof, never here.
+	return {"mesh":tagged,"group":int(group.offset),"triangles":colors.size()/3,"cow_triangles":cows,"ambiguous_cow_triangles":0}
 
 func compile_gpu_faces() -> void:
 	# Fit-independent vertex coefficients are uploaded once. Each observed face

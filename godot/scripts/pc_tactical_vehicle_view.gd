@@ -11,8 +11,11 @@ var head_count:=0
 var _flat_shader:Shader
 var flat_admitted:Dictionary={}
 var pose_admitted:Dictionary={}
+var _cow_submissions:Array[Dictionary]=[]
+var _cow_generation:=0
 
 func clear() -> void:
+	_cow_generation+=1;_cow_submissions.clear()
 	for instance in instances:instance.visible=false
 	active_count=0
 	group_count=0
@@ -198,6 +201,7 @@ func prepare_object(assets:RefCounted,object:Dictionary,frame:Dictionary,owner:i
 		material.set_shader_parameter("source_group",true)
 		material.set_shader_parameter("source_group_basis",fit.basis);material.set_shader_parameter("source_group_origin",fit.origin)
 		bind_material(material,assets,shape,owner,ownership,basis)
+		if shape==157:_cow_submissions.append({"owner":owner,"node":instance,"mesh":instance.mesh})
 		for primitive in group.primitives:covered[Vector2i(owner,int(primitive))]=true
 		assets.max_anchor_error=maxf(assets.max_anchor_error,float(fit.error))
 		group_count+=1;count+=int(group.triangles)
@@ -205,6 +209,85 @@ func prepare_object(assets:RefCounted,object:Dictionary,frame:Dictionary,owner:i
 
 func covers(owner:int,primitive:int) -> bool:
 	return Vector2i(owner,primitive) in covered
+
+func cow_proof_snapshot(assets:RefCounted,data:Dictionary) -> Dictionary:
+	var result:Dictionary={"ok":false,"reason":"no complete submitted farm","view":self,"generation":_cow_generation,
+		"assets":assets,"revision":assets.revision,"active_count":active_count,"submission_count":_cow_submissions.size(),"owners":[],"groups":[],"triangles":0,"covered_keys":[]}
+	if not is_inside_tree() or not assets.ready or assets.cow_proof_groups.is_empty():return result
+	if not data.get("objects") is Array or not data.get("unsupported") is Array or not data.unsupported.is_empty():return result
+	for i in data.objects.size():
+		var object:Dictionary=data.objects[i]
+		if int(object.get("shape_index",-1))!=157:continue
+		var owner:int=i+1
+		# Genuine original farms carry static_path=1 AND dynamic_instance=true.
+		# The latter is observer draw context, not motion or a separate cow actor.
+		var static_path:Variant=object.get("static_path",false)
+		if not (static_path is bool or static_path is int or static_path is float) or not is_finite(float(static_path)) or float(static_path)<=0.0 or int(object.get("root",-1))!=28643:
+			result.reason="farm source identity";return result
+		if object.has("sprite") or not object.get("round_forms",[]).is_empty() or object.get("polygons",[]).is_empty():
+			result.reason="farm sprite/round/empty source";return result
+		var commands:Array=Commands.ordered(object)
+		if commands.size()!=object.polygons.size():result.reason="farm command coverage";return result
+		for item:Dictionary in commands:
+			if item.kind!="polygon":result.reason="farm nonpolygon command";return result
+			var polygon:Dictionary=item.data;var primitive:int=int(polygon.get("primitive",-1))
+			if int(polygon.get("fill_mode",0))!=1 or polygon.get("camera_vertices",[]).size()<3 or primitive in assets.protected_surfaces.get(157,{}) or not covers(owner,primitive):
+				result.reason="farm uncovered/line/protected/common surface";return result
+			result.covered_keys.append(Vector2i(owner,primitive))
+		var nodes:Array=[];var cow_count:=0
+		for submission:Dictionary in _cow_submissions:
+			if submission.owner!=owner:continue
+			var node:MeshInstance3D=submission.node
+			if not is_instance_valid(node) or node.mesh!=submission.mesh or node.mesh not in assets.cow_proof_groups:
+				result.reason="farm proof mesh unavailable";return result
+			var proof:Dictionary=assets.cow_proof_groups[node.mesh]
+			var material:ShaderMaterial=node.material_override as ShaderMaterial
+			if material==null or material.shader!=VehicleShader or material.next_pass!=null or material.render_priority!=0 or not node.is_visible_in_tree() or node.transparency!=0.0:
+				result.reason="farm noncanonical material/visibility";return result
+			var uniforms:Dictionary=cow_uniform_snapshot(material)
+			if uniforms.get("source_group")!=true or uniforms.get("strict_source_coverage")!=true or uniforms.get("source_round")!=false or uniforms.get("source_piecewise")!=false or uniforms.get("instance_owner")!=owner:
+				result.reason="farm noncanonical shader coverage";return result
+			result.groups.append({"owner":owner,"group":proof.group,"node":node,"mesh":node.mesh,"proof_mesh":proof.mesh,
+				"material":material,"shader":material.shader,"shader_code":material.shader.code,"uniforms":uniforms,
+				"global_transform":node.global_transform,"custom_aabb":node.custom_aabb,"layers":node.layers,"priority":material.render_priority,
+				"triangles":proof.triangles,"cow_triangles":proof.cow_triangles,"ambiguous_cow_triangles":proof.ambiguous_cow_triangles})
+			nodes.append(node);cow_count+=int(proof.cow_triangles);result.triangles+=int(proof.triangles)
+		# Any same-owner instance not in the captured group set is an emitted face
+		# fallback or unknown extra occluder. It cannot be silently left out.
+		for node:MeshInstance3D in instances:
+			if not node.visible or node.material_override==null:continue
+			if node.material_override.get_shader_parameter("instance_owner")==owner and node not in nodes:
+				result.reason="farm emitted nongroup fallback";return result
+		if cow_count==0:result.reason="submitted cow tags absent or ambiguous";return result
+		result.owners.append(owner)
+	if result.owners.is_empty():return result
+	result.ok=true;result.reason="complete actual farm group snapshot"
+	return result
+
+func cow_proof_snapshot_valid(snapshot:Dictionary) -> bool:
+	if not snapshot.get("ok",false) or snapshot.get("view")!=self or snapshot.get("generation")!=_cow_generation or not is_inside_tree():return false
+	if snapshot.active_count!=active_count or snapshot.submission_count!=_cow_submissions.size():return false
+	var assets:RefCounted=snapshot.assets
+	if not is_instance_valid(assets) or not assets.ready or assets.revision!=snapshot.revision:return false
+	for key:Vector2i in snapshot.covered_keys:
+		if key not in covered:return false
+	for row:Dictionary in snapshot.groups:
+		var node:MeshInstance3D=row.node
+		if not is_instance_valid(node) or not node.is_visible_in_tree() or node.transparency!=0.0 or node.mesh!=row.mesh or node.material_override!=row.material:return false
+		if node.global_transform!=row.global_transform or node.custom_aabb!=row.custom_aabb or node.layers!=row.layers:return false
+		if row.material.shader!=row.shader or row.shader.code!=row.shader_code or row.material.next_pass!=null or row.material.render_priority!=row.priority:return false
+		if node.mesh not in assets.cow_proof_groups or assets.cow_proof_groups[node.mesh].mesh!=row.proof_mesh:return false
+		if not cow_uniform_snapshot(row.material).recursive_equal(row.uniforms,64):return false
+	return true
+
+static func cow_uniform_snapshot(material:ShaderMaterial) -> Dictionary:
+	var uniforms:Dictionary={}
+	for uniform:Dictionary in material.shader.get_shader_uniform_list():
+		var value:Variant=material.get_shader_parameter(uniform.name)
+		if value is Array or value is Dictionary:value=value.duplicate(true)
+		elif typeof(value) in [TYPE_PACKED_BYTE_ARRAY,TYPE_PACKED_INT32_ARRAY,TYPE_PACKED_INT64_ARRAY,TYPE_PACKED_FLOAT32_ARRAY,TYPE_PACKED_FLOAT64_ARRAY,TYPE_PACKED_STRING_ARRAY,TYPE_PACKED_VECTOR2_ARRAY,TYPE_PACKED_VECTOR3_ARRAY,TYPE_PACKED_COLOR_ARRAY]:value=value.duplicate()
+		uniforms[uniform.name]=value
+	return uniforms
 
 func submit_head(assets:RefCounted,object:Dictionary,form:Dictionary,frame:Dictionary,owner:int,ownership:Texture2D,basis:Dictionary) -> int:
 	var shape:=int(object.get("shape_index",-1))

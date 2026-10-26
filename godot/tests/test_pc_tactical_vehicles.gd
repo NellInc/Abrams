@@ -44,6 +44,13 @@ func run() -> void:
 			if not scene_kind.is_empty():print("PC_TACTICAL_SCENE_FORMAT: %s; %d checks, %d errors"%[scene_kind,checks,failures.size()])
 		finish();return
 	var shapes:Array=(VehicleAssets.SCENE_SHAPES if scene_roster else VehicleAssets.ROSTER_SHAPES) if full_roster else [115,125]
+	if "--cow-proof-only" in args:
+		check(DisplayServer.get_name()=="headless" and scene_roster,"cow proof checks require headless schema3 roster")
+		if DisplayServer.get_name()=="headless" and scene_roster:
+			var vehicles=VehicleAssets.new()
+			check(vehicles.load_detail(directory),"cow proof assets load")
+			cow_proof_contract(vehicles,art.load_catalogue(directory))
+		finish();return
 	if DisplayServer.get_name()=="headless":
 		var vehicles=VehicleAssets.new()
 		check(vehicles.load_detail(directory),"complete Blender assets load")
@@ -53,6 +60,7 @@ func run() -> void:
 		grounding_encoding(vehicles)
 		var catalog:=art.load_catalogue(directory)
 		rigid_groups(vehicles,catalog)
+		if scene_roster:cow_proof_contract(vehicles,catalog)
 		for shape in shapes:
 			var data:=model_packet(catalog,shape)
 			var found:=0
@@ -509,6 +517,7 @@ func cpu_geometry_lifetime(vehicles:RefCounted,catalog:Dictionary) -> void:
 			var gpu:Dictionary=vehicles.gpu_faces[shape][primitive]
 			meshes[[shape,primitive]]=[gpu.affine,gpu.piecewise,gpu.triangles]
 	var poses:Dictionary=vehicles.gpu_poses.duplicate()
+	var cow_proofs:Dictionary=vehicles.cow_proof_groups.duplicate()
 	vehicles.release_cpu_geometry();vehicles.release_cpu_geometry()
 	check(vehicles.cpu_geometry_released and vehicles.models.size()==model_count,"GPU-only retirement is explicit and idempotent")
 	for key:Array in before:
@@ -519,10 +528,74 @@ func cpu_geometry_lifetime(vehicles:RefCounted,catalog:Dictionary) -> void:
 		var gpu:Dictionary=vehicles.gpu_faces[key[0]][key[1]]
 		check([gpu.affine,gpu.piecewise,gpu.triangles]==meshes[key],"GPU buffers and exact triangle counts survive retirement")
 	check(vehicles.gpu_poses==poses,"ground-crew ownership positions survive retirement")
+	check(vehicles.cow_proof_groups==cow_proofs,"optional cow GPU proofs survive CPU retirement")
 	check(vehicles.mapping({},{},{},[])==[],"retired CPU mapping fails closed")
 	rigid_groups(vehicles,catalog)
 	vehicles.clear_detail()
 	check(not vehicles.cpu_geometry_released and vehicles.models.is_empty(),"reload boundary resets CPU lifetime")
+	check(vehicles.cow_proof_groups.is_empty(),"reload boundary clears optional cow GPU proofs")
+
+func cow_proof_contract(vehicles:RefCounted,catalog:Dictionary) -> void:
+	check(vehicles.cow_proof_groups.size()==vehicles.gpu_groups[157].size(),"every farm group retained in separate component proof")
+	var total:=0;var cows:=0;var ambiguous:=0
+	for live:ArrayMesh in vehicles.cow_proof_groups:
+		var proof:Dictionary=vehicles.cow_proof_groups[live]
+		var original:Array=live.surface_get_arrays(0);var tagged:Array=proof.mesh.surface_get_arrays(0)
+		check(proof.mesh!=live and live.get_surface_count()==1 and proof.mesh.get_surface_count()==1,"proof never replaces or adds a live surface")
+		for slot in [Mesh.ARRAY_VERTEX,Mesh.ARRAY_TEX_UV,Mesh.ARRAY_TEX_UV2]:check(original[slot]==tagged[slot],"proof position/UV/grounding arrays remain exact")
+		check(original[Mesh.ARRAY_COLOR]==null,"live group has no diagnostic component colours")
+		var colors:PackedColorArray=tagged[Mesh.ARRAY_COLOR]
+		var valid_tags:=true;var tagged_cows:=0
+		for i in range(0,colors.size(),3):
+			valid_tags=valid_tags and colors[i] in [Color(0,0,0,1),Color(1,1,1,1)] and colors[i]==colors[i+1] and colors[i]==colors[i+2]
+			if colors[i].r==1.0:tagged_cows+=1
+		check(valid_tags and tagged_cows==proof.cow_triangles,"each triangle has one exact validated component tag")
+		total+=int(proof.triangles);cows+=int(proof.cow_triangles);ambiguous+=int(proof.ambiguous_cow_triangles)
+	check(total==7938 and cows+ambiguous==1266 and cows>0,"entire current farm and precise cow labels retained")
+	var triangle:Dictionary={"vertices":[[0,0,0],[2,0,0],[0,2,0]],"uvs":[[0,0],[1,0],[0,1]],"component":"architecture_cow_body","material":"architecture_cow_white","source_primitive":28751}
+	var invalid:Dictionary=triangle.duplicate(true);invalid.material="grass"
+	check(not VehicleAssets.cow_proof_plan({"shape_index":157,"triangles":[invalid]}).ok,"cow label and material disagreement cannot gain proof")
+	var subject:=VehicleView.new();root.add_child(subject)
+	var data:=model_packet(catalog,157);data.unsupported=[]
+	var original_source:String=JSON.stringify(data)
+	check(subject.prepare_object(vehicles,data.objects[0],data.camera,1,null,{})>0,"production farm groups actually submitted")
+	var snapshot:Dictionary=subject.cow_proof_snapshot(vehicles,data)
+	check(snapshot.ok and snapshot.groups.size()==vehicles.gpu_groups[157].size() and snapshot.triangles==total,"snapshot includes every actually submitted farm occluder")
+	check(subject.cow_proof_snapshot_valid(snapshot),"fresh complete snapshot valid")
+	var dual_flags:Dictionary=data.duplicate(true);dual_flags.objects[0].dynamic_instance=true
+	check(subject.cow_proof_snapshot(vehicles,dual_flags).ok,"authentic dual-flag farm draw context is not a moving cow actor")
+	for path:Variant in [false,-1,NAN,"1"]:
+		var bad_path:Dictionary=dual_flags.duplicate(true);bad_path.objects[0].static_path=path
+		check(not subject.cow_proof_snapshot(vehicles,bad_path).ok,"invalid/nonpositive static path cannot gain farm proof")
+	if snapshot.ok:
+		var row:Dictionary=snapshot.groups[0]
+		check(row.custom_aabb==row.node.custom_aabb and row.uniforms.source_group_basis==row.material.get_shader_parameter("source_group_basis") and row.uniforms.source_group_origin==row.material.get_shader_parameter("source_group_origin"),"shader-space fit and oversized AABB captured")
+		var origin:Vector3=row.material.get_shader_parameter("source_group_origin")
+		row.material.set_shader_parameter("source_group_origin",origin+Vector3.ONE)
+		check(not subject.cow_proof_snapshot_valid(snapshot),"pooled uniform mutation invalidates immutable snapshot")
+		row.material.set_shader_parameter("source_group_origin",origin)
+		check(subject.cow_proof_snapshot_valid(snapshot),"exact fit restore restores validation")
+		var packed:=PackedVector3Array([Vector3.ONE]);row.material.set_shader_parameter("source_anchors",packed)
+		var frozen:Dictionary=subject.cow_proof_snapshot(vehicles,data)
+		packed[0]=Vector3.ZERO;row.material.set_shader_parameter("source_anchors",packed)
+		check(frozen.groups[0].uniforms.source_anchors[0]==Vector3.ONE and not subject.cow_proof_snapshot_valid(frozen),"packed uniforms freeze independently of pooled arrays")
+		row.node.visible=false;check(not subject.cow_proof_snapshot_valid(snapshot),"hidden group invalidates proof");row.node.visible=true
+	for field:String in ["sprite","round_forms","line","uncovered"]:
+		var bad:Dictionary=data.duplicate(true)
+		if field=="sprite":bad.objects[0].sprite={}
+		elif field=="round_forms":bad.objects[0].round_forms=[{}]
+		elif field=="line":bad.objects[0].polygons[0].fill_mode=0
+		else:bad.objects[0].polygons[0].primitive=-1
+		check(not subject.cow_proof_snapshot(vehicles,bad).ok,"farm "+field+" fails complete proof closed")
+	var before_extra:Dictionary=subject.cow_proof_snapshot(vehicles,data)
+	check(subject.cow_proof_snapshot_valid(before_extra),"current snapshot valid before extra fallback")
+	check(subject.submit(vehicles,data.objects[0],data.objects[0].polygons[0],data.camera,1,null,{})>0,"generated extra face fallback submitted")
+	check(not subject.cow_proof_snapshot(vehicles,data).ok,"emitted same-owner fallback cannot be omitted")
+	check(not subject.cow_proof_snapshot_valid(before_extra),"new emitted fallback invalidates an already pending snapshot")
+	subject.clear();check(not subject.cow_proof_snapshot_valid(snapshot),"next assembly invalidates old pending snapshot")
+	check(JSON.stringify(data)==original_source,"proof inspection never mutates source packet")
+	subject.free()
+	print("PC_COW_ASSET_PROOF: groups=%d triangles=%d cow=%d ambiguous=%d"%[vehicles.cow_proof_groups.size(),total,cows,ambiguous])
 
 func source_line_vertices() -> PackedVector3Array:
 	var result:=PackedVector3Array()

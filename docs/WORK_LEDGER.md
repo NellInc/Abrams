@@ -7803,3 +7803,70 @@ Individual saved controls remain usable. This closes combined continuous-balance
 listening, while whole historical mix/device hearing are not newly claimed.
 The existing fresh live machine proof remains separate and passing. No native
 rerun, purchase, publication or foreign-file/process changes were necessary.
+
+## 26 October 2026: visible field air and guarded cow preparation
+
+Nell requested Soviet recordings and cow/environment bindings, free first,
+without changing the accepted Hind/tank balance, timing or visibility masks.
+She explicitly requested batched subagents. Sol retained integration and native
+execution; isolated workers supplied source/component/mastering lanes, with a
+bounded read-only Astra contract review. No cross-chat messages were sent.
+
+Installed a separate optional local cow/field bank atomically. Its production
+loader passes five exact SHA/PCM/frame/loop checks; installed-bank mixer 360,
+original source audio 924, limiter 33 and asset/snapshot 76 pass. The existing
+three accepted motor WAV hashes and factors remain exact. Cow uses one CC0 call,
+with source-frame exposure/cooldown and no count/range/pan modulation. Field uses
+CC0 tree-air-derived material. Nell rejected the original tall-grass preview as
+storm-like and accepted the gentler edit at factor 0.08 alongside the unchanged
+motors. Stock assets, crew/music and original requests/cadence were not replaced.
+
+Saved Animals/Field air controls bring native Settings to 17. The actual native
+Settings-only route passes 39 checks; compact, wide and scrolled screenshots
+were inspected. Changes target artifact preferences during the test. No fresh
+manual OS Audio-menu or user-preference pre/post byte claim is made.
+
+Real JSON-number container comparisons initially rejected the field predicate.
+Fixed exact typed scalar comparisons, with genuine parsed-source and JSON-roundtrip
+regressions. A one-pixel original field also fell between incumbent sparse probes;
+only the new field cue adds bounded exact ownership-texel sampling. Existing
+Hind/river admission stays unchanged. Portable world checks pass 135. Focused native
+retained-field replay passes seven, including current postdraw playback, original
+UI-cover stop, and world/source/ownership byte equality. The native fixture uses
+generated silent PCM and disables unrelated score prewarm. Two earlier 90-second
+setup timeouts remain failures, with no proven global CPU/GPU/music cause.
+
+Cow tags copy all production mesh arrays into private proof meshes: 1266 cow
+triangles among 7938 catalog triangles. Complete actually submitted farm groups,
+independent source fits, pooled-state/current-frame validation and the original
+ownership shader discards are retained. The opaque private companion biases cow
+away and occluders near, requires separated exact 3x3 WORLD component interiors
+and original UI clearance. It never edits production meshes/materials/masks.
+The bounded-search/premultiplied-copy final native matrix passes 114 checks;
+portable 71 and the asset/snapshot 76 pass. Genuine distant and offscreen cases
+stay silent. A five-pixel, 4x2 unbiased cow patch is explicitly insufficient.
+No universal floating-point precision or sustained-FPS claim is made. Sampled
+static CPU phase costs remain separate from visual PNG capture and frame-rate
+claims; a natural positive and comparable performance acceptance remain open.
+
+Recovered an authentic baseline by replaying 489 ordinary segments/12169 frames,
+matching every original RAM/video boundary. Read-only source control diagnosis
+showed accumulated steering and delayed yaw; ordinary stopping/alignment/approach
+then captured a centred farm at source depth 4931, without guest/camera overrides.
+The further drive ended when the original left SIM. The next native closer-farm
+check returned UNUSED before launch: fresh free space 5,636,829,184 bytes was below
+the mandatory 8 GiB floor. No guard was relaxed and no foreign process/cache or
+recording/evidence was deleted. No owned native reservation remains.
+
+Nell auditioned the Sound Ideas T-55 front steady-idle single, Stockmusic item
+22935298 at US$1.99, and approved up to US$3 total. Sign-in was completed by Nell.
+Local browser control is now disabled in Work settings, so checkout/download and
+licence entitlement remain open. No paid source is placed in Git or a package,
+no other spending/subscription is inferred, and no T-62/T-72 identity is claimed.
+
+Source closure and 33 packaging/remaining-audio Python tests pass without a kit
+build. Root inspected the integrated owned diff and kept foreign intro/music/
+campaign changes separate. The linter's dynamic voice_%s.wav load placeholder in
+an unmodified test is not a new resource defect. No push, standalone/web rebuild,
+packaging or publication. Current evidence and exact remaining gates:
+artifacts/environment-bindings-20261026/{state,verification}.json.
