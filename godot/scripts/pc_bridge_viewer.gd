@@ -401,6 +401,10 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 	# Play draws only the paired actors; capture and the --trace caption keep the
 	# complete world. Substitute bridges without the property are unaffected.
 	bridge.set("slim_samples",play_mode and not capture)
+	# Private component first-use work stays behind startup, before guest time.
+	if pc_audio and pc_audio.world_audio.streams.has("cow") and draw_view.tactical_vehicle_assets.ready:
+		var warmup: Dictionary = pc_audio.world_audio.cow_visibility.prewarm(draw_view.tactical_vehicle_assets,world_viewport)
+		print("PC_COW_PREWARM: "+JSON.stringify(warmup))
 	bridge.start(python, startup_state, save_path,
 		output.path_join("host.log"), "trace" if trace_mode else "reference", "--frame-audit" in args)
 	startup_ready=true

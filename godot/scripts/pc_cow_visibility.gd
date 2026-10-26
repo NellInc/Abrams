@@ -19,6 +19,7 @@ var admitted: Array[int] = []
 var reads: int = 0
 var renders: int = 0
 var cache_hits: int = 0
+var classify_count: int = 0
 var last_read_usec: int = 0
 var last_prepare_usec: int = 0
 var last_before_usec: int = 0
@@ -28,8 +29,12 @@ var failure: String = ""
 var _nodes: Array[MeshInstance3D] = []
 var _shader: Shader
 var _shader_source: String = ""
+var startup_warmup: Dictionary = {}
 var _proof_key: Array = []
 var _proof_mask: Image
+var _proof_version: int = 0
+var _classification_key: Array = []
+var _classification_owners: Array[int] = []
 var _serial: int = 0
 var _clone_uniform_names: Array[Array] = []
 
@@ -40,6 +45,8 @@ func stop() -> void:
 	_serial += 1
 	pending.clear(); armed.clear(); admitted.clear()
 	_proof_key.clear(); _proof_mask = null
+	_classification_key.clear(); _classification_owners.clear()
+	_proof_version += 1
 	if is_instance_valid(target): target.render_target_update_mode = SubViewport.UPDATE_DISABLED
 
 func begin_packet() -> void:
@@ -53,6 +60,71 @@ func release() -> void:
 	stop()
 	if is_instance_valid(target): target.queue_free()
 	target = null; camera = null; _nodes.clear(); _clone_uniform_names.clear(); _shader = null
+
+func prewarm(assets: RefCounted, world: SubViewport) -> Dictionary:
+	# Startup only, outside render callbacks and before the source bridge starts.
+	# Working if: real tagged fragments execute in this isolated target while
+	# live proof caches, source clocks, ownership and audio remain untouched.
+	if DisplayServer.get_name() == "headless" or RenderingServer.get_current_rendering_method() != "gl_compatibility" or not str(Engine.get_version_info().get("hash", "")).begins_with(QUALIFIED_ENGINE):
+		return {"ok":false,"skipped":true,"reason":"unqualified renderer"}
+	if not is_instance_valid(world) or not is_instance_valid(assets) or not pending.is_empty() or not armed.is_empty() or _proof_mask != null:
+		return {"ok":false,"skipped":true,"reason":"startup only"}
+	var proof: RefCounted = self
+	const VehicleView = preload("res://scripts/pc_tactical_vehicle_view.gd")
+	var started: int = Time.get_ticks_usec()
+	var code: String = shader_variant(preload("res://scripts/pc_tactical_vehicles.gdshader").code)
+	if code.is_empty() or not assets.ready:return {"ok":false,"reason":"source shader/assets unavailable"}
+	var selected: ArrayMesh
+	for row: Dictionary in assets.cow_proof_groups.values():
+		if int(row.cow_triangles)>0:selected=row.mesh;break
+	if selected==null:return {"ok":false,"reason":"tagged vertex format unavailable"}
+	var warm: RID = RenderingServer.viewport_create()
+	var scenario: RID = RenderingServer.scenario_create()
+	var camera: RID = RenderingServer.camera_create()
+	RenderingServer.viewport_set_size(warm,64,64)
+	RenderingServer.viewport_set_transparent_background(warm,true)
+	RenderingServer.viewport_set_msaa_3d(warm,world.msaa_3d as RenderingServer.ViewportMSAA)
+	RenderingServer.viewport_set_anisotropic_filtering_level(warm,world.anisotropic_filtering_level as RenderingServer.ViewportAnisotropicFiltering)
+	RenderingServer.viewport_set_scenario(warm,scenario);RenderingServer.viewport_attach_camera(warm,camera)
+	RenderingServer.camera_set_perspective(camera,75.0,0.25,2048.0)
+	RenderingServer.viewport_set_update_mode(warm,RenderingServer.VIEWPORT_UPDATE_ALWAYS)
+	RenderingServer.viewport_set_active(warm,true)
+	var mask: Image = Image.create(1,1,false,Image.FORMAT_RGBA8);mask.fill(Color8(1,0,8,255))
+	var ownership: Texture2D = ImageTexture.create_from_image(mask)
+	proof._shader=Shader.new();proof._shader.code=code
+	proof._shader_source=preload("res://scripts/pc_tactical_vehicles.gdshader").code
+	var material: ShaderMaterial = ShaderMaterial.new()
+	var binder: Node3D = VehicleView.new()
+	binder.bind_material(material,assets,157,1,ownership,{"inverse":Basis.IDENTITY,"origin":Vector3.ZERO})
+	material.shader=proof._shader
+	material.set_shader_parameter("source_group",true)
+	material.set_shader_parameter("source_group_basis",Basis.IDENTITY)
+	material.set_shader_parameter("source_group_origin",Vector3(350,1024,0))
+	var input: Color = Colour.input_color([1,0,0],true)
+	material.set_shader_parameter("cow_proof_owner",Vector2(input.r,input.g))
+	var instance: RID = RenderingServer.instance_create()
+	RenderingServer.instance_set_base(instance,selected.get_rid());RenderingServer.instance_set_scenario(instance,scenario)
+	RenderingServer.instance_geometry_set_material_override(instance,material.get_rid())
+	RenderingServer.instance_set_transform(instance,Transform3D.IDENTITY)
+	RenderingServer.instance_set_custom_aabb(instance,AABB(Vector3(-100000,-100000,-100000),Vector3(200000,200000,200000)))
+	RenderingServer.force_draw(false);RenderingServer.force_sync()
+	var image: Image = RenderingServer.texture_2d_get(RenderingServer.viewport_get_texture(warm))
+	var opaque: int = 0;var cow: int = 0;var clear_background: bool = false
+	if image!=null:
+		clear_background=image.get_pixel(0,0)==Color(0,0,0,0)
+		if image.get_format()!=Image.FORMAT_RGBA8:image.convert(Image.FORMAT_RGBA8)
+		var bytes: PackedByteArray = image.get_data()
+		for pixel: int in image.get_width()*image.get_height():
+			if bytes[pixel*4+3]==255:
+				opaque+=1
+			# Resolved MSAA edge coverage still proves this opaque shader ran;
+			# it is never a live ownership/witness rule or published mask.
+			if bytes[pixel*4+3]>0 and bytes[pixel*4+2]>0:cow+=1
+	RenderingServer.viewport_set_active(warm,false)
+	RenderingServer.free_rid(instance);RenderingServer.free_rid(camera);RenderingServer.free_rid(warm);RenderingServer.free_rid(scenario)
+	binder.free()
+	startup_warmup = {"ok":clear_background and cow>0,"startup_usec":Time.get_ticks_usec()-started,"opaque_pixels":opaque,"cow_fragment_pixels":cow,"clear_background":clear_background,"dummy_mask_published":false,"live_proof_cache_empty":proof._proof_mask==null and proof.admitted.is_empty()}
+	return startup_warmup
 
 static func shader_variant(source: String) -> String:
 	# Append after the entire production fragment, preserving every discard.
@@ -156,7 +228,10 @@ func prepare(snapshot: Dictionary, world: SubViewport, live_camera: Camera3D, ow
 		"clip": clip.duplicate(), "size": world.size, "selected": snapshot.owners.duplicate(), "frame": frame, "epoch": epoch,
 		"current": current, "guard": guard, "serial": _serial, "camera_key": camera_key(live_camera), "raster_key": raster_key(world),
 		"owner_key": owner_inputs, "submission_key": snapshot_key(snapshot)}
-	token.proof_key = [epoch, frame, token.camera_key, token.raster_key, token.owner_key, token.submission_key]
+	# Source time remains an observation validity gate, never a render input.
+	# Working if: advancing identical packets reuse proof only after fresh
+	# pre/postdraw frame checks; changed clip, epoch or consumed inputs rerender.
+	token.proof_key = [epoch, token.clip, token.camera_key, token.raster_key, token.owner_key, token.submission_key]
 	if _proof_mask != null and token.proof_key == _proof_key:
 		token.reuse_mask = _proof_mask
 	else:
@@ -204,11 +279,20 @@ func after_draw() -> void:
 	else:
 		var started: int = Time.get_ticks_usec()
 		mask = target.get_texture().get_image()
+		_proof_version += 1
 		reads += 1; last_read_usec = Time.get_ticks_usec() - started
 	if not valid_token(token) or mask == null or mask.get_size() != token.size: stop(); return
-	var classification: int = Time.get_ticks_usec()
-	admitted = visible_owners(mask, token)
-	last_classify_usec = Time.get_ticks_usec() - classification
+	var classification_key: Array = [mask, _proof_version, token.ui, token.selected, token.clip]
+	if classification_key == _classification_key:
+		admitted.assign(_classification_owners)
+		last_classify_usec = 0
+	else:
+		var classification: int = Time.get_ticks_usec()
+		admitted = visible_owners(mask, token)
+		last_classify_usec = Time.get_ticks_usec() - classification
+		classify_count += 1
+		_classification_key = classification_key.duplicate(true)
+		_classification_owners.assign(admitted)
 	_proof_key = token.proof_key.duplicate(true)
 	_proof_mask = mask
 	last_after_usec = Time.get_ticks_usec() - began

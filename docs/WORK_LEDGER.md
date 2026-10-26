@@ -7870,3 +7870,85 @@ campaign changes separate. The linter's dynamic voice_%s.wav load placeholder in
 an unmodified test is not a new resource defect. No push, standalone/web rebuild,
 packaging or publication. Current evidence and exact remaining gates:
 artifacts/environment-bindings-20261026/{state,verification}.json.
+
+
+## 26 October 2026: cow proof startup and exact-input cache checkpoint
+
+Nell explicitly released the free-space hold. No CPU or disk admission hold was
+retained, no shared cache was cleared, and no foreign process was signalled.
+The accepted engine/turret/Hind PCM hashes and factors remain exact. No push,
+package, browser or standalone rebuild/publication was performed.
+
+A genuine ordinary-Z source case at frame13519/focal512 passes 12/12 native
+component proofs, including production world/ownership/source byte equality.
+Cache-only portable82/native138 checks pass: current frame/epoch still gate
+pre/postdraw validity; exact render inputs, clip and source epoch qualify reuse;
+mask version/UI/owners/clip qualify classification reuse. Hidden/UI-covered or
+mutated inputs retain their fail-closed behavior.
+
+One isolated real tagged-fragment startup warmup was qualified and integrated
+before bridge.start. It matches the selected raster quality, retains the Shader
+used by the live proof, frees temporary rendering RIDs, and publishes no dummy
+mask, source provenance, admission or audio. The promoted PNG-free retained
+benchmark passes with 156.592ms warm work, first real proof23.647ms versus the
+cache-only144.262ms, subsequent fresh median12.201ms and cached median8.1265ms.
+Cached classification is0usec. This is bounded MSAA4 retained-scene evidence,
+without a sustained-FPS, compilation-cause, universal driver or cold-cache claim.
+The bounded read-only Astra review found no blocking warm/cache contract defect.
+Root inspected the actual changes and verified the promoted startup hook in
+fresh native runs; those hooks report valid real fragments and empty live caches.
+
+Initial integration enum conversions and a private helper indentation error were
+caught, corrected and parsed before guest validation. A live capture with PNG
+finalization timed out and remains failed. The changed source-event endpoint
+removed that screenshot wait. A later run lost actual focus and stayed silent;
+another had412 focused source samples, but the cow was legitimately visible for
+only150 before the original UI became fully opaque at13677. The unchanged
+180-frame exposure delay correctly prevented a moo. No mask or timer was relaxed.
+An earlier genuine frame12899 has356 UI-clear source frames, but native component
+readback still rejects it:77 exact interiors all meet the original reticle row60.
+Its91-check result was never a positive-acceptance claim. An incorrectly shortened
+expectation CLI flag was ignored; the fixture now rejects unknown --expect- flags
+with exit2. Ordinary original gunner controls are being investigated next.
+
+Root reran installed mix360 and portable world135, all passing; component portable
+82 passes. Source closure and the Git index boundary pass without a build. The
+linter still reports its known dynamic voice_%s.wav placeholder in the unmodified
+source-audio test; no new parse errors were reported. Foreign sealed files remain
+byte-identical. The T55 single is still not downloaded: a targeted task-filename
+check found no supplied file, and disabled Work browser access remains external.
+Actual source-timed moo/mix acceptance and that licensed download remain open.
+
+
+Later source-only work found an earlier genuine native resume at12899. Its cow
+remained too close to the original reticle row60. Ordinary C/KP8 then moved the
+original reticle60to58 in13source frames while camera/farm projection remained
+unchanged. Root verified checkpoint hashes and frame12912 packet, then enforced
+--expect-visible-cow:92checks0errors, actualowner6 admitted, source/world/owner
+bytes unchanged. No camera/mode/RAM write or visibility/timer override was used.
+
+Fresh live capture still has no accepted moo. Native05 exposed a diagnostic
+startup focus dependency and closed cleanly at its unchanged90second cap.
+Native06 fixed that dependency and performed one real OS activation on its
+verified own game PID, returning0. Eight actualfocused samples/four positive
+cow draws were followed by actualOSfocus loss; it correctly aborted/stopped
+sound after0.093seconds, hostexit0/audio drained. No focus flag was forged and
+no repeated foreground stealing was installed. Final capture needs stable real
+foreground; this is not a renderer/component or mix-listening pass. A scoped
+current Chrome check again reports localbrowseruse disabledinWorksettings.
+The approved T55 file remains absent and cannot be obtained through that UI.
+
+
+Nell then supplied a bounded foreground interval. Current native07 is terminal0:
+325/325 live samples focused,320focused recording samples,0unfocused,320actual
+positive draws, one cowcall/oneplayingedge. Its first exposure12918 matures at
+13098, exactly180sourceframes, with no early/replayed event. Source audit325
+rows is monotonic step1. Root asserted terminal host0, audio drained, no bank or
+component errors, and unchanged source/mask/timer contracts. The8.266second
+private post-limiter stereo PCM has -5.3dBTP and no clipping. This is actual
+native original-resume/production-mixer execution with the Dummy driver, without
+physical-device/healthy-host pacing claims. All earlier failures remain failures.
+The actual new mix was presented for human balance judgment; no listening result
+is invented. The redundant helper first-sample focus request was removed before
+this run; focus transitions are retained, no admission flag was overridden.
+T55 entitlement/download remains the external dependency described above.

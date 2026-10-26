@@ -54,8 +54,25 @@ invalid cow/field bank cannot disable the accepted Hind/river bank. Native
 Settings exposes saved Off-to-100% controls for both cues. Their source and
 native acceptance evidence is kept in artifacts/environment-bindings-20261026.
 The separate private bank is installed locally. Production loader/mixer checks
-pass; the sufficiently visible natural cow case remains open. Field level
-acceptance and native source-mask admission are recorded separately.
+pass. A genuine original zoomed farm now qualifies the component proof natively;
+world, ownership and source bytes remain identical. Render-cache reuse still
+checks the current source frame and epoch before and after drawing. Exact UI,
+clip, ownership, geometry or material changes invalidate the relevant cache.
+An isolated tagged-fragment warmup runs before the source bridge starts, with
+the selected MSAA/anisotropy. It publishes no visibility or audio authority.
+The qualified MSAA4 retained case measured 156.592 ms startup work and 23.647 ms
+first real proof, versus 144.262 ms without that warmup. These are bounded
+retained-scene measurements, without a sustained-FPS or cold-cache claim.
+A second earlier original case qualifies after ordinary sight controls move
+the reticle clear of the cow, without changing the camera or geometry. Enforced
+native positive checks pass 92. With an uninterrupted foreground interval,
+actual native original execution passes 325 focused samples and one cow call
+at source frame13098, exactly180 after exposure12918. The 8.266-second private
+post-limiter capture peaks at -5.3dBTP, with zero unfocused recording samples.
+New human mix review is pending. This uses the Dummy driver for software capture,
+without a physical-device or healthy-host pacing claim. The initial delay remains
+180 source frames, and accepted motor levels remain exact.
+Field level acceptance and native source-mask admission are recorded separately.
 No browser or standalone edition has been rebuilt or published.
 
 ## Suno score production, 23 October 2026

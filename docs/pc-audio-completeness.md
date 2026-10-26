@@ -764,9 +764,26 @@ farm occluders, with pessimistic depth and original UI clearance. Whole-yard
 visibility never qualifies a moo. Portable component checks pass 71; asset and
 snapshot checks pass 76. Final generated native depth/UI/occlusion/MSAA checks pass 114,
 including bounded search and the private premultiplied-alpha search copy. Genuine distant/offscreen farm
-cases remain silent. A positive sufficiently large original cow case and final
-native acceptance are still open; source frames and controlled replay evidence
-are retained without guest/camera overrides. No tiny cow is relabelled audible.
+cases remain silent. A genuine original zoomed farm now passes the native
+component proof, with production world/ownership/source byte equality.
+Cache-contract checks pass 82 portable and 138 native; current frame/epoch
+validity survives render-cache reuse. Source-derived private startup warming
+reduces the measured first proof from 144.262 ms to 23.647 ms in the qualified
+retained scene, shifting 156.592 ms before the guest starts. Subsequent fresh
+median is 12.201 ms, cached median 8.1265 ms, with zero cached classification
+work. Shared caches were not cleared; these results establish neither sustained
+FPS nor a universal driver guarantee. Actual source-timed moo/mix acceptance
+remains open. The tested live route has 150 qualifying source frames before the
+original UI covers it completely, so the unchanged 180-frame delay correctly
+prevents a call. An earlier genuine checkpoint now passes 92 native checks after ordinary C/KP8
+moves the original reticle from60to58; camera/farm projection remains unchanged.
+Earlier live captures lost real OS focus and correctly stayed silent. Nell then
+provided a foreground interval: fresh native execution passes325 focused source
+samples, one moo exactly180sourceframes after exposure, hostexit0/audio drained
+and zero unfocused recording samples. The8.266-second post-limiter PCM peaks at
+-5.3dBTP; new human mix review is pending. Software Dummy-driver capture does
+not establish physical-device hearing or healthy-host pacing. Source frames and controlled replay evidence remain distinct;
+no tiny cow is relabelled audible.
 
 The Soviet search found the clean steady T-55 front-idle single by Sound Ideas,
 Stockmusic item 22935298, US$1.99. Nell auditioned it and approved a total up to

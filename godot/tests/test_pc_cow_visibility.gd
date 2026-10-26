@@ -40,6 +40,10 @@ func rectangle(mask: Image, bounds: Rect2i, colour: Color) -> void:
 func run() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	native = "--native" in args
+	for argument: String in args:
+		if argument.begins_with("--expect-") and argument not in ["--expect-visible-cow", "--expect-hidden-cow"]:
+			printerr("Unknown cow expectation: " + argument)
+			quit(2); return
 	if "--output" in args: output = args[args.find("--output") + 1]
 	if not output.is_empty() and not output.is_absolute_path(): output = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join(output)
 	var ui: Image = Image.create(320, 200, false, Image.FORMAT_L8); ui.fill(Color.BLACK)
@@ -198,6 +202,42 @@ func portable_submission_checks(ui: Image) -> void:
 	check(proof.pending.has("reuse_mask"), "unchanged retained source frame queues exact immutable cached proof")
 	proof.before_draw(); proof.after_draw()
 	check(proof.admitted == [1] and proof.reads == 0 and proof.cache_hits == 1, "cached bytes require pre/postdraw and current token")
+	var classified: int = proof.classify_count
+	for source_frame: int in range(2, 5):
+		state.frame = source_frame; proof.begin_packet()
+		check(proof.prepare(snapshot,world,camera,ownership,ui,data.camera.clip,source_frame,1,current,guard) and proof.pending.has("reuse_mask"), "advancing identical source frame retains exact render proof")
+		proof.before_draw(); proof.after_draw()
+	check(proof.reads == 0 and proof.classify_count == classified and proof.admitted == [1] and proof.last_classify_usec == 0, "advancing current tokens reuse one immutable classification")
+	state.frame = 1
+	ui.fill(Color.WHITE)
+	proof.prepare(snapshot,world,camera,ownership,ui,data.camera.clip,1,1,current,guard)
+	check(proof.pending.has("reuse_mask"), "UI-only changes retain GPU proof")
+	proof.before_draw(); proof.after_draw()
+	check(proof.reads == 0 and proof.classify_count == classified + 1 and proof.admitted.is_empty(), "UI-only change reclassifies without draw/readback")
+	ui.fill(Color.BLACK)
+	proof.prepare(snapshot,world,camera,ownership,ui,data.camera.clip,1,1,current,guard); proof.before_draw(); proof.after_draw()
+	var original_key: Array = proof._proof_key.duplicate(true)
+	var clip: Array = [1,0,319,199]
+	proof.prepare(snapshot,world,camera,ownership,ui,clip,1,1,current,guard)
+	check(not proof.pending.has("reuse_mask") and proof.pending.proof_key != original_key and proof.target.render_target_update_mode == SubViewport.UPDATE_ONCE, "changed source clip invalidates render proof and mapping identity")
+	# Headless state-machine fixture supplies the changed proof mask explicitly.
+	# Native mode below proves real render/readback counts for this transition.
+	proof._proof_key = proof.pending.proof_key.duplicate(true)
+	proof.prepare(snapshot,world,camera,ownership,ui,clip,1,1,current,guard); proof.before_draw(); proof.after_draw()
+	check(proof.classify_count == classified + 3 and proof.admitted == [1], "changed clip reclassifies identical image under its exact new mapping")
+	ownership.prepare(data,world.size,null,{}, {1:true})
+	proof.prepare(snapshot,world,camera,ownership,ui,clip,1,1,current,guard)
+	check(not proof.pending.has("reuse_mask"), "new actual ownership mesh forces render proof miss")
+	proof._proof_key = proof.pending.proof_key.duplicate(true)
+	proof.prepare(snapshot,world,camera,ownership,ui,clip,1,1,current,guard); proof.before_draw(); proof.after_draw()
+	var saved_origin: Vector3 = row.uniforms.source_group_origin
+	row.uniforms.source_group_origin = Vector3.ONE; row.material.set_shader_parameter("source_group_origin", Vector3.ONE)
+	proof.prepare(snapshot,world,camera,ownership,ui,clip,1,1,current,guard)
+	check(not proof.pending.has("reuse_mask"), "changed actual pooled group fit forces render proof miss")
+	row.uniforms.source_group_origin = saved_origin; row.material.set_shader_parameter("source_group_origin", saved_origin)
+	proof.stop()
+	check(proof._classification_key.is_empty() and proof._proof_mask == null, "mute/restore lifecycle stop clears render and classification caches")
+
 	var mutations: Array[String] = ["origin","generation","frame","epoch","mute","resize","camera","mesh","ui","private","reset"]
 	for mutation: String in mutations:
 		check(proof.prepare(snapshot,world,camera,ownership,ui,data.camera.clip,1,1,current,guard), "fresh current token prepares: " + mutation)
@@ -275,10 +315,24 @@ func native_checks(ui: Image) -> void:
 		proof.prepare(snapshot,world,camera,ownership,ui,data.camera.clip,1,1,current,guard)
 		await RenderingServer.frame_post_draw
 		check(proof.admitted == [1] and proof.reads == read_count, "retained identical frame reuses exact proof after postdraw")
+	var classifications: int = proof.classify_count
+	state.frame = 2
+	proof.begin_packet(); proof.prepare(snapshot,world,camera,ownership,ui,data.camera.clip,2,1,current,guard)
+	await RenderingServer.frame_post_draw
+	check(proof.reads == read_count and proof.classify_count == classifications and proof.admitted == [1], "native advancing identical source frame needs one read and one classification")
+	state.frame = 1
 	ui.fill(Color.WHITE); proof.prepare(snapshot,world,camera,ownership,ui,data.camera.clip,1,1,current,guard)
 	await RenderingServer.frame_post_draw
-	check(proof.admitted.is_empty() and proof.reads == read_count, "UI-only change reclassifies cache without GPU read")
+	check(proof.admitted.is_empty() and proof.reads == read_count and proof.classify_count == classifications + 1, "UI-only change reclassifies cache without GPU read")
 	ui.fill(Color.BLACK)
+	var changed_clip: Array = [1,0,319,199]
+	proof.prepare(snapshot,world,camera,ownership,ui,changed_clip,1,1,current,guard)
+	await RenderingServer.frame_post_draw
+	check(proof.reads == read_count + 1 and proof.classify_count == classifications + 2, "native changed clip rerenders and reclassifies exact mapping")
+	proof.prepare(snapshot,world,camera,ownership,ui,data.camera.clip,1,1,current,guard)
+	await RenderingServer.frame_post_draw
+	check(proof.reads == read_count + 2 and proof.admitted == [1], "native original clip restoration requires its own current proof")
+	read_count = proof.reads
 	# In the very next draw, the current production owner texture must win.
 	ownership.prepare(source_data(true),world.size,null,{}, {1:true,2:true})
 	proof.prepare(snapshot,world,camera,ownership,ui,data.camera.clip,1,1,current,guard)
@@ -346,7 +400,7 @@ func native_checks(ui: Image) -> void:
 		distant.node.visible = false; row.node.visible = true; snapshot.groups = [row]; snapshot.triangles = 2
 	if not output.is_empty():
 		DirAccess.make_dir_recursive_absolute(output)
-		FileAccess.open(output.path_join("cow-native.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"reads":proof.reads,"renders":proof.renders,"cache_hits":proof.cache_hits,"startup_changed_before_companion":startup_changed,"source":"generated actual-submission fixture; no guest launch or actual-farm angle acceptance"},"  "))
+		FileAccess.open(output.path_join("cow-native.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"reads":proof.reads,"renders":proof.renders,"cache_hits":proof.cache_hits,"classify_count":proof.classify_count,"startup_changed_before_companion":startup_changed,"source":"generated actual-submission fixture; no guest launch or actual-farm angle acceptance"},"  "))
 	RenderingServer.frame_pre_draw.disconnect(proof.before_draw); RenderingServer.frame_post_draw.disconnect(proof.after_draw)
 	proof.release(); world.queue_free(); ownership.queue_free(); await process_frame
 
@@ -435,6 +489,7 @@ func retained_farm_checks(path: String, args: PackedStringArray) -> void:
 	var first_admitted: Array = proof.admitted.duplicate()
 	var before_cache_reads: int = proof.reads
 	var before_cache_hits: int = proof.cache_hits
+	var before_cache_classifications: int = proof.classify_count
 	var cached_start: int = Time.get_ticks_usec()
 	proof.prepare(snapshot,world,camera,draw.ownership,ui,data.camera.clip,1,1,current,guard)
 	var cache_prepare: int = Time.get_ticks_usec() - cached_start
@@ -446,7 +501,7 @@ func retained_farm_checks(path: String, args: PackedStringArray) -> void:
 	proof.prepare(snapshot,world,camera,draw.ownership,ui,data.camera.clip,2,1,current,guard)
 	var changed_prepare: int = Time.get_ticks_usec() - changed_start
 	await RenderingServer.frame_post_draw
-	check(proof.reads == before_cache_reads+1, "changed source frame gets a fresh component proof")
+	check(proof.reads == before_cache_reads and proof.classify_count == before_cache_classifications and proof.last_classify_usec == 0, "advancing identical actual source frame reuses current proof and classification")
 	if not output.is_empty():
 		DirAccess.make_dir_recursive_absolute(output)
 		if proof._proof_mask != null: proof._proof_mask.save_png(output.path_join("retained-farm-component.png"))
@@ -471,7 +526,7 @@ func retained_farm_checks(path: String, args: PackedStringArray) -> void:
 			"live_effective":transform_values(camera.get_camera_transform()),"clone_effective":transform_values(proof.camera.get_camera_transform()),
 			"live_projection":str(camera.get_camera_projection()),"clone_projection":str(proof.camera.get_camera_projection()),
 			"live_cull_mask":camera.cull_mask,"clone_cull_mask":proof.camera.cull_mask,"ownership_camera":transform_values(draw.ownership.camera.global_transform)}
-		FileAccess.open(output.path_join("retained-farm.json"),FileAccess.WRITE).store_string(JSON.stringify({"source":path,"source_sha256":FileAccess.get_sha256(path),"owners":snapshot.owners,"groups":snapshot.groups.size(),"emitted_groups":groups,"cameras":cameras,"triangles":snapshot.triangles,"admitted":proof.admitted,"first_prepare_usec":first_prepare,"first_read_usec":first_read,"cpu_phases_usec":{"first":first_phases,"cache":cache_phases,"changed_frame":{"prepare":proof.last_prepare_usec,"before_draw":proof.last_before_usec,"after_draw":proof.last_after_usec,"readback":proof.last_read_usec,"classification":proof.last_classify_usec}},"cache_prepare_usec":cache_prepare,"changed_frame_prepare_usec":changed_prepare,"changed_frame_read_usec":proof.last_read_usec,"reads":proof.reads,"cache_hits":proof.cache_hits,"engine":Engine.get_version_info(),"gpu":RenderingServer.get_video_adapter_name()},"  "))
+		FileAccess.open(output.path_join("retained-farm.json"),FileAccess.WRITE).store_string(JSON.stringify({"source":path,"source_sha256":FileAccess.get_sha256(path),"owners":snapshot.owners,"groups":snapshot.groups.size(),"emitted_groups":groups,"cameras":cameras,"triangles":snapshot.triangles,"admitted":proof.admitted,"first_prepare_usec":first_prepare,"first_read_usec":first_read,"cpu_phases_usec":{"first":first_phases,"cache":cache_phases,"changed_frame":{"prepare":proof.last_prepare_usec,"before_draw":proof.last_before_usec,"after_draw":proof.last_after_usec,"readback":proof.last_read_usec,"classification":proof.last_classify_usec}},"cache_prepare_usec":cache_prepare,"changed_frame_prepare_usec":changed_prepare,"changed_frame_read_usec":proof.last_read_usec,"reads":proof.reads,"cache_hits":proof.cache_hits,"classify_count":proof.classify_count,"engine":Engine.get_version_info(),"gpu":RenderingServer.get_video_adapter_name()},"  "))
 	RenderingServer.frame_pre_draw.disconnect(proof.before_draw); RenderingServer.frame_post_draw.disconnect(proof.after_draw)
 	proof.release(); world.queue_free(); await process_frame
 
