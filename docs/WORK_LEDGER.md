@@ -8171,3 +8171,77 @@ sizes without changing user preferences. Exact final counts and hashes are
 recorded in verification.json. No physical-device or fresh live-guest/mix
 listening claim is made. Local only, no push or standalone/web publication.
 Foreign intro/music/viewer edits, files/index and processes remain preserved.
+
+
+## 2026-10-27: acquired M113 and Bradley engines integrated locally
+
+Nell supplied the purchased SoundDogs single, requested a solid continuous loop
+and integration of the acquired sounds, suggested the50–60second region, then
+accepted its edited join (“Continuous, keep it”) and both captured motor mixes
+(“Balanced, keep these levels”). These instructions release the sourcing-only
+hold for the approved M113 and Bradley masters. No new purchase, publication or
+standalone/web rebuild was performed.
+
+The recoverable Bradley original is173.994667seconds, stereo48k24. Its private
+derivative is480817frames/10.017020833seconds, mono48k16, selected from50.0 to
+60.042020833seconds with a25ms phase-matched, correlation-compensated splice.
+The measured join-region level difference is0.10dB. Static attenuation yields
+-25.0LUFS/-13.62dBTP, with no EQ, compressor, pitch/time change or clipping.
+The already approved M113 v2 is copied byte-identically at1152000frames/24s.
+Originals, accepted previews and earlier revisions remain private/recoverable.
+The Bradley source is vendor-labelled Bradley-family; exact M2/M3 variant and
+microphone placement remain unverified. No paid audio is supplied to models.
+
+An optional native-only two-cue bank validates fixed names, SHA,48k mono16 and
+exact per-cue lengths before atomic admission. Exact intact source models129
+(M113) and131(M2), uniquely joined actor pointers and nonzero signed16 movement,
+qualify the authored beds. Wrecks130/132, stationary, ambiguous, hidden and
+UI-covered actors remain excluded. Source event IDs/onsets, own-motor authority,
+camera, geometry and painter masks are unchanged. One centred fixed-pitch player
+per class uses factor0.30, with independent saved Off–100% controls. Muting either
+class never selects the generic tank fallback.
+
+Sol owns integration; a Sol worker added focused tests and a bounded read-only
+Astra review found no implementation blocker. Root corrected a new negative
+fixture that had incorrectly painted its background as a second eligible owner.
+Root reran the applicable checks: world470, mix420, source audio924, limiter33,
+play menu386 and frontdoor63, all exit0 with zero script errors. Native retained
+original Tactical ownership/audio checks add63 and Settings adds14, also exit0.
+Settings pixels were inspected at wide and compact targets, with21 controls and
+both new rows reachable. Test preferences are isolated; user settings unchanged.
+
+Native proof uses actual source44834 for M113 and29093 for Bradley, paired to
+canonical original presentation/audio records and VGA BGRX digests. A prior
+Bradley case28178 correctly had no visible witnesses and remained silent. The
+complete production Tactical protected-line/surface/guard/pose path is used.
+Source geometry, ownership and original UI bytes remain identical after audio
+observation. The first negative Bradley mask PNG was overwritten by the later
+positive case; its hash/negative receipt remains, with no retained-pixel or
+positive-visibility claim. Positive masks were hash-checked and frame-named;
+the helper now uses unique names for future runs.
+
+Two12second post-limiter captures use actual mixer sample clocks, with0clipped
+samples/0discarded frames and true peaks-25.57/-25.36dBTP. They hold authenticated
+original source boundaries, compare existing own-motor sound with each added
+bed, and do not invent crew/events. Nell accepted the resulting balance. This
+is retained-scene native/Dummy-driver proof, not fresh live guest motion,
+physical-device, crew-intelligibility or FPS evidence.
+
+All472stock audio files and23incumbent private-bank files remain byte-identical.
+The other approved acquired cues were already integrated. Unpurchased T72/BMP
+leads, rejected radio/revisions, excluded vehicles, unqualified stock reserves
+and unknown requests7/9/10/15/16 remain unbound; downloads alone do not establish
+perceptible source-owned events. The wrong podcast check initially rejected the
+intended-25LUFS level; a custom game-level check passes without changing audio.
+The sole generic subtitle warning is inapplicable to an engine WAV. Initial
+sandbox log/OS errors were resolved for acceptance runs with task-local logs
+and normal native access; a macOS launcher-extension warning remains recorded.
+No shared cache clearing or foreign-file/process/index changes occurred.
+
+Full provenance, receipts and the finite acquired-sound disposition are under
+artifacts/vehicle-audio-integration-20261027. Local only.
+
+Working if: both exact visible moving intact classes play their approved private
+beds, their saved controls independently mute/scale them without fallback, hidden
+or stale/UI-covered admissions stay silent, and incumbent audio/timing/masks stay
+unchanged.

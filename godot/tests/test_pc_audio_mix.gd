@@ -69,8 +69,10 @@ func individual_controls() -> void:
 	check(audio.engine.playing and audio.turret.playing,"only source-active engine resumes")
 	menu.choose("turret",0)
 	check(audio.engine.playing and not audio.turret.playing,"turret off leaves engine active")
+	menu.choose("m113",23);menu.choose("bradley",0)
 	check(audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100}),"legacy API still accepted")
 	check(audio.mix.engine==67 and audio.mix.turret==0,"legacy mix updates preserve individual choices")
+	check(audio.mix.m113==23 and audio.mix.bradley==0,"legacy mix updates preserve independent allied gain and Off")
 	check(sequence==[audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed] and JSON.stringify(source)==original,"individual settings never mutate or advance source events/loops")
 	for bad in [NAN,1.5,-1,101,"loud"]:
 		var invalid := menu.settings.duplicate();invalid.engine=bad
@@ -124,7 +126,11 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==19,"one external Audio menu, nineteen gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==21,"one external Audio menu, twenty-one gain groups")
+	for cue: String in ["m113","bradley"]:
+		check(Menu.DEFAULTS[cue]==100 and Menu.TITLES.has(cue) and menu.audio_channels().has(cue) and menu.menus.has(cue),"native allied control has an independent title and unchanged100% default: "+cue)
+		var choices: PopupMenu=menu.menus[cue]
+		check(choices.get_item_text(choices.get_item_index(0))=="Off" and choices.get_item_index(100)>=0,"native allied control exposes Off through100%: "+cue)
 	check(menu.get_menu_title(0)=="Audio","menu title")
 	for child in [menu.popup]+menu.menus.values():
 		for i in child.item_count:
@@ -205,10 +211,17 @@ func run() -> void:
 	check(reload.load_settings() and reload.settings.engine==0 and reload.settings.cannon==67 and reload.settings.turret==20,"individual settings persist, including Off and irregular gains")
 	menu.choose("hind",0);menu.choose("river",37);menu.choose("radio",23);menu.choose("switch",0);menu.choose("field",41);menu.choose("cow",0);menu.choose("t80",27);menu.choose("tank",43)
 	check(reload.load_settings() and reload.settings.hind==0 and reload.settings.river==37 and reload.settings.radio==23 and reload.settings.switch==0 and reload.settings.field==41 and reload.settings.cow==0 and reload.settings.t80==27 and reload.settings.tank==43,"world and auxiliary controls persist independent mute and intermediate gain")
+	menu.choose("m113",0);menu.choose("bradley",37)
+	check(reload.load_settings() and reload.settings.m113==0 and reload.settings.bradley==37,"allied controls persist independent Off and intermediate gain")
+	menu.choose("m113",43);menu.choose("bradley",0)
+	check(reload.load_settings() and reload.settings.m113==43 and reload.settings.bradley==0,"each allied class independently retains saved gain and mute")
 	var legacy := ConfigFile.new()
 	legacy.set_value("audio","effects",40);legacy.set_value("audio","motors",30)
 	legacy.save(menu.config_path)
-	check(reload.load_settings() and reload.settings.effects==40 and reload.settings.motors==30 and reload.settings.hind==100 and reload.settings.river==100 and reload.settings.field==100 and reload.settings.cow==100 and reload.settings.t80==100 and reload.settings.tank==100 and Audio.EFFECT_CUES.all(func(cue):return reload.settings[cue]==100),"old preferences keep original mix and acquire unchanged individual defaults")
+	check(reload.load_settings() and reload.settings.effects==40 and reload.settings.motors==30 and reload.settings.hind==100 and reload.settings.river==100 and reload.settings.field==100 and reload.settings.cow==100 and reload.settings.t80==100 and reload.settings.tank==100 and reload.settings.m113==100 and reload.settings.bradley==100 and Audio.EFFECT_CUES.all(func(cue):return reload.settings[cue]==100),"old preferences keep original mix and acquire unchanged individual defaults")
+	var invalid_allied := ConfigFile.new()
+	invalid_allied.set_value("audio","m113",101);invalid_allied.save(menu.config_path)
+	check(not reload.load_settings() and reload.settings==Menu.DEFAULTS and not reload.save_error.is_empty(),"invalid saved allied gain rejects complete preference file atomically")
 	var malformed := ConfigFile.new()
 	malformed.set_value("audio","effects","loud")
 	malformed.save(menu.config_path)

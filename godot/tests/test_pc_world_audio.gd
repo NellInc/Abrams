@@ -19,6 +19,7 @@ func check(ok: bool, why: String) -> void:
 func isolated_audio() -> Node:
 	var audio: Node = Audio.new()
 	audio.world_audio.tank_directory = ""
+	audio.world_audio.allied_directory = ""
 	return audio
 
 func packet(frame: int) -> Dictionary:
@@ -39,7 +40,8 @@ func bank(directory: String, cues: Array = World.BASE_CUES, kind: String = "priv
 	for cue: String in cues:
 		var stream: AudioStreamWAV = AudioStreamWAV.new()
 		stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=48000
-		var bytes: PackedByteArray=PackedByteArray();bytes.resize(World.T80_FRAME_COUNT*2 if cue=="t80" else World.TANK_FRAME_COUNT*2 if cue=="tank" else 96000);stream.data=bytes
+		var frames: int=World.ALLIED_FRAME_COUNTS[cue] if cue in World.ALLIED_CUES else World.T80_FRAME_COUNT if cue=="t80" else World.TANK_FRAME_COUNT if cue=="tank" else 48000
+		var bytes: PackedByteArray=PackedByteArray();bytes.resize(frames*2);stream.data=bytes
 		var path: String=directory.path_join(cue+".wav")
 		check(stream.save_to_wav(path)==OK,"generated PCM writes")
 		manifest.cues[cue]={"file":cue+".wav","sha256":FileAccess.get_sha256(path)}
@@ -111,6 +113,7 @@ func run() -> void:
 	await environment_checks(directory,ui,mask)
 	await soviet_checks(directory,ui,mask)
 	await tank_checks(directory,ui,mask)
+	await allied_checks(directory,ui,mask)
 	if native:
 		await native_checks(audio,original,ui)
 		if "--retained-field" in args: await retained_field_checks(args[args.find("--retained-field")+1])
@@ -309,6 +312,160 @@ func tank_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	manifest.cues.tank.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
 	check(reader._read_bank(directory,"private visible-tank fallback",World.TANK_CUES).get("error")=="invalid tank fallback frame count","matching file/manifest SHA cannot admit wrong loop duration")
 	check(JSON.stringify(data)==unchanged,"fallback never mutates original drawing/actor state")
+
+func allied_checks(base_directory: String, ui: Image, mask: Image) -> void:
+	check(World.ALLIED_CUES==["m113","bradley"] and World.ALLIED_SHAPES=={129:"m113",131:"bradley"}, "allied bank and exact intact original roster stay bounded")
+	for shape: int in [129,131]:
+		var data: Dictionary=tank_source(shape)
+		var original: String=JSON.stringify(data)
+		var cue: String="m113" if shape==129 else "bradley"
+		check(World.candidates(JSON.parse_string(original)).get(1,{}).get("cue")==cue, "exact JSON allied identity maps to its own recording: "+cue)
+		var actors: Dictionary={};actors[[123,shape]]=[data.world.dynamic[0],1]
+		check(World.moving_vehicle_candidate(data.objects[0],actors,shape) and not World.moving_tank_candidate(data.objects[0],actors,shape), "allied eligibility never widens strict tank helper: "+cue)
+		for speed: int in [-32768,-1,1,32767]:
+			var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].speed_raw=speed
+			check(World.candidates(changed,false).get(1,{}).get("cue")==cue, "allied forward/reverse signed16 movement retains exact class: "+cue)
+		for speed: Variant in [0,-32769,32768,0.5,NAN,INF,"10",true]:
+			var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].speed_raw=speed
+			check(World.candidates(changed).is_empty(), "stationary or malformed allied motion stays silent: "+cue)
+		for mutation: Dictionary in [{"shape_index":shape+0.5},{"shape_index":str(shape)},{"pointer":123.5},{"pointer":"123"},{"pointer":-1},{"pointer":65536},{"dynamic_instance":false}]:
+			var changed: Dictionary=data.duplicate(true);changed.objects[0].merge(mutation,true)
+			check(World.candidates(changed).is_empty(), "allied drawn identity cannot be coerced or made static: "+cue)
+		for mutation: Dictionary in [{"shape_index":shape+1},{"shape_index":shape+0.5},{"pointer":124},{"pointer":123.5},{"pointer":"123"}]:
+			var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].merge(mutation,true)
+			check(World.candidates(changed).is_empty(), "allied actor must exactly match drawn pointer and model: "+cue)
+		var duplicate: Dictionary=data.duplicate(true);duplicate.world.dynamic.append(duplicate.world.dynamic[0].duplicate())
+		check(World.candidates(duplicate).is_empty(), "ambiguous reused allied actor cannot supply movement: "+cue)
+		var missing: Dictionary=data.duplicate(true);missing.world.dynamic=[]
+		check(World.candidates(missing).is_empty(), "allied drawing never invents absent movement: "+cue)
+		ui.fill(Color.BLACK)
+		var token: Dictionary={"size":mask.get_size(),"clip":data.camera.clip,"selected":World.candidates(data),"ui":ui.get_data()}
+		for flag: int in [0,8]:
+			mask.fill(Color8(1,0,flag));check(World.visible_cues(mask,token)==[cue], "ordinary/guarded actual allied owner qualifies: "+cue)
+		for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0),Color.TRANSPARENT]:
+			mask.fill(colour);check(World.visible_cues(mask,token).is_empty(), "occluded/offscreen/line/round/alpha allied owners remain silent: "+cue)
+		mask.fill(Color8(2,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+		check(World.visible_cues(mask,token)==[cue], "thin allied silhouette uses separated actual same-owner pixels: "+cue)
+		ui.fill(Color.WHITE);token.ui=ui.get_data()
+		check(World.visible_cues(mask,token).is_empty(), "opaque original UI blocks narrow allied proof: "+cue)
+		ui.fill(Color.BLACK);token.ui=ui.get_data()
+		mask.set_pixel(820,231,Color8(2,0,8))
+		check(World.visible_cues(mask,token).is_empty(), "different allied owners cannot combine tiny fragments: "+cue)
+		var pair: Dictionary=data.duplicate(true)
+		var second: Dictionary=data.objects[0].duplicate(true);second.pointer=124;pair.objects.append(second)
+		pair.world.dynamic.append({"pointer":124,"shape_index":shape,"speed_raw":-10});token.selected=World.candidates(pair)
+		# Both owners are now eligible: the background must belong to neither.
+		mask.fill(Color8(0,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(2,0,8))
+		check(token.selected.size()==2 and World.visible_cues(mask,token).is_empty(), "two selected allied owners of the same class still cannot combine isolated witnesses: "+cue)
+		token.selected=World.candidates(data)
+		mask.set_pixel(815,241,Color8(1,0,8))
+		check(World.visible_cues(mask,token).is_empty(), "allied witnesses retain four-source-pixel separation: "+cue)
+		mask.set_pixel(815,241,Color8(2,0,8));mask.set_pixel(800,241,Color8(2,0,0));mask.set_pixel(800,236,Color8(1,0,0));mask.set_pixel(790,241,Color8(1,0,8));mask.set_pixel(810,241,Color8(1,0,0))
+		check(World.visible_cues(mask,token)==[cue], "complete allied scan finds separated endpoints around an intermediate first witness: "+cue)
+		check(World.visible_cues(Image.create(256,97,false,Image.FORMAT_RGBA8),token).is_empty(), "stale allied target size cannot lend visibility: "+cue)
+		check(JSON.stringify(data)==original, "allied qualification never mutates source: "+cue)
+	for shape: int in [130,132,115,117,119,121,127,133,163]:
+		check(not World.candidates(tank_source(shape)).values().any(func(item):return item.cue in World.ALLIED_CUES), "wrecks and other model classes cannot borrow allied recordings: "+str(shape))
+	var directory: String=output.path_join("generated-allied-bank")
+	bank(directory,World.ALLIED_CUES,"private visible-allied cues")
+	var audio: Node=isolated_audio();audio.recorded_effect_directory=""
+	audio.world_audio.directory=base_directory
+	audio.world_audio.environment_directory=output.path_join("allied-environment-control")
+	audio.world_audio.soviet_directory=output.path_join("allied-soviet-control")
+	audio.world_audio.tank_directory=output.path_join("allied-tank-control")
+	audio.world_audio.allied_directory=directory
+	bank(audio.world_audio.environment_directory,World.ENVIRONMENT_CUES,"private visible-environment cues")
+	bank(audio.world_audio.soviet_directory,World.SOVIET_CUES,"private visible-soviet cues")
+	bank(audio.world_audio.tank_directory,World.TANK_CUES,"private visible-tank fallback")
+	root.add_child(audio);audio.apply_audio(packet(1))
+	var world: RefCounted=audio.world_audio
+	check(world.streams.size()==8 and world.players.size()==8 and world.allied_failure.is_empty(), "valid allied bank adds exactly two independent players without replacing incumbents")
+	for cue: String in World.ALLIED_CUES:
+		var player: AudioStreamPlayer=world.players[cue]
+		check(player.bus==audio.presentation_bus and player.stream.mix_rate==48000 and player.stream.format==AudioStreamWAV.FORMAT_16_BITS and not player.stream.stereo and player.stream.loop_mode==AudioStreamWAV.LOOP_FORWARD and player.stream.loop_begin==0 and player.stream.loop_end==World.ALLIED_FRAME_COUNTS[cue], "allied exact per-cue mono16 loop uses incumbent limiter: "+cue)
+		check(world.cue_gain(cue)==0.65*0.30, "allied fixed authored gain: "+cue)
+	check(world.cue_gain("river")==0.65*0.20 and world.cue_gain("hind")==0.65*0.30 and world.cue_gain("field")==0.65*0.08 and world.cue_gain("cow")==0.65*0.80 and world.cue_gain("t80")==0.65*0.30 and world.cue_gain("tank")==0.65*0.30, "allied bank leaves all incumbent gain factors exact")
+	world.admitted.assign(["m113","bradley","hind","t80"]);world.refresh()
+	check(world.players.m113.playing and world.players.bradley.playing and world.players.m113.pitch_scale==1.0 and world.players.bradley.pitch_scale==1.0 and not world.players.tank.playing, "both allied classes coexist at fixed pitch without generic fallback")
+	world.admitted.append("m113");world.refresh()
+	check(world.players.size()==8 and is_equal_approx(db_to_linear(world.players.m113.volume_db),0.65*0.30) and world.players.m113.pitch_scale==1.0, "additional allied admission never multiplies players, gain or pitch")
+	var clock: Array=[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)]
+	audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"m113":0,"bradley":40})
+	check(not world.players.m113.playing and world.players.bradley.playing and is_equal_approx(db_to_linear(world.players.bradley.volume_db),0.65*0.30*0.40) and world.players.hind.playing and world.players.t80.playing and not world.players.tank.playing, "independent allied Off/gain leaves other classes intact and never substitutes tank")
+	audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"m113":30,"bradley":0})
+	check(world.players.m113.playing and not world.players.bradley.playing and is_equal_approx(db_to_linear(world.players.m113.volume_db),0.65*0.30*0.30) and not world.players.tank.playing, "Bradley Off remains independent from M113 and cannot enable fallback")
+	world.admitted.clear();world.refresh();audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"m113":100,"bradley":100})
+	check(not world.players.m113.playing and not world.players.bradley.playing, "allied unmute cannot invent remembered visibility")
+	check(clock==[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)], "allied gain controls never advance original events/clocks/motors")
+	if native: await allied_native_checks(audio,ui)
+	check(await audio.drain_for_shutdown(), "both allied streams use clean incumbent shutdown");audio.free()
+	var reader: RefCounted=World.new()
+	var manifest_path: String=directory.path_join("manifest.json")
+	var manifest: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+	var extra: Dictionary=manifest.duplicate(true);extra.cues.extra=extra.cues.m113.duplicate(true)
+	FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(extra))
+	check(reader._read_bank(directory,"private visible-allied cues",World.ALLIED_CUES).has("error"), "allied manifest rejects an extra cue")
+	FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
+	for cue: String in World.ALLIED_CUES:
+		var path: String=directory.path_join(cue+".wav")
+		var good: PackedByteArray=FileAccess.get_file_as_bytes(path)
+		FileAccess.open(path,FileAccess.WRITE).store_string("corrupt")
+		check(reader._read_bank(directory,"private visible-allied cues",World.ALLIED_CUES).has("error"), "allied hash mismatch rejects entire two-cue bank: "+cue)
+		for delta: int in [-1,1]:
+			var stream: AudioStreamWAV=AudioStreamWAV.new();stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=48000
+			var bytes: PackedByteArray=PackedByteArray();bytes.resize((World.ALLIED_FRAME_COUNTS[cue]+delta)*2);stream.data=bytes
+			check(stream.save_to_wav(path)==OK, "wrong-length allied fixture writes")
+			manifest.cues[cue].sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
+			check(reader._read_bank(directory,"private visible-allied cues",World.ALLIED_CUES).has("error"), "matching allied SHA cannot admit a one-frame duration mismatch: "+cue)
+		FileAccess.open(path,FileAccess.WRITE).store_buffer(good);manifest.cues[cue].sha256=FileAccess.get_sha256(path)
+		FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
+	var path: String=directory.path_join("bradley.wav")
+	for format: Dictionary in [{"rate":44100,"stereo":false,"bits":AudioStreamWAV.FORMAT_16_BITS},{"rate":48000,"stereo":true,"bits":AudioStreamWAV.FORMAT_16_BITS},{"rate":48000,"stereo":false,"bits":AudioStreamWAV.FORMAT_8_BITS}]:
+		var stream: AudioStreamWAV=AudioStreamWAV.new();stream.format=format.bits;stream.mix_rate=format.rate;stream.stereo=format.stereo
+		var bytes: PackedByteArray=PackedByteArray();bytes.resize(World.ALLIED_FRAME_COUNTS.bradley*2);stream.data=bytes
+		check(stream.save_to_wav(path)==OK, "wrong-format allied fixture writes")
+		manifest.cues.bradley.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
+		check(reader._read_bank(directory,"private visible-allied cues",World.ALLIED_CUES).has("error"), "matching allied SHA cannot admit wrong sample rate/channels/bit depth")
+	for folder: String in [directory,output.path_join("missing-allied-bank")]:
+		var isolated: Node=isolated_audio();isolated.recorded_effect_directory=""
+		isolated.world_audio.directory=base_directory;isolated.world_audio.environment_directory=output.path_join("allied-environment-control")
+		isolated.world_audio.soviet_directory=output.path_join("allied-soviet-control");isolated.world_audio.tank_directory=output.path_join("allied-tank-control");isolated.world_audio.allied_directory=folder
+		root.add_child(isolated)
+		check(isolated.world_audio.streams.size()==6 and isolated.world_audio.players.size()==6 and not isolated.world_audio.streams.has("m113") and not isolated.world_audio.streams.has("bradley") and isolated.failure.is_empty(), "invalid/absent allied bank atomically preserves all six incumbent cues")
+		check(not isolated.world_audio.allied_failure.is_empty() if folder==directory else isolated.world_audio.allied_failure.is_empty(), "invalid allied bank reports separately while absence stays optional")
+		await isolated.drain_for_shutdown();isolated.free()
+
+func allied_native_checks(audio: Node, ui: Image) -> void:
+	var data: Dictionary=tank_source(129)
+	var second: Dictionary=tank_source(131).objects[0]
+	second.pointer=124
+	for point: Array in second.polygons[0].camera_vertices: point[0]+=400.0
+	data.objects.append(second);data.world.dynamic.append({"pointer":124,"shape_index":131,"speed_raw":-10})
+	var target: SubViewport=Ownership.new();root.add_child(target)
+	check(target.prepare(data,Vector2i(1280,485)), "production owner mesh prepares both allied classes")
+	var world: RefCounted=audio.world_audio
+	ui.fill(Color.BLACK);audio.apply_audio(packet(2));world.observe(data,target,ui,audio.last_frame,audio.epoch)
+	await RenderingServer.frame_post_draw
+	check(world.players.m113.playing and world.players.bradley.playing, "postdraw actual separate owners admit both allied classes simultaneously")
+	ui.fill(Color.WHITE);world.observe(data,target,ui,audio.last_frame,audio.epoch)
+	await RenderingServer.frame_post_draw
+	check(not world.players.m113.playing and not world.players.bradley.playing, "postdraw opaque original UI silences both allied classes")
+	ui.fill(Color.BLACK);world.observe(data,target,ui,audio.last_frame,audio.epoch);audio.apply_audio(packet(3))
+	await RenderingServer.frame_post_draw
+	check(not world.players.m113.playing and not world.players.bradley.playing, "new source frame cancels queued allied owner proof")
+	world.observe(data,target,ui,audio.last_frame,audio.epoch);audio.reset_timeline()
+	await RenderingServer.frame_post_draw
+	check(not world.players.m113.playing and not world.players.bradley.playing and world.pending.is_empty(), "timeline epoch/reset cancels queued allied admission")
+	audio.apply_audio(packet(4));world.observe(data,target,ui,3,audio.epoch)
+	check(world.pending.is_empty() and not world.players.m113.playing and not world.players.bradley.playing, "old allied source frame cannot borrow current packet identity")
+	world.observe(data,target,ui,audio.last_frame,audio.epoch+1)
+	check(world.pending.is_empty(), "wrong allied source epoch never queues ownership")
+	world.observe(data,target,ui,audio.last_frame,audio.epoch);audio.set_transport_muted(true)
+	await RenderingServer.frame_post_draw
+	check(not world.players.m113.playing and not world.players.bradley.playing and world.pending.is_empty(), "transport mute between queue/draw cancels both allied classes")
+	audio.set_transport_muted(false);world.refresh()
+	check(not world.players.m113.playing and not world.players.bradley.playing, "transport recovery cannot replay stale allied visibility")
+	target.queue_free();await process_frame
 
 func environment_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	var field: Dictionary = source(48)

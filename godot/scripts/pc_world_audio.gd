@@ -12,8 +12,14 @@ const TANK_FRAME_COUNT := 1152000
 # Intact original tanks only. Abrams already has its dedicated source motor;
 # unverified F-ST and IFV identities are never substituted with this recording.
 const TANK_SHAPES := [115, 117, 119, 121, 127]
-const CUES := ["river", "hind", "field", "cow", "t80", "tank"]
-const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "tank":0.30}
+const ALLIED_CUES := ["m113", "bradley"]
+const ALLIED_FRAME_COUNTS := {"m113":1152000, "bradley":480817}
+# Original class table: intact M113129 and M2 131; wrecks130/132 stay silent.
+# These recording names never determine actor allegiance or original requests.
+const ALLIED_SHAPES := {129:"m113", 131:"bradley"}
+const GROUND_MOTOR_CUES := ["t80", "tank", "m113", "bradley"]
+const CUES := ["river", "hind", "field", "cow", "t80", "tank", "m113", "bradley"]
+const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "tank":0.30, "m113":0.30, "bradley":0.30}
 const COW_EXPOSURE_FRAMES := 180
 const COW_COOLDOWN_FRAMES := 2400
 var directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-world-effects-v1")
@@ -23,6 +29,8 @@ var soviet_directory: String = ProjectSettings.globalize_path("res://").trim_suf
 var soviet_failure: String = ""
 var tank_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-tank-fallback-v1")
 var tank_failure: String = ""
+var allied_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-allied-effects-v1")
+var allied_failure: String = ""
 var cow_visibility = CowVisibility.new()
 var _cow_epoch: int = -1
 var _cow_frame: int = -1
@@ -67,6 +75,8 @@ func _read_bank(folder: String, kind: String, expected: Array) -> Dictionary:
 			return {"error":"invalid T80 frame count"}
 		if cue == "tank" and stream.data.size() != TANK_FRAME_COUNT * 2:
 			return {"error":"invalid tank fallback frame count"}
+		if cue in ALLIED_CUES and stream.data.size() != int(ALLIED_FRAME_COUNTS[cue]) * 2:
+			return {"error":"invalid allied frame count"}
 		stream.loop_mode = AudioStreamWAV.LOOP_DISABLED if cue == "cow" else AudioStreamWAV.LOOP_FORWARD
 		stream.loop_begin = 0
 		stream.loop_end = stream.data.size() / 2
@@ -94,6 +104,11 @@ func setup(owner: Node) -> void:
 	if bank.has("error"):
 		tank_failure = bank.error
 		push_warning("Private tank fallback ignored: " + tank_failure)
+	else: streams.merge(bank.streams)
+	bank = _read_bank(allied_directory, "private visible-allied cues", ALLIED_CUES)
+	if bank.has("error"):
+		allied_failure = bank.error
+		push_warning("Private allied sounds ignored: " + allied_failure)
 	else: streams.merge(bank.streams)
 	if streams.is_empty(): return
 	for cue: String in streams:
@@ -169,13 +184,16 @@ static func t80_candidate(object: Dictionary, actors: Dictionary) -> bool:
 	return moving_tank_candidate(object, actors, 121)
 
 static func moving_tank_candidate(object: Dictionary, actors: Dictionary, shape: int) -> bool:
+	return shape in TANK_SHAPES and moving_vehicle_candidate(object, actors, shape)
+
+static func moving_vehicle_candidate(object: Dictionary, actors: Dictionary, shape: int) -> bool:
 	# Movement qualifies this authored visible model texture, never idle engine,
 	# allegiance, RPM, damage or any original sound-request identity.
-	# Working if: only uniquely joined intact allowed tanks qualify; reverse is
+	# Working if: only uniquely joined intact allowed vehicles qualify; reverse is
 	# accepted, while hidden ownership and stopped/reused identities stay silent.
 	var dynamic: Variant = object.get("dynamic_instance")
 	var pointer: Variant = object.get("pointer")
-	if shape not in TANK_SHAPES or not ((dynamic is bool and dynamic) or exact_number(dynamic, 1)) or not exact_number(object.get("shape_index"), shape): return false
+	if (shape not in TANK_SHAPES and not ALLIED_SHAPES.has(shape)) or not ((dynamic is bool and dynamic) or exact_number(dynamic, 1)) or not exact_number(object.get("shape_index"), shape): return false
 	if not (pointer is int or pointer is float) or not is_finite(float(pointer)) or pointer != floorf(float(pointer)) or pointer < 0 or pointer > 65535: return false
 	var match: Variant = actors.get([int(pointer), shape])
 	if match == null or match[1] != 1: return false
@@ -209,6 +227,10 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true) -> Dictiona
 			cue = "t80" if dedicated_t80 else "tank"
 		elif TANK_SHAPES.any(func(shape): return moving_tank_candidate(object, actors, shape)):
 			cue = "tank"
+		elif moving_vehicle_candidate(object, actors, 129):
+			cue = "m113"
+		elif moving_vehicle_candidate(object, actors, 131):
+			cue = "bradley"
 		elif positive_source_path(object.get("static_path")) and not object.has("sprite") and object.get("round_forms", []).is_empty():
 			if field_candidate(object, polygons):
 				cue = "field" # Authored visible-field air, not original weather.
@@ -310,12 +332,12 @@ static func visible_cues(mask: Image, token: Dictionary) -> Array[String]:
 			elif Vector2(witnesses[id]).distance_squared_to(Vector2(x, y)) >= 16.0:
 				found.append(cue)
 				if found.size() == wanted.size(): return found
-	for cue: String in ["field", "t80", "tank"]:
+	for cue: String in ["field", "t80", "tank", "m113", "bradley"]:
 		if cue in wanted and cue not in found and narrow_visible(bytes,stride,token,cue): found.append(cue)
 	return found
 
 static func narrow_visible(bytes: PackedByteArray, stride: int, token: Dictionary, cue: String) -> bool:
-	# Fields and small tank silhouettes can fall between the sparse grid rows.
+	# Fields and small vehicle silhouettes can fall between the sparse grid rows.
 	# Working if: two separated actual same-owner/UI-clear pixels admit, while
 	# closer fragments, protected lines and other owners stay silent. No mask
 	# pixels or distance threshold change; Hind/river keep their incumbent grid.
@@ -335,13 +357,13 @@ static func narrow_visible(bytes: PackedByteArray, stride: int, token: Dictionar
 			search_hits += 1
 			if search_hits > 8192: break # ambiguous dense byte collisions stay quiet
 			cursor = hit+1
-			if hit%stride != 0 or bytes[hit+1] != (owner_id >> 8) or bytes[hit+2] not in ([0,8] if cue in ["t80","tank"] else [0]) or (stride==4 and bytes[hit+3] != 255): continue
+			if hit%stride != 0 or bytes[hit+1] != (owner_id >> 8) or bytes[hit+2] not in ([0,8] if cue in GROUND_MOTOR_CUES else [0]) or (stride==4 and bytes[hit+3] != 255): continue
 			var index: int = hit/stride
 			var pixel: Vector2i = Vector2i(index%width,index/width)
 			if pixel.y >= height: continue
 			var source: Vector2i = Vector2i(clip[0]+floori((pixel.x+0.5)*extent.x/width),clip[1]+floori((pixel.y+0.5)*extent.y/height))
 			if source.x<0 or source.x>=320 or source.y<0 or source.y>=200 or token.ui[source.y*320+source.x] != 0: continue
-			if cue in ["t80","tank"]:
+			if cue in GROUND_MOTOR_CUES:
 				# Every endpoint is an actual observed pixel, never a bounding-box
 				# corner or a sum across actors. Before a pair succeeds, all points
 				# fit within <4 pixels of the first: at most49 lattice positions.
