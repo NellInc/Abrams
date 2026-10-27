@@ -8020,3 +8020,45 @@ in cow-audibility/cow-level-acceptance.json. Retain cow factor0.80 (effective0.5
 at the recorded settings). No further gain, source-timer, mask, other sound or
 user-preference changes were made. Cow/field outcomes are complete; the licensed
 T55 download remains the separate external dependency. No publication occurred.
+
+
+## Roster-correct Soviet source preparation
+
+Nell requested Soviet recordings next, preserving the accepted balance and
+background operation. Reused bounded read-only source and catalogue workers;
+no other chats were contacted. Root decoded the hash-pinned original catalogue:
+T-62/115,T-64/117,T-72/119,T-80/121 and corresponding wrecks116/118/120/122.
+There is no T-55. The prior approved cheap T-55 lead is held, not substituted or
+purchased. The earlier3,837-hit T72 search count was loose token matching, not
+model availability; exact/alias checks and50returnedtitles found no match.
+Six official SONNISS lists(5,584entries) likewise supplied no exact eligible
+recording in that finite metadata pass. No catalogue-wide absence is claimed.
+
+The current free candidate is creator-labelled T-80 GTD turbine material on
+Freesound456277, CC BY-NC4.0. Keep attribution and the noncommercial restriction,
+separate/private in this pass; do not label it CC0 or claim human/field-recording
+verification before acquisition/audition. Original WAV login is required.
+Nell twice reports browser enabled; the tool still returns the explicit Work
+settings denial after supported js_reset. Read-only Codex settings inspection
+is independently refused for safety. No permission, browser-profile, credential
+or alternate-driver workaround was attempted. Targeted file checks found only
+old rejected T80exercise media, which remains quarantined and unused. A supplied
+legitimate original or restored permitted browser access is the remaining
+acquisition input. No money, credit redemption, subscription or agreement.
+
+Read-only existing source cases provide moving T80/T72/T62 and stationaryT64
+negative candidates. Root checked T80shape121/pointer29062/owner15/speed30,
+and frame42389/index1020 with matching compact-sorted presentation SHA. These
+are source candidates, not painter visibility acceptance; no ownership receipt
+was found. Only visible-moving intact models may be considered, with unique
+pointer/shape joins and the incumbent owner/UI/current-frame transport guards.
+Stationary idle-engine state, allegiance and health are not decoded; unknown
+requests7/9/10/15/16 stay unknown. One fixed centred bed may not reveal actor
+counts, ranges, direction or offscreen presence. Working if: no new tank cue
+plays until a roster-correct licensed source and corresponding current/historical
+qualified painter observation both exist; cow admission is never tank proof.
+
+No runtime, asset, accepted level, original timing or visibility-mask changes.
+Cow.80,field.08,Hind.30,ownengine.08,turret.10 and crew/music remain untouched.
+Source/licence plan and provenance live under
+artifacts/environment-bindings-20261026/soviet-sources/. No release or publication.

@@ -791,10 +791,25 @@ accepts the level; retain the0.80 cow factor. Normal frontend focus-mute behavio
 fresh GPU/device or live-pacing proof; the isolated reference is not mix acceptance. Source frames and controlled replay evidence remain distinct;
 no tiny cow is relabelled audible.
 
-The Soviet search found the clean steady T-55 front-idle single by Sound Ideas,
-Stockmusic item 22935298, US$1.99. Nell auditioned it and approved a total up to
-US$3. Sign-in is complete, but Work browser control is disabled; no payment,
-download or licence entitlement is claimed. The purchase remains an external
-prerequisite. It is T-55 provenance, without a T-62/T-72 identity claim or any
-new enemy-audio binding. No paid recordings enter public Git or package assets.
-Evidence and remaining gates: artifacts/environment-bindings-20261026/state.json.
+The earlier Sound Ideas T-55 front-idle lead (Stockmusic22935298, approved up to
+US$3) is now held. The hash-checked original catalogue contains T-62/115,
+T-64/117, T-72/119 and T-80/121, with wrecks116/118/120/122; it has no T-55.
+No purchase, substitution, download or entitlement is claimed for that lead.
+
+A free creator-labelled [T-80 turbine candidate](https://freesound.org/people/SoundFX.studio/sounds/456277/)
+uses CC BY-NC4.0, requiring attribution and noncommercial use. It remains a
+separate/private acquisition candidate, without a clean-loop audition or an
+independently documented field-capture process. The original WAV requires login.
+Nell reports browser access enabled, but the tool still denies access after a
+supported session reset; inspecting Codex settings is also safety-blocked. No
+alternate browser driver, credentials extraction or gated-preview scraping is
+used. Existing mixed exercise media stays quarantined.
+
+Finite public catalogue and official SONNISS-list searches found no qualifying
+unrestricted exact-model source; this is not a global absence claim. Authentic
+moving T-62/T-72/T-80 packets and a stationary T-64 negative were located, but
+final painter-owner visibility is not yet qualified. Movement can gate a bed;
+stationary engine-on, health and allegiance are not decoded. No new runtime cue,
+source request mapping, saved control or balance change has been installed.
+Evidence and remaining gates: artifacts/environment-bindings-20261026/state.json
+and soviet-sources/model-specific-plan.json.
