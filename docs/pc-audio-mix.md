@@ -426,3 +426,48 @@ explicit cleanliness, seam or hearing observation is invented. Candidate and
 heard-preview references are bound in the private t80-continue-authority.json
 receipt. All accepted incumbent banks and source/mask/motor inputs were
 rechecked unchanged. New purchases and publication remain outside this go-ahead.
+
+## Generic tank fallback
+
+The optional native bank at `local-audio/pc-tank-fallback-v1/` contains the
+approved JoniHeinonen heavy-diesel recording, Freesound161896, under CC BY3.0.
+It is a generic texture with unidentified vehicle provenance. The original
+24-bit WAV and both edits remain recoverable outside tracked assets. The
+accepted equal-power revision is exactly1,152,000frames,24seconds,48kHz mono16,
+-25LUFS, SHA256
+`2ce260b7ac2f9b611dc85c02d12c2e12bc0fb0c097d200fa5f08bee017ee593f`.
+Attribution and modifications accompany the installed bank.
+
+Exact intact original shapes115(T-62),117(T-64),119(T-72) and127(M60A3) use
+this fallback. Shape121(T-80) retains its validated dedicated recording, using
+the fallback only if that optional recording is absent or invalid. Muting a
+dedicated recording never substitutes the generic sound for the same actor.
+M1-A1 keeps the original source-owned Abrams motor path; no claim is made that
+this covers every visible M1 actor. Wrecks, unverified F-ST, IFVs, trucks and
+stationary actors receive no new cue. Movement is an audibility qualification,
+not a decoded engine-start, idle or RPM event.
+
+The strict unique pointer/model join and finite nonzero signed16 speed rules,
+postdraw frame/epoch/mesh/camera guards, original UI exclusions and two
+separated same-owner pixel witnesses are inherited from the existing T-80
+path. No painter, visibility-mask or guest state is modified. Working if:
+offscreen/occluded, invalid, paused and restored timelines cannot start or
+retain a fallback from stale proof.
+
+One centred fixed-pitch generic bed serves all eligible fallback owners,
+without count-, direction- or distance-dependent gain. It uses the existing
+Effects group, factor0.30 and shared-1dB limiter. The native-only saved
+“Other tank engines” control provides Off through100%; old settings retain
+their values and acquire the new100% default. Different visible classes may
+play dedicated and generic beds together; neither automatically ducks the
+other. Existing own-engine/turret, T-80, Hind, river, cow, field, crew and music
+gains and source event onsets/cadence remain unchanged.
+
+Verification uses focused source/mixer/limiter checks and the real native
+production owner target from a retained original scene. Source JSON, UI and
+owner bytes remain identical before/after audio observation. The historical
+audio sequence beside that capture is no longer present, so the native check
+uses an explicitly synthetic empty presenter transport and proves no fresh
+live-guest playback, device listening or sustained performance claim. The
+approved loop audition remains the human hearing evidence. Local integration
+only; no web/standalone rebuilding, packaging or publication is performed.

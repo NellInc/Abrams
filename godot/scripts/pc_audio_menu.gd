@@ -2,9 +2,9 @@ extends MenuBar
 signal mix_changed
 ## Presentation-only gains. No bridge, source state, key binding or pause command.
 const DEFAULTS := {"master":100,"effects":100,"voice":100,"motors":100,"music":70,
-	"cannon":100,"machinegun":100,"impact":100,"smoke":100,"engine":100,"turret":100,"river":100,"hind":100,"radio":100,"switch":100,"field":100,"cow":100,"t80":100}
+	"cannon":100,"machinegun":100,"impact":100,"smoke":100,"engine":100,"turret":100,"river":100,"hind":100,"radio":100,"switch":100,"field":100,"cow":100,"t80":100,"tank":100}
 const TITLES := {"master":"Master volume","effects":"Sound effects","voice":"Crew voices","motors":"Engine and turret","music":"Music",
-	"cannon":"Cannons","machinegun":"Machine gun","impact":"Impacts","smoke":"Smoke","engine":"Engine","turret":"Turret","river":"Rivers","hind":"Hind engine","radio":"Radio alerts","switch":"Switches","field":"Field air","cow":"Animals","t80":"T-80 engine"}
+	"cannon":"Cannons","machinegun":"Machine gun","impact":"Impacts","smoke":"Smoke","engine":"Engine","turret":"Turret","river":"Rivers","hind":"Hind engine","radio":"Radio alerts","switch":"Switches","field":"Field air","cow":"Animals","t80":"T-80 engine","tank":"Other tank engines"}
 var settings: Dictionary = DEFAULTS.duplicate()
 var config_path := "user://pc_audio.cfg"
 var audio: Node
@@ -18,7 +18,7 @@ var save_error := ""
 
 func audio_channels() -> Array:
 	# Private native recordings are never a browser feature or bundled asset.
-	return DEFAULTS.keys().filter(func(key):return not OS.has_feature("web") or key not in ["river","hind","field","cow","t80"])
+	return DEFAULTS.keys().filter(func(key):return not OS.has_feature("web") or key not in ["river","hind","field","cow","t80","tank"])
 
 func _ready() -> void:
 	set_disable_shortcuts(true)

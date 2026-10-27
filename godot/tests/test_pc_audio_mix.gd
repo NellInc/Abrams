@@ -124,7 +124,7 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==18,"one external Audio menu, eighteen gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==19,"one external Audio menu, nineteen gain groups")
 	check(menu.get_menu_title(0)=="Audio","menu title")
 	for child in [menu.popup]+menu.menus.values():
 		for i in child.item_count:
@@ -203,12 +203,12 @@ func run() -> void:
 	check(menu.reset_mix() and reload.load_settings() and reload.settings==Menu.DEFAULTS,"reset persists every default gain")
 	menu.choose("engine",0);menu.choose("cannon",67);menu.choose("turret",20)
 	check(reload.load_settings() and reload.settings.engine==0 and reload.settings.cannon==67 and reload.settings.turret==20,"individual settings persist, including Off and irregular gains")
-	menu.choose("hind",0);menu.choose("river",37);menu.choose("radio",23);menu.choose("switch",0);menu.choose("field",41);menu.choose("cow",0);menu.choose("t80",27)
-	check(reload.load_settings() and reload.settings.hind==0 and reload.settings.river==37 and reload.settings.radio==23 and reload.settings.switch==0 and reload.settings.field==41 and reload.settings.cow==0 and reload.settings.t80==27,"world and auxiliary controls persist independent mute and intermediate gain")
+	menu.choose("hind",0);menu.choose("river",37);menu.choose("radio",23);menu.choose("switch",0);menu.choose("field",41);menu.choose("cow",0);menu.choose("t80",27);menu.choose("tank",43)
+	check(reload.load_settings() and reload.settings.hind==0 and reload.settings.river==37 and reload.settings.radio==23 and reload.settings.switch==0 and reload.settings.field==41 and reload.settings.cow==0 and reload.settings.t80==27 and reload.settings.tank==43,"world and auxiliary controls persist independent mute and intermediate gain")
 	var legacy := ConfigFile.new()
 	legacy.set_value("audio","effects",40);legacy.set_value("audio","motors",30)
 	legacy.save(menu.config_path)
-	check(reload.load_settings() and reload.settings.effects==40 and reload.settings.motors==30 and reload.settings.hind==100 and reload.settings.river==100 and reload.settings.field==100 and reload.settings.cow==100 and reload.settings.t80==100 and Audio.EFFECT_CUES.all(func(cue):return reload.settings[cue]==100),"old preferences keep original mix and acquire unchanged individual defaults")
+	check(reload.load_settings() and reload.settings.effects==40 and reload.settings.motors==30 and reload.settings.hind==100 and reload.settings.river==100 and reload.settings.field==100 and reload.settings.cow==100 and reload.settings.t80==100 and reload.settings.tank==100 and Audio.EFFECT_CUES.all(func(cue):return reload.settings[cue]==100),"old preferences keep original mix and acquire unchanged individual defaults")
 	var malformed := ConfigFile.new()
 	malformed.set_value("audio","effects","loud")
 	malformed.save(menu.config_path)

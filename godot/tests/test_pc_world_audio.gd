@@ -16,6 +16,11 @@ func check(ok: bool, why: String) -> void:
 	checks += 1
 	if not ok: errors.append(why)
 
+func isolated_audio() -> Node:
+	var audio: Node = Audio.new()
+	audio.world_audio.tank_directory = ""
+	return audio
+
 func packet(frame: int) -> Dictionary:
 	return {"schema":3,"frame":frame,"epoch":1,"last_id":0,"active":true,"enabled":true,"events":[],"loops":{}}
 
@@ -34,7 +39,7 @@ func bank(directory: String, cues: Array = World.BASE_CUES, kind: String = "priv
 	for cue: String in cues:
 		var stream: AudioStreamWAV = AudioStreamWAV.new()
 		stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=48000
-		var bytes: PackedByteArray=PackedByteArray();bytes.resize(World.T80_FRAME_COUNT*2 if cue=="t80" else 96000);stream.data=bytes
+		var bytes: PackedByteArray=PackedByteArray();bytes.resize(World.T80_FRAME_COUNT*2 if cue=="t80" else World.TANK_FRAME_COUNT*2 if cue=="tank" else 96000);stream.data=bytes
 		var path: String=directory.path_join(cue+".wav")
 		check(stream.save_to_wav(path)==OK,"generated PCM writes")
 		manifest.cues[cue]={"file":cue+".wav","sha256":FileAccess.get_sha256(path)}
@@ -54,7 +59,7 @@ func run() -> void:
 		return
 	var directory: String=output.path_join("generated-bank")
 	bank(directory)
-	var audio: Node=Audio.new()
+	var audio: Node=isolated_audio()
 	audio.recorded_effect_directory=""
 	audio.world_audio.directory=directory
 	audio.world_audio.environment_directory=""
@@ -105,12 +110,13 @@ func run() -> void:
 	check(JSON.stringify(original)==digest,"observation never mutates source")
 	await environment_checks(directory,ui,mask)
 	await soviet_checks(directory,ui,mask)
+	await tank_checks(directory,ui,mask)
 	if native:
 		await native_checks(audio,original,ui)
 		if "--retained-field" in args: await retained_field_checks(args[args.find("--retained-field")+1])
 	check(await audio.drain_for_shutdown(),"world playback and streams drain")
 	audio.free()
-	var bad: Node=Audio.new();bad.recorded_effect_directory="";bad.world_audio.directory=directory;bad.world_audio.environment_directory=""
+	var bad: Node=isolated_audio();bad.recorded_effect_directory="";bad.world_audio.directory=directory;bad.world_audio.environment_directory=""
 	bad.world_audio.soviet_directory=""
 	FileAccess.open(directory.path_join("hind.wav"),FileAccess.WRITE).store_string("corrupt")
 	root.add_child(bad)
@@ -195,6 +201,115 @@ func native_checks(audio: Node, data: Dictionary, ui: Image) -> void:
 		"source":"generated visibility fixture, not live guest or original raster parity; cached zero entries mean no GPU read, not zero CPU work"},"  "))
 	target.queue_free();await process_frame
 
+func tank_source(shape: int) -> Dictionary:
+	var data: Dictionary = source(shape)
+	data.objects[0].dynamic_instance = true
+	data.objects[0].static_path = false
+	return data
+
+func tank_checks(base_directory: String, ui: Image, mask: Image) -> void:
+	var data: Dictionary = tank_source(115)
+	var unchanged: String = JSON.stringify(data)
+	for shape: int in World.TANK_SHAPES:
+		var moving: Dictionary = tank_source(shape)
+		check(World.candidates(moving,false).get(1,{}).get("cue")=="tank", "intact tank uses generic when dedicated bank is absent: "+str(shape))
+		check(World.candidates(moving,true).get(1,{}).get("cue")==("t80" if shape==121 else "tank"), "dedicated T80 takes precedence only for exact model121")
+		for speed: int in [-32768,-1,1,32767]:
+			moving.world.dynamic[0].speed_raw = speed
+			check(World.candidates(moving,false).get(1,{}).get("cue")=="tank", "generic accepts the same finite signed16 forward/reverse movement")
+	for shape: int in [116,118,120,122,123,124,125,126,128,129,131,133,135,137,139,141,143,159,163]:
+		check(not World.candidates(tank_source(shape),false).values().any(func(item):return item.cue=="tank"), "wrecks/Abrams/unverified/IFV/other identities cannot borrow generic tank recording: "+str(shape))
+	for speed: Variant in [0,-32769,32768,0.5,NAN,INF,"10",true]:
+		var changed: Dictionary = data.duplicate(true); changed.world.dynamic[0].speed_raw=speed
+		check(World.candidates(changed,false).is_empty(), "stationary or invalid source speed cannot start generic loop")
+	for mutation: Dictionary in [{"shape_index":115.5},{"shape_index":"115"},{"pointer":123.5},{"pointer":"123"},{"dynamic_instance":false}]:
+		var changed: Dictionary=data.duplicate(true);changed.objects[0].merge(mutation,true)
+		check(World.candidates(changed,false).is_empty(), "generic drawn identity is exact, never truncated or coerced")
+	for mutation: Dictionary in [{"shape_index":115.5},{"pointer":123.5},{"pointer":"123"},{"shape_index":117},{"pointer":124}]:
+		var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].merge(mutation,true)
+		check(World.candidates(changed,false).is_empty(), "generic actor pointer/model must exactly match drawn owner")
+	var duplicate: Dictionary=data.duplicate(true);duplicate.world.dynamic.append(duplicate.world.dynamic[0].duplicate())
+	check(World.candidates(duplicate,false).is_empty(), "reused pointer/model cannot qualify generic movement")
+	var missing: Dictionary=data.duplicate(true);missing.world.dynamic=[]
+	check(World.candidates(missing,false).is_empty(), "generic never invents missing source movement")
+	ui.fill(Color.BLACK)
+	var token: Dictionary={"size":mask.get_size(),"clip":data.camera.clip,"selected":World.candidates(data,false),"ui":ui.get_data()}
+	for flag: int in [0,8]:
+		mask.fill(Color8(1,0,flag));check(World.visible_cues(mask,token)==["tank"], "generic inherits actual ordinary/guarded T80 ownership rules")
+	for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
+		mask.fill(colour);check(World.visible_cues(mask,token).is_empty(), "generic excludes occluders, lines, round forms and alpha")
+	mask.fill(Color8(2,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+	check(World.visible_cues(mask,token)==["tank"], "thin generic silhouette uses identical separated same-owner narrow witnesses")
+	ui.fill(Color.WHITE);token.ui=ui.get_data()
+	check(World.visible_cues(mask,token).is_empty(), "original opaque UI silences generic exact scan")
+	ui.fill(Color.BLACK);token.ui=ui.get_data()
+	mask.set_pixel(820,231,Color8(2,0,8))
+	check(World.visible_cues(mask,token).is_empty(), "generic cannot combine two separate tiny owners")
+	for colour: Color in [Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
+		mask.set_pixel(820,231,colour)
+		check(World.visible_cues(mask,token).is_empty(), "generic narrow scan retains exact line/round/alpha exclusions")
+	var directory: String=output.path_join("generated-tank-bank")
+	bank(directory,World.TANK_CUES,"private visible-tank fallback")
+	for dedicated_state: String in ["absent","valid","invalid"]:
+		var dedicated: bool = dedicated_state == "valid"
+		var audio: Node=isolated_audio();audio.recorded_effect_directory=""
+		audio.world_audio.directory=base_directory;audio.world_audio.environment_directory=""
+		audio.world_audio.soviet_directory=output.path_join("generated-soviet-bank") if dedicated_state != "absent" else ""
+		audio.world_audio.tank_directory=directory
+		# The earlier Soviet rejection fixture deliberately corrupts its bank.
+		if dedicated_state != "absent":
+			bank(audio.world_audio.soviet_directory,World.SOVIET_CUES,"private visible-soviet cues")
+			if dedicated_state == "invalid": FileAccess.open(audio.world_audio.soviet_directory.path_join("t80.wav"),FileAccess.WRITE).store_string("corrupt")
+		root.add_child(audio);audio.apply_audio(packet(1))
+		var world: RefCounted=audio.world_audio
+		var player: AudioStreamPlayer=world.players.tank
+		check((not world.soviet_failure.is_empty()) == (dedicated_state == "invalid"), "dedicated failure is isolated from optional fallback")
+		check(world.tank_failure.is_empty() and player.bus==audio.presentation_bus and player.stream.loop_end==World.TANK_FRAME_COUNT, "optional generic bank loads exact24s through incumbent limiter")
+		check(world.cue_gain("tank")==0.65*0.30 and world.cue_gain("hind")==0.65*0.30 and world.cue_gain("river")==0.65*0.20, "generic matches accepted tank nominal level without changing incumbent factors")
+		check(World.candidates(tank_source(121),world.streams.has("t80")).get(1,{}).get("cue")==("t80" if dedicated else "tank"), "validated stream availability chooses dedicated versus generic")
+		world.admitted.assign(["tank","hind"]);world.refresh()
+		check(player.playing and player.pitch_scale==1.0 and world.players.size()==(4 if dedicated else 3), "only one fixed-pitch centred generic player, independent of actor count")
+		var clock: Array=[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)]
+		check(audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"tank":40}) and is_equal_approx(db_to_linear(player.volume_db),0.65*0.30*0.40), "independent fallback gain applies without source pitch/RPM changes")
+		if dedicated:
+			world.admitted.append("t80");world.refresh()
+			check(player.playing and world.players.t80.playing and is_equal_approx(db_to_linear(world.players.t80.volume_db),0.65*0.30), "different visible tank classes coexist without ducking accepted dedicated gain")
+			world.admitted.erase("tank");audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"t80":0})
+			check(not player.playing and not world.players.t80.playing and World.candidates(tank_source(121),world.streams.has("t80")).get(1,{}).get("cue")=="t80", "dedicated Off never substitutes generic for the same T80")
+			world.admitted.append("tank");world.refresh()
+			check(player.playing and not world.players.t80.playing, "separate generic owner is independent of dedicated T80 Off")
+		audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"tank":0})
+		check(not player.playing and world.players.hind.playing, "generic Off leaves accepted Hind playing")
+		world.admitted.erase("tank");audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"tank":100})
+		check(not player.playing, "generic unmute cannot invent remembered visibility")
+		world.admitted.append("tank");world.refresh();audio.set_transport_muted(true)
+		check(not player.playing and world.admitted.is_empty() and world.pending.is_empty(), "pause/focus/transport gate clears generic and queued ownership")
+		audio.set_transport_muted(false);world.refresh();check(not player.playing,"transport recovery cannot replay generic admission")
+		check(clock==[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)], "generic controls never advance original clocks/events/motors")
+		world.admitted.append("tank");world.refresh()
+		var disabled: Dictionary=packet(2);disabled.active=false
+		check(audio.apply_audio(disabled) and not player.playing, "original inactive/pause envelope silences fallback")
+		world.refresh();check(not player.playing,"retained owner proof cannot reopen inactive original source")
+		check(await audio.drain_for_shutdown(),"generic uses existing clean audio shutdown");audio.free()
+	var reader: RefCounted=World.new()
+	var path: String=directory.path_join("tank.wav")
+	var good: PackedByteArray=FileAccess.get_file_as_bytes(path)
+	FileAccess.open(path,FileAccess.WRITE).store_string("corrupt")
+	check(reader._read_bank(directory,"private visible-tank fallback",World.TANK_CUES).has("error"), "changed generic PCM rejected by manifest SHA")
+	var isolated: Node=isolated_audio();isolated.recorded_effect_directory="";isolated.world_audio.directory=base_directory;isolated.world_audio.environment_directory="";isolated.world_audio.soviet_directory="";isolated.world_audio.tank_directory=directory
+	root.add_child(isolated)
+	check(not isolated.world_audio.tank_failure.is_empty() and isolated.failure.is_empty() and isolated.world_audio.streams.size()==2, "corrupt optional generic bank cannot disable accepted original or world audio")
+	await isolated.drain_for_shutdown();isolated.free()
+	FileAccess.open(path,FileAccess.WRITE).store_buffer(good)
+	var manifest_path: String=directory.path_join("manifest.json")
+	var manifest: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+	var short: AudioStreamWAV=AudioStreamWAV.new();short.format=AudioStreamWAV.FORMAT_16_BITS;short.mix_rate=48000
+	var short_pcm: PackedByteArray=PackedByteArray();short_pcm.resize(96000);short.data=short_pcm
+	check(short.save_to_wav(path)==OK,"wrong-duration generic fixture writes")
+	manifest.cues.tank.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
+	check(reader._read_bank(directory,"private visible-tank fallback",World.TANK_CUES).get("error")=="invalid tank fallback frame count","matching file/manifest SHA cannot admit wrong loop duration")
+	check(JSON.stringify(data)==unchanged,"fallback never mutates original drawing/actor state")
+
 func environment_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	var field: Dictionary = source(48)
 	field.objects[0].root = 5109
@@ -229,7 +344,7 @@ func environment_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	check(World.visible_cues(mask,token).is_empty(), "dense field scan cannot become whole-farm or cow authority")
 	var directory: String = output.path_join("generated-environment-bank")
 	bank(directory,World.ENVIRONMENT_CUES,"private visible-environment cues")
-	var audio: Node = Audio.new(); audio.recorded_effect_directory = ""
+	var audio: Node = isolated_audio(); audio.recorded_effect_directory = ""
 	audio.world_audio.directory = base_directory; audio.world_audio.environment_directory = directory
 	audio.world_audio.soviet_directory=""
 	root.add_child(audio)
@@ -267,7 +382,7 @@ func environment_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	check(await audio.drain_for_shutdown(), "new environment players drain through existing audio shutdown")
 	audio.free()
 	FileAccess.open(directory.path_join("cow.wav"),FileAccess.WRITE).store_string("corrupt")
-	var bad: Node = Audio.new();bad.recorded_effect_directory = ""
+	var bad: Node = isolated_audio();bad.recorded_effect_directory = ""
 	bad.world_audio.directory = base_directory;bad.world_audio.environment_directory = directory
 	bad.world_audio.soviet_directory=""
 	root.add_child(bad)
@@ -288,7 +403,7 @@ func soviet_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		check(World.candidates(changed).is_empty(), "stationary/nonintegral/nonfinite/out-of-range T80 movement stays silent")
 	for shape: int in [122,115,117,119]:
 		var changed: Dictionary=data.duplicate(true);changed.objects[0].shape_index=shape;changed.world.dynamic[0].shape_index=shape
-		check(World.candidates(changed).is_empty(), "wreck and other Soviet models cannot borrow exact T80 recording")
+		check(World.candidates(changed).get(1,{}).get("cue") != "t80", "wreck and other Soviet models cannot borrow exact T80 recording")
 	for mutation: Dictionary in [{"shape_index":121.5},{"shape_index":"121"},{"pointer":123.5},{"pointer":"123"},{"dynamic_instance":false}]:
 		var changed: Dictionary=data.duplicate(true);changed.objects[0].merge(mutation,true)
 		check(World.candidates(changed).is_empty(), "T80 source identity cannot be truncated/coerced/static")
@@ -325,7 +440,7 @@ func soviet_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	var environment: String=output.path_join("soviet-environment-control")
 	bank(directory,World.SOVIET_CUES,"private visible-soviet cues")
 	bank(environment,World.ENVIRONMENT_CUES,"private visible-environment cues")
-	var audio: Node=Audio.new();audio.recorded_effect_directory=""
+	var audio: Node=isolated_audio();audio.recorded_effect_directory=""
 	audio.world_audio.directory=base_directory;audio.world_audio.environment_directory=environment;audio.world_audio.soviet_directory=directory
 	root.add_child(audio);audio.apply_audio(packet(1))
 	var world: RefCounted=audio.world_audio
@@ -360,7 +475,7 @@ func soviet_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	manifest.cues.t80.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
 	check(reader._read_bank(directory,"private visible-soviet cues",World.SOVIET_CUES).get("error")=="invalid T80 frame count", "provisional18-frame-short count cannot silently replace verified original length")
 	for folder: String in [directory,output.path_join("missing-soviet-bank")]:
-		var isolated: Node=Audio.new();isolated.recorded_effect_directory=""
+		var isolated: Node=isolated_audio();isolated.recorded_effect_directory=""
 		isolated.world_audio.directory=base_directory;isolated.world_audio.environment_directory=environment;isolated.world_audio.soviet_directory=folder
 		root.add_child(isolated)
 		check(isolated.world_audio.streams.size()==4 and not isolated.world_audio.streams.has("t80") and isolated.failure.is_empty(), "missing/invalid optional T80 bank cannot disable any incumbent cue")
@@ -438,7 +553,7 @@ func retained_field_checks(path: String) -> void:
 	print("FIELD_STAGE: world_readback_done ms="+str(Time.get_ticks_msec()))
 	var owners: Image = draw.ownership.get_texture().get_image()
 	print("FIELD_STAGE: owner_readback_done ms="+str(Time.get_ticks_msec()))
-	var audio: Node = Audio.new();audio.recorded_effect_directory = ""
+	var audio: Node = isolated_audio();audio.recorded_effect_directory = ""
 	# Keep unrelated145MB score prewarm out of this focused field fixture.
 	audio.prefer_independent_music = false
 	audio.music_bank.directory = output.path_join("absent-fixture-score")

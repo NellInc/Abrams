@@ -8142,3 +8142,32 @@ repeating and redacted from retained HTML. No secrets or credentials were used.
 No clean exact T-62/T-64 source qualified in this finite pass, and no absence
 claim or substitute engine is asserted. T-80 stays at the presented level;
 other Soviet slots and all accepted incumbent sounds remain unchanged.
+
+
+## 2026-10-27: approved generic tank fallback integrated locally
+
+Nell explicitly requested integration after accepting the equal-power loop:
+“Please integrate the approved loop as the fallback for tanks without
+dedicated recordings. Keep the current balance and preserve the original
+timing and visibility masks.” This releases the earlier inactive-only hold
+for this bank, with no new purchase/publication authority.
+
+Sol owns the implementation: optional singleton native bank, exact24sPCM
+validation, strict intact tank allowlist115/117/119/121/127, availability-based
+T-80 precedence, unchanged painter/UI witness rules, one fixed generic bed and
+independent saved Other tank engines control. Existing bank files, stock WAVs,
+renderer, source dispatcher and motor/event authority are unchanged. No
+unknown original sound request is relabelled. Read-only Astra contract advice
+was reconciled, including no mute-driven failover or automatic ducking.
+
+Evidence: artifacts/tank-fallback-integration-20261027. The initial sandboxed
+native launch aborted before diagnostics. A reused native timeline probe then
+failed its original missing frames.json preflight and reached its90second
+guard; it is not a successful replay. A narrower retained-source owner check
+uses an explicitly empty diagnostic transport, preserving the source and
+rendered ownership bytes. Both dedicated-present and fallback-only native
+cases pass. Production Settings renders the added control at wide/compact
+sizes without changing user preferences. Exact final counts and hashes are
+recorded in verification.json. No physical-device or fresh live-guest/mix
+listening claim is made. Local only, no push or standalone/web publication.
+Foreign intro/music/viewer edits, files/index and processes remain preserved.
