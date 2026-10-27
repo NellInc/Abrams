@@ -72,11 +72,16 @@ post-limiter capture peaks at -5.3dBTP, with zero unfocused recording samples.
 Nell could not hear the cow in that mix. Its quiet master had an additional
 0.12 cue factor, approximately -50LUFS before panning. Only the cow factor is now
 0.80 (about16.5dB higher); Animals still supplies its saved Off-to-100% adjustment.
-Field/Hind/river, tank motors and crew levels remain exact. Focused checks pass,
-but corrected live mix capture/listening remains open after actual focus loss.
-The isolated reference is an audition only. Dummy-driver software capture does
-not establish physical-device hearing or healthy-host pacing. The initial delay
-remains180 source frames.
+Field/Hind/river, tank motors and crew levels remain exact. Focused checks pass.
+Audio-level QA now runs headlessly:324 fresh original-core frames match the
+prior native RAM/video audits and audio envelopes, with the corresponding sealed
+historical visibility decisions. The production mixer independently computes
+one cow at13098 from exposure12918, preserving180 source frames. The8.173-second
+corrected background mix peaks at -4.5dBTP, with no clipped frames or pacing
+rebases; new human level review is pending. The normal frontend focus-mute rule
+is untouched. This is historical-visibility mixer QA, without fresh GPU,
+physical-device or live-pacing proof. The isolated reference remains an audition
+only.
 Field level acceptance and native source-mask admission are recorded separately.
 No browser or standalone edition has been rebuilt or published.
 

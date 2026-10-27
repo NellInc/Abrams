@@ -7972,3 +7972,43 @@ source masks/focus flags/timers were never bypassed. A further real foreground
 interval is requested. A2.444second +8dB isolated reference, -3.9dBTP, was supplied
 solely to identify the cow; it is explicitly separate from the game mix. No
 publication, extra purchase, source asset overwrite or foreign process changes.
+
+
+## Background audio QA workflow
+
+Nell explicitly requested background operation after repeated focus losses.
+Stopped foreground/focus-attribution attempts. The private background helper
+reuses the production original-core bridge and mixer, with no Window focus flag
+or OS activation. It exports324fresh original packets from the genuine12912
+checkpoint, requiring exact native07audio envelopes and RAM/video audits per
+contiguous epoch/frame12914..13237. Frame13238 has no native admission and is
+excluded. Source presentation metadata is reconstructed by the unchanged trace
+observer; RAM/video hashes alone are not independent metadata authentication.
+
+A separate QA-only transport replays the matching sealed historical postdraw
+admission, with rendering callbacks disconnected. The production scheduler
+computes its own exposure/onset; no historical clock/player state is injected.
+Music context uses original RGB/program/presentation/state and the production
+API. All mixer settings equal the prior capture, with only the committed cow
+factor changed. Tail playback holds the last authenticated frame for3seconds,
+without source increments or additional onsets. Normal frontend focus-mute,
+visibility masks, source events and motor authority remain unchanged.
+
+The first headless attempt correctly failed on a JSON float/int owner-membership
+check before source playback. Reused the existing exact numeric-leaf validator.
+Background02 then passed:324source and admission rows,18originalevents/lastid18,
+one cow at13098 from12918, originalhostexit0/drained mixer. Its8.173-second
+post-limiter PCM measures -4.5dBTP with0clipped stereo frames. Maximum dispatch
+lateness13614usec,0pacingrebases/slip. Root independently checked the packets,
+settings, clocks, WAV SHA and metering. Bounded read-only Astra independently
+checked all324source and historical admission/exposure/onset rows and found no
+blocking false-acceptance or historical-authority leak. Human corrected-level
+review is requested; no subjective hearing result is invented.
+
+Use this task-specific headless replay for subsequent level-only checks.
+Working if: no foreground activation is requested, changed sealed source bytes
+fail before playback, and every accepted cue comes from its exact historical
+frame. A passed functional result with pacing rebases does not qualify unchanged
+listening cadence; inspect the recorded pacing fields. Renderer changes require
+separate visual qualification, and no device/fresh-GPU claim follows from this
+fixture. No publication or extra spending occurred.
