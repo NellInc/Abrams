@@ -233,7 +233,8 @@ func environment_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	var world: RefCounted = audio.world_audio
 	check(world.players.cow.stream.loop_mode == AudioStreamWAV.LOOP_DISABLED and world.players.field.stream.loop_mode == AudioStreamWAV.LOOP_FORWARD, "cow is one call, field is a fixed loop")
 	check(world.cue_gain("hind") == 0.65*0.30 and world.cue_gain("river") == 0.65*0.20, "accepted Hind/river factors remain exact")
-	check(world.cue_gain("field") == 0.65*0.08, "rejected storm-like field candidate remains reduced to0.08 pending listening")
+	check(world.cue_gain("field") == 0.65*0.08, "accepted gentle field level remains0.08")
+	check(world.cue_gain("cow") == 0.65*0.80, "cow avoids double attenuation while accepted beds remain unchanged")
 	for frame: int in [1,61,121,180]:
 		audio.apply_audio(packet(frame));world.admitted.assign(["cow","field"]);world.refresh()
 	check(not world.players.cow.playing and world.players.field.playing, "one call waits for continuous source exposure")

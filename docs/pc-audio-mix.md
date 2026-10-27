@@ -69,9 +69,14 @@ native positive checks pass 92. With an uninterrupted foreground interval,
 actual native original execution passes 325 focused samples and one cow call
 at source frame13098, exactly180 after exposure12918. The 8.266-second private
 post-limiter capture peaks at -5.3dBTP, with zero unfocused recording samples.
-New human mix review is pending. This uses the Dummy driver for software capture,
-without a physical-device or healthy-host pacing claim. The initial delay remains
-180 source frames, and accepted motor levels remain exact.
+Nell could not hear the cow in that mix. Its quiet master had an additional
+0.12 cue factor, approximately -50LUFS before panning. Only the cow factor is now
+0.80 (about16.5dB higher); Animals still supplies its saved Off-to-100% adjustment.
+Field/Hind/river, tank motors and crew levels remain exact. Focused checks pass,
+but corrected live mix capture/listening remains open after actual focus loss.
+The isolated reference is an audition only. Dummy-driver software capture does
+not establish physical-device hearing or healthy-host pacing. The initial delay
+remains180 source frames.
 Field level acceptance and native source-mask admission are recorded separately.
 No browser or standalone edition has been rebuilt or published.
 

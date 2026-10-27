@@ -7952,3 +7952,23 @@ The actual new mix was presented for human balance judgment; no listening result
 is invented. The redundant helper first-sample focus request was removed before
 this run; focus transitions are retained, no admission flag was overridden.
 T55 entitlement/download remains the external dependency described above.
+
+
+## Cow audibility follow-up
+
+Nell reports the cow cannot be heard in native07. Its raw master measures
+-27.9LUFS/-11.9dBTP; the old0.12 cue factor plus0.65 master implies roughly
+-50LUFS before panning. An FFT template check is too weak to isolate the cow
+reliably from that capture, so no measured standalone in-mix level is claimed.
+Only the cow factor is raised0.12to0.80 (+16.48dB), effective0.52 at the incumbent
+master. Raw PCM and all accepted motor/field/Hind/river/crew/music gains stay
+unchanged. World136, mix360 and limiter33 pass; the new assertion protects the
+cow-only default while retaining independent Animals mute and source timers.
+
+The first corrected native attempt acquired no stable post-startup focus. A
+changed one-time activation after the actual startup marker allowed32source
+samples before actualOSfocus loss. Both are failed captures, not mix acceptance;
+source masks/focus flags/timers were never bypassed. A further real foreground
+interval is requested. A2.444second +8dB isolated reference, -3.9dBTP, was supplied
+solely to identify the cow; it is explicitly separate from the game mix. No
+publication, extra purchase, source asset overwrite or foreign process changes.

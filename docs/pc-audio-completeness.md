@@ -781,8 +781,11 @@ Earlier live captures lost real OS focus and correctly stayed silent. Nell then
 provided a foreground interval: fresh native execution passes325 focused source
 samples, one moo exactly180sourceframes after exposure, hostexit0/audio drained
 and zero unfocused recording samples. The8.266-second post-limiter PCM peaks at
--5.3dBTP; new human mix review is pending. Software Dummy-driver capture does
-not establish physical-device hearing or healthy-host pacing. Source frames and controlled replay evidence remain distinct;
+-5.3dBTP. Nell found the cow inaudible in that mix, so only its cue factor is
+raised from0.12to0.80. World136, mix360 and limiter33 pass. The new live mix still
+needs stable foreground capture/listening; the isolated reference is not a game
+mix acceptance. Software Dummy-driver capture does not establish physical-device
+hearing or healthy-host pacing. Source frames and controlled replay evidence remain distinct;
 no tiny cow is relabelled audible.
 
 The Soviet search found the clean steady T-55 front-idle single by Sound Ideas,
