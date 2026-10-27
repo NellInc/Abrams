@@ -8012,3 +8012,11 @@ frame. A passed functional result with pacing rebases does not qualify unchanged
 listening cadence; inspect the recorded pacing fields. Renderer changes require
 separate visual qualification, and no device/fresh-GPU claim follows from this
 fixture. No publication or extra spending occurred.
+
+
+Nell confirms: "I can hear the cow now. That sounds good, keep it at that level
+please." The corrected background02 mix is accepted, bound to its exact WAV SHA
+in cow-audibility/cow-level-acceptance.json. Retain cow factor0.80 (effective0.52
+at the recorded settings). No further gain, source-timer, mask, other sound or
+user-preference changes were made. Cow/field outcomes are complete; the licensed
+T55 download remains the separate external dependency. No publication occurred.

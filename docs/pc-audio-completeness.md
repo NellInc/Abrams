@@ -786,8 +786,8 @@ raised from0.12to0.80. World136, mix360 and limiter33 pass. Nell requested backg
 work, so audio QA now uses a headless original-core/production-mixer replay:
 324fresh source audio/RAM/video rows match native07, joined to its qualified
 historical visibility. One cow still starts180sourceframes after exposure.
-The corrected8.173-second PCM has -4.5dBTP/no clipping, and new human level review
-is pending. Normal frontend focus-mute behavior is unchanged. This supplies no
+The corrected8.173-second PCM has -4.5dBTP/no clipping. Nell hears the cow and
+accepts the level; retain the0.80 cow factor. Normal frontend focus-mute behavior is unchanged. This supplies no
 fresh GPU/device or live-pacing proof; the isolated reference is not mix acceptance. Source frames and controlled replay evidence remain distinct;
 no tiny cow is relabelled audible.
 

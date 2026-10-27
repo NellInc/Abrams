@@ -78,7 +78,8 @@ prior native RAM/video audits and audio envelopes, with the corresponding sealed
 historical visibility decisions. The production mixer independently computes
 one cow at13098 from exposure12918, preserving180 source frames. The8.173-second
 corrected background mix peaks at -4.5dBTP, with no clipped frames or pacing
-rebases; new human level review is pending. The normal frontend focus-mute rule
+rebases. Nell hears the cow and accepts this level: retain the0.80 cow factor.
+The normal frontend focus-mute rule
 is untouched. This is historical-visibility mixer QA, without fresh GPU,
 physical-device or live-pacing proof. The isolated reference remains an audition
 only.
