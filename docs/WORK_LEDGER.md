@@ -8120,3 +8120,25 @@ cross-chat messages, foreign process signals, cache clearing, push, standalone
 or web rebuild, packaging or publication. Local only. Full evidence is under
 artifacts/environment-bindings-20261026/t80-verification.json and its linked
 private artifacts.
+
+
+Nell subsequently says “Proceed please” after both T-80 previews were presented.
+Retain the installed candidate at factor0.30 and continue sourcing the other
+exact models. This is authorization to use the presented candidate/level; no
+explicit cleanliness, seam or hearing observation is invented. Candidate and
+heard-preview references are bound in the private t80-continue-authority.json
+receipt. All accepted incumbent banks and source/mask/motor inputs were
+rechecked unchanged. New purchases and publication remain outside this go-ahead.
+
+
+The subsequent bounded public source pass acquired no new audio. The affordable
+SoundFX Studio T-72 pack is currently listed at US$12.99 with named idle/driving
+loops, but its game-ready product page establishes no recording-session custody.
+It stays unpurchased; the previous Hind-only cap and held T-55 approval do not
+authorize this purchase. The public preview-player asset returned HTTP403. No
+equivalent retry, demo scraping, account workaround or vendor inquiry followed.
+Public page evidence exposed vendor plugin-licence metadata, flagged without
+repeating and redacted from retained HTML. No secrets or credentials were used.
+No clean exact T-62/T-64 source qualified in this finite pass, and no absence
+claim or substitute engine is asserted. T-80 stays at the presented level;
+other Soviet slots and all accepted incumbent sounds remain unchanged.

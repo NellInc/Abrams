@@ -417,3 +417,12 @@ no crew events, source frames or onset sequences are invented. About4seconds
 of existing engine/score precede8seconds with T-80. Headless/Dummy proves no
 physical-device or fresh-live-motion claim. Human loop/mix judgment is pending.
 All15 incumbent private-bank files remain byte-identical. No publication.
+
+
+Nell subsequently says “Proceed please” after both T-80 previews were presented.
+Retain the installed candidate at factor0.30 and continue sourcing the other
+exact models. This is authorization to use the presented candidate/level; no
+explicit cleanliness, seam or hearing observation is invented. Candidate and
+heard-preview references are bound in the private t80-continue-authority.json
+receipt. All accepted incumbent banks and source/mask/motor inputs were
+rechecked unchanged. New purchases and publication remain outside this go-ahead.
