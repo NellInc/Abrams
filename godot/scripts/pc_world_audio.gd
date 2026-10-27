@@ -5,13 +5,17 @@ const Modern = preload("res://scripts/pc_modern_assets.gd")
 const CowVisibility = preload("res://scripts/pc_cow_visibility.gd")
 const BASE_CUES := ["river", "hind"]
 const ENVIRONMENT_CUES := ["field", "cow"]
-const CUES := ["river", "hind", "field", "cow"]
-const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80}
+const SOVIET_CUES := ["t80"]
+const T80_FRAME_COUNT := 1062930
+const CUES := ["river", "hind", "field", "cow", "t80"]
+const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30}
 const COW_EXPOSURE_FRAMES := 180
 const COW_COOLDOWN_FRAMES := 2400
 var directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-world-effects-v1")
 var environment_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-environment-effects-v1")
 var environment_failure: String = ""
+var soviet_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-soviet-effects-v1")
+var soviet_failure: String = ""
 var cow_visibility = CowVisibility.new()
 var _cow_epoch: int = -1
 var _cow_frame: int = -1
@@ -52,6 +56,8 @@ func _read_bank(folder: String, kind: String, expected: Array) -> Dictionary:
 		var stream: AudioStreamWAV = AudioStreamWAV.load_from_file(path)
 		if stream == null or stream.format != AudioStreamWAV.FORMAT_16_BITS or stream.mix_rate != 48000 or stream.stereo or stream.data.size() < 96000 or stream.data.size() % 2 != 0:
 			return {"error":"invalid PCM format/duration"}
+		if cue == "t80" and stream.data.size() != T80_FRAME_COUNT * 2:
+			return {"error":"invalid T80 frame count"}
 		stream.loop_mode = AudioStreamWAV.LOOP_DISABLED if cue == "cow" else AudioStreamWAV.LOOP_FORWARD
 		stream.loop_begin = 0
 		stream.loop_end = stream.data.size() / 2
@@ -69,6 +75,11 @@ func setup(owner: Node) -> void:
 	if bank.has("error"):
 		environment_failure = bank.error
 		push_warning("Private environment sounds ignored: " + environment_failure)
+	else: streams.merge(bank.streams)
+	bank = _read_bank(soviet_directory, "private visible-soviet cues", SOVIET_CUES)
+	if bank.has("error"):
+		soviet_failure = bank.error
+		push_warning("Private Soviet sounds ignored: " + soviet_failure)
 	else: streams.merge(bank.streams)
 	if streams.is_empty(): return
 	for cue: String in streams:
@@ -140,6 +151,22 @@ static func field_candidate(object: Dictionary, polygons: Array) -> bool:
 	var command: Dictionary = order[0]
 	return command.size() == 2 and command.get("kind") == "polygon" and exact_number(command.get("index"), 0)
 
+static func t80_candidate(object: Dictionary, actors: Dictionary) -> bool:
+	# Movement qualifies this authored visible model texture, never idle engine,
+	# allegiance, RPM, damage or any original sound-request identity.
+	# Working if: only uniquely joined intact moving T80 actors qualify; reverse is
+	# accepted, while hidden ownership and stopped/reused identities stay silent.
+	var dynamic: Variant = object.get("dynamic_instance")
+	var pointer: Variant = object.get("pointer")
+	if not ((dynamic is bool and dynamic) or exact_number(dynamic, 1)) or not exact_number(object.get("shape_index"), 121): return false
+	if not (pointer is int or pointer is float) or not is_finite(float(pointer)) or pointer != floorf(float(pointer)) or pointer < 0 or pointer > 65535: return false
+	var match: Variant = actors.get([int(pointer), 121])
+	if match == null or match[1] != 1: return false
+	var actor: Dictionary = match[0]
+	if not exact_number(actor.get("shape_index"), 121) or not exact_number(actor.get("pointer"), int(pointer)): return false
+	var speed: Variant = actor.get("speed_raw")
+	return (speed is int or speed is float) and is_finite(float(speed)) and speed == floorf(float(speed)) and speed >= -32768 and speed <= 32767 and speed != 0
+
 static func candidates(data: Dictionary) -> Dictionary:
 	var result: Dictionary = {}
 	if not data.get("objects") is Array or not data.get("camera") is Dictionary or not data.get("unsupported") is Array or not data.unsupported.is_empty(): return result
@@ -160,6 +187,8 @@ static func candidates(data: Dictionary) -> Dictionary:
 			if not (speed is int or speed is float) or not is_finite(float(speed)) or speed != floorf(float(speed)) or absf(float(speed)) > 32768 or speed == 0: continue
 			# Authored visible-flight ambience, not an RPM/rotor-state decoder.
 			cue = "hind"
+		elif t80_candidate(object, actors):
+			cue = "t80"
 		elif positive_source_path(object.get("static_path")) and not object.has("sprite") and object.get("round_forms", []).is_empty():
 			if field_candidate(object, polygons):
 				cue = "field" # Authored visible-field air, not original weather.
@@ -261,20 +290,23 @@ static func visible_cues(mask: Image, token: Dictionary) -> Array[String]:
 			elif Vector2(witnesses[id]).distance_squared_to(Vector2(x, y)) >= 16.0:
 				found.append(cue)
 				if found.size() == wanted.size(): return found
-	if "field" in wanted and "field" not in found and field_visible(bytes,stride,token): found.append("field")
+	for cue: String in ["field", "t80"]:
+		if cue in wanted and cue not in found and narrow_visible(bytes,stride,token,cue): found.append(cue)
 	return found
 
-static func field_visible(bytes: PackedByteArray, stride: int, token: Dictionary) -> bool:
-	# Real source fields can be a one-pixel strip between the old sparse probes.
-	# Working if: exact narrow fields admit, UI/edges/other owners never do,
-	# and incumbent Hind/river admission retains its original sample grid.
+static func narrow_visible(bytes: PackedByteArray, stride: int, token: Dictionary, cue: String) -> bool:
+	# Fields and small tank silhouettes can fall between the sparse grid rows.
+	# Working if: two separated actual same-owner/UI-clear pixels admit, while
+	# closer fragments, protected lines and other owners stay silent. No mask
+	# pixels or distance threshold change; Hind/river keep their incumbent grid.
 	var width: int = token.size.x
 	var height: int = token.size.y
 	var clip: Array = token.clip
 	var extent: Vector2 = Vector2(clip[2]-clip[0]+1,clip[3]-clip[1]+1)
 	for owner_id: int in token.selected:
-		if token.selected[owner_id].cue != "field": continue
+		if token.selected[owner_id].cue != cue: continue
 		var first: Vector2i = Vector2i(-1,-1)
+		var witnesses: Array[Vector2i] = []
 		var cursor: int = 0
 		var search_hits: int = 0
 		while cursor < bytes.size():
@@ -283,14 +315,23 @@ static func field_visible(bytes: PackedByteArray, stride: int, token: Dictionary
 			search_hits += 1
 			if search_hits > 8192: break # ambiguous dense byte collisions stay quiet
 			cursor = hit+1
-			if hit%stride != 0 or bytes[hit+1] != (owner_id >> 8) or bytes[hit+2] != 0 or (stride==4 and bytes[hit+3] != 255): continue
+			if hit%stride != 0 or bytes[hit+1] != (owner_id >> 8) or bytes[hit+2] not in ([0,8] if cue=="t80" else [0]) or (stride==4 and bytes[hit+3] != 255): continue
 			var index: int = hit/stride
 			var pixel: Vector2i = Vector2i(index%width,index/width)
 			if pixel.y >= height: continue
 			var source: Vector2i = Vector2i(clip[0]+floori((pixel.x+0.5)*extent.x/width),clip[1]+floori((pixel.y+0.5)*extent.y/height))
 			if source.x<0 or source.x>=320 or source.y<0 or source.y>=200 or token.ui[source.y*320+source.x] != 0: continue
-			if first.x<0: first=source
-			elif Vector2(first).distance_squared_to(Vector2(source))>=16.0: return true
+			if cue=="t80":
+				# Every endpoint is an actual observed pixel, never a bounding-box
+				# corner or a sum across actors. Before a pair succeeds, all points
+				# fit within <4 pixels of the first: at most49 lattice positions.
+				for witness: Vector2i in witnesses:
+					if Vector2(witness).distance_squared_to(Vector2(source))>=16.0: return true
+				if source not in witnesses: witnesses.append(source)
+				if witnesses.size()>49: return false
+			else:
+				if first.x<0: first=source
+				elif Vector2(first).distance_squared_to(Vector2(source))>=16.0: return true
 	return false
 
 func after_draw() -> void:

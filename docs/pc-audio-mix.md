@@ -1,12 +1,12 @@
 # Presentation audio controls
 
-## Current saved controls, 26 October 2026
+## Current saved controls, 27 October 2026
 
 Native Settings and Audio expose five groups (Master volume, Sound effects,
-Crew voices, Engine and turret, Music) and twelve independent controls: Cannons,
+Crew voices, Engine and turret, Music) and thirteen independent controls: Cannons,
 Machine gun, Impacts, Smoke, Engine, Turret, Rivers, Hind engine, Radio alerts
-Switches, Field air and Animals. Every control supports Off through 100%. Existing group defaults
-and individual 100% defaults are retained. Rivers, Hind, Field air and Animals stay native-only because
+Switches, Field air, Animals and T-80 engine. Every control supports Off through 100%. Existing group defaults
+and individual 100% defaults are retained. Rivers, Hind, Field air, Animals and T-80 stay native-only because
 their optional local banks are excluded from browser discovery and packaging.
 
 Radio alerts and Switches now have the same immediate gain/mute and durable
@@ -353,3 +353,67 @@ These are self-verification checks by the authoring chat, not independent listen
 Working if: the installed app and served Web bundle contain the nineteen pinned
 cues; PC-only menu/arming playback is observed; source mute, result/aftermath,
 encounter rotation and restore checks pass without shipping original game files.
+
+
+## Exact-model T-80, private noncommercial pass
+
+Nell supplied SoundFX.studio's Freesound456277 original. Its creator labels it
+T-80 GTD turbine material; independent recording-session authentication is not
+claimed. The original and SHA-verified recovery copy remain private. CC BY-NC4.0
+attribution and processing notes accompany the optional separate bank at
+`local-audio/pc-soviet-effects-v1/`. This pass authorizes private noncommercial
+evaluation only, with no commercial/public packaging or paid acquisition.
+
+The full1,062,930-frame (22.144375-second) source is downmixed arithmetically to
+48kHz mono16 and statically attenuated to -25.0LUFS, 1LU below the accepted Hind
+master. Peak is -17.72dBTP. No dynamics, EQ, pitch change, trim or loop-boundary
+edit is applied. The source page's22.144seconds is rounded,18frames shorter
+than the actual file if treated as exact. Provenance pins the actual length.
+Human cleanliness, loop and combined-level approval remain separate gates.
+
+Only exact intact model121 with a unique original pointer/model actor join and
+finite nonzero signed16 movement can become a candidate. Stationary engine-on
+state is unproven; stationary objects and wreck122 remain silent. The existing
+postdraw owner/original-UI, mesh/camera, frame/epoch and transport guards decide
+audibility. One centred fixed-pitch bed uses factor0.30 through Effects and its
+independent saved Off–100% T-80 control. Missing or invalid new assets cannot
+disable accepted world/environment banks. Requests7/9/10/15/16 remain unknown.
+
+Accepted cow0.80, field0.08, Hind0.30, own engine0.08, turret0.10, river0.20,
+crew/music, original event timing and source-owned motor pitch/amplitude are
+unchanged. Adding a new bed can affect shared limiter attenuation; unchanged
+input gains alone do not prove identical mixed-output levels. Focused mix and
+visibility qualification, then human listening, decide the new combination.
+T-62, T-64 and T-72 have no acquired qualified exact-model recording in this
+finite pass; the T-80 is never used as their substitute. The held T-55 purchase
+is roster-incompatible and remains unpurchased.
+
+The final machine checkpoint passes200 world-audio checks,373 mixer checks,
+62 native owner/playback checks and40 native Settings checks. Compact, wide
+and scrolled native Settings images were inspected; preferences are isolated
+to the test output, with no manual native-menu selection claim.
+
+A demonstrated sparse-grid miss on a thin T-80 silhouette now reuses the bounded
+exact-owner scan. Its witnesses remain two actual same-owner original pixels,
+separated by at least4pixels, with accepted blue0/8, opaque alpha and clear
+original UI. No source/ownership pixels or geometry change. The8192-byte-hit
+cap fails closed; at most49 unique coordinate witnesses are needed before a
+qualifying pair exists. Existing field behavior and Hind/river grids are
+unchanged. Sourceframe42389 remains negative (maximum distance squared9);
+two genuine defense3 cases qualify (distance squared20). The native positive
+uses sourceframe42755/owner16 and retains the complete original painter queue,
+including occluders. No possible pose substitution or configured surface
+passthrough exists in that packet; protected standalone segments cannot be
+witnesses. This qualifies source ownership, not a new full-Tactical visual pass.
+
+The full-world diagnostic timed out at its100-second cap and is not acceptance
+or a performance diagnosis. An initial platform-name preflight and an initial
+wall-timer PCM-duration check also failed; their receipts are retained. The
+accepted background sample-clock capture instead reads the production bus
+after its existing limiter: exactly12seconds,44.1kHz stereo16, -17.8dBTP,
+zero clipped samples or discarded capture frames. It holds authenticated
+sourceframe42755 after1026 original envelopes were consumed silently;
+no crew events, source frames or onset sequences are invented. About4seconds
+of existing engine/score precede8seconds with T-80. Headless/Dummy proves no
+physical-device or fresh-live-motion claim. Human loop/mix judgment is pending.
+All15 incumbent private-bank files remain byte-identical. No publication.

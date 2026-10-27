@@ -1,7 +1,9 @@
 # PC audio coverage and machine QA
 
-Current 26 October checkpoint: the approved switch and 15 native controls are
-installed locally. Genuine moving-Hind playback now passes in the production
+Current 27 October checkpoint: the approved switch and 18 native controls are
+installed locally. The new private T-80 cue is exact-model and visible-moving
+only; its native painter and human mix qualification are tracked separately.
+The cow and gentle field-air levels are accepted. Genuine moving-Hind playback now passes in the production
 native viewer/mixer. Nell accepted the combined Hind/tank-motor balance; its
 levels remain unchanged. The latest
 parallel-batch section supersedes earlier Hind-open checkpoint notes below.

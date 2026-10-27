@@ -8062,3 +8062,61 @@ No runtime, asset, accepted level, original timing or visibility-mask changes.
 Cow.80,field.08,Hind.30,ownengine.08,turret.10 and crew/music remain untouched.
 Source/licence plan and provenance live under
 artifacts/environment-bindings-20261026/soviet-sources/. No release or publication.
+
+
+## Private exact T-80 recording and saved control, 27 October 2026
+
+Nell supplied the original Freesound456277 WAV in Downloads. Root verified
+its SHA and recoverable private copy, actual1,062,930frames/22.144375seconds.
+SoundFX.studio labels it T-80 GTD turbine material, licensed CC BY-NC4.0.
+The exact-length mono48k16 derivative uses static downmix/attenuation only,
+-25.0LUFS and -17.72dBTP, one LU below the accepted Hind master. A separate
+optional singleton bank is atomically installed with attribution/provenance.
+No paid acquisition, source overwrite, public media or commercial inclusion.
+
+Only exact intact model121, uniquely joined pointer/model and finite nonzero
+signed16 motion qualify. Wreck122, stationary/other models and unknown
+requests7/9/10/15/16 remain excluded. The existing postdraw/UI/owner/frame/epoch
+and transport guards remain authoritative. One centred fixed-pitch bed uses
+independent saved Off–100% control, native only; incumbent gains/banks and
+original event/source-loop authority remain unchanged.
+
+Astra read-only review identified a preview source/visibility join gap, fixed
+by sealing capture, canonical presentation/audio index, epoch, native receipt
+and all consumed inputs. A native platform-name preflight failed before
+rendering, then a full-world diagnostic hit its100-second cap. Neither is
+a performance or completion claim. Owner-only inspection instead retained
+11 simple complete source queues from14 candidates. The initial42389case
+correctly lacks separated witnesses; a sparse-grid miss on two defense3 cases
+was confirmed in actual captured owner pixels. The T80-only bounded exact scan
+retains the same two real same-owner/UI-clear coordinates and4pixel separation,
+with no mask or geometry edits. Astra approved the contract and recommended
+the complete unique-witness implementation (at most49 coordinates), which was
+adopted. Field behavior and existing Hind/river grids remain unchanged.
+
+Root reran relevant checks: world200, mixer373, actual native source-owner62,
+native Settings40, all0errors/exit0. Actualsource42755/owner16 starts playback
+after postdraw; UI cover and stale frame/epoch stop it. Source and ownership
+bytes remain unchanged. Native compact/wide/scrolled Settings were inspected,
+including the T-80 slider. Tests use isolated saved preferences, not user mixes.
+No full Tactical world, fresh live movement, device or FPS claim follows.
+
+The first background Record/timer duration assertion failed and was retained.
+The corrected private capture uses actual post-limiter AudioEffectCapture
+samples, not assumed wall/audio clock equality:12seconds stereo44.1k16,
+-17.8dBTP,0clipped samples and0discarded capture frames. A sealed1026-envelope
+original prefix is consumed silently then frame42755 is held, with no invented
+crew/events, source advancement or source-owned pitch/amplitude changes.
+The first4seconds retain original engine/score; T80 joins for8seconds.
+The12-second mix and10-second tail/head preview are presented for human review.
+Human T80 loop and combined-level acceptance remain pending, not fabricated.
+
+Root independently rechecked all15 incumbent private-bank inputs byte-identical.
+Cow0.80,field0.08,Hind0.30,ownengine0.08,turret0.10,river0.20,crew/music and
+limiter unchanged. T62/T64/T72 clean exact recordings remain unacquired after
+bounded free-first searches; T55 remains held as roster-incompatible.
+All foreign intro/music edits and files/index ownership are preserved. No
+cross-chat messages, foreign process signals, cache clearing, push, standalone
+or web rebuild, packaging or publication. Local only. Full evidence is under
+artifacts/environment-bindings-20261026/t80-verification.json and its linked
+private artifacts.
