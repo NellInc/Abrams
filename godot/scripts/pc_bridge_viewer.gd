@@ -1243,7 +1243,9 @@ func _apply_sample(message: Dictionary) -> void:
 			var world_ui: Dictionary = previous_presentation.get("ui_overlay", {})
 			pc_audio.world_audio.observe(world_drawing, draw_view.ownership, tandem_frame._decoded_mask("ui", str(world_ui.get("mask_png", ""))), int(message.audio.frame), int(message.audio.epoch),
 				func(): return tandem_frame.world_enabled and draw_view.modern_enabled and not _frontdoor_blocked() and audio_menu.window_focused and root.has_focus() and audio_menu.open_menus.is_empty(),
-				{"view":draw_view.tactical_vehicle_view,"assets":draw_view.tactical_vehicle_assets,"world":world_viewport,"camera":camera})
+				{"view":draw_view.tactical_vehicle_view,"assets":draw_view.tactical_vehicle_assets,"world":world_viewport,"camera":camera,
+				"source":{"pass_sequence":world_drawing.get("sequence"),"start_ram_sha256":world_drawing.get("start_ram_sha256"),
+					"video_sha256":previous_presentation.get("video_sha256"),"ui_sha256":world_ui.get("mask_sha256")}})
 	previous = state
 	_finish_startup_display()
 	# Hidden research labels cause text shaping/layout even when not displayed.

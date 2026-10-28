@@ -20,6 +20,7 @@ try:
     from tools.pc_materials import read_materials, material_pixel
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from tools.pc_audio_events import AudioEvents
+    from tools.pc_guided_launch import GuidedLaunches, receipt_capability
     from tools.pc_orientation import OrientationRuns
     from tools.pc_reticle import ReticleRuns
     from tools.pc_reticle_target import TargetBoxRuns
@@ -38,6 +39,7 @@ except ModuleNotFoundError as error:
     from pc_materials import read_materials, material_pixel
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
     from pc_audio_events import AudioEvents
+    from pc_guided_launch import GuidedLaunches, receipt_capability
     from pc_orientation import OrientationRuns
     from pc_reticle import ReticleRuns
     from pc_reticle_target import TargetBoxRuns
@@ -137,17 +139,21 @@ class Collector:
         self.effects = cached_source(ROOT / 'GAME/EFFECTS.BMP', effect_table)
         self.effect_pixels_checked = 0
         self.shapes, self.shape_primitives, self.shape_commands = cached_source(ROOT / 'GAME/SHAPE.TBL', shape_table)
+        self.guided = GuidedLaunches(shapes=self.shapes)
         self.callback = CALLBACK(self.observe)
 
     def observe(self, event, registers, data, offset, length):
         try: raw = C.string_at(data, length)
         except Exception as error:
+            self.guided.pending = None
             if self.error is None: self.error = error
             return
         self.observe_packet(event, registers[:12], raw, offset)
 
     def observe_packet(self, event, registers, raw, offset):
         """Consume an exact native callback packet, including its original bytes."""
+        guided_launch = self.guided.observe(event, registers, raw, offset, self.presented) if not self.error else None
+        if event in (59,60): return
         if event == 56:
             try:
                 self.loop_diagnostic = None
@@ -175,7 +181,7 @@ class Collector:
             return
         try:
             if event == 25:
-                self.audio.observe(raw, text_sequence=self.text.sequence)
+                self.audio.observe(raw, text_sequence=self.text.sequence, guided_launch=guided_launch)
                 return
             if event in (10, 11, 12, 19, 24, 31):
                 self.observe_video(event, offset, raw, registers)
@@ -283,6 +289,7 @@ class Collector:
                 state = self.reader.read(raw)
                 if not state or not state['camera']: raise ValueError('draw-start snapshot lacks supported camera')
                 state['camera']['sampling'] = 'observed at original drawing callback entry; not a logic-tick claim'
+                self.guided.freeze(raw, state['load_segment'], self.sequence)
                 ds = state['load_segment'] * 16 + 0x19E00
                 self.sine = list(struct.unpack_from('<256h', raw, ds + 0x1D9C))
                 self.cosine = list(struct.unpack_from('<256h', raw, ds + 0x1E1C))
@@ -635,6 +642,8 @@ class Collector:
     def attach(self, core, load_segment):
         core.pause_at_frame_end()
         self.window_bundles = receipt_window_bundles(getattr(core, 'core_sha256', None), ROOT / '.runtime/pc-core')
+        self.guided.enabled = receipt_capability(getattr(core, 'core_sha256', None), ROOT / '.runtime/pc-core')
+        self.guided.reset()
         self.claim_strut = core.core.abrams_trace_claim_strut
         self.claim_strut.argtypes = [C.c_uint,C.c_uint,C.POINTER(C.c_uint8),C.c_uint]
         self.claim_strut.restype = C.c_bool
@@ -652,6 +661,7 @@ class Collector:
             configure(True)
 
     def detach(self, core):
+        self.guided.reset()
         core.pause_at_frame_end()
         # A zero load segment only disables instruction hooks. VGA callbacks
         # must also be removed before this Python callback can be released.

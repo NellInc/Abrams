@@ -495,3 +495,23 @@ WORK_LEDGER/playability/optional-Genesis edits are not owned by this audio batch
 
 Working if: resume from real finite results, preserve M1A1regular firing, and
 never fill the missing enemy onset with guessed events or a later flare.
+
+
+## Guided-trigger local integration, 28 October 2026
+
+Source/implementation receipts are now in `artifacts/rocket-trigger-20261028/`
+and `docs/pc-guided-launch-audio.md`. Actual original033Flaunches are confirmed
+for classes13/14/15/16. Native eligible positives: rail14frame14320and Spigot16
+frame21256. Sagger15frame32056is absent from the presented pass, so its new
+attack correctly remains silent and original15unchanged. No audible native
+Sagger positive is claimed. M1A1AX remains a regular shot.
+
+The runtime60f455core and private27thPCM/11thbank are installed locally; the
+old37bff0pair is recoverable. No public edition was rebuilt or released. Exact
+source/audio parity and focused checks pass; the new combined-launch listening
+review awaits Nell, and the prior aggregate RAM fixture hold remains separate.
+The current admission contract uses prior cached owner proof at the original
+onset, superseding the old proposed first-post-birth rendering scheme.
+
+Working if: all original IDs/onsets/masks and incumbent balances remain exact,
+failed launch proofs cannot replay, and release claims preserve those limits.

@@ -35,7 +35,7 @@ class AudioEvents:
         self.limit = limit
         self.pending = deque()
 
-    def observe(self, raw, *, text_sequence=None):
+    def observe(self, raw, *, text_sequence=None, guided_launch=None):
         if len(raw) != 12: raise ValueError('invalid native audio boundary')
         ip, caller, value, backend, gate, reload_state = struct.unpack('<6H', raw)
         if ip not in (0x9107, 0x8DA3, 0x35EE, 0x91D6):
@@ -57,10 +57,14 @@ class AudioEvents:
             if text_sequence is not None: event['text_sequence'] = text_sequence
         else:
             event['kind'] = 'engine_parameter'
+        if guided_launch is not None and ip == 0x9107 and caller == 0x034F and value == 15:
+            event['guided_launch'] = guided_launch
         self.pending.append(event)
 
     def drain(self):
         events = list(self.pending)
+        for event in events:
+            if 'guided_launch' in event and not event['guided_launch']: del event['guided_launch']
         self.pending.clear()
         return events
 

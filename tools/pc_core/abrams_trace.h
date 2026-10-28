@@ -379,10 +379,78 @@ static INLINE void AbramsTraceFrontendInstruction() {
     }
 }
 
+// Stateless continuity barriers. Emit before identity mutations, never for movement.
+static bool AbramsGuidedPoolPointer(Bit32u pointer) {
+    return pointer >= 0x709e && pointer < 0x709e + 30u*58u && (pointer-0x709e)%58u == 0;
+}
+static void AbramsTraceGuidedContinuity(Bit32u ip) {
+    if (ip!=0x02b4 && ip!=0x02bc && ip!=0x429a && ip!=0x4435 && ip!=0x443f && ip!=0x4449 &&
+        ip!=0x516a && ip!=0x885a && ip!=0x87d3 && ip!=0x9268 &&
+        ip!=0x0a95 && ip!=0x0aaf && ip!=0x0afd && ip!=0x0b17 && ip!=0x3a73) return;
+    const Bit32u segment = SegValue(cs), data_segment = abrams_trace_load+0x19e0;
+    const Bit32u base = data_segment*16u;
+    if (base+65536u>640u*1024u) return;
+    unsigned kind=0, pointer=0;
+    if (segment==abrams_trace_load && ip==0x9268) {
+        // BSS clear precedes DS setup; require the exact original ES/SS range.
+        if (SegValue(es)!=data_segment || SegValue(ss)!=data_segment ||
+            reg_di!=0x5cb0 || reg_cx!=0x9040-0x5cb0 || (reg_ax&255)) return;
+        kind=3;
+    } else {
+        if (SegValue(ds)!=data_segment) return;
+        if (segment==abrams_trace_load+0x0b4d && (ip==0x02b4 || ip==0x02bc)) {
+            // Successful allocator return AX, or free's BX immediately before clear.
+            const Bit32u at=ip==0x02b4 ? reg_sp : reg_bp+2u;
+            const Bit32u stack=SegPhys(ss);
+            if (at+4u>65536 || stack+at+4u>640u*1024u) return;
+            // Invalidation grants no authority: every caller revises a valid slot.
+            if (ip==0x02b4) {
+                pointer=reg_ax;
+                if (!AbramsGuidedPoolPointer(pointer) || !(mem_readb(base+pointer)&128)) return;
+            } else {
+                pointer=reg_bx;
+                if (!AbramsGuidedPoolPointer(pointer)) return;
+            }
+            kind=1;
+        } else if (segment==abrams_trace_load) {
+            if (ip==0x885a) {
+                if (reg_bx>=30u*58u || reg_bx%58u) return;
+                kind=3;
+            } else if (ip==0x87d3) {
+                if (reg_bx>58u || reg_bx%2u || !AbramsGuidedPoolPointer(reg_ax)) return;
+                kind=3;
+            } else if (ip==0x516a || ip==0x429a || ip==0x4435 || ip==0x443f || ip==0x4449) {
+                const unsigned controls=mem_readw(base+0x6f54), count=mem_readw(base+0x0a08);
+                pointer=reg_bx;
+                if (!count || controls+count*17u>65536 || pointer<controls ||
+                    pointer>=controls+count*17u || (pointer-controls)%17u) return;
+                if (ip==0x516a) { kind=3; pointer=0; }
+                else kind=2;
+            } else if (ip==0x0a95 || ip==0x0aaf || ip==0x0afd || ip==0x0b17 || ip==0x3a73) {
+                pointer=reg_bx;
+                if (!AbramsGuidedPoolPointer(pointer)) return;
+                const bool header=ip==0x0aaf || ip==0x0b17;
+                const unsigned before=header ? mem_readw(base+pointer+2u) : mem_readb(base+pointer+1u);
+                const unsigned after=header ? reg_ax : (reg_ax&255u);
+                if (before==after) return;
+                kind=1;
+            }
+        }
+    }
+    if (!kind) return;
+    const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
+        reg_bp,reg_sp,SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+    const unsigned fields[4]={1,kind,pointer,0};
+    Bit8u bytes[8];
+    for (unsigned i=0;i<4;++i) { bytes[2*i]=Bit8u(fields[i]); bytes[2*i+1]=Bit8u(fields[i]>>8); }
+    abrams_trace_callback(60,regs,bytes,ip,sizeof(bytes));
+}
+
 static INLINE void AbramsTraceInstruction() {
     if (abrams_trace_callback && abrams_frontend_text_mode) { AbramsTraceFrontendInstruction(); return; }
     if (!abrams_trace_callback || !abrams_trace_load) return;
     Bit32u ip = reg_eip;
+    AbramsTraceGuidedContinuity(ip);
     if (ip == 0x0e85 && abrams_loop_diagnostics &&
         SegValue(cs) == abrams_trace_load && SegValue(ds) == abrams_trace_load + 0x19e0) {
         const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
@@ -415,7 +483,7 @@ static INLINE void AbramsTraceInstruction() {
     if (abrams_plate_copy_active && ip == abrams_plate_copy_return_ip && SegValue(cs) == abrams_plate_copy_return_cs)
         abrams_plate_copy_active = false;
     // Cheap filter before consulting segments on the normal instruction path.
-    if (ip != 0x8ac4 && ip != 0x02c1 && ip != 0x29ad && ip != 0x0596 && ip != 0x2979 && ip != 0x0357
+    if (ip != 0x033f && ip != 0x8ac4 && ip != 0x02c1 && ip != 0x29ad && ip != 0x0596 && ip != 0x2979 && ip != 0x0357
         && ip != 0x123e && ip != 0x324a
         && ip != 0x1446 && ip != 0x1495 && ip != 0x14c4 && ip != 0x1573 && ip != 0x15c2 && ip != 0x15f1 && ip != 0x125f
         && ip != 0x28d0 && ip != 0x31a6 && ip != 0x59e4 && ip != 0x340b
@@ -437,6 +505,35 @@ static INLINE void AbramsTraceInstruction() {
     Bit32u segment = SegValue(cs), event = 0, start = 0, length = 0;
     const Bit32u base = SegPhys(ds);
     if (base + 65536 > 640 * 1024) return;
+    // Stateless successful enemy launch observation, before original target branch.
+    // Host-only packet; no guest writes, CPU register writes or cycle changes.
+    if (segment == abrams_trace_load && ip == 0x033f) {
+        const unsigned controller = mem_readw(base+0x777e);
+        const unsigned actor = mem_readw(base+0x7776);
+        const unsigned controls = mem_readw(base+0x6f54), count = mem_readw(base+0x0a08);
+        const unsigned sound = 16u*(abrams_trace_load+0x18b5)+0x0f48;
+        const unsigned stack = SegPhys(ss)+reg_sp;
+        if (!count || controls+count*17u>65536 || controller<controls ||
+            controller>=controls+count*17u || (controller-controls)%17u ||
+            reg_bx!=controller || !mem_readb(base+controller) ||
+            actor<0x709e || actor>=0x709e + 58u*30 || (actor-0x709e)%58u ||
+            mem_readw(base+controller+3)!=actor || reg_sp<4 || reg_sp+2u>65536 ||
+            stack+2u>640*1024 || sound>=640*1024) return;
+        const unsigned projectile = mem_readw(base+controller+15);
+        if (projectile<0x709e || projectile>=0x709e + 58u*30 || (projectile-0x709e)%58u ||
+            !(mem_readb(base+projectile)&128) || mem_readw(base+projectile+2)!=100 ||
+            mem_readw(base+projectile+36)!=250 ||
+            mem_readb(base+projectile+1)!=mem_readw(base+0x79c2)+71 ||
+            mem_readw(base+controller+12)!=10) return;
+        static Bit8u guided_packet[8+65536];
+        const Bit16u prefix[4] = {1,mem_readb(base+0x35ac),mem_readb(sound),0};
+        for (unsigned i=0;i<4;++i) { guided_packet[2*i]=Bit8u(prefix[i]); guided_packet[2*i+1]=Bit8u(prefix[i]>>8); }
+        MEM_BlockRead(base,guided_packet+8,65536);
+        const Bit16u regs[12] = {reg_ax,reg_bx,reg_cx,reg_dx,reg_si,reg_di,
+            reg_bp,reg_sp,SegValue(cs),SegValue(ds),SegValue(es),SegValue(ss)};
+        abrams_trace_callback(59,regs,guided_packet,ip,sizeof(guided_packet));
+        return;
+    }
     // Stateless round-form observations. Every span validates the original
     // far caller via its exact stack depth; no host lifetime field or guest
     // state is changed, so observer checkpoint ABI 1 is unchanged.

@@ -60,6 +60,7 @@ class PresentationSession:
         self.transitions = []
         self.audio_pending = []
         self.audio_sequence = 0
+        self.guided_pending = []
         self.readiness = ReadinessBark()
         self.crew = CrewBarks()
         self.radio = RadioBarks()
@@ -93,6 +94,8 @@ class PresentationSession:
     def step(self, frames, keys=()):
         for _ in range(frames):
             self.before_frame()
+            if self.collector and hasattr(self.collector, 'guided'):
+                self.collector.guided.before_frame(self.core.frame + 1, self.epoch)
             self.core.run(1, keys)
             if self.collector and self.collector.error: raise self.collector.error
             if self.frontend and self.frontend.error: raise self.frontend.error
@@ -106,6 +109,11 @@ class PresentationSession:
             events += self.readiness.advance(self.core.frame, events, presentation, self.audio_state)
             events += self.crew.advance(presentation, self.audio_state)
             events += self.radio.advance(presentation, self.audio_state)
+            if self.collector and hasattr(self.collector, 'guided'):
+                launches = self.collector.guided.drain()
+                if verified and self.audio_state.get('enabled'):
+                    if len(self.guided_pending)+len(launches)>4096: raise ValueError('guided launch queue overflow')
+                    self.guided_pending.extend(launches)
             for event in events:
                 if len(self.audio_pending) >= 4096: raise ValueError('session audio queue overflow')
                 self.audio_sequence += 1
@@ -114,7 +122,8 @@ class PresentationSession:
 
     def drain_audio(self):
         events, self.audio_pending = self.audio_pending, []
-        return {'schema': 3, 'frame': self.core.frame, 'epoch': self.epoch,
+        guided, self.guided_pending = self.guided_pending, []
+        return {**({'guided_launches': guided} if guided else {}), 'schema': 3, 'frame': self.core.frame, 'epoch': self.epoch,
                 'last_id': self.audio_sequence, 'events': events, **self.audio_state}
 
     def sample(self):

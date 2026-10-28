@@ -346,9 +346,14 @@ func continue_timeline() -> void:
 	loop_transitions.clear()
 	continuing_timeline=true
 	music_bank.rebase_source()
+	world_audio.reset_rocket_timeline()
 
-func play(cue: String) -> void:
-	if not transport_muted: super.play(cue)
+func play(cue: String, override_stream: AudioStream = null) -> void:
+	if not transport_muted: super.play(cue,override_stream)
+
+func effect_gain(cue: String) -> float:
+	if cue=="rocketlaunch": return volume*effects_volume*0.6*float(mix.get("missileflight",100))/100.0
+	return super.effect_gain(cue)
 
 func speak(cue: String) -> void:
 	if not transport_muted: super.speak(cue)
@@ -574,9 +579,13 @@ func apply_audio(packet: Dictionary) -> bool:
 		elif transport_muted: reason = "presentation-transport-muted"
 		elif last_frame - int(event.frame) > MAX_AGE_FRAMES: reason = "stale-diagnostic-step"
 		elif event.kind not in ["readiness_visible", "crew_visible", "radio_visible"] and (event.kind != "sound" or event.get("sample") == null): reason = "unmapped-original-request"
+		var rocket: AudioStreamWAV
+		if event.kind=="sound" and int(event.ip)==0x9107 and int(event.return_ip)==0x034f and int(event.value)==15 and event.get("sample")=="pc_request_15":
+			rocket=world_audio.rocket_variant(event.get("guided_launch"),last_frame,epoch,true,reason.is_empty())
 		if reason.is_empty():
 			music_bank.observe_event(event)
-			if event.get("sample") != null: play(event.sample)
+			if rocket!=null: play("rocketlaunch",rocket)
+			elif event.get("sample") != null: play(event.sample)
 			if event.get("voice") != null: speak(event.voice)
 			supplemental.observe_event(event)
 			delivered += 1
@@ -587,6 +596,13 @@ func apply_audio(packet: Dictionary) -> bool:
 			"kind": event.kind, "message_id": event.get("message_id")}
 		receipts.append(receipt)
 		if receipts.size() > 64: receipts.pop_front()
+	# Other-target launches have no original sound request. Their separate once-
+	# only tokens cannot renumber or replay the original event sequence.
+	var launches: Variant=packet.get("guided_launches",[])
+	if launches is Array and launches.size()<=64:
+		for launch: Variant in launches:
+			var rocket: AudioStreamWAV=world_audio.rocket_variant(launch,last_frame,epoch,false,packet.active and packet.enabled and not transport_muted)
+			if rocket!=null: play("rocketlaunch",rocket)
 	last_event_id = next_id
 	last_crew_message = next_crew_id
 	last_radio_message = next_radio_id

@@ -201,7 +201,7 @@ def main():
     shutil.copyfile(SOURCE / ('dosbox_pure_libretro'+suffix), staged)
     # The header sends SIM events 26/28/29 as AWB1 RAM window bundles
     # (tools/pc_trace_windows.py); the event schemas below declare that.
-    manifest = {'schema': 2, 'round_form_event_schema': 1, 'audio_event_schema': 1, 'text_event_schema': WINDOW_BUNDLE_SCHEMAS[0], 'message_event_schema': WINDOW_BUNDLE_SCHEMAS[1], 'strut_event_schema': WINDOW_BUNDLE_SCHEMAS[2], 'driver_overlay_schema': 1, 'state_overlay_schema': 1, 'observer_checkpoint_schema': 1, 'observer_checkpoint_header_sha256': sha(observer), 'state_overlay_header_sha256': sha(state_overlay), 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
+    manifest = {'schema': 2, 'round_form_event_schema': 1, 'audio_event_schema': 1, 'guided_launch_event_schema': 1, 'guided_continuity_event_schema': 1, 'text_event_schema': WINDOW_BUNDLE_SCHEMAS[0], 'message_event_schema': WINDOW_BUNDLE_SCHEMAS[1], 'strut_event_schema': WINDOW_BUNDLE_SCHEMAS[2], 'driver_overlay_schema': 1, 'state_overlay_schema': 1, 'observer_checkpoint_schema': 1, 'observer_checkpoint_header_sha256': sha(observer), 'state_overlay_header_sha256': sha(state_overlay), 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
         'loop_diagnostic_schema': 1, 'native_save_format_version': 9,
         'source_core_normal_sha256': hashlib.sha256(original.encode()).hexdigest(),
         'patched_core_normal_sha256': sha(target), 'trace_header_sha256': sha(header),

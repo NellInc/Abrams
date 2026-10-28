@@ -71,6 +71,14 @@ var allied_directory: String = PrivateAudio.bank_directory(private_audio_root,"p
 var allied_failure: String = ""
 var detail_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-world-detail-v1")
 var detail_failure: String = ""
+const ROCKET_SHAPES := {13:141,14:143,15:161,16:162}
+var rocket_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-rocket-effects-v1")
+var rocket_stream: AudioStreamWAV
+var rocket_failure: String = ""
+var _rocket_proof: Dictionary = {}
+var _rocket_epoch: int = -1
+var _rocket_last: int = 0
+var _rocket_seen: Array[int] = []
 var cow_visibility = CowVisibility.new()
 var _cow_epoch: int = -1
 var _cow_frame: int = -1
@@ -171,7 +179,16 @@ func setup(owner: Node) -> void:
 		if flight_sources.is_empty(): flight_failure = "unverified original flare resources"
 		else: streams.merge(bank.streams)
 	if not flight_failure.is_empty(): push_warning("Private missile flight ignored: " + flight_failure)
-	if streams.is_empty(): return
+	bank = _read_bank(rocket_directory,"private source-qualified rocket attack",["rocketlaunch"])
+	if bank.has("error"): rocket_failure=str(bank.error)
+	elif bank.streams.has("rocketlaunch"):
+		var stream: AudioStreamWAV=bank.streams.rocketlaunch
+		if stream.data.size()!=115200*2: rocket_failure="invalid rocket attack frame count"
+		else:
+			stream.loop_mode=AudioStreamWAV.LOOP_DISABLED
+			rocket_stream=stream
+	if not rocket_failure.is_empty(): push_warning("Private rocket attack ignored: "+rocket_failure)
+	if streams.is_empty() and rocket_stream==null: return
 	for cue: String in streams:
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
 		host.add_child(player)
@@ -191,6 +208,7 @@ func stop() -> void:
 	_cow_exposure = -1
 	pending.clear(); armed.clear(); admitted.clear()
 	_proof_key.clear(); _proof_mask = null; _proof_inputs.clear(); _proof_cues.clear()
+	_rocket_proof.clear()
 	for player: AudioStreamPlayer in players.values():
 		host._remember_playback(player)
 		player.stop()
@@ -200,6 +218,7 @@ func release() -> void:
 	cow_visibility.release()
 	for player: AudioStreamPlayer in players.values(): player.stream = null
 	streams.clear()
+	rocket_stream=null
 	if RenderingServer.frame_pre_draw.is_connected(before_draw): RenderingServer.frame_pre_draw.disconnect(before_draw)
 	if RenderingServer.frame_post_draw.is_connected(after_draw): RenderingServer.frame_post_draw.disconnect(after_draw)
 
@@ -213,7 +232,7 @@ func begin_packet() -> void:
 	cow_visibility.begin_packet()
 	# A new packet without a successful world presentation silences at postdraw.
 	# No new packet between draws, however, is an ordinary retained source frame.
-	if not streams.is_empty(): pending = {"clear": true}
+	if not streams.is_empty() or rocket_stream!=null: pending = {"clear": true}
 	armed.clear()
 
 static func exact_number(value: Variant, expected: int) -> bool:
@@ -409,13 +428,14 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t
 	return result
 
 func observe(data: Dictionary, ownership: SubViewport, ui: Image, source_frame: int, source_epoch: int, guard: Callable = Callable(), component_context: Dictionary = {}) -> void:
-	if streams.is_empty(): return
+	if streams.is_empty() and rocket_stream==null: return
 	visibility_guard = guard
 	if not allowed() or RenderingServer.get_current_rendering_method() != "gl_compatibility" or source_frame != host.last_frame or source_epoch != host.epoch or data.is_empty() or ownership == null or ui == null or ui.get_size() != Vector2i(320, 200) or ui.get_format() != Image.FORMAT_L8:
 		stop(); return
 	var bits: PackedByteArray = ui.get_data()
 	if bits.count(0) + bits.count(255) != 64000: stop(); return
 	var selected: Dictionary = candidates(data, streams.has("t80"), streams.has("t72"), flight_sources)
+	var rockets: Dictionary = rocket_owners(data) if rocket_stream!=null else {}
 	for id: int in selected.keys():
 		if not streams.has(CUE_PLAYERS.get(selected[id].cue,selected[id].cue)) or cue_gain(selected[id].cue) <= 0: selected.erase(id)
 	var cow_ready: bool = false
@@ -427,13 +447,22 @@ func observe(data: Dictionary, ownership: SubViewport, ui: Image, source_frame: 
 		cow_visibility.stop()
 		for id: int in selected.keys():
 			if selected[id].cue == "cow": selected.erase(id)
-	if selected.is_empty() or ownership.object_count != data.objects.size() or ownership.mesh_node.mesh == null:
+	if (selected.is_empty() and rockets.is_empty()) or ownership.object_count != data.objects.size() or ownership.mesh_node.mesh == null:
 		stop(); return
 	var token: Dictionary = {"target": ownership, "mesh": ownership.mesh_node.mesh, "size": ownership.size,
 		"clip": data.camera.clip.duplicate(), "selected": selected, "ui": bits,
 		"epoch": host.epoch, "frame": host.last_frame, "camera": camera_key(ownership)}
+	token.rocket_owners=rockets
+	token.rocket_source=component_context.get("source",{}).duplicate(true)
+	if not rockets.is_empty():
+		var ui_hash: String=""
+		if not _rocket_proof.is_empty() and token.ui==_rocket_proof.ui: ui_hash=str(_rocket_proof.source.get("ui_sha256",""))
+		else:
+			var digest:=HashingContext.new();digest.start(HashingContext.HASH_SHA256);digest.update(token.ui)
+			ui_hash=digest.finish().hex_encode()
+		if ui_hash!=token.rocket_source.get("ui_sha256"): token.rocket_source={}
 	token.proof_key = [ownership, token.mesh, token.size, token.camera, token.clip]
-	token.cow_only = selected.values().all(func(item): return item.cue == "cow")
+	token.cow_only = rockets.is_empty() and selected.values().all(func(item): return item.cue == "cow")
 	# prepare() creates a fresh immutable mesh/material. This narrowly scoped
 	# cache must be invalidated if that ownership path gains in-place mutation.
 	# Working if: UI-only changes reclassify, new meshes reread, and mute/reset
@@ -574,6 +603,10 @@ func after_draw() -> void:
 		_proof_mask = mask
 		_proof_inputs = [token.ui.duplicate(), token.selected.duplicate(true)]
 		_proof_cues = admitted.duplicate()
+		if rocket_stream!=null:
+			_rocket_proof={"target":token.target,"mesh":token.mesh,"size":token.size,"camera":token.camera,
+				"clip":token.clip.duplicate(),"ui":token.ui.duplicate(),"epoch":token.epoch,"mask":mask,
+				"owners":token.get("rocket_owners",{}).duplicate(true),"source":token.get("rocket_source",{}).duplicate(true)}
 	for id: int in cow_visibility.admitted:
 		if token.selected.has(id) and token.selected[id].cue == "cow" and "cow" not in admitted: admitted.append("cow")
 	refresh()
@@ -583,6 +616,79 @@ func cue_gain(cue: String) -> float:
 
 func reset_source_timeline() -> void:
 	_cow_epoch = -1; _cow_frame = -1; _cow_exposure = -1; _cow_fired = -1
+	reset_rocket_timeline()
+
+func reset_rocket_timeline() -> void:
+	_rocket_proof.clear();_rocket_seen.clear();_rocket_epoch=-1;_rocket_last=0
+
+static func source_integer(value: Variant) -> bool:
+	return (value is int or value is float) and is_finite(float(value)) and value==floorf(float(value))
+
+static func same_rocket_pose(left: Variant, right: Variant) -> bool:
+	if not left is Dictionary or not right is Dictionary: return false
+	for key: String in ["position","orientation"]:
+		if not left.get(key) is Array or not right.get(key) is Array or left[key].size()!=3 or right[key].size()!=3: return false
+		for at: int in 3:
+			if not source_integer(left[key][at]) or not source_integer(right[key][at]) or int(left[key][at])!=int(right[key][at]): return false
+	return true
+
+static func rocket_owners(data: Dictionary) -> Dictionary:
+	var result: Dictionary={}
+	if not data.get("objects") is Array or not data.get("unsupported") is Array or not data.unsupported.is_empty(): return result
+	var actors: Dictionary=Modern.dynamic_index(data)
+	for index: int in data.objects.size():
+		var object: Variant=data.objects[index]
+		if not object is Dictionary or object.get("dynamic_instance")!=true or object.get("kind")=="sprite" or object.get("polygons",[]).is_empty(): continue
+		var shape: Variant=object.get("shape_index")
+		var pointer: Variant=object.get("pointer")
+		if not source_integer(shape) or int(shape) not in ROCKET_SHAPES.values() or not source_integer(pointer): continue
+		var pair: Variant=actors.get([int(pointer),int(shape)])
+		if pair==null or pair[1]!=1: continue
+		var actor: Dictionary=pair[0]
+		if not source_integer(actor.get("flags")) or (int(actor.flags)&0x90)!=0x80: continue
+		var position: Variant=actor.get("world_position_raw")
+		var orientation: Variant=actor.get("orientation_u8")
+		if not position is Array or not orientation is Array or position.size()!=3 or orientation.size()!=3: continue
+		if not position.all(source_integer) or not orientation.all(func(v):return source_integer(v) and v>=0 and v<=255): continue
+		result[index+1]={"pointer":int(pointer),"shape":int(shape),"pose":{"position":position.duplicate(),"orientation":orientation.duplicate()}}
+	return result
+
+func rocket_variant(value: Variant, frame: int, epoch: int, player_target: bool, enabled: bool=true) -> AudioStreamWAV:
+	# Working if: one source token uses only an already drawn exact owner proof;
+	# misses are consumed, never delayed, and no original shot/ID is added.
+	if not value is Dictionary or not source_integer(value.get("token")) or not source_integer(value.get("epoch")) or int(value.epoch)!=epoch: return null
+	var id: int=int(value.token)
+	if id<=0 or id>2147483647: return null
+	if _rocket_epoch!=epoch: _rocket_epoch=epoch;_rocket_last=0;_rocket_seen.clear()
+	if id in _rocket_seen or id<=_rocket_last-128: return null
+	_rocket_last=maxi(id,_rocket_last);_rocket_seen.append(id)
+	if _rocket_seen.size()>128: _rocket_seen.pop_front()
+	if not enabled or rocket_stream==null or not allowed() or host.effect_gain("rocketlaunch")<=0: return null
+	for key: String in ["schema","frame","class_index","shape_index","actor_pointer","backend","gate"]:
+		if not source_integer(value.get(key)): return null
+	if int(value.schema)!=1 or int(value.frame)!=frame or value.get("player_target") is not bool or value.player_target!=player_target or int(value.backend) not in [0,1] or int(value.gate)!=1: return null
+	if not ROCKET_SHAPES.has(int(value.class_index)) or int(value.shape_index)!=ROCKET_SHAPES[int(value.class_index)]: return null
+	if _rocket_proof.is_empty() or _rocket_proof.epoch!=epoch or not value.get("source") is Dictionary: return null
+	var source: Dictionary=value.source
+	if not source_integer(source.get("owner")) or int(source.owner)<=0: return null
+	if not source_integer(source.get("pass_sequence")) or int(source.pass_sequence)<=0: return null
+	for key: String in ["start_ram_sha256","video_sha256","ui_sha256"]:
+		if not source.get(key) is String or source[key].length()!=64: return null
+		for character: String in source[key]:
+			if character not in "0123456789abcdef": return null
+	for key: String in ["pass_sequence","start_ram_sha256","video_sha256","ui_sha256"]:
+		if not source.has(key) or source[key]!=_rocket_proof.source.get(key): return null
+	var target: Variant=_rocket_proof.target
+	if not is_instance_valid(target) or target.size!=_rocket_proof.size or target.mesh_node.mesh!=_rocket_proof.mesh or camera_key(target)!=_rocket_proof.camera: return null
+	var owner_id: int=int(source.owner)
+	var actor: Variant=_rocket_proof.owners.get(owner_id)
+	if not actor is Dictionary or actor.pointer!=int(value.actor_pointer) or actor.shape!=int(value.shape_index) or not same_rocket_pose(actor.pose,value.get("display_pose")): return null
+	var token: Dictionary={"size":_rocket_proof.size,"clip":_rocket_proof.clip,"ui":_rocket_proof.ui,"selected":{owner_id:{"cue":"rocketlaunch"}}}
+	var mask: Image=_rocket_proof.mask
+	if "rocketlaunch" not in visible_cues(mask,token):
+		var stride: int=4 if mask.get_format()==Image.FORMAT_RGBA8 else 3 if mask.get_format()==Image.FORMAT_RGB8 else 0
+		if stride==0 or not narrow_visible(mask.get_data(),stride,token,"rocketlaunch"): return null
+	return rocket_stream
 
 func _refresh_cow(player: AudioStreamPlayer, gain: float) -> void:
 	# Authored sparse moo: eligibility advances only on accepted source frames.
@@ -590,7 +696,9 @@ func _refresh_cow(player: AudioStreamPlayer, gain: float) -> void:
 	var frame: int = host.last_frame
 	var epoch: int = host.epoch
 	if epoch != _cow_epoch or frame < _cow_frame:
-		reset_source_timeline()
+		# Cow scheduling initializes independently of the same-draw rocket proof.
+		# Working if: first cow refresh cannot erase a qualified launch cache.
+		_cow_frame = -1; _cow_exposure = -1; _cow_fired = -1
 		_cow_epoch = epoch
 	if not allowed() or "cow" not in admitted or gain <= 0:
 		_cow_exposure = -1

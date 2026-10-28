@@ -205,44 +205,30 @@ may inventory witnesses; it does not manufacture or accept them.
 Working if: each claimed class has an honest positive/negative source verdict,
 own motor is never doubled, controls work, and original bytes/masks stay fixed.
 
-### Batch B. Complete the recorded launch trigger safely
+### Batch B. Source-qualified launch integration, local checkpoint
 
-This is the principal engineering dependency. The prepared launch recording is
-already available; more stock does not solve its onset identity.
+The four original enemy classes now have successful source firing witnesses:
+BRDM-2/13, BRDM-3/14, SAGGER/15 and SPIGOT/16. The private attack bank and
+capability-gated native/host/Godot path are installed locally. M1A1AX remains
+ordinary cannon audio. See [guided launch audio](pc-guided-launch-audio.md).
 
-1. Finish the bounded original lifecycle audit: allocator/free, direct30-record
-   clear at885A, BSS clear/table rebuild and non-phase header/shape mutations.
-   Resolve remaining indirect-write aliases or design narrowly targeted
-   fail-closed invalidation. Do not call four hook families exhaustive.
-2. Lock the smallest capability-gated observer/host contract after bounded
-   read-only Astra challenge. Keep hooks stateless if possible; host generations
-   start unknown. Audit compatibility with saved cores, restore and save-only
-   continuation before changing native code.
-3. Observe initialized birth and freeze generation at draw start. Only the first
-   source framebuffer submission after birth may decide; its pass must begin
-   after birth. Old/hidden/missing/skipped submissions consume silently. Keep
-   exact submission/session/owner identity through one postdraw opportunity.
-4. Implement the narrow enemy-launch native hook, Collector/session transport
-   and Godot one-shot admission. Exclude the own-tank2f04path. Preserve request15and all original events. A hidden birth,
-   re-entry, stale buffer, recycled slot or restore must never replay ignition.
-5. Rebuild an isolated task-owned native core using existing tools. Witness the
-   requested enemy launch paths through ordinary input, then compare baseline/changed requests,
-   paired RAM/video and event timing. Check reset/reuse/batching timelines.
-6. Install only the required launch transient, without replaying the hybrid
-   preview's sustained tail on top of the accepted fizz. Audition the combined
-   original requests/attack/flight mix: one launch remains one apparent launch.
+Admission now uses an already-drawn exact source-owner proof at the original
+launch onset. This supersedes the earlier proposed post-birth draw design,
+which could delay the original request. Original IDs/onsets remain unchanged;
+failed visibility/cache proofs keep the original sound, and cannot be rescued
+later. Moving identities require explicit continuity fences. Masks, geometry,
+opacity and accepted gains are unchanged.
 
-Tools: reverse-engineer-anything skill with available engines, existing
-ndisasm/Unicorn/disassembly, `abrams_trace.h`, core builder, render Collector,
-session tests, Godot audio/world tests and original trace-parity utility. Use
-native fallback tools directly if REA providers remain unavailable; no unrelated
-engine installation is a prerequisite. Sol owns implementation and acceptance;
-Astra advises only at the consequential contract boundary.
+Actual native positives exist for the rail launcher and Spigot. The genuine
+Sagger32056launch has no presented actor, correctly admits no added attack and
+retains original request15. Its audible native positive is unclaimed. Focused
+checks and original replay parity pass. The new companion/attack human mix
+review is pending; the earlier release aggregate still has its separate RAM
+fixture hold. No public application/browser rebuild or publication occurred.
 
-Working if: an actual fresh source launch gives at most one justified attack,
-the requested enemy launcher paths are tested, own M1A1 AX remains regular, suppressed opportunities stay consumed, and
-original execution/audio/visibility parity holds. Otherwise keep ignition
-uninstalled and retain the working approved fizz with an explicit source gap.
+Working if: each source launch admits at most one justified attack at its
+original onset, missing authority remains silent for new cues, M1A1AX stays
+regular, and original execution/audio/visibility parity holds.
 
 ### Batch C. Qualify environmental and reserve actions
 
