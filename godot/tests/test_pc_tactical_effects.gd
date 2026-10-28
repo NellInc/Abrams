@@ -52,6 +52,21 @@ func run() -> void:
 	var art:=Art.new()
 	check(art.load_assets(directory),"Tactical effects source art available")
 	if not assets.ready or not art.loaded: finish(); return
+	# Use the captured PC descriptors, including the final entry's trailing word.
+	# Synthetic flags=8 fixtures used to hide the observed phase-63 rejection.
+	var pc_data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-effects-v1/effects.json")))
+	for phase: int in range(54,64):
+		var source_sprite: Dictionary=pc_data.images[phase].duplicate(true)
+		source_sprite.origin=[128,50];source_sprite.clip=frame.clip.duplicate()
+		var observed: Dictionary={"kind":"sprite","sprite_status":"observed","bitmap_index":phase,"shape_index":Art.SHAPES[phase],"root":Art.ROOTS[phase],"sprite":source_sprite}
+		var registered: Dictionary=art.mapping(observed,frame,Art.PC_PALETTE)
+		check(not registered.is_empty(),"observed PC guided phase %d maps to authored art"%phase)
+		if registered.is_empty(): continue
+		check(registered.donor==(18 if phase%2==0 else 19),"guided phase %d preserves its authored donor"%phase)
+		check(registered.target==Rect2(Vector2(128,50)+art.bounds[phase].position,art.bounds[phase].size),"guided phase %d preserves native footprint"%phase)
+		var changed: Dictionary=observed.duplicate(true)
+		changed.sprite.flags=8 if phase==63 else 16
+		check(art.mapping(changed,frame,Art.PC_PALETTE).is_empty(),"guided phase %d rejects another descriptor's trailing word"%phase)
 	var effects:=Effects.new()
 	root.add_child(effects)
 	var mapping:={"origin":Vector3.ZERO,"inverse":Basis.IDENTITY}
@@ -153,6 +168,18 @@ func run() -> void:
 	for heading in [[0,0,192],[64,0,0],[0,0,0]]:
 		var turned:=missile.duplicate(true);turned.world.dynamic[0].orientation_u8=heading
 		check(queued(effects,turned,mapping,ownership,assets,art)==flight,"missile heading %s leaves the glow unchanged"%str(heading))
+	var alternate: Dictionary=missile.duplicate(true)
+	alternate.objects[0].sprite=pc_data.images[63].duplicate(true)
+	alternate.objects[0].sprite.origin=[152,60];alternate.objects[0].sprite.clip=frame.clip.duplicate()
+	alternate.objects[0].bitmap_index=63;alternate.objects[0].shape_index=Art.SHAPES[63];alternate.objects[0].root=Art.ROOTS[63]
+	alternate.world.dynamic[0].shape_index=187
+	queued(effects,alternate,mapping,ownership,assets,art)
+	check(effects.counts.missile==9,"observed phase 63 retains its authored motor glow")
+	var alternate_mapping: Dictionary=art.mapping(alternate.objects[0],frame,Art.PC_PALETTE)
+	if not alternate_mapping.is_empty():
+		var alternate_confined: bool=not effects.puffs.is_empty()
+		for puff: Array in effects.puffs: alternate_confined=alternate_confined and puff[8]==alternate_mapping.rect
+		check(alternate_confined,"phase 63 motor puffs remain inside the exact source rectangle")
 	var impact:=missile.duplicate(true);impact.world.dynamic[0].shape_header_word=2
 	queued(effects,impact,mapping,ownership,assets,art)
 	check(effects.counts.missile==0,"impact starburst cannot become a missile")

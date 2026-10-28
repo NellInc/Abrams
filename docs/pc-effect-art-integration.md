@@ -133,3 +133,35 @@ The other 55 bitmaps, palette/damage overlays, broader animation families,
 full runtime visibility coverage and human art acceptance remain open. The
 original executable, emulator and source reference files are unchanged. No
 push, release, publication or redistribution is part of this checkpoint.
+
+## Incoming missile phase 63 repair (28 October 2026)
+
+The final incoming-missile phase was incorrectly left at original resolution.
+The trace's field named `flags` is the word following the original eight-byte
+EGA descriptor, not an extra blit-mode word copied by that routine. Captured
+phase 63 carries 16, while the other entries carry 8. The previous uniform-8 check
+rejected the otherwise exact phase 63, and synthetic tests repeated that error.
+
+Art admission now pins the exact per-entry value, 16 for 63 only. The original
+pixels, opacity arrays, roots, dimensions, clipping, donor choices, timing and
+ownership remain unchanged. All ten incoming phases 54 through 63 are covered using
+captured original descriptor data. A swapped trailing word still fails closed.
+
+The native colour oracle also had a broken expectation: it predicted rectangular
+art outside Modern source ownership. It now predicts the untouched backdrop at
+unowned cells and authored-alpha discards. The existing one-byte RGB tolerance,
+independent bilinear sampler and exact source-opacity checks remain intact.
+The implementing lead checked its own repair against the production draw path
+and retained pixel witnesses, with independent read-only advice.
+
+Verification: 84 focused Tactical checks, 83,755 headless art checks, 2,733,247
+native art checks and 75 native ten-phase checks pass. Maximum native RGB error
+is 1; Modern contour changes outside original opaque source pixels are 0. The
+incoming phases were also visually inspected at native game scale. These are
+controlled native descriptor replays, not a new original-game timing measurement.
+Evidence: `artifacts/visual-fixes-20261028/acceptance.json`. Local only, no public
+application/browser rebuild or publication.
+
+Working if: phase 63 selects its authored donor like the rest of the sequence,
+all source transparency/ownership remains exact, and repeated/paused source
+packets and graphics-mode restoration remain unchanged.

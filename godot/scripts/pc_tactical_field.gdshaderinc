@@ -24,9 +24,108 @@ vec3 field_enamel(vec3 original,vec2 p,float hardware) {
 	return mix(coat,original,clamp(hardware,0.0,1.0));
 }
 
+// Pinned original cupola barrel spans, registered to the authored metal contour.
+// Material UVs only. The existing source masks and edge coverage remain authoritative.
+vec2 field_cupola_barrel_uv(vec2 p) {
+	vec3 profile[25] = vec3[](
+		vec3(4.0,661.00,709.00),
+		vec3(7.0,655.93,714.75),
+		vec3(8.0,650.86,720.49),
+		vec3(9.0,645.77,726.17),
+		vec3(10.0,640.19,730.22),
+		vec3(11.0,634.85,734.12),
+		vec3(12.0,632.73,735.95),
+		vec3(12.0,630.60,737.77),
+		vec3(13.0,628.47,739.60),
+		vec3(13.0,625.86,741.19),
+		vec3(13.0,623.12,742.71),
+		vec3(14.0,620.39,744.23),
+		vec3(14.0,617.65,745.15),
+		vec3(14.0,614.91,745.45),
+		vec3(15.0,612.18,745.76),
+		vec3(15.0,609.38,746.25),
+		vec3(15.0,606.33,747.47),
+		vec3(16.0,603.29,748.68),
+		vec3(16.0,600.25,749.90),
+		vec3(17.0,594.42,755.58),
+		vec3(17.0,588.33,761.67),
+		vec3(19.0,579.92,770.29),
+		vec3(21.0,568.69,781.99),
+		vec3(23.0,559.56,792.40),
+		vec3(24.0,555.00,800.00)
+	);
+	float row=clamp(p.y-85.5,0.0,24.0);
+	int i=int(floor(row));
+	vec3 span=mix(profile[i],profile[min(i+1,24)],fract(row));
+	float across=clamp(0.5+(p.x-120.0)/(2.0*span.x),0.0,1.0);
+	float y=mix(540.0,676.0,row/24.0);
+	return vec2(mix(span.y,span.z,across)/1672.0,y/941.0);
+}
+
+// Pinned original driver barrel spans, registered to the authored metal contour.
+// Material UVs only. The existing source masks and edge coverage remain authoritative.
+vec2 field_driver_barrel_uv(vec2 p) {
+	vec3 profile[46] = vec3[](
+		vec3(35.0,682.53,979.58),
+		vec3(34.0,683.80,978.56),
+		vec3(34.0,685.08,977.54),
+		vec3(34.0,686.35,976.52),
+		vec3(33.0,687.62,975.50),
+		vec3(33.0,688.90,974.48),
+		vec3(32.0,690.17,973.46),
+		vec3(32.0,691.45,972.44),
+		vec3(31.0,693.12,971.20),
+		vec3(31.0,695.10,969.78),
+		vec3(31.0,697.08,968.37),
+		vec3(30.0,699.06,966.95),
+		vec3(30.0,701.05,965.54),
+		vec3(29.0,703.03,964.12),
+		vec3(29.0,705.01,962.71),
+		vec3(29.0,708.46,959.98),
+		vec3(28.0,713.39,955.93),
+		vec3(28.0,718.32,951.88),
+		vec3(27.0,723.24,947.84),
+		vec3(26.0,728.17,943.79),
+		vec3(25.0,733.10,939.74),
+		vec3(24.0,737.56,935.80),
+		vec3(23.0,741.91,931.88),
+		vec3(21.0,746.27,927.96),
+		vec3(19.0,750.62,924.04),
+		vec3(17.0,754.98,920.12),
+		vec3(17.0,759.33,916.20),
+		vec3(16.0,763.69,912.28),
+		vec3(16.0,766.05,909.95),
+		vec3(15.0,768.25,907.75),
+		vec3(15.0,770.46,905.54),
+		vec3(15.0,772.67,903.33),
+		vec3(14.0,774.87,901.13),
+		vec3(14.0,777.08,898.92),
+		vec3(14.0,779.29,896.71),
+		vec3(13.0,781.49,894.51),
+		vec3(13.0,783.95,891.74),
+		vec3(13.0,786.93,887.76),
+		vec3(12.0,789.92,883.78),
+		vec3(12.0,792.90,879.79),
+		vec3(11.0,795.89,875.81),
+		vec3(10.0,798.88,871.83),
+		vec3(9.0,802.55,866.94),
+		vec3(8.0,807.91,859.79),
+		vec3(7.0,813.56,852.67),
+		vec3(4.0,824.80,846.12)
+	);
+	float row=clamp(p.y-31.5,0.0,45.0);
+	int i=int(floor(row));
+	vec3 span=mix(profile[i],profile[min(i+1,45)],fract(row));
+	float across=clamp(0.5+(p.x-161.0)/(2.0*span.x),0.0,1.0);
+	float source_y=clamp(p.y,31.5,76.5);
+	float y=source_y<46.0 ? mix(200.0,307.0,(source_y-18.0)/28.0) : mix(307.0,487.0,(source_y-46.0)/31.0);
+	return vec2(mix(span.y,span.z,across)/1672.0,y/941.0);
+}
+
 // Concept texture registration only. The paired source masks still own every
 // fragment, including the signed moving driver assembly and its edge samples.
 vec2 field_driver_uv(vec2 p) {
+
 	float y;
 	if(p.y<18.0)y=mix(121.0,200.0,p.y/18.0);
 	else if(p.y<46.0)y=mix(200.0,307.0,(p.y-18.0)/28.0);
@@ -41,9 +140,14 @@ vec2 field_driver_uv(vec2 p) {
 		else if(p.x<240.0)x=mix(450.0,1222.0,(p.x-80.0)/160.0);
 		else x=mix(1222.0,1672.0,(p.x-240.0)/80.0);
 	}
-	return vec2(x/1672.0,y/941.0);
+	vec2 uv=vec2(x/1672.0,y/941.0);
+	// Ease the cylinder into its mounting collar, without a straight UV splice.
+	if(p.y>=28.5 && p.y<77.0 && abs(p.x-161.0)<36.5)
+		uv=mix(uv,field_driver_barrel_uv(p),smoothstep(28.5,34.0,p.y));
+	return uv;
 }
 vec2 field_cupola_uv(vec2 p) {
+	if(p.y>=84.0 && p.y<110.0 && abs(p.x-120.0)<27.0)return field_cupola_barrel_uv(p);
 	float x;
 	if(p.x<59.0)x=mix(0.0,69.0,p.x/59.0);
 	else if(p.x<183.0)x=mix(69.0,191.0,(p.x-59.0)/124.0);

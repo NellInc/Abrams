@@ -107,7 +107,10 @@ func mapping(object: Dictionary, camera: Dictionary, palette: Array) -> Dictiona
 	var source: Dictionary = sources[index]
 	for field in ["width","height","pixels","opaque"]:
 		if sprite.get(field)!=source[field]: return {}
-	if int(sprite.get("flags",-1))!=8: return {}
+	# The EGA blitter copies only the descriptor's first eight bytes. The
+	# trace field named flags is its trailing word: 16 for phase 63, 8 otherwise.
+	# Keep this per-entry fingerprint exact; it never changes pixel opacity.
+	if int(sprite.get("flags",-1))!=(16 if index==63 else 8): return {}
 	for value in [sprite.get("origin"),sprite.get("clip"),camera.get("clip")]:
 		if not value is Array: return {}
 		for n in value:

@@ -2691,3 +2691,30 @@ original smoke cadence.
 Working if: PC-only lifecycle fixtures restore the mission title, briefing,
 summary and motor pool, ending motion changes only smoke, overwritten source
 pixels reject the applicable restoration, and original graphics modes bypass it.
+
+### Forward barrel registration repair (28 October 2026)
+
+The cupola's upper barrel cap and the driver's underside sampled black space
+beside the authored metal. Their material registration now fits the pinned
+original barrel spans to smooth interior donor contours. The driver collar
+joins continuously, and the upper cap avoids the donor's ragged outer ink.
+Dark collar seams are retained as physical detail rather than mistaken for a
+silhouette boundary. No bitmap was repainted or regenerated.
+
+This changes only Tactical UV sampling inside the already-owned barrel regions.
+Both compositor and existing edge pass share the registration. Original camera,
+source silhouette, plate/UI masks, signed driver offsets, opacity and timing
+are unchanged. Legacy/Modern donor selection remains separate. No gameplay,
+audio, source data, new texture, animation clock or visibility rule was added.
+
+The implementing lead reviewed its own native driver/cupola replays at 960×540
+and 1600×900. Same-run baseline comparisons show zero changed pixels outside the
+barrel regions. Existing ownership checks report zero forbidden pixels across
+the cupola and three signed-offset driver fixtures; 36 interior-bank and 88
+cockpit checks pass. These include retained genuine forward states plus
+controlled offset fixtures, with no fresh guest-playthrough or performance claim.
+Evidence: `artifacts/visual-fixes-20261028/acceptance.json`. Source/local only;
+the running game needs a new launch to reload the shader.
+
+Working if: neither barrel shows a cut-out cap or severed collar, pixels outside
+the barrel regions stay exact, and original source/mask and mode gates still pass.

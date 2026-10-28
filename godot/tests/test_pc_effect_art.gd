@@ -34,7 +34,7 @@ func check(ok: bool, message: String) -> void:
 
 func object_for(index: int, origin: Array = [128,50]) -> Dictionary:
 	var sprite: Dictionary = style.sources[index].duplicate(true)
-	sprite.flags = 8
+	sprite.flags = 16 if index==63 else 8
 	sprite.origin = origin
 	sprite.clip = frame.clip.duplicate()
 	return {"kind":"sprite","sprite_status":"observed","bitmap_index":index,"root":Art.ROOTS[index],
@@ -79,6 +79,8 @@ func check_authored_colors(image: Image, mapping: Dictionary, background: Image 
 	var box: Rect2 = mapping.rect
 	var target: Rect2 = mapping.target
 	var source_uv: Rect2 = mapping.source_uv
+	var source_sprite: Dictionary=style.sources[int(mapping.index)]
+	var sprite_origin: Vector2=target.position-style.bounds[int(mapping.index)].position
 	var scale := Vector2(viewport.size)/Vector2(256,97)
 	var origin := Vector2(frame.clip[0],frame.clip[1])
 	for y in range(floori((box.position.y-origin.y)*scale.y),ceili((box.end.y-origin.y)*scale.y)):
@@ -94,8 +96,17 @@ func check_authored_colors(image: Image, mapping: Dictionary, background: Image 
 				var p: Vector2i = (lo+offset).clamp(Vector2i.ZERO,source.get_size()-Vector2i.ONE)
 				colors.append(source.get_pixelv(p))
 			var expected := colors[0].lerp(colors[1],fraction.x).lerp(colors[2].lerp(colors[3],fraction.x),fraction.y)
-			if expected.a>0.49 and expected.a<0.51: continue # Floating cutout boundary tolerance only.
-			if expected.a<0.5: expected = background.get_pixel(x,y) if background else backdrop.get_pixel(x,y)
+			var pixel_base: Color=background.get_pixel(x,y) if background else backdrop.get_pixel(x,y)
+			var source_at: Vector2i=Vector2i((point-sprite_origin).floor())
+			# Modern's original owner mask overrides authored donor alpha. Predict
+			# the untouched source/background at unowned pixels, not rectangle art.
+			# Working if: transparent source cells stay exact while owned RGB keeps
+			# the same one-byte sampler tolerance and source-alpha confinement check.
+			var source_owned: bool=source_at.x>=0 and source_at.y>=0 and source_at.x<int(source_sprite.width) and source_at.y<int(source_sprite.height) and source_sprite.opaque[source_at.y*int(source_sprite.width)+source_at.x]
+			# The authored quad replaces the original sprite runs. An alpha
+			# discard reveals backdrop, while ownership still excludes other owners.
+			if (not modern or source_owned) and expected.a>0.49 and expected.a<0.51: continue
+			if expected.a<0.5 or (modern and not source_owned): expected=pixel_base
 			var actual := image.get_pixel(x,y)
 			for c in 3:
 				var error := absi(roundi(actual[c]*255)-roundi(expected[c]*255))
