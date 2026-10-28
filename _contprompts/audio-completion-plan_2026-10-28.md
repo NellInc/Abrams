@@ -10,6 +10,9 @@ stepsCompleted:
   - both_new_human_listening_reviews_accepted
   - woodland_fire_installed_with_complete_rollback_banks
   - actual_installed_loader_12_and_mixer_587_checks_passed
+  - supplied_t72_archive_preserved_and_13_originals_decoded
+  - human_approved_t72_loop_installed_privately
+  - t72_world608_mix632_native24_installed_loader8_passed
 ---
 
 # Remaining sound work and delivery plan, 28 October 2026
@@ -325,3 +328,43 @@ release-candidate build and its package/device/performance acceptance, within
 the separately authorised edition/destination boundary above. Public paid-audio
 distribution is not inferred. Dedicated T72 and affordable BMP/other exact-model
 sources remain explicit external sourcing gaps; no replacement is invented.
+
+## T-72 acquisition and integration supersedes its sourcing hold
+
+Nell supplied the T-72 archive, allowed a shared BMP1/2 source, and requested
+BTR-70, BRDM-2 and Spigot/Sagger-class launch sourcing, free first. She confirms
+the supplied Bluezone smoke file is a preview and Soundsnap is too expensive.
+No paid subscription or additional purchase. Keep that preview excluded and
+the accepted authored smoke unchanged.
+
+The accepted steady/continuous T-72 loop is now installed privately at
+local-audio/pc-t72-effects-v1. The source contract is original moving model119,
+exact unique pointer/actor join, existing final visible ownership/UI mask,
+fixed presentation pitch and unchanged0.30factor. Optional-bank failure retains
+the generic fallback; user Off never changes recording availability. Legacy
+generic gain inherits only if the saved T-72 key is absent. Root checks pass
+608world/632mix,24native retained-source and8default-path installed-loader.
+All513 incumbent audio/bank files remain identical.
+
+Native source qualification uses genuine paired VGA/geometry but an explicit
+empty synthetic presenter audio envelope, because historical paired audio is
+unavailable. No fresh live guest, combined-level human/device listening or pacing
+claim. Preserve this distinction and the correctly silent distant source case.
+Vendor T-72 labelling is retained without an authenticated field-session claim.
+
+Remaining acquisition gaps: shared clean exterior BMP loop, exact BTR-70,
+qualified BRDM-2 and a clean reusable ATGM launch. The CC0 TOW67542 candidate's
+original download is blocked by Chrome; specific manual download requested.
+Do not bypass browser blocking, rip previews, buy excluded subscriptions or
+guess original request7/9/10/15/16 semantics. Finite Soundsnap research found
+BRDM idle metadata with unstated subtype/perspective, no qualified exterior BMP
+steady idle and no BTR result. Retain accepted sources until a real candidate
+changes those facts. No generic proceed is needed after a valid supplied file.
+
+Evidence and current source authority: artifacts/t72-smoke-20261028/ and
+artifacts/vehicle-sourcing-followup-20261028/. Source edits are confined to the
+world-bank selector/menu and their focused tests. No pack/app build or release.
+
+Working if: the T-72 bank loads normally with accepted balance and original masks,
+the remaining acquisition gaps stay explicit, and the next real input resumes
+its concrete qualification without repeating accepted loop reviews.

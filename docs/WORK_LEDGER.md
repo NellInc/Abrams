@@ -8448,3 +8448,59 @@ acceptance and dedicated-recording acquisition gaps remain separate work.
 Working if: ordinary local Play loads the approved full-length loops, other
 accepted files/levels remain fixed, rollback banks remain intact, and future
 release work reports actual package and hearing/performance evidence.
+
+## 2026-10-28: approved T-72 loop installed, remaining sourcing reconciled
+
+Nell supplied the purchased T-72 archive and accepted the edited loop as steady
+and continuous. Root preserved/hashed the archive and decoded all13WAVs. A
+Sol6.1 worker prepared the loop and another implemented the separate optional
+bank/menu contract; read-only Astra advised on visibility and saved-gain
+migration. Root reviewed the integrated diff and ran the load-bearing checks.
+The13.0775second,627720frame mono48k16 master is -25.01LUFS/-12.69dBTP,
+SHA25628d374bb2b3758a811c8a5c766803b7199d9f1dcb87496f058404dbe29156e65.
+Vendor T-72 Idle labelling is retained; exterior field-session provenance is
+not independently authenticated. Originals and recipes stay private/recoverable.
+
+Only exactly joined moving original model119 changes recording after the
+existing final owner/UI proof. No source timing, masks, geometry or own-motor
+authority change. Optional bank failure retains generic playback. Dedicated
+Off never substitutes generic. Saved generic-tank gain inherits only when a
+dedicated T-72 key is absent, after complete preference validation. Native
+controls now total28; Web remains13. Nominal0.30factor is unchanged.
+
+Root focused checks pass608world and632mix assertions,0errors. The worker's
+initial sandbox mix failure and startup diagnostics remain retained; root's
+supported elevated/log-path rerun passes without changing the fixture. Static
+lint reports no touched-file diagnostics; its pre-existing formatted
+voice_%s.wav test-path false positive and12warnings remain classified separately.
+
+The first genuine retained native source stays silent because its tiny visible
+owner footprint does not qualify. A closer original capture passes24checks,
+with unchanged original motion/geometry, PNG-paired source, ownership/UI bytes,
+exact approved PCM, source/guard controls and no generic double playback. The
+macOS launcher sandbox-extension warning persists despite actual GL readback;
+no renderer/script errors. Its empty synthetic presenter transport is explicit,
+because this capture has no paired historical audio. No fresh guest, combined
+mix hearing, device or pacing claim. Default-path installed loading passes8.
+All513 incumbent bank/audio files remain identical after atomic promotion.
+
+Nell confirms the Bluezone smoke MP3 is preview-only and rejects Soundsnap cost.
+It is excluded from runtime/derivative authoring; approved smoke remains fixed.
+Rendered catalogue research finds no qualifying steady exterior BMP source in
+the36inspected entries, a26second BRDM idle with unstated subtype/perspective,
+and no BTR query result. These are finite negatives/unqualified leads. A CC0
+TOW67542 candidate exists; Chrome blocks its official original download and
+manual download is requested. No browser-security bypass, subscription, new
+spend, vendor agreement, unknown-request remapping or public-media transfer.
+Shared BMP1/2, exact BTR70/BRDM2 and a qualified ATGM launch remain open.
+
+Evidence: artifacts/t72-smoke-20261028/verification.json, installation.json,
+native-locked/verification.json, root-checks/, installed-loader.json and
+artifacts/vehicle-sourcing-followup-20261028/root-rendered-catalogue.json.
+No new game pack/app build or publication. Completed internal leaf results are
+retained; the runtime exposes no supported disposal control/authoritative child
+UUID, so helper disposal is not claimed.
+
+Working if: ordinary local Play selects the reviewed T-72 only for visible
+qualified source motion, legacy balance/Off survive, other accepted audio stays
+fixed, and unavailable or unlicensed sources remain explicit gaps.

@@ -18,6 +18,7 @@ func check(ok: bool, why: String) -> void:
 
 func isolated_audio() -> Node:
 	var audio: Node = Audio.new()
+	audio.world_audio.t72_directory = ""
 	audio.world_audio.tank_directory = ""
 	audio.world_audio.allied_directory = ""
 	audio.world_audio.detail_directory = ""
@@ -42,7 +43,7 @@ func bank(directory: String, cues: Array = World.BASE_CUES, kind: String = "priv
 	for cue: String in cues:
 		var stream: AudioStreamWAV = AudioStreamWAV.new()
 		stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=48000
-		var frames: int=World.ALLIED_FRAME_COUNTS[cue] if cue in World.ALLIED_CUES else World.T80_FRAME_COUNT if cue=="t80" else World.TANK_FRAME_COUNT if cue=="tank" else 48000
+		var frames: int=World.ALLIED_FRAME_COUNTS[cue] if cue in World.ALLIED_CUES else World.T80_FRAME_COUNT if cue=="t80" else World.T72_FRAME_COUNT if cue=="t72" else World.TANK_FRAME_COUNT if cue=="tank" else 48000
 		var bytes: PackedByteArray=PackedByteArray();bytes.resize(frames*2);stream.data=bytes
 		var path: String=directory.path_join(cue+".wav")
 		check(stream.save_to_wav(path)==OK,"generated PCM writes")
@@ -115,6 +116,7 @@ func run() -> void:
 	await environment_checks(directory,ui,mask)
 	await soviet_checks(directory,ui,mask)
 	await tank_checks(directory,ui,mask)
+	await t72_checks(directory,ui,mask)
 	await allied_checks(directory,ui,mask)
 	await detail_checks(directory,ui,mask)
 	if native:
@@ -365,6 +367,119 @@ func tank_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	manifest.cues.tank.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
 	check(reader._read_bank(directory,"private visible-tank fallback",World.TANK_CUES).get("error")=="invalid tank fallback frame count","matching file/manifest SHA cannot admit wrong loop duration")
 	check(JSON.stringify(data)==unchanged,"fallback never mutates original drawing/actor state")
+
+func t72_checks(base_directory: String, ui: Image, mask: Image) -> void:
+	var data: Dictionary=tank_source(119)
+	var original: String=JSON.stringify(data)
+	check(World.T72_CUES==["t72"] and World.T72_FRAME_COUNT==627720, "T72 bank has exactly one verified-length cue")
+	check(World.candidates(data).get(1,{}).get("cue")=="tank" and World.candidates(data,false).get(1,{}).get("cue")=="tank", "legacy one/two-argument classification keeps T72 generic")
+	check(World.candidates(JSON.parse_string(original),true,true).get(1,{}).get("cue")=="t72", "exact JSON moving model119 gets available dedicated T72")
+	for shape: int in World.TANK_SHAPES:
+		check(World.candidates(tank_source(shape),true,true).get(1,{}).get("cue")==("t72" if shape==119 else "t80" if shape==121 else "tank"), "dedicated T72 changes only intact119: "+str(shape))
+		check(World.candidates(tank_source(shape),false,true).get(1,{}).get("cue")==("t72" if shape==119 else "tank"), "T72 availability does not change T80 fallback: "+str(shape))
+	for shape: int in [120,122,123,129,131,159,163]:
+		check(World.candidates(tank_source(shape),true,true)==World.candidates(tank_source(shape),true), "wreck and other class classifications unchanged: "+str(shape))
+	for speed: int in [-32768,-1,1,32767]:
+		var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].speed_raw=speed
+		check(World.candidates(changed,true,true).get(1,{}).get("cue")=="t72", "T72 accepts exact signed16 forward/reverse movement")
+	for speed: Variant in [0,-32769,32768,0.5,NAN,INF,"10",true]:
+		var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].speed_raw=speed
+		check(World.candidates(changed,true,true).is_empty(), "stopped or malformed T72 motion stays silent")
+	for mutation: Dictionary in [{"shape_index":119.5},{"shape_index":"119"},{"pointer":123.5},{"pointer":"123"},{"pointer":-1},{"pointer":65536},{"dynamic_instance":false}]:
+		var changed: Dictionary=data.duplicate(true);changed.objects[0].merge(mutation,true)
+		check(World.candidates(changed,true,true).is_empty(), "T72 drawn identity cannot be coerced or made static")
+	for mutation: Dictionary in [{"shape_index":119.5},{"shape_index":120},{"pointer":124},{"pointer":123.5},{"pointer":"123"}]:
+		var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].merge(mutation,true)
+		check(World.candidates(changed,true,true).is_empty(), "T72 actor must exactly join drawn pointer/model")
+	var duplicate: Dictionary=data.duplicate(true);duplicate.world.dynamic.append(duplicate.world.dynamic[0].duplicate())
+	check(World.candidates(duplicate,true,true).is_empty(), "duplicate T72 actor join stays silent")
+	duplicate.world.dynamic=[]
+	check(World.candidates(duplicate,true,true).is_empty(), "missing T72 actor cannot invent motion")
+	ui.fill(Color.BLACK)
+	var token: Dictionary={"size":mask.get_size(),"clip":data.camera.clip,"selected":World.candidates(data,true,true),"ui":ui.get_data()}
+	for flag: int in [0,8]:
+		mask.fill(Color8(1,0,flag));check(World.visible_cues(mask,token)==["t72"], "ordinary/guarded actual T72 owner admits")
+	for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
+		mask.fill(colour);check(World.visible_cues(mask,token).is_empty(), "foreign/line/round/alpha T72 pixels remain silent")
+	mask.fill(Color8(2,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+	check(World.visible_cues(mask,token)==["t72"], "narrow separated actual same-owner T72 pixels qualify")
+	ui.fill(Color.WHITE);token.ui=ui.get_data()
+	check(World.visible_cues(mask,token).is_empty(), "original opaque UI blocks narrow T72 proof")
+	ui.fill(Color.BLACK);token.ui=ui.get_data()
+	for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
+		mask.set_pixel(820,231,colour)
+		check(World.visible_cues(mask,token).is_empty(), "narrow T72 proof excludes foreign/line/round/alpha endpoints")
+	mask.fill(Color8(2,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(815,241,Color8(1,0,8))
+	check(World.visible_cues(mask,token).is_empty(), "narrow T72 retains four-source-pixel minimum separation")
+	token.selected[2]={"cue":"t72"};mask.fill(Color8(0,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(2,0,8))
+	check(World.visible_cues(mask,token).is_empty(), "two selected T72 owners cannot pool isolated witnesses")
+	var directory: String=output.path_join("generated-t72-bank")
+	var fallback: String=output.path_join("t72-tank-control")
+	var soviet: String=output.path_join("t72-soviet-control")
+	var detail: String=output.path_join("t72-detail-control")
+	bank(directory,World.T72_CUES,"private visible-t72 cue")
+	bank(fallback,World.TANK_CUES,"private visible-tank fallback")
+	bank(soviet,World.SOVIET_CUES,"private visible-soviet cues")
+	bank(detail,World.DETAIL_CUES,"private visible-world detail")
+	var path: String=directory.path_join("t72.wav")
+	var good: PackedByteArray=FileAccess.get_file_as_bytes(path)
+	for state: String in ["valid","absent","corrupt"]:
+		if state=="corrupt": FileAccess.open(path,FileAccess.WRITE).store_string("corrupt")
+		var audio: Node=isolated_audio();audio.recorded_effect_directory=""
+		audio.world_audio.directory=base_directory;audio.world_audio.environment_directory="";audio.world_audio.soviet_directory=soviet
+		audio.world_audio.tank_directory=fallback;audio.world_audio.detail_directory=detail;audio.world_audio.t72_directory=directory if state!="absent" else output.path_join("missing-t72-bank")
+		root.add_child(audio);audio.apply_audio(packet(1))
+		var world: RefCounted=audio.world_audio
+		var dedicated: bool=state=="valid"
+		check(world.streams.size()==(8 if dedicated else 7) and world.players.size()==world.streams.size() and audio.failure.is_empty(), "T72 availability preserves every incumbent cue atomically: "+state)
+		check((not world.t72_failure.is_empty())==(state=="corrupt") and world.tank_failure.is_empty() and world.soviet_failure.is_empty(), "T72 errors are isolated and absence is optional: "+state)
+		var selected: Dictionary=World.candidates(data,world.streams.has("t80"),world.streams.has("t72"))
+		var cue: String="t72" if dedicated else "tank"
+		check(selected.get(1,{}).get("cue")==cue and World.candidates(tank_source(121),world.streams.has("t80"),world.streams.has("t72")).get(1,{}).get("cue")=="t80", "validated availability alone routes119 while121 stays T80: "+state)
+		world.admitted.assign([cue,"hind"]);world.refresh()
+		check(world.players[cue].playing and world.players.tracks.playing, "selected visible moving class and dependent tracks play: "+state)
+		if dedicated:
+			var player: AudioStreamPlayer=world.players.t72
+			check(player.bus==audio.presentation_bus and player.stream.loop_mode==AudioStreamWAV.LOOP_FORWARD and player.stream.loop_begin==0 and player.stream.loop_end==627720 and not player.stream.stereo and player.pitch_scale==1.0, "one centred fixed-pitch T72 loops exact mono length through incumbent limiter")
+			check(world.cue_gain("t72")==0.65*0.30 and not world.players.tank.playing, "T72 nominal factor is0.30 without simultaneous generic fallback")
+			var clock: Array=[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)]
+			check(audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"t72":0}) and not player.playing and not world.players.tracks.playing and world.players.hind.playing and not world.players.tank.playing, "T72 Off silences dependent tracks and never substitutes generic")
+			check(World.candidates(data,world.streams.has("t80"),world.streams.has("t72")).get(1,{}).get("cue")=="t72", "T72 Off keeps dedicated classification")
+			check(audio.set_mix({"master":50,"effects":20,"voice":100,"motors":100,"t72":40}) and player.playing and world.players.tracks.playing and is_equal_approx(db_to_linear(player.volume_db),0.65*0.50*0.20*0.30*0.40) and player.pitch_scale==1.0, "T72 user/effects/master gains multiply without RPM or pitch changes")
+			check(clock==[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)], "T72 controls leave original clocks/events/motors unchanged")
+			world.admitted.erase("t72");world.refresh()
+			check(not player.playing and not world.players.tracks.playing and world.players.hind.playing, "loss of T72 proof stops its bed and tracks only")
+			world.admitted.append("t72");world.refresh();audio.set_transport_muted(true)
+			check(not player.playing and world.pending.is_empty() and world.admitted.is_empty(), "transport clears T72 playback and stale admission")
+			audio.set_transport_muted(false);world.refresh();check(not player.playing, "transport recovery cannot replay remembered T72 proof")
+			world.admitted.append("t72");world.refresh();audio.reset_timeline()
+			check(not player.playing and world.admitted.is_empty(), "source timeline reset clears T72 playback")
+			audio.apply_audio(packet(2));world.admitted.append("t72");world.refresh()
+			var disabled: Dictionary=packet(3);disabled.enabled=false
+			check(audio.apply_audio(disabled) and not player.playing, "original sound gate silences T72")
+		check(await audio.drain_for_shutdown(), "T72 optional state drains cleanly: "+state);audio.free()
+	var reader: RefCounted=World.new()
+	var manifest_path: String=directory.path_join("manifest.json")
+	var manifest: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+	check(reader._read_bank(directory,"private visible-t72 cue",World.T72_CUES).has("error"), "T72 PCM hash mismatch rejects the whole bank")
+	FileAccess.open(path,FileAccess.WRITE).store_buffer(good)
+	manifest.cues.extra=manifest.cues.t72.duplicate(true)
+	FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
+	check(reader._read_bank(directory,"private visible-t72 cue",World.T72_CUES).has("error"), "T72 manifest rejects an extra cue")
+	manifest.cues.erase("extra")
+	for frames: int in [627719,627721]:
+		var stream: AudioStreamWAV=AudioStreamWAV.new();stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=48000
+		var bytes: PackedByteArray=PackedByteArray();bytes.resize(frames*2);stream.data=bytes
+		check(stream.save_to_wav(path)==OK, "one-frame T72 negative fixture writes")
+		manifest.cues.t72.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
+		check(reader._read_bank(directory,"private visible-t72 cue",World.T72_CUES).get("error")=="invalid T72 frame count", "matching manifest SHA cannot admit wrong T72 duration")
+	for format: Array in [[44100,false,AudioStreamWAV.FORMAT_16_BITS],[48000,true,AudioStreamWAV.FORMAT_16_BITS],[48000,false,AudioStreamWAV.FORMAT_8_BITS]]:
+		var stream: AudioStreamWAV=AudioStreamWAV.new();stream.mix_rate=format[0];stream.stereo=format[1];stream.format=format[2]
+		var bytes: PackedByteArray=PackedByteArray();bytes.resize(627720*2);stream.data=bytes
+		check(stream.save_to_wav(path)==OK, "wrong-format T72 negative fixture writes")
+		manifest.cues.t72.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
+		check(reader._read_bank(directory,"private visible-t72 cue",World.T72_CUES).has("error"), "T72 rejects wrong rate/channels/bit depth even with matching SHA")
+	check(JSON.stringify(data)==original, "T72 eligibility, masks and controls preserve original source")
 
 func allied_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	check(World.ALLIED_CUES==["m113","bradley"] and World.ALLIED_SHAPES=={129:"m113",131:"bradley"}, "allied bank and exact intact original roster stay bounded")

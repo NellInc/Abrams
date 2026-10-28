@@ -1,10 +1,10 @@
 # PC audio coverage and machine QA
 
-Current 28 October checkpoint: the approved Abrams, Hind, T-80, generic tank,
+Current 28 October checkpoint: the approved Abrams, Hind, T-80, T-72, generic tank,
 M113 and Bradley recordings are integrated in optional private banks. M113 and
 Bradley acquisition, loop review and combined-level review are complete. The
 cow and gentle field-air levels are accepted. Native source Settings exposes
-27 saved controls. The current source and integration receipts supersede older
+28 saved controls. The current source and integration receipts supersede older
 acquisition, browser-access and vehicle-integration blockers below.
 
 The acquired-sound map accounts for 89 roles. Ten supplementary runtime cues
@@ -28,6 +28,44 @@ the preceding focused/native source qualification is retained separately.
 Working if: each role has a current disposition, completed purchases stay closed,
 accepted masters/gains remain fixed, and listening, source proof and delivery
 status are reported separately.
+
+### T-72 and remaining vehicle sourcing, 28 October
+
+Nell supplied the purchased SoundFX Studio T-72 archive and accepted the edited
+idle loop as steady and continuous. Its private optional bank now contains the
+same approved627720frame,48kHz mono16 master at -25.01LUFS. Only an exactly joined,
+moving original model119 can select it, through the existing final ownership/UI
+mask gate. Missing or corrupt banks retain the generic tank fallback. An explicit
+T-72 Off never switches back to generic playback. Legacy saved generic-tank gains
+inherit when no T-72 preference exists; explicit T-72 settings take precedence.
+The nominal0.30factor and all513 incumbent audio/bank files remain unchanged.
+
+Root checks pass608world and632mix assertions. Native retained-source proof
+passes24checks; the default installed loader passes8. The first distant case
+correctly remains silent; the closer original case qualifies without changing
+geometry, source motion or visibility thresholds. Its audio transport is an
+explicit empty synthetic presenter envelope because paired historical audio is
+unavailable. This is no fresh live guest, combined-mix hearing, device or pacing
+claim. The vendor identifies the source as T-72 Idle; a field session/exterior
+recording perspective is not independently authenticated.
+
+The shared BMP-1/2 source, clean exterior BTR-70 and BRDM-2, and a qualified
+ATGM launch remain open. Soundsnap is held after Nell rejected its cost. Its
+catalogue yielded a26second BRDM idle with unstated subtype/perspective; this
+is unqualified, not an acquired BRDM-2 exterior recording. No paid option was
+bought. A free CC0 TOW candidate is awaiting an original download blocked by
+Chrome; metadata, listening and Spigot/Sagger suitability remain unverified.
+No unknown original request is relabelled as a rocket. The supplied six-second
+Bluezone smoke MP3 is explicitly a preview, excluded from installation and
+derivative authoring. Existing approved smoke stays unchanged.
+
+Evidence: artifacts/t72-smoke-20261028/installation.json,
+native-locked/verification.json, installed-loader.json and root-checks/;
+artifacts/vehicle-sourcing-followup-20261028/ retains the finite research.
+
+Working if: local Play selects the approved T-72 only after actual visible source
+admission, saved balance/Off remain respected, and unlicensed or unqualified
+recordings never enter the runtime or public packages.
 
 The finite source audit now accounts for every relative-near-call candidate in
 SIM's first 64 KiB code segment targeting the known original sound and message

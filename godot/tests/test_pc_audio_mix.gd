@@ -25,6 +25,7 @@ func packet(frame: int, enabled: bool=true, event: bool=false) -> Dictionary:
 
 func individual_controls() -> void:
 	var audio := Audio.new()
+	audio.world_audio.t72_directory=""
 	audio.recorded_effect_directory=""
 	root.add_child(audio)
 	var menu := Menu.new()
@@ -69,10 +70,11 @@ func individual_controls() -> void:
 	check(audio.engine.playing and audio.turret.playing,"only source-active engine resumes")
 	menu.choose("turret",0)
 	check(audio.engine.playing and not audio.turret.playing,"turret off leaves engine active")
-	menu.choose("m113",23);menu.choose("bradley",0)
+	menu.choose("m113",23);menu.choose("bradley",0);menu.choose("t72",37)
 	check(audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100}),"legacy API still accepted")
 	check(audio.mix.engine==67 and audio.mix.turret==0,"legacy mix updates preserve individual choices")
 	check(audio.mix.m113==23 and audio.mix.bradley==0,"legacy mix updates preserve independent allied gain and Off")
+	check(audio.mix.t72==37,"legacy mix updates preserve independent T72 gain")
 	check(sequence==[audio.last_frame,audio.last_event_id,audio.epoch,audio.delivered,audio.suppressed] and JSON.stringify(source)==original,"individual settings never mutate or advance source events/loops")
 	for bad in [NAN,1.5,-1,101,"loud"]:
 		var invalid := menu.settings.duplicate();invalid.engine=bad
@@ -86,6 +88,7 @@ func individual_controls() -> void:
 
 func auxiliary_source_controls() -> void:
 	var audio: Node = Audio.new()
+	audio.world_audio.t72_directory=""
 	audio.recorded_effect_directory = ""
 	root.add_child(audio)
 	var menu: MenuBar = Menu.new()
@@ -111,7 +114,7 @@ func auxiliary_source_controls() -> void:
 func detail_audio(folder: String) -> Node:
 	var audio: Node=Audio.new()
 	audio.recorded_effect_directory="";audio.supplemental.directory=folder
-	for key: String in ["directory","environment_directory","soviet_directory","tank_directory","allied_directory","detail_directory"]: audio.world_audio.set(key,"")
+	for key: String in ["directory","environment_directory","soviet_directory","t72_directory","tank_directory","allied_directory","detail_directory"]: audio.world_audio.set(key,"")
 	root.add_child(audio)
 	return audio
 
@@ -257,6 +260,7 @@ func run() -> void:
 	if "--output" in args: output=args[args.find("--output")+1]
 	DirAccess.make_dir_recursive_absolute(output)
 	var audio := Audio.new()
+	audio.world_audio.t72_directory=""
 	check(audio.set_mix({"master":100,"effects":100,"voice":30,"motors":100}),"launch preferences accepted before players exist")
 	root.add_child(audio)
 	gain(audio.voice,0.65*0.3*0.8,"launch preference applied after player construction")
@@ -268,7 +272,10 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==27,"one external Audio menu, twenty-seven independently specified gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==28,"one external Audio menu, twenty-eight independently specified gain groups")
+	check(Menu.DEFAULTS.t72==100 and Menu.TITLES.t72=="T-72 engine" and menu.audio_channels().has("t72") and menu.menus.has("t72"),"native T72 has its own100% default and exact title")
+	var t72_choices: PopupMenu=menu.menus.t72
+	check(t72_choices.get_item_text(t72_choices.get_item_index(0))=="Off" and t72_choices.get_item_index(100)>=0,"native T72 exposes independent Off through100%")
 	for cue: String in ["m113","bradley"]:
 		check(Menu.DEFAULTS[cue]==100 and Menu.TITLES.has(cue) and menu.audio_channels().has(cue) and menu.menus.has(cue),"native allied control has an independent title and unchanged100% default: "+cue)
 		var choices: PopupMenu=menu.menus[cue]
@@ -359,7 +366,7 @@ func run() -> void:
 	check(reload.load_settings() and reload.settings.m113==0 and reload.settings.bradley==37,"allied controls persist independent Off and intermediate gain")
 	menu.choose("m113",43);menu.choose("bradley",0)
 	check(reload.load_settings() and reload.settings.m113==43 and reload.settings.bradley==0,"each allied class independently retains saved gain and mute")
-	for cue: String in ["woodland","truck","tracks","foley","interface","fire"]:
+	for cue: String in ["t72","woodland","truck","tracks","foley","interface","fire"]:
 		menu.choose(cue,0)
 		check(reload.load_settings() and reload.settings[cue]==0,"new private control saves Off independently: "+cue)
 		menu.choose(cue,37)
@@ -369,6 +376,18 @@ func run() -> void:
 	legacy.save(menu.config_path)
 	check(reload.load_settings() and reload.settings.effects==40 and reload.settings.motors==30 and reload.settings.hind==100 and reload.settings.river==100 and reload.settings.field==100 and reload.settings.cow==100 and reload.settings.t80==100 and reload.settings.tank==100 and reload.settings.m113==100 and reload.settings.bradley==100 and Audio.EFFECT_CUES.all(func(cue):return reload.settings[cue]==100),"old preferences keep original mix and acquire unchanged individual defaults")
 	check(["woodland","truck","tracks","foley","interface","fire"].all(func(cue):return reload.settings[cue]==100),"old saved preferences acquire all six private defaults without changing incumbent mix")
+	check(reload.settings.t72==100,"preferences missing both tank and T72 retain the new100% default")
+	for saved: Dictionary in [{"tank":0},{"tank":40},{"tank":90,"t72":0},{"tank":0,"t72":37},{"t72":37},{}]:
+		var previous: ConfigFile=ConfigFile.new()
+		for key: String in saved: previous.set_value("audio",key,saved[key])
+		check(previous.save(menu.config_path)==OK,"T72 migration fixture writes")
+		var expected_t72: int=int(saved.get("t72",saved.get("tank",100)))
+		check(reload.load_settings() and reload.settings.t72==expected_t72 and reload.settings.tank==int(saved.get("tank",100)),"saved T72 wins; legacy generic balance inherits only when T72 is absent: "+str(saved))
+	for saved: Dictionary in [{"tank":-1},{"tank":"bad"},{"tank":0.5},{"t72":101},{"t72":NAN},{"tank":40,"effects":"bad"},{"tank":40,"t72":0,"voice":"bad"}]:
+		var previous: ConfigFile=ConfigFile.new()
+		for key: String in saved: previous.set_value("audio",key,saved[key])
+		check(previous.save(menu.config_path)==OK,"invalid T72 migration fixture writes")
+		check(not reload.load_settings() and reload.settings==Menu.DEFAULTS and not reload.save_error.is_empty(),"invalid tank/T72/unrelated field rejects complete preferences before migration")
 	var invalid_allied := ConfigFile.new()
 	invalid_allied.set_value("audio","m113",101);invalid_allied.save(menu.config_path)
 	check(not reload.load_settings() and reload.settings==Menu.DEFAULTS and not reload.save_error.is_empty(),"invalid saved allied gain rejects complete preference file atomically")
@@ -384,6 +403,7 @@ func run() -> void:
 	# A save restarts the worker without rewinding the guest: sounds already
 	# started keep playing while the resumed observer restarts at epoch 0/id 0.
 	var resumed := Audio.new()
+	resumed.world_audio.t72_directory=""
 	root.add_child(resumed)
 	check(resumed.apply_audio(packet(20,true,true)) and resumed.effects[0].playing and resumed.voice.playing and resumed.engine.playing,"cue before save plays")
 	resumed.continue_timeline()

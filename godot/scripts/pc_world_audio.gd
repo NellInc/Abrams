@@ -7,6 +7,8 @@ const BASE_CUES := ["river", "hind"]
 const ENVIRONMENT_CUES := ["field", "cow"]
 const SOVIET_CUES := ["t80"]
 const T80_FRAME_COUNT := 1062930
+const T72_CUES := ["t72"]
+const T72_FRAME_COUNT := 627720
 const TANK_CUES := ["tank"]
 const TANK_FRAME_COUNT := 1152000
 # Intact original tanks only. Abrams already has its dedicated source motor;
@@ -17,10 +19,10 @@ const ALLIED_FRAME_COUNTS := {"m113":1152000, "bradley":480817}
 # Original class table: intact M113129 and M2 131; wrecks130/132 stay silent.
 # These recording names never determine actor allegiance or original requests.
 const ALLIED_SHAPES := {129:"m113", 131:"bradley"}
-const GROUND_MOTOR_CUES := ["t80", "tank", "m113", "bradley"]
+const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley"]
 const DETAIL_CUES := ["woodland", "truck", "tracks"]
-const CUES := ["river", "hind", "field", "cow", "t80", "tank", "m113", "bradley", "woodland", "truck", "tracks"]
-const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04}
+const CUES := ["river", "hind", "field", "cow", "t80", "t72", "tank", "m113", "bradley", "woodland", "truck", "tracks"]
+const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04}
 const COW_EXPOSURE_FRAMES := 180
 const COW_COOLDOWN_FRAMES := 2400
 var directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-world-effects-v1")
@@ -28,6 +30,8 @@ var environment_directory: String = ProjectSettings.globalize_path("res://").tri
 var environment_failure: String = ""
 var soviet_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-soviet-effects-v1")
 var soviet_failure: String = ""
+var t72_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-t72-effects-v1")
+var t72_failure: String = ""
 var tank_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-tank-fallback-v1")
 var tank_failure: String = ""
 var allied_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-allied-effects-v1")
@@ -76,6 +80,8 @@ func _read_bank(folder: String, kind: String, expected: Array) -> Dictionary:
 			return {"error":"invalid PCM format/duration"}
 		if cue == "t80" and stream.data.size() != T80_FRAME_COUNT * 2:
 			return {"error":"invalid T80 frame count"}
+		if cue == "t72" and stream.data.size() != T72_FRAME_COUNT * 2:
+			return {"error":"invalid T72 frame count"}
 		if cue == "tank" and stream.data.size() != TANK_FRAME_COUNT * 2:
 			return {"error":"invalid tank fallback frame count"}
 		if cue in ALLIED_CUES and stream.data.size() != int(ALLIED_FRAME_COUNTS[cue]) * 2:
@@ -102,6 +108,11 @@ func setup(owner: Node) -> void:
 	if bank.has("error"):
 		soviet_failure = bank.error
 		push_warning("Private Soviet sounds ignored: " + soviet_failure)
+	else: streams.merge(bank.streams)
+	bank = _read_bank(t72_directory, "private visible-t72 cue", T72_CUES)
+	if bank.has("error"):
+		t72_failure = bank.error
+		push_warning("Private T72 sound ignored: " + t72_failure)
 	else: streams.merge(bank.streams)
 	bank = _read_bank(tank_directory, "private visible-tank fallback", TANK_CUES)
 	if bank.has("error"):
@@ -224,7 +235,7 @@ static func moving_vehicle_candidate(object: Dictionary, actors: Dictionary, sha
 	var speed: Variant = actor.get("speed_raw")
 	return (speed is int or speed is float) and is_finite(float(speed)) and speed == floorf(float(speed)) and speed >= -32768 and speed <= 32767 and speed != 0
 
-static func candidates(data: Dictionary, dedicated_t80: bool = true) -> Dictionary:
+static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t72: bool = false) -> Dictionary:
 	var result: Dictionary = {}
 	if not data.get("objects") is Array or not data.get("camera") is Dictionary or not data.get("unsupported") is Array or not data.unsupported.is_empty(): return result
 	var actors: Dictionary = Modern.dynamic_index(data)
@@ -247,6 +258,8 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true) -> Dictiona
 		elif t80_candidate(object, actors):
 			# Availability chooses the recording, never a user mute or gain.
 			cue = "t80" if dedicated_t80 else "tank"
+		elif dedicated_t72 and moving_tank_candidate(object, actors, 119):
+			cue = "t72"
 		elif TANK_SHAPES.any(func(shape): return moving_tank_candidate(object, actors, shape)):
 			cue = "tank"
 		elif moving_vehicle_candidate(object, actors, 129):
@@ -273,7 +286,7 @@ func observe(data: Dictionary, ownership: SubViewport, ui: Image, source_frame: 
 		stop(); return
 	var bits: PackedByteArray = ui.get_data()
 	if bits.count(0) + bits.count(255) != 64000: stop(); return
-	var selected: Dictionary = candidates(data, streams.has("t80"))
+	var selected: Dictionary = candidates(data, streams.has("t80"), streams.has("t72"))
 	for id: int in selected.keys():
 		if not streams.has(selected[id].cue) or cue_gain(selected[id].cue) <= 0: selected.erase(id)
 	var cow_ready: bool = false
@@ -358,7 +371,7 @@ static func visible_cues(mask: Image, token: Dictionary) -> Array[String]:
 			elif Vector2(witnesses[id]).distance_squared_to(Vector2(x, y)) >= 16.0:
 				found.append(cue)
 				if found.size() == wanted.size(): return found
-	for cue: String in ["field", "t80", "tank", "m113", "bradley", "woodland", "truck"]:
+	for cue: String in ["field", "t80", "t72", "tank", "m113", "bradley", "woodland", "truck"]:
 		if cue in wanted and cue not in found and narrow_visible(bytes,stride,token,cue): found.append(cue)
 	return found
 

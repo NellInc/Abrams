@@ -2,15 +2,15 @@
 
 ## Current saved controls, 28 October 2026
 
-Native Settings and Audio expose 27 saved controls: five groups (Master volume,
-Sound effects, Crew voices, Engine and turret, Music) and 22 individual controls.
+Native Settings and Audio expose 28 saved controls: five groups (Master volume,
+Sound effects, Crew voices, Engine and turret, Music) and 23 individual controls.
 These cover Cannons, Machine gun, Impacts, Smoke, Engine, Turret, Rivers, Hind
-engine, Radio alerts, Switches, Field air, Animals, T-80 engine, Other tank engines,
+engine, Radio alerts, Switches, Field air, Animals, T-80 engine, T-72 engine, Other tank engines,
 M113 engine, Bradley engine, Woodland air, Truck engines, Track texture,
 Mechanical detail, Interface tones and Visible fire. Every control supports Off
 through 100%. Existing group defaults and individual 100% defaults are retained.
 
-The fourteen optional world/detail controls stay native-only because their local
+The fifteen optional world/detail controls stay native-only because their local
 banks are excluded from browser discovery and packaging. Current Web source
 supports thirteen controls; the previously published game pack supplies five.
 The shell deployed at `6a19ea9` displays only capabilities reported by that
@@ -27,6 +27,16 @@ approved forest-edge28second master (-35LUFS) and wood-fire24second master
 accepted masters, controls and factors remain unchanged. Complete previous
 banks are retained for rollback. German/Central European woodland is the accepted
 art direction, without an authenticated German recording-location claim.
+
+The approved private T-72 idle now replaces generic playback for exact moving
+model119 after the unchanged native ownership gate. Its -25.01LUFS master uses
+the same0.30factor as the generic recording. Existing saved Other tank engines
+gain, including Off, carries to T-72 only when no dedicated preference is saved.
+An explicit dedicated Off remains silent. No other master, factor, source clock,
+event, own-motor pitch/amplitude or mask changes. Human loop approval and24native
+retained-source checks are complete; no new live combined-mix or device hearing
+verdict is inferred. The original mask-qualified source had no paired historical
+audio, so its native mixer check uses an explicitly empty synthetic envelope.
 
 Working if: settings isolate their own cues, old configs preserve their values,
 the browser advertises only real runtime capabilities, and only an explicitly
