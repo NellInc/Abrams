@@ -1,5 +1,7 @@
 ---
-status: local_sound_pass_complete_release_pending
+status: remaining_sound_plan_ready
+current_planning_commit: f2395607724d1c63d9a013af85f82f4dca7b5629
+current_plan: docs/pc-audio-remaining-plan.md
 base_commit: 6a19ea98c7accef58f4530b93bbe2c3992936124
 stepsCompleted:
   - current_513_file_baseline_sealed
@@ -18,6 +20,18 @@ stepsCompleted:
 ---
 
 # Remaining sound work and delivery plan, 28 October 2026
+
+The current whole-sound audit and searched completion plan is
+`docs/pc-audio-remaining-plan.md`, at checkpointf239560. It supersedes the
+historical acquisition holds below: T-72 and approved loop-only flight fizz
+are installed. Fresh planning verifies10private banks/26PCMfiles and90role
+dispositions, with no runtime/mix changes or new purchase. BMPshared/BTR70/BRDM2,
+additional source-class bindings, recorded ignition semantics and target-edition
+rights/delivery remain explicit. This pass delivers the requested plan/search;
+it does not revoke earlier bounded approvals or create new purchase authority.
+
+Working if: resumed work consumes that current plan and real holds instead of
+reopening completed purchases or treating older checklist rows as current facts.
 
 ## Authority and current boundary
 
