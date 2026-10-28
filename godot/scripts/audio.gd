@@ -41,11 +41,11 @@ func get_stream(cue: String) -> AudioStream:
 		cache[cue] = load(path)
 	return cache[cue]
 
-func play(cue: String, override_stream: AudioStream = null) -> void:
+func play(cue: String) -> void:
 	var level := effect_gain(cue)
 	if muted or level<=0:
 		return
-	var stream := override_stream if override_stream != null else get_stream(cue)
+	var stream := get_stream(cue)
 	if stream == null:
 		return
 	var p := effects[_effect_slot()]

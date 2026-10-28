@@ -60,9 +60,6 @@ var recorded_effect_streams: Dictionary = {}
 var recorded_effects_checked := false
 const WorldAudio = preload("res://scripts/pc_world_audio.gd")
 var world_audio = WorldAudio.new()
-var ax_effect_directory := PrivateAudio.bank_directory(private_audio_root,"pc-ax-effects-v1")
-var ax_effect_stream: AudioStreamWAV
-var ax_effect_failure := ""
 const SupplementalAudio = preload("res://scripts/pc_supplemental_audio.gd")
 var supplemental = SupplementalAudio.new()
 
@@ -108,20 +105,6 @@ func _prewarm_recorded_effects() -> bool:
 
 func get_stream(cue:String) -> AudioStream:
 	return recorded_effect_streams[cue] if recorded_effect_streams.has(cue) else super.get_stream(cue)
-
-func _prewarm_ax_effect() -> void:
-	if OS.has_feature("web"): return
-	var bank: Dictionary = world_audio._read_bank(ax_effect_directory,"private AX firing-request variant",["ax"])
-	if bank.has("error"):
-		ax_effect_failure=str(bank.error)
-	elif bank.streams.has("ax"):
-		var stream: AudioStreamWAV = bank.streams.ax
-		if stream.data.size()!=int(RECORDED_EFFECT_FRAMES.cannon)*2:
-			ax_effect_failure="invalid AX frame count"
-		else:
-			stream.loop_mode=AudioStreamWAV.LOOP_DISABLED
-			ax_effect_stream=stream
-	if not ax_effect_failure.is_empty(): push_warning("Private AX variant ignored: "+ax_effect_failure)
 
 func _create_presentation_bus() -> void:
 	# Limit only this PC presentation. Never modify Master or the range mixer.
@@ -176,7 +159,6 @@ func set_mix(settings: Dictionary) -> bool:
 func _ready() -> void:
 	super._ready()
 	if _prewarm_recorded_effects():engine.stream=recorded_effect_streams.engine
-	_prewarm_ax_effect()
 	radio_catalogue=JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_radio_voice_script.json")).cues
 	crew_catalogue = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_crew_voice_script.json")).cues
 	crew_catalogue.merge(JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_bearing_voice_script.json")).cues)
@@ -365,8 +347,8 @@ func continue_timeline() -> void:
 	continuing_timeline=true
 	music_bank.rebase_source()
 
-func play(cue: String, override_stream: AudioStream = null) -> void:
-	if not transport_muted: super.play(cue,override_stream)
+func play(cue: String) -> void:
+	if not transport_muted: super.play(cue)
 
 func speak(cue: String) -> void:
 	if not transport_muted: super.speak(cue)
@@ -383,7 +365,6 @@ func release_streams() -> void:
 	music_track=""
 	music_bank.streams.clear()
 	recorded_effect_streams.clear()
-	ax_effect_stream=null
 
 func _valid_loops(loops) -> bool:
 	if not loops is Dictionary: return false
@@ -429,17 +410,6 @@ func _valid_sound(event: Dictionary) -> bool:
 	var mapped: bool = request in REQUEST_CALLS and int(event.return_ip) in REQUEST_CALLS[request]
 	var expected = REQUEST_SAMPLES[request] if mapped else null
 	return event.get("sample")==expected and event.get("voice")==VOICES.get(expected)
-
-func _valid_ax_context(event: Dictionary) -> bool:
-	# Working if: one exact original AX request changes only its stream, retaining
-	# cannon gain/player/ID/onset/crew. Missing bank/context keeps normal cannon.
-	if event.get("kind")!="sound" or event.get("sample")!="cannon" or event.get("voice")!="on_the_way": return false
-	if int(event.ip)!=0x9107 or int(event.return_ip)!=0x33c4 or int(event.value)!=1: return false
-	var context: Variant = event.ax_fire_context
-	if not context is Dictionary or context.size()!=3: return false
-	for key: String in ["schema","selection","definition_class"]:
-		if not _integer(context.get(key)) or int(context[key])!=int({"schema":1,"selection":2,"definition_class":3}[key]): return false
-	return true
 
 func _valid_readiness(event: Dictionary) -> bool:
 	for key in ["completion_frame", "text_sequence", "text_draw_sequence", "text_return_ip", "text_pointer"]:
@@ -542,8 +512,6 @@ func apply_audio(packet: Dictionary) -> bool:
 			return _reject("Unknown remastered sample")
 		if event.kind == "sound" and not _valid_sound(event):
 			return _reject("Invalid original sound request identity")
-		if event.has("ax_fire_context") and not _valid_ax_context(event):
-			return _reject("Invalid original AX firing context")
 		if event.enabled and int(event.backend) not in [0,1]:
 			return _reject("Unsupported enabled original sound backend")
 		if event.kind == "readiness_visible":
@@ -608,7 +576,7 @@ func apply_audio(packet: Dictionary) -> bool:
 		elif event.kind not in ["readiness_visible", "crew_visible", "radio_visible"] and (event.kind != "sound" or event.get("sample") == null): reason = "unmapped-original-request"
 		if reason.is_empty():
 			music_bank.observe_event(event)
-			if event.get("sample") != null: play(event.sample,ax_effect_stream if event.has("ax_fire_context") else null)
+			if event.get("sample") != null: play(event.sample)
 			if event.get("voice") != null: speak(event.voice)
 			supplemental.observe_event(event)
 			delivered += 1

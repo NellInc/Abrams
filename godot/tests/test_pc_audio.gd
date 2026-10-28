@@ -43,7 +43,6 @@ func _initialize() -> void: run.call_deferred()
 func stock_audio() -> PcAudio:
 	var audio:=PcAudio.new()
 	audio.recorded_effect_directory=""
-	audio.ax_effect_directory=""
 	return audio
 
 func write_recorded_fixture(folder:String, bad:String="") -> void:
@@ -100,58 +99,6 @@ func recorded_bank_contract() -> void:
 		rejected.queue_free();await process_frame
 	for cue:String in PcAudio.RECORDED_EFFECT_FRAMES:DirAccess.remove_absolute(folder.path_join(cue+".wav"))
 	DirAccess.remove_absolute(folder.path_join("manifest.json"));DirAccess.remove_absolute(folder)
-
-func ax_variant_contract() -> void:
-	var folder:=OS.get_temp_dir().path_join("abrams-ax-%d-%d"%[OS.get_process_id(),Time.get_ticks_usec()])
-	DirAccess.make_dir_recursive_absolute(folder)
-	var pcm:=AudioStreamWAV.new()
-	pcm.format=AudioStreamWAV.FORMAT_16_BITS;pcm.mix_rate=48000
-	var bytes:=PackedByteArray();bytes.resize(int(PcAudio.RECORDED_EFFECT_FRAMES.cannon)*2)
-	pcm.data=bytes
-	var path:=folder.path_join("ax.wav")
-	check(pcm.save_to_wav(path)==OK,"disposable AX fixture saved")
-	var manifest:Dictionary={"schema":1,"kind":"private AX firing-request variant","cues":{"ax":{"file":"ax.wav","sha256":FileAccess.get_sha256(path)}}}
-	FileAccess.open(folder.path_join("manifest.json"),FileAccess.WRITE).store_string(JSON.stringify(manifest))
-	var audio:=stock_audio();audio.ax_effect_directory=folder;root.add_child(audio)
-	check(audio.ax_effect_stream!=null and audio.ax_effect_stream.loop_mode==AudioStreamWAV.LOOP_DISABLED,"verified AX one-shot loaded")
-	var ordinary:AudioStream=audio.get_stream("cannon")
-	var event:=sound(1,10);event.ax_fire_context={"schema":1,"selection":2,"definition_class":3}
-	check(audio.apply_audio(JSON.parse_string(JSON.stringify(packet(10,1,[event])))),"JSON original AX event accepted")
-	var selected:AudioStreamPlayer=audio.effects[audio.cursor-1]
-	check(selected.stream==audio.ax_effect_stream and selected.playing and selected.get_meta("effect_cue")=="cannon","one existing cannon player selects AX stream")
-	check(audio.delivered==1 and audio.last_event_id==1 and audio.last_voice=="on_the_way" and audio.effects.size()==8,"AX preserves event count/ID/crew/player pool")
-	check(is_equal_approx(db_to_linear(selected.volume_db),audio.effect_gain("cannon")) and audio.get_stream("cannon")==ordinary,"unchanged cannon gain and cached normal shot")
-	check(audio.apply_audio(packet(10,1,[event])) and audio.delivered==1,"duplicate AX consumed once")
-	check(audio.apply_audio(packet(11,2,[sound(2,11)])),"following ordinary shot accepted")
-	check(audio.effects[audio.cursor-1].stream==ordinary,"AX variant never leaks into following HEAT/SABOT shot")
-	audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"cannon":0})
-	check(not selected.playing,"live Cannon Off stops AX player")
-	event.id=3;event.frame=12
-	check(audio.apply_audio(packet(12,3,[event])) and audio.delivered==3 and audio.effects.all(func(p):return not p.playing),"Off consumes AX without playback")
-	audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"cannon":100})
-	check(audio.effects.all(func(p):return not p.playing),"Cannon unmute never replays AX")
-	for mode:String in ["transport","source","stale","epoch"]:
-		audio.reset_timeline();audio.set_transport_muted(mode=="transport")
-		var quiet:=event.duplicate(true);quiet.id=1;quiet.frame=10;quiet.epoch=0 if mode=="epoch" else 1
-		var envelope:=packet(20 if mode=="stale" else 10,1,[quiet],mode!="source")
-		check(audio.apply_audio(envelope) and audio.effects.all(func(p):return not p.playing),"AX retains suppression: "+mode)
-		audio.set_transport_muted(false)
-	for context:Variant in [null,{}, {"schema":1,"selection":3,"definition_class":3},{"schema":1,"selection":2,"definition_class":2},{"schema":true,"selection":2,"definition_class":3},{"schema":1,"selection":2,"definition_class":3,"extra":0}]:
-		var bad:=event.duplicate(true);bad.ax_fire_context=context
-		check(not audio._valid_ax_context(bad),"malformed/inconsistent AX metadata rejected")
-	var misplaced:=sound(1,10,"machinegun");misplaced.ax_fire_context=event.ax_fire_context
-	check(not audio.apply_audio(packet(21,4,[misplaced])) and not audio.failure.is_empty(),"misplaced context fails whole envelope before sound")
-	check(await audio.drain_for_shutdown(),"AX player drains");check(audio.ax_effect_stream==null,"AX references released");audio.free()
-	var absent:=stock_audio();root.add_child(absent)
-	var fallback:=event.duplicate(true);fallback.id=1;fallback.frame=10
-	check(absent.apply_audio(packet(10,1,[fallback])) and absent.effects[absent.cursor-1].stream==absent.get_stream("cannon"),"absent private AX bank keeps one normal cannon")
-	check(await absent.drain_for_shutdown(),"absent AX fallback drains");absent.free()
-	manifest.cues.ax.sha256="0".repeat(64)
-	FileAccess.open(folder.path_join("manifest.json"),FileAccess.WRITE).store_string(JSON.stringify(manifest))
-	var corrupt:=stock_audio();corrupt.ax_effect_directory=folder;root.add_child(corrupt)
-	check(corrupt.ax_effect_stream==null and not corrupt.ax_effect_failure.is_empty() and corrupt.failure.is_empty(),"corrupt optional AX bank retains normal source audio")
-	check(await corrupt.drain_for_shutdown(),"corrupt AX fallback drains");corrupt.free()
-	DirAccess.remove_absolute(path);DirAccess.remove_absolute(folder.path_join("manifest.json"));DirAccess.remove_absolute(folder)
 
 func run() -> void:
 	var audio := stock_audio()
@@ -390,7 +337,6 @@ func run() -> void:
 		check(absf(stream.get_length()-float(entry.duration_seconds)) < 0.001,"crew imported duration "+cue)
 		check(entry.text == pc_script.cues[cue].caption and entry.generator == "gemini-3.8-flash-tts","crew caption/provider "+cue)
 	await recorded_bank_contract()
-	await ax_variant_contract()
 	print("PC_AUDIO: %d checks, %d failures" % [checks,failures.size()])
 	for failure in failures: printerr(failure)
 	quit(0 if failures.is_empty() else 1)

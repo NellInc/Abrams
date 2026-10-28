@@ -113,23 +113,6 @@ static void AbramsTraceSendWindows(Bit32u event, const Bit16u* regs, Bit32u offs
 }
 // AWB1 SIM RAM window bundle: end.
 
-// AX fire context: begin.
-// Optional event 59 qualifies the next unchanged sound event 25. This is the
-// original accepted request before allocation, never proof of projectile birth.
-// Working if: exact own AX emits one six-byte context before its existing shot;
-// other selections, inconsistent definitions and out-of-range pointers emit none.
-static void AbramsTraceAxFireContext(Bit16u ip, Bit32u base, const Bit16u* regs, const Bit16u* values) {
-    const Bit32u limit = 640u * 1024u;
-    if (ip != 0x9107 || values[0] != 0x9107 || values[1] != 0x33c4 || values[2] != 1 ||
-        base > limit - 65536u || mem_readb(base + 0x79a9) != 2) return;
-    const Bit16u definition = mem_readw(base + 0x79a7);
-    if (!definition || definition > 65533u || definition != mem_readw(base + 0x79c0) ||
-        mem_readb(base + definition + 2u) != 3) return;
-    const Bit8u bytes[6] = {1, 0, 2, 0, 3, 0}; // schema, selection, definition class
-    abrams_trace_callback(59, regs, bytes, 0, sizeof(bytes));
-}
-// AX fire context: end.
-
 extern "C" __attribute__((visibility("default")))
 void abrams_trace_configure(Bit16u load, AbramsTraceCallback callback) {
     abrams_loop_diagnostics = false;
@@ -767,7 +750,6 @@ static INLINE void AbramsTraceInstruction() {
             mem_readb(base + 0x35ac), mem_readb(sound), mem_readb(base + 0x79aa)};
         Bit8u bytes[12];
         for (unsigned i = 0; i < 6; ++i) { bytes[i*2] = Bit8u(values[i]); bytes[i*2+1] = Bit8u(values[i] >> 8); }
-        AbramsTraceAxFireContext(Bit16u(ip), base, regs, values);
         abrams_trace_callback(25, regs, bytes, 0, 12);
         return;
     }

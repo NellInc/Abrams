@@ -3,7 +3,7 @@ extends RefCounted
 const BANKS := ["pc-recorded-effects-v1","pc-world-effects-v1","pc-environment-effects-v1",
 	"pc-soviet-effects-v1","pc-t72-effects-v1","pc-tank-fallback-v1",
 	"pc-allied-effects-v1","pc-world-detail-v1","pc-missile-flight-v1",
-	"pc-supplemental-effects-v1","pc-ax-effects-v1"]
+	"pc-supplemental-effects-v1"]
 
 static func root_directory() -> String:
 	if OS.has_feature("web"): return ""

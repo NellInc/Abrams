@@ -19,7 +19,7 @@ try:
     from tools.inspect_scenarios import decode_resource
     from tools.pc_materials import read_materials, material_pixel
     from tools.pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
-    from tools.pc_audio_events import AudioEvents, decode_ax_fire_context, receipt_ax_fire_context
+    from tools.pc_audio_events import AudioEvents
     from tools.pc_orientation import OrientationRuns
     from tools.pc_reticle import ReticleRuns
     from tools.pc_reticle_target import TargetBoxRuns
@@ -37,7 +37,7 @@ except ModuleNotFoundError as error:
     from inspect_scenarios import decode_resource
     from pc_materials import read_materials, material_pixel
     from pc_bitmaps import decode_bitmaps, read_ega_bitmap, verify_loaded_effects
-    from pc_audio_events import AudioEvents, decode_ax_fire_context, receipt_ax_fire_context
+    from pc_audio_events import AudioEvents
     from pc_orientation import OrientationRuns
     from pc_reticle import ReticleRuns
     from pc_reticle_target import TargetBoxRuns
@@ -94,13 +94,11 @@ def prewarm():
 
 class Collector:
     def __init__(self, reader, output=None, *, history_limit=3000, loop_diagnostics=False,
-                 window_bundles=False, ax_fire_context=False):
+                 window_bundles=False):
         self.reader, self.output = reader, output
         # Packet format of SIM events 26/28/29, as the trace core's receipt
         # declares it (pc_trace_windows). attach() reads it from the core.
         self.window_bundles = window_bundles
-        self.ax_fire_context = ax_fire_context
-        self._ax_fire_context = None
         self.loop_diagnostics = loop_diagnostics
         self.loop_diagnostic = None
         self.loop_sequence = 0
@@ -142,22 +140,14 @@ class Collector:
         self.callback = CALLBACK(self.observe)
 
     def observe(self, event, registers, data, offset, length):
-        try: self.observe_packet(event, registers[:12], C.string_at(data, length), offset)
+        try: raw = C.string_at(data, length)
         except Exception as error:
-            self._ax_fire_context = None
             if self.error is None: self.error = error
+            return
+        self.observe_packet(event, registers[:12], raw, offset)
 
     def observe_packet(self, event, registers, raw, offset):
         """Consume an exact native callback packet, including its original bytes."""
-        context, self._ax_fire_context = self._ax_fire_context, None
-        if event == 59:
-            # Context is host-transient and never an audio event/ID of its own.
-            # Working if: only the immediate matching25 may use it; any other
-            # callback, error, detach or reattachment cancels stale context.
-            if self.ax_fire_context and self.error is None and offset == 0 and len(registers) == 12:
-                decoded = decode_ax_fire_context(raw)
-                if decoded is not None: self._ax_fire_context = (tuple(registers), decoded)
-            return
         if event == 56:
             try:
                 self.loop_diagnostic = None
@@ -185,9 +175,7 @@ class Collector:
             return
         try:
             if event == 25:
-                paired = context[1] if (self.ax_fire_context and self.error is None and context is not None
-                    and offset == 0 and tuple(registers) == context[0]) else None
-                self.audio.observe(raw, text_sequence=self.text.sequence, ax_fire_context=paired)
+                self.audio.observe(raw, text_sequence=self.text.sequence)
                 return
             if event in (10, 11, 12, 19, 24, 31):
                 self.observe_video(event, offset, raw, registers)
@@ -645,10 +633,8 @@ class Collector:
         return self.presented
 
     def attach(self, core, load_segment):
-        self._ax_fire_context = None
         core.pause_at_frame_end()
         self.window_bundles = receipt_window_bundles(getattr(core, 'core_sha256', None), ROOT / '.runtime/pc-core')
-        self.ax_fire_context = receipt_ax_fire_context(getattr(core, 'core_sha256', None), ROOT / '.runtime/pc-core')
         self.claim_strut = core.core.abrams_trace_claim_strut
         self.claim_strut.argtypes = [C.c_uint,C.c_uint,C.POINTER(C.c_uint8),C.c_uint]
         self.claim_strut.restype = C.c_bool
@@ -666,8 +652,6 @@ class Collector:
             configure(True)
 
     def detach(self, core):
-        self._ax_fire_context = None
-        self.ax_fire_context = False
         core.pause_at_frame_end()
         # A zero load segment only disables instruction hooks. VGA callbacks
         # must also be removed before this Python callback can be released.
