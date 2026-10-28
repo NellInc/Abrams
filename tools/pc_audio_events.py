@@ -4,6 +4,7 @@ The original 9107 dispatcher is the authority, not input keys or ammo deltas.
 Unknown requests stay in diagnostics without acquiring invented meanings.
 """
 from collections import deque
+import json
 import struct
 try:
     from tools.pc_audio_loops import read_loops
@@ -30,12 +31,34 @@ for _value, _returns in {7:(0x19D1,),9:(0x0527,),10:(0x0974,0x7790),15:(0x034F,)
 
 
 
+def decode_ax_fire_context(raw):
+    """Optional event59, three LE words; malformed context leaves cannon intact."""
+    if len(raw) != 6 or struct.unpack('<3H', raw) != (1, 2, 3): return None
+    return {'schema': 1, 'selection': 2, 'definition_class': 3}
+
+
+def receipt_ax_fire_context(core_sha256, directory):
+    """Enable only the optional schema declared by the exact active/retained core.
+
+    Missing, old or malformed optional receipts retain ordinary cannon delivery.
+    This mirrors the active/previous receipt lookup in pc_trace_windows.
+    """
+    if not core_sha256: return False
+    for path in (directory / 'abrams-trace.json', directory / 'previous' / core_sha256 / 'abrams-trace.json'):
+        try: receipt = json.loads(path.read_text())
+        except (OSError, ValueError): continue
+        if isinstance(receipt, dict) and receipt.get('trace_sha256') == core_sha256:
+            schema = receipt.get('ax_fire_context_schema')
+            return type(schema) is int and schema == 1
+    return False
+
+
 class AudioEvents:
     def __init__(self, limit=4096):
         self.limit = limit
         self.pending = deque()
 
-    def observe(self, raw, *, text_sequence=None):
+    def observe(self, raw, *, text_sequence=None, ax_fire_context=None):
         if len(raw) != 12: raise ValueError('invalid native audio boundary')
         ip, caller, value, backend, gate, reload_state = struct.unpack('<6H', raw)
         if ip not in (0x9107, 0x8DA3, 0x35EE, 0x91D6):
@@ -47,6 +70,11 @@ class AudioEvents:
             event['kind'] = 'sound'
             sample, voice = SAMPLES.get((value, caller), (None, None))
             event.update(sample=sample, voice=voice)
+            if ((value, caller) == (1, 0x33C4) and isinstance(ax_fire_context, dict)
+                    and set(ax_fire_context) == {'schema', 'selection', 'definition_class'}
+                    and all(type(ax_fire_context[key]) is int and ax_fire_context[key] == expected
+                            for key, expected in (('schema', 1), ('selection', 2), ('definition_class', 3)))):
+                event['ax_fire_context'] = dict(ax_fire_context)
         elif ip == 0x8DA3:
             event.update(kind='gate', enabled=value == 1 and backend in (0, 1))
         elif ip == 0x35EE:

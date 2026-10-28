@@ -721,6 +721,11 @@ def launch(bundle, home, extra):
         if not regular(path) or not os.access(path,os.X_OK): raise ValueError('Bundled runtime is unavailable')
     managed(home, home/'saves').mkdir(exist_ok=True); managed(home, home/'logs').mkdir(exist_ok=True)
     env = dict(os.environ, ABRAMS_PYTHON=str(runtime), PYTHONDONTWRITEBYTECODE='1')
+    # Stable owner-provisioned native SFX location, outside versioned installs.
+    # No media import/copy or public-package permission is implied. An explicit
+    # caller override stays authoritative; Godot validates it and fails silent.
+    if 'ABRAMS_AUDIO_ROOT' not in env:
+        env['ABRAMS_AUDIO_ROOT'] = str(managed(home, home/'audio'))
     # Ignore developer-machine overrides and package-manager Python search paths.
     for key in ['PYTHONHOME','PYTHONPATH','GODOT_BIN',PAYLOAD_VERIFIED_ENV]:
         env.pop(key,None)

@@ -1,4 +1,6 @@
 extends RefCounted
+const PrivateAudio = preload("res://scripts/pc_private_audio.gd")
+var private_audio_root: String = PrivateAudio.root_directory()
 ## Quiet, centred presentation beds. No gameplay, event or positional inference.
 ## Admission reads the production painter mask after its draw, never guest RAM.
 const Modern = preload("res://scripts/pc_modern_assets.gd")
@@ -17,7 +19,20 @@ const FLIGHT_PHASES := {
 	58:{"shape":186,"root":33790,"flags":8,"width":8,"height":3},59:{"shape":187,"root":33828,"flags":8,"width":8,"height":3},
 	60:{"shape":186,"root":33784,"flags":8,"width":32,"height":23},61:{"shape":187,"root":33822,"flags":8,"width":32,"height":24},
 	62:{"shape":186,"root":33782,"flags":8,"width":56,"height":45},63:{"shape":187,"root":33820,"flags":16,"width":56,"height":45}}
-const FLIGHT_SOURCE_HASH := "8d6483bdc0ad1df38338e24c2bd413ca497603d0aea819034b72a1862f19db41"
+# Original PC EFFECTS.BMP, not optional Genesis-derived artwork.
+# Fingerprints serialize pixel bytes then strict boolean opacity bytes.
+const FLIGHT_PC_RESOURCE_SHA256 := "6f8db51638447d2c8a798c7885fcf469acd9aff21e9606343de6d199462dc3fd"
+const FLIGHT_FINGERPRINTS := {
+	54:"856892cac07102d921ebbf6b816ac2da5da5b292a492917bf956c304ec543590",
+	55:"ac9bc4ec36c236b800b4514f530463660aed59c359e57e851186bc5e6ad5ab35",
+	56:"fb4592039207ce985789e957b784a470956379208166ce2cee52ccadc098b5ac",
+	57:"4c87b2f60a5ad464b97dd518161d17ea52c07a96c2ffa43f27079d24b54fe95e",
+	58:"106ce850a54ec15cc27f9b485c742c52297ff3b3dd9fc07f87b567401000546c",
+	59:"e8f301d13b9c29c1d2fe7f4f4d9d4c91d85ea1628af6df2d6637dc07f28f806d",
+	60:"212efbeffcd00c1e31956fd175cbe5b500bc28ef554f642d47cbd9efbc04d33c",
+	61:"1a8f41f4780e9da8f93e0b71071891a0c3ab8a9479be1c9e36582f99791636af",
+	62:"e17527b961fc6246650fc9c79c9db5e31efb45bc13ceb4399e90c7a7062b0727",
+	63:"e0f5f3053a23be9d0d952b5357926f9d4b24b55ca76c09f9f80d507a695073bf"}
 const TANK_CUES := ["tank"]
 const TANK_FRAME_COUNT := 1152000
 # Intact original tanks only, including the manual's FST-I MBT category.
@@ -40,21 +55,21 @@ const CUES := ["river", "hind", "field", "cow", "t80", "t72", "tank", "m113", "b
 const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04,"missileflight":0.30,"trackedfallback":0.30,"wheeledfallback":0.30}
 const COW_EXPOSURE_FRAMES := 180
 const COW_COOLDOWN_FRAMES := 2400
-var directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-world-effects-v1")
-var environment_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-environment-effects-v1")
+var directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-world-effects-v1")
+var environment_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-environment-effects-v1")
 var environment_failure: String = ""
-var soviet_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-soviet-effects-v1")
+var soviet_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-soviet-effects-v1")
 var soviet_failure: String = ""
-var t72_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-t72-effects-v1")
+var t72_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-t72-effects-v1")
 var t72_failure: String = ""
-var flight_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-missile-flight-v1")
+var flight_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-missile-flight-v1")
 var flight_failure: String = ""
 var flight_sources: Dictionary = {}
-var tank_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-tank-fallback-v1")
+var tank_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-tank-fallback-v1")
 var tank_failure: String = ""
-var allied_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-allied-effects-v1")
+var allied_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-allied-effects-v1")
 var allied_failure: String = ""
-var detail_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-world-detail-v1")
+var detail_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-world-detail-v1")
 var detail_failure: String = ""
 var cow_visibility = CowVisibility.new()
 var _cow_epoch: int = -1
@@ -215,7 +230,7 @@ static func field_candidate(object: Dictionary, polygons: Array) -> bool:
 	var polygon: Dictionary = polygons[0]
 	var colors: Variant = polygon.get("colors")
 	var vertices: Variant = polygon.get("camera_vertices")
-	if not exact_number(polygon.get("primitive"), 5123) or not exact_number(polygon.get("fill_mode"), 1) or not colors is Array or colors.size() != 2 or not exact_number(colors[0], 8) or not exact_number(colors[1], 8) or not vertices is Array or vertices.size() < 3: return false
+	if not exact_number(polygon.get("primitive"), 5123) or not exact_number(polygon.get("fill_mode"), 1) or not colors is Array or colors.size() != 2 or not ((exact_number(colors[0],8) and exact_number(colors[1],8)) or (exact_number(colors[0],3) and exact_number(colors[1],3))) or not vertices is Array or vertices.size() < 3: return false
 	for point: Variant in vertices:
 		if not point is Array or point.size() != 3: return false
 		for value: Variant in point:
@@ -225,6 +240,26 @@ static func field_candidate(object: Dictionary, polygons: Array) -> bool:
 	if not order is Array or order.size() != 1 or not order[0] is Dictionary: return false
 	var command: Dictionary = order[0]
 	return command.size() == 2 and command.get("kind") == "polygon" and exact_number(command.get("index"), 0)
+
+static func audio_water_surface(object: Dictionary, polygon: Dictionary) -> bool:
+	# Original normal4/thermal6 remaps preserve this exact water identity.
+	# Audio only: renderer classification, masks and source mode remain untouched.
+	var dynamic: Variant = object.get("dynamic_instance")
+	if not ((dynamic is bool and not dynamic) or exact_number(dynamic,0)) or not positive_source_path(object.get("static_path")): return false
+	var shape: int = -1
+	for candidate: int in Modern.WATER:
+		if exact_number(object.get("shape_index"),candidate): shape = candidate; break
+	if shape < 0 or not exact_number(object.get("root"),int(Modern.WATER[shape][0])): return false
+	if not Modern.WATER[shape][1].any(func(id):return exact_number(polygon.get("primitive"),int(id))) or not exact_number(polygon.get("fill_mode"),1): return false
+	var colors: Variant = polygon.get("colors")
+	if not colors is Array or colors.size()!=2: return false
+	var vertices: Variant = polygon.get("camera_vertices")
+	if not vertices is Array or vertices.size()<3: return false
+	for point: Variant in vertices:
+		if not point is Array or point.size()!=3: return false
+		for value: Variant in point:
+			if not (value is int or value is float) or not is_finite(float(value)): return false
+	return (exact_number(colors[0],4) and exact_number(colors[1],4)) or (exact_number(colors[0],6) and exact_number(colors[1],6))
 
 static func t80_candidate(object: Dictionary, actors: Dictionary) -> bool:
 	return moving_tank_candidate(object, actors, 121)
@@ -262,14 +297,27 @@ static func moving_vehicle_candidate(object: Dictionary, actors: Dictionary, sha
 	var speed: Variant = actor.get("speed_raw")
 	return (speed is int or speed is float) and is_finite(float(speed)) and speed == floorf(float(speed)) and speed >= -32768 and speed <= 32767 and speed != 0
 
-static func read_flight_sources(base: String) -> Dictionary:
-	var path: String = base.path_join("local-art/genesis/source/effects-v1/effects.json")
-	if not FileAccess.file_exists(path) or FileAccess.get_size(path) > 1000000 or FileAccess.get_sha256(path) != FLIGHT_SOURCE_HASH: return {}
-	var source: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if not source is Dictionary or not source.get("images") is Array or source.images.size() != 64: return {}
+static func read_flight_sources(_base: String) -> Dictionary:
+	# Legacy caller signature. Expectations are pinned from the PC decoder;
+	# never read expected resources from the candidate packet or optional art.
 	var result: Dictionary = {}
-	for index: int in FLIGHT_PHASES: result[index] = source.images[index]
+	for index: int in FLIGHT_PHASES: result[index] = {"sha256":FLIGHT_FINGERPRINTS[index]}
 	return result
+
+static func flight_signature(sprite: Dictionary) -> String:
+	var pixels: Variant = sprite.get("pixels")
+	var opaque: Variant = sprite.get("opaque")
+	if not pixels is Array or not opaque is Array or pixels.size() != opaque.size() or pixels.is_empty(): return ""
+	var bytes: PackedByteArray = PackedByteArray()
+	bytes.resize(pixels.size()*2)
+	for at: int in pixels.size():
+		var value: Variant = pixels[at]
+		if not (value is int or value is float) or not is_finite(float(value)) or value != floorf(float(value)) or value < 0 or value > 15 or not opaque[at] is bool: return ""
+		bytes[at] = int(value)
+		bytes[pixels.size()+at] = 1 if opaque[at] else 0
+	var hash: HashingContext = HashingContext.new()
+	hash.start(HashingContext.HASH_SHA256); hash.update(bytes)
+	return hash.finish().hex_encode()
 
 static func flight_candidate(object: Dictionary, actors: Dictionary, data: Dictionary, sources: Dictionary) -> bool:
 	# Steady texture only. Visibility is never a launch/birth notification.
@@ -300,9 +348,8 @@ static func flight_candidate(object: Dictionary, actors: Dictionary, data: Dicti
 		if not exact_number(sprite.get(pair[0]),int(pair[1])): return false
 	var size: int = int(phase.width)*int(phase.height)
 	if not sprite.get("pixels") is Array or not sprite.get("opaque") is Array or sprite.pixels.size() != size or sprite.opaque.size() != size: return false
-	if not original.get("pixels") is Array or not original.get("opaque") is Array or original.pixels.size() != size or original.opaque.size() != size: return false
-	for at: int in size:
-		if not exact_number(sprite.pixels[at],int(original.pixels[at])) or not sprite.opaque[at] is bool or sprite.opaque[at] != original.opaque[at]: return false
+	if not original.get("sha256") is String or original.sha256.length() != 64: return false
+	if flight_signature(sprite) != original.sha256: return false
 	if not sprite.get("origin") is Array or sprite.origin.size() != 2 or not sprite.get("clip") is Array or sprite.clip.size() != 4: return false
 	for value: Variant in sprite.origin:
 		if not (value is int or value is float) or not is_finite(float(value)) or value != floorf(float(value)) or value < -32768 or value > 32767: return false
@@ -326,7 +373,7 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t
 		if polygons.is_empty(): continue
 		# Whole-owner identity is required: one water face cannot qualify a
 		# building/riverbank face that happens to share its object ID.
-		if polygons.all(func(p): return p is Dictionary and Modern.water_surface(object, p)) and object.get("round_forms", []).is_empty() and not object.has("sprite"):
+		if polygons.all(func(p): return p is Dictionary and audio_water_surface(object, p)) and object.get("round_forms", []).is_empty() and not object.has("sprite"):
 			cue = "river"
 		elif object.get("dynamic_instance", false) and int(object.get("shape_index", -1)) == 163:
 			var actor: Variant = actors.get([int(object.get("pointer", -1)), 163])

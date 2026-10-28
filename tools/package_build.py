@@ -174,6 +174,12 @@ OPTIONAL_COMPARISON_INPUTS = {
     ('godot/tests/test_pc_effect_art.gd', 'tests/particle-material-before.gdshader'),
     ('godot/tests/test_pc_effect_art.gd', 'tests/effects-before.gdshader'),
 }
+# This authoring script creates the file; it never reads it at runtime.
+# Working if: its exact WRITE target may be absent, while READ/load, another
+# caller or any undeclared output still receives the normal closure checks.
+DECLARED_BUILD_OUTPUTS = {
+    ('tools/build_cover_export.gd', '../local-art/cover-blender-v1/source.json'),
+}
 
 
 def check_source_closure(root, names, include_assets=False):
@@ -204,9 +210,13 @@ def check_source_closure(root, names, include_assets=False):
         if include_assets and path.suffix in {'.gd', '.tscn'}:
             # GDScript shader templates contain singly escaped quote delimiters.
             # Match the delimiter pair, preserving bounded path characters.
-            for match in re.finditer(r'''(?<!\\)(\\?)(["'])res://([^"'\\\r\n]+)\1\2''', path.read_text()):
+            text = path.read_text()
+            for match in re.finditer(r'''(?<!\\)(\\?)(["'])res://([^"'\\\r\n]+)\1\2''', text):
                 dependency = match.group(3)
                 if (name, dependency) in OPTIONAL_COMPARISON_INPUTS:
+                    continue
+                if ((name, dependency) in DECLARED_BUILD_OUTPUTS and
+                        re.match(r'\s*,\s*FileAccess\.WRITE\s*\)', text[match.end():])):
                     continue
                 if '%' not in dependency and Path(dependency).suffix and 'godot/' + dependency not in selected:
                     raise ValueError(f'Missing resource dependency: {name} -> godot/{dependency}')

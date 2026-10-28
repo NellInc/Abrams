@@ -258,8 +258,13 @@ class StandaloneRuntimeTests(unittest.TestCase):
         for path in [renderer, engine]: path.parent.mkdir(parents=True, exist_ok=True); path.write_text('synthetic'); path.chmod(0o755)
         with patch.object(runtime, 'prepare_install', return_value=self.root / 'install'), \
              patch.object(runtime, 'renderer_import'), patch.object(runtime, 'renderer_preflight'), \
-             patch.object(runtime.os, 'execve') as execute:
+             patch.object(runtime.os, 'execve') as execute, patch.dict(runtime.os.environ):
+            runtime.os.environ.pop('ABRAMS_AUDIO_ROOT', None)
             runtime.launch(self.bundle, self.home, [])
+            self.assertEqual(execute.call_args[0][2]['ABRAMS_AUDIO_ROOT'], str(self.home/'audio'))
+            runtime.os.environ['ABRAMS_AUDIO_ROOT'] = str(self.root/'owner-chosen-audio')
+            runtime.launch(self.bundle, self.home, [])
+            self.assertEqual(execute.call_args[0][2]['ABRAMS_AUDIO_ROOT'], str(self.root/'owner-chosen-audio'))
         self.assertIn('--pc-only', execute.call_args[0][1])
 
     def test_older_profile_derives_missing_pc_data_lazily(self):

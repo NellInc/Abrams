@@ -1,10 +1,12 @@
 extends RefCounted
+const PrivateAudio = preload("res://scripts/pc_private_audio.gd")
+var private_audio_root: String = PrivateAudio.root_directory()
 ## Optional CC0 detail at already-qualified source events and visible scenes.
 const CHANNELS := ["foley", "interface", "fire"]
 const CUES := ["reload", "ui_accept", "ui_back", "ui_error", "debris", "pressure", "fire"]
 const FACTORS := {"reload":0.35,"ui_accept":0.22,"ui_back":0.22,"ui_error":0.22,"debris":0.12,"pressure":0.10,"fire":0.12}
 const SCENE1_RGB := "d695c1d5da1c39a6518729038d44888b4708babeabc5ef2a7c399c9bcb0d9805"
-var directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-supplemental-effects-v1")
+var directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-supplemental-effects-v1")
 var host: Node
 var streams: Dictionary = {}
 var players: Dictionary = {}

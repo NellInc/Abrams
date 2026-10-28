@@ -1,5 +1,6 @@
 extends SceneTree
 ## Generated PCM and masks; native mode also reads the production owner target.
+const PrivateAudio = preload("res://scripts/pc_private_audio.gd")
 const Audio = preload("res://scripts/pc_audio.gd")
 const World = preload("res://scripts/pc_world_audio.gd")
 const Ownership = preload("res://scripts/pc_modern_ownership.gd")
@@ -63,6 +64,15 @@ func run() -> void:
 		for error: String in errors:printerr("FAIL: "+error)
 		quit(0 if errors.is_empty() else 1)
 		return
+	var private_root: String=output.path_join("explicit-audio-root")
+	DirAccess.make_dir_recursive_absolute(private_root)
+	check(PrivateAudio.select_root(private_root,"/unrelated/project/",false)==private_root,"explicit absolute private root selects only its owner-managed directory")
+	check(PrivateAudio.select_root("","/checkout/godot/",false)=="/checkout/local-audio","unset private root preserves incumbent layout")
+	check(PrivateAudio.select_root(private_root,"/checkout/godot/",true).is_empty(),"Web cannot enable native private audio")
+	for invalid: String in ["relative","~/audio","res://audio","user://audio","https://example.org/audio",private_root+"\n",private_root+"-missing"]:
+		check(PrivateAudio.select_root(invalid,"/checkout/godot/",false).is_empty(),"explicit malformed or missing root cannot fall back")
+	for name: String in PrivateAudio.BANKS:check(PrivateAudio.bank_directory(private_root,name)==private_root.path_join(name),"fixed optional bank resolves without changing manifest or media: "+name)
+	check(PrivateAudio.bank_directory(private_root,"../foreign").is_empty() and PrivateAudio.bank_directory("","pc-world-effects-v1").is_empty(),"fixed bank allowlist and disabled root fail closed")
 	var directory: String=output.path_join("generated-bank")
 	bank(directory)
 	var audio: Node=isolated_audio()
@@ -86,6 +96,13 @@ func run() -> void:
 	check(World.candidates(duplicate).is_empty(),"reused actor identity excluded")
 	var wreck: Dictionary=source(164)
 	check(World.candidates(wreck).is_empty(),"wreck cannot run Hind engine")
+	for color: int in [4,6]:
+		var remapped: Dictionary=source(40);remapped.objects[0].polygons[0].colors=[color,color]
+		check(World.candidates(remapped).get(1,{}).get("cue")=="river","same exact original water identity survives original normal/thermal source remap")
+	for colors: Variant in [[6.5,6],[true,6],["6",6],[6,4],[3,3]]:
+		var remapped: Dictionary=source(40);remapped.objects[0].polygons[0].colors=colors
+		check(World.candidates(remapped).is_empty(),"mixed or malformed colours cannot invent a water source")
+
 	check(World.candidates(source(40)).size()==1,"pinned water source admits")
 	var water: Dictionary=source(40);water.objects[0].polygons.append(water.objects[0].polygons[0].duplicate(true));water.objects[0].polygons[1].primitive=1
 	check(World.candidates(water).is_empty(),"mixed-owner water/land excluded")
@@ -486,15 +503,19 @@ func t72_checks(base_directory: String, ui: Image, mask: Image) -> void:
 
 func flight_checks(ui: Image, mask: Image) -> void:
 	var resources: Dictionary = {}
+	var fixtures: Dictionary = {}
+	check(World.read_flight_sources("/no-optional-art-here").size()==10,"PC phase expectations need no optional Genesis files")
 	for index: int in World.FLIGHT_PHASES:
 		var phase: Dictionary = World.FLIGHT_PHASES[index]
 		var pixels: Array = []; var opaque: Array = []
 		pixels.resize(int(phase.width)*int(phase.height)); pixels.fill(10); opaque.resize(pixels.size()); opaque.fill(true)
-		resources[index] = {"pixels":pixels,"opaque":opaque}
+		fixtures[index] = {"pixels":pixels,"opaque":opaque}
+		# Explicit trusted synthetic verifier injection, never production expectations.
+		resources[index] = {"sha256":World.flight_signature(fixtures[index])}
 	var data: Dictionary = {"objects":[],"unsupported":[],"camera":{"clip":[32,13,287,109]},"world":{"presentation_effects":{"schema":1,"shape_base":115},"dynamic":[]}}
 	for index: int in World.FLIGHT_PHASES:
 		var phase: Dictionary = World.FLIGHT_PHASES[index]
-		var sprite: Dictionary = resources[index].duplicate(true)
+		var sprite: Dictionary = fixtures[index].duplicate(true)
 		sprite.merge({"index":index,"flags":phase.flags,"width":phase.width,"height":phase.height,"origin":[100,30],"clip":[32,13,287,109]})
 		data.objects=[{"kind":"sprite","sprite_status":"observed","dynamic_instance":true,"pointer":99,"shape_index":phase.shape,"root":phase.root,"bitmap_index":index,"polygons":[],"sprite":sprite}]
 		data.world.dynamic=[{"pointer":99,"shape_index":phase.shape,"shape_header_word":100,"speed_raw":250}]
@@ -512,8 +533,11 @@ func flight_checks(ui: Image, mask: Image) -> void:
 			check(World.candidates(changed,true,true,resources).is_empty(),"flight requires exact source actor and speed")
 		var changed: Dictionary=data.duplicate(true);changed.world.dynamic.append(changed.world.dynamic[0].duplicate())
 		check(World.candidates(changed,true,true,resources).is_empty(),"ambiguous recycled projectile join stays silent")
-		changed=data.duplicate(true);changed.objects[0].sprite.pixels[0]=true
-		check(World.candidates(changed,true,true,resources).is_empty(),"pixel booleans cannot coerce source colours")
+		for value: Variant in [true,0.5,-1,16,266,NAN,INF,"10",11]:
+			changed=data.duplicate(true);changed.objects[0].sprite.pixels[0]=value
+			check(World.candidates(changed,true,true,resources).is_empty(),"changed or malformed source pixels cannot match the fingerprint")
+		changed=data.duplicate(true);changed.objects[0].sprite.opaque[0]=false
+		check(World.candidates(changed,true,true,resources).is_empty(),"changed source opacity rejects")
 		changed=data.duplicate(true);changed.objects[0].sprite.opaque[0]=1
 		check(World.candidates(changed,true,true,resources).is_empty(),"opacity integers cannot coerce original booleans")
 		changed=data.duplicate(true);changed.world=[]
@@ -764,6 +788,8 @@ func environment_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	field.objects[0].root = 5109
 	field.objects[0].polygons[0].merge({"primitive":5123,"fill_mode":1,"colors":[8,8]},true)
 	check(World.candidates(field).get(1,{}).get("cue") == "field", "exact original static green field admits candidate")
+	var thermal_field: Dictionary=field.duplicate(true);thermal_field.objects[0].polygons[0].colors=[3,3]
+	check(World.candidates(thermal_field).get(1,{}).get("cue")=="field","exact field identity retains ambience under original thermal remap")
 	json_field_checks(field)
 	for mutation: Dictionary in [{"root":5110},{"dynamic_instance":true},{"sprite":{}},{"draw_order":[]}]:
 		var changed: Dictionary = field.duplicate(true); changed.objects[0].merge(mutation,true)

@@ -160,6 +160,21 @@ class PackagingTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, error):
                         package.check_source_closure(root, [caller], include_assets=True)
 
+    def test_declared_authoring_output_is_not_a_missing_input(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); caller = 'tools/build_cover_export.gd'
+            path = root/caller; path.parent.mkdir(parents=True)
+            target = 'res://../local-art/cover-blender-v1/source.json'
+            path.write_text(f'var output = FileAccess.open("{target}",FileAccess.WRITE)\n')
+            package.check_source_closure(root, [caller], include_assets=True)
+            for expression in [f'FileAccess.open("{target}",FileAccess.READ)',
+                               f'FileAccess.open("{target}",FileAccess.WRITE_READ)',
+                               f'load("{target}")',
+                               'FileAccess.open("res://unrelated.json",FileAccess.WRITE)']:
+                path.write_text('var resource = '+expression+'\n')
+                with self.assertRaisesRegex(ValueError, 'Missing (?:code|resource) dependency'):
+                    package.check_source_closure(root, [caller], include_assets=True)
+
     def test_escaped_resource_scanner_cannot_absorb_adjacent_dynamic_text(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); name = 'godot/scripts/a.gd'; path = root / name
