@@ -2,9 +2,10 @@
 
 28 October 2026. Planning checkpoint: `f2395607724d1c63d9a013af85f82f4dca7b5629`.
 This supersedes older acquisition checklists, including the old T-72 and TOW
-download holds. This planning pass makes no purchase, subscription, vendor
-correspondence, runtime change or publication. It neither revokes earlier
-bounded execution approvals nor grants new spending or release authority.
+download holds. Nell subsequently approved execution with reuse/free sources
+where feasible and explicitly excluded MiGs. The first reuse batch is now
+implemented and verified locally. No new spending, agreement, vendor email,
+app/pack rebuild or publication occurred. See the execution receipt below.
 
 ## Completion criteria
 
@@ -38,7 +39,7 @@ Already integrated locally: Abrams cannon/MG/motors, T-72, T-80, Hind, M113,
 Bradley, generic tank fallback, river, cow, gentle field air, German-directed
 woodland, selected fire, visible truck/track texture, switch, qualified reload,
 interface, debris/pressure and visible guided-flight fizz. Current native
-settings have29saved controls. Original radio, crew and music choices stay fixed.
+settings have31saved controls, including independent tracked/wheeled fallbacks. Original radio, crew and music choices stay fixed.
 
 Keep those acquisitions and listening decisions closed. The recorded TOW
 ignition is prepared but uninstalled; only the approved flat flight fizz is
@@ -51,16 +52,16 @@ The browser shell's compatibility update is not an asset-bearing game release.
 
 | Priority | Family | Current position | Action and acceptance |
 |---|---|---|---|
-| P1 | Shared BMP-1/BMP-2 engine | Both approved preview references remain unowned. One shared family source is explicitly approved. | Obtain one clean steady exterior BMP original through a lawful affordable route. Label its recorded model accurately; no claim a BMP-1 take was recorded from BMP-2. Bind exact intact133/135only after motion/owner proof. |
-| P1 | BTR-70 engine | No suitable original qualified. Generic tank fallback is not currently assigned to it. | Seek exact exterior steady recording and verify original source/class137. Do not substitute BTR-80/82, onboard material, a game rip or passing vehicle. |
-| P1 | BRDM-2 engine | Retained26second idle lead has unstated subtype/perspective and a rejected subscription route. | Acquire only a genuinely suitable exact-model exterior source, then qualify class141. No renewed subscription or email loop. |
-| P2 | ACRV-2 | Original class139is present; no dedicated current bed. | Establish authentic vehicle/source family before searching or binding a recording. A neighbouring BMP recording does not establish its identity. A clearly labelled family fallback needs a justified source contract. |
-| P2 | Source BRDM-3 | Original class143is separate; no dedicated bed. | Resolve the original label and equipment relationship. Consider a shared BRDM-family texture only with explicit provenance/label qualification and exact owner matching. |
-| P2 | Source F-ST | Class123is present, physical identity unresolved. | Identify its intended source category. If no actual recordable model exists, use an honestly generic authored/fallback treatment after qualification. Do not advertise an authentic F-ST recording. |
+| P1 | Shared BMP-1/BMP-2 engine | Exact intact133/135now use the accepted M113 master as a clearly generic tracked-vehicle fallback. Both dedicated preview references remain unowned. | Generic coverage is implemented. A genuinely affordable clean steady exterior BMP original remains an authenticity sourcing gap; no claim that the reused M113 take was recorded from a BMP. |
+| P1 | BTR-70 engine | Exact intact137now uses the selected CC0 truck master as a generic wheeled-vehicle fallback. | Generic coverage is implemented. Exact exterior BTR-70 recording remains an authenticity sourcing gap; no BTR-80/82, onboard, game-rip or passby claim. |
+| P1 | BRDM-2 engine | Exact intact141now uses the selected CC0 truck master as a generic wheeled-vehicle fallback. The26second dedicated lead stays unqualified. | Generic coverage is implemented. Exact-model exterior recording remains a sourcing gap, with no subscription or email detour. |
+| P2 | ACRV-2 | Manual identifies a tracked mobile command vehicle. Exact intact139now shares the generic tracked fallback, without a real powertrain/model claim. | Unit contract is verified; the retained native ACRV silhouette was too small for the unchanged visibility threshold and correctly stayed silent. A larger genuine source witness remains unverified. |
+| P2 | Source BRDM-3 | Manual describes a BRDM-2 development using Spandrel. Exact intact143now shares the generic wheeled fallback. | Source label is preserved, without claiming an unrelated modern BRDM-3 recording. Genuine retained native moving-owner proof passes. |
+| P2 | Source F-ST | Manual explicitly categorises FST-I as a main battle tank. Intact123now uses the accepted generic tank fallback. Physical model identity is unresolved. | No authentic F-ST recording claim. Unit contract passes; the retained native case was tiny and correctly silent, so a larger genuine source witness remains unverified. |
 | P2 | Other Abrams instances, if encountered | Own-tank motor is source-driven; class125has no general world-engine bed. | Confirm an ordinary mission actually needs it and establish an authoritative own-body exclusion. Reuse acquired Abrams material, with no doubled player motor or new purchase. |
 | P3 | T-62/T-64/M60A3 exact engines | Current approved generic tank fallback covers115/117/127. | Optional authenticity upgrades only when a clean cheap/free exact source appears. They are not currently silent acquisition blockers. |
 | P3 | Truck and isolated tracks | Generic truck and chain-like track texture are already bound. Exact truck model and authentic isolated tracks are unverified. | First inspect already licensed long Abrams vehicle material and free bank for usable track detail. No additional engine layer, new ground-material inference or invented track surface classifier. |
-| P3 | Source MIGS | Source label166exists, exact encountered aircraft identity and audio boundary unresolved. | Establish actual ordinary mission occurrence/type before any recording purchase. No generic flyby-to-idle conversion. A-10 and Bren Carrier remain excluded. |
+| Excluded | MiGs, A-10, Bren Carrier | Explicit human exclusions. | No sourcing, binding or new playback. Preserve unknown original requests without guessing that any is a jet. |
 
 For new loops: prefer a stable exterior run with enough clean material for an
 unobtrusive cycle. Preserve the original file, measure seam energy and sample
@@ -103,10 +104,14 @@ searches without a specific new source or offer.
 The TOW file and accepted edit already exist. Original request15is conditional
 on a successful guided allocation targeting the player; it may be a threat
 warning. Another launch path does not use that request. Keep all existing
-requests intact. Use original disassembly, existing observers and an ordinary
-source route to establish launch occurrence, actor association and once-only
-identity. If observer-side birth/free generation is necessary, qualify that
-bounded cross-component contract before implementation.
+requests intact. The source study confirms a new native observation and host lifecycle contract
+is necessary. Read-only challenge identified a critical timing boundary: only
+the first source framebuffer submission after initialized birth can make the
+sole decision, and its pass must start after birth. Stale, hidden or skipped
+submissions consume that decision silently. Waiting for a later qualifying
+view would replay old launches. Direct pool clears/reset coverage and real
+callback ordering remain unresolved; no new observer or ignition is installed.
+See `artifacts/audio-execution-20261028/ignition-binding-study.md`.
 
 Acceptance: one original launch gives one apparent launch; hidden/suppressed
 births stay consumed, visibility re-entry never replays ignition, both flare
@@ -143,9 +148,12 @@ levels; no new bird actors, random distant moos or weather simulation.
 | Footstep contacts | 2 | Original infantry footstep/contact event. |
 | Pistol, rifle and SMG reserves | 3 | Actual original matching weapon event. |
 
-These files are already sourced. Classify each action as demonstrated,
-not yet exposed, or absent from the original. Implement demonstrated actions
-only; absent actions close as not applicable. Do not keep buying stock for
+These files are already sourced. The execution audit finds16unresolved source
+actions,2related actions already covered (reload/breech and cannon/recoil),
+and3weapon reserves absent from the verified player weapon suite only. It
+does not prove global absence or qualify a new distinct event. All21remain
+unbound as separate cues. Implement only demonstrated distinct actions; no
+additional stock purchase solves missing action evidence. Do not keep buying stock for
 mechanics the original never performs. Preserve requests7/9/10/15/16until their
 meaning is proved. Briefing narration similarly requires complete utterance
 grouping and interruption identity before any new speech generation.
@@ -229,3 +237,47 @@ merely to produce this plan, and no audio or accepted mix was changed.
 
 Working if: batches advance the actual gaps, preserve all current acceptance,
 and stop at real source, rights, human-listening or target-release boundaries.
+
+
+## 6. Executed reuse batch, 28 October 2026
+
+The local development game now covers seven additional intact source classes:
+BMP-1/2 and ACRV-2 use the accepted M113 master as a generic tracked texture;
+BTR-70, BRDM-2 and the original BRDM-3 label use the CC0 generic truck master;
+FST-I uses the accepted generic tank loop. No acquired file was rewritten or
+copied. Two independent native saved controls select Off through100%.
+
+One physical M113/Truck player serves each donor and fallback family. Its gain
+is the maximum of currently admitted independent requests, never their sum.
+An eligible donor/fallback handoff keeps the existing loop running. Both Off
+or loss of all qualified owners stops it. Existing donor settings do not mute
+or migrate into the new controls. Missing/invalid donor banks also disable
+their fallback. Tracked owners can qualify the existing quiet chain texture;
+wheeled owners cannot. All incumbent gains and source-owned motors remain
+unchanged. Expanded coverage can be audible in previously silent scenes; this
+is not a promise of identical scene loudness after enabling new controls.
+
+Root verified1152world,681mix and33limiter assertions with clean final engine
+logs. Native132checks use seven genuine VGA-paired retained source packets and
+unchanged production geometry/UI/painter masks. Exact own-owner positives are
+BMP-1,BMP-2,BTR-70,BRDM-2andBRDM-3. ACRV/FST cases are correctly negative at the
+unchanged four-source-pixel threshold. Settings14checks and two inspected
+native screenshots verify reachable controls at wide/compact sizes. No fresh
+live guest, physical-device, new human-listening or pacing claim is made.
+
+All1528sealed incumbent audio/bank files are unchanged. Ten private banks,
+26PCMfiles and13physical world players remain; logical world cues increase to15
+and native saved controls to31(Web13unchanged). This batch costsUS$0.
+Initial sandbox-only checks encountered user-data/certificate access failures;
+those logs were rejected and supported host-permission reruns passed. The static
+linter retains its known unrelated formatted voice-filename false positive
+and12warnings, with no touched-file finding.
+
+Current evidence: `artifacts/audio-execution-20261028/verification.json`,
+`source-cases.json`, `native/verification.json`, `settings/verification.json`,
+`source-action-audit.json` and the unchanged-file seal. Local source/private
+runtime only; no application, game pack or public audio release was made.
+
+Working if: these exact visible moving owners can reuse the accepted beds
+without summed duplicates, independent Off survives, wrecks/hidden/tiny/UI-
+covered owners remain silent, and MiGs receive no new sound or sourcing.

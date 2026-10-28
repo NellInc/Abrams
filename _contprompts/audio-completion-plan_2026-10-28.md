@@ -1,5 +1,5 @@
 ---
-status: remaining_sound_plan_ready
+status: reuse_batch_locally_verified_remaining_source_rights_gates
 current_planning_commit: f2395607724d1c63d9a013af85f82f4dca7b5629
 current_plan: docs/pc-audio-remaining-plan.md
 base_commit: 6a19ea98c7accef58f4530b93bbe2c3992936124
@@ -32,6 +32,33 @@ it does not revoke earlier bounded approvals or create new purchase authority.
 
 Working if: resumed work consumes that current plan and real holds instead of
 reopening completed purchases or treating older checklist rows as current facts.
+
+## Latest execution checkpoint, 28 October 2026
+
+Nell approved the remaining plan with reuse/free material where feasible and
+explicitly excluded MiGs. Source now adds generic tracked133/135/139and
+wheeled137/141/143coverage using existing approved M113/CC0Truck masters,
+with shared physical players/max admitted gain and two independent saved
+controls. Manual-qualified FST123uses the existing generic tank loop. No new
+media/bank/player, spend, agreement, push or release. All1528sealed incumbent
+files unchanged. Root world1152/mix681/limiter33/native132/Settings14pass;
+Settings screenshots inspected. Native source positives133/135/137/141/143;
+139/123remain correctly silent in tiny retained cases. No fresh guest/device
+or new human-audition verdict. Evidence artifacts/audio-execution-20261028/.
+
+Recorded ignition still cannot safely use request15or snapshot appearance.
+A bounded source/architecture study requires fresh native lifecycle hooks,
+first-framebuffer-submission-only consumption and frozen owner generations.
+Direct record-clear/reset and real callback order still need proof; no native
+ABI/observer edits were made. Accepted flight fizz remains unchanged. All21
+reserve roles remain unbound separately (16unresolved,2already covered related
+actions,3absent from verified player weapons only). Exact affordable clean
+BMP/BTR/BRDM originals and target-edition rights/release remain open. No MiGs,
+A-10,Bren, subscription/email detour, Bluezone-preview derivative or guessed
+request semantics. Do not reopen approved loops/levels or call this a release.
+
+Working if: resume from actual source/current receipts, keep expanded coverage
+honestly generic and all original timing/masks/accepted files unchanged.
 
 ## Authority and current boundary
 

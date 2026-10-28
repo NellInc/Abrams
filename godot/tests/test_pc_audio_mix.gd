@@ -275,11 +275,11 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==29,"one external Audio menu, twenty-nine independently specified gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==31,"one external Audio menu, thirty-one independently specified gain groups")
 	check(Menu.DEFAULTS.t72==100 and Menu.TITLES.t72=="T-72 engine" and menu.audio_channels().has("t72") and menu.menus.has("t72"),"native T72 has its own100% default and exact title")
 	var t72_choices: PopupMenu=menu.menus.t72
 	check(t72_choices.get_item_text(t72_choices.get_item_index(0))=="Off" and t72_choices.get_item_index(100)>=0,"native T72 exposes independent Off through100%")
-	for cue: String in ["m113","bradley"]:
+	for cue: String in ["m113","bradley","trackedfallback","wheeledfallback"]:
 		check(Menu.DEFAULTS[cue]==100 and Menu.TITLES.has(cue) and menu.audio_channels().has(cue) and menu.menus.has(cue),"native allied control has an independent title and unchanged100% default: "+cue)
 		var choices: PopupMenu=menu.menus[cue]
 		check(choices.get_item_text(choices.get_item_index(0))=="Off" and choices.get_item_index(100)>=0,"native allied control exposes Off through100%: "+cue)
@@ -369,7 +369,7 @@ func run() -> void:
 	check(reload.load_settings() and reload.settings.m113==0 and reload.settings.bradley==37,"allied controls persist independent Off and intermediate gain")
 	menu.choose("m113",43);menu.choose("bradley",0)
 	check(reload.load_settings() and reload.settings.m113==43 and reload.settings.bradley==0,"each allied class independently retains saved gain and mute")
-	for cue: String in ["t72","missileflight","woodland","truck","tracks","foley","interface","fire"]:
+	for cue: String in ["t72","missileflight","woodland","truck","tracks","foley","interface","fire","trackedfallback","wheeledfallback"]:
 		menu.choose(cue,0)
 		check(reload.load_settings() and reload.settings[cue]==0,"new private control saves Off independently: "+cue)
 		menu.choose(cue,37)

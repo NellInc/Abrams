@@ -121,6 +121,7 @@ func run() -> void:
 	await flight_checks(ui,mask)
 	await allied_checks(directory,ui,mask)
 	await detail_checks(directory,ui,mask)
+	await family_checks(directory,ui,mask)
 	if native:
 		await native_checks(audio,original,ui)
 		if "--retained-field" in args: await retained_field_checks(args[args.find("--retained-field")+1])
@@ -277,7 +278,7 @@ func tank_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		for speed: int in [-32768,-1,1,32767]:
 			moving.world.dynamic[0].speed_raw = speed
 			check(World.candidates(moving,false).get(1,{}).get("cue")=="tank", "generic accepts the same finite signed16 forward/reverse movement")
-	for shape: int in [116,118,120,122,123,124,125,126,128,129,131,133,135,137,139,141,143,159,163]:
+	for shape: int in [116,118,120,122,124,125,126,128,129,131,133,135,137,139,141,143,159,163]:
 		check(not World.candidates(tank_source(shape),false).values().any(func(item):return item.cue=="tank"), "wrecks/Abrams/unverified/IFV/other identities cannot borrow generic tank recording: "+str(shape))
 	for speed: Variant in [0,-32769,32768,0.5,NAN,INF,"10",true]:
 		var changed: Dictionary = data.duplicate(true); changed.world.dynamic[0].speed_raw=speed
@@ -532,6 +533,77 @@ func flight_checks(ui: Image, mask: Image) -> void:
 	check(not loaded.has("error") and loaded.streams.missileflight.loop_end==384000,"flight loader accepts exact steady8second loop")
 	FileAccess.open(path.path_join("missileflight.wav"),FileAccess.WRITE).store_string("invalid")
 	check(reader._read_bank(path,"private visible-missile flight",World.FLIGHT_CUES).has("error"),"flight hash mismatch rejects optional bank")
+
+func family_checks(base_directory: String, ui: Image, mask: Image) -> void:
+	check(World.FAMILY_SHAPES=={133:"trackedfallback",135:"trackedfallback",139:"trackedfallback",137:"wheeledfallback",141:"wheeledfallback",143:"wheeledfallback"},"generic families preserve six exact intact source identities")
+	for shape: int in World.FAMILY_SHAPES:
+		var data: Dictionary=tank_source(shape)
+		var original: String=JSON.stringify(data)
+		var cue: String=World.FAMILY_SHAPES[shape]
+		check(World.candidates(JSON.parse_string(original)).get(1,{}).get("cue")==cue,"JSON source maps to honestly generic family: "+str(shape))
+		check(World.candidates(tank_source(shape+1)).is_empty(),"family wreck/replacement stays silent: "+str(shape+1))
+		for speed: Variant in [-32768,-1,1,32767,0,-32769,32768,0.5,NAN,INF,"10",true]:
+			var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].speed_raw=speed
+			check((not World.candidates(changed).is_empty())==(speed is int and speed in [-32768,-1,1,32767]),"family requires nonzero signed16 motion: "+str(shape))
+		for mutation: Dictionary in [{"shape_index":shape+0.5},{"pointer":123.5},{"pointer":"123"},{"pointer":-1},{"pointer":65536},{"dynamic_instance":false}]:
+			var changed: Dictionary=data.duplicate(true);changed.objects[0].merge(mutation,true)
+			check(World.candidates(changed).is_empty(),"malformed drawn family cannot borrow an actor")
+		var duplicate: Dictionary=data.duplicate(true);duplicate.world.dynamic.append(duplicate.world.dynamic[0].duplicate())
+		check(World.candidates(duplicate).is_empty(),"ambiguous family pointer/model cannot supply motion")
+		var foreign: Dictionary=data.duplicate(true);foreign.world.dynamic[0].pointer=124
+		check(World.candidates(foreign).is_empty(),"foreign family actor cannot supply motion")
+		ui.fill(Color.BLACK)
+		var token: Dictionary={"size":mask.get_size(),"clip":data.camera.clip,"selected":World.candidates(data),"ui":ui.get_data()}
+		mask.fill(Color8(1,0,8));check(World.visible_cues(mask,token)==[cue],"actual family owner qualifies")
+		for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,8,0)]:
+			mask.fill(colour);check(World.visible_cues(mask,token).is_empty(),"foreign/line/transparent family owner stays silent")
+		mask.fill(Color8(0,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+		check(World.visible_cues(mask,token)==[cue],"thin family gets two separated same-owner source pixels")
+		ui.fill(Color.WHITE);token.ui=ui.get_data()
+		check(World.visible_cues(mask,token).is_empty(),"opaque original UI silences thin family")
+		ui.fill(Color.BLACK);token.ui=ui.get_data();mask.set_pixel(820,231,Color8(2,0,8))
+		check(World.visible_cues(mask,token).is_empty(),"separate family owners cannot combine witnesses")
+		mask.set_pixel(815,241,Color8(1,0,8))
+		check(World.visible_cues(mask,token).is_empty(),"family keeps four-source-pixel separation")
+		mask.set_pixel(815,241,Color8(0,0,0));mask.set_pixel(800,241,Color8(0,0,0))
+		for pixel: Vector2i in [Vector2i(800,236),Vector2i(790,241),Vector2i(810,241)]:mask.set_pixelv(pixel,Color8(1,0,8))
+		check(World.visible_cues(mask,token)==[cue],"complete family scan finds separated endpoints around first witness")
+		check(JSON.stringify(data)==original,"family observation leaves source bytes unchanged")
+	var directory: String=base_directory+"-family"
+	bank(directory,World.ALLIED_CUES,"private visible-allied cues")
+	bank(directory+"-detail",World.DETAIL_CUES,"private visible-world detail")
+	var audio: Node=isolated_audio();audio.recorded_effect_directory=""
+	audio.world_audio.directory="";audio.world_audio.environment_directory="";audio.world_audio.soviet_directory=""
+	audio.world_audio.allied_directory=directory;audio.world_audio.detail_directory=directory+"-detail"
+	root.add_child(audio)
+	var world: RefCounted=audio.world_audio
+	check(world.players.size()==5 and world.streams.size()==5 and not world.players.has("trackedfallback") and not world.players.has("wheeledfallback"),"reuse adds no duplicate player, stream or media file")
+	for pair: Array in [["m113","trackedfallback"],["truck","wheeledfallback"]]:
+		var donor: String=pair[0];var alias: String=pair[1];var player: AudioStreamPlayer=world.players[donor]
+		world.admitted.assign([donor,alias])
+		for levels: Array in [[40,100],[100,40],[0,100],[100,0],[0,0],[30,50]]:
+			audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,donor:levels[0],alias:levels[1]})
+			var expected: float=0.65*0.30*maxi(levels[0],levels[1])/100.0
+			check(player.playing==(expected>0),"independent donor/alias Off preserves only eligible contributors")
+			if expected>0:check(is_equal_approx(db_to_linear(player.volume_db),expected) and player.pitch_scale==1.0,"reuse uses maximum gain once, fixed pitch, never additive doubling")
+		check(not world.players.tracks.playing if alias=="wheeledfallback" else world.players.tracks.playing,"only tracked family starts track texture")
+		audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,donor:40,alias:100})
+		await process_frame
+		var position: float=player.get_playback_position()
+		world.admitted.assign([donor]);world.refresh()
+		check(player.playing and is_equal_approx(db_to_linear(player.volume_db),0.65*0.30*0.40) and player.get_playback_position()>=position,"owner loss reduces to remaining requested gain without loop restart")
+		world.admitted.assign([alias]);world.refresh()
+		check(player.playing and player.get_playback_position()>=position,"eligible donor-to-alias handoff keeps loop position")
+		audio.set_transport_muted(true)
+		check(world.players.values().all(func(p):return not p.playing),"transport immediately stops all shared physical players")
+		audio.set_transport_muted(false)
+		check(not player.playing and world.admitted.is_empty(),"unmute cannot replay stale family visibility")
+	world.admitted.assign(["trackedfallback","wheeledfallback"]);world.refresh()
+	check(world.players.m113.playing and world.players.truck.playing,"both generic families coexist through their own masters")
+	audio.apply_audio(packet(40));audio.apply_audio(packet(20))
+	check(world.admitted.is_empty() and world.players.values().all(func(p):return not p.playing),"source rewind cancels every shared admission")
+	check(await audio.drain_for_shutdown(),"shared physical players drain once")
+	audio.free()
 
 func allied_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	check(World.ALLIED_CUES==["m113","bradley"] and World.ALLIED_SHAPES=={129:"m113",131:"bradley"}, "allied bank and exact intact original roster stay bounded")

@@ -20,18 +20,24 @@ const FLIGHT_PHASES := {
 const FLIGHT_SOURCE_HASH := "8d6483bdc0ad1df38338e24c2bd413ca497603d0aea819034b72a1862f19db41"
 const TANK_CUES := ["tank"]
 const TANK_FRAME_COUNT := 1152000
-# Intact original tanks only. Abrams already has its dedicated source motor;
-# unverified F-ST and IFV identities are never substituted with this recording.
-const TANK_SHAPES := [115, 117, 119, 121, 127]
+# Intact original tanks only, including the manual's FST-I MBT category.
+# Abrams has its source motor; IFVs have separately labelled family textures.
+const TANK_SHAPES := [115, 117, 119, 121, 123, 127]
 const ALLIED_CUES := ["m113", "bradley"]
 const ALLIED_FRAME_COUNTS := {"m113":1152000, "bradley":480817}
 # Original class table: intact M113129 and M2 131; wrecks130/132 stay silent.
 # These recording names never determine actor allegiance or original requests.
 const ALLIED_SHAPES := {129:"m113", 131:"bradley"}
-const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley"]
+# Generic textures, never claims of recordings from these original models.
+# Replacement/wreck shapes remain excluded. Aliases share one physical donor
+# player, so coexistence cannot sum identical waves or restart a live loop.
+const FAMILY_SHAPES := {133:"trackedfallback",135:"trackedfallback",139:"trackedfallback",
+	137:"wheeledfallback",141:"wheeledfallback",143:"wheeledfallback"}
+const CUE_PLAYERS := {"trackedfallback":"m113","wheeledfallback":"truck"}
+const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley", "trackedfallback"]
 const DETAIL_CUES := ["woodland", "truck", "tracks"]
-const CUES := ["river", "hind", "field", "cow", "t80", "t72", "tank", "m113", "bradley", "woodland", "truck", "tracks", "missileflight"]
-const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04,"missileflight":0.30}
+const CUES := ["river", "hind", "field", "cow", "t80", "t72", "tank", "m113", "bradley", "woodland", "truck", "tracks", "missileflight", "trackedfallback", "wheeledfallback"]
+const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04,"missileflight":0.30,"trackedfallback":0.30,"wheeledfallback":0.30}
 const COW_EXPOSURE_FRAMES := 180
 const COW_COOLDOWN_FRAMES := 2400
 var directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-world-effects-v1")
@@ -247,7 +253,7 @@ static func moving_vehicle_candidate(object: Dictionary, actors: Dictionary, sha
 	# accepted, while hidden ownership and stopped/reused identities stay silent.
 	var dynamic: Variant = object.get("dynamic_instance")
 	var pointer: Variant = object.get("pointer")
-	if (shape not in TANK_SHAPES and not ALLIED_SHAPES.has(shape) and shape != 159) or not ((dynamic is bool and dynamic) or exact_number(dynamic, 1)) or not exact_number(object.get("shape_index"), shape): return false
+	if (shape not in TANK_SHAPES and not ALLIED_SHAPES.has(shape) and not FAMILY_SHAPES.has(shape) and shape != 159) or not ((dynamic is bool and dynamic) or exact_number(dynamic, 1)) or not exact_number(object.get("shape_index"), shape): return false
 	if not (pointer is int or pointer is float) or not is_finite(float(pointer)) or pointer != floorf(float(pointer)) or pointer < 0 or pointer > 65535: return false
 	var match: Variant = actors.get([int(pointer), shape])
 	if match == null or match[1] != 1: return false
@@ -342,6 +348,8 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t
 			cue = "bradley"
 		elif moving_vehicle_candidate(object, actors, 159):
 			cue = "truck" # Original Truck class, recording make/model unspecified.
+		elif FAMILY_SHAPES.has(int(object.get("shape_index", -1))) and moving_vehicle_candidate(object, actors, int(object.shape_index)):
+			cue = FAMILY_SHAPES[int(object.shape_index)]
 		elif positive_source_path(object.get("static_path")) and not object.has("sprite") and object.get("round_forms", []).is_empty():
 			if field_candidate(object, polygons):
 				cue = "field" # Authored visible-field air, not original weather.
@@ -362,7 +370,7 @@ func observe(data: Dictionary, ownership: SubViewport, ui: Image, source_frame: 
 	if bits.count(0) + bits.count(255) != 64000: stop(); return
 	var selected: Dictionary = candidates(data, streams.has("t80"), streams.has("t72"), flight_sources)
 	for id: int in selected.keys():
-		if not streams.has(selected[id].cue) or cue_gain(selected[id].cue) <= 0: selected.erase(id)
+		if not streams.has(CUE_PLAYERS.get(selected[id].cue,selected[id].cue)) or cue_gain(selected[id].cue) <= 0: selected.erase(id)
 	var cow_ready: bool = false
 	if selected.values().any(func(item): return item.cue == "cow") and component_context.has_all(["view","assets","world","camera"]):
 		var snapshot: Dictionary = component_context.view.cow_proof_snapshot(component_context.assets, data)
@@ -445,7 +453,7 @@ static func visible_cues(mask: Image, token: Dictionary) -> Array[String]:
 			elif Vector2(witnesses[id]).distance_squared_to(Vector2(x, y)) >= 16.0:
 				found.append(cue)
 				if found.size() == wanted.size(): return found
-	for cue: String in ["field", "t80", "t72", "tank", "m113", "bradley", "woodland", "truck"]:
+	for cue: String in ["field", "t80", "t72", "tank", "m113", "bradley", "woodland", "truck", "trackedfallback", "wheeledfallback"]:
 		if cue in wanted and cue not in found and narrow_visible(bytes,stride,token,cue): found.append(cue)
 	return found
 
@@ -476,7 +484,7 @@ static func narrow_visible(bytes: PackedByteArray, stride: int, token: Dictionar
 			if pixel.y >= height: continue
 			var source: Vector2i = Vector2i(clip[0]+floori((pixel.x+0.5)*extent.x/width),clip[1]+floori((pixel.y+0.5)*extent.y/height))
 			if source.x<0 or source.x>=320 or source.y<0 or source.y>=200 or token.ui[source.y*320+source.x] != 0: continue
-			if cue in GROUND_MOTOR_CUES or cue == "truck":
+			if cue in GROUND_MOTOR_CUES or cue in ["truck","wheeledfallback"]:
 				# Every endpoint is an actual observed pixel, never a bounding-box
 				# corner or a sum across actors. Before a pair succeeds, all points
 				# fit within <4 pixels of the first: at most49 lattice positions.
@@ -557,9 +565,18 @@ func refresh() -> void:
 			_refresh_cow(player, gain)
 			continue
 		var present: bool = cue in admitted
+		# Working if: independent enabled owners request a maximum, never a sum;
+		# donor-to-fallback handoff keeps position, both absent/Off stops normally.
+		gain = gain if present else 0.0
+		for alias: String in CUE_PLAYERS:
+			if CUE_PLAYERS[alias] == cue and alias in admitted:
+				present = true
+				gain = maxf(gain,cue_gain(alias))
 		# Chain texture follows the same already-visible, source-moving tracked
 		# owners. Original idle channels, trucks and hidden motion cannot start it.
-		if cue == "tracks": present = admitted.any(func(item): return item in GROUND_MOTOR_CUES and cue_gain(item) > 0)
+		if cue == "tracks":
+			present = admitted.any(func(item): return item in GROUND_MOTOR_CUES and cue_gain(item) > 0)
+			gain = cue_gain(cue) if present else 0.0
 		if not allowed() or not present or gain <= 0:
 			host._remember_playback(player); player.stop(); continue
 		# A single mono, fixed-pitch bed. Count, direction, range, allegiance and

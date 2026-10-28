@@ -8568,3 +8568,62 @@ and any recorded-ignition association remain explicit separate gaps.
 Working if: only currently qualified visible flight admits the fizz, visibility
 re-entry never creates ignition, Off/mute/pause/restore silence it immediately,
 and accepted incumbent files/levels plus original source/visibility stay fixed.
+
+## 2026-10-28: free reuse covers remaining ground-vehicle families
+
+Nell approved execution with reuse/free sources where feasible and excluded
+MiGs. Root retained all accepted masters and added two independently saved
+native controls: Other tracked vehicles and Other wheeled vehicles. Exact
+intact BMP-1/2 and ACRV shapes 133/135/139 reuse the approved M113 master as a
+clearly generic tracked texture. BTR-70 and original BRDM-2/3 shapes 137/141/143
+reuse the selected CC0 truck master as a generic wheeled texture. The manual
+explicitly categorises FST-I as a main battle tank, so intact shape 123 now uses
+the existing generic tank fallback. Dedicated recording authenticity is never
+inferred from these bindings; no new audio was bought, downloaded or edited.
+
+Bounded read-only Astra challenge caught identical-wave summation risk. Root
+used one existing physical player per donor and the maximum currently admitted
+independent gain, never a sum. Eligible handoff preserves loop position. Off
+and donor-bank failure remain independent, and only tracked admissions can
+qualify the existing quiet chain texture. Exact actor/motion, same-owner/UI,
+four-source-pixel separation, current frame/epoch and production painter
+contracts are unchanged. Own Abrams motor authority and unknown requests stay
+untouched; no MiG, A-10 or Bren cue was added.
+
+Root checked the integrated diff and final logs: 1152 world, 681 mixer,
+33 limiter, 132 native and 14 Settings assertions pass. Native uses seven
+unchanged VGA-paired original source packets; exact own-owner positives cover
+BMP-1, BMP-2, BTR-70, BRDM-2 and BRDM-3. Tiny ACRV/FST cases correctly stay
+silent. The tightened own-owner native receipt supersedes the earlier family-
+level receipt, preventing another vehicle from lending its pixels. Two Settings
+screenshots were inspected at wide/compact sizes with reachable controls and
+no user preference writes. All 1528 sealed incumbent audio/bank files match.
+Ten banks, 26 private PCM files and 13 physical world players remain. Logical
+world cues total 15, saved native controls 31, Web controls stay 13.
+
+Initial sandbox checks encountered user-data/certificate failures and were
+rejected; supported host-permission reruns passed. Static lint retains the
+known unrelated formatted voice-filename false positive and 12 warnings, with
+no touched-file finding. Native launcher extension warning persists; no script
+or renderer error was accepted. These are retained-source/controlled-clock
+native checks, with no fresh guest, device, hearing or performance claim.
+
+Source audit leaves 16 reserve actions unresolved, two related actions already
+covered, and three matching weapons absent from the verified player suite only.
+No global absence claim or extra sound layering. Original player flag 0x10 is
+identified for future other-Abrams exclusion, but no new NPC binding was made.
+The ignition study establishes that waiting for later visible flight can replay
+an old launch: first framebuffer submission after initialized birth must make
+the sole consumed decision. New lifecycle hooks, reset/record-clear coverage
+and actual callback ordering still need proof; recorded ignition remains
+uninstalled and the approved fizz unchanged. Exact exterior BMP/BTR/BRDM
+recordings and target-edition rights/release remain open.
+
+Evidence: artifacts/audio-execution-20261028/verification.json, native/,
+settings/, source-action-audit.json and ignition-binding-study.md. Current plan
+and continuation authority updated. Local source/private runtime only, no
+pack/app rebuild, public media or new publication in this batch.
+
+Working if: exact visible moving ground families reuse approved beds without
+duplicate loudness, independent Off survives, hidden/wreck/tiny/UI-covered
+owners remain silent, and accepted assets, original timing and masks stay fixed.
