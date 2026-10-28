@@ -58,6 +58,8 @@ var recorded_effect_streams: Dictionary = {}
 var recorded_effects_checked := false
 const WorldAudio = preload("res://scripts/pc_world_audio.gd")
 var world_audio = WorldAudio.new()
+const SupplementalAudio = preload("res://scripts/pc_supplemental_audio.gd")
+var supplemental = SupplementalAudio.new()
 
 func _recorded_effect_error(reason:String) -> bool:
 	if recorded_effect_failure.is_empty():
@@ -127,7 +129,7 @@ func set_mix(settings: Dictionary) -> bool:
 	for key in ["master","effects","voice","motors"]:
 		if not settings.has(key): return false
 	for key in settings:
-		if key not in ["master","effects","voice","motors","music"] and key not in EFFECT_CUES and key not in WorldAudio.CUES: return false
+		if key not in ["master","effects","voice","motors","music"] and key not in EFFECT_CUES and key not in WorldAudio.CUES and key not in SupplementalAudio.CHANNELS: return false
 		if not _integer(settings[key]) or settings[key]<0 or settings[key]>100: return false
 	if settings.has("music"): music_mix=int(settings.music)
 	# Legacy four/five-channel callers retain individual choices already made.
@@ -149,6 +151,7 @@ func set_mix(settings: Dictionary) -> bool:
 	_sync_loops(current_loops)
 	_sync_music()
 	world_audio.refresh()
+	supplemental.refresh()
 	return true
 
 func _ready() -> void:
@@ -175,6 +178,7 @@ func _ready() -> void:
 	add_child(music_tail)
 	_create_presentation_bus()
 	world_audio.setup(self)
+	supplemental.setup(self)
 	set_mix(mix)
 	# Verify and decode local frontend music before the first frontend frame.
 	var independent_bank:=SunoMusic.new()
@@ -187,6 +191,7 @@ func _ready() -> void:
 
 func _stop_source_audio() -> void:
 	world_audio.stop()
+	supplemental.stop()
 	super.stop_all()
 	if is_instance_valid(turret):
 		_remember_playback(turret)
@@ -283,6 +288,7 @@ func _sync_music() -> void:
 
 func _process(delta: float) -> void:
 	world_audio.maintain()
+	supplemental.refresh()
 	if not music_bank.independent: return
 	music_transition=maxf(0.0,music_transition-minf(delta,0.05))
 	if music_transition==0.0 and music_tail.playing: music_tail.stop()
@@ -347,6 +353,7 @@ func speak(cue: String) -> void:
 
 func release_streams() -> void:
 	world_audio.release()
+	supplemental.release()
 	super.release_streams()
 	if is_instance_valid(turret): turret.stream = null
 	if is_instance_valid(music): music.stream=null
@@ -542,6 +549,7 @@ func apply_audio(packet: Dictionary) -> bool:
 		last_frame = int(packet.frame)
 		last_event_id = next_id
 		return true
+	supplemental.begin_packet()
 	# Adopting the resumed worker's epoch is not a program change. Its source
 	# gates (inactive with events, or sound disabled) still stop everything.
 	if (int(packet.epoch) != epoch and not continuing_timeline) or not packet.active or not packet.enabled: _stop_source_audio()
@@ -568,6 +576,7 @@ func apply_audio(packet: Dictionary) -> bool:
 			music_bank.observe_event(event)
 			if event.get("sample") != null: play(event.sample)
 			if event.get("voice") != null: speak(event.voice)
+			supplemental.observe_event(event)
 			delivered += 1
 		else:
 			suppressed += 1

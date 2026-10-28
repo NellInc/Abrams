@@ -603,6 +603,8 @@ func _load_cockpit_presentation(directory: String) -> void:
 	if play_mode: tandem_frame.load_graphics_sources(directory)
 
 func _apply_frontend_music(source: Image, program: Dictionary, presentation: Dictionary, state: Variant=null) -> void:
+	pc_audio.supplemental.observe_frame(source, program,
+		func(): return not _frontdoor_blocked() and audio_menu.window_focused and root.has_focus() and audio_menu.open_menus.is_empty())
 	# Independent score uses no Genesis import and never drives the guest.
 	var allowed: bool=not pc_only or pc_audio.music_bank.independent
 	var context: String=pc_audio.music_context_for_frame(source,program,presentation,state) if allowed else ""

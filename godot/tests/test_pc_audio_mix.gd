@@ -108,6 +108,148 @@ func auxiliary_source_controls() -> void:
 	check(await audio.drain_for_shutdown(), "auxiliary source controls drain")
 	menu.queue_free(); audio.queue_free()
 
+func detail_audio(folder: String) -> Node:
+	var audio: Node=Audio.new()
+	audio.recorded_effect_directory="";audio.supplemental.directory=folder
+	for key: String in ["directory","environment_directory","soviet_directory","tank_directory","allied_directory","detail_directory"]: audio.world_audio.set(key,"")
+	root.add_child(audio)
+	return audio
+
+func detail_fixture(folder: String) -> bool:
+	var created: bool=DirAccess.make_dir_recursive_absolute(folder)==OK
+	check(created,"task-local supplemental fixture directory writes")
+	if not created: return false
+	var manifest: Dictionary={"schema":1,"kind":"private source-qualified detail","cues":{}}
+	for cue: String in Audio.SupplementalAudio.CUES:
+		var stream: AudioStreamWAV=AudioStreamWAV.new();stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=48000
+		var bytes: PackedByteArray=PackedByteArray();bytes.resize(9600);stream.data=bytes
+		var path: String=folder.path_join(cue+".wav")
+		var saved: bool=stream.save_to_wav(path)==OK
+		check(saved,"tiny mono48k16 supplemental fixture writes: "+cue)
+		if not saved: return false
+		manifest.cues[cue]={"file":cue+".wav","sha256":FileAccess.get_sha256(path)}
+	var file: FileAccess=FileAccess.open(folder.path_join("manifest.json"),FileAccess.WRITE)
+	check(file!=null,"fixed seven-cue supplemental manifest writes")
+	if file==null: return false
+	file.store_string(JSON.stringify(manifest))
+	return true
+
+func detail_event(audio: Node, cue: String, id: int, frame: int) -> Dictionary:
+	var event: Dictionary={"id":id,"frame":frame,"epoch":1,"enabled":true,"kind":"sound","ip":0x9107,"return_ip":0,"value":0,"backend":0,"sample":null,"voice":null}
+	if cue=="reload":
+		event.merge({"kind":"readiness_visible","ip":0x35ee,"voice":"loaded","completion_frame":frame-3,
+			"text_sequence":10,"text_draw_sequence":11,"text_return_ip":0x55df,"text_pointer":0x0aca,"text_pixel_sha256":"a".repeat(64)},true)
+	elif cue in ["ui_accept","ui_back","ui_error"]:
+		var voice: String={"ui_accept":"pc_radio_complete","ui_back":"pc_radio_abort","ui_error":"pc_out_of_fuel"}[cue]
+		var spec: Dictionary=audio.crew_catalogue[voice] if cue=="ui_error" else audio.radio_catalogue[voice]
+		event.merge({"kind":"crew_visible" if cue=="ui_error" else "radio_visible","voice":voice,"text":spec.caption,
+			"message_id":id,"speaker":spec.speaker if cue=="ui_error" else null,"ip":spec.assignment_ip if cue=="ui_error" else spec.assignment_ips[0],"parts":[]},true)
+		for index: int in spec.source_variants[0].size():
+			event.parts.append({"rect":[46+18*index,112,18,6],"draw_sequence":index+1,"source_pointer":spec.source_variants[0][index],"pixel_sha256":"a".repeat(64)})
+	else:
+		event.merge({"sample":"impact" if cue=="debris" else "smoke","voice":null if cue=="debris" else "smoke",
+			"return_ip":0x6b25 if cue=="debris" else 0x7c07,"value":6 if cue=="debris" else 3},true)
+	return event
+
+func detail_packet(frame: int, id: int, events: Array) -> Dictionary:
+	var source: Dictionary=packet(frame);source.last_id=id;source.events=events
+	return source
+
+func supplemental_source_controls() -> void:
+	var folder: String=ProjectSettings.globalize_path("user://pc-audio-mix-detail-%d-%d"%[OS.get_process_id(),Time.get_ticks_usec()])
+	if not detail_fixture(folder): return
+	var audio: Node=detail_audio(folder)
+	var detail: RefCounted=audio.supplemental
+	check(detail.failure.is_empty() and detail.streams.size()==7 and detail.players.size()==7,"valid optional supplemental bank publishes exactly seven independent players")
+	for cue: String in Audio.SupplementalAudio.CUES:
+		var player: AudioStreamPlayer=detail.players[cue]
+		check(player.bus==audio.presentation_bus and player.stream.mix_rate==48000 and player.stream.format==AudioStreamWAV.FORMAT_16_BITS and not player.stream.stereo and player.stream.loop_end==4800 and player.stream.loop_mode==(AudioStreamWAV.LOOP_FORWARD if cue=="fire" else AudioStreamWAV.LOOP_DISABLED),"supplemental exact format, loop mode and incumbent limiter: "+cue)
+	var menu: MenuBar=Menu.new();menu.config_path="";menu.audio=audio;root.add_child(menu)
+	var id: int=0
+	for cue: String in ["reload","ui_error","ui_accept","ui_back","debris","pressure"]:
+		id+=1
+		var source: Dictionary=JSON.parse_string(JSON.stringify(detail_packet(10+id,id,[detail_event(audio,cue,id,10+id)])))
+		var original: String=JSON.stringify(source)
+		check(audio.apply_audio(source) and detail.starts.get(cue,0)==1 and detail.players[cue].playing,"complete source-qualified event adds one detail start: "+cue)
+		var delivered: int=audio.delivered
+		check(audio.apply_audio(source) and detail.starts.get(cue,0)==1 and audio.delivered==delivered,"repeated source identity cannot replay supplemental detail: "+cue)
+		check(JSON.stringify(source)==original,"supplemental dispatch never mutates source envelope: "+cue)
+	check(audio.delivered==6 and audio.cursor==2 and audio.last_voice=="smoke" and audio.engine.playing and audio.turret.playing,"detail leaves original effect/crew delivery, cadence and loops intact")
+	detail.play("fire")
+	var sequence: Array=[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)]
+	menu.choose("foley",0)
+	check(not detail.players.reload.playing and not detail.players.debris.playing and not detail.players.pressure.playing and detail.players.ui_accept.playing and detail.players.ui_back.playing and detail.players.ui_error.playing and detail.players.fire.playing,"Mechanical detail Off stops only reload/debris/pressure immediately")
+	check(audio.effects.any(func(player):return player.playing) and audio.voice.playing and audio.engine.playing,"detail mute never cuts original effects, crew or motor")
+	menu.choose("foley",40)
+	check(not detail.players.reload.playing and not detail.players.debris.playing and not detail.players.pressure.playing,"mechanical unmute cannot replay consumed one-shots")
+	gain(detail.players.debris,0.65*0.12*0.4,"Mechanical detail gain multiplies impact debris only")
+	gain(detail.players.pressure,0.65*0.10*0.4,"Mechanical detail gain multiplies smoke pressure only")
+	check(sequence==[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)],"detail controls never advance original source clocks or events")
+	check(audio.apply_audio(detail_packet(20,7,[detail_event(audio,"reload",7,20)])),"fresh readiness after detail gain change accepted")
+	gain(detail.players.reload,0.65*0.35*0.4,"Mechanical detail gain multiplies authored reload level")
+	menu.choose("interface",0)
+	check(["ui_accept","ui_back","ui_error"].all(func(cue):return not detail.players[cue].playing) and detail.players.reload.playing and detail.players.fire.playing,"Interface Off isolates all UI detail from mechanical and fire")
+	menu.choose("interface",35)
+	check(["ui_accept","ui_back","ui_error"].all(func(cue):return not detail.players[cue].playing),"interface unmute cannot replay consumed tones")
+	gain(detail.players.ui_accept,0.65*0.22*0.35,"Interface gain multiplies UI detail independently")
+	menu.choose("fire",0)
+	check(not detail.players.fire.playing and detail.players.reload.playing,"Visible fire Off leaves mechanical detail untouched")
+	menu.choose("fire",100)
+	check(not detail.players.fire.playing,"fire gain alone cannot invent current source visibility")
+	var starts: Dictionary=detail.starts.duplicate()
+	check(audio.apply_audio(detail_packet(40,8,[detail_event(audio,"reload",8,30)])) and detail.starts==starts and audio.receipts[-1].reason=="stale-diagnostic-step","stale source readiness cannot add supplemental detail")
+	var raw: Dictionary=detail_event(audio,"reload",9,41);raw.kind="reload_complete";raw.voice=null
+	check(audio.apply_audio(detail_packet(41,9,[raw])) and detail.starts==starts,"raw completion without visible readiness cannot add reload detail")
+	audio.set_transport_muted(true)
+	var transported: Dictionary=detail_packet(42,10,[detail_event(audio,"reload",10,42)])
+	check(audio.apply_audio(transported) and detail.starts==starts and detail.players.values().all(func(player):return not player.playing),"transport gate consumes source event without supplemental playback")
+	audio.set_transport_muted(false);audio.apply_audio(transported)
+	check(detail.starts==starts and detail.players.values().all(func(player):return not player.playing),"transport recovery cannot replay consumed detail")
+	var muted: Dictionary=detail_packet(43,11,[detail_event(audio,"reload",11,43)]);muted.enabled=false
+	check(audio.apply_audio(muted) and detail.starts==starts,"original source mute suppresses supplemental event")
+	menu.choose("foley",100)
+	check(audio.muted and detail.players.values().all(func(player):return not player.playing),"supplemental gain cannot override original source mute")
+	var disabled: Dictionary=detail_event(audio,"reload",12,44);disabled.enabled=false
+	check(audio.apply_audio(detail_packet(44,12,[disabled])) and detail.starts==starts,"individual original event gate suppresses detail")
+	var previous: Dictionary=detail_event(audio,"reload",13,45);previous.epoch=0
+	check(audio.apply_audio(detail_packet(45,13,[previous])) and detail.starts==starts,"previous source epoch cannot add current detail")
+	var crew: Dictionary={"kind":"crew_visible","sample":null,"voice":"pc_hit_zero_four_three","ip":0x3d6a,"return_ip":0,"value":0,"backend":0,"enabled":true,"epoch":1,
+		"id":14,"frame":46,"message_id":14,"speaker":3,"text":"We've been hit! Bearing 043","parts":[
+			{"rect":[46,112,144,6],"draw_sequence":1,"source_pointer":0x95d,"pixel_sha256":"a".repeat(64)},
+			{"rect":[190,112,18,6],"draw_sequence":2,"source_pointer":0x6472,"pixel_sha256":"b".repeat(64)}]}
+	check(audio.apply_audio(detail_packet(46,14,[crew])) and detail.starts==starts and audio.last_voice=="pc_hit_zero_four_three","qualified non-warning crew report never acquires warning interface tone")
+	# Inject only an already-admitted loop for lifecycle checks. Real source-image
+	# hash qualification is deliberately not claimed by this synthetic fixture.
+	detail.fire_visible=true;detail.fire_frame=audio.last_frame;detail.fire_epoch=audio.epoch;detail.fire_guard=func():return true
+	detail.after_draw()
+	var fire_starts: int=detail.starts.get("fire",0)
+	check(detail.players.fire.playing and fire_starts==int(starts.get("fire",0))+1,"already-admitted diagnostic fire starts one retained loop")
+	audio.continue_timeline()
+	check(audio.apply_audio({"schema":3,"frame":46,"epoch":0,"last_id":0,"events":[],"active":false,"enabled":false}),"supplemental save-continuation primer accepted")
+	detail.after_draw()
+	check(detail.players.fire.playing and detail.starts.get("fire",0)==fire_starts,"save primer retains admitted fire without restarting or inventing image qualification")
+	detail.observe_frame(Image.create(320,200,false,Image.FORMAT_RGB8),{"name":"SIM"},func():return true)
+	detail.after_draw()
+	check(not detail.players.fire.playing and detail.starts.get("fire",0)==fire_starts,"actual nonmatching source image silences retained fire without a new start")
+	audio.reset_timeline()
+	check(not detail.fire_visible and not detail.fire_guard.is_valid() and detail.players.values().all(func(player):return not player.playing),"timeline reset clears supplemental fire admission and playback")
+	check(await audio.drain_for_shutdown(),"supplemental and original streams drain together");menu.free();audio.free()
+	var invalid: Node=detail_audio(folder)
+	var bad: Dictionary=detail_event(invalid,"reload",2,10);bad.text_pixel_sha256="x".repeat(64)
+	var attempt: Dictionary=detail_packet(10,2,[detail_event(invalid,"debris",1,10),bad])
+	var original: String=JSON.stringify(attempt)
+	check(not invalid.apply_audio(attempt) and invalid.supplemental.starts.is_empty() and invalid.cursor==0 and invalid.delivered==0,"invalid final readiness proof rejects complete packet before any original or supplemental onset")
+	check(JSON.stringify(attempt)==original,"rejected complete packet remains unmodified")
+	await invalid.drain_for_shutdown();invalid.free()
+	FileAccess.open(folder.path_join("fire.wav"),FileAccess.WRITE).store_string("corrupt")
+	for bank: String in [folder,folder.path_join("absent")]:
+		var isolated: Node=detail_audio(bank)
+		check(isolated.supplemental.players.is_empty() and isolated.supplemental.streams.is_empty() and (not isolated.supplemental.failure.is_empty() if bank==folder else isolated.supplemental.failure.is_empty()),"last-cue hash failure rejects entire optional bank; absent bank stays optional")
+		check(isolated.apply_audio(packet(10,true,true)) and isolated.failure.is_empty() and isolated.effects[0].playing and isolated.voice.playing and isolated.engine.playing,"invalid/absent supplemental bank leaves incumbent source audio intact")
+		await isolated.drain_for_shutdown();isolated.free()
+	for name: String in Audio.SupplementalAudio.CUES: DirAccess.remove_absolute(folder.path_join(name+".wav"))
+	DirAccess.remove_absolute(folder.path_join("manifest.json"));DirAccess.remove_absolute(folder)
+
 func run() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	output=directory.path_join("artifacts/pc-audio-mix-unit")
@@ -126,11 +268,13 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==21,"one external Audio menu, twenty-one gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==27,"one external Audio menu, twenty-seven independently specified gain groups")
 	for cue: String in ["m113","bradley"]:
 		check(Menu.DEFAULTS[cue]==100 and Menu.TITLES.has(cue) and menu.audio_channels().has(cue) and menu.menus.has(cue),"native allied control has an independent title and unchanged100% default: "+cue)
 		var choices: PopupMenu=menu.menus[cue]
 		check(choices.get_item_text(choices.get_item_index(0))=="Off" and choices.get_item_index(100)>=0,"native allied control exposes Off through100%: "+cue)
+	for cue: String in ["woodland","truck","tracks","foley","interface","fire"]:
+		check(Menu.DEFAULTS[cue]==100 and Menu.TITLES.has(cue) and menu.menus.has(cue),"new native private control has independent title and100% default: "+cue)
 	check(menu.get_menu_title(0)=="Audio","menu title")
 	for child in [menu.popup]+menu.menus.values():
 		for i in child.item_count:
@@ -215,10 +359,16 @@ func run() -> void:
 	check(reload.load_settings() and reload.settings.m113==0 and reload.settings.bradley==37,"allied controls persist independent Off and intermediate gain")
 	menu.choose("m113",43);menu.choose("bradley",0)
 	check(reload.load_settings() and reload.settings.m113==43 and reload.settings.bradley==0,"each allied class independently retains saved gain and mute")
+	for cue: String in ["woodland","truck","tracks","foley","interface","fire"]:
+		menu.choose(cue,0)
+		check(reload.load_settings() and reload.settings[cue]==0,"new private control saves Off independently: "+cue)
+		menu.choose(cue,37)
+		check(reload.load_settings() and reload.settings[cue]==37,"new private control saves exact intermediate gain: "+cue)
 	var legacy := ConfigFile.new()
 	legacy.set_value("audio","effects",40);legacy.set_value("audio","motors",30)
 	legacy.save(menu.config_path)
 	check(reload.load_settings() and reload.settings.effects==40 and reload.settings.motors==30 and reload.settings.hind==100 and reload.settings.river==100 and reload.settings.field==100 and reload.settings.cow==100 and reload.settings.t80==100 and reload.settings.tank==100 and reload.settings.m113==100 and reload.settings.bradley==100 and Audio.EFFECT_CUES.all(func(cue):return reload.settings[cue]==100),"old preferences keep original mix and acquire unchanged individual defaults")
+	check(["woodland","truck","tracks","foley","interface","fire"].all(func(cue):return reload.settings[cue]==100),"old saved preferences acquire all six private defaults without changing incumbent mix")
 	var invalid_allied := ConfigFile.new()
 	invalid_allied.set_value("audio","m113",101);invalid_allied.save(menu.config_path)
 	check(not reload.load_settings() and reload.settings==Menu.DEFAULTS and not reload.save_error.is_empty(),"invalid saved allied gain rejects complete preference file atomically")
@@ -258,6 +408,7 @@ func run() -> void:
 	check(await audio.drain_for_shutdown(),"audio drains without residual playback")
 	await individual_controls()
 	await auxiliary_source_controls()
+	await supplemental_source_controls()
 	FileAccess.open(output.path_join("report.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"errors":errors,"native_menu":menu.is_native_menu()},"  "))
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_AUDIO_MIX: %d checks, %d errors"%[checks,errors.size()])

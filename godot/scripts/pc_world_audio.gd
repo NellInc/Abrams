@@ -18,8 +18,9 @@ const ALLIED_FRAME_COUNTS := {"m113":1152000, "bradley":480817}
 # These recording names never determine actor allegiance or original requests.
 const ALLIED_SHAPES := {129:"m113", 131:"bradley"}
 const GROUND_MOTOR_CUES := ["t80", "tank", "m113", "bradley"]
-const CUES := ["river", "hind", "field", "cow", "t80", "tank", "m113", "bradley"]
-const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "tank":0.30, "m113":0.30, "bradley":0.30}
+const DETAIL_CUES := ["woodland", "truck", "tracks"]
+const CUES := ["river", "hind", "field", "cow", "t80", "tank", "m113", "bradley", "woodland", "truck", "tracks"]
+const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04}
 const COW_EXPOSURE_FRAMES := 180
 const COW_COOLDOWN_FRAMES := 2400
 var directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-world-effects-v1")
@@ -31,6 +32,8 @@ var tank_directory: String = ProjectSettings.globalize_path("res://").trim_suffi
 var tank_failure: String = ""
 var allied_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-allied-effects-v1")
 var allied_failure: String = ""
+var detail_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-world-detail-v1")
+var detail_failure: String = ""
 var cow_visibility = CowVisibility.new()
 var _cow_epoch: int = -1
 var _cow_frame: int = -1
@@ -110,6 +113,11 @@ func setup(owner: Node) -> void:
 		allied_failure = bank.error
 		push_warning("Private allied sounds ignored: " + allied_failure)
 	else: streams.merge(bank.streams)
+	bank = _read_bank(detail_directory, "private visible-world detail", DETAIL_CUES)
+	if bank.has("error"):
+		detail_failure = bank.error
+		push_warning("Private world detail ignored: " + detail_failure)
+	else: streams.merge(bank.streams)
 	if streams.is_empty(): return
 	for cue: String in streams:
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
@@ -183,6 +191,20 @@ static func field_candidate(object: Dictionary, polygons: Array) -> bool:
 static func t80_candidate(object: Dictionary, actors: Dictionary) -> bool:
 	return moving_tank_candidate(object, actors, 121)
 
+static func woodland_candidate(object: Dictionary, polygons: Array) -> bool:
+	var dynamic: Variant = object.get("dynamic_instance")
+	if not ((dynamic is bool and not dynamic) or exact_number(dynamic, 0)) or not exact_number(object.get("shape_index"), 103) or not exact_number(object.get("root"), 10523) or polygons.is_empty(): return false
+	for polygon: Variant in polygons:
+		if not polygon is Dictionary or not [10541, 10549, 10564, 10571].any(func(value): return exact_number(polygon.get("primitive"), value)): return false
+		var points: Variant = polygon.get("camera_vertices")
+		var expected: int = 3 if int(polygon.primitive) in [10549, 10564] else 4
+		if not points is Array or points.size() != expected: return false
+		for point: Variant in points:
+			if not point is Array or point.size() != 3: return false
+			for coordinate: Variant in point:
+				if not (coordinate is int or coordinate is float) or not is_finite(float(coordinate)): return false
+	return true
+
 static func moving_tank_candidate(object: Dictionary, actors: Dictionary, shape: int) -> bool:
 	return shape in TANK_SHAPES and moving_vehicle_candidate(object, actors, shape)
 
@@ -193,7 +215,7 @@ static func moving_vehicle_candidate(object: Dictionary, actors: Dictionary, sha
 	# accepted, while hidden ownership and stopped/reused identities stay silent.
 	var dynamic: Variant = object.get("dynamic_instance")
 	var pointer: Variant = object.get("pointer")
-	if (shape not in TANK_SHAPES and not ALLIED_SHAPES.has(shape)) or not ((dynamic is bool and dynamic) or exact_number(dynamic, 1)) or not exact_number(object.get("shape_index"), shape): return false
+	if (shape not in TANK_SHAPES and not ALLIED_SHAPES.has(shape) and shape != 159) or not ((dynamic is bool and dynamic) or exact_number(dynamic, 1)) or not exact_number(object.get("shape_index"), shape): return false
 	if not (pointer is int or pointer is float) or not is_finite(float(pointer)) or pointer != floorf(float(pointer)) or pointer < 0 or pointer > 65535: return false
 	var match: Variant = actors.get([int(pointer), shape])
 	if match == null or match[1] != 1: return false
@@ -231,9 +253,13 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true) -> Dictiona
 			cue = "m113"
 		elif moving_vehicle_candidate(object, actors, 131):
 			cue = "bradley"
+		elif moving_vehicle_candidate(object, actors, 159):
+			cue = "truck" # Original Truck class, recording make/model unspecified.
 		elif positive_source_path(object.get("static_path")) and not object.has("sprite") and object.get("round_forms", []).is_empty():
 			if field_candidate(object, polygons):
 				cue = "field" # Authored visible-field air, not original weather.
+			elif woodland_candidate(object, polygons):
+				cue = "woodland" # Scene-owned foliage air, no hidden bird actors.
 			elif exact_number(object.get("shape_index"), 157) and exact_number(object.get("root"), 28643):
 				cue = "cow" # Candidate only; whole-farm ownership NEVER admits it.
 		if cue.is_empty(): continue
@@ -332,7 +358,7 @@ static func visible_cues(mask: Image, token: Dictionary) -> Array[String]:
 			elif Vector2(witnesses[id]).distance_squared_to(Vector2(x, y)) >= 16.0:
 				found.append(cue)
 				if found.size() == wanted.size(): return found
-	for cue: String in ["field", "t80", "tank", "m113", "bradley"]:
+	for cue: String in ["field", "t80", "tank", "m113", "bradley", "woodland", "truck"]:
 		if cue in wanted and cue not in found and narrow_visible(bytes,stride,token,cue): found.append(cue)
 	return found
 
@@ -357,13 +383,13 @@ static func narrow_visible(bytes: PackedByteArray, stride: int, token: Dictionar
 			search_hits += 1
 			if search_hits > 8192: break # ambiguous dense byte collisions stay quiet
 			cursor = hit+1
-			if hit%stride != 0 or bytes[hit+1] != (owner_id >> 8) or bytes[hit+2] not in ([0,8] if cue in GROUND_MOTOR_CUES else [0]) or (stride==4 and bytes[hit+3] != 255): continue
+			if hit%stride != 0 or bytes[hit+1] != (owner_id >> 8) or bytes[hit+2] not in ([0] if cue == "field" else [0,8]) or (stride==4 and bytes[hit+3] != 255): continue
 			var index: int = hit/stride
 			var pixel: Vector2i = Vector2i(index%width,index/width)
 			if pixel.y >= height: continue
 			var source: Vector2i = Vector2i(clip[0]+floori((pixel.x+0.5)*extent.x/width),clip[1]+floori((pixel.y+0.5)*extent.y/height))
 			if source.x<0 or source.x>=320 or source.y<0 or source.y>=200 or token.ui[source.y*320+source.x] != 0: continue
-			if cue in GROUND_MOTOR_CUES:
+			if cue in GROUND_MOTOR_CUES or cue == "truck":
 				# Every endpoint is an actual observed pixel, never a bounding-box
 				# corner or a sum across actors. Before a pair succeeds, all points
 				# fit within <4 pixels of the first: at most49 lattice positions.
@@ -443,7 +469,11 @@ func refresh() -> void:
 		if cue == "cow":
 			_refresh_cow(player, gain)
 			continue
-		if not allowed() or cue not in admitted or gain <= 0:
+		var present: bool = cue in admitted
+		# Chain texture follows the same already-visible, source-moving tracked
+		# owners. Original idle channels, trucks and hidden motion cannot start it.
+		if cue == "tracks": present = admitted.any(func(item): return item in GROUND_MOTOR_CUES and cue_gain(item) > 0)
+		if not allowed() or not present or gain <= 0:
 			host._remember_playback(player); player.stop(); continue
 		# A single mono, fixed-pitch bed. Count, direction, range, allegiance and
 		# unseen motion never modulate it or create additional players.

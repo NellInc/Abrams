@@ -20,6 +20,8 @@ func isolated_audio() -> Node:
 	var audio: Node = Audio.new()
 	audio.world_audio.tank_directory = ""
 	audio.world_audio.allied_directory = ""
+	audio.world_audio.detail_directory = ""
+	audio.supplemental.directory = ""
 	return audio
 
 func packet(frame: int) -> Dictionary:
@@ -114,6 +116,7 @@ func run() -> void:
 	await soviet_checks(directory,ui,mask)
 	await tank_checks(directory,ui,mask)
 	await allied_checks(directory,ui,mask)
+	await detail_checks(directory,ui,mask)
 	if native:
 		await native_checks(audio,original,ui)
 		if "--retained-field" in args: await retained_field_checks(args[args.find("--retained-field")+1])
@@ -129,6 +132,56 @@ func run() -> void:
 	print("PC_WORLD_AUDIO: %d checks, %d errors"%[checks,errors.size()])
 	for error: String in errors:printerr("FAIL: "+error)
 	quit(0 if errors.is_empty() else 1)
+
+func detail_checks(base_directory: String, ui: Image, mask: Image) -> void:
+	var tree: Dictionary = source(103)
+	tree.objects[0].root = 10523
+	tree.objects[0].polygons[0].primitive = 10549
+	tree.objects[0].polygons[0].camera_vertices.resize(3)
+	var original: String = JSON.stringify(tree)
+	check(World.candidates(tree).get(1, {}).get("cue") == "woodland", "exact original tree qualifies scene-owned woodland")
+	for bad: Variant in [103.5, "103", 104]:
+		var changed: Dictionary = tree.duplicate(true); changed.objects[0].shape_index = bad
+		check(World.candidates(changed).is_empty(), "tree aliases cannot acquire woodland")
+	for bad: Variant in [10523.5, 5109, "10523"]:
+		var changed: Dictionary = tree.duplicate(true); changed.objects[0].root = bad
+		check(World.candidates(changed).is_empty(), "exact tree source root required")
+	var changed: Dictionary = tree.duplicate(true); changed.objects[0].polygons[0].primitive = 10549.5
+	check(World.candidates(changed).is_empty(), "fractional tree primitive excluded")
+	changed = tree.duplicate(true); changed.objects[0].polygons[0].camera_vertices[0][0] = NAN
+	check(World.candidates(changed).is_empty(), "non-finite tree geometry excluded")
+	ui.fill(Color.BLACK);mask.fill(Color8(1,0,8))
+	var token: Dictionary = {"size":mask.get_size(),"clip":tree.camera.clip,"selected":World.candidates(tree),"ui":ui.get_data()}
+	check(World.visible_cues(mask,token) == ["woodland"], "actual guarded tree-owner mask admits woodland")
+	for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255)]:
+		mask.fill(colour);check(World.visible_cues(mask,token).is_empty(), "foreign/line/effect pixels cannot announce woodland")
+	mask.fill(Color8(1,0,8));ui.fill(Color.WHITE);token.ui=ui.get_data()
+	check(World.visible_cues(mask,token).is_empty(), "original UI silences tree")
+	var truck: Dictionary = tank_source(159)
+	check(World.candidates(truck).get(1,{}).get("cue") == "truck", "exact original moving Truck class admitted")
+	for speed: Variant in [0, NAN, 1.5, "18"]:
+		changed=truck.duplicate(true);changed.world.dynamic[0].speed_raw=speed
+		check(World.candidates(changed).is_empty(), "stationary or invalid truck motion stays silent")
+	check(World.candidates(tank_source(160)).is_empty(), "truck wreck cannot run engine")
+	var directory: String = base_directory + "-detail"
+	bank(directory,World.DETAIL_CUES,"private visible-world detail")
+	var audio: Node = isolated_audio();audio.recorded_effect_directory=""
+	audio.world_audio.directory=base_directory;audio.world_audio.environment_directory="";audio.world_audio.soviet_directory=""
+	audio.world_audio.detail_directory=directory
+	root.add_child(audio);audio.apply_audio(packet(1))
+	check(audio.world_audio.detail_failure.is_empty() and audio.world_audio.players.has_all(World.DETAIL_CUES), "optional detail bank loads atomically")
+	for cue: String in World.DETAIL_CUES: check(audio.world_audio.players[cue].bus == audio.presentation_bus, "detail shares incumbent limiter: " + cue)
+	audio.world_audio.admitted.assign(["woodland","truck"]);audio.world_audio.refresh()
+	check(audio.world_audio.players.woodland.playing and audio.world_audio.players.truck.playing and not audio.world_audio.players.tracks.playing, "tree/truck cannot manufacture track rolling")
+	audio.world_audio.admitted.assign(["m113"]);audio.world_audio.refresh()
+	check(audio.world_audio.players.tracks.playing, "already-visible source-moving tracked owner starts quiet texture")
+	audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"m113":0})
+	check(not audio.world_audio.players.tracks.playing, "class Off immediately silences its track texture before next packet")
+	audio.world_audio.admitted.clear();audio.world_audio.refresh()
+	check(not audio.world_audio.players.tracks.playing, "hidden owners leave no track tail")
+	check(JSON.stringify(tree)==original, "supplemental observation preserves original tree geometry")
+	check(await audio.drain_for_shutdown(), "details drain through existing lifecycle")
+	audio.free();ui.fill(Color.BLACK)
 
 func native_checks(audio: Node, data: Dictionary, ui: Image) -> void:
 	var target: SubViewport=Ownership.new();root.add_child(target)
@@ -673,7 +726,9 @@ func json_field_checks(field: Dictionary) -> void:
 	var ui: Image=Image.new()
 	check(ui.load_png_from_buffer(Marshalls.base64_to_raw(capture.presentation.ui_overlay.mask_png))==OK, "actual retained original field UI decodes for CPU admission check")
 	var token: Dictionary={"size":owners.get_size(),"clip":data.camera.clip,"selected":selected,"ui":ui.get_data()}
-	check(World.visible_cues(owners,token)==["field"], "actual retained production mask admits JSON field through exact narrow-strip scan")
+	var actual_visible: Array[String] = World.visible_cues(owners,token)
+	actual_visible.sort()
+	check(actual_visible==["field","woodland"], "actual retained production mask admits exact JSON field and newly qualified tree")
 	ui.fill(Color.WHITE);token.ui=ui.get_data()
 	check(World.visible_cues(owners,token).is_empty(), "actual retained field mask stays silent under opaque original UI")
 	print("PC_WORLD_AUDIO_RETAINED_JSON: exact original candidate and captured ownership CPU admission passed")

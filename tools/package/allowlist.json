@@ -556,6 +556,7 @@
     "web-prototype/test_build_remaster.py",
     "web-prototype/test_package_site.py",
     "godot/scripts/pc_suno_music.gd",
+    "godot/scripts/pc_supplemental_audio.gd",
     "godot/tests/test_pc_suno_music.gd",
     "tools/import_suno_score.py",
     "godot/scripts/pc_tactical_panel.gd",

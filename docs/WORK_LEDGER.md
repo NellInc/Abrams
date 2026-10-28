@@ -8245,3 +8245,80 @@ Working if: both exact visible moving intact classes play their approved private
 beds, their saved controls independently mute/scale them without fallback, hidden
 or stale/UI-covered admissions stay silent, and incumbent audio/timing/masks stay
 unchanged.
+
+## 2026-10-28: remaining acquired sound categories, source-bound integration
+
+Nell requested all acquired sounds wired into the local game, retaining the
+accepted balance and original timing/visibility. The full finite 89-role source
+catalogue now has an explicit disposition under
+artifacts/all-sounds-integration-20261027/sound-map.md and sound-map.json.
+Raw packs contain alternatives, not 539 distinct gameplay events.
+
+Ten supplementary selected cues are installed privately: woodland air, generic
+truck engine, track texture, reload completion contact, mission completion/abort
+and warning tones, generic impact debris, smoke pressure, and visible aftermath
+fire. Existing accepted own-tank/Hind/T80/fallback/M113/Bradley, cow, field, river,
+weapon, switch, crew and music masters and gain factors remain unchanged.
+Six new saved Off-to-100 controls bring native Settings to27 groups. Web controls
+exclude these private additions; no web/standalone rebuild or publication.
+
+World admission uses the unchanged actual Tactical painter mask. Woodland is
+exact static tree103/root10523 with known source primitives; truck is exact
+intact moving159 joined uniquely to its source actor. Hidden/UI-covered/ambiguous
+owners remain silent. Tracks derive only from already-visible source-moving
+tracked classes, with class Off suppressing their dependent track layer
+immediately as well as before observation. Original idle is not rolling proof.
+Reload contact follows qualified visible READY, never raw completion or keys.
+Warning/mission tones use already-qualified visible original messages. Debris
+is the same generic metal/wood/glass/stone ingredient for every original impact;
+there is no material-specific target cue. Pressure follows original smoke onset.
+Fire requires the full original SIM scene1 RGB match, current visibility/transport
+guards and postdraw. Mission wrecks/fumes do not establish burning. Save primers
+retain the unchanged displayed source; restore/nonmatch/source mute clears it.
+
+Root implemented/integrated; two Sol scouts established source contracts, a Sol
+worker authored free/CC0 candidates, another extended focused mixer tests, and a
+bounded read-only Astra review identified the track-Off ordering defect, fixed
+before acceptance. Root inspected diffs and reran the final frozen checks:
+world503, mix587, source audio924, limiter33, play-menu422, frontdoor63, native
+retained source62 and native Settings14, all terminal0. Total2608 focused checks.
+An additional442 prefix/source/mixer assertions captured3 actual historical
+source-event excerpts with installed assets. No discarded or clipped frames.
+Their true peaks are-9.93/-7.17/-7.21dBTP. Woodland/truck/fire captures peak
+-31.79/-24.26/-31.31dBTP. The25.20second listening reel has excerpts and gaps only,
+no gain boost, ducking or normalization. New-detail human listening acceptance
+is not claimed; previous human motor/crew/cow approvals remain unchanged.
+
+Native proof uses exact VGA/canonical audio-paired retained original tree and
+truck cases, actual production protected lines/surfaces/guard/poses, and unchanged
+geometry/UI/ownership bytes. Fire separately uses genuine original scene1 pixels
+with controlled audio permission, not a fresh live aftermath/audio-envelope join.
+Settings pixels were inspected wide/compact, all27 controls reachable, isolated
+preferences. These are retained-source/Dummy-driver functional checks, not fresh
+live gameplay, device-listening, healthy-host pacing or FPS evidence. Static
+script scan has0errors and4unchanged inference warnings in pc_play_menu.gd.
+A macOS launcher-extension warning persists despite actual native GL/readbacks.
+
+All508 sealed incumbent files remain identical, including all472 stock WAVs;
+14 preferred source inputs rehash unchanged. New private banks are atomic and
+optional, a corrupt last file cannot alter original playback. Initial sandbox
+scratch/OS access failures were resolved through supported native permission.
+One old field-only test correctly exposed the newly admitted tree; expectation
+now explicitly checks both visible field and woodland. Final mix was rerun after
+four late worker assertions, with a frozen source SHA and587 passing checks.
+
+Standalone hatches, opening stages, suspension/ground-specific contact, water
+entry, weather, footsteps and unrelated weapon events remain silent because no
+qualified source boundary is established. Alternate animal/water/flyby textures
+remain recoverable instead of arbitrarily stacking them on an accepted mix.
+Original request7/9/10/15/16 samples do exist and remain source-qualified; their
+semantic meanings are unverified. This corrects the prior section's loose
+'unbound' wording, which must not imply those original sounds were removed.
+No guest RAM/event/geometry/opacity/mask change, cache clearing, foreign-process
+control, new spending, push or publication. Only the2-line source-frame observer
+addition in the foreign-dirty viewer belongs to this checkpoint.
+
+Working if: the installed selected families and components follow these source
+boundaries, all accepted masters remain identical, hidden/muted/stale/restored
+presentation stays silent, controls isolate their groups, and unqualified stock
+is accounted for without inventing gameplay or tactical information.
