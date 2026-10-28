@@ -8362,3 +8362,89 @@ Working if: source changes reach the established origin only after existing
 boundary/size/secret/site checks pass, private material stays out of Git, the
 existing browser runtime retains working controls, and ambience authoring stays
 paused with recoverable unfinished files.
+
+## 2026-10-28: resumed ambience completion batch, uninstalled candidates
+
+Nell released the pause with an explicit Proceed and requested sensible batching
+with subagents. Three disjoint Sol6.1 workers prepared woodland, completed fire
+and rechecked the remaining vehicle acquisition routes. Root owns integration
+and acceptance. No cross-chat communications, new purchase or agreement.
+
+The new CC0 forest-edge master is28seconds,48kHz mono16, -35LUFS/-20.51dBTP.
+It is0.71LU below the already accepted field-air master at the same0.08factor.
+The CC0 PagDev fireplace derivative is24seconds, -25LUFS/-6.36dBTP. A small
+peak-ceiling miss in the interrupted candidate was corrected in a new version;
+rotating its unchanged cycle moves the seam away from a steep natural crackle.
+Originals, rejected cues and earlier candidates remain recoverable. Fireplace
+provenance does not establish an actual wreck or structural-blaze recording.
+
+Root independently rehashed/metered both and loaded isolated complete bank
+copies into the production mixer. All513 sealed incumbent audio/bank files stay
+unchanged. Native retained tree and moving M113 ownership/source clocks/gains
+match prior receipts exactly. Candidate/source/mixer native checks pass71;
+existing audio924, limiter33, mix587, world503, menu422 and frontdoor63 pass2532.
+Root's first collector wrongly expected the word errors for the passing924check
+audio receipt, which prints failures. The collector was corrected without
+rerunning or weakening the test; its failed collection record is retained.
+
+The first native request was safety-blocked as though the old pause persisted.
+After the newer direct Proceed authority was made explicit, the same bounded
+request was accepted, without a workaround. An initial default user-log write
+failed; the supported explicit log path parsed cleanly. The historical macOS
+sandbox-extension launcher warning remains despite actual native GL/readbacks.
+No fresh live guest/device/pacing/FPS claim is made. The fire matcher and short
+interface-timbre sample use explicitly controlled production-mixer permission,
+separate from original event-occurrence evidence.
+
+The17second character/wrap preview and33.60second production-level reel are
+presented for new human listening. The latter replaces only woodland/fire
+excerpts in the old reel, keeps every other existing excerpt byte-identical,
+and appends retained M113/track and isolated interface references. No gain,
+ducking or normalization of that reel. Installation is pending these verdicts.
+
+Stale M113/Bradley acquisition blockers are superseded; both remain integrated
+and accepted. A bounded primary-source search found no current free/cheap BMP
+acquisition meeting the existing constraints. No speculative subscription or
+library purchase. T72 remains held for Nell's promised original. The89role map
+and21unqualified-action dispositions remain intact. Updated current coverage,
+control and rights documentation distinguishes source, private playback and
+future asset-bearing release. No game pack/app was rebuilt or published.
+
+Evidence: artifacts/audio-completion-20261028/verification.json,
+production-review-reel.json and release-matrix.json; woodland/fire recipes and
+receipts in artifacts/ambience-revision-20261028; source research in
+artifacts/vehicle-sourcing-followup-20261028/recording-gaps-research.json.
+Completed leaf results are retained. The exposed collaboration controls provide
+no dispose operation or authoritative child UUID; disposal is not claimed.
+
+Working if: only accepted new candidates are installed after the pending hearing
+verdicts, original timing/masks and accepted incumbent levels stay fixed, and
+unavailable recordings or unreleased packages are never presented as complete.
+
+## 2026-10-28: woodland/fire accepted and installed privately
+
+After replay of both reviews and her direction that woodland fit Germany,
+Nell said, "Sounds good, bravo. What's next please." Root bound that acceptance
+to the17second character/wrap preview and33.60second production-level reel,
+then promoted the complete reviewed woodland/fire bank copies. The full old
+banks remain under local-audio/ambience-revision-20261028/rollback/; originals
+and prior candidate edits remain recoverable. German/Central European woodland
+is the accepted direction, without a recording-location/species assertion.
+
+Actual production default-path loading passes12checks and the installed mixer
+passes587checks,0errors. Both promoted PCM hashes match the reviewed candidates.
+Only woodland.wav/fire.wav and their bank manifests/provenance changed;507other
+sealed files, including472stock WAVs, remain identical. Gains, crew/music,
+source event cadence, motor authority, geometry, masks and ownership code are
+unchanged. Earlier2532focused/71native candidate checks are retained as earlier
+evidence, not counted as a fresh aggregate or device/performance gate.
+
+Evidence: artifacts/audio-completion-20261028/human-acceptance.json,
+installation.json, installed-loader.json and installed-checks.json. No new
+spending, public audio transfer, game-pack rebuild or application release.
+The local sound pass is complete; release-candidate/package/device/performance
+acceptance and dedicated-recording acquisition gaps remain separate work.
+
+Working if: ordinary local Play loads the approved full-length loops, other
+accepted files/levels remain fixed, rollback banks remain intact, and future
+release work reports actual package and hearing/performance evidence.

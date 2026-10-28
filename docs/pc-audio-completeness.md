@@ -1,12 +1,33 @@
 # PC audio coverage and machine QA
 
-Current 27 October checkpoint: the approved switch and 18 native controls are
-installed locally. The new private T-80 cue is exact-model and visible-moving
-only; its native painter and human mix qualification are tracked separately.
-The cow and gentle field-air levels are accepted. Genuine moving-Hind playback now passes in the production
-native viewer/mixer. Nell accepted the combined Hind/tank-motor balance; its
-levels remain unchanged. The latest
-parallel-batch section supersedes earlier Hind-open checkpoint notes below.
+Current 28 October checkpoint: the approved Abrams, Hind, T-80, generic tank,
+M113 and Bradley recordings are integrated in optional private banks. M113 and
+Bradley acquisition, loop review and combined-level review are complete. The
+cow and gentle field-air levels are accepted. Native source Settings exposes
+27 saved controls. The current source and integration receipts supersede older
+acquisition, browser-access and vehicle-integration blockers below.
+
+The acquired-sound map accounts for 89 roles. Ten supplementary runtime cues
+(woodland, truck, tracks, reload, interface accept/back/error, debris, pressure
+and fire) have machine-verified source boundaries. Their new-detail listening
+pass is separate from the accepted incumbent vehicle/cow mix. After rejecting
+the first woodland/fire character, Nell accepted the replacement wrap/character
+preview and production-level reel. The approved28second forest-edge and24second
+wood-fire loops are now installed in the optional local banks; all other accepted
+cue files and gains are unchanged. Twenty-one roles lack qualified original physical-action events;
+they remain unused rather than adding an inferred simulation or hidden cues.
+
+Current evidence: `artifacts/all-sounds-integration-20261027/sound-map.json`,
+`verification.json`, `artifacts/vehicle-audio-integration-20261027/verification.json`
+and `artifacts/ambience-revision-20261028/state.json`. The latest source checkpoint
+was pushed as `6a19ea9`; only the compatible browser shell was deployed. No
+matching new game pack or standalone edition carries these private banks.
+Installed default-path loader checks pass12 and the installed mixer passes587;
+the preceding focused/native source qualification is retained separately.
+
+Working if: each role has a current disposition, completed purchases stay closed,
+accepted masters/gains remain fixed, and listening, source proof and delivery
+status are reported separately.
 
 The finite source audit now accounts for every relative-near-call candidate in
 SIM's first 64 KiB code segment targeting the known original sound and message

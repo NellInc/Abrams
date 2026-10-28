@@ -38,6 +38,33 @@ account and byte-perfect provenance do not establish redistribution rights.
 | EXEPACK 1.4.0 (independent comparison) | Local COPYING contains a CC0 waiver. | Research binary/source tree excluded. The project's Python unpacker remains in source. |
 | Barlow and IBM Plex fonts | SIL Open Font License 1.1, retained beside current font files. | The standalone app, private developer kit and Web edition (`/play` `LICENSES/IBM-Plex-OFL.txt` and `assets/Barlow-OFL.txt`; both TTFs are embedded in the Godot PCK) retain both licence files. These licences do not clear reconstructed original-game fonts. |
 
+## Recorded effects and environment pass, 28 October 2026
+
+The latest recorded effects are optional local banks, excluded from public Git,
+source kits and the currently published game packs. The selected originals,
+edits, purchase/download evidence and licence snapshots remain private. A source
+push and a browser-shell update do not establish redistribution clearance or
+deliver these banks to players.
+
+| Selected family | Current evidence | Distribution boundary |
+|---|---|---|
+| Abrams cannon/MG/motors and M113 | Purchased PSE originals; [individual EULA](https://www.prosoundeffects.com/individual-end-user-license-agreement) and [licensing summary](https://www.prosoundeffects.com/licensing) rechecked. | Ordinary production editing and synchronized end-user works are covered subject to the agreement. Standalone-file access and extraction restrictions remain. No paid PCM is committed or exposed as a public download. |
+| Hind engine | Human-purchased SoundFX Studio pack and [publisher licence](https://soundfx.studio/soundfx-studio-license/), rechecked. | Game synchronization and edits are permitted subject to the licence; unsynchronized sharing and unlicensed multi-user access are restricted. The selected engine remains private. This does not certify every alternative pack cue as an original field recording. |
+| Bradley-family engine | Human-supplied purchased SoundDogs original and [sound-effects EULA](https://sounddogs.com/Page/Sound-Effects-End-User-License), rechecked. | Game synchronization and ordinary edits are described. Standalone-source and AI/ML-use restrictions remain; no recording is sent to a model. This inventory does not assert universal clearance for every assistant-operated workflow or exact M2/M3 recording identity. |
+| T-80 engine | Creator-labelled Freesound456277 source, CC BY-NC4.0. | Attribution, modification notice and noncommercial limits remain. Keep the private boundary unless the intended release is specifically cleared; otherwise use a cleared fallback. |
+| Generic tank fallback | JoniHeinonen Freesound161896, CC BY3.0, retained source and modification attribution. | Exact tank model is unidentified. Any distributable derivative must retain the applicable credit/licence/modification notice; its present bank remains local. |
+| Woodland/fire revisions | Saved La Sonotheque forest-edge0905 and PagDev fireplace originals, retained CC0 source-page/licence evidence. | Replacement character/loop and production-level reviews are accepted; the derivatives are installed privately. Fire provenance is a fireplace, without an actual military-blaze claim. German woodland is the accepted art direction, not a verified field-recording location. |
+
+Before any new asset-bearing game release, enumerate its exact selected files,
+check each intended use against the retained terms, include required notices and
+inspect the actual outgoing package. Free source material and local possession
+do not by themselves close the release gate. No new purchase, agreement or
+vendor communication was made in this review.
+
+Working if: every selected derivative has a recorded source and release
+disposition, private paid audio stays out of public source/download inventories,
+and a new game package is checked independently of source-only publication.
+
 Primary sources consulted:
 
 * [DOSBox Pure pinned LICENSE](https://github.com/schellingb/dosbox-pure/blob/73e03aa145e0549ed4d5a20f8e65532714da33f5/LICENSE) and [upstream README](https://github.com/schellingb/dosbox-pure/blob/73e03aa145e0549ed4d5a20f8e65532714da33f5/README.md).

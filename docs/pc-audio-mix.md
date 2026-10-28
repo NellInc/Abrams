@@ -1,13 +1,36 @@
 # Presentation audio controls
 
-## Current saved controls, 27 October 2026
+## Current saved controls, 28 October 2026
 
-Native Settings and Audio expose five groups (Master volume, Sound effects,
-Crew voices, Engine and turret, Music) and thirteen independent controls: Cannons,
-Machine gun, Impacts, Smoke, Engine, Turret, Rivers, Hind engine, Radio alerts
-Switches, Field air, Animals and T-80 engine. Every control supports Off through 100%. Existing group defaults
-and individual 100% defaults are retained. Rivers, Hind, Field air, Animals and T-80 stay native-only because
-their optional local banks are excluded from browser discovery and packaging.
+Native Settings and Audio expose 27 saved controls: five groups (Master volume,
+Sound effects, Crew voices, Engine and turret, Music) and 22 individual controls.
+These cover Cannons, Machine gun, Impacts, Smoke, Engine, Turret, Rivers, Hind
+engine, Radio alerts, Switches, Field air, Animals, T-80 engine, Other tank engines,
+M113 engine, Bradley engine, Woodland air, Truck engines, Track texture,
+Mechanical detail, Interface tones and Visible fire. Every control supports Off
+through 100%. Existing group defaults and individual 100% defaults are retained.
+
+The fourteen optional world/detail controls stay native-only because their local
+banks are excluded from browser discovery and packaging. Current Web source
+supports thirteen controls; the previously published game pack supplies five.
+The shell deployed at `6a19ea9` displays only capabilities reported by that
+runtime and retains a working Restore default mix. More source controls require
+a matching future game-pack build; the shell update did not rebuild that pack.
+
+Accepted Hind/tank/crew/cow/field levels and source-owned motor pitch/amplitude
+remain unchanged. The generic tank fallback, M113 and Bradley are installed;
+their earlier acquisition and integration holds below are historical. Woodland
+and fire replacements were reviewed after Nell rejected their first character.
+Nell accepted both the character/wrap preview and production-level reel. The
+approved forest-edge28second master (-35LUFS) and wood-fire24second master
+(-25LUFS) are installed, retaining factors0.08 and0.12 respectively. All other
+accepted masters, controls and factors remain unchanged. Complete previous
+banks are retained for rollback. German/Central European woodland is the accepted
+art direction, without an authenticated German recording-location claim.
+
+Working if: settings isolate their own cues, old configs preserve their values,
+the browser advertises only real runtime capabilities, and only an explicitly
+accepted new cue can alter the incumbent mix.
 
 Radio alerts and Switches now have the same immediate gain/mute and durable
 preference behavior as the earlier individual controls. Muting consumes an
