@@ -1,6 +1,6 @@
 ---
 status: reuse_batch_locally_verified_remaining_source_rights_gates
-current_planning_commit: f2395607724d1c63d9a013af85f82f4dca7b5629
+current_planning_commit: 66bcdf3b596303bbdf5265b29cae6193f021dc10
 current_plan: docs/pc-audio-remaining-plan.md
 base_commit: 6a19ea98c7accef58f4530b93bbe2c3992936124
 stepsCompleted:
@@ -21,17 +21,30 @@ stepsCompleted:
 
 # Remaining sound work and delivery plan, 28 October 2026
 
-The current whole-sound audit and searched completion plan is
-`docs/pc-audio-remaining-plan.md`, at checkpointf239560. It supersedes the
-historical acquisition holds below: T-72 and approved loop-only flight fizz
-are installed. Fresh planning verifies10private banks/26PCMfiles and90role
-dispositions, with no runtime/mix changes or new purchase. BMPshared/BTR70/BRDM2,
-additional source-class bindings, recorded ignition semantics and target-edition
-rights/delivery remain explicit. This pass delivers the requested plan/search;
-it does not revoke earlier bounded approvals or create new purchase authority.
+The current whole-sound completion programme is `docs/pc-audio-remaining-plan.md`,
+refreshed against clean execution checkpoint66bcdf3. Current source-role counts
+include8alternatives and2explicit jet exclusions. The latest user asks for the
+remaining work and an ordered plan; this refresh is documentation-only, with no
+new runtime, asset, spend or publication.
 
-Working if: resumed work consumes that current plan and real holds instead of
-reopening completed purchases or treating older checklist rows as current facts.
+Recommended next action: larger genuine ACRV/FST source witnesses, other-Abrams
+occurrence/player-marker exclusion, then one expanded-family mix. Follow the
+plan's A-Fbatches: source/visibility coverage; safe first-submission ignition;
+environment/reserve dispositions; opportunistic exact recording upgrades;
+actual edition rights/discovery; one frozen final default/native/live gate and
+verified delivery. Local private native is the first target; public assets and
+editions need their own rights/inventory. Reuse/free first, no MiGs/A-10/Bren,
+no repeated subscription/passby/onboard search or vendor email detour.
+
+The native lifecycle proposal is still unimplemented: direct30record clear885A,
+BSS clear9268, pointer-table rebuild87D3and non-phase identity writers defeat a
+four-hook-only assumption. Remaining generic aliases and actual callback order
+need closure; never substitute later visibility for birth. Keep approved fizz,
+unknown original requests, all accepted files/levels and masks unchanged.
+
+Working if: resumed work starts from the actual checkpoint and one finite next
+action, carries open source/rights/device/delivery limits, and does not reopen
+completed sound approvals or mistake this refreshed plan for a release.
 
 ## Latest execution checkpoint, 28 October 2026
 
@@ -40,7 +53,7 @@ explicitly excluded MiGs. Source now adds generic tracked133/135/139and
 wheeled137/141/143coverage using existing approved M113/CC0Truck masters,
 with shared physical players/max admitted gain and two independent saved
 controls. Manual-qualified FST123uses the existing generic tank loop. No new
-media/bank/player, spend, agreement, push or release. All1528sealed incumbent
+media/bank/player, spend, agreement, push or release. All 1,528 sealed incumbent
 files unchanged. Root world1152/mix681/limiter33/native132/Settings14pass;
 Settings screenshots inspected. Native source positives133/135/137/141/143;
 139/123remain correctly silent in tiny retained cases. No fresh guest/device
@@ -190,7 +203,7 @@ fallbacks or silence while a suitable original is unavailable.
 | Medium | Actual track-only recording | Seek an appropriate recorded tracked vehicle with useful isolated track detail. | Bren Carrier remains excluded; do not relabel the current generic chain texture as authentic tank tracks. |
 | Medium | Actual smoke-launcher discharge | Seek an isolated genuine discharge with retained provenance. | Preserve the approved authored/CC0 pressure cue until a better source passes; one original smoke event remains one apparent discharge. |
 | Low | T-62, T-64, M60 and other confirmed roster gaps | Acquire exact dedicated sources where genuinely economical. | Existing approved generic tank fallback remains valid for its current tank classes, never automatically for APCs. |
-| Low | MiG/other relevant aircraft | First confirm the original source identity and legitimate audible/display boundary, then seek a steady model-appropriate source. | No A-10 scope expansion, generic flyby loop or guessed original event meaning. |
+| Excluded | MiGs and A-10 | Explicitly excluded by Nell. | Do not source or bind. |
 
 Research uses primary publisher/creator pages and retained licence evidence.
 Live stock, prices and terms are rechecked when an acquisition is actually
@@ -447,3 +460,38 @@ open alongside BMP/BTR/BRDM sourcing. Current approved smoke stays unchanged.
 Working if: visible qualified flight alone admits the fizz, phase/visibility
 changes never replay ignition, original requests and accepted levels stay fixed,
 and no static/controlled/Dummy proof is called fresh live or device acceptance.
+
+
+## Current authority correction and batch checkpoint
+
+Nell's latest clarification restricts recorded launch attacks to Sagger/Spigot
+and the rail-mounted missile vehicle. M1A1 AX remains a regular round sound.
+Own-AX override/context/bank were withdrawn, exact default37bff0core restored.
+Corrected source checkpoint4e631f3; ce11d54 is superseded for its own-AX branch.
+No original/accepted media was changed. Do not reinstall that superseded bank
+or treat its accepted sound audition as an approved own-tank binding.
+
+FST/ACRV own-owner native 47 checks and human family mix are accepted. PC-only
+flight native 87 checks and private packaged loader 34 checks pass; review app
+8d52b7e973d4b12f9c84runtime payload matches corrected source (documentation refreshed later), ten banks, 26 cues. No full
+GUI/device or public release claim. Own-AX candidate gate143is incomplete,
+not a pass. Isolated enemy-launch research continues without production hooks.
+Use artifacts/audio-batch-20261028/{state.json,AX-scope-correction.json} and the
+current remaining plan; keep final source/native/live gates and rights distinct.
+
+Working if: resume with the enemy-only launch scope, existing balance/masks and
+all foreign files/processes intact, without reopening accepted audio questions.
+
+
+Enemy launch study now has three distinct finite dispositions: fresh neutral
+Siegen had no enemy033f; exact historical input replay diverged at11495and stopped;
+a new ordinary approach toward the source-verified Spigot area completed24,000
+SIM frames with no launches. No source-owner onset was qualified, so enemy attack
+remains prepared/uninstalled, with original request15and accepted fizz unchanged.
+Current full-validation-venv gate ended1:106default/34native/7livepassed,
+combat-outcome RAM mismatch305failed; ten remaininglivechecks notrun. Earlier incomplete-interpreter gate
+failed imports;87affectedchecks pass in the existing full environment. Foreign
+WORK_LEDGER/playability/optional-Genesis edits are not owned by this audio batch.
+
+Working if: resume from real finite results, preserve M1A1regular firing, and
+never fill the missing enemy onset with guessed events or a later flare.

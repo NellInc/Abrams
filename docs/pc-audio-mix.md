@@ -515,3 +515,24 @@ uses an explicitly synthetic empty presenter transport and proves no fresh
 live-guest playback, device listening or sustained performance claim. The
 approved loop audition remains the human hearing evidence. Local integration
 only; no web/standalone rebuilding, packaging or publication is performed.
+
+
+## Current private native root and missile scope
+
+Native checkout playback retains its existing `local-audio` discovery. A native
+owner may instead set `ABRAMS_AUDIO_ROOT` to the absolute directory containing
+the ten fixed bank folders. The standalone launcher defaults this to its stable
+profile `audio` folder, outside versioned installs. Invalid explicit roots select
+no optional recordings, and Web ignores this setting. Each bank still requires
+its existing manifest/hash/PCM validation. This neither copies media nor grants
+redistribution rights. Review-profile links reference the accepted local banks.
+
+The FST and ACRV held-source mixes are accepted at their current unchanged levels.
+Nell's launch-sound request covers Sagger/Spigot and the rail-mounted missile
+vehicle; M1A1 AX continues using the regular round firing sound. The own-AX
+variant was withdrawn, and enemy ignition remains uninstalled pending its exact
+original launch boundary. Current flight fizz and every accepted motor/ambience
+master and gain stay unchanged.
+
+Working if: all 26 accepted private cues load through one explicit root, missing
+banks retain their existing fallbacks, and M1A1 AX is acoustically unchanged.

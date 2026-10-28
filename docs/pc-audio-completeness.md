@@ -4,7 +4,7 @@ Current 28 October checkpoint: the approved Abrams, Hind, T-80, T-72, generic ta
 M113 and Bradley recordings are integrated in optional private banks. M113 and
 Bradley acquisition, loop review and combined-level review are complete. The
 cow and gentle field-air levels are accepted. Native source Settings exposes
-29 saved controls. The current source and integration receipts supersede older
+31 saved controls. The current source and integration receipts supersede older
 acquisition, browser-access and vehicle-integration blockers below.
 
 The acquired-sound map accounts for 90 roles. Eleven supplementary runtime cues
@@ -909,3 +909,24 @@ stationary engine-on, health and allegiance are not decoded. No new runtime cue,
 source request mapping, saved control or balance change has been installed.
 Evidence and remaining gates: artifacts/environment-bindings-20261026/state.json
 and soviet-sources/model-specific-plan.json.
+
+
+## Private native follow-up, 28 October 2026
+
+The accepted expanded FST/ACRV family mix has now passed genuine larger-source
+native final-owner checks and human balance review. Current runtime remains
+ten banks/26 private PCM files with 31 saved native controls. Explicit native
+`ABRAMS_AUDIO_ROOT` and stable profile/audio discovery are implemented; all 26
+clips loaded in the fresh bundled renderer after its normal import. PC-only
+flight fingerprints now use original PC resource bytes, without optional art.
+No public-media, full-device/pacing or final aggregate completion is inferred.
+
+Nell clarified that launch recordings belong to enemy Sagger/Spigot and the
+rail-mounted launcher. M1A1 AX retains the ordinary round firing sound. A briefly
+prepared own-AX override was removed entirely; enemy ignition remains a separate
+source-event qualification, while the accepted visible-flight fizz is unchanged.
+Evidence and current remaining limits: artifacts/audio-batch-20261028/ and
+`docs/pc-audio-remaining-plan.md`.
+
+Working if: these dispositions match actual installed banks and source bindings,
+without obsolete acquisition holds or an own-tank missile-sound substitution.

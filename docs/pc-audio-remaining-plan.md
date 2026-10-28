@@ -1,11 +1,16 @@
 # Remaining sound completion plan
 
-28 October 2026. Planning checkpoint: `f2395607724d1c63d9a013af85f82f4dca7b5629`.
-This supersedes older acquisition checklists, including the old T-72 and TOW
-download holds. Nell subsequently approved execution with reuse/free sources
-where feasible and explicitly excluded MiGs. The first reuse batch is now
-implemented and verified locally. No new spending, agreement, vendor email,
-app/pack rebuild or publication occurred. See the execution receipt below.
+28 October 2026. Execution resumed from `66bcdf3`; current corrected source
+checkpoint is `4e631f3`. The current batch closes genuine FST/ACRV source and
+mix proof, private native audio-root discovery and PC-only flight validation.
+The current accepted ten banks and 26 PCM masters remain unchanged.
+
+Nell clarified the missile scope: recorded ignition is for enemy Sagger/Spigot
+and the rail-mounted missile vehicle. The M1A1 AX keeps its regular round firing
+sound. An own-AX variant was briefly prepared, then withdrawn completely from
+production code and the runtime bank. Its review does not authorise that binding.
+The existing guided-flight fizz stays installed. No MiGs, A-10 or Bren Carrier,
+new spending, agreement, vendor email or public media release.
 
 ## Completion criteria
 
@@ -27,9 +32,10 @@ and neither an acquired file nor a passing unit test is called a shipped sound.
 
 ## Current verified position
 
-Fresh read-only audit verifies all26PCM hashes across10active private banks.
-The source-role map has90entries:49selected/composite roles,10alternatives,
-21roles without qualified actions, and10preserved original/user-choice roles.
+The retained execution audit verifies26PCM hashes across10active private banks.
+The current source-role map has90entries:49selected/composite roles,8alternatives,
+2explicit exclusions,21roles without qualified distinct actions, and10preserved
+original/user-choice roles.
 These are aliases and dispositions, not90simultaneous sounds or90unique players.
 All30audited original sound callsites and21message callsites are classified;
 the345caption-domain strings have selected takes, with449PC-caption performances
@@ -39,10 +45,11 @@ Already integrated locally: Abrams cannon/MG/motors, T-72, T-80, Hind, M113,
 Bradley, generic tank fallback, river, cow, gentle field air, German-directed
 woodland, selected fire, visible truck/track texture, switch, qualified reload,
 interface, debris/pressure and visible guided-flight fizz. Current native
-settings have31saved controls, including independent tracked/wheeled fallbacks. Original radio, crew and music choices stay fixed.
+settings have31saved controls, including independent tracked/wheeled fallbacks.
+Original radio, crew and music choices stay fixed.
 
 Keep those acquisitions and listening decisions closed. The recorded TOW
-ignition is prepared but uninstalled; only the approved flat flight fizz is
+ignition is prepared for the enemy launch study and remains uninstalled; only the approved flat flight fizz is
 installed. The supplied Bluezone smoke MP3 remains preview-only.
 
 The currently published game pack/apps have not received these private banks.
@@ -58,7 +65,7 @@ The browser shell's compatibility update is not an asset-bearing game release.
 | P2 | ACRV-2 | Manual identifies a tracked mobile command vehicle. Exact intact139now shares the generic tracked fallback, without a real powertrain/model claim. | Unit contract is verified; the retained native ACRV silhouette was too small for the unchanged visibility threshold and correctly stayed silent. A larger genuine source witness remains unverified. |
 | P2 | Source BRDM-3 | Manual describes a BRDM-2 development using Spandrel. Exact intact143now shares the generic wheeled fallback. | Source label is preserved, without claiming an unrelated modern BRDM-3 recording. Genuine retained native moving-owner proof passes. |
 | P2 | Source F-ST | Manual explicitly categorises FST-I as a main battle tank. Intact123now uses the accepted generic tank fallback. Physical model identity is unresolved. | No authentic F-ST recording claim. Unit contract passes; the retained native case was tiny and correctly silent, so a larger genuine source witness remains unverified. |
-| P2 | Other Abrams instances, if encountered | Own-tank motor is source-driven; class125has no general world-engine bed. | Confirm an ordinary mission actually needs it and establish an authoritative own-body exclusion. Reuse acquired Abrams material, with no doubled player motor or new purchase. |
+| P2 | Other Abrams instances, if encountered | Own-tank motor is source-driven; class125has no general world-engine bed. Original body marker0x10is established in source and12retained fixtures; no new binding is implemented. | First find a genuine moving non-player125witness. Require exact allocated byte flags with0x10clear and existing unique actor/owner proof; malformed or marked actors stay silent. Reuse existing Abrams audio, with no doubled own-tank motor. |
 | P3 | T-62/T-64/M60A3 exact engines | Current approved generic tank fallback covers115/117/127. | Optional authenticity upgrades only when a clean cheap/free exact source appears. They are not currently silent acquisition blockers. |
 | P3 | Truck and isolated tracks | Generic truck and chain-like track texture are already bound. Exact truck model and authentic isolated tracks are unverified. | First inspect already licensed long Abrams vehicle material and free bank for usable track detail. No additional engine layer, new ground-material inference or invented track surface classifier. |
 | Excluded | MiGs, A-10, Bren Carrier | Explicit human exclusions. | No sourcing, binding or new playback. Preserve unknown original requests without guessing that any is a jet. |
@@ -69,7 +76,7 @@ continuity, make a short wrap audition and compare at the current family level.
 Maintain a single centred fixed-level bed unless a different source contract is
 explicitly established. No model-dependent hidden pan/range/count cues.
 
-## 2. Fresh sourcing result and spending order
+## 2. Retained sourcing result and spending order
 
 Three disjoint bounded research lanes rechecked BMP, BTR/BRDM and weapon sources.
 Root separately checked the strongest primary pages, licences and lower-priority
@@ -87,8 +94,8 @@ BMP/BTR/BRDM requirements. This is a finite search result, not proof none exists
 | [Missiles and Rockets pack](https://soundfx.studio/shop/sfx-for-games/weapons/missiles-and-rockets-fx/) | US$29.99; lists MLRS,SAM/AAM,M203and mortar. | Reject speculative purchase: requested Spigot/Sagger source is not established by those categories. |
 | Free track-stock leads | A5secondPixabay MP3 exists; exact vehicle and field provenance are unstated. Another generic Freesound loop has conflicting description/licence text. | No qualified upgrade. Do not replace the accepted loop or call generated/unknown stock an authentic recording. |
 
-Prices are public displayed pre-checkout figures, not tax-inclusive quotes or
-spending authorisation. No new money was spent. Existing scoped purchase caps
+These are historical displayed figures from the retained search checkpoint,
+not freshly rechecked prices, tax-inclusive quotes or spending authorisation. No new money was spent. Existing scoped purchase caps
 are not a general wallet for these gaps.
 
 Recommended order: use already owned/licensed material first, then a genuinely
@@ -162,43 +169,201 @@ Radio alternatives, extra isolated birds, river waves and spare pack acceleratio
 start/stop/passby/collision takes are reserves. They are not omissions that must
 all be layered. Keep Nell's new-switch-only decision and steady-engine direction.
 
-## 4. Execution batches and minimum proof
+## 4. Ordered action plan
 
-1. **Audit and protect, completed in this planning pass.** Hash active manifests
-   and26PCMfiles, reconcile90role dispositions, check original roster/callsites,
-   preserve accepted masters/gains and separate private/public status.
-2. **Free engineering batch.** Resolve source semantics and the uncovered actor
-   families; classify the21reserve roles. Use retained ordinary source routes,
-   existing disassembly/ndisasm/Unicorn and current packet/owner tests. No new
-   tool installation or speculative harness is a prerequisite. Root owns the
-   integration; use a bounded read-only Astra challenge for consequential
-   cross-component contracts, not routine permanent review lanes.
-3. **Acquisition batch.** Pursue BMPshared, BTR70andBRDM2only on a specific new
-   qualifying source. Public metadata/rights research can run independently;
-   keep one automation browser and preserve the signed-in profile. Play promising
-   authorised previews rather than sending vendor emails. No purchase until
-   the actual selected item, total and appropriate authority are established.
-4. **Authoring/integration batch.** Preserve originals, provenance and rejected
-   candidates; make one steady mono48k16loop/master per selected cue, with
-   appropriate exact runtime bounds. Match incumbent family levels, retain
-   headroom and independently saved Off/gain. Promote complete optional banks
-   atomically with stock/fallback recovery, without changing guest timing.
-5. **Changed-surface verification.** Reuse focused world/mix/source-event tests;
-   inspect engine logs as well as completion counters. Check visible/hidden,
-   UI-covered, tiny/ambiguous owners, Off/unmute, pause/focus, epoch restore and
-   simultaneous crew/weapons/motors. Verify source/owner bytes unchanged. Add
-   limiter checks only when the changed routing/overlap risk warrants them.
-   Capture a short actual production mix and obtain human cleanliness/balance
-   judgment; numerical meters do not hear voices or loop character.
-6. **Target-edition delivery.** Verify optional-bank discovery in the exported
-   target, settings persistence and fallback with no private banks. Resolve a
-   confirmed path problem narrowly, without removing packaging exclusions.
-   Separate source-only, local-private, public-Web and standalone inventories.
-   Freeze one named release candidate, run its required default/native/live
-   gate once, and inspect actual outgoing assets before authorised publication.
-   Current snapshots/Dummy playback do not substitute for fresh live mission,
-   physical-device or performance acceptance. Measure pacing separately from
-   PNG capture; no driver-cache clearing or foreign-process control.
+Recommended delivery path: finish and qualify the local private native edition
+first. Prepare public source/Web/standalone editions as separate inventories,
+each carrying only assets cleared for that exact delivery. Affordable exact
+vehicle recordings are authenticity upgrades while generic coverage is usable;
+they must not repeatedly delay source-binding and delivery work.
+
+### Batch A. Close the inexpensive source and visibility gaps
+
+1. **ACRV and FST positive source witnesses.** Search existing ordinary mission
+   captures for a genuinely moving, larger visible139/123owner. Replay the
+   unchanged packet through the production native painter, including original
+   opaque UI, thermal/day palette where available and the existing four-pixel
+   threshold. If retained evidence cannot supply one, use ordinary original
+   controls. Never enlarge the object or weaken the threshold to get a pass.
+2. **Other Abrams.** Establish whether an ordinary mission presents a moving
+   non-player125. If so, reuse the acquired Abrams engine with strict allocated
+   flags and player-marker exclusion. Verify own125, other125, duplicate and
+   malformed identity cases. Do not add another own-tank bed or infer self from
+   position, distance, slot or a fixture's fixed pointer.
+3. **Expanded-family listening.** Capture a short actual production mix of the
+   new generic families with incumbent motors/crew. Exercise donor and fallback
+   coexistence, individual Off/intermediate saved gain, owner loss and eligible
+   handoff. Keep one physical donor/max-gain rule and accepted levels fixed.
+   Use the existing background capture path; preserve production focus/mute
+   rules. Only new sound-character/balance judgments need human listening.
+
+Tools: existing retained packets, original manual/disassembly, `pc_world.py`,
+Godot skill, production ownership tests and native probe, FFmpeg meters and
+inline local audio playback. Root owns implementation. A bounded source scout
+may inventory witnesses; it does not manufacture or accept them.
+
+Working if: each claimed class has an honest positive/negative source verdict,
+own motor is never doubled, controls work, and original bytes/masks stay fixed.
+
+### Batch B. Complete the recorded launch trigger safely
+
+This is the principal engineering dependency. The prepared launch recording is
+already available; more stock does not solve its onset identity.
+
+1. Finish the bounded original lifecycle audit: allocator/free, direct30-record
+   clear at885A, BSS clear/table rebuild and non-phase header/shape mutations.
+   Resolve remaining indirect-write aliases or design narrowly targeted
+   fail-closed invalidation. Do not call four hook families exhaustive.
+2. Lock the smallest capability-gated observer/host contract after bounded
+   read-only Astra challenge. Keep hooks stateless if possible; host generations
+   start unknown. Audit compatibility with saved cores, restore and save-only
+   continuation before changing native code.
+3. Observe initialized birth and freeze generation at draw start. Only the first
+   source framebuffer submission after birth may decide; its pass must begin
+   after birth. Old/hidden/missing/skipped submissions consume silently. Keep
+   exact submission/session/owner identity through one postdraw opportunity.
+4. Implement the narrow enemy-launch native hook, Collector/session transport
+   and Godot one-shot admission. Exclude the own-tank2f04path. Preserve request15and all original events. A hidden birth,
+   re-entry, stale buffer, recycled slot or restore must never replay ignition.
+5. Rebuild an isolated task-owned native core using existing tools. Witness the
+   requested enemy launch paths through ordinary input, then compare baseline/changed requests,
+   paired RAM/video and event timing. Check reset/reuse/batching timelines.
+6. Install only the required launch transient, without replaying the hybrid
+   preview's sustained tail on top of the accepted fizz. Audition the combined
+   original requests/attack/flight mix: one launch remains one apparent launch.
+
+Tools: reverse-engineer-anything skill with available engines, existing
+ndisasm/Unicorn/disassembly, `abrams_trace.h`, core builder, render Collector,
+session tests, Godot audio/world tests and original trace-parity utility. Use
+native fallback tools directly if REA providers remain unavailable; no unrelated
+engine installation is a prerequisite. Sol owns implementation and acceptance;
+Astra advises only at the consequential contract boundary.
+
+Working if: an actual fresh source launch gives at most one justified attack,
+the requested enemy launcher paths are tested, own M1A1 AX remains regular, suppressed opportunities stay consumed, and
+original execution/audio/visibility parity holds. Otherwise keep ignition
+uninstalled and retain the working approved fizz with an explicit source gap.
+
+### Batch C. Qualify environmental and reserve actions
+
+1. Exercise current cow, river, German woodland/field and exact fire-scene
+   bindings across genuine available scene/view variants, UI and occlusion.
+   Preserve accepted character and levels; no new birds or random distant cows.
+2. For broader fire, establish an actual currently visible active-burn state.
+   A wreck alone is insufficient. Reuse the accepted blaze only after that
+   source fact is qualified; do not infer burning from damage or black geometry.
+3. Reconcile all21reserve roles against the existing audit. Keep16unresolved
+   actions unbound until their actual onset/contact is demonstrated. The two
+   covered related actions need no extra layer. The three weapon reserves have
+   no verified player event; do not infer a global original-game absence.
+4. Preserve unknown requests7/9/10/15/16and incomplete utterance boundaries.
+   No speculative speech or invented hatch/gate/weather/infantry mechanics.
+
+Tools: original source observers/disassembly, existing environmental fixtures,
+Godot native owner/readback tests and the already acquired free bank. No new
+stock purchase or new generalized event framework is needed for this batch.
+
+Working if: demonstrated actions receive justified bindings, every other role
+has a precise reserve/covered disposition, and scenery never leaks hidden cues.
+
+### Batch D. Opportunistic recording upgrades, parallel and capped
+
+Order: inspect acquired archives and463-file CC0 bank first, then a specific
+new free original, then a clean cheap single with a verified total and rights.
+Prioritise one shared BMP exterior loop, BTR-70, BRDM-2 and a real smoke-launch
+single. Exact T-62/T-64/M60and isolated tracks are lower priority because
+functional fallbacks already exist. MiGs/A-10/Bren remain excluded.
+
+Reopen a search only on a new candidate/producer route/offer, not another round
+of rejected subscription, onboard or passby leads. No vendor email detour,
+stream-demo extraction, preview-derived asset or speculative paid bundle.
+Existing item-specific caps are not a general new wallet. An actual new paid
+selection needs its concrete total and appropriate current authority.
+
+For any qualified original: preserve hash/licence/source receipt, author a
+continuous mono48kPCM16loop with exact bounds, meter seam and loudness, present
+one short authorised audition, then compare at the accepted family level.
+Keep old banks recoverable. No paid raw audio goes to models or public Git.
+
+Tools: public web research, authorised preview players, Chrome only for scoped
+signed-in acquisition, FFmpeg/ffprobe and existing authoring/provenance scripts.
+One bounded research lane may run independently of source work.
+
+Working if: only genuinely better, affordable and entitled sources replace a
+fallback; a negative search closes that lane without blocking other batches.
+
+### Batch E. Make the intended edition load and retain its sounds
+
+1. Write a per-edition asset inventory: local private native, public source,
+   public Web and any standalone target. Classify every bank's provenance,
+   attribution, intended-use and extraction/distribution conditions. Recheck
+   primary terms for the exact outgoing assets before delivery; do not infer
+   redistribution rights from purchase alone.
+2. Resolve the existing free T-80's noncommercial-use restriction for the actual
+   target. Retain the accepted private version; use a cleared fallback or
+   separately cleared source if that target cannot carry it.
+3. Test actual exported bank discovery. Current paths derive from `res://`'s
+   parent, and package allowlists exclude these SFX banks. Exported loading is
+   therefore an open question, not an established path bug or completed release.
+   Implement the smallest target-specific discovery/staging fix if reproduced,
+   with explicit private provisioning and unchanged public exclusions.
+4. Verify real launch, saved31native controls, independent Off, bank recovery,
+   missing/corrupt-bank fallback and upgrade preservation in the actual target.
+   Web retains only its supported13controls unless a matching authorised game
+   build deliberately changes that contract.
+
+Tools: existing package allowlist/build/runtime tools, export presets, Godot
+export inspection and scoped rights/provenance review. Prefer a reversible local
+private staging target first; do not weaken global packaging safeguards.
+
+Working if: the named edition actually loads the intended cleared sounds,
+preferences survive restart/upgrade, and outgoing contents match its inventory.
+
+### Batch F. Final integration, gate and delivery
+
+* Run focused changed-surface checks while implementing. Reject engine/script
+  errors even when assertion counters report zero errors. Root reconciles any
+  delegated diffs and load-bearing claims before accepting them.
+* After integration settles, freeze one candidate SHA and private-bank hash set.
+  Run the existing required default/native/live release tiers to terminal exit,
+  without repeated passing broad gates for reassurance.
+* Do one fresh ordinary live mission and physical-output check of crew/weapons/
+  motors/ambience, plus pause/mute/focus/save/restore. Existing Dummy/retained
+  checks do not establish device playback or healthy-host pacing. Keep PNG
+  visuals separate from timing and preserve foreign jobs/shared driver caches.
+* Inspect outgoing asset list, licence/credits, credential/original-input guard
+  and100MBGit size boundary. Commit/push or publish only to the established
+  authorised target with its release checks. Verify delivered SHA and served
+  or installed bytes, retain rollback, and report edition-specific status.
+* Retire the temporary follow-up only when its actual outcomes are complete.
+  Do not wake or coordinate other chats; use task-owned jobs and existing waits.
+
+Tools: current repository validation runner, native/original-core checks,
+production mixer/capture, package boundary guard, Git and target-specific
+served/installed verification. Use task-internal leaf agents only for genuinely
+independent bounded lanes; root retains integration and final delivery.
+
+Working if: implementation, source parity, human/device judgment, rights and
+actual delivery each have their own real result, with no partial gate called
+complete. Optional authenticity shopping cannot hold an otherwise qualified
+fallback edition indefinitely.
+
+## Execution arrangement and next action
+
+Sequence: **A first; B and C as bounded independent source lanes; D opportunistic;
+E begins early as an inventory and closes after source work; F once at freeze.**
+Next concrete action is Batch A's larger ACRV/FST witness search and the
+other-Abrams occurrence check, followed by one expanded-family mix capture.
+These reuse existing assets, cost nothing and do not require another generic
+approval. This planning turn itself starts no new runtime or purchase.
+
+Three failure modes govern the order: guessed birth/visibility creates false
+launches; duplicated reused beds change the mix; a sound works in checkout but
+is missing or uncleared in the delivered edition. The plan addresses those
+before adding more stock or calling the programme complete.
+
+Working if: each lane returns its finite source/edit/test artifact, root can
+accept or reject it independently, and the next authorised action stays clear.
 
 ## 5. Rights and release decisions
 
@@ -231,9 +396,10 @@ candidate or offer after the current finite negative, not another equivalent
 round of subscriptions or game/video rips.
 
 Current search/audit evidence: `artifacts/audio-remaining-plan-20261028/`.
-Current local runtime proof: `artifacts/tow-flight-20261028/verification.json`
-and the referenced T-72/ambience/vehicle receipts. No runtime checks were rerun
-merely to produce this plan, and no audio or accepted mix was changed.
+Latest local execution proof: `artifacts/audio-execution-20261028/verification.json`
+and the referenced TOW/T-72/ambience/vehicle receipts. This plan refresh checked
+HEAD, clean tracked state, receipt/log hashes, current role counts and source/
+packaging paths. It ran no runtime test and changed no audio or accepted mix.
 
 Working if: batches advance the actual gaps, preserve all current acceptance,
 and stop at real source, rights, human-listening or target-release boundaries.
@@ -265,7 +431,7 @@ unchanged four-source-pixel threshold. Settings14checks and two inspected
 native screenshots verify reachable controls at wide/compact sizes. No fresh
 live guest, physical-device, new human-listening or pacing claim is made.
 
-All1528sealed incumbent audio/bank files are unchanged. Ten private banks,
+All 1,528 sealed incumbent audio/bank files are unchanged. Ten private banks,
 26PCMfiles and13physical world players remain; logical world cues increase to15
 and native saved controls to31(Web13unchanged). This batch costsUS$0.
 Initial sandbox-only checks encountered user-data/certificate access failures;
@@ -281,3 +447,95 @@ runtime only; no application, game pack or public audio release was made.
 Working if: these exact visible moving owners can reuse the accepted beds
 without summed duplicates, independent Off survives, wrecks/hidden/tiny/UI-
 covered owners remain silent, and MiGs receive no new sound or sourcing.
+
+
+## Current batch evidence and limits, 28 October 2026
+
+* FST123 and ACRV139 now have genuine larger VGA-paired source cases and their
+  own native final-owner positives. Final replay passed47checks with no errors.
+  Their exact original audio histories were consumed to held boundaries. Nell
+  accepted the combined reel as comfortable; existing masters/gains stayed fixed.
+* Flight expectations now derive from the original PC EFFECTS.BMP, with all ten
+  phase fingerprints independently matched. PC-only native loading no longer
+  needs optional Genesis artwork. The native flight check passed87assertions.
+* `ABRAMS_AUDIO_ROOT` selects one explicit absolute owner-managed native bank
+  root. Missing/invalid explicit roots fail closed; Web never reads it. The
+  standalone launcher defaults to its stable profile `audio` folder. Ten banks
+  remain outside public assets and versioned installs, with no new PCM copies.
+* A fresh private review app, build8d52b7e973d4b12f9c84, passed normal renderer
+  import and34bundled-loader assertions with all26cues. Its runtime payload matches corrected source; documentation was refreshed
+  afterward. This is component/loading evidence,
+  not a fresh full-app device-output or pacing verdict. Older apps/saves remain.
+* Audio-only field/water qualification recognises the exact original thermal
+  remaps as well as day colours. Renderer and ownership code did not change.
+  Retained thermal cases correctly remained silent because the final owner had
+  no pixels. A genuine thermal-positive native case is still unobserved; CPU
+  positives are not relabelled as that acceptance.
+* The own-AX branch was removed after Nell's correction. The original core37bff0
+  and matching receipt were restored exactly; original cannon event1 and crew
+  remain unchanged. A source gate on the superseded own-AX candidate ended143
+  after only its verified task-owned unittest leaf was stopped. It is not a
+  completed gate. The superseded AX app and files are retained as rejected work.
+* Source research keeps enemy ignition separate from visible flight. Ordinary
+  own-AX research produced no eligible first-render opportunity and is outside
+  the clarified target. No lifecycle research hook or guessed request15mapping
+  has entered production. A fresh neutral Siegen run and a distinct ordinary southward approach both
+  produced zero enemy launches. The approach completed 24,000 SIM frames,
+  reached [79872,117304,50], retained ammunition and had no callback errors.
+  Eight paired PNGs match source video. A historical-input attempt matched its
+  first fence, then diverged at frame11495 and stopped before any suffix. No
+  actor-to-owner launch admission was established; the recording stays prepared
+  and uninstalled. Do not repeat those equivalent probes or infer an onset
+  from the flare already being visible.
+* Existing free stock and a distinct SONNISS designed-smoke lead were checked.
+  No additional qualified free exterior BMP/BTR/BRDM recording was acquired.
+  The smoke lead is unacquired and is not verified as a hardware recording.
+  Approved generic beds/pressure remain the honest fallback. All 21 reserve
+  dispositions remain source-qualified or explicitly unbound, not extra layers.
+
+Evidence is retained in `artifacts/audio-batch-20261028/`. All 1,528 sealed incumbent
+files were rechecked unchanged after the AX withdrawal. The published game pack
+and public apps have not received private recordings. No new money or credit
+was spent. Final corrected-source aggregate and device/release limits remain
+separate from the passing focused checks.
+
+Working if: the accepted family mix stays fixed, private PC-only loading works,
+M1A1 AX stays regular, and only evidenced enemy launches can acquire ignition.
+
+
+### Corrected-source verification status
+
+The unchanged focused audio surface passes 924 audio, 1,272 world, 681 mix and
+33 limiter assertions. The corrected Python subset passes 128 tests. The first
+full-tier attempt used an incomplete build interpreter and stopped at the Python
+reference tier with 16 failures and four import errors. The repository's existing
+complete validation environment resolves those imports, and all 87 affected
+checks pass there. The full run passed all 106 default and 34 native checks, plus seven live checks,
+then failed combat-outcome paired RAM at frame305; ten later live checks did not run.
+no test, release check or source guard was removed or relaxed. Foreign ledger,
+playability documentation and optional-Genesis test edits remain untouched.
+
+Working if: a focused pass is reported as focused, failed/superseded runs remain
+visible, and final gate status comes from its terminal receipt.
+
+
+### Release hold and finite source disposition
+
+The complete aggregate is not green. Native combat replay failed its full paired
+RAM assertion at frame305. A 64-frame attribution probe using the unchanged
+original baseline and trace cores produced identical current RAM/video, while
+both differed from retained RAM (starting272); retained video still matched.
+This narrows the failure to retained RAM reproducibility, with its cause still
+unproved. The guard and fixture were left intact. Ten later live checks remain
+unrun; no push, public release or replacement of Nell's existing app/profile.
+
+Enemy-launch recording integration also remains incomplete. Three different
+finite source approaches did not establish a launch-to-visible-owner boundary.
+The recording and provenance remain ready, while original request15and the
+accepted visible-flight fizz continue unchanged. No generic request rename,
+late-visible ignition, hidden actor cue or M1A1AX replacement is used to fill
+that gap. Exact source classes/actor-controller joins are documented in
+`artifacts/audio-batch-20261028/enemy-actor-contract-study.json`.
+
+Working if: the release stays held until the real fixture/source issues close,
+and the current ordinary M1A1 firing and accepted mix remain unchanged.
