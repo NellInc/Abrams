@@ -8322,3 +8322,43 @@ Working if: the installed selected families and components follow these source
 boundaries, all accepted masters remain identical, hidden/muted/stale/restored
 presentation stays silent, controls isolate their groups, and unqualified stock
 is accounted for without inventing gameplay or tactical information.
+
+## 2026-10-28: paused ambience revision and source publication checkpoint
+
+Nell paused further work and explicitly requested commit/push of all files.
+The unfinished woodland/fire correction is preserved privately and remains
+uninstalled. A new original CC0 woodland source and an unreviewed24second fire
+candidate are recoverable under local-audio/ambience-revision-20261028; its
+state is in artifacts/ambience-revision-20261028/state.json. Installed banks
+remain unchanged, the rejected sound-character feedback is still open, and
+the task heartbeat was verified already PAUSED. No automatic resumption.
+
+This checkpoint also includes the existing intro shot-only75percent playback
+and bounded Escape-skip changes. Root inspected the actual diff and reran
+scheduler210, frontend music61 and frame pacing49159, all terminal0. Earlier
+native short-tap receipts were inspected, with0errors and exited children;
+no fresh live/native intro run was claimed for this checkpoint.
+
+Pre-push inspection found a real browser compatibility defect: the delivered
+shell advertised six individual controls that the existing packed game does
+not supply, incorrectly disabling Restore default mix. The existing shell test
+was reading only the older development copy and missed it. Root reproduced the
+failure against the actual delivered script, then made controls conditional on
+reported runtime capabilities. Legacy five-channel reset remains enabled;
+unsupported rows hide, and a newer runtime reveals its individual controls.
+The row-hidden CSS override and identical source/deployed templates are covered
+by the16passing shell tests. No Godot/Python/asset pack was rebuilt. Only the
+two intentionally changed shell hashes were refreshed in BUNDLE.json; every
+other bundle member was verified unchanged.
+
+The publication tree is verified from tracked candidate bytes, excluding only
+untracked/ignored Mac metadata and the existing foreign build lock. Neither is
+deleted or smuggled into the deployment inventory, and no checker is weakened.
+The machine-local recursive Godot alias and generated build lock now have exact
+Git exclusions. Original games, paid/private audio, captures and partial
+revision outputs remain private. No new purchase or standalone release.
+
+Working if: source changes reach the established origin only after existing
+boundary/size/secret/site checks pass, private material stays out of Git, the
+existing browser runtime retains working controls, and ambience authoring stays
+paused with recoverable unfinished files.

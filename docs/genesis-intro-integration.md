@@ -6,11 +6,12 @@ The default tandem renderer now restores the title illustration, all four
 observed expanding muzzle-flash poses and all eight original PC credit cards.
 `pc_intro_art.gd` selects each composition using the complete 320x200 RGB frame
 and the active original START executable. There is no wall-clock animation,
-input interception, random effect or authored credit schedule. The one authored
-motion, the shot below, is timed by the original frame sequence.
+random effect or authored credit schedule. The one authored motion, the shot
+below, is timed by the original frame sequence. Visible Play now offers the
+slower playback and Escape skip described below.
 
-The original PC controls frame holds, the response to keys, credit wording and
-order, and the transition into the menu. Unknown or altered frames retain the
+The original PC controls frame-count holds, the response to delivered keys,
+credit wording and order, and the transition into the menu. Unknown or altered frames retain the
 original framebuffer. Missing or modified local source/art files also disable
 the replacement. `--original-art` disables it through the existing diagnostic.
 
@@ -18,6 +19,44 @@ The initial publisher splash, joystick question, moving 3D menu backdrop and
 unobserved transition variants remain original. This completes the observed
 title/fire/credits sequence's binding, not the entire animation programme.
 No intro audio replacement was added in this pass.
+
+## Playback controls (25 October 2026)
+
+At Nell's request, only the tank shot runs at 75% of normal delivery speed,
+giving its original holds one third more screen time. The title, credit names
+and dedication retain their usual speed, as Nell clarified after viewing the
+preview.
+The emulated CPU, source frame rate, shot's frame-based animation and gameplay
+speed are unchanged. Explicit fast-forward still overrides the slower cadence.
+Hidden cover-menu navigation and diagnostic captures keep their existing pace.
+
+A single Escape tap skips the whole visible intro, including its credit cards.
+The tap is retained even while an original frame is outstanding. The viewer
+sends bounded 600-frame neutral fast-forward batches, because the original
+advances one card per fresh Escape press and its final credit has a fixed hold.
+Every reply must still match the pinned intro pixels before another batch is
+sent, with a maximum of six batches. Leaving those frames stops the skip and
+quarantines any held key before ordinary menu controls resume. Remaster menus, reference readers and
+window-focus quarantine retain priority over skipping. Recognition uses the
+existing source-verified catalogue independently of replacement artwork or audio.
+
+Verification of this assistant's changes: the current scheduler (210 checks),
+frontend-music recognition (61 checks) and frame-pacing (49,159 checks) tests
+passed. The scheduler verifies normal-speed delivery on every credit card while
+keeping Escape available. Earlier frontdoor (63 checks) and intro-art (8,347
+checks) tests passed. Native short-tap probes during the shot and credit 4 both reached
+the original menu and observed 120 subsequent menu frames with no errors.
+Receipts are `artifacts/intro-pacing-20261025/skip-shot-final/intro-play.json`
+and `skip-credit/intro-play.json`. Skip latency in this local debug build was
+5.00 and 4.64 seconds respectively; source-frame execution still takes time.
+The earlier pulse-only attempt and machine-speed assumptions remain recorded
+in the earlier reports in the same artifact directory. No publication or
+release build was performed.
+
+Working if: visible Play slows only the tank shot, the title and names run at the usual pace, a brief
+Escape tap during the shot or a credit reaches the original menu without a
+second press, and neither the held skip key nor the slower cadence carries into
+menus or gameplay.
 
 ## Dedication
 
@@ -30,8 +69,8 @@ a lower-left memorial panel:
 The panel uses the original 6X6 and 8X8 letterforms, a black background, the same
 red border as the credit cards, a subdued grey introduction and a white name.
 It does not cover or replace an original credit. It appears only while the
-original final credit frame is displayed, with no extra hold, input or timing
-change. This is an authored remaster dedication, distinct from original content.
+original final credit frame is displayed, with no independent hold or timer.
+This is an authored remaster dedication, distinct from original content.
 The new name and every panel/font pixel are checked independently in the native
 intro test, and unknown frames clear it with the rest of the title restoration.
 
@@ -123,8 +162,9 @@ source has more animation to restore. Nell chose an authored animation
     rises 10 source pixels, cross-fades into grey smoke of the same shape (the
     atlas desaturated and dimmed at load), and thins to nothing by frame 104,
     just before the first credit (about frame 110).
-* **Unchanged.** PC timing, input, credits, the dedication and the transition
-  to the menu all stay with the PC. A skipped intro (credit at frame 48) shows
+* **Unchanged in the 16 October integration.** PC timing, input, credits,
+  the dedication and the transition to the menu all stay with the PC.
+  A skipped intro (credit at frame 48) shows
   the credit card over the thinning smoke.
 
 Evidence, 16 October 2026:

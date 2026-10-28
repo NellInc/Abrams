@@ -167,7 +167,7 @@ const command = value => {
 };
 function updateExtended(state) {
   const warnings = [];
-  let audioReady = true;
+  let audioReady = Object.keys(state.audio || {}).some(key => Object.hasOwn(audioControls, key));
   let qualityReady = true;
   for (const [key, select] of Object.entries(qualityControls)) {
     const levels = state.quality_levels?.[key];
@@ -182,10 +182,12 @@ function updateExtended(state) {
     }
   }
   for (const [key, select] of Object.entries(audioControls)) {
+    const supported = Object.hasOwn(state.audio || {}, key) || Object.hasOwn(state.audio_defaults || {}, key);
+    select.closest('label').hidden = !supported;
     const value = state.audio?.[key];
     const valid = Number.isInteger(value) && value >= 0 && value <= 100;
-    select.disabled = !valid;
-    audioReady &&= valid;
+    select.disabled = !supported || !valid;
+    if (supported) audioReady &&= valid;
     if (valid) {
       for (const option of [...select.options])
         if (option.dataset.current === '1' && Number(option.value) !== value) option.remove();

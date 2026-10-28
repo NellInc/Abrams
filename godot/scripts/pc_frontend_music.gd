@@ -77,10 +77,12 @@ func _fail(context: String, reason: String) -> AudioStreamWAV:
 
 var intro_frames: Dictionary = {}
 var intro_checked := false
+var intro_phase := ""
 var _last_start_bytes := PackedByteArray()
-var _last_start_intro := false
+var _last_start_intro := ""
 
 func context_for_frame(source: Image, program: Dictionary, presentation: Dictionary) -> String:
+	intro_phase=""
 	if source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8: return ""
 	var name: String=program.get("name","")
 	if name not in ["START","BRIEF","END"]: return ""
@@ -94,9 +96,11 @@ func context_for_frame(source: Image, program: Dictionary, presentation: Diction
 				full_frame_hashes+=1
 				var hash := HashingContext.new()
 				hash.start(HashingContext.HASH_SHA256);hash.update(bytes)
-				_last_start_intro=intro_frames.has(hash.finish().hex_encode())
+				_last_start_intro=intro_frames.get(hash.finish().hex_encode(),"")
 				_last_start_bytes=bytes
-			if _last_start_intro: return "intro"
+			if not _last_start_intro.is_empty():
+				intro_phase=_last_start_intro
+				return "intro"
 	if presentation.get("frontend_program")!=program: return ""
 	if not verified_text(source,presentation).is_empty():
 		return {"START":"menu","BRIEF":"briefing","END":"debrief"}[name]
@@ -156,4 +160,4 @@ func _load_intro_fingerprints() -> void:
 	for name in data.sources:
 		var original := root_path.path_join("GAME/"+name)
 		if not FileAccess.file_exists(original) or FileAccess.get_sha256(original)!=data.sources[name]: return
-	for entry in data.entries: intro_frames[entry.rgb_sha256]=true
+	for entry in data.entries: intro_frames[entry.rgb_sha256]=entry.name

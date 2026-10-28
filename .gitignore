@@ -49,3 +49,8 @@ builds/
 # Working if: git check-ignore output/playwright work succeeds.
 /output/
 /work/
+
+# Machine-local runtime aliases and build locks never enter a source commit.
+# Working if: git check-ignore godot/godot website/dist/play/.generated/.abrams-build.lock succeeds.
+/godot/godot
+/website/dist/play/.generated/.abrams-build.lock

@@ -221,12 +221,12 @@
       "sha256": "7c3173b44bfececa2d77f27f94663e60195434a9542a0f792171086435571f15"
     },
     "remaster.html": {
-      "bytes": 12064,
-      "sha256": "e227452d669f36041b0dcfe8587423acd72ce92ff19d744271790916bd44f8be"
+      "bytes": 14723,
+      "sha256": "db11d10323e7663dd63b2a770365fcb95e6958f4644b828428e759c56ae4d220"
     },
     "remaster.mjs": {
-      "bytes": 23894,
-      "sha256": "ac8212cd127c2bf3a4d56a36aeb99ddb398d16456029fca5b4a049a2be3acc70"
+      "bytes": 24219,
+      "sha256": "31888d72bfef174e6c34edbe3559b593644f9b03d28dcc9927e5150528bd3d48"
     },
     "remaster.service.worker.js": {
       "bytes": 4557,

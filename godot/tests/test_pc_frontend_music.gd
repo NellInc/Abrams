@@ -105,7 +105,7 @@ func run()->void:
 	quiet.context_for_frame(source,{"name":"START"},{})
 	check(quiet.full_frame_hashes==0,"no intro catalogue, no full-frame hash")
 	var black_hash:=HashingContext.new();black_hash.start(HashingContext.HASH_SHA256);black_hash.update(source.get_data())
-	quiet.intro_frames[black_hash.finish().hex_encode()]=true
+	quiet.intro_frames[black_hash.finish().hex_encode()]="title"
 	check(quiet.context_for_frame(source,{"name":"START"},{})=="intro" and quiet.full_frame_hashes==1,"pinned frame selects intro")
 	check(quiet.context_for_frame(source,{"name":"START"},{})=="intro" and quiet.full_frame_hashes==1,"unchanged frame reuses its result")
 	source.set_pixel(5,5,Color.WHITE)

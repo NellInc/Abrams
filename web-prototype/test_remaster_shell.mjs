@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {test} from 'node:test';
 import vm from 'node:vm';
-const source = (await readFile(new URL('./remaster.mjs', import.meta.url), 'utf8')).replace(/^import .*;\n/gm, '');
+const deployedSource = await readFile(new URL('../website/dist/play/remaster.mjs', import.meta.url), 'utf8');
+const source = deployedSource.replace(/^import .*;\n/gm, '');
 class Element {
   constructor() { this.listeners = {}; this.files = []; this.options = []; this.value = ''; this.hidden = false; this.disabled = false; this.dataset = {}; this.attrs = {}; this.textContent = ''; this.classList = {toggle() {}, add() {}, remove() {}}; }
   set value(value) { this._value = value; if (value === '') this.files = []; }
@@ -12,7 +13,7 @@ class Element {
   removeAttribute(key) { delete this.attrs[key]; }
   getBoundingClientRect() { return {width: 800, height: 450}; }
   focus() { this.focused = true; }
-  closest() { return this.form ? this : null; }
+  closest(selector) { return selector === 'label' ? this.parentLabel : (this.form ? this : null); }
   append(option) { this.options.push(option); option.remove = () => { this.options = this.options.filter(value => value !== option); }; }
 }
 // A fake service worker container: register(), ready, controller, controllerchange.
@@ -45,8 +46,10 @@ function fixture({missingManifest = false, engineFailure = false, capability = t
   el('#web-load-slot').value = el('#web-save-slot').value = '1';
   for (const [key, values] of Object.entries({msaa: [0,2,4,8], anisotropy: [0,2,4,8,16]}))
     el('#web-' + key).options = values.map(value => Object.assign(new Element(), {value: String(value)}));
-  for (const key of ['master','effects','voice','motors','music'])
+  for (const key of ['master','effects','voice','motors','music','cannon','machinegun','impact','smoke','engine','turret']) {
     el('#web-audio-' + key).options = Array.from({length: 11}, (_, index) => Object.assign(new Element(), {value: String(index * 10)}));
+    el('#web-audio-' + key).parentLabel = new Element();
+  }
   const events = {}, sent = [], engines = [], hosts = [], replaced = [], copies = [];
   const document = {querySelector: el, createElement: () => new Element(), addEventListener: (type, fn) => events[type] = fn, body: new Element(), fullscreenEnabled: true,
     documentElement: {requestFullscreen: async () => { document.fullscreenElement = {}; events.fullscreenchange?.(); }},
@@ -132,6 +135,7 @@ test('extended quality and all five gains dispatch incumbent controls and report
   const value = {...state(false), quality: {msaa: 4, anisotropy: 16}, quality_levels: {msaa: [0,2,4,8], anisotropy: [0,2,4,8,16]},
     audio: {master: 100, effects: 30, voice: 67, motors: 100, music: 70}, audio_error: 'Mix changed, but could not save it'};
   f.ctx.testAPI.updateToolbar(value);
+  assert.equal(f.el('#web-reset-audio').disabled, false, 'the existing five-channel player retains its working reset');
   assert.equal(f.el('#web-msaa').value, '4'); assert.equal(f.el('#web-anisotropy').value, '16');
   assert.equal(f.el('#web-audio-voice').value, '67'); assert.match(f.el('#web-settings-status').textContent, /could not save/);
   f.el('#web-msaa').value = '8'; f.el('#web-msaa').listeners.change();
@@ -141,6 +145,15 @@ test('extended quality and all five gains dispatch incumbent controls and report
   f.el('#web-reset-audio').listeners.click(); assert.equal(f.sent.at(-1).op, 'reset_audio');
   f.el('#web-reset-quality').listeners.click(); assert.equal(f.sent.at(-1).op, 'reset_quality');
   assert.equal(f.el('#web-reset-quality').disabled, false);
+  assert.equal(f.el('#web-audio-cannon').disabled, true);
+  assert.equal(f.el('#web-audio-cannon').parentLabel.hidden, true, 'unsupported new channels stay hidden on the old pack');
+  const individual = {cannon: 0, machinegun: 40, impact: 50, smoke: 60, engine: 70, turret: 80};
+  f.ctx.testAPI.updateToolbar({...value, audio: {...value.audio, ...individual}});
+  assert.equal(f.el('#web-reset-audio').disabled, false);
+  for (const [key, percent] of Object.entries(individual)) {
+    const select = f.el('#web-audio-' + key);
+    assert.equal(select.disabled, false); assert.equal(select.parentLabel.hidden, false); assert.equal(select.value, String(percent));
+  }
   f.ctx.testAPI.updateToolbar({...value, speed: 8}); assert.match(f.el('#web-audio-note').textContent, /muted during/);
   f.ctx.testAPI.updateToolbar(state(false)); assert.equal(f.el('#web-msaa').disabled, true); assert.equal(f.el('#web-reset-audio').disabled, true); assert.equal(f.el('#web-reset-quality').disabled, true);
 });
@@ -239,4 +252,9 @@ test('a worker that never claims hits the bounded deadline', async () => {
   assert.ok(deadline); deadline.fn(); await settle();
   assert.match(f.el('#status').textContent, /did not become ready/);
   assert.equal(f.replaced.length, 0); assert.equal(f.el('#reload-page').hidden, false);
+});
+
+test('build templates match the deployed audio-capability controls', async () => {
+  assert.equal(await readFile(new URL('./remaster.mjs', import.meta.url), 'utf8'), deployedSource);
+  assert.equal(await readFile(new URL('./remaster.html', import.meta.url), 'utf8'), await readFile(new URL('../website/dist/play/remaster.html', import.meta.url), 'utf8'));
 });

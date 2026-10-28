@@ -58,6 +58,7 @@ func check(ok: bool, why: String) -> void:
 
 func _initialize() -> void:
 	# Do not launch a real child or load artwork in this scheduler-only fixture.
+	root.window_input.connect(_intro_input)
 	bridge=TestBridge.new()
 	bridge.events=events
 	draw_view=TestDraw.new()
@@ -234,6 +235,7 @@ func run() -> void:
 	check(bridge.requests[-1].keys==["space"],"new trigger press survives focus recovery")
 	audio_menu.queue_free();audio_menu=null
 	_choose_speed(1);set_keys([])
+	check_intro_controls(period)
 
 	# Capture routes retain explicit batches and dispatch only after presentation.
 	capture=true
@@ -387,3 +389,68 @@ func finish() -> void:
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_LIVE_SCHEDULING: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)
+
+func check_intro_controls(period: float) -> void:
+	var directory:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	var catalog: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("local-art/pc-intro-v2/intro.json")))
+	var title:=Image.load_from_file(directory.path_join("artifacts/pc-intro-trace-01/"+catalog.entries[0].capture_image))
+	play_mode=true
+	audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+	audio_menu.config_path="";audio_menu.quality_config_path=""
+	root.add_child(audio_menu)
+	_observe_intro(title,{"name":"START"},{})
+	check(intro_active and not intro_shot_active,"title remains skippable at normal speed")
+	bridge.pending=false;elapsed=period
+	check(_advance_live_frame() and bridge.requests[-1].frames==1,"title advances at the usual speed")
+	var flash:=Image.load_from_file(directory.path_join("artifacts/pc-intro-trace-01/"+catalog.entries[1].capture_image))
+	_observe_intro(flash,{"name":"START"},{})
+	check(intro_active and intro_shot_active,"tank shot recognized without replacement art or music")
+	bridge.pending=false;elapsed=period
+	check(not _advance_live_frame(),"tank shot waits longer than an ordinary frame")
+	elapsed=period/INTRO_SPEED
+	check(_advance_live_frame() and bridge.requests[-1].frames==1,"slower intro still executes one unchanged original frame")
+	check(is_equal_approx(fps,1.0/period),"intro slowdown leaves original source fps unchanged")
+	fast_forward=8;bridge.pending=false;elapsed=period
+	check(_advance_live_frame() and bridge.requests[-1].frames==8,"explicit fast-forward overrides intro slowdown")
+	fast_forward=1
+	var escape:=InputEventKey.new();escape.keycode=KEY_ESCAPE;escape.pressed=true
+	audio_menu.popup.about_to_popup.emit()
+	root.window_input.emit(escape)
+	check(intro_skip_step==-1,"Escape closing a remaster menu cannot skip the intro")
+	audio_menu.popup.popup_hide.emit()
+	audio_menu.game_keys([])
+	root.window_input.emit(escape)
+	escape.pressed=false;root.window_input.emit(escape)
+	check(bridge.pending and intro_skip_step==0,"brief Escape tap latches while an original frame is outstanding")
+	bridge.pending=false;elapsed=0.0
+	check(_advance_live_frame() and bridge.requests[-1]=={"frames":INTRO_SKIP_BATCH,"keys":[]},"latched skip immediately fast-forwards bounded neutral original frames")
+	bridge.pending=false
+	check(_advance_live_frame() and bridge.requests[-1]=={"frames":INTRO_SKIP_BATCH,"keys":[]},"skip never sends a key into the original menu")
+	var changed:=title.duplicate();changed.set_pixel(0,0,Color.MAGENTA)
+	_observe_intro(changed,{"name":"START"},{})
+	check(not intro_active and intro_skip_step==-1,"unrecognized source stops skip before any menu or gameplay input")
+	set_keys([KEY_ESCAPE]);bridge.pending=false;elapsed=period
+	check(_advance_live_frame() and bridge.requests[-1].frames==1 and bridge.requests[-1].keys.is_empty(),"held skip key quarantined after intro; ordinary menu pace restored")
+	set_keys([]);audio_menu.game_keys([])
+	for entry in catalog.entries:
+		if not str(entry.name).begins_with("credit-"): continue
+		var credit:=Image.load_from_file(directory.path_join("artifacts/pc-intro-trace-01/"+entry.capture_image))
+		_observe_intro(credit,{"name":"START"},{})
+		check(intro_active and not intro_shot_active,"credit stays skippable without slowing its names: "+entry.name)
+		bridge.pending=false;elapsed=period
+		check(_advance_live_frame() and bridge.requests[-1].frames==1,"credit advances at the usual speed: "+entry.name)
+	var credit_escape:=InputEventKey.new();credit_escape.keycode=KEY_ESCAPE;credit_escape.pressed=true
+	root.window_input.emit(credit_escape)
+	check(intro_skip_step==0,"Escape still skips during normal-speed names")
+	intro_skip_step=-1
+	_observe_intro(title,{"name":"SIM"},{})
+	check(not intro_active,"title pixels in another executable cannot slow gameplay")
+	capture=true;_observe_intro(title,{"name":"START"},{})
+	check(not intro_active,"diagnostic captures retain original timing and input")
+	capture=false;_observe_intro(title,{"name":"START"},{})
+	intro_skip_step=INTRO_SKIP_STEPS-1;bridge.pending=false
+	check(_advance_live_frame() and intro_skip_step==-1,"skip cannot retry beyond six bounded original batches")
+	_observe_intro(changed,{"name":"START"},{})
+	play_mode=false;inflight_fast=false
+	audio_menu.queue_free();audio_menu=null
+	bridge.pending=false;elapsed=0.0;set_keys([])

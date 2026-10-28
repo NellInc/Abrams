@@ -55,6 +55,12 @@ var previous: Dictionary = {}
 var previous_program: Dictionary = {}
 var elapsed := 0.0
 var fps := 59.9227
+const INTRO_SPEED := 0.75
+const INTRO_SKIP_STEPS := 6
+const INTRO_SKIP_BATCH := 600
+var intro_active := false
+var intro_shot_active := false
+var intro_skip_step := -1
 var closing := false
 var close_deadline := 0
 var capture := false
@@ -140,6 +146,7 @@ func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, p
 
 func _initialize() -> void:
 	Keyboard.initialize(root)
+	root.window_input.connect(_intro_input)
 	root.title = str(ProjectSettings.get_setting("application/config/name")) + ": bridge research"
 	root.size = Vector2i(1440, 900)
 	root.min_size = Vector2i(1100, 750)
@@ -725,12 +732,45 @@ static func frame_remainder(elapsed_seconds: float, source_fps: float) -> float:
 	# never invent a catch-up batch or backdate a newly sampled key press.
 	return fmod(elapsed_seconds,1.0/source_fps)
 
+func _intro_input(event: InputEvent) -> void:
+	if not intro_active or _frontdoor_blocked() or capture or closing or state_control_pending or not pending_state_command.is_empty(): return
+	if not event is InputEventKey or not event.pressed or event.echo: return
+	var code: int=event.keycode if event.keycode!=0 else event.physical_keycode
+	if code!=KEY_ESCAPE or event.meta_pressed or event.ctrl_pressed or event.alt_pressed: return
+	# Use the same menu, reference-reader and focus quarantine as ordinary keys.
+	if audio_menu and audio_menu.game_keys(["escape"])!=["escape"]: return
+	if intro_skip_step<0: intro_skip_step=0
+
+func _observe_intro(image: Image, program: Dictionary, presentation: Dictionary) -> void:
+	# Recognition uses pinned original pixels, independent of graphics mode,
+	# replacement art and audio. Hidden frontdoor navigation keeps its own pace.
+	intro_active=play_mode and not capture and not _frontdoor_blocked() and frontdoor_route.proof.context_for_frame(image,program,presentation)=="intro"
+	intro_shot_active=intro_active and frontdoor_route.proof.intro_phase.begins_with("flash-")
+	if not intro_active and intro_skip_step>=0:
+		intro_skip_step=-1
+		# A held skip key must never also cancel/exit the menu we just reached.
+		if audio_menu: audio_menu.release_keys=true
+		elapsed=0.0
+
 func _advance_live_frame() -> bool:
 	if capture or closing or state_control_pending or not pending_state_command.is_empty() or bridge.pending or not bridge.failure.is_empty():
 		return false
 	if _frontdoor_blocked():return _advance_frontdoor()
-	if elapsed<1.0/fps:return false
-	elapsed=frame_remainder(elapsed,fps)
+	if intro_active and intro_skip_step>=0:
+		# Escape advances individual credits but cannot dismiss the last hold.
+		# Fast-forward neutral frames instead: the PC reaches its own menu,
+		# without a skip key that could also select or cancel anything there.
+		var skipping: bool=bridge.step(INTRO_SKIP_BATCH,[])
+		if skipping:
+			intro_skip_step+=1
+			if intro_skip_step>=INTRO_SKIP_STEPS: intro_skip_step=-1
+			elapsed=0.0
+			inflight_fast=true
+			if pc_audio: pc_audio.set_transport_muted(true)
+		return skipping
+	var delivery_fps: float=fps*(INTRO_SPEED if intro_shot_active and fast_forward==1 else 1.0)
+	if elapsed<1.0/delivery_fps:return false
+	elapsed=frame_remainder(elapsed,delivery_fps)
 	# Sample current original keys once, never queue a second outstanding frame.
 	var held := Keyboard.held()
 	if audio_menu: held=audio_menu.game_keys(held)
@@ -814,6 +854,7 @@ func _choose_speed(multiplier: int) -> void:
 
 func _request_state(operation: String, slot: int) -> void:
 	if _frontdoor_blocked() or closing or state_control_pending or not pending_state_command.is_empty(): return
+	intro_skip_step=-1
 	pending_state_command={"op":operation,"slot":slot}
 	# A save neither advances nor rewinds the guest: a reply already in flight
 	# is real play and keeps its sound. A load discards what follows it.
@@ -1119,6 +1160,7 @@ func _apply_sample(message: Dictionary) -> void:
 	# The completed packet owns its pixels and metadata. Once validated, the
 	# original host may compute the next frame while we build this presentation.
 	# All Godot scene work remains on the main thread; capture never prefetches.
+	_observe_intro(image,message.get("program",{}) if message.get("program") is Dictionary else {},message.get("presentation",{}))
 	_advance_live_frame()
 	# Play hides this rect; only captures and the comparison viewer read it.
 	if (capture or not play_mode) and (changed or picture.texture==null): picture.texture = ImageTexture.create_from_image(image)
