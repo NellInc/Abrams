@@ -13,6 +13,8 @@ stepsCompleted:
   - supplied_t72_archive_preserved_and_13_originals_decoded
   - human_approved_t72_loop_installed_privately
   - t72_world608_mix632_native24_installed_loader8_passed
+  - human_approved_loop_only_guided_flight_fizz_and_production_balance
+  - flight_world911_mix647_native86_bitmap512_installed9_passed
 ---
 
 # Remaining sound work and delivery plan, 28 October 2026
@@ -368,3 +370,39 @@ world-bank selector/menu and their focused tests. No pack/app build or release.
 Working if: the T-72 bank loads normally with accepted balance and original masks,
 the remaining acquisition gaps stay explicit, and the next real input resumes
 its concrete qualification without repeating accepted loop reviews.
+
+## Guided-flight texture completed, original launch binding held
+
+Nell supplied Freesound67542 and asked for its abrupt ending to segue into a
+fizzle during flight. She accepted the12second hybrid preview with "Great job!"
+and the14second held original-boundary mixer capture with "Sounds good!".
+Only the authored8second flat fizzle is installed at
+local-audio/pc-missile-flight-v1. Original ignition/alert samples are unchanged;
+the TOW recorded launch and combined audition master remain prepared privately.
+
+Read-only Astra advice rejected a combined ignition/world-loop shortcut because
+recycled pointers and visibility re-entry are not source births. Request15 is
+conditional on guided allocation targeting the player and may be an incoming
+warning. Never rename it from correlation. The smaller stateless loop-only
+contract is qualified: exact ten original flare descriptors, unique actor join,
+header100/speed250 and original final-owner/UI proof. No gameplay timer, event
+mapping, hidden allocation or position/pan/count cue. Existing four-pixel
+separation stays fixed; tiny variants can legitimately remain silent.
+
+Root checks pass911world/647mix with clean engine logs,86native and9installed
+loader checks. The original bitmap oracle passes64images/512blits. Genuine
+source phase63 joins its original audio prefix at frame152082. Other native
+variants are controlled fixtures, never claimed as fresh guest occurrence.
+All516 incumbent audio/bank files are identical. New saved Missile flight
+Off100 brings native controls to29; Web remains13. No app/pack rebuild or
+asset-bearing publication. Human/device and fresh live route/pacing limits
+remain documented, without reopening accepted texture/balance questions.
+
+Current proof: artifacts/tow-flight-20261028/verification.json. The downloaded
+original supersedes the old Chrome-download blocker. Independent underlying
+2009Army-source confirmation and any future recorded-ignition binding remain
+open alongside BMP/BTR/BRDM sourcing. Current approved smoke stays unchanged.
+
+Working if: visible qualified flight alone admits the fizz, phase/visibility
+changes never replay ignition, original requests and accepted levels stay fixed,
+and no static/controlled/Dummy proof is called fresh live or device acceptance.

@@ -26,6 +26,7 @@ func packet(frame: int, enabled: bool=true, event: bool=false) -> Dictionary:
 func individual_controls() -> void:
 	var audio := Audio.new()
 	audio.world_audio.t72_directory=""
+	audio.world_audio.flight_directory=""
 	audio.recorded_effect_directory=""
 	root.add_child(audio)
 	var menu := Menu.new()
@@ -89,6 +90,7 @@ func individual_controls() -> void:
 func auxiliary_source_controls() -> void:
 	var audio: Node = Audio.new()
 	audio.world_audio.t72_directory=""
+	audio.world_audio.flight_directory=""
 	audio.recorded_effect_directory = ""
 	root.add_child(audio)
 	var menu: MenuBar = Menu.new()
@@ -114,7 +116,7 @@ func auxiliary_source_controls() -> void:
 func detail_audio(folder: String) -> Node:
 	var audio: Node=Audio.new()
 	audio.recorded_effect_directory="";audio.supplemental.directory=folder
-	for key: String in ["directory","environment_directory","soviet_directory","t72_directory","tank_directory","allied_directory","detail_directory"]: audio.world_audio.set(key,"")
+	for key: String in ["directory","environment_directory","soviet_directory","t72_directory","flight_directory","tank_directory","allied_directory","detail_directory"]: audio.world_audio.set(key,"")
 	root.add_child(audio)
 	return audio
 
@@ -261,6 +263,7 @@ func run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	var audio := Audio.new()
 	audio.world_audio.t72_directory=""
+	audio.world_audio.flight_directory=""
 	check(audio.set_mix({"master":100,"effects":100,"voice":30,"motors":100}),"launch preferences accepted before players exist")
 	root.add_child(audio)
 	gain(audio.voice,0.65*0.3*0.8,"launch preference applied after player construction")
@@ -272,7 +275,7 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==28,"one external Audio menu, twenty-eight independently specified gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==29,"one external Audio menu, twenty-nine independently specified gain groups")
 	check(Menu.DEFAULTS.t72==100 and Menu.TITLES.t72=="T-72 engine" and menu.audio_channels().has("t72") and menu.menus.has("t72"),"native T72 has its own100% default and exact title")
 	var t72_choices: PopupMenu=menu.menus.t72
 	check(t72_choices.get_item_text(t72_choices.get_item_index(0))=="Off" and t72_choices.get_item_index(100)>=0,"native T72 exposes independent Off through100%")
@@ -366,7 +369,7 @@ func run() -> void:
 	check(reload.load_settings() and reload.settings.m113==0 and reload.settings.bradley==37,"allied controls persist independent Off and intermediate gain")
 	menu.choose("m113",43);menu.choose("bradley",0)
 	check(reload.load_settings() and reload.settings.m113==43 and reload.settings.bradley==0,"each allied class independently retains saved gain and mute")
-	for cue: String in ["t72","woodland","truck","tracks","foley","interface","fire"]:
+	for cue: String in ["t72","missileflight","woodland","truck","tracks","foley","interface","fire"]:
 		menu.choose(cue,0)
 		check(reload.load_settings() and reload.settings[cue]==0,"new private control saves Off independently: "+cue)
 		menu.choose(cue,37)
@@ -404,6 +407,7 @@ func run() -> void:
 	# started keep playing while the resumed observer restarts at epoch 0/id 0.
 	var resumed := Audio.new()
 	resumed.world_audio.t72_directory=""
+	resumed.world_audio.flight_directory=""
 	root.add_child(resumed)
 	check(resumed.apply_audio(packet(20,true,true)) and resumed.effects[0].playing and resumed.voice.playing and resumed.engine.playing,"cue before save plays")
 	resumed.continue_timeline()

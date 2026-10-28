@@ -9,6 +9,15 @@ const SOVIET_CUES := ["t80"]
 const T80_FRAME_COUNT := 1062930
 const T72_CUES := ["t72"]
 const T72_FRAME_COUNT := 627720
+const FLIGHT_CUES := ["missileflight"]
+const FLIGHT_FRAME_COUNT := 384000
+const FLIGHT_PHASES := {
+	54:{"shape":186,"root":33786,"flags":8,"width":16,"height":11},55:{"shape":187,"root":33824,"flags":8,"width":16,"height":11},
+	56:{"shape":186,"root":33788,"flags":8,"width":8,"height":7},57:{"shape":187,"root":33826,"flags":8,"width":8,"height":7},
+	58:{"shape":186,"root":33790,"flags":8,"width":8,"height":3},59:{"shape":187,"root":33828,"flags":8,"width":8,"height":3},
+	60:{"shape":186,"root":33784,"flags":8,"width":32,"height":23},61:{"shape":187,"root":33822,"flags":8,"width":32,"height":24},
+	62:{"shape":186,"root":33782,"flags":8,"width":56,"height":45},63:{"shape":187,"root":33820,"flags":16,"width":56,"height":45}}
+const FLIGHT_SOURCE_HASH := "8d6483bdc0ad1df38338e24c2bd413ca497603d0aea819034b72a1862f19db41"
 const TANK_CUES := ["tank"]
 const TANK_FRAME_COUNT := 1152000
 # Intact original tanks only. Abrams already has its dedicated source motor;
@@ -21,8 +30,8 @@ const ALLIED_FRAME_COUNTS := {"m113":1152000, "bradley":480817}
 const ALLIED_SHAPES := {129:"m113", 131:"bradley"}
 const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley"]
 const DETAIL_CUES := ["woodland", "truck", "tracks"]
-const CUES := ["river", "hind", "field", "cow", "t80", "t72", "tank", "m113", "bradley", "woodland", "truck", "tracks"]
-const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04}
+const CUES := ["river", "hind", "field", "cow", "t80", "t72", "tank", "m113", "bradley", "woodland", "truck", "tracks", "missileflight"]
+const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04,"missileflight":0.30}
 const COW_EXPOSURE_FRAMES := 180
 const COW_COOLDOWN_FRAMES := 2400
 var directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-world-effects-v1")
@@ -32,6 +41,9 @@ var soviet_directory: String = ProjectSettings.globalize_path("res://").trim_suf
 var soviet_failure: String = ""
 var t72_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-t72-effects-v1")
 var t72_failure: String = ""
+var flight_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-missile-flight-v1")
+var flight_failure: String = ""
+var flight_sources: Dictionary = {}
 var tank_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-tank-fallback-v1")
 var tank_failure: String = ""
 var allied_directory: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-audio/pc-allied-effects-v1")
@@ -82,6 +94,8 @@ func _read_bank(folder: String, kind: String, expected: Array) -> Dictionary:
 			return {"error":"invalid T80 frame count"}
 		if cue == "t72" and stream.data.size() != T72_FRAME_COUNT * 2:
 			return {"error":"invalid T72 frame count"}
+		if cue == "missileflight" and stream.data.size() != FLIGHT_FRAME_COUNT * 2:
+			return {"error":"invalid flight frame count"}
 		if cue == "tank" and stream.data.size() != TANK_FRAME_COUNT * 2:
 			return {"error":"invalid tank fallback frame count"}
 		if cue in ALLIED_CUES and stream.data.size() != int(ALLIED_FRAME_COUNTS[cue]) * 2:
@@ -129,6 +143,13 @@ func setup(owner: Node) -> void:
 		detail_failure = bank.error
 		push_warning("Private world detail ignored: " + detail_failure)
 	else: streams.merge(bank.streams)
+	bank = _read_bank(flight_directory, "private visible-missile flight", FLIGHT_CUES)
+	if bank.has("error"): flight_failure = bank.error
+	elif not bank.streams.is_empty():
+		flight_sources = read_flight_sources(ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir())
+		if flight_sources.is_empty(): flight_failure = "unverified original flare resources"
+		else: streams.merge(bank.streams)
+	if not flight_failure.is_empty(): push_warning("Private missile flight ignored: " + flight_failure)
 	if streams.is_empty(): return
 	for cue: String in streams:
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
@@ -235,7 +256,57 @@ static func moving_vehicle_candidate(object: Dictionary, actors: Dictionary, sha
 	var speed: Variant = actor.get("speed_raw")
 	return (speed is int or speed is float) and is_finite(float(speed)) and speed == floorf(float(speed)) and speed >= -32768 and speed <= 32767 and speed != 0
 
-static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t72: bool = false) -> Dictionary:
+static func read_flight_sources(base: String) -> Dictionary:
+	var path: String = base.path_join("local-art/genesis/source/effects-v1/effects.json")
+	if not FileAccess.file_exists(path) or FileAccess.get_size(path) > 1000000 or FileAccess.get_sha256(path) != FLIGHT_SOURCE_HASH: return {}
+	var source: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not source is Dictionary or not source.get("images") is Array or source.images.size() != 64: return {}
+	var result: Dictionary = {}
+	for index: int in FLIGHT_PHASES: result[index] = source.images[index]
+	return result
+
+static func flight_candidate(object: Dictionary, actors: Dictionary, data: Dictionary, sources: Dictionary) -> bool:
+	# Steady texture only. Visibility is never a launch/birth notification.
+	# Working if: both original phases qualify strictly, while arbitrary sprites,
+	# hidden owners and re-entry cannot create an ignition or positional cue.
+	var world: Variant = data.get("world")
+	if not world is Dictionary: return false
+	var effects: Variant = world.get("presentation_effects")
+	if not effects is Dictionary or not exact_number(effects.get("schema"),1) or not exact_number(effects.get("shape_base"),115): return false
+	if object.get("kind") != "sprite" or object.get("sprite_status") != "observed": return false
+	var dynamic: Variant = object.get("dynamic_instance")
+	if not dynamic is bool or not dynamic: return false
+	var index: Variant = object.get("bitmap_index")
+	if not (index is int or index is float) or not is_finite(float(index)) or index != floorf(float(index)) or not FLIGHT_PHASES.has(int(index)): return false
+	var phase: Dictionary = FLIGHT_PHASES[int(index)]
+	if not exact_number(object.get("shape_index"),phase.shape) or not exact_number(object.get("root"),phase.root): return false
+	var pointer: Variant = object.get("pointer")
+	if not (pointer is int or pointer is float) or not is_finite(float(pointer)) or pointer != floorf(float(pointer)) or pointer <= 0 or pointer > 65535: return false
+	var match: Variant = actors.get([int(pointer),phase.shape])
+	if match == null or match[1] != 1: return false
+	var actor: Dictionary = match[0]
+	for pair: Array in [["pointer",pointer],["shape_index",phase.shape],["shape_header_word",100],["speed_raw",250]]:
+		if not exact_number(actor.get(pair[0]),int(pair[1])): return false
+	var sprite: Variant = object.get("sprite")
+	var original: Variant = sources.get(int(index))
+	if not sprite is Dictionary or not original is Dictionary: return false
+	for pair: Array in [["index",index],["flags",phase.flags],["width",phase.width],["height",phase.height]]:
+		if not exact_number(sprite.get(pair[0]),int(pair[1])): return false
+	var size: int = int(phase.width)*int(phase.height)
+	if not sprite.get("pixels") is Array or not sprite.get("opaque") is Array or sprite.pixels.size() != size or sprite.opaque.size() != size: return false
+	if not original.get("pixels") is Array or not original.get("opaque") is Array or original.pixels.size() != size or original.opaque.size() != size: return false
+	for at: int in size:
+		if not exact_number(sprite.pixels[at],int(original.pixels[at])) or not sprite.opaque[at] is bool or sprite.opaque[at] != original.opaque[at]: return false
+	if not sprite.get("origin") is Array or sprite.origin.size() != 2 or not sprite.get("clip") is Array or sprite.clip.size() != 4: return false
+	for value: Variant in sprite.origin:
+		if not (value is int or value is float) or not is_finite(float(value)) or value != floorf(float(value)) or value < -32768 or value > 32767: return false
+	var clip: Variant = data.get("camera",{}).get("clip")
+	if not clip is Array or clip.size() != 4: return false
+	for at: int in 4:
+		if not (clip[at] is int or clip[at] is float) or not is_finite(float(clip[at])) or clip[at] != floorf(float(clip[at])) or not exact_number(sprite.clip[at],int(clip[at])): return false
+	return clip[0] >= 0 and clip[0] <= clip[2] and clip[2] < 320 and clip[1] >= 0 and clip[1] <= clip[3] and clip[3] < 200
+
+static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t72: bool = false, flight_resources: Dictionary = {}) -> Dictionary:
 	var result: Dictionary = {}
 	if not data.get("objects") is Array or not data.get("camera") is Dictionary or not data.get("unsupported") is Array or not data.unsupported.is_empty(): return result
 	var actors: Dictionary = Modern.dynamic_index(data)
@@ -243,6 +314,9 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t
 		var object: Dictionary = data.objects[i]
 		var cue: String = ""
 		var polygons: Array = object.get("polygons", [])
+		if not flight_resources.is_empty() and flight_candidate(object,actors,data,flight_resources):
+			result[i+1] = {"cue":"missileflight"}
+			continue
 		if polygons.is_empty(): continue
 		# Whole-owner identity is required: one water face cannot qualify a
 		# building/riverbank face that happens to share its object ID.
@@ -286,7 +360,7 @@ func observe(data: Dictionary, ownership: SubViewport, ui: Image, source_frame: 
 		stop(); return
 	var bits: PackedByteArray = ui.get_data()
 	if bits.count(0) + bits.count(255) != 64000: stop(); return
-	var selected: Dictionary = candidates(data, streams.has("t80"), streams.has("t72"))
+	var selected: Dictionary = candidates(data, streams.has("t80"), streams.has("t72"), flight_sources)
 	for id: int in selected.keys():
 		if not streams.has(selected[id].cue) or cue_gain(selected[id].cue) <= 0: selected.erase(id)
 	var cow_ready: bool = false

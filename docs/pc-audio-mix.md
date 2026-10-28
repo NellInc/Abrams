@@ -2,15 +2,15 @@
 
 ## Current saved controls, 28 October 2026
 
-Native Settings and Audio expose 28 saved controls: five groups (Master volume,
-Sound effects, Crew voices, Engine and turret, Music) and 23 individual controls.
+Native Settings and Audio expose 29 saved controls: five groups (Master volume,
+Sound effects, Crew voices, Engine and turret, Music) and 24 individual controls.
 These cover Cannons, Machine gun, Impacts, Smoke, Engine, Turret, Rivers, Hind
 engine, Radio alerts, Switches, Field air, Animals, T-80 engine, T-72 engine, Other tank engines,
 M113 engine, Bradley engine, Woodland air, Truck engines, Track texture,
-Mechanical detail, Interface tones and Visible fire. Every control supports Off
+Mechanical detail, Interface tones, Visible fire and Missile flight. Every control supports Off
 through 100%. Existing group defaults and individual 100% defaults are retained.
 
-The fifteen optional world/detail controls stay native-only because their local
+The sixteen optional world/detail controls stay native-only because their local
 banks are excluded from browser discovery and packaging. Current Web source
 supports thirteen controls; the previously published game pack supplies five.
 The shell deployed at `6a19ea9` displays only capabilities reported by that
@@ -37,6 +37,17 @@ event, own-motor pitch/amplitude or mask changes. Human loop approval and24nativ
 retained-source checks are complete; no new live combined-mix or device hearing
 verdict is inferred. The original mask-qualified source had no paired historical
 audio, so its native mixer check uses an explicitly empty synthetic envelope.
+
+Missile flight is an approved authored steady fizz,8seconds at -30.49LUFS,
+factor0.30. Its source-qualified original flare owners alone admit one centred,
+fixed-pitch bed. Both alternating phases and all ten registered sizes use exact
+canonical original pixels and unchanged owner/UI separation. Tiny or hidden
+sprites remain silent; there is no inferred full-flight timer or new ignition.
+The14second held original-boundary mix was accepted as comfortable alongside
+the existing motors. The separate recorded TOW launch and combined audition
+remain uninstalled. Original launch/alert requests and all incumbent levels
+are unchanged. This source-bound Dummy/native capture is no physical-device
+or fresh live mission/pacing claim.
 
 Working if: settings isolate their own cues, old configs preserve their values,
 the browser advertises only real runtime capabilities, and only an explicitly

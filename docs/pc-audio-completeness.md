@@ -4,12 +4,12 @@ Current 28 October checkpoint: the approved Abrams, Hind, T-80, T-72, generic ta
 M113 and Bradley recordings are integrated in optional private banks. M113 and
 Bradley acquisition, loop review and combined-level review are complete. The
 cow and gentle field-air levels are accepted. Native source Settings exposes
-28 saved controls. The current source and integration receipts supersede older
+29 saved controls. The current source and integration receipts supersede older
 acquisition, browser-access and vehicle-integration blockers below.
 
-The acquired-sound map accounts for 89 roles. Ten supplementary runtime cues
+The acquired-sound map accounts for 90 roles. Eleven supplementary runtime cues
 (woodland, truck, tracks, reload, interface accept/back/error, debris, pressure
-and fire) have machine-verified source boundaries. Their new-detail listening
+and fire, plus visible missile-flight fizz) have machine-verified source boundaries. Their new-detail listening
 pass is separate from the accepted incumbent vehicle/cow mix. After rejecting
 the first woodland/fire character, Nell accepted the replacement wrap/character
 preview and production-level reel. The approved28second forest-edge and24second
@@ -50,11 +50,14 @@ claim. The vendor identifies the source as T-72 Idle; a field session/exterior
 recording perspective is not independently authenticated.
 
 The shared BMP-1/2 source, clean exterior BTR-70 and BRDM-2, and a qualified
-ATGM launch remain open. Soundsnap is held after Nell rejected its cost. Its
+ATGM ignition binding remain open. Soundsnap is held after Nell rejected its cost. Its
 catalogue yielded a26second BRDM idle with unstated subtype/perspective; this
 is unqualified, not an acquired BRDM-2 exterior recording. No paid option was
-bought. A free CC0 TOW candidate is awaiting an original download blocked by
-Chrome; metadata, listening and Spigot/Sagger suitability remain unverified.
+bought. Nell supplied the free CC0 TOW original after Chrome blocked automation.
+Its accepted authored flight fizz is installed; the recorded ignition remains
+uninstalled because original launch/threat-warning semantics are unresolved.
+The file's embedded2009USArmy source URL is currently unavailable, and no exact
+Spigot/Sagger recording identity is claimed.
 No unknown original request is relabelled as a rocket. The supplied six-second
 Bluezone smoke MP3 is explicitly a preview, excluded from installation and
 derivative authoring. Existing approved smoke stays unchanged.
@@ -66,6 +69,38 @@ artifacts/vehicle-sourcing-followup-20261028/ retains the finite research.
 Working if: local Play selects the approved T-72 only after actual visible source
 admission, saved balance/Off remain respected, and unlicensed or unqualified
 recordings never enter the runtime or public packages.
+
+### Visible guided-flight fizz
+
+Nell accepted both the12second launch-to-fizz audition and the14second
+production-mixer balance capture. The optional private bank contains only the
+authored8second steady fizzle, with no ignition region. Existing original
+requests, including request15, and all516 incumbent audio/bank files remain
+unchanged. Recorded TOW ignition and the combined audition master stay prepared
+outside runtime. A visible reappearance never creates a new launch sound.
+
+Admission requires exact original flare descriptors54through63, their registered
+shape186/187, root, dimensions, pixels, opacity and per-index flags. A unique
+source actor must match pointer/shape, header100 and speed250; original schema1
+and shape-base115 are required. The current final painter-owner/UI mask then
+requires the same separated four-source-pixel witnesses. No rectangles, authored
+glow alpha, hidden allocation lifetimes, count/direction or distance select sound.
+Small unqualified sprites stay silent. Mask loss, mute, pause and restored epochs
+stop it immediately. Native Missile flight volume/Off is independently saved;
+other gains, pitch/amplitude authority, timing and limiter remain unchanged.
+
+Root checks pass911world/647mix with clean engine logs,86native source/mixer
+checks, and9default installed-loader checks. The original bitmap oracle passes
+64images/512blits/32,768,000framebuffer pixels. Genuine phase63/VGA geometry
+joins the exact original audio history at frame152082; other size/phase native
+fixtures are explicitly controlled coverage. The accepted mix holds that source
+boundary, uses Dummy audio and measures -29.47dBTP. No fresh live guest, physical
+device, sustained pacing or exact Soviet-missile acoustic identity is claimed.
+Evidence: artifacts/tow-flight-20261028/verification.json and human-acceptance.json.
+
+Working if: the quiet flat texture follows only current qualified visible flight,
+phase changes and re-entry never replay ignition, hidden/muted states stay silent,
+and source/ownership bytes plus existing accepted balances remain unchanged.
 
 The finite source audit now accounts for every relative-near-call candidate in
 SIM's first 64 KiB code segment targeting the known original sound and message

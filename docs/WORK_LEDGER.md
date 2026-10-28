@@ -8504,3 +8504,67 @@ UUID, so helper disposal is not claimed.
 Working if: ordinary local Play selects the reviewed T-72 only for visible
 qualified source motion, legacy balance/Off survive, other accepted audio stays
 fixed, and unavailable or unlicensed sources remain explicit gaps.
+
+## 2026-10-28: accepted guided-flight fizz integrated privately
+
+Nell supplied the free TOW67542original and requested a segue from its abrupt
+end into a fizzle during flight. Root preserved the original FLAC and embedded
+2009USArmy metadata, then authored a periodic8second source-coloured noise bed.
+The recorded attack is unchanged through1.05seconds in the private hybrid
+audition; a500msblend leads into the authored texture. The8second loop is
+-30.49LUFS/-18.85dBTP; seam100msenergy difference is -0.408dB and no clipping.
+Nell accepted that12second review ("Great job!") and the separate14second
+production mixer balance capture ("Sounds good!"). The latter measures
+-29.47dBTP and uses held original source/audio, with no new ignition or crew.
+
+Read-only Astra review rejected launch-on-visibility: pointers recycle, and
+request15 is conditional on guided allocation targeting the player, with launch
+versus warning meaning unresolved. Root confirmed the original instructions.
+No original request, ignition sample or cadence changes. The recorded launch
+and combined audition master remain prepared, uninstalled. The installed bank
+contains only the flat8secondfizz, SHA256
+9d586640c60ceeff8657d5ecd8eebdb8fc297d123b1466a461bc92b45b9246e9.
+
+Current exact sprite/actor/painter ownership alone qualifies a single centred
+fixed-pitch bed. Ten original descriptors54through63 preserve both phases and
+all registered sizes. Each requires exact root/shape/pixels/opacity/dimensions
+and its own flags (8except63which uses16), unique pointer/shape, header100 and
+speed250. Final owner/UI/current-frame/epoch proof retains the four-source-pixel
+separation; tiny unqualified variants stay silent. No mask, geometry, authored
+effect-art gate, direction/count/range or hidden allocation selects sound.
+The new saved Missile flight Off100control brings native count to29, Web13.
+
+Root caught a real introduced qualifier bug despite zero-error test summaries:
+integer dynamic flags were compared to booleans before their type was checked,
+emitting SCRIPT ERRORs. Those summaries were rejected. The check now validates
+the type first; final911world/647mix assertions and their engine logs pass.
+Final native proof passes86checks, with genuine phase63/VGA geometry joined to
+11730original audio envelopes at sourceframe152082. Other phase/size native
+fixtures are explicitly controlled, never fresh historical guest frames. Source,
+ownership/UI bytes, original clocks and own-motor pitch stay identical. Native
+launcher extension warning persists; no renderer/script diagnostic is hidden.
+
+The existing original-bitmap oracle passes64images/512blits and32,768,000pixels.
+Plain Python lackedUnicorn and pinned sandbox emulation exited132 without a
+receipt; imports were checked, then the supported bounded elevated oracle
+completed0. The later independent RAM fence establishes resource/descriptor
+compatibility, not contemporaneous source visibility. Initial meter collection
+also misread trailing FFmpeg text; the same successful meter output was parsed
+correctly without repeating the encode or changing PCM.
+
+Atomic private installation preserves all516 incumbent audio/bank files and
+accepted balances, including T-72, cow and ambience. Actual default loading
+passes9checks. No source game/RAM write, new spend/agreement, audio-model upload,
+app/pack rebuild or public-media release. Independent underlying Army-source
+verification remains open because the embedded URL is unavailable. No authentic
+Spigot/Sagger continuous-burn recording or new device/pacing verdict is claimed.
+
+Evidence: artifacts/tow-flight-20261028/verification.json, human-acceptance.json,
+checks-final/, native-final/, original-bitmap-oracle.json and installation.json.
+The source-role map now accounts for90roles/11newdetailcues, with all21unqualified
+physical actions and original request identities retained. BMP/BTR/BRDM sourcing
+and any recorded-ignition association remain explicit separate gaps.
+
+Working if: only currently qualified visible flight admits the fizz, visibility
+re-entry never creates ignition, Off/mute/pause/restore silence it immediately,
+and accepted incumbent files/levels plus original source/visibility stay fixed.

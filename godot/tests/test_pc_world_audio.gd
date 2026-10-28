@@ -19,6 +19,7 @@ func check(ok: bool, why: String) -> void:
 func isolated_audio() -> Node:
 	var audio: Node = Audio.new()
 	audio.world_audio.t72_directory = ""
+	audio.world_audio.flight_directory = ""
 	audio.world_audio.tank_directory = ""
 	audio.world_audio.allied_directory = ""
 	audio.world_audio.detail_directory = ""
@@ -43,7 +44,7 @@ func bank(directory: String, cues: Array = World.BASE_CUES, kind: String = "priv
 	for cue: String in cues:
 		var stream: AudioStreamWAV = AudioStreamWAV.new()
 		stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=48000
-		var frames: int=World.ALLIED_FRAME_COUNTS[cue] if cue in World.ALLIED_CUES else World.T80_FRAME_COUNT if cue=="t80" else World.T72_FRAME_COUNT if cue=="t72" else World.TANK_FRAME_COUNT if cue=="tank" else 48000
+		var frames: int=World.ALLIED_FRAME_COUNTS[cue] if cue in World.ALLIED_CUES else World.FLIGHT_FRAME_COUNT if cue=="missileflight" else World.T80_FRAME_COUNT if cue=="t80" else World.T72_FRAME_COUNT if cue=="t72" else World.TANK_FRAME_COUNT if cue=="tank" else 48000
 		var bytes: PackedByteArray=PackedByteArray();bytes.resize(frames*2);stream.data=bytes
 		var path: String=directory.path_join(cue+".wav")
 		check(stream.save_to_wav(path)==OK,"generated PCM writes")
@@ -117,6 +118,7 @@ func run() -> void:
 	await soviet_checks(directory,ui,mask)
 	await tank_checks(directory,ui,mask)
 	await t72_checks(directory,ui,mask)
+	await flight_checks(ui,mask)
 	await allied_checks(directory,ui,mask)
 	await detail_checks(directory,ui,mask)
 	if native:
@@ -480,6 +482,56 @@ func t72_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		manifest.cues.t72.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
 		check(reader._read_bank(directory,"private visible-t72 cue",World.T72_CUES).has("error"), "T72 rejects wrong rate/channels/bit depth even with matching SHA")
 	check(JSON.stringify(data)==original, "T72 eligibility, masks and controls preserve original source")
+
+func flight_checks(ui: Image, mask: Image) -> void:
+	var resources: Dictionary = {}
+	for index: int in World.FLIGHT_PHASES:
+		var phase: Dictionary = World.FLIGHT_PHASES[index]
+		var pixels: Array = []; var opaque: Array = []
+		pixels.resize(int(phase.width)*int(phase.height)); pixels.fill(10); opaque.resize(pixels.size()); opaque.fill(true)
+		resources[index] = {"pixels":pixels,"opaque":opaque}
+	var data: Dictionary = {"objects":[],"unsupported":[],"camera":{"clip":[32,13,287,109]},"world":{"presentation_effects":{"schema":1,"shape_base":115},"dynamic":[]}}
+	for index: int in World.FLIGHT_PHASES:
+		var phase: Dictionary = World.FLIGHT_PHASES[index]
+		var sprite: Dictionary = resources[index].duplicate(true)
+		sprite.merge({"index":index,"flags":phase.flags,"width":phase.width,"height":phase.height,"origin":[100,30],"clip":[32,13,287,109]})
+		data.objects=[{"kind":"sprite","sprite_status":"observed","dynamic_instance":true,"pointer":99,"shape_index":phase.shape,"root":phase.root,"bitmap_index":index,"polygons":[],"sprite":sprite}]
+		data.world.dynamic=[{"pointer":99,"shape_index":phase.shape,"shape_header_word":100,"speed_raw":250}]
+		var unchanged: String = JSON.stringify(data)
+		check(World.candidates(data).is_empty(),"missing optional flight resources preserve legacy sprite silence")
+		check(World.candidates(JSON.parse_string(unchanged),true,true,resources).get(1,{}).get("cue")=="missileflight","exact original phase allows a steady flight bed: "+str(index))
+		for mutation: Dictionary in [{"sprite_status":"pending"},{"dynamic_instance":1},{"pointer":99.5},{"shape_index":phase.shape+0.5},{"root":phase.root+1},{"bitmap_index":index+0.5}]:
+			var changed: Dictionary=data.duplicate(true);changed.objects[0].merge(mutation,true)
+			check(World.candidates(changed,true,true,resources).is_empty(),"malformed/unobserved phase rejects")
+		for mutation: Dictionary in [{"flags":0},{"flags":phase.flags+1},{"width":55},{"index":index+1},{"origin":[0.5,30]},{"clip":[0,0,319,199]}]:
+			var changed: Dictionary=data.duplicate(true);changed.objects[0].sprite.merge(mutation,true)
+			check(World.candidates(changed,true,true,resources).is_empty(),"wrong original descriptor or clip rejects")
+		for mutation: Dictionary in [{"speed_raw":0},{"speed_raw":249},{"speed_raw":250.5},{"shape_header_word":101},{"pointer":99.5}]:
+			var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].merge(mutation,true)
+			check(World.candidates(changed,true,true,resources).is_empty(),"flight requires exact source actor and speed")
+		var changed: Dictionary=data.duplicate(true);changed.world.dynamic.append(changed.world.dynamic[0].duplicate())
+		check(World.candidates(changed,true,true,resources).is_empty(),"ambiguous recycled projectile join stays silent")
+		changed=data.duplicate(true);changed.objects[0].sprite.pixels[0]=true
+		check(World.candidates(changed,true,true,resources).is_empty(),"pixel booleans cannot coerce source colours")
+		changed=data.duplicate(true);changed.objects[0].sprite.opaque[0]=1
+		check(World.candidates(changed,true,true,resources).is_empty(),"opacity integers cannot coerce original booleans")
+		changed=data.duplicate(true);changed.world=[]
+		check(World.candidates(changed,true,true,resources).is_empty(),"malformed world fails closed")
+		ui.fill(Color.BLACK);mask.fill(Color8(1,0,8))
+		var token: Dictionary={"size":mask.get_size(),"clip":data.camera.clip,"selected":World.candidates(data,true,true,resources),"ui":ui.get_data()}
+		check(World.visible_cues(mask,token)==["missileflight"],"both phases reuse original separated-owner visibility")
+		ui.fill(Color.WHITE);token.ui=ui.get_data()
+		check(World.visible_cues(mask,token).is_empty(),"opaque source UI silences flight")
+		ui.fill(Color.BLACK);token.ui=ui.get_data()
+		for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
+			mask.fill(colour);check(World.visible_cues(mask,token).is_empty(),"hidden/line/round/transparent flight owners stay silent")
+		check(JSON.stringify(data)==unchanged,"flight admission never edits source or alternation")
+	var path: String=output.path_join("flight-bank")
+	bank(path,World.FLIGHT_CUES,"private visible-missile flight")
+	var reader: RefCounted=World.new();var loaded: Dictionary=reader._read_bank(path,"private visible-missile flight",World.FLIGHT_CUES)
+	check(not loaded.has("error") and loaded.streams.missileflight.loop_end==384000,"flight loader accepts exact steady8second loop")
+	FileAccess.open(path.path_join("missileflight.wav"),FileAccess.WRITE).store_string("invalid")
+	check(reader._read_bank(path,"private visible-missile flight",World.FLIGHT_CUES).has("error"),"flight hash mismatch rejects optional bank")
 
 func allied_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	check(World.ALLIED_CUES==["m113","bradley"] and World.ALLIED_SHAPES=={129:"m113",131:"bradley"}, "allied bank and exact intact original roster stay bounded")
