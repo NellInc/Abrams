@@ -8794,3 +8794,200 @@ or sustained-soak acceptance is inferred from this release work.
 Build, installation, package and local acceptance receipts are in
 `artifacts/release-barrels-20261029/`. Private originals and paid recordings
 remain outside Git and the public packages.
+
+
+### 29 October 2026, mission verification continuation
+
+Nell renewed the execution request. No other Codex chats were contacted. The
+shared candidate is 779d684 and preserves the scheduler and selected-effect
+donor fixes already included by the concurrent barrel work. Internal workers
+retain separate mission lanes. Live play remains on pinned core37; production
+profiling uses core60. These evidence profiles are not interchangeable.
+
+The retained Hannover campaign reached actual60563 after genuine T-62 credit
+60431/message33, SABOT10 to9. ROOT read all33 raw cannon checkpoints and
+independently matched their hashes to the authoritative native audit. Material
+remains H100, drives100, systems0 and armor50/65/65/40. Original goal is still0/2.
+A preparation typo in COAX count halted before any frame; its source and failed
+receipt are retained, then the corrected exact binding was used.
+
+ROOT reran Siegen's1164-frame approach verifier and original neutral bridge
+GI qualification, then released its finite northern crossing. Intercept's
+longer eastern corridor passed ROOT source/arrival checks plus25 guard and9
+pacing cases before release. Convoy's proposed queue guard was broken for
+legitimate input delivery:14 historical UP6 pulses had queue1, clearing after
+EMPTY6. The private host now admits one own movement pulse with at most12
+EMPTY frames, requiring actual queue0 and release before another pulse. ROOT
+reran17 checks and65 pins before authorizing one graceful exact-latest recovery;
+no recenter gameplay is admitted until full35217-row parity is checked.
+
+Canonical aggregate rerun output: artifacts/finish-abrams-20261025/aggregate-
+canonical-validation-20261029-rerun.log. It is still running at this entry.
+Performance and final winning/stalemate endings remain open.
+
+Working if: actual mission ENDs, original disk persistence and uncontaminated
+timing close the requested gates independently; these partial passes do not
+claim all-eight or campaign completion.
+
+The canonical rerun subsequently completed: EXACT_AGGREGATE_END status=0,
+artifacts/validation-20261029T142911Z. ROOT observed its terminal process exit.
+The default native/live exclusions remain explicit. The genuine Siegen bridge
+crossing then reached8941; ROOT independently reran its792-raw-frame verifier.
+No new mission ending or campaign count is claimed.
+
+
+### 29 October 2026, original Intercept full-four victory
+
+Mossel Intercept reached genuine original complete1 at86210 with all four
+original allies alive and LOSS0. That flag follows the first qualifying arrival;
+no all-four physical-arrival claim is made. Ordinary Q/Return-to-base reached
+the explicit successful debrief86489 and score412 at86615. ROOT personally
+viewed both original screenshots, ran the completion and final END verifiers,
+and independently read the34-byte original SIM.OUT header[0,4,4] and matching
+exported archive. The owned pilot closed normally without extra native frames;
+its PID is absent. Full evidence and original disk export remain local under
+lane-intercept-terminal86210-packet; root-intercept-full-four-86615-verified29.json
+is the reconciliation. Distinct positive missions are now5/8. Winning campaign
+count remains2/8, while its Hannover mission has genuine HQ credit and goal1/2.
+
+A fresh human-ready benchmark still lost focus after174/1020 samples; Chrome,
+Terminal and a different Godot application activated. All five mission journals
+and487 runtime-source fingerprints were unchanged. The timing/input-route
+result is invalid and does not establish an FPS regression or acceptance. A
+dependency-led audit found no reachable benchmark launcher for those other
+applications; requester provenance remains unverified. No equivalent benchmark
+retry, foreign process control or other-chat coordination was performed.
+
+Working if: original END and disk evidence close only the matching standalone
+mission row; successful campaign, persistence and performance retain independent
+acceptance gates.
+
+
+### 29 October 2026, second Hannover search position and focus provenance
+
+The same original Hannover career reached its second public search position
+at75409, [163039,180184,50], with neutral controls, goal1/2, unchanged
+critical material and HEAT8. ROOT read the live snapshot and viewed its
+original framebuffer. A finite source survey is being prepared; arrival alone
+establishes no second objective or mission victory.
+
+Nuremberg reached the actual ridge at180646. ROOT reran the1256-native-frame
+resume verifier, including exact original GI support and the preserved633-frame
+prefix. Four cardinal views were blank. Original zoom7 is already widest;
+the next bounded search uses previously unsampled bearings and ordinary Enter
+acquisition, within the unchanged182000 cap. No enemy absence is inferred.
+
+The retained OS log subsequently identified the competing Godot executable as
+the separate Generations movie-rate QA runtime, with TCC responsibility assigned
+to Terminal69167. ROOT independently queried that exact log evidence. Immediate
+parent, launching chat and human trigger remain unknown. Other jobs are untouched;
+a controlled foreground benchmark remains blocked on resolving those activations.
+
+Working if: each finite search preserves its original phase and material guards,
+while actual source identification, successful END, durable career progression
+and isolated timing remain separate acceptance gates.
+
+
+### 29 October 2026, Hannover career advance and mission-only continuation
+
+The retained original career completed Hannover with both objectives, positive
+END359 and the original34-byte END-loaded SIM.OUT header[0,2,2]. ROOT viewed
+the narrative, score and R&R selection, checked234 saved raw snapshots and
+verified normal original disk count3/status0/score1214. The protected50-byte
+TC retained its identity. A fresh original cold process then Continued into
+unplayed Nuremburg Highway, Mission4, with byte-identical career bytes. The
+normal SHELL selection metadata changed; whole-archive equality was an
+overstrict check, and its failed receipt is retained. No gameplay replay was
+used to repair that assertion.
+
+The previous Nuremberg diagnostic closed normally at181266, goal19/20 and
+fuel4, without END or success. The current campaign mission starts0/20. Its
+initial North-first public-road caller halted at4115 after three native
+acceleration frames because static labels disappeared and identical range
+provenance was duplicated. This is a broken harness guard; the partial input
+is preserved and a continuation from the actual frame is being prepared.
+
+Siegen has a genuine original T64 destruction from one improved-range SABOT,
+class1 WORD credit and a new canonical crew caption, with physical P0 closure
+at14907. Goal remains0/2. ROOT reran the255-audit-row/86-raw verifier. Convoy
+reached43792 with all five fresh and LOSS0; a canonical hit cue caused no
+material loss. ROOT reran its2201-row verifier before releasing one exact
+unchanged-cue acknowledgement and bounded same-phase continuation. Neither
+lane has a mission victory yet.
+
+The isolated stalemate branch has a genuine active count5/score1214 disk;
+an unsupported mission6 exit gate was stopped normally without credit. ROOT
+read the current archive and career hashes before releasing one fresh ordinary
+continuation. Its private read-only observer records only own-health and the
+original END result buffer. The winning career stays on its separate count3
+disk. The broken R&R whole-frame golden was replaced by canonical original
+source cells plus independently raster-bound current RGB;16 focused tests
+passed, including rejection of a metadata-only highlight swap. A fresh default
+aggregate gate is running after this change.
+
+Nell answered both benchmark questions with mission-only continuation.
+Performance profiling is explicitly on hold until she releases it. No other
+chat was contacted and no foreign process was controlled.
+
+Working if: only actual original END and durable career evidence increase
+acceptance counts; failed harness attempts retain their real partial inputs,
+and the performance hold remains intact while mission work proceeds.
+
+
+### 29 October 2026, natural stalemate and current regression gate
+
+The separate original-disk branch has reached the authentic STALE newspaper,
+its complete original ending prose and genuine count8/status3/score1214,
+with all eight played markers. ROOT personally viewed the paper/prose and
+fresh-process Continue refusal, read the actual50-byte TC and three original
+END-loaded34-byte result buffers, and reran the branch verifier. All four
+owned hosts closed normally and their exact PIDs are absent. The original
+winning count3 prefix remains byte-identical. This is an ending-coverage result,
+not eight objective victories or an uninterrupted-run claim. Actual mission8
+result header is[0,20,0], correcting the worker's unchecked[0,1,0] message.
+
+The first post-R&R aggregate run failed one script-mode import guard among
+1036 Python tests (two skips). The new font import lacked the established
+tools/script fallback. Moving it into that existing fallback fixed the defect;
+22 focused checks passed. The complete canonical default gate then finished
+with exit0 and EXACT_AGGREGATE_RNR_IMPORTFIX_END status0, output
+artifacts/validation-20261029T185420Z. Native/live tiers remain explicitly
+excluded. No timing acceptance or new mission victory follows from this gate.
+
+Main campaign Nuremburg reached both initial public-road nodes at8829,
+neutral/pristine/fuel96, with fresh BRDM-2 range2589 and no ammunition spent.
+The source-query issue was resolved through the original Enter selection
+semantics, a bounded passive release and one real reacquisition, preserving
+every prior input. Positive-ID navigation now observes without cycling Enter.
+Convoy has genuine right armor65to50 wear at44512, all five still alive and
+LOSS0. Its pristine guard correctly halted. A separately reviewed, exact-input
+STOPONLY recovery is being prepared; the damage is retained and no process
+has been closed or replayed yet. Siegen's new turn failed without translation
+when the original input queue reached8; its actual185 raw frames were checked,
+and only a fresh queue0 KP5/EMPTY brake was released.
+
+Working if: natural ending evidence and the aggregate terminal receipt close
+only their own gates; genuine damage and failed controls remain recorded,
+and subsequent gameplay preserves the actual state rather than rewinding it.
+
+
+### 29 October 2026, genuine navigation and preserved live-state continuity
+
+Main campaign mission4 has one genuine ambient BRDM-2 destruction, with no primary progress. ROOT verified306 audit frames,54 saved raw boundaries and964 source rectangles. Subsequent navigation reached the historical western own service stance at13679, physically neutral, fuel92 and unchanged critical material/ammunition. No Base, service latch or refill has been observed; historical arrival alone does not establish current service availability.
+
+Convoy's complete44272-frame input/RAM/video recovery passed before a real72-frame smoke/brake sequence reached neutral44584. Separate actual-neutral ROOT/Astra review released only the existing strict50 guarded controller. Two real original selection transactions ended44632 at blank list end. All five remain alive and LOSS0; absence of a current selected enemy is not clearance. The existing same-phase public road continuation is underway.
+
+Siegen completed the public rejoin at15855 within86.38raw, neutral/P0 and unchanged retained armor50. ROOT reran377 audit rows and352 saved raw checks. A proposed metadata-journal successor failed its exact original cold START240 RAM check before historical replay. Its zero-row failure and exit are retained; the original live owner remains usable and paused. No retry, altered clock, relaxed hash or replacement fate was used. This evidence-IO work does not close performance, which remains on Nell's explicit hold.
+
+Working if: actual source service and full original positive endings alone close their respective gates, failed recovery never displaces the usable owner, and every real input and material loss remains recorded.
+
+
+### 29 October 2026, real service entry and further guarded contact
+
+Nuremberg reached the original ATBASE service artwork at13838 after a stationary Commander view and a111-frame direct approach. ROOT viewed the actual original framebuffer. Fuel/ammunition remain unchanged; the bounded original arming/refuelling operation is in progress and is not yet credited as complete. A fresh own-stat forecast at13679 was15, confirming that the positive495-point debrief needs more than the twenty primary credits alone.
+
+Convoy reached45173 physically neutral after one exact unchanged-material cue review, one smoke2to1 deployment and one brake. ROOT reran the78-frame verifier: same five fresh, LOSS0 and retained armor50. The initial Commander view stopped after18 frames before original repaint; no F8 was sent. A passive continuation under the original120-frame cap is authorised, without another F2 or any physical turn.
+
+Siegen reached16470 neutral, then its next public leg stopped at16719 after right armor50to35. ROOT reran249 audit rows and49 saved raw checks. The exact hit frame within the last six-frame slice is unverified; no new message or source ID identifies a shooter. All other critical material and ammunition are unchanged. The real loss is retained, and only a bounded protective smoke/brake stop is authorised at this checkpoint.
+
+Working if: actual service confirmation, original source contact and physically neutral stops govern subsequent actions, while incomplete legs and retained damage never count as mission success.

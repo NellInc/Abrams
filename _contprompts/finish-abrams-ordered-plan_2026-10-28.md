@@ -4,7 +4,7 @@
 
 Nell requested performance and full eight-mission/campaign verification, including successful endings and save/resume. Internal subagents are explicitly requested. No messages to other Codex chats. Nell subsequently requested execution until performance, all eight missions, the full campaign, save/resume and various endings are verified. Execute continuously across internal checkpoints. No publication target is established; preserve active game state.
 
-Checkout: /Users/nellwatson/Documents/GitHub/Abrams. Observed HEAD 66bcdf3, clean when inspected. Other work has advanced this shared checkout, so fingerprint it again before editing or benchmarking. Preserve all concurrent changes and original inputs. Use ignored artifacts/finish-abrams-20261025 for local evidence. About 28 GiB free at last observation; reuse this checkout, no new worktree or bulk snapshot duplication.
+Checkout: /Users/nellwatson/Documents/GitHub/Abrams. Implementation baseline: HEAD 0b560df0f87273574eeb832e37b31e99f0c2e769 on 29 October. Fingerprint again before editing or any future benchmark. Preserve all concurrent changes and original inputs. Use ignored artifacts/finish-abrams-20261025 for local evidence. About 131 GiB free at the latest29October observation; reuse this checkout, no new worktree or bulk snapshot duplication.
 
 The original PC game owns gameplay. No guest writes, hidden opposing targeting data, changed clocks/cycles, objective/score manipulation, or combat rollback. Diagnostic replay cannot count as a new successful playthrough. Source/Godot tests, original gameplay, normal-viewer rendering, performance, device and release evidence remain separate.
 
@@ -14,14 +14,14 @@ The original PC game owns gameplay. No guest writes, hidden opposing targeting d
 | --- | --- | --- |
 | The Road to Bonn | Verified, score365 | Retain evidence; campaign crew survived genuine abandonment, tank lost |
 | Mass Destruction | Verified standalone Expert, score392 | Win it in the same campaign when selected |
-| Hannover Push | Verified standalone Expert, score359 | Current original saved campaign mission3 is Hannover, still0/2 |
+| Hannover Push | Verified standalone Expert, score359 | Current original campaign mission3 Hannover completed, positive END359 and genuine disk count3/score1214 verified |
 | Mossel Defense | Verified standalone Expert, score490 | Campaign prefix already includes its success |
-| Nuremberg | Not yet | Current standalone19/20; planned two additional credits for positive score, bridge intact, friendly0, actual END |
-| Convoy | Not yet | Full five surviving escorts and actual positive END; latest23 failed at7155 and is closed |
-| Intercept | Not yet | Full four surviving allies and actual positive END; current all4 alive, no completion |
+| Nuremberg | Not yet | Standalone19/20 diagnostic closed incomplete; current original campaign mission4 starts0/20, preserve bridge/friendly0 and reach positive END |
+| Convoy | Not yet | Current same-five live road run LOSS0; full five surviving escorts and actual positive END still required |
+| Intercept | Verified standalone, score412 | Original successful END and SIM.OUT[0,4,4] ROOT verified; still needs its win in the same campaign |
 | Siegen Infiltration | Not yet | Both original objectives and actual positive END; previous campaign attempt genuinely failed |
 
-Verified distinct full-positive endings:4/8. Verified winning campaign prefix:2/8, score855. Fresh-process original R&R Continue has been demonstrated for that prefix. Six further successful career missions, final successful campaign ending and complete persistence chain remain. Existing source analysis gives Moscow total>=2808; do not claim that ending until the original game displays it.
+Verified distinct full-positive endings:5/8. Verified winning campaign prefix:3/8, score1214. Fresh-process original R&R Continue has been demonstrated for that prefix. Five further successful career missions, final successful campaign ending and complete persistence chain remain. Existing source analysis gives Moscow total>=2808; do not claim that ending until the original game displays it.
 
 Working if: each acceptance row links to an actual positive original END and goal result; standalone, failed and diagnostic runs never inflate the campaign count.
 
@@ -35,6 +35,8 @@ Working if: every live lane has an exact owner, latest actual boundary, preserve
 
 ## 1. Close the performance question with an isolated baseline
 
+**Human hold, 29 October:** Nell selected “Continue missions for now” and “Continue mission work for now” in reply to both benchmark questions. Do not launch or request another benchmark until an explicit release. Continue all mission, ending and persistence work meanwhile.
+
 Use existing native production-like performance routes, Godot profiling and the installed godot-performance-workflows, performance-optimization and godot-debugging-profiling skills. Run timing without simultaneous gameplay emulators, compilation or heavy audit hashing from this task. Do not stop foreign jobs. If machine load or foreground conditions invalidate a sample, retain it as invalid rather than claim acceptance.
 
 Measure release/normal Play at fixed resolution and unchanged quality: CPU host/bridge, renderer CPU/GPU where available, source-frame delivery, median/p95/p99/max, long stalls, audio backlog and memory. Include moving Tactical/Modern, representative stations and smoke/impact-heavy scenes. Existing smoke evidence proves a short transition improvement only, not sustained60fps. Preserve the established60fps presentation target and roughly59.47Hz original cadence; report source cadence separately from presentation FPS.
@@ -45,20 +47,20 @@ Working if: comparable full-route before/after measurements identify the improve
 
 ## 2. Batch the remaining functional work in independent lanes
 
-ROOT owns the authentic campaign. Existing Nuremberg and Intercept workers own their sessions. Convoy worker owns only its private diagnostic and later a justified fresh ordinary attempt. Workers are leaf-only; no other chats. Stable reviewed controllers should run whole bounded route/objective batches, returning on objective completion, real damage/contact, source ambiguity or a finite deadline. Avoid per-input orchestration and speculative harness expansion.
+ROOT owns integration and the authentic campaign. Existing workers have separate Nuremberg, Convoy and Siegen lanes; Intercept has finished its standalone victory and is reserved for campaign coverage. Workers are leaf-only; no other chats. Run whole reviewed, bounded route/objective batches, returning on objective completion, real damage/contact, source ambiguity or a finite deadline. Avoid per-input orchestration and speculative harness expansion. Current frames, exclusive input owners and bounded releases live in the operational ledger.
 
 Priority blockers:
 
-1. Convoy: independently inspect the built core hash, actual old/new flags and serializer/layout pins. Then run exactly6915 original input/frame comparisons from neutral START240. Release filtered friendly-victim causal events only after all keys/RAM/videoRAM match. A mismatch ends the diagnostic claim. Use the finding to change a concrete route/timing/control hypothesis before another full attempt. An empty event stream is inconclusive.
-2. Nuremberg: finish the public approach safely, reacquire only through normal original sighting, obtain the missing objective/score credits, keep the neutral bridge intact and complete the original END.
-3. Intercept: dispose of the newly displayed crew cue through one explicitly scoped unchanged-material response, preserve the original phase and all4 observations, then finish the route/cohort release and original END. The prior T72 shot is unconfirmed and closed; never invent its destruction.
-4. Siegen: reuse source-grounded lessons and public-route evidence from the failed run. Verify both objectives in an actual run. Prefer covering it inside the campaign when originally selected; use a separate ordinary scenario only if needed to close unique coverage without distorting campaign selection.
+1. Nuremberg: use the genuine original base/refit UI, then complete the public highway and hillside sweep. Require actual20/20 and a fresh own-stat score forecast at least495 before ordinary Return, followed by the real positive END. Primary progress alone does not establish that score. Preserve the bridge and friendly counters; never reopen the closed19/20 diagnostic.
+2. Convoy: the causal diagnostic and exact guarded-controller recovery are complete. Continue the current same-five run, retaining actual right armor50. Identify new threats only through original player-visible views and targeting; preserve all five, LOSS0 and the actual positive END. Do not restart old diagnostics or replay a failed run as success.
+3. Siegen: the current run retains genuine right armor35 after the newly observed loss. A bounded protective stop is authorised; further travel requires review of its actual state and original source contacts. Preserve both objectives as open until genuine completion and positive END. The failed cold journal migration cannot replace the usable live process or justify relaxed hashes.
+4. Intercept: standalone positive END412 is complete. Reuse its verified route as preparation when the original winning campaign selects it, while keeping that future campaign execution distinct from the standalone proof.
 
-Working if: the four missing rows become actual successful original endings, with no blind equivalent retries and all failures retained honestly.
+Working if: the three remaining unique rows become actual successful original endings, and every campaign row is independently completed in the retained career, with failures preserved and no blind equivalent retries.
 
 ## 3. Complete the same authentic campaign and persistence chain
 
-Resume the existing count2 career using original menus and disk save. Win current Hannover and whichever remaining missions the original game selects. Never force scenario/RNG selection. After every positive END: verify goal/result/score and original career count/status, take normal R&R, save, close through the owning tool, launch a genuinely fresh process and Continue from disk. Confirm the expected career and next briefing before proceeding. Keep the previous known-good save separately.
+Resume the existing count3 career using original menus and disk save. Hannover has a positive END and original saved count3/1214. Win current Nuremburg mission4 and whichever remaining missions the original game selects. Never force scenario/RNG selection. After every positive END: verify goal/result/score and original career count/status, take normal R&R, save, close through the owning tool, launch a genuinely fresh process and Continue from disk. Confirm the expected career and next briefing before proceeding. Keep the previous known-good save separately.
 
 Track all eight distinct campaign missions, accumulated score, crew/tank outcomes and final original ending. Cover normal remaster checkpoint save/resume on representative gameplay and at a campaign transition using existing tests and fresh-process continuation; distinguish exact-core checkpoints from original disk career saves. Reuse existing failed-load rollback, held-input and observer reconstruction checks where their contracts are unchanged.
 

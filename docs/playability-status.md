@@ -7,10 +7,10 @@ HEAT artwork is now restored; target-rate performance and release acceptance rem
 
 ## Completion verification in progress, 28 October 2026
 
-Four distinct original missions have positive full endings: Bonn (365), Mossel
-Defense (490), Hannover (359) and Mass Destruction (392). The same successful
-campaign has two verified victories and score 855, with fresh-process original
-R&R Continue. Nuremberg, Convoy, Intercept, Siegen and the remaining campaign
+Five distinct original missions have positive full endings: Bonn (365), Mossel
+Defense (490), Hannover (359), Mass Destruction (392) and Mossel Intercept (412). The same successful
+campaign has three verified victories and score1214, with genuine original R&R
+and fresh-process Continue into Nuremburg Highway, Mission4, retaining byte-identical career bytes. Nuremberg, Convoy, Siegen and the remaining campaign
 victories are still open. Standalone victories do not increase that campaign
 count.
 
@@ -22,8 +22,7 @@ these are presentation checks, not additional mission victories.
 
 Separate original career ENDRET reached genuine disciplinary retirement:
 score 0/count 3/status 1, with the original reprimand and a fresh cold Continue
-refusal. The retained winning career is untouched. Stalemate and successful
-Moscow campaign endings still need genuine runtime evidence. Focus/input-route
+refusal. The retained winning career is untouched. A separate ordinary-disk branch has now reached the genuine Stalemate newspaper and original prose, count8/status3/score1214, followed by fresh cold Continue refusal. It includes incomplete exits and does not count as eight victories. The successful Moscow ending remains open. Focus/input-route
 failures invalidate the latest timing runs, so target-rate performance remains
 unverified.
 
@@ -45,10 +44,38 @@ Godot diagnostics and three promo parse checks passed. A quiet format-0 run
 passed in 24.058 seconds within its original 120-second limit. The subsequent
 full gate failed because concurrent trace-header changes no longer matched the
 core build receipt and a new rocket-audio test was absent from the gate list.
-Those failures remain open on the changing candidate. Mission runs continue on
-their preserved, pinned runtime. A complete successful aggregate invocation is
-still required.
+Those historical failures were subsequently resolved. The canonical default gate passed again after the R&R import repair, with terminal exit0 in artifacts/validation-20261029T185420Z. Mission runs continue on their preserved, pinned runtime; default-gate success excludes native/live acceptance.
 No new release is claimed.
+
+## Live verification update, 29 October 2026
+
+The acceptance count is five distinct positive mission endings and three
+victories in the retained winning campaign. Hannover has completed both objectives and its successful original debrief,
+score359. The genuine original saved career is count3, score1214, active status0.
+Fresh-process Continue has loaded the unplayed Nuremburg Highway as Mission4,
+with the original50-byte career unchanged.
+The current Nuremburg run has a genuine ambient BRDM-2 destruction, independently checked against306 audit frames,54 saved raw boundaries and original RGB. Its primary objective remains0/20. These combat credits do not count as mission victories. The old Nuremberg diagnostic closed incomplete at19/20; the current campaign mission4 starts0/20. Mossel Intercept reached its authentic successful
+debrief and score412, with original SIM.OUT exit0/required4/surviving4. ROOT
+independently viewed both original narrative and score, read the original disk
+bytes and ran the final verifier. Convoy still requires its successful debrief.
+Siegen has genuine T64 destruction and P0 closure14907 after an earlier retained armor loss; its two objectives remain open. Convoy currently has all five alive and LOSS0, with its positive END still required.
+
+The effect-inventory failure was a broken selection check: retained rejected
+artwork candidates were being treated as runtime donors. The audit now requires
+one selected donor for each of the twenty ordered runtime bases. Six focused
+tests passed. The fresh canonical aggregate invocation passed with exit0 in
+`artifacts/validation-20261029T142911Z`. Native and live tiers were explicitly
+excluded by this default gate; their separate evidence remains necessary. The separate barrel packaging gate
+below has its own frozen-candidate evidence.
+
+Nell has placed further performance benchmarks on hold while mission work continues. Target-rate performance remains open. The retained isolated run measured
+53.43 source fps against 59.47 requested fps. A later run completed all 1,020
+focused input samples, but concurrent mission processes and a separate renderer
+invalidate it as isolated timing acceptance. GPU timing remains unavailable.
+
+Working if: actual original endings and cold disk Continue close the mission
+and campaign rows; focused tests, partial combat credits and contended timing
+never increase those counts or close performance acceptance.
 
 ## Alpha 7, 23 October 2026
 
