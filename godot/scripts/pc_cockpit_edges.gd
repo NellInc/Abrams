@@ -48,25 +48,65 @@ static func profile_y(points: PackedVector2Array,x: float) -> float:
 			return lerpf(points[i].y,points[i+1].y,(x-points[i].x)/(points[i+1].x-points[i].x))
 	return points[-1].y
 
-# A continuous cap only where the quantised original supports this curvature.
+# Continuous caps and shoulders where the quantised source supports curvature.
 # Keep the existing ERROR/BAND, source masks, material and world-sample gates.
 static func round_barrel_cap(points: PackedVector2Array,heights: PackedFloat32Array,station: int) -> PackedVector2Array:
 	var centre: float=120.0 if station==3 else 161.0
 	var peak: float=84.9 if station==3 else 77.1
 	var direction: float=1.0 if station==3 else -1.0
-	var left: float=centre-12.5
-	var right: float=centre+12.5
+	var cap_left: float=centre-12.5
+	var cap_right: float=centre+12.5
 	if station not in [3,4] or heights.size()!=320 or points.size()<2:return points
-	for x in range(int(left),int(right)+1):
+	for x in range(int(cap_left),int(cap_right)+1):
 		var expected: float=peak+direction*0.0465*pow(float(x)+0.5-centre,2)
 		if absf(expected-heights[x])>ERROR:return points
+	var radius: float=25.5 if station==3 else 37.5
+	var left: float=centre-radius
+	var right: float=centre+radius
+	# Join at existing vertices. Splitting a long, nominally collinear deck
+	# segment changed its GPU interpolation and unrelated paint-grain pixels.
+	var left_point: Vector2=Vector2.ZERO
+	var right_point: Vector2=Vector2.ZERO
+	var found_left: bool=false
+	var found_right: bool=false
+	for point: Vector2 in points:
+		if point.x>=left and point.x<=cap_left:
+			left_point=point;found_left=true;break
+	for i in range(points.size()-1,-1,-1):
+		var point: Vector2=points[i]
+		if point.x<=right and point.x>=cap_right:
+			right_point=point;found_right=true;break
+	if not found_left or not found_right:return points
+	left=left_point.x;right=right_point.x
+	# Remove native one-pixel quantisation without rounding unrelated roof/deck
+	# corners. Bounded knots and monotone tangents prevent interval overshoot.
+	var smooth: PackedFloat32Array=heights.duplicate()
+	var slopes: PackedFloat32Array=PackedFloat32Array();slopes.resize(320)
+	for x in 320:
+		var average: float=(heights[maxi(x-2,0)]+4.0*heights[maxi(x-1,0)]+6.0*heights[x]+4.0*heights[mini(x+1,319)]+heights[mini(x+2,319)])/16.0
+		smooth[x]=clampf(average,heights[x]-ERROR*0.8,heights[x]+ERROR*0.8)
+	for x in range(1,319):
+		var before: float=smooth[x]-smooth[x-1]
+		var after: float=smooth[x+1]-smooth[x]
+		if before*after>0.0:slopes[x]=2.0*before*after/(before+after)
 	var result: PackedVector2Array=PackedVector2Array()
 	for point: Vector2 in points:
 		if point.x<left:result.append(point)
-	for i in 101:
+	var steps: int=roundi((right-left)*4.0)
+	for i in steps+1:
+		if i==0:result.append(left_point);continue
+		if i==steps:result.append(right_point);continue
 		var x: float=left+float(i)*0.25
 		var weight: float=smoothstep(left,left+2.0,x)*(1.0-smoothstep(right-2.0,right,x))
-		var curve: float=peak+direction*0.0465*pow(x-centre,2)
+		var column: int=floori(x-0.5)
+		var t: float=x-float(column)-0.5
+		var t2: float=t*t
+		var t3: float=t2*t
+		var side: float=(2.0*t3-3.0*t2+1.0)*smooth[column]+(t3-2.0*t2+t)*slopes[column]
+		side+=(-2.0*t3+3.0*t2)*smooth[column+1]+(t3-t2)*slopes[column+1]
+		var cap_weight: float=smoothstep(cap_left,cap_left+2.0,x)*(1.0-smoothstep(cap_right-2.0,cap_right,x))
+		var cap: float=peak+direction*0.0465*pow(x-centre,2)
+		var curve: float=lerpf(side,cap,cap_weight)
 		result.append(Vector2(x,lerpf(profile_y(points,x),curve,weight)))
 	for point: Vector2 in points:
 		if point.x>right:result.append(point)

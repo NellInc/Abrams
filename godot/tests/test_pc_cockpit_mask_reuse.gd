@@ -258,9 +258,10 @@ func edge_extents() -> void:
 		var centre: float=120.0 if station==3 else 161.0
 		var peak: float=84.9 if station==3 else 77.1
 		var direction: float=1.0 if station==3 else -1.0
-		var heights: PackedFloat32Array=PackedFloat32Array();heights.resize(320);heights.fill(100.0 if station==3 else 32.0)
-		for x in range(int(centre-12.5),int(centre+12.5)+1):
-			heights[x]=roundf(peak+direction*0.0465*pow(float(x)+0.5-centre,2))
+		var heights: PackedFloat32Array=PackedFloat32Array();heights.resize(320)
+		for x in 320:
+			var shape: float=peak+direction*0.0465*pow(float(x)+0.5-centre,2)
+			heights[x]=roundf(minf(100.0,shape) if station==3 else maxf(32.0,shape))
 		var original_bytes: PackedByteArray=heights.to_byte_array()
 		var linear: PackedVector2Array=Edges.fit(heights)
 		var curved: PackedVector2Array=Edges.round_barrel_cap(linear,heights,station)
@@ -268,6 +269,22 @@ func edge_extents() -> void:
 		var bounded: bool=true
 		for x in 320:bounded=bounded and absf(Edges.profile_y(curved,float(x)+0.5)-heights[x])<=Edges.ERROR+0.0001
 		check(bounded and heights.to_byte_array()==original_bytes,"curved cap retains source error bound and input bytes "+str(station))
+		var shoulders_changed: bool=false
+		var outside_exact: bool=true
+		var radius: float=25.5 if station==3 else 37.5
+		for x in 320:
+			var distance: float=absf(float(x)+0.5-centre)
+			var difference: float=absf(Edges.profile_y(curved,float(x)+0.5)-Edges.profile_y(linear,float(x)+0.5))
+			if distance>12.5 and distance<radius and difference>0.01:shoulders_changed=true
+			if distance>radius and difference>0.0001:outside_exact=false
+		check(shoulders_changed,"continuous curvature also reaches the barrel shoulders "+str(station))
+		check(outside_exact,"rounder shoulders leave unrelated roof and deck profiles exact "+str(station))
+		var outer_segments_exact: bool=true
+		for i in range(linear.size()-1):
+			if linear[i].x<centre-radius or linear[i+1].x>centre+radius:
+				var at: int=curved.find(linear[i])
+				outer_segments_exact=outer_segments_exact and at>=0 and at+1<curved.size() and curved[at+1]==linear[i+1]
+		check(outer_segments_exact,"outside and boundary-crossing quads retain exact vertices and connectivity "+str(station))
 		var unknown: PackedFloat32Array=heights.duplicate();unknown[int(centre)]+=5.0
 		check(Edges.round_barrel_cap(linear,unknown,station)==linear,"unrecognised cap keeps the original linear fit "+str(station))
 		# A qualifying cap must also cross the real geometry-cache mode boundary.

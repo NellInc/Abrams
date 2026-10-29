@@ -2796,3 +2796,35 @@ fresh guest playthrough, performance or publication claim. Evidence:
 Working if: the upper underside collars join cleanly into the rounded barrel,
 rim highlights stay restrained, accepted contours remain exact and unrelated
 screen pixels, source timing and ownership masks are unchanged.
+
+### Rounder barrel shoulders (29 October 2026)
+
+The guarded Tactical outline now rounds both shoulders as well as the small
+end caps. Bounded five-tap source-column filtering and monotone Hermite intervals
+replace the remaining straight shoulder facets. Cap admission, the 0.98-pixel
+native-column fit limit, the 1.65-pixel edge band and every ownership/world-sample
+gate remain unchanged. The guarantee is at native column centres; a global
+subpixel error or monotonicity guarantee after spatial blending is not claimed.
+Materials, source masks, camera, guest timing, audio and non-Tactical fits are
+unchanged.
+
+The first candidate split long outer deck segments, causing small unrelated
+colour differences through changed GPU interpolation. It was rejected. Curve
+joins now use existing original vertices and preserve outside segment topology
+exactly. The regression covers those boundary-crossing quads in addition to
+source error, input bytes, shoulder activation, mode restoration and cache reuse.
+
+The lead reviewed its own final native replays at 960x540 and 1600x900. Both
+actual source profiles activate; maximum full-profile native-column error is
+0.955 pixels for cupola and 0.934 for driver. Final same-process comparisons
+against 2b7ecaf show zero changes outside barrel regions. Ownership checks,
+including three controlled driver offsets, report zero forbidden pixels.
+The mask/cache suite passes 3,017 checks and cockpit refinement passes 88.
+Bounded read-only advice was reconciled with the root-run native results.
+Evidence: `artifacts/barrel-shoulders-20261029/acceptance.json`. These are retained
+source frames rendered natively, with no fresh guest playthrough, performance,
+app/Web rebuild or publication claim.
+
+Working if: both shoulder transitions are smoothly rounded inside the existing
+source fit limits, outside outline quads stay exact, and original timing and
+ownership gates remain unchanged.
