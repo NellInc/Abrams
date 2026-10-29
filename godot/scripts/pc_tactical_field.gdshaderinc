@@ -24,20 +24,38 @@ vec3 field_enamel(vec3 original,vec2 p,float hardware) {
 	return mix(coat,original,clamp(hardware,0.0,1.0));
 }
 
+// One source-width profile owns both donor registration and round shading.
+float field_barrel_half_width(float y,bool upper) {
+	if(upper) {
+		float profile[25]=float[](4.0,7.0,8.0,9.0,10.0,11.0,12.0,12.0,13.0,13.0,13.0,14.0,14.0,14.0,15.0,15.0,15.0,16.0,16.0,17.0,17.0,19.0,21.0,23.0,24.0);
+		float row=clamp(y-85.5,0.0,24.0);
+		int i=int(floor(row));
+		int j=min(i+1,24);
+		float a=(profile[max(i-1,0)]+2.0*profile[i]+profile[min(i+1,24)])*0.25;
+		float b=(profile[max(j-1,0)]+2.0*profile[j]+profile[min(j+1,24)])*0.25;
+		return mix(a,b,fract(row));
+	}
+	float profile[46]=float[](35.0,34.0,34.0,34.0,33.0,33.0,32.0,32.0,31.0,31.0,31.0,30.0,30.0,29.0,29.0,29.0,28.0,28.0,27.0,26.0,25.0,24.0,23.0,21.0,19.0,17.0,17.0,16.0,16.0,15.0,15.0,15.0,14.0,14.0,14.0,13.0,13.0,13.0,12.0,12.0,11.0,10.0,9.0,8.0,7.0,4.0);
+	float row=clamp(y-31.5,0.0,45.0);
+	int i=int(floor(row));
+	int j=min(i+1,45);
+	float a=(profile[max(i-1,0)]+2.0*profile[i]+profile[min(i+1,45)])*0.25;
+	float b=(profile[max(j-1,0)]+2.0*profile[j]+profile[min(j+1,45)])*0.25;
+	return mix(a,b,fract(row));
+}
+
 // Continuous cylindrical normals inside the existing source-owned barrel.
 // RGB only: neither this finish nor its curved collar grooves owns coverage.
 vec3 field_round_barrel(vec3 original,vec2 p,int station) {
 	bool upper=station==3;
 	if(station!=3 && station!=4)return original;
-	float start=upper ? 85.0 : 18.0;
-	float end=upper ? 110.0 : 77.0;
+	float start=upper ? 83.0 : 18.0;
+	float end=upper ? 110.0 : 79.0;
 	if(p.y<start || p.y>=end)return original;
-	float row=clamp(p.y-(upper ? 85.5 : 31.5),0.0,upper ? 24.0 : 45.0);
-	// Smooth material coordinates follow the pinned native span profile.
-	float half_width=upper ? 4.0+13.0*sqrt(row/20.0)+6.0*smoothstep(20.0,24.0,row)
-		: 35.0-0.42*row-7.0*smoothstep(18.0,26.0,row)-5.0*smoothstep(34.0,45.0,row);
+	float half_width=field_barrel_half_width(p.y,upper);
+	float flush=upper ? 1.0-smoothstep(92.0,98.0,p.y) : smoothstep(58.0,64.0,p.y);
 	float across=(p.x-(upper ? 120.0 : 161.0))/max(half_width,1.0);
-	if(abs(across)>=1.06)return original;
+	if(abs(across)>=mix(1.06,1.4,flush))return original;
 	float x=clamp(across,-1.0,1.0);
 	float dome=sqrt(max(1.0-x*x,0.0));
 	vec2 normal=vec2(x,dome);
@@ -53,14 +71,11 @@ vec3 field_round_barrel(vec3 original,vec2 p,int station) {
 	colour+=field_grain(paint_uv)*0.014+field_grain(p*0.23)*0.004;
 	// Elliptical seams wrap around the cylinder instead of joining flat facets.
 	float collar=upper ? 100.5+2.1*x*x : 56.0+3.4*dome;
-	float rim=upper ? 85.5+1.2*x*x : 74.0+1.4*dome;
 	float groove=1.0-smoothstep(0.10,0.34,abs(p.y-collar));
-	float end_rim=1.0-smoothstep(0.08,0.28,abs(p.y-rim));
 	float lip=1.0-smoothstep(0.08,0.30,abs(p.y-collar+0.35));
 	float seat=1.0-smoothstep(0.20,0.85,abs(p.y-collar));
-	float rim_lip=1.0-smoothstep(0.06,0.24,abs(p.y-rim-(upper ? 0.32 : -0.32)));
-	colour*=1.0-groove*0.36-end_rim*0.22-seat*0.08;
-	colour+=(lip*(upper ? 0.045 : 0.026)+rim_lip*0.023)*(0.35+0.65*diffuse)*vec3(1.0,1.0,0.8);
+	colour*=1.0-groove*0.36-seat*0.08;
+	colour+=lip*(upper ? 0.045 : 0.026)*(0.35+0.65*diffuse)*vec3(1.0,1.0,0.8);
 	if(!upper) {
 		// Continue the same smooth metal into both existing mounting collars.
 		// Their old donor seams were ragged; no new hardware or coverage is added.
@@ -79,114 +94,111 @@ vec3 field_round_barrel(vec3 original,vec2 p,int station) {
 	float blend=upper ? smoothstep(start,start+0.8,p.y)*(1.0-smoothstep(end-0.6,end,p.y))
 		: smoothstep(17.5+1.6*dome,21.0+1.6*dome,p.y);
 	blend*=1.0-smoothstep(0.94,1.06,abs(across));
-	return mix(original,clamp(colour,vec3(0.0),vec3(1.0)),blend*0.96);
+	// End surfaces replace the donor completely, including its old bevel.
+	return mix(original,clamp(colour,vec3(0.0),vec3(1.0)),mix(blend*0.96,1.0,flush));
 }
 
 // Pinned original cupola barrel spans, registered to the authored metal contour.
 // Material UVs only. The existing source masks and edge coverage remain authoritative.
 vec2 field_cupola_barrel_uv(vec2 p) {
-	vec3 profile[25] = vec3[](
-		vec3(4.0,661.00,709.00),
-		vec3(7.0,655.93,714.75),
-		vec3(8.0,650.86,720.49),
-		vec3(9.0,645.77,726.17),
-		vec3(10.0,640.19,730.22),
-		vec3(11.0,634.85,734.12),
-		vec3(12.0,632.73,735.95),
-		vec3(12.0,630.60,737.77),
-		vec3(13.0,628.47,739.60),
-		vec3(13.0,625.86,741.19),
-		vec3(13.0,623.12,742.71),
-		vec3(14.0,620.39,744.23),
-		vec3(14.0,617.65,745.15),
-		vec3(14.0,614.91,745.45),
-		vec3(15.0,612.18,745.76),
-		vec3(15.0,609.38,746.25),
-		vec3(15.0,606.33,747.47),
-		vec3(16.0,603.29,748.68),
-		vec3(16.0,600.25,749.90),
-		vec3(17.0,594.42,755.58),
-		vec3(17.0,588.33,761.67),
-		vec3(19.0,579.92,770.29),
-		vec3(21.0,568.69,781.99),
-		vec3(23.0,559.56,792.40),
-		vec3(24.0,555.00,800.00)
+	vec2 profile[25] = vec2[](
+		vec2(661.00,709.00),
+		vec2(655.93,714.75),
+		vec2(650.86,720.49),
+		vec2(645.77,726.17),
+		vec2(640.19,730.22),
+		vec2(634.85,734.12),
+		vec2(632.73,735.95),
+		vec2(630.60,737.77),
+		vec2(628.47,739.60),
+		vec2(625.86,741.19),
+		vec2(623.12,742.71),
+		vec2(620.39,744.23),
+		vec2(617.65,745.15),
+		vec2(614.91,745.45),
+		vec2(612.18,745.76),
+		vec2(609.38,746.25),
+		vec2(606.33,747.47),
+		vec2(603.29,748.68),
+		vec2(600.25,749.90),
+		vec2(594.42,755.58),
+		vec2(588.33,761.67),
+		vec2(579.92,770.29),
+		vec2(568.69,781.99),
+		vec2(559.56,792.40),
+		vec2(555.00,800.00)
 	);
 	float row=clamp(p.y-85.5,0.0,24.0);
 	int i=int(floor(row));
-	vec3 span=mix(profile[i],profile[min(i+1,24)],fract(row));
+	vec2 span=mix(profile[i],profile[min(i+1,24)],fract(row));
 	// Smooth the material width, not the source's stair-stepped silhouette.
 	// Following every integer width used to pinch the longitudinal highlight.
-	float width0=(profile[max(i-1,0)].x+2.0*profile[i].x+profile[min(i+1,24)].x)*0.25;
-	int j=min(i+1,24);
-	float width1=(profile[max(j-1,0)].x+2.0*profile[j].x+profile[min(j+1,24)].x)*0.25;
-	float across=clamp(0.5+(p.x-120.0)/(2.0*mix(width0,width1,fract(row))),0.025,0.975);
+	float half_width=field_barrel_half_width(p.y,true);
+	float across=clamp(0.5+(p.x-120.0)/(2.0*half_width),0.025,0.975);
 	float y=mix(533.0,688.62,row/24.0);
-	return vec2(mix(span.y,span.z,across)/1672.0,y/941.0);
+	return vec2(mix(span.x,span.y,across)/1672.0,y/941.0);
 }
 
 // Pinned original driver barrel spans, registered to the authored metal contour.
 // Material UVs only. The existing source masks and edge coverage remain authoritative.
 vec2 field_driver_barrel_uv(vec2 p) {
-	vec3 profile[46] = vec3[](
-		vec3(35.0,682.53,979.58),
-		vec3(34.0,683.80,978.56),
-		vec3(34.0,685.08,977.54),
-		vec3(34.0,686.35,976.52),
-		vec3(33.0,687.62,975.50),
-		vec3(33.0,688.90,974.48),
-		vec3(32.0,690.17,973.46),
-		vec3(32.0,691.45,972.44),
-		vec3(31.0,693.12,971.20),
-		vec3(31.0,695.10,969.78),
-		vec3(31.0,697.08,968.37),
-		vec3(30.0,699.06,966.95),
-		vec3(30.0,701.05,965.54),
-		vec3(29.0,703.03,964.12),
-		vec3(29.0,705.01,962.71),
-		vec3(29.0,708.46,959.98),
-		vec3(28.0,713.39,955.93),
-		vec3(28.0,718.32,951.88),
-		vec3(27.0,723.24,947.84),
-		vec3(26.0,728.17,943.79),
-		vec3(25.0,733.10,939.74),
-		vec3(24.0,737.56,935.80),
-		vec3(23.0,741.91,931.88),
-		vec3(21.0,746.27,927.96),
-		vec3(19.0,750.62,924.04),
-		vec3(17.0,754.98,920.12),
-		vec3(17.0,759.33,916.20),
-		vec3(16.0,763.69,912.28),
-		vec3(16.0,766.05,909.95),
-		vec3(15.0,768.25,907.75),
-		vec3(15.0,770.46,905.54),
-		vec3(15.0,772.67,903.33),
-		vec3(14.0,774.87,901.13),
-		vec3(14.0,777.08,898.92),
-		vec3(14.0,779.29,896.71),
-		vec3(13.0,781.49,894.51),
-		vec3(13.0,783.95,891.74),
-		vec3(13.0,786.93,887.76),
-		vec3(12.0,789.92,883.78),
-		vec3(12.0,792.90,879.79),
-		vec3(11.0,795.89,875.81),
-		vec3(10.0,798.88,871.83),
-		vec3(9.0,802.55,866.94),
-		vec3(8.0,807.91,859.79),
-		vec3(7.0,813.56,852.67),
-		vec3(4.0,824.80,846.12)
+	vec2 profile[46] = vec2[](
+		vec2(682.53,979.58),
+		vec2(683.80,978.56),
+		vec2(685.08,977.54),
+		vec2(686.35,976.52),
+		vec2(687.62,975.50),
+		vec2(688.90,974.48),
+		vec2(690.17,973.46),
+		vec2(691.45,972.44),
+		vec2(693.12,971.20),
+		vec2(695.10,969.78),
+		vec2(697.08,968.37),
+		vec2(699.06,966.95),
+		vec2(701.05,965.54),
+		vec2(703.03,964.12),
+		vec2(705.01,962.71),
+		vec2(708.46,959.98),
+		vec2(713.39,955.93),
+		vec2(718.32,951.88),
+		vec2(723.24,947.84),
+		vec2(728.17,943.79),
+		vec2(733.10,939.74),
+		vec2(737.56,935.80),
+		vec2(741.91,931.88),
+		vec2(746.27,927.96),
+		vec2(750.62,924.04),
+		vec2(754.98,920.12),
+		vec2(759.33,916.20),
+		vec2(763.69,912.28),
+		vec2(766.05,909.95),
+		vec2(768.25,907.75),
+		vec2(770.46,905.54),
+		vec2(772.67,903.33),
+		vec2(774.87,901.13),
+		vec2(777.08,898.92),
+		vec2(779.29,896.71),
+		vec2(781.49,894.51),
+		vec2(783.95,891.74),
+		vec2(786.93,887.76),
+		vec2(789.92,883.78),
+		vec2(792.90,879.79),
+		vec2(795.89,875.81),
+		vec2(798.88,871.83),
+		vec2(802.55,866.94),
+		vec2(807.91,859.79),
+		vec2(813.56,852.67),
+		vec2(824.80,846.12)
 	);
 	float row=clamp(p.y-31.5,0.0,45.0);
 	int i=int(floor(row));
-	vec3 span=mix(profile[i],profile[min(i+1,45)],fract(row));
-	float width0=(profile[max(i-1,0)].x+2.0*profile[i].x+profile[min(i+1,45)].x)*0.25;
-	int j=min(i+1,45);
-	float width1=(profile[max(j-1,0)].x+2.0*profile[j].x+profile[min(j+1,45)].x)*0.25;
-	float across=clamp(0.5+(p.x-161.0)/(2.0*mix(width0,width1,fract(row))),0.025,0.975);
+	vec2 span=mix(profile[i],profile[min(i+1,45)],fract(row));
+	float half_width=field_barrel_half_width(p.y,false);
+	float across=clamp(0.5+(p.x-161.0)/(2.0*half_width),0.025,0.975);
 	float source_y=clamp(p.y,31.5,76.5);
 	// Stop just inside the painted end rim, before the donor's black cutout.
 	float y=source_y<46.0 ? mix(200.0,307.0,(source_y-18.0)/28.0) : mix(307.0,479.0,(source_y-46.0)/31.0);
-	return vec2(mix(span.y,span.z,across)/1672.0,y/941.0);
+	return vec2(mix(span.x,span.y,across)/1672.0,y/941.0);
 }
 
 // Concept texture registration only. The paired source masks still own every

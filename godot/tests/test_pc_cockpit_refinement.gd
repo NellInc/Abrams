@@ -77,6 +77,7 @@ func run()->void:
 		var edge=frame.cockpit_edges
 		check(edge.active,"settled outline active "+entry.stage)
 		var station:=3 if entry.stage=="cupola-settled" else 4
+		if native and station==4:await tactical_flush_tip(frame,repo,source,packet,world,output)
 		var assembly:Image=frame._current_driver_mask
 		var donor:Texture2D=frame.cockpit_art_textures[station]
 		var rail:bool=frame.material.get_shader_parameter("cupola_rail_verified")
@@ -146,6 +147,30 @@ func run()->void:
 	for e in errors:printerr("FAIL: "+e)
 	print("PC_COCKPIT_REFINEMENT: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)
+
+func tactical_flush_tip(frame:TextureRect,repo:String,source:Image,packet:Dictionary,world:Texture2D,output:String)->void:
+	check(frame.load_tactical_art(repo),"Tactical donors load for flush-tip regression")
+	frame.graphics_mode="tactical"
+	check(frame.set_frame(source,packet,world),"same original driver frame binds in Tactical")
+	check(frame.material.get_shader_parameter("tactical_interior") and frame.cockpit_edges.active,"flush-tip regression exercises production Tactical material and edges")
+	var donor:Texture2D=frame.material.get_shader_parameter("driver_art")
+	var edge_donor:Texture2D=frame.cockpit_edges.material.get_shader_parameter("donor")
+	var clean:Image=await snap()
+	var contrast:Image=Image.create_empty(8,8,false,Image.FORMAT_RGB8);contrast.fill(Color.MAGENTA)
+	var probe:Texture2D=ImageTexture.create_from_image(contrast)
+	frame.material.set_shader_parameter("driver_art",probe)
+	frame.cockpit_edges.material.set_shader_parameter("donor",probe)
+	var altered:Image=await snap()
+	var scale:Vector2=Vector2(clean.get_size())/Vector2(320,200)
+	var tip:Rect2i=Rect2i(Vector2i(Vector2(132,64)*scale),Vector2i(Vector2(58,15)*scale))
+	check(clean.get_region(tip).get_data()==altered.get_region(tip).get_data(),"entire shaft tip rejects donor bevel bleed, even with a magenta donor")
+	check(clean.get_data()!=altered.get_data(),"contrast donor probe actually changes the surrounding donor-owned hardware")
+	clean.save_png(output.path_join("tactical-flush-tip.png"))
+	altered.save_png(output.path_join("tactical-flush-tip-contrast.png"))
+	frame.material.set_shader_parameter("driver_art",donor)
+	frame.cockpit_edges.material.set_shader_parameter("donor",edge_donor)
+	check(clean.get_data()==(await snap()).get_data(),"Tactical donor and held frame restore exactly after contrast probe")
+	frame.graphics_mode="modern";frame.set_frame(source,packet,world)
 
 func moving_roofs(frame:TextureRect,repo:String,native:bool,output:String)->void:
 	var fixture:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(repo.path_join("artifacts/finish-20260928/cursor-struts/coverage-fixtures.json")))

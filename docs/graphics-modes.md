@@ -2828,3 +2828,27 @@ app/Web rebuild or publication claim.
 Working if: both shoulder transitions are smoothly rounded inside the existing
 source fit limits, outside outline quads stay exact, and original timing and
 ownership gates remain unchanged.
+
+### Flush barrel ends (29 October 2026)
+
+The preceding finish introduced a false lip: its shading radius narrowed faster
+than the registered source barrel, exposing the donor's old bevel at the edges.
+The shared material now uses the same native width profile for both UV
+registration and cylindrical shading. The end surfaces fully replace donor RGB,
+including the existing antialias fringe, and the artificial end-rim band is
+removed. Existing mounting collars remain. Accepted contour geometry, source
+masks, coverage, clocks, caller shaders and audio assets are unchanged.
+
+The implementing lead inspected its own native retained-source cupola and driver
+renders at 960x540 and 1600x900. Same-process comparisons show zero changes outside
+the barrel regions; all four source-ownership fixtures have zero forbidden
+pixels. Native cockpit refinement passes 100 checks, including a contrast-donor
+regression: substituting magenta artwork cannot change the corrected driver tip,
+the surrounding hardware does change, and restoring the donor restores the
+entire frame exactly. Touched-file lint is clean; existing project diagnostics
+are unchanged. Evidence: `artifacts/barrel-flush-20261029/acceptance.json`.
+These are native replays of retained source frames, with no fresh guest
+playthrough, performance, app/Web rebuild or publication claim.
+
+Working if: the end reads as one continuous rounded surface, no donor bevel or
+false rim reappears, and source ownership and unrelated screen pixels stay exact.
