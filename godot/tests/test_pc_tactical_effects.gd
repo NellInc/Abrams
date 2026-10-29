@@ -161,6 +161,22 @@ func run() -> void:
 	missile.world={"dynamic":[{"pointer":99,"shape_index":186,"shape_header_word":100,"world_position_raw":[raw[0],-raw[1],raw[2]],"orientation_u8":[0,0,64],"speed_raw":250}],"presentation_effects":{"schema":1,"shape_base":115}}
 	var flight:=queued(effects,missile,mapping,ownership,assets,art)
 	check(effects.counts.missile==9,"observed guided flare keeps its motor glow")
+	var luminous: bool=effects._plumes_live
+	var motor_puffs: int=0
+	var plume_puffs: int=0
+	var generic_puffs: int=0
+	for n in effects.puffs.size():
+		var puff: Array=effects.puffs[n]
+		if puff[4]==2.0:
+			generic_puffs+=1
+			luminous=luminous and puff[10]==-1.0 and puff[9]==-1.0
+			continue
+		luminous=luminous and puff[10]==-2.0 and puff[9]==-1.0
+		if puff[4]==3.0: motor_puffs+=1
+		if puff[4]==0.0: plume_puffs+=1
+		var anchor: Color=effects._roots.get_pixel(n*2+1,0)
+		luminous=luminous and anchor.a==-2.0
+	check(luminous and motor_puffs==2 and plume_puffs==7 and generic_puffs==5,"missile RGB tag keeps puff kinds, inactive impact ages and live plume clock")
 	var rect: Rect2=art.mapping(object,frame,Art.PC_PALETTE).rect
 	var confined:=true
 	for puff: Array in effects.puffs: confined=confined and puff[8]==rect

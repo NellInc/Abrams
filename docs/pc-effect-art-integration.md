@@ -165,3 +165,38 @@ application/browser rebuild or publication.
 Working if: phase 63 selects its authored donor like the rest of the sequence,
 all source transparency/ownership remains exact, and repeated/paused source
 packets and graphics-mode restoration remain unchanged.
+
+## Incoming flare detail polish (29 October 2026)
+
+Two versioned ImageGen donors add resolved incandescent filaments in place of
+the flat flare artwork. They keep the original ten-phase donor alternation;
+original donor files remain recoverable. New PNGs, prompts, bounds, hashes and
+provenance stay in the local authored-art bank. The private packaging allowlist
+includes the two new names, with no package or Web asset build performed.
+
+The nine source-qualified missile puffs previously put grey smoke across the
+hot centre. An exact negative material-phase tag (-2) selects an incandescent
+RGB finish for these puffs only. The five generic effect puffs stay unchanged.
+Puff types, alpha, geometry, roots, source ownership and both clocks retain their
+existing behaviour. The moving billow/grain fields still modulate the new RGB.
+The impact-phase branch continues to accept only phases 0 through 1.
+
+A bounded read-only review identified two initial acceptance defects: the test
+wrongly treated the five generic puffs as missile puffs, and the first RGB branch
+dropped visible phase modulation. Both were corrected before acceptance. The
+implementing lead verified the revised source and its own native replays.
+
+Verification: 85 Tactical checks, 83,755 headless art checks, 2,733,244 native art
+checks and 93 ten-phase/material checks pass. Native RGB error is at most 1 and
+source-external Modern contour pixels are 0. White-material before/after captures
+prove pixel-exact puff opacity and coverage for both alternate flare shapes.
+Advancing only the existing plume clock changes 1,360 and 1,354 RGB pixels, while
+white-material coverage, puff geometry and root payload remain exact. Held phases
+and repeated packets remain exact. These are controlled native descriptor
+replays, not a fresh guest playthrough or performance measurement.
+
+Working if: all ten incoming phases use the selected authored detail without a
+grey centre, only the admitted missile puffs select the incandescent palette,
+and native colour-motion, pause, clipping and ownership controls pass. Evidence:
+`artifacts/visual-polish-20261029/acceptance.json`. Local only; no app/browser
+rebuild, public asset upload, push or publication. Audio remains unchanged.

@@ -2718,3 +2718,23 @@ the running game needs a new launch to reload the shader.
 
 Working if: neither barrel shows a cut-out cap or severed collar, pixels outside
 the barrel regions stay exact, and original source/mask and mode gates still pass.
+
+### Forward barrel material polish (29 October 2026)
+
+The second pass smooths only the material-width registration across the pinned
+source barrel spans. It removes stepped highlight pinching, keeps samples inside
+the painted metal, joins the cupola shoulder continuously to the deck and avoids
+the driver's black cutout just past its end rim. Original barrel silhouettes,
+signed assembly offsets, cameras, masks and timing remain unchanged. The existing
+interior donor bitmaps are unchanged.
+
+The implementing lead reviewed its own native forward replays at 960x540 and
+1600x900. Both views pass the source-ownership checks, including three controlled
+signed driver offsets, with zero forbidden pixels. Same-process comparisons have
+zero changed pixels outside the barrel regions. The 88 cockpit checks pass.
+These are retained original states rendered natively, with no new guest-motion
+or performance claim. Evidence: `artifacts/visual-polish-20261029/acceptance.json`.
+
+Working if: barrel highlights and collars join smoothly within the original
+silhouette, the original mask/offset tests pass and unrelated screen pixels stay
+exact. Local source only; no application/browser rebuild or publication.

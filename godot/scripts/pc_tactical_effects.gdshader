@@ -139,6 +139,15 @@ void fragment() {
         colour=tactical_hot_finish(q,coarse,detail,filtered,1.0);
     }
     colour=tactical_particle_volume(colour,q,density,emitter.y,fold_light);
+    if(anchor.w == -2.0) {
+        // Source-qualified missile puffs are incandescent. Grey smoke here
+        // obscured the authored hot centre with a soft, dark "eye".
+        // RGB only: retain density, alpha, discard and both incumbent clocks.
+        float heat=smoothstep(0.02,0.75,density+(billow-coarse)*0.06*filtered);
+        colour=mix(vec3(1.0,0.68,0.22),vec3(1.0,0.97,0.85),heat);
+        // Keep the same moving colour fields; only the palette is replaced.
+        colour*=0.96+0.04*(billow*0.65+grain*0.35)*filtered;
+    }
     if(anchor.w>=0.0 && anchor.w<=1.0)colour=tactical_impact_phase(colour,q,anchor.w);
     if(dynamics_time>=0.0 && emitter.w>0.0) {
         // Short ballistic sparks, colour-only inside the incumbent alpha/mask.

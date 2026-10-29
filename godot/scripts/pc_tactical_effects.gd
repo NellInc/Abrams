@@ -241,7 +241,9 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 			for n in 9:
 				var at:=target.position+target.size*Vector2(0.5+cos(float(n)*2.4)*0.07*float(n%3),0.5+sin(float(n)*2.4)*0.07*float(n%3))
 				var raw:=Modern.vec(Geometry.unproject(at,1024.0,_frame))
-				_puff(raw,target.size.x*1024.0/float(_frame.focal_pixels)*(0.10+float(n%3)*0.035),0.42*(1.0-float(n)/10.0),3.0 if n<2 else 0.0,seed+float(n)*0.41,owner,root,effect.rect)
+				# Negative phase -2 marks missile RGB only. Puff type, alpha,
+				# geometry and existing plume clock retain their original values.
+				_puff(raw,target.size.x*1024.0/float(_frame.focal_pixels)*(0.10+float(n%3)*0.035),0.42*(1.0-float(n)/10.0),3.0 if n<2 else 0.0,seed+float(n)*0.41,owner,root,effect.rect,-1.0,-2.0)
 			counts.missile+=9
 			continue
 		var anchored:=engine_anchor(object,assets,_frame)

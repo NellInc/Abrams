@@ -57,8 +57,13 @@ vec2 field_cupola_barrel_uv(vec2 p) {
 	float row=clamp(p.y-85.5,0.0,24.0);
 	int i=int(floor(row));
 	vec3 span=mix(profile[i],profile[min(i+1,24)],fract(row));
-	float across=clamp(0.5+(p.x-120.0)/(2.0*span.x),0.0,1.0);
-	float y=mix(540.0,676.0,row/24.0);
+	// Smooth the material width, not the source's stair-stepped silhouette.
+	// Following every integer width used to pinch the longitudinal highlight.
+	float width0=(profile[max(i-1,0)].x+2.0*profile[i].x+profile[min(i+1,24)].x)*0.25;
+	int j=min(i+1,24);
+	float width1=(profile[max(j-1,0)].x+2.0*profile[j].x+profile[min(j+1,24)].x)*0.25;
+	float across=clamp(0.5+(p.x-120.0)/(2.0*mix(width0,width1,fract(row))),0.025,0.975);
+	float y=mix(533.0,688.62,row/24.0);
 	return vec2(mix(span.y,span.z,across)/1672.0,y/941.0);
 }
 
@@ -116,9 +121,13 @@ vec2 field_driver_barrel_uv(vec2 p) {
 	float row=clamp(p.y-31.5,0.0,45.0);
 	int i=int(floor(row));
 	vec3 span=mix(profile[i],profile[min(i+1,45)],fract(row));
-	float across=clamp(0.5+(p.x-161.0)/(2.0*span.x),0.0,1.0);
+	float width0=(profile[max(i-1,0)].x+2.0*profile[i].x+profile[min(i+1,45)].x)*0.25;
+	int j=min(i+1,45);
+	float width1=(profile[max(j-1,0)].x+2.0*profile[j].x+profile[min(j+1,45)].x)*0.25;
+	float across=clamp(0.5+(p.x-161.0)/(2.0*mix(width0,width1,fract(row))),0.025,0.975);
 	float source_y=clamp(p.y,31.5,76.5);
-	float y=source_y<46.0 ? mix(200.0,307.0,(source_y-18.0)/28.0) : mix(307.0,487.0,(source_y-46.0)/31.0);
+	// Stop just inside the painted end rim, before the donor's black cutout.
+	float y=source_y<46.0 ? mix(200.0,307.0,(source_y-18.0)/28.0) : mix(307.0,479.0,(source_y-46.0)/31.0);
 	return vec2(mix(span.y,span.z,across)/1672.0,y/941.0);
 }
 
@@ -147,7 +156,6 @@ vec2 field_driver_uv(vec2 p) {
 	return uv;
 }
 vec2 field_cupola_uv(vec2 p) {
-	if(p.y>=84.0 && p.y<110.0 && abs(p.x-120.0)<27.0)return field_cupola_barrel_uv(p);
 	float x;
 	if(p.x<59.0)x=mix(0.0,69.0,p.x/59.0);
 	else if(p.x<183.0)x=mix(69.0,191.0,(p.x-59.0)/124.0);
@@ -158,5 +166,9 @@ vec2 field_cupola_uv(vec2 p) {
 	else if(p.y<114.0)y=mix(530.0,714.0,(p.y-85.0)/29.0);
 	else if(p.y<146.0)y=mix(714.0,843.0,(p.y-114.0)/32.0);
 	else y=mix(843.0,941.0,(p.y-146.0)/54.0);
-	return vec2(x/320.0,y/941.0);
+	vec2 uv=vec2(x/320.0,y/941.0);
+	// Join the shoulder to the unchanged deck without a hard material splice.
+	if(p.y>=84.0 && p.y<110.0 && abs(p.x-120.0)<27.0)
+		uv=mix(field_cupola_barrel_uv(p),uv,smoothstep(108.0,110.0,p.y));
+	return uv;
 }
