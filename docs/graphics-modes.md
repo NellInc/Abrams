@@ -2884,8 +2884,9 @@ bounded material displacement checks, with exact original frame counts and masks
 ### Hairline barrel contours (29 October 2026)
 
 Both Tactical forward barrels now have a thin black contour in the existing
-cockpit edge pass. Its inward fade is bounded by one edge-render pixel, measured
-from derivatives of the accepted contour distance. It changes RGB only and
+cockpit edge pass. The first version used an inward fade bounded by one
+edge-render pixel, measured from derivatives of the accepted contour distance.
+It changes RGB only and
 tapers into the mounting shoulders. Source geometry, antialias coverage, masks,
 guest timing, cosmetic-motion authority and the flush-end finish are unchanged.
 
@@ -2898,3 +2899,25 @@ new live route, performance claim, standalone/Web rebuild or publication.
 
 Working if: both silhouettes carry a restrained black hairline, the false lip
 stays absent, and existing contours, visibility masks and timing stay unchanged.
+
+### Antialiased barrel hairlines (29 October 2026)
+
+The black stroke now uses integrated pixel area rather than a steep point-sampled
+fade. A two-render-pixel filter footprint smooths the 0.7-pixel ink stroke before
+the wide HUD's nearest resampling. Its slight inward inset and the original
+coverage clamp retain the accepted silhouette. Global texture filtering, source
+masks, geometry, timing and the flush-end material remain unchanged.
+
+The implementing lead compared its own before/after renders at native size and
+with nearest-neighbour diagnostic magnification, at 960x540 and 1600x900. The
+single-pixel filter candidate was insufficient and was rejected. The accepted
+prefilter softens the hard dark steps while retaining a thin contour. Changes
+remain inside barrel regions; all four ownership fixtures have zero forbidden
+pixels. The final native suite passes 124 checks, including both-view displacement
+and donor isolation. The half-plane area function also matches 56 independent
+grid-integration cases. Evidence: `artifacts/barrel-aa-20261029/acceptance.json`.
+These are native retained-source checks, with no new live route, performance,
+standalone/Web rebuild or publication claim.
+
+Working if: the hairlines blend smoothly across raster-pixel boundaries without
+changing the barrel contours, original visibility masks or timing.

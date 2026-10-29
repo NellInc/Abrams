@@ -45,6 +45,19 @@ vec3 paint(vec4 art,vec2 p) {
 	if(tactical)colour=mix(field_enamel(vec3(light),p,0.0),colour,art.a);
 	return colour;
 }
+// Exact area of a linear half-plane inside the rectangular raster pixel.
+// Integrating both stroke edges avoids the phase-dependent thin-line steps.
+float barrel_pixel_area(float distance,vec2 gradient) {
+	vec2 span=abs(gradient);
+	float major=max(max(span.x,span.y),0.00001);
+	float minor=min(span.x,span.y);
+	float x=abs(distance);
+	float shoulder=(major-minor)*0.5;
+	float radius=(major+minor)*0.5;
+	float tail=x<shoulder ? 0.5-x/major
+		: pow(max(radius-x,0.0),2.0)/(2.0*major*max(minor,0.00001));
+	return distance>=0.0 ? 1.0-tail : tail;
+}
 void fragment() {
 	vec2 p=point;
 	float signed_distance=(p.y-UV.y)*direction;
@@ -86,8 +99,16 @@ void fragment() {
 		float radius=station==3 ? 25.5 : 37.5;
 		float barrel=1.0-smoothstep(radius-1.5,radius,abs(sample_p.x-centre));
 		bool end_profile=station==3 ? (UV.y>82.0 && UV.y<110.0) : (UV.y>30.0 && UV.y<80.0);
-		float pixel_width=max(length(vec2(dFdx(signed_distance),dFdy(signed_distance))),0.001);
-		float ink=1.0-smoothstep(0.15,0.95,signed_distance/pixel_width);
+		vec2 gradient=vec2(dFdx(signed_distance),dFdy(signed_distance));
+		float pixel_width=max(length(gradient),0.001);
+		// Prefilter the subpixel ink before the wide HUD's nearest resampling.
+		// A two-pixel footprint filters the narrow stroke without a hard dark step.
+		vec2 footprint=gradient*2.0;
+		float inset=pixel_width*0.15;
+		float width=pixel_width*0.70;
+		float stroke=barrel_pixel_area(signed_distance-inset,footprint)-barrel_pixel_area(signed_distance-inset-width,footprint);
+		// Keep the incumbent silhouette coverage exactly; filter only black RGB.
+		float ink=clamp(stroke/max(coverage,0.00001),0.0,1.0);
 		if(end_profile)art=mix(art,vec3(0.0),ink*barrel);
 	}
 	vec3 world=texture(world_texture,visible/camera_size).rgb;
