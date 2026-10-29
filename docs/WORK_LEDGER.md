@@ -8991,3 +8991,29 @@ Convoy reached45173 physically neutral after one exact unchanged-material cue re
 Siegen reached16470 neutral, then its next public leg stopped at16719 after right armor50to35. ROOT reran249 audit rows and49 saved raw checks. The exact hit frame within the last six-frame slice is unverified; no new message or source ID identifies a shooter. All other critical material and ammunition are unchanged. The real loss is retained, and only a bounded protective smoke/brake stop is authorised at this checkpoint.
 
 Working if: actual service confirmation, original source contact and physically neutral stops govern subsequent actions, while incomplete legs and retained damage never count as mission success.
+
+
+### 29 October 2026, approved BRDM engine loop integrated locally
+
+Installed Nell's approved 5.647958-second BRDM loop privately, preserving every
+one of 203 incumbent bank files. The optional exact-frame/SHA loader binds only
+moving intact source 141/143 through the existing postdraw owner/UI-mask proof.
+No guest/event/motor, renderer, camera or visibility-mask file changed. BTR and
+truck keep their recordings; a single BRDM never plays the old donor as well.
+A new saved BRDM control inherits the old wheeled gain/Off until separately set.
+
+A bounded read-only review caught both a zero-script lint invocation and the
+potential extra wheel-layer loudness from distinct simultaneous beds. Root
+corrected lint scope and added a shared maximum squared-gain budget. Three
+relative-phase probes measured -24.93 to -24.95 LUFS versus the old -25.00 LUFS;
+this is sampled loudness evidence, not an all-phase perceived-mix guarantee.
+A malformed negative WAV fixture was fixed before the clean final run.
+
+Terminal focused checks: world 1354, mix 710, source 924, limiter 33, play-menu 452,
+frontdoor 63, installed-loader/player 11, all 0 errors/failures. Real lint scanned 78
+scripts, 0 errors; four warnings are in unchanged pc_play_menu.gd. Evidence and
+private provenance: artifacts/brdm-integration-20261029/verification.json.
+Packaged app/web were not rebuilt or published; no fresh live/device claim.
+
+Working if: only correctly moving and actually visible BRDM owners admit the
+approved loop, stored Off remains Off, and source timing/masks stay unchanged.

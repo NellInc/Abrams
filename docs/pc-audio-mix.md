@@ -536,3 +536,51 @@ master and gain stay unchanged.
 
 Working if: all 26 accepted private cues load through one explicit root, missing
 banks retain their existing fallbacks, and M1A1 AX is acoustically unchanged.
+
+
+## BRDM recording integration (29 October 2026)
+
+The human-approved exterior BRDM-2 recording is installed privately at
+`local-audio/pc-brdm-effects-v1`. Pole Position Production's original was
+obtained from the official SONNISS GDC2023 torrent under the explicitly
+accepted current licence. The original, licence source and edit recipe remain
+recoverable outside public assets. Its exact 271,102-frame loop is 48 kHz mono 16-bit,
+5.647958 seconds, -25.00 LUFS and -10.76 dBTP. Installed SHA-256:
+`4b5688cc2eb6ee18e9a2980d82c5a672dc3378aced1a43a39c66adc706332a4f`.
+
+Only intact original shapes 141 (BRDM-2) and 143(the source-labelled BRDM-3
+launcher derivative) select it. BTR 137 and truck 159 keep their recordings.
+The existing unique actor/model join, finite nonzero signed16 motion and
+postdraw original ownership/UI-mask checks are unchanged. This is a visible
+moving-engine texture, without a newly inferred idle, ignition or RPM event.
+Wrecks 142/144, stationary, hidden and occluded actors remain silent. No source
+requests, clocks, camera, geometry, visibility masks or own-tank motor authority
+were changed. Missing/corrupt optional stock retains the former generic donor;
+turning the dedicated cue Off never substitutes that donor.
+
+The native “BRDM engine” control offers Off through 100%. Old saved wheeled-family
+levels, including Off, inherit only when no explicit BRDM setting exists. The
+solo cue retains factor 0.30 and fixed pitch. Its -25 LUFS master matches the
+previous truck donor. Concurrent visible BRDM and BTR/truck textures share the
+old maximum squared-gain-coefficient budget instead of adding two full-level
+beds. Relative sliders survive; an equal-level pair attenuates each by 3.01 dB.
+Three 24-second relative-phase probes measured -24.94, -24.93 and -24.95 LUFS
+against the old -25.00 LUFS wheel layer. These samples do not prove exact
+all-phase or perceived-scene loudness equality. Other cue gains are unchanged.
+
+Focused terminal checks: world 1354, mix 710, source 924, limiter 33, play menu 452,
+frontdoor 63 and actual installed-loader/player 11, all zero errors/failures.
+All 203 prior runtime-bank files and the original renderer/mask/event/motor
+sources were rechecked unchanged. Corrected skill lint scanned 78 scripts with
+zero errors; four warnings are in untouched `pc_play_menu.gd`. An earlier
+file-path lint invocation scanned zero scripts and is not acceptance evidence.
+The read-only contract review caught the coexistence budget issue before lock.
+Evidence: `artifacts/brdm-integration-20261029/verification.json`.
+
+This is local native integration. The packaged app and public web build were
+not rebuilt or published. No fresh live-guest or device-listening claim follows
+from the headless production-player and source/mask contract checks.
+
+Working if: the exact approved loop loads only for an eligible visible BRDM,
+old gain/Off survives, same-actor donor doubling and wheeled track noise remain
+absent, and mute/restore cannot reuse stale admission.

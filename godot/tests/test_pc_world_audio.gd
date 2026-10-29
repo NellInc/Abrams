@@ -20,6 +20,7 @@ func check(ok: bool, why: String) -> void:
 func isolated_audio() -> Node:
 	var audio: Node = Audio.new()
 	audio.world_audio.t72_directory = ""
+	audio.world_audio.brdm_directory = ""
 	audio.world_audio.flight_directory = ""
 	audio.world_audio.tank_directory = ""
 	audio.world_audio.allied_directory = ""
@@ -45,7 +46,7 @@ func bank(directory: String, cues: Array = World.BASE_CUES, kind: String = "priv
 	for cue: String in cues:
 		var stream: AudioStreamWAV = AudioStreamWAV.new()
 		stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=48000
-		var frames: int=World.ALLIED_FRAME_COUNTS[cue] if cue in World.ALLIED_CUES else World.FLIGHT_FRAME_COUNT if cue=="missileflight" else World.T80_FRAME_COUNT if cue=="t80" else World.T72_FRAME_COUNT if cue=="t72" else World.TANK_FRAME_COUNT if cue=="tank" else 48000
+		var frames: int=World.ALLIED_FRAME_COUNTS[cue] if cue in World.ALLIED_CUES else World.FLIGHT_FRAME_COUNT if cue=="missileflight" else World.T80_FRAME_COUNT if cue=="t80" else World.T72_FRAME_COUNT if cue=="t72" else World.BRDM_FRAME_COUNT if cue=="brdm" else World.TANK_FRAME_COUNT if cue=="tank" else 48000
 		var bytes: PackedByteArray=PackedByteArray();bytes.resize(frames*2);stream.data=bytes
 		var path: String=directory.path_join(cue+".wav")
 		check(stream.save_to_wav(path)==OK,"generated PCM writes")
@@ -135,6 +136,7 @@ func run() -> void:
 	await soviet_checks(directory,ui,mask)
 	await tank_checks(directory,ui,mask)
 	await t72_checks(directory,ui,mask)
+	await brdm_checks(ui,mask)
 	await flight_checks(ui,mask)
 	await allied_checks(directory,ui,mask)
 	await detail_checks(directory,ui,mask)
@@ -500,6 +502,81 @@ func t72_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		manifest.cues.t72.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
 		check(reader._read_bank(directory,"private visible-t72 cue",World.T72_CUES).has("error"), "T72 rejects wrong rate/channels/bit depth even with matching SHA")
 	check(JSON.stringify(data)==original, "T72 eligibility, masks and controls preserve original source")
+
+func brdm_checks(ui: Image, mask: Image) -> void:
+	var directory: String=output.path_join("generated-brdm-bank")
+	bank(directory,World.BRDM_CUES,"private visible-brdm cue")
+	var reader: RefCounted=World.new()
+	check(World.BRDM_FRAME_COUNT==271102 and World.BRDM_SHAPES==[141,143],"BRDM recording has exact accepted frames and two intact derivative identities")
+	for shape: int in [137,141,142,143,144,159,160]:
+		var data: Dictionary=tank_source(shape)
+		var unchanged: String=JSON.stringify(data)
+		var selected: Dictionary=World.candidates(data,true,false,{},true)
+		var dedicated: bool=shape in World.BRDM_SHAPES
+		check(selected.get(1,{}).get("cue")=="brdm" if dedicated else selected==World.candidates(data),"BRDM availability changes only the intact family: "+str(shape))
+		if not dedicated: continue
+		check(World.candidates(data).get(1,{}).get("cue")=="wheeledfallback","missing dedicated bank keeps incumbent donor")
+		for speed: Variant in [-32768,-1,1,32767,0,-32769,32768,0.5,NAN,INF,"10",true]:
+			var changed: Dictionary=data.duplicate(true);changed.world.dynamic[0].speed_raw=speed
+			check((not World.candidates(changed,true,false,{},true).is_empty())==(speed is int and speed in [-32768,-1,1,32767]),"dedicated BRDM inherits exact moving-source gate")
+		for mutation: Dictionary in [{"pointer":123.5},{"pointer":"123"},{"shape_index":shape+0.5},{"dynamic_instance":false}]:
+			var changed: Dictionary=data.duplicate(true);changed.objects[0].merge(mutation,true)
+			check(World.candidates(changed,true,false,{},true).is_empty(),"dedicated BRDM rejects coerced drawn identity")
+		var duplicate: Dictionary=data.duplicate(true);duplicate.world.dynamic.append(duplicate.world.dynamic[0].duplicate())
+		check(World.candidates(duplicate,true,false,{},true).is_empty(),"dedicated BRDM rejects ambiguous source actor")
+		ui.fill(Color.BLACK)
+		var token: Dictionary={"size":mask.get_size(),"clip":data.camera.clip,"selected":selected,"ui":ui.get_data()}
+		for flag: int in [0,8]:
+			mask.fill(Color8(1,0,flag));check(World.visible_cues(mask,token)==["brdm"],"dedicated BRDM retains ordinary and guarded owner proof")
+		for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,8,0),Color.TRANSPARENT]:
+			mask.fill(colour);check(World.visible_cues(mask,token).is_empty(),"foreign, line, hidden or transparent BRDM remains silent")
+		mask.fill(Color8(0,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+		check(World.visible_cues(mask,token)==["brdm"],"thin BRDM retains separated same-owner pixel witnesses")
+		ui.fill(Color.WHITE);token.ui=ui.get_data()
+		check(World.visible_cues(mask,token).is_empty(),"original opaque UI blocks dedicated BRDM")
+		check(JSON.stringify(data)==unchanged,"dedicated BRDM leaves original source unchanged")
+	var detail: String=output.path_join("brdm-detail-control")
+	bank(detail,World.DETAIL_CUES,"private visible-world detail")
+	var audio: Node=isolated_audio();audio.recorded_effect_directory=""
+	audio.world_audio.directory="";audio.world_audio.environment_directory="";audio.world_audio.soviet_directory=""
+	audio.world_audio.brdm_directory=directory;audio.world_audio.detail_directory=detail
+	root.add_child(audio)
+	var world: RefCounted=audio.world_audio
+	var player: AudioStreamPlayer=world.players.brdm
+	check(world.brdm_failure.is_empty() and player.stream.loop_end==271102 and player.bus==audio.presentation_bus,"dedicated BRDM loads exact bounds through incumbent limiter")
+	world.admitted.assign(["brdm"]);world.refresh()
+	check(player.playing and not world.players.truck.playing and not world.players.tracks.playing and is_equal_approx(db_to_linear(player.volume_db),0.65*0.30),"BRDM uses unchanged nominal gain without donor doubling or track noise")
+	var clock: Array=[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)]
+	audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"brdm":0})
+	check(not player.playing and not world.players.truck.playing and World.candidates(tank_source(141),true,false,{},true).get(1,{}).get("cue")=="brdm","BRDM Off never substitutes donor")
+	audio.set_mix({"master":50,"effects":20,"voice":100,"motors":100,"brdm":40})
+	check(player.playing and player.pitch_scale==1.0 and is_equal_approx(db_to_linear(player.volume_db),0.65*0.50*0.20*0.30*0.40),"BRDM controls multiply without source RPM or pitch changes")
+	check(clock==[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)],"BRDM controls preserve clocks, events and original motors")
+	world.admitted.assign(["brdm","wheeledfallback"]);world.refresh()
+	check(player.playing and world.players.truck.playing and not world.players.tracks.playing,"separate visible BTR/BRDM owners retain their own fixed beds")
+	var truck_gain: float=db_to_linear(world.players.truck.volume_db)
+	var brdm_gain: float=db_to_linear(player.volume_db)
+	check(is_equal_approx(truck_gain*truck_gain+brdm_gain*brdm_gain,pow(0.65*0.50*0.20*0.30,2)) and is_equal_approx(brdm_gain/truck_gain,0.40),"simultaneous BRDM/BTR textures preserve the old wheeled power budget and relative settings")
+	world.admitted.assign(["brdm"]);world.refresh()
+	check(is_equal_approx(db_to_linear(player.volume_db),0.65*0.50*0.20*0.30*0.40),"loss of the other visible wheeled class restores the unchanged single-bed level")
+	audio.set_transport_muted(true);audio.set_transport_muted(false);world.refresh()
+	check(not player.playing and world.admitted.is_empty(),"transport recovery cannot replay stale BRDM proof")
+	world.admitted.assign(["brdm"]);world.refresh();audio.reset_timeline()
+	check(not player.playing and world.admitted.is_empty(),"restore/reset silences dedicated BRDM")
+	check(await audio.drain_for_shutdown(),"dedicated BRDM drains cleanly");audio.free()
+	var path: String=directory.path_join("brdm.wav")
+	var good: PackedByteArray=FileAccess.get_file_as_bytes(path)
+	FileAccess.open(path,FileAccess.WRITE).store_buffer(good.slice(0,good.size()-2))
+	check(reader._read_bank(directory,"private visible-brdm cue",World.BRDM_CUES).has("error"),"BRDM hash mismatch rejects optional bank")
+	var wrong_length: AudioStreamWAV=AudioStreamWAV.new()
+	wrong_length.format=AudioStreamWAV.FORMAT_16_BITS;wrong_length.mix_rate=48000
+	var wrong_pcm: PackedByteArray=PackedByteArray();wrong_pcm.resize((World.BRDM_FRAME_COUNT-1)*2);wrong_length.data=wrong_pcm
+	check(wrong_length.save_to_wav(path)==OK,"wrong-duration BRDM fixture keeps a valid WAV header")
+	var manifest: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(directory.path_join("manifest.json")))
+	manifest.cues.brdm.sha256=FileAccess.get_sha256(path)
+	FileAccess.open(directory.path_join("manifest.json"),FileAccess.WRITE).store_string(JSON.stringify(manifest))
+	check(reader._read_bank(directory,"private visible-brdm cue",World.BRDM_CUES).get("error")=="invalid BRDM frame count","matching SHA cannot admit wrong BRDM duration")
+	FileAccess.open(path,FileAccess.WRITE).store_buffer(good)
 
 func flight_checks(ui: Image, mask: Image) -> void:
 	var resources: Dictionary = {}

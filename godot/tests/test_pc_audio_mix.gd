@@ -116,7 +116,7 @@ func auxiliary_source_controls() -> void:
 func detail_audio(folder: String) -> Node:
 	var audio: Node=Audio.new()
 	audio.recorded_effect_directory="";audio.supplemental.directory=folder
-	for key: String in ["directory","environment_directory","soviet_directory","t72_directory","flight_directory","tank_directory","allied_directory","detail_directory"]: audio.world_audio.set(key,"")
+	for key: String in ["directory","environment_directory","soviet_directory","t72_directory","brdm_directory","flight_directory","tank_directory","allied_directory","detail_directory"]: audio.world_audio.set(key,"")
 	root.add_child(audio)
 	return audio
 
@@ -275,11 +275,11 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==31,"one external Audio menu, thirty-one independently specified gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==32,"one external Audio menu, thirty-two independently specified gain groups")
 	check(Menu.DEFAULTS.t72==100 and Menu.TITLES.t72=="T-72 engine" and menu.audio_channels().has("t72") and menu.menus.has("t72"),"native T72 has its own100% default and exact title")
 	var t72_choices: PopupMenu=menu.menus.t72
 	check(t72_choices.get_item_text(t72_choices.get_item_index(0))=="Off" and t72_choices.get_item_index(100)>=0,"native T72 exposes independent Off through100%")
-	for cue: String in ["m113","bradley","trackedfallback","wheeledfallback"]:
+	for cue: String in ["m113","bradley","brdm","trackedfallback","wheeledfallback"]:
 		check(Menu.DEFAULTS[cue]==100 and Menu.TITLES.has(cue) and menu.audio_channels().has(cue) and menu.menus.has(cue),"native allied control has an independent title and unchanged100% default: "+cue)
 		var choices: PopupMenu=menu.menus[cue]
 		check(choices.get_item_text(choices.get_item_index(0))=="Off" and choices.get_item_index(100)>=0,"native allied control exposes Off through100%: "+cue)
@@ -369,7 +369,7 @@ func run() -> void:
 	check(reload.load_settings() and reload.settings.m113==0 and reload.settings.bradley==37,"allied controls persist independent Off and intermediate gain")
 	menu.choose("m113",43);menu.choose("bradley",0)
 	check(reload.load_settings() and reload.settings.m113==43 and reload.settings.bradley==0,"each allied class independently retains saved gain and mute")
-	for cue: String in ["t72","missileflight","woodland","truck","tracks","foley","interface","fire","trackedfallback","wheeledfallback"]:
+	for cue: String in ["t72","brdm","missileflight","woodland","truck","tracks","foley","interface","fire","trackedfallback","wheeledfallback"]:
 		menu.choose(cue,0)
 		check(reload.load_settings() and reload.settings[cue]==0,"new private control saves Off independently: "+cue)
 		menu.choose(cue,37)
@@ -380,6 +380,11 @@ func run() -> void:
 	check(reload.load_settings() and reload.settings.effects==40 and reload.settings.motors==30 and reload.settings.hind==100 and reload.settings.river==100 and reload.settings.field==100 and reload.settings.cow==100 and reload.settings.t80==100 and reload.settings.tank==100 and reload.settings.m113==100 and reload.settings.bradley==100 and Audio.EFFECT_CUES.all(func(cue):return reload.settings[cue]==100),"old preferences keep original mix and acquire unchanged individual defaults")
 	check(["woodland","truck","tracks","foley","interface","fire"].all(func(cue):return reload.settings[cue]==100),"old saved preferences acquire all six private defaults without changing incumbent mix")
 	check(reload.settings.t72==100,"preferences missing both tank and T72 retain the new100% default")
+	for saved: Dictionary in [{"wheeledfallback":0},{"wheeledfallback":40},{"wheeledfallback":90,"brdm":0},{"wheeledfallback":0,"brdm":37},{"brdm":37},{}]:
+		var previous: ConfigFile=ConfigFile.new()
+		for key: String in saved: previous.set_value("audio",key,saved[key])
+		check(previous.save(menu.config_path)==OK,"BRDM migration fixture writes")
+		check(reload.load_settings() and reload.settings.brdm==int(saved.get("brdm",saved.get("wheeledfallback",100))) and reload.settings.wheeledfallback==int(saved.get("wheeledfallback",100)),"legacy wheeled balance/Off inherits only when BRDM is absent: "+str(saved))
 	for saved: Dictionary in [{"tank":0},{"tank":40},{"tank":90,"t72":0},{"tank":0,"t72":37},{"t72":37},{}]:
 		var previous: ConfigFile=ConfigFile.new()
 		for key: String in saved: previous.set_value("audio",key,saved[key])
