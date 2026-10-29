@@ -2852,3 +2852,31 @@ playthrough, performance, app/Web rebuild or publication claim.
 
 Working if: the end reads as one continuous rounded surface, no donor bevel or
 false rim reappears, and source ownership and unrelated screen pixels stay exact.
+
+### Forward barrels during original-game movement (29 October 2026)
+
+The shared finish is wired into both production Tactical compositor paths and
+the cockpit edge pass. A fresh original-core movement route exercised the driver
+and cupola views, including forward driving, reversing and turns. The lead
+inspected all 55 native frame details plus full-frame samples; the false lip
+stays absent wherever the original source admits the barrel. Original station
+transition/fallback timing is retained.
+
+All 427 sampled boundaries match an independent original-core replay exactly
+for paired RAM, video, UI, plate and driver masks. The 256 driver samples include
+234 moving samples; all 171 cupola samples are moving. The native cockpit suite
+passes 124 checks, extending the contrast-donor regression to both forward ends
+at zero and opposite maximum cosmetic displacements. No production renderer,
+guest, source-mask or audio changes were needed after the flush-end fix.
+
+Evidence: `artifacts/barrel-motion-20261029/acceptance.json`. This is background
+functional capture through the production Play renderer, with explicit held-frame
+draws where macOS occlusion suppresses redraw. Focus-dependent cosmetic animation
+is tested separately with controlled material displacements; no foreground
+interactive pacing or performance result is claimed. The rejected foreground
+attempt and private capture-tool failures are retained separately. This two-view
+route does not replace the four-station acceptance gate. Local source only;
+standalone/Web editions were neither rebuilt nor published.
+
+Working if: both forward ends stay flush during source-owned motion and the
+bounded material displacement checks, with exact original frame counts and masks.
