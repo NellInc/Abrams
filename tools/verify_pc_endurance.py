@@ -23,11 +23,13 @@ try:
     from tools.verify_pc_save_states import Client, ROOT
     from tools.capture_pc_session import scenario_steps, information_steps, INFORMATION_PAGES, no_sim_geometry
     from tools.source_guard import inside_source
+    from tools.pc_fonts import decode_font, text_pixels
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
     from verify_pc_save_states import Client, ROOT
     from capture_pc_session import scenario_steps, information_steps, INFORMATION_PAGES, no_sim_geometry
     from source_guard import inside_source
+    from pc_fonts import decode_font, text_pixels
 
 
 def source_hashes():
@@ -119,6 +121,71 @@ def campaign_record(raw):
             'played_markers': played, 'category_totals': list(struct.unpack_from('<14H', raw, 12))}
 
 
+def rnr_choice(packet):
+    """Classify the original END choice from all three current source/RGB cells.
+
+    Working if both valid highlight roles classify, while partial/stale/unpaired
+    menus fail closed. None means no R&R source row is identified, not a
+    source-qualified page and never permission to rest. No identified partial
+    menu may fall back to page-Space.
+    """
+    presentation = packet.get('presentation') or {}
+    rows = presentation.get('text_runs') or []
+    specs = [('NOW WHAT SOLDIER?', 0xa1c, [92, 90, 136, 8], 0xc71),
+             ('TAKE R&R', 0xa2e, [92, 102, 64, 8], 0xe10),
+             ('CONTINUE', 0xa37, [164, 102, 64, 8], 0xe10)]
+    if not any(row.get('text') in {spec[0] for spec in specs} or
+               row.get('source_pointer') in {spec[1] for spec in specs} for row in rows):
+        return None
+    def require(condition):
+        if not condition:
+            raise ValueError('Unqualified original END R&R source/RGB cells')
+    program = packet.get('program') or {}
+    require(program.get('name') == 'END' and presentation.get('frontend_program') == program)
+    try:
+        with Image.open(io.BytesIO(base64.b64decode(packet['png'], validate=True))) as png:
+            image = png.convert('RGB')
+    except (KeyError, ValueError, OSError) as error:
+        raise ValueError('Missing or invalid paired R&R PNG') from error
+    require(image.size == (320, 200))
+    palette = presentation.get('palette_rgb')
+    require(isinstance(palette, list) and len(palette) == 16 and
+            all(isinstance(rgb, (list, tuple)) and len(rgb) == 3 and
+                all(isinstance(value, int) and 0 <= value <= 255 for value in rgb) for rgb in palette))
+    require(palette[1] != palette[4])
+    # Use the same pinned native font/raster machinery as pc_frontend_text.
+    # A crop hash alone cannot bind a claimed highlight role to its pixels.
+    try:
+        font_bytes = (ROOT/'GAME/STENCIL.FNT').read_bytes()
+    except OSError as error:
+        raise ValueError('Pinned original STENCIL font required for R&R') from error
+    require(hashlib.sha256(font_bytes).hexdigest() == '3f92e8c7488278d86aeaa978d87d980d6a688fc9c8dbf87befaf4e6bbc9f4181')
+    font = decode_font(font_bytes)
+    colours = []
+    for text, pointer, rect, return_ip in specs:
+        matches = [row for row in rows if row.get('text') == text]
+        require(len(matches) == 1)
+        row = matches[0]
+        require((row.get('source_pointer'), row.get('rect'), row.get('return_ip')) ==
+                (pointer, rect, return_ip))
+        require(row.get('basis') == 'completed original string and exact full current glyph cell; original highlight colours retained')
+        require(row.get('font_sha256') == '3f92e8c7488278d86aeaa978d87d980d6a688fc9c8dbf87befaf4e6bbc9f4181')
+        x, y, width, height = rect
+        require(hashlib.sha256(image.crop((x, y, x+width, y+height)).tobytes()).hexdigest() == row.get('pixel_sha256'))
+        fg, bg = row.get('foreground'), row.get('background')
+        require((fg, bg) in ((1, 4), (4, 1)))
+        glyph_width, glyph_height, ink = text_pixels(font, text.encode('ascii'))
+        require((glyph_width, glyph_height) == (width, height))
+        expected = b''.join(bytes(palette[fg if bit else bg]) for bit in ink)
+        require(image.crop((x, y, x+width, y+height)).tobytes() == expected)
+        colours.append((fg, bg))
+    require(colours[0] == (1, 4))
+    if colours[1:] == [(4, 1), (1, 4)]:
+        return 'rest'
+    require(colours[1:] == [(1, 4), (4, 1)])
+    return 'continue'
+
+
 def run_campaign_tour(output):
     """Exercise all eight original campaign handoffs and cold disk continuations.
 
@@ -129,8 +196,6 @@ def run_campaign_tour(output):
     before = source_hashes()
     routes = json.loads((ROOT/'godot/tests/fixtures/pc_campaign_steps.json').read_text())
     quit_route = json.loads((ROOT/'godot/tests/fixtures/pc_reentry_steps.json').read_text())[:8]
-    choices = {'179660660519b1e466871e94b9bae9ecae5c35ce22a92a1b19d9f7b2c36ecfba': 'continue',
-               'dd261b967d88052666983f1d36607c8935192ef56ed2bc2e9f0e406487662433': 'rest'}
     checks, missions, stages, visited = {}, [], [], set()
     client, error = None, None
     started = time.monotonic()
@@ -182,12 +247,14 @@ def run_campaign_tour(output):
                 if (packet.get('program') or {}).get('name') == 'START':
                     break
                 check(prefix+f':review-{page}-END', packet['program']['name'] == 'END')
-                choice = choices.get(photograph(packet, prefix+f'-review-{page}'))
+                photograph(packet, prefix+f'-review-{page}')
+                choice = rnr_choice(packet)
                 if choice:
                     check(prefix+':no-rest-after-final', mission < 8)
                     if choice == 'continue':
                         step(prefix+':choose-rest', 10, ['left'])
-                        step(prefix+':choose-rest-release', 90)
+                        packet = step(prefix+':choose-rest-release', 90)
+                    check(prefix+':source-rest-selected', rnr_choice(packet) == 'rest')
                     step(prefix+':rest-confirm', 10, ['return'])
                     packet = step(prefix+':rest-return', 600)
                 else:
@@ -340,16 +407,14 @@ def run(output):
             for index, (count, keys) in enumerate(routes[route]):
                 packet = step(f'campaign:{route}:{index}', count, keys)
             if route == 'new':
-                # Same source-pixel witnesses as the production campaign gate.
-                choices = {'179660660519b1e466871e94b9bae9ecae5c35ce22a92a1b19d9f7b2c36ecfba': 'continue',
-                           'dd261b967d88052666983f1d36607c8935192ef56ed2bc2e9f0e406487662433': 'rest'}
+                # Original source/RGB cells retain highlight semantics across palettes.
                 for page in range(8):
-                    picture = Image.open(io.BytesIO(base64.b64decode(packet['png']))).convert('RGB')
-                    choice = choices.get(hashlib.sha256(picture.tobytes()).hexdigest())
+                    choice = rnr_choice(packet)
                     if choice:
                         if choice == 'continue':
                             step('campaign:rest-select', 10, ['left'])
-                            step('campaign:rest-select-release', 90)
+                            packet = step('campaign:rest-select-release', 90)
+                        check('campaign:source-rest-selected', rnr_choice(packet) == 'rest')
                         step('campaign:rest-confirm', 10, ['return'])
                         packet = step('campaign:rest-menu', 600)
                         break

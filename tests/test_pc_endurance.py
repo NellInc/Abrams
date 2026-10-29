@@ -2,11 +2,99 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch, call
+from tests._inputs import requires
 
-from tools.verify_pc_endurance import BoundedClient, campaign_record, percentile, native_rss_kib, source_hashes
+from tools.verify_pc_endurance import BoundedClient, campaign_record, percentile, native_rss_kib, source_hashes, rnr_choice
 
 
 class EnduranceGateTests(unittest.TestCase):
+    @staticmethod
+    def rnr_packet(choice):
+        import base64, hashlib, io
+        from PIL import Image
+        program = {'name': 'END', 'load_segment': 493}
+        from tools.pc_fonts import decode_font, text_pixels
+        font = decode_font((Path(__file__).resolve().parents[1]/'GAME/STENCIL.FNT').read_bytes())
+        palette = [[i*13, i*11, i*7] for i in range(16)]
+        image = Image.new('RGB', (320, 200))
+        specs = [('NOW WHAT SOLDIER?', 0xa1c, [92, 90, 136, 8], 0xc71, (1, 4)),
+                 ('TAKE R&R', 0xa2e, [92, 102, 64, 8], 0xe10, (4, 1) if choice == 'rest' else (1, 4)),
+                 ('CONTINUE', 0xa37, [164, 102, 64, 8], 0xe10, (1, 4) if choice == 'rest' else (4, 1))]
+        rows = []
+        for text, pointer, rect, ip, colours in specs:
+            x, y, width, height = rect
+            w, h, ink = text_pixels(font, text.encode('ascii'))
+            self_rgb = b''.join(bytes(palette[colours[0] if bit else colours[1]]) for bit in ink)
+            image.paste(Image.frombytes('RGB', (w, h), self_rgb), (x, y))
+            rows.append({'text': text, 'source_pointer': pointer, 'rect': rect, 'return_ip': ip,
+                         'foreground': colours[0], 'background': colours[1],
+                         'font_sha256': '3f92e8c7488278d86aeaa978d87d980d6a688fc9c8dbf87befaf4e6bbc9f4181',
+                         'basis': 'completed original string and exact full current glyph cell; original highlight colours retained',
+                         'pixel_sha256': hashlib.sha256(image.crop((x, y, x+width, y+height)).tobytes()).hexdigest()})
+        png = io.BytesIO(); image.save(png, format='PNG')
+        return {'program': program, 'presentation': {'frontend_program': program.copy(), 'text_runs': rows, 'palette_rgb': palette},
+                'png': base64.b64encode(png.getvalue()).decode()}
+
+    @requires('GAME')
+    def test_rnr_both_valid_highlight_roles_classify_and_rest_admission_is_separate(self):
+        for choice in ('continue', 'rest'):
+            with self.subTest(choice=choice):
+                classified = rnr_choice(self.rnr_packet(choice))
+                self.assertEqual(classified, choice)
+                self.assertEqual(classified == 'rest', choice == 'rest')
+        self.assertIsNone(rnr_choice({'program': {'name': 'END'}, 'presentation': {'text_runs': []}}))
+
+    @requires('GAME')
+    def test_rnr_partial_stale_or_inconsistent_source_cells_fail_closed(self):
+        import copy
+        packet = self.rnr_packet('rest')
+        changes = [('source_pointer', 0), ('rect', [91, 102, 64, 8]), ('return_ip', 0),
+                   ('font_sha256', 'stale'), ('basis', 'partial'), ('pixel_sha256', 'unpaired'),
+                   ('foreground', 1)]
+        for key, value in changes:
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                bad = copy.deepcopy(packet); bad['presentation']['text_runs'][1][key] = value; rnr_choice(bad)
+        for kind in ('missing', 'duplicate', 'program', 'frontend', 'png', 'metadata'):
+            with self.subTest(kind=kind), self.assertRaises(ValueError):
+                bad = copy.deepcopy(packet)
+                if kind == 'missing': bad['presentation']['text_runs'].pop()
+                if kind == 'duplicate': bad['presentation']['text_runs'].append(bad['presentation']['text_runs'][0].copy())
+                if kind == 'program': bad['program'] = {'name': 'START'}
+                if kind == 'frontend': bad['presentation']['frontend_program'] = {'name': 'END', 'load_segment': 999}
+                if kind == 'png': bad.pop('png')
+                if kind == 'metadata': bad['presentation']['text_runs'][1].pop('foreground')
+                rnr_choice(bad)
+
+    @requires('GAME')
+    def test_rnr_current_glyph_pixels_are_required_but_whole_frame_hash_is_not(self):
+        import base64, io
+        from PIL import Image
+        packet = self.rnr_packet('continue')
+        image = Image.open(io.BytesIO(base64.b64decode(packet['png']))).convert('RGB')
+        image.putpixel((0, 0), (1, 2, 3))
+        png = io.BytesIO(); image.save(png, format='PNG'); packet['png'] = base64.b64encode(png.getvalue()).decode()
+        self.assertEqual(rnr_choice(packet), 'continue')
+        image.putpixel((164, 102), (255, 255, 255))
+        png = io.BytesIO(); image.save(png, format='PNG'); packet['png'] = base64.b64encode(png.getvalue()).decode()
+        with self.assertRaises(ValueError): rnr_choice(packet)
+
+    @requires('GAME')
+    def test_rnr_colours_only_swap_with_unchanged_png_and_hashes_is_rejected(self):
+        import copy
+        packet = self.rnr_packet('continue')
+        original_png = packet['png']
+        original_hashes = [r['pixel_sha256'] for r in packet['presentation']['text_runs']]
+        for row in packet['presentation']['text_runs'][1:]:
+            row['foreground'], row['background'] = row['background'], row['foreground']
+        self.assertEqual(packet['png'], original_png)
+        self.assertEqual([r['pixel_sha256'] for r in packet['presentation']['text_runs']], original_hashes)
+        with self.assertRaises(ValueError): rnr_choice(packet)
+        ambiguous = self.rnr_packet('rest')
+        ambiguous['presentation']['palette_rgb'][4] = ambiguous['presentation']['palette_rgb'][1]
+        with self.assertRaises(ValueError): rnr_choice(ambiguous)
+        # Fully swapped source pixels AND metadata are the legitimate other choice.
+        self.assertEqual(rnr_choice(self.rnr_packet('rest')), 'rest')
+
     def test_campaign_record_keeps_played_markers_separate_from_victory(self):
         import hashlib, struct
         raw = struct.pack('<HBB', 55, 1, 0) + bytes([0, 0, 1, 0, 0, 0, 0, 0]) + bytes(38)
