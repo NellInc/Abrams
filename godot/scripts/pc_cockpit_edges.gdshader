@@ -38,7 +38,7 @@ float driver_y(float y) {
 	return mix(172.0,192.0,(y-187.0)/13.0);
 }
 vec3 paint(vec4 art,vec2 p) {
-	if(tactical_interior)return art.rgb;
+	if(tactical_interior)return field_round_barrel(art.rgb,p,station);
 	if(!modern)return art.rgb;
 	float light=dot(art.rgb,vec3(.2126,.7152,.0722));
 	vec3 colour=mix(art.rgb,light*vec3(.65,.70,.46),smoothstep(.10,.30,light)*(1.0-art.a));

@@ -24,6 +24,45 @@ vec3 field_enamel(vec3 original,vec2 p,float hardware) {
 	return mix(coat,original,clamp(hardware,0.0,1.0));
 }
 
+// Continuous cylindrical normals inside the existing source-owned barrel.
+// RGB only: neither this finish nor its curved collar grooves owns coverage.
+vec3 field_round_barrel(vec3 original,vec2 p,int station) {
+	bool upper=station==3;
+	if(station!=3 && station!=4)return original;
+	float start=upper ? 85.0 : 31.0;
+	float end=upper ? 110.0 : 77.0;
+	if(p.y<start || p.y>=end)return original;
+	float row=clamp(p.y-(upper ? 85.5 : 31.5),0.0,upper ? 24.0 : 45.0);
+	// Smooth material coordinates follow the pinned native span profile.
+	float half_width=upper ? 4.0+13.0*sqrt(row/20.0)+6.0*smoothstep(20.0,24.0,row)
+		: 35.0-0.42*row-7.0*smoothstep(18.0,26.0,row)-5.0*smoothstep(34.0,45.0,row);
+	float across=(p.x-(upper ? 120.0 : 161.0))/max(half_width,1.0);
+	if(abs(across)>=1.06)return original;
+	float x=clamp(across,-1.0,1.0);
+	float dome=sqrt(max(1.0-x*x,0.0));
+	vec2 normal=vec2(x,dome);
+	float diffuse=max(dot(normal,vec2(-0.48,0.877268)),0.0);
+	float reflection=pow(max(dot(normal,vec2(-0.28,0.96)),0.0),18.0);
+	vec3 enamel=upper ? vec3(0.55,0.57,0.425) : vec3(0.28,0.30,0.19);
+	vec3 colour=enamel*(0.36+0.56*diffuse);
+	colour+=reflection*(upper ? vec3(0.16,0.16,0.125) : vec3(0.08,0.08,0.06));
+	colour+=field_grain(p*vec2(7.0,9.0))*0.010+field_grain(p*1.7)*0.005;
+	// Elliptical seams wrap around the cylinder instead of joining flat facets.
+	float collar=upper ? 100.5+2.1*x*x : 56.0+3.4*dome;
+	float rim=upper ? 85.5+1.2*x*x : 74.0+1.4*dome;
+	float groove=1.0-smoothstep(0.10,0.34,abs(p.y-collar));
+	float end_rim=1.0-smoothstep(0.08,0.28,abs(p.y-rim));
+	float lip=1.0-smoothstep(0.10,0.42,abs(p.y-collar+0.42));
+	colour*=1.0-groove*0.48-end_rim*0.26;
+	colour+=lip*(upper ? 0.035 : 0.018)*vec3(1.0,1.0,0.8);
+	// The underside emerges from a curved collar. A straight horizontal fade
+	// would look like a cut even with a continuous cylindrical normal field.
+	float blend=upper ? smoothstep(start,start+0.8,p.y)*(1.0-smoothstep(end-0.6,end,p.y))
+		: smoothstep(32.0+2.6*dome,39.0+2.6*dome,p.y);
+	blend*=1.0-smoothstep(0.94,1.06,abs(across));
+	return mix(original,clamp(colour,vec3(0.0),vec3(1.0)),blend*0.96);
+}
+
 // Pinned original cupola barrel spans, registered to the authored metal contour.
 // Material UVs only. The existing source masks and edge coverage remain authoritative.
 vec2 field_cupola_barrel_uv(vec2 p) {

@@ -2738,3 +2738,39 @@ or performance claim. Evidence: `artifacts/visual-polish-20261029/acceptance.jso
 Working if: barrel highlights and collars join smoothly within the original
 silhouette, the original mask/offset tests pass and unrelated screen pixels stay
 exact. Local source only; no application/browser rebuild or publication.
+
+### Rounded forward barrel finish (29 October 2026)
+
+The next pass replaces the barrel's faceted material gradients with a continuous
+cylindrical normal field, satin olive paint and curved collar/rim shading. The
+finish is RGB-only, shared by the compositor and edge pass, and follows the
+existing signed driver coordinates and presentation shift. No bitmap, guest
+state, source geometry, clock, camera, mask or audio asset is changed.
+
+The two small end-cap profiles now use a guarded continuous curve in Tactical.
+The curve must match every native column within the incumbent 0.98-source-pixel
+fit limit or the old linear fit remains. Quarter-pixel samples join the old
+profile smoothly. The existing 1.65-pixel edge band, source-visible world-sample
+selection and UI/plate/assembly ownership gates are unchanged. Edge antialias
+coverage changes within that existing reconstruction band; byte-identical final
+coverage is not claimed. Other graphics modes keep their original linear fit.
+The geometry-cache identity now includes this Tactical-only choice.
+
+The implementing lead reviewed its own native cupola and driver replays at
+960x540 and 1600x900. Both actual source caps activate; maximum full-profile
+source error is 0.955 pixels for cupola and 0.934 for driver. Same-process
+pre-pass comparisons show zero changes outside barrel regions. Source-ownership
+checks, including controlled driver offsets -16, 0 and +16, report zero forbidden
+pixels. The focused mask/cache suite passes 3,011 checks, including qualifying-cap
+mode switches, exact restoration, stable-cache reuse, unknown-cap rejection,
+source-byte preservation and the original error bound. The cockpit suite passes
+88 checks. Bounded read-only advice was reconciled with these root-run checks.
+
+Evidence: `artifacts/barrel-roundness-20261029/acceptance.json`. These are retained
+original states rendered natively, with no fresh guest playthrough or performance
+claim. The earlier material-only captures are diagnostics; the `curved/` captures
+are the accepted result. Local source only, with no app/Web build or publication.
+
+Working if: both caps and their surface highlights are continuous and rounded,
+curves fail closed outside the original fit tolerance, non-Tactical geometry
+restores exactly, and ownership and unrelated-screen-pixel checks stay clean.

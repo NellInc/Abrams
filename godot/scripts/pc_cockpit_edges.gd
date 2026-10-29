@@ -42,6 +42,39 @@ static func fit(heights: PackedFloat32Array) -> PackedVector2Array:
 	_fit(points,0,points.size()-1,result)
 	return result
 
+static func profile_y(points: PackedVector2Array,x: float) -> float:
+	for i in range(points.size()-1):
+		if x<=points[i+1].x:
+			return lerpf(points[i].y,points[i+1].y,(x-points[i].x)/(points[i+1].x-points[i].x))
+	return points[-1].y
+
+# A continuous cap only where the quantised original supports this curvature.
+# Keep the existing ERROR/BAND, source masks, material and world-sample gates.
+static func round_barrel_cap(points: PackedVector2Array,heights: PackedFloat32Array,station: int) -> PackedVector2Array:
+	var centre: float=120.0 if station==3 else 161.0
+	var peak: float=84.9 if station==3 else 77.1
+	var direction: float=1.0 if station==3 else -1.0
+	var left: float=centre-12.5
+	var right: float=centre+12.5
+	if station not in [3,4] or heights.size()!=320 or points.size()<2:return points
+	for x in range(int(left),int(right)+1):
+		var expected: float=peak+direction*0.0465*pow(float(x)+0.5-centre,2)
+		if absf(expected-heights[x])>ERROR:return points
+	var result: PackedVector2Array=PackedVector2Array()
+	for point: Vector2 in points:
+		if point.x<left:result.append(point)
+	for i in 101:
+		var x: float=left+float(i)*0.25
+		var weight: float=smoothstep(left,left+2.0,x)*(1.0-smoothstep(right-2.0,right,x))
+		var curve: float=peak+direction*0.0465*pow(x-centre,2)
+		result.append(Vector2(x,lerpf(profile_y(points,x),curve,weight)))
+	for point: Vector2 in points:
+		if point.x>right:result.append(point)
+	# The blend must satisfy the same source-column error as the old fit too.
+	for x in range(int(left),int(right)+1):
+		if absf(profile_y(result,float(x)+0.5)-heights[x])>ERROR:return points
+	return result
+
 func set_frame(ui:Image,tags:Image,camera:Rect2i,donor:Texture2D,assembly:Image,station:int,modern:bool,rail:bool,world:Texture2D,
 		ui_texture:Texture2D=null,tags_texture:Texture2D=null,assembly_texture:Texture2D=null,tactical_interior:bool=false) -> void:
 	# Optional textures are the compositor's uploads of these exact images.
@@ -61,7 +94,7 @@ func set_frame(ui:Image,tags:Image,camera:Rect2i,donor:Texture2D,assembly:Image,
 	# changes only turret offset bytes (same B ownership plane), reuse the
 	# validated outline without any column work.
 	var claims:Image=null
-	var same:bool=not cached.is_empty() and rail==cached.rail and bits==cached.tags
+	var same:bool=not cached.is_empty() and rail==cached.rail and bits==cached.tags and cached.get("rounded",false)==tactical_interior
 	if same and roof!=cached.roof:
 		claims=claim_plane(assembly) if not roof.is_empty() else null
 		same=(claims.get_data() if claims!=null else PackedByteArray())==cached.claims
@@ -78,17 +111,20 @@ func set_frame(ui:Image,tags:Image,camera:Rect2i,donor:Texture2D,assembly:Image,
 		if claims==null and not roof.is_empty():claims=claim_plane(assembly)
 		var plate:Array=cached.plate if plate_known else claim_extents(tags,station,station,camera.end.y)
 		var extents:=column_extents(tags,assembly,station,rail,camera.end.y,plate,claims)
-		var key:=[station,rail,extents[0],extents[1]]
+		var key:=[station,rail,tactical_interior,extents[0],extents[1]]
 		if not cached.is_empty() and key==cached.key:
 			# The outline depends only on these column extents.
 			profiles=cached.profiles.duplicate(true);mesh=cached.mesh
 		else:
 			profiles.clear();mesh=null
-			if station==4:profiles.append({"upper":true,"points":fit(extents[0])})
-			profiles.append({"upper":false,"points":fit(extents[1])})
+			if station==4:
+				var upper: PackedVector2Array=fit(extents[0])
+				profiles.append({"upper":true,"points":round_barrel_cap(upper,extents[0],station) if tactical_interior else upper})
+			var lower: PackedVector2Array=fit(extents[1])
+			profiles.append({"upper":false,"points":round_barrel_cap(lower,extents[1],station) if tactical_interior and station==3 else lower})
 			_build_mesh();build_count+=1
 		_geometry_cache[station]={"tags":bits,"roof":roof,"claims":claims.get_data() if claims!=null else PackedByteArray(),"rail":rail,
-				"plate":plate,"key":key,"profiles":profiles.duplicate(true),"mesh":mesh}
+				"plate":plate,"key":key,"profiles":profiles.duplicate(true),"mesh":mesh,"rounded":tactical_interior}
 	material.set_shader_parameter("ui_mask",ui_texture if ui_texture!=null else ImageTexture.create_from_image(ui))
 	material.set_shader_parameter("plate_mask",tags_texture if tags_texture!=null else ImageTexture.create_from_image(tags))
 	material.set_shader_parameter("driver_mask",(assembly_texture if assembly_texture!=null else ImageTexture.create_from_image(assembly)) if assembly!=null else null)

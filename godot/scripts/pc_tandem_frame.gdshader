@@ -316,12 +316,15 @@ void fragment() {
 			if (genesis_art) art = commander_metal(pixel,art);
 			if (tactical_armour) art.rgb=field_enamel(art.rgb,pixel,0.18);
 		} else if (station_art_enabled.y > 0.5 && plate == 3) {
+			vec2 barrel_sample=pixel;
 			vec2 donor = tactical_interior ? field_cupola_uv(pixel) : vec2(UV.x,cupola_y(pixel.y)/200.0);
 			if(tactical_armour && any(notEqual(tactical_armour_shift,vec2(0.0)))) {
 				vec2 moving=tactical_armour_sample(pixel,3.0,ui_mask,plate_mask,driver_assembly_mask,false,tactical_armour_shift);
+				barrel_sample=moving;
 				donor=tactical_interior ? field_cupola_uv(moving) : vec2(moving.x/320.0,cupola_y(moving.y)/200.0);
 			}
 			art = armour_paint(texture(cupola_art,donor),donor*vec2(320.0,200.0));
+			if(tactical_interior)art.rgb=field_round_barrel(art.rgb,barrel_sample,3);
 		} else if ((genesis_art || tactical_interior) && cupola_rail_verified && station_art_enabled.y > 0.5 && plate == 0 && cupola_rail_pixel(pixel)) {
 			// Complete the existing raised rail, then use its adjacent clean
 			// deck material for the PC-owned tapered edge. No world pixels qualify.
@@ -330,8 +333,10 @@ void fragment() {
 			art = armour_paint(texture(cupola_art,donor),donor*vec2(320.0,200.0));
 		} else if (station_art_enabled.z > 0.5 && plate == 4 &&
 			!in_box(pixel,vec4(53.0,187.0,267.0,200.0))) {
-			vec2 donor=driver_donor(tactical_armour_sample(pixel,4.0,ui_mask,plate_mask,driver_assembly_mask,driver_assembly_enabled,tactical_armour ? tactical_armour_shift : vec2(0.0)));
+			vec2 barrel_sample=tactical_armour_sample(pixel,4.0,ui_mask,plate_mask,driver_assembly_mask,driver_assembly_enabled,tactical_armour ? tactical_armour_shift : vec2(0.0));
+			vec2 donor=driver_donor(barrel_sample);
 			art = armour_paint(texture(driver_art,donor),donor*vec2(320.0,200.0));
+			if(tactical_interior)art.rgb=field_round_barrel(art.rgb,barrel_sample,4);
 		} else if (status_art_enabled && plate==5 && !status_live_cell(pixel)) {
 			vec2 donor = status_donor(pixel);
 			donor.y = 0.5+donor.y*0.5;
@@ -346,6 +351,7 @@ void fragment() {
 			vec2 moving=tactical_armour_sample(pixel,4.0,ui_mask,plate_mask,driver_assembly_mask,true,tactical_armour ? tactical_armour_shift : vec2(0.0));
 			vec2 donor=driver_donor(vec2(moving.x-offset,moving.y));
 			vec4 art = armour_paint(texture(driver_art,donor),donor*vec2(320.0,200.0));
+			if(tactical_interior)art.rgb=field_round_barrel(art.rgb,vec2(moving.x-offset,moving.y),4);
 			result.rgb = mix(result.rgb,art.rgb,art.a);
 		}
 	}

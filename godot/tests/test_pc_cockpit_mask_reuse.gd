@@ -243,8 +243,55 @@ func edge_extents() -> void:
 	var fresh=Edges.new();root.add_child(fresh)
 	fresh.set_frame(ui,tags,Rect2i(0,0,320,136),donor,roof,4,true,false,donor)
 	check(edges.active and edges.build_count==builds+2 and edges.profiles==fresh.profiles,"changed plate kept a stale cached plate scan")
+	var legacy_profiles: Array=edges.profiles.duplicate(true)
+	edges.set_frame(ui,tags,Rect2i(0,0,320,136),donor,roof,4,true,false,donor,null,null,null,true)
+	var rounded_builds: int=edges.build_count
+	edges.set_frame(ui,tags,Rect2i(0,0,320,136),donor,roof,4,true,false,donor,null,null,null,true)
+	check(edges.build_count==rounded_builds,"Tactical cap mode reuses its stable geometry")
+	edges.set_frame(ui,tags,Rect2i(0,0,320,136),donor,roof,4,true,false,donor)
+	check(edges.profiles==legacy_profiles,"switching out of Tactical restores exact legacy profiles")
 	fresh.queue_free()
 	edges.queue_free()
+	# Analytic quantised caps exercise the guarded curve without storing decoded
+	# original art. Native capture separately checks the actual source profiles.
+	for station in [3,4]:
+		var centre: float=120.0 if station==3 else 161.0
+		var peak: float=84.9 if station==3 else 77.1
+		var direction: float=1.0 if station==3 else -1.0
+		var heights: PackedFloat32Array=PackedFloat32Array();heights.resize(320);heights.fill(100.0 if station==3 else 32.0)
+		for x in range(int(centre-12.5),int(centre+12.5)+1):
+			heights[x]=roundf(peak+direction*0.0465*pow(float(x)+0.5-centre,2))
+		var original_bytes: PackedByteArray=heights.to_byte_array()
+		var linear: PackedVector2Array=Edges.fit(heights)
+		var curved: PackedVector2Array=Edges.round_barrel_cap(linear,heights,station)
+		check(curved.size()>linear.size(),"supported cap gets continuous quarter-pixel curvature "+str(station))
+		var bounded: bool=true
+		for x in 320:bounded=bounded and absf(Edges.profile_y(curved,float(x)+0.5)-heights[x])<=Edges.ERROR+0.0001
+		check(bounded and heights.to_byte_array()==original_bytes,"curved cap retains source error bound and input bytes "+str(station))
+		var unknown: PackedFloat32Array=heights.duplicate();unknown[int(centre)]+=5.0
+		check(Edges.round_barrel_cap(linear,unknown,station)==linear,"unrecognised cap keeps the original linear fit "+str(station))
+		# A qualifying cap must also cross the real geometry-cache mode boundary.
+		var cap_tags: Image=Image.create_empty(320,200,false,Image.FORMAT_L8)
+		var ink: Color=Color8(station,station,station)
+		for x in 320:
+			var y: int=int(heights[x])
+			cap_tags.fill_rect(Rect2i(x,y if station==3 else 0,1,200-y if station==3 else y),ink)
+		if station==4:cap_tags.fill_rect(Rect2i(0,150,320,50),ink)
+		var cap_edges: Control=Edges.new();root.add_child(cap_edges)
+		var cap_camera: Rect2i=Rect2i(0,0,320,117 if station==3 else 136)
+		cap_edges.set_frame(ui,cap_tags,cap_camera,donor,null,station,true,false,donor)
+		var cap_legacy: Array=cap_edges.profiles.duplicate(true)
+		cap_edges.set_frame(ui,cap_tags,cap_camera,donor,null,station,true,false,donor,null,null,null,true)
+		var cap_tactical: Array=cap_edges.profiles.duplicate(true)
+		check(cap_tactical!=cap_legacy,"qualifying cap activates only in Tactical "+str(station))
+		var cap_builds: int=cap_edges.build_count
+		cap_edges.set_frame(ui,cap_tags,cap_camera,donor,null,station,true,false,donor,null,null,null,true)
+		check(cap_edges.build_count==cap_builds,"qualifying Tactical cap reuses its cached mesh "+str(station))
+		cap_edges.set_frame(ui,cap_tags,cap_camera,donor,null,station,true,false,donor)
+		check(cap_edges.profiles==cap_legacy,"qualifying cap restores exact non-Tactical geometry "+str(station))
+		cap_edges.set_frame(ui,cap_tags,cap_camera,donor,null,station,true,false,donor,null,null,null,true)
+		check(cap_edges.profiles==cap_tactical,"qualifying cap round trip restores exact Tactical geometry "+str(station))
+		cap_edges.queue_free()
 
 var errors: Array[String] = []
 var checks := 0
