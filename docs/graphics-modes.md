@@ -2880,3 +2880,21 @@ standalone/Web editions were neither rebuilt nor published.
 
 Working if: both forward ends stay flush during source-owned motion and the
 bounded material displacement checks, with exact original frame counts and masks.
+
+### Hairline barrel contours (29 October 2026)
+
+Both Tactical forward barrels now have a thin black contour in the existing
+cockpit edge pass. Its inward fade is bounded by one edge-render pixel, measured
+from derivatives of the accepted contour distance. It changes RGB only and
+tapers into the mounting shoulders. Source geometry, antialias coverage, masks,
+guest timing, cosmetic-motion authority and the flush-end finish are unchanged.
+
+The implementing lead inspected native renders at 960x540 and 1600x900. Only
+barrel-region pixels darken; unrelated pixels are exact. All four ownership
+fixtures have zero forbidden pixels, and the native both-view displacement/donor
+regression passes 124 checks. Evidence:
+`artifacts/barrel-outline-20261029/acceptance.json`. Local source only, with no
+new live route, performance claim, standalone/Web rebuild or publication.
+
+Working if: both silhouettes carry a restrained black hairline, the false lip
+stays absent, and existing contours, visibility masks and timing stay unchanged.

@@ -79,6 +79,17 @@ void fragment() {
 	vec2 uv=sample_p/vec2(320,200);
 	if(tactical_interior)uv=station==4 ? field_driver_uv(sample_p) : field_cupola_uv(sample_p);
 	vec3 art=paint(texture(donor,uv),sample_p);
+	if(tactical_interior) {
+		// A subpixel black ink line follows the existing barrel contour.
+		// RGB only: coverage, geometry and all source/world ownership stay exact.
+		float centre=station==3 ? 120.0 : 161.0;
+		float radius=station==3 ? 25.5 : 37.5;
+		float barrel=1.0-smoothstep(radius-1.5,radius,abs(sample_p.x-centre));
+		bool end_profile=station==3 ? (UV.y>82.0 && UV.y<110.0) : (UV.y>30.0 && UV.y<80.0);
+		float pixel_width=max(length(vec2(dFdx(signed_distance),dFdy(signed_distance))),0.001);
+		float ink=1.0-smoothstep(0.15,0.95,signed_distance/pixel_width);
+		if(end_profile)art=mix(art,vec3(0.0),ink*barrel);
+	}
 	vec3 world=texture(world_texture,visible/camera_size).rgb;
 	COLOR=vec4(mix(world,art,coverage),safe?1.0:0.0);
 }
