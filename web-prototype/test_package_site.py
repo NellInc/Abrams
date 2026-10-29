@@ -1,5 +1,8 @@
 import contextlib
+import fcntl
 import importlib.util
+import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -8,6 +11,9 @@ from unittest.mock import patch
 spec = importlib.util.spec_from_file_location('browser_package', Path(__file__).with_name('package_site.py'))
 package = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(package)
+verify_spec = importlib.util.spec_from_file_location('website_verify', package.ROOT / 'website/verify.py')
+website_verify = importlib.util.module_from_spec(verify_spec)
+verify_spec.loader.exec_module(website_verify)
 
 class BrowserPackageTests(unittest.TestCase):
     def setUp(self):
@@ -39,6 +45,89 @@ class BrowserPackageTests(unittest.TestCase):
         with patch.object(package.shutil, 'copy2', side_effect=OSError('disk full')):
             with self.assertRaisesRegex(OSError, 'disk full'): package.install_bundle({'remaster.mjs': self.source}, self.target)
         self.unchanged()
+
+    def make_lock(self):
+        lock = self.target / package.LOCAL_LOCK
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        lock.write_bytes(b'local owner')
+        self.before[package.LOCAL_LOCK] = lock.read_bytes()
+        return lock
+
+    def test_local_lock_inode_survives_promotion_without_publication(self):
+        lock = self.make_lock(); identity = package.local_lock_identity(lock)
+        self.source.write_text('new accepted')
+        records = package.install_bundle({'remaster.mjs': self.source}, self.target)
+        self.assertEqual(package.local_lock_identity(lock), identity)
+        self.assertEqual(lock.read_bytes(), b'local owner')
+        self.assertNotIn(package.LOCAL_LOCK, records)
+        self.assertNotIn(package.LOCAL_LOCK, json.loads((self.target / 'BUNDLE.json').read_text())['files'])
+        self.assertEqual(website_verify.LOCAL_BROWSER_LOCK, package.LOCAL_LOCK)
+        self.assertEqual(website_verify.browser_publication_files(self.target), {'remaster.mjs', 'BUNDLE.json'})
+
+    def test_busy_local_lock_refuses_without_changes(self):
+        lock = self.make_lock()
+        with lock.open('rb') as owner:
+            fcntl.flock(owner, fcntl.LOCK_SH | fcntl.LOCK_NB)
+            with self.assertRaisesRegex(SystemExit, 'in use'):
+                package.install_bundle({'remaster.mjs': self.source}, self.target)
+        self.unchanged()
+
+    def test_local_lock_cannot_hide_other_extras_or_be_published(self):
+        self.make_lock()
+        with self.assertRaisesRegex(SystemExit, 'Unsafe'):
+            package.install_bundle({package.LOCAL_LOCK: self.source}, self.target)
+        extra = self.target / 'foreign'; extra.write_text('keep')
+        with self.assertRaisesRegex(SystemExit, 'changed browser site files'):
+            package.install_bundle({'remaster.mjs': self.source}, self.target)
+        self.assertEqual(extra.read_text(), 'keep')
+
+    def test_invalid_local_lock_types_refused(self):
+        lock = self.target / package.LOCAL_LOCK; lock.parent.mkdir(parents=True)
+        for kind in ('symlink', 'directory', 'fifo'):
+            if kind == 'symlink': lock.symlink_to(self.source)
+            elif kind == 'directory': lock.mkdir()
+            else: os.mkfifo(lock)
+            with self.subTest(kind=kind), self.assertRaisesRegex(SystemExit, 'invalid local browser build lock'):
+                package.install_bundle({'remaster.mjs': self.source}, self.target)
+            with self.assertRaisesRegex(ValueError, 'Invalid local browser build lock'):
+                website_verify.browser_publication_files(self.target)
+            if kind == 'directory': lock.rmdir()
+            else: lock.unlink()
+
+    def test_lock_mutation_during_staging_refuses(self):
+        lock = self.make_lock(); original = package.shutil.copy2
+        def copy(source, destination):
+            result = original(source, destination); lock.write_bytes(b'changed owner marker'); return result
+        with patch.object(package.shutil, 'copy2', copy), self.assertRaisesRegex(SystemExit, 'lock changed'):
+            package.install_bundle({'remaster.mjs': self.source}, self.target)
+        self.assertEqual((self.target / 'remaster.mjs').read_text(), 'accepted')
+        self.assertEqual(lock.read_bytes(), b'changed owner marker')
+
+    def test_locked_rename_failure_rolls_back_same_inode(self):
+        lock = self.make_lock(); identity = package.local_lock_identity(lock); original = Path.replace
+        def replace(path, dest):
+            if path.name == 'candidate': raise OSError('rename failed')
+            return original(path, dest)
+        with patch.object(Path, 'replace', replace), self.assertRaisesRegex(OSError, 'rename failed'):
+            package.install_bundle({'remaster.mjs': self.source}, self.target)
+        self.assertEqual(package.local_lock_identity(lock), identity)
+        self.unchanged()
+
+    def test_lock_created_in_rename_gap_is_preserved_with_accepted_backup(self):
+        lock = self.make_lock(); identity = package.local_lock_identity(lock); original = Path.replace
+        def replace(path, dest):
+            result = original(path, dest)
+            if path == self.target:
+                foreign = self.target / package.LOCAL_LOCK
+                foreign.parent.mkdir(parents=True); foreign.write_bytes(b'new foreign lock')
+            return result
+        with patch.object(Path, 'replace', replace), self.assertRaisesRegex(RuntimeError, 'accepted build retained'):
+            package.install_bundle({'remaster.mjs': self.source}, self.target)
+        self.assertEqual(lock.read_bytes(), b'new foreign lock')
+        backups = list(self.root.glob('.abrams-play-*/previous'))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(package.local_lock_identity(backups[0] / package.LOCAL_LOCK), identity)
+        self.assertEqual((backups[0] / 'remaster.mjs').read_text(), 'accepted')
     def test_rename_failure_rolls_back(self):
         original = Path.replace
         def replace(path, dest):

@@ -37,8 +37,8 @@
       "sha256": "efb917219f345230545e5fe56ed0df313418e604e1ce42bd5cc3789c4b6bd37f"
     },
     ".generated/godot/index.pck": {
-      "bytes": 19940760,
-      "sha256": "e7b6a11975c6a09594e0c6a3b56b42fbdaeb8dca3ece0b909368326f25879dce"
+      "bytes": 20044940,
+      "sha256": "59efa0232167211fccc9b035f4f2d02055f3dac3009cc3236b045436a298407d"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
@@ -69,8 +69,8 @@
       "sha256": "831fd1e535084b972f87c6a35275de3d236efd5166f5e77ce89497710635e73c"
     },
     ".generated/python-source.zip": {
-      "bytes": 444266,
-      "sha256": "30577e0263fa1d043c6c39b8e1a7cc4b74e5d04bf85bb97e425b57050acb7e93"
+      "bytes": 594832,
+      "sha256": "3e8d13a86a195620510d20970db47bee1cc8b251ac520987eba8e68415438f14"
     },
     ".generated/remaster-assets-00.zip": {
       "bytes": 29013294,

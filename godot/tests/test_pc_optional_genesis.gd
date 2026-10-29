@@ -4,7 +4,12 @@ const Menu = preload("res://scripts/pc_play_menu.gd")
 var errors: Array[String] = []
 var checks := 0
 
+class SupplementalProbe extends RefCounted:
+	func observe_frame(_source: Image, _program: Dictionary, _guard: Callable) -> void:
+		pass
+
 class MusicProbe extends Node:
+	var supplemental := SupplementalProbe.new()
 	var music_bank := {"independent":false}
 	var context_queries := 0
 	var applied: Array = []

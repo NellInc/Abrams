@@ -2,8 +2,53 @@
 
 The original PC executables own gameplay, mission logic, menus and disk saves.
 Godot renders the supported high-resolution layers and plays event-driven audio.
-The authored calibration range is separate. The non-Modern completion pass has passed the local aggregate gate.
+The authored calibration range is separate. An earlier non-Modern completion pass passed its local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
+
+## Completion verification in progress, 28 October 2026
+
+Four distinct original missions have positive full endings: Bonn (365), Mossel
+Defense (490), Hannover (359) and Mass Destruction (392). The same successful
+campaign has two verified victories and score 855, with fresh-process original
+R&R Continue. Nuremberg, Convoy, Intercept, Siegen and the remaining campaign
+victories are still open. Standalone victories do not increase that campaign
+count.
+
+The current production native viewer passed 230 save/load, recovery-slot undo,
+rendered-restoration and input-replay assertions. Its resumed RAM/video audit
+matches the uninterrupted route. The focused persistence Python suite passed 59
+tests. All 32 recorded mission/station pairs passed 130 Tactical rendering checks;
+these are presentation checks, not additional mission victories.
+
+Separate original career ENDRET reached genuine disciplinary retirement:
+score 0/count 3/status 1, with the original reprimand and a fresh cold Continue
+refusal. The retained winning career is untouched. Stalemate and successful
+Moscow campaign endings still need genuine runtime evidence. Focus/input-route
+failures invalidate the latest timing runs, so target-rate performance remains
+unverified.
+
+Local evidence: `artifacts/finish-abrams-20261025/` contains
+`successful-campaign-progress.json`,
+`normal-viewer-conveniences-20261028/conveniences-report.json`,
+`save-resume-focused-20261028.log`,
+`scenario32-tactical-20261028/report.json` and
+`ending-retirement-28/root-retirement-verification.json`.
+Modern also passed 164 checks across the same 32 pairs. Native frontend and
+ending presentation passed 96 checks. A real cold-boot session passed 52
+stages and 3,328,000 exact RGB checks across briefing, SIM, debrief and reentry.
+The first aggregate run failed in Python (22 failures, 71 skips, 1,033 tests).
+Using the existing canonical interpreter and normal host permissions passed
+1,024 tests with two skips. The gate then exposed an incomplete audio test
+double. Its five-line fixture repair passed all 69 existing assertions in a
+root rerun; that repair does not change production audio. The remaining 79
+Godot diagnostics and three promo parse checks passed. A quiet format-0 run
+passed in 24.058 seconds within its original 120-second limit. The subsequent
+full gate failed because concurrent trace-header changes no longer matched the
+core build receipt and a new rocket-audio test was absent from the gate list.
+Those failures remain open on the changing candidate. Mission runs continue on
+their preserved, pinned runtime. A complete successful aggregate invocation is
+still required.
+No new release is claimed.
 
 ## Alpha 7, 23 October 2026
 
@@ -289,3 +334,22 @@ The corrected moving native route measured 38.77 fps before and 40.12 after,
 with identical requested inputs and final rendered output. All 32 station/scenario
 screens match the preceding alpha exactly. This does not meet consistent 60 fps;
 Modern stays experimental. See [pacing evidence](pc-pacing-research.md).
+
+## Packaged barrel update, 29 October 2026
+
+The latest rounded forward barrels and smooth thin outlines are packaged in
+the local macOS app (build 693ff62dc026e64149ad) and Web remaster. The app's
+normal frozen runtime, both barrel views at two sizes, and four zero-leak
+ownership fixtures passed. Player saves/content/private audio were preserved
+when updating the installed app; the prior app remains recoverable.
+
+Actual browser gameplay separately reached both driver and cupola views with
+Tactical, 4x MSAA and 16x anisotropy and no console warnings/errors. Original Web CPU
+and corresponding-source bytes were retained. Private recordings and original
+game inputs are excluded from public packages. This local macOS build is
+ad-hoc signed; no new notarized Release binary is claimed.
+
+Final default validation completed exit 0 on the frozen code candidate in
+`artifacts/validation-20261029T125108Z`. This closes this barrel packaging gate,
+while the campaign, device/performance and soak gaps above retain their own
+acceptance criteria. Evidence: `artifacts/release-barrels-20261029/`.

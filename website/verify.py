@@ -12,6 +12,18 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent
 DIST = ROOT / "dist"
+LOCAL_BROWSER_LOCK = ".generated/.abrams-build.lock"
+
+
+def browser_publication_files(browser: Path) -> set[str]:
+    """Inventory public files while preserving the exact local build sentinel."""
+    actual = {p.relative_to(browser).as_posix() for p in browser.rglob("*") if p.is_file()}
+    lock = browser / LOCAL_BROWSER_LOCK
+    if lock.is_symlink() or (lock.exists() and not lock.is_file()):
+        raise ValueError("Invalid local browser build lock")
+    if lock.is_file():
+        actual.discard(LOCAL_BROWSER_LOCK)
+    return actual
 
 
 class Page(HTMLParser):
@@ -205,7 +217,11 @@ def main():
     else:
         bundle = json.loads(bundle_path.read_text())
         files = bundle.get("files", {})
-        actual = {p.relative_to(browser).as_posix() for p in browser.rglob("*") if p.is_file()}
+        try:
+            actual = browser_publication_files(browser)
+        except ValueError as error:
+            errors.append(str(error))
+            actual = set()
         if bundle.get("schema") != 1 or bundle.get("original_pc_files_included") is not False or actual != set(files) | {"BUNDLE.json"}:
             errors.append("The browser bundle differs from its publication inventory")
         for name, record in files.items():

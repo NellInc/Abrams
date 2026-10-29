@@ -52,7 +52,10 @@ def inventory(root=ROOT):
     shape_data = decode_resource((root / 'GAME/SHAPE.TBL').read_bytes())
     bindings = source_bindings(shape_data)
     assets = json.loads((root / 'local-art/genesis/remastered/effects-v2/manifest.json').read_text())
-    donors = {entry['source_index']: entry for entry in assets['assets']}
+    selected = [entry for entry in assets['assets'] if entry.get('selected', True)]
+    donors = {entry['source_index']: entry for entry in selected}
+    if len(selected) != len(donors) or list(donors) != BASES:
+        raise ValueError('exactly one selected donor per ordered runtime base required')
     rows = []
     for index, (native, original) in enumerate(zip(source, pc)):
         for field in ('width', 'height', 'pixels'):

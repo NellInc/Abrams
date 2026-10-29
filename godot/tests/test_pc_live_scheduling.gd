@@ -5,6 +5,8 @@ var checks := 0
 var events: Array = []
 var held_codes: Array = []
 var valid_sample: Dictionary
+var callback_age := -1.0
+var speed_reset_on_poll := false
 
 class TestBridge extends RefCounted:
 	var pending := true
@@ -13,6 +15,7 @@ class TestBridge extends RefCounted:
 	var requests: Array = []
 	var events: Array
 	var stopped := false
+	var reject_next := false
 	func poll() -> Array[Dictionary]:
 		events.append("poll")
 		var result := incoming.duplicate()
@@ -21,6 +24,9 @@ class TestBridge extends RefCounted:
 		return result
 	func step(frames: int, keys: Array) -> bool:
 		if pending or stopped or not failure.is_empty(): return false
+		if reject_next:
+			reject_next=false
+			return false
 		events.append("step")
 		requests.append({"frames":frames,"keys":keys.duplicate()})
 		pending=true
@@ -80,6 +86,15 @@ func _initialize() -> void:
 	run.call_deferred()
 
 func _process(_delta: float) -> bool: return false
+
+func _live_callback_elapsed_seconds() -> float:
+	return callback_age if callback_age>=0.0 else super._live_callback_elapsed_seconds()
+
+func _poll_web_controls() -> void:
+	if speed_reset_on_poll:
+		speed_reset_on_poll=false
+		_choose_speed(1)
+	else: super._poll_web_controls()
 
 func set_keys(codes: Array) -> void:
 	for code in held_codes:
@@ -143,8 +158,47 @@ func run() -> void:
 	check(elapsed>=period,"busy time retained until next available request")
 	set_keys([])
 	reply()
+	var busy_requests: int=bridge.requests.size()
 	super._process(0)
-	check(elapsed>=0 and elapsed<period,"busy intervals discarded without a catch-up burst")
+	check(bridge.requests.size()==busy_requests+1,"busy intervals discard whole missed periods without a catch-up burst")
+	bridge.pending=false
+	check(not _advance_live_frame(),"compensated residual cannot dispatch a second frame")
+	# Actual work within this callback can cross the next source deadline.
+	callback_age=0.004
+	_live_process_credit_enabled=true
+	elapsed=period-0.003
+	var deadline_requests: int=bridge.requests.size()
+	check(_advance_live_frame(),"callback work crossing deadline dispatches immediately")
+	check(bridge.requests.size()==deadline_requests+1 and bridge.requests[-1].frames==1,"deadline dispatch is exactly one original frame")
+	check(absf(elapsed+callback_age-0.001)<0.000001,"callback credit preserves the true fractional remainder")
+	check(not _advance_live_frame(),"pending deadline dispatch cannot queue another frame")
+	callback_age=0.0
+	_live_process_credit_enabled=false
+	elapsed+=0.002
+	bridge.pending=false
+	check(not _advance_live_frame(),"next callback delta does not double-count credited work")
+	callback_age=0.003
+	_live_process_credit_enabled=true
+	elapsed=period-0.002
+	var before_reject := elapsed
+	bridge.reject_next=true
+	check(not _advance_live_frame() and elapsed==before_reject,"rejected transport keeps its delivery opportunity")
+	callback_age=period*2.0
+	_reset_live_clock()
+	check(not _live_process_credit_enabled and not _advance_live_frame(),"clock reset excludes expensive pre-reset callback work")
+	callback_age=0.001
+	speed_reset_on_poll=true
+	var reset_requests: int=bridge.requests.size()
+	super._process(period*2.0)
+	check(bridge.requests.size()==reset_requests,"speed reset during control polling discards the prior delta")
+	callback_age=0.0
+	super._process(period*0.5)
+	check(bridge.requests.size()==reset_requests,"post-reset half period cannot advance the original")
+	super._process(period)
+	check(bridge.requests.size()==reset_requests+1,"post-reset time permits exactly one new original frame")
+	callback_age=-1.0
+	_live_process_credit_enabled=false
+	elapsed=0.0
 	audio_menu=preload("res://scripts/pc_audio_menu.gd").new()
 	audio_menu.config_path=""
 	root.add_child(audio_menu)

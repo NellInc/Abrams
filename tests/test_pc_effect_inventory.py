@@ -44,7 +44,10 @@ class EffectInventoryTests(unittest.TestCase):
         manifest = json.loads((folder / 'effects-v2/manifest.json').read_text())
         code = (ROOT / 'godot/scripts/pc_effect_art.gd').read_text()
         regions = ast.literal_eval(re.search(r'const ART_BOUNDS := (\[[^\n]+\])', code)[1])
-        for index, entry in enumerate(manifest['assets']):
+        selected = [entry for entry in manifest['assets'] if entry.get('selected', True)]
+        self.assertEqual([entry['source_index'] for entry in selected], BASES)
+        self.assertEqual(len(regions), len(selected))
+        for index, entry in enumerate(selected):
             with Image.open(folder / entry['file']) as image:
                 box = image.getchannel('A').point(lambda a: 255 if a >= 128 else 0).getbbox()
                 self.assertEqual(list(box), entry['cutout_bbox'])

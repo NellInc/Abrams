@@ -8627,3 +8627,170 @@ pack/app rebuild, public media or new publication in this batch.
 Working if: exact visible moving ground families reuse approved beds without
 duplicate loudness, independent Off survives, hidden/wreck/tiny/UI-covered
 owners remain silent, and accepted assets, original timing and masks stay fixed.
+
+## 2026-10-28: completion verification, native persistence and retirement
+
+The completion task remains active: four unique positive original mission ENDs,
+two victories in the same score855 career. The four other unique victories,
+remaining winning career chain, natural final success and valid target-rate
+performance are not closed by this checkpoint. No messages to other chats.
+
+Root ran and inspected59 focused save-state/observer/session Python tests and230
+native production-viewer convenience assertions, all passing. Actual save1,
+load1 and recovery-slot0 operations succeeded; resumed RAM/video and complete
+rendered cockpit matched their uninterrupted counterparts. Tactical fixture
+rendering passed130 checks over32 unique scenario/station pairs, with actual
+native exit0. These fixture checks do not rerun or win the missions.
+
+Independent ENDRET original retirement proof has score0/count3/status1, the
+original disciplinary message and cold Continue refusal. Root checked actual
+TC bytes/hash and source screenshots; the main winning career is preserved.
+Current original Hannover took real wear while stopped, H95/rear0/GPS1. Its
+ordinary withdrawal toward a genuine source-owned Motor Pool is active. Old
+material and failed timing evidence remain retained; neither damage nor focus
+loss is hidden behind a new baseline or a passing test count.
+
+Evidence: artifacts/finish-abrams-20261025/{save-resume-focused-20261028.log,
+normal-viewer-conveniences-20261028/conveniences-report.json,
+scenario32-tactical-20261028/report.json,
+ending-retirement-28/root-retirement-verification.json,
+successful-campaign-progress.json}. Aggregate default gate is running separately;
+no aggregate completion or publication is claimed. Concurrent audio edits are
+preserved and remain their owner's work.
+
+Completion verification follow-on: Modern passed164 checks across32 cases;
+native frontend/ending presentation passed96. Real original cold boot, briefing,
+SIM, END, menu and mission reentry passed52 stages, nine paired worlds and
+3,328,000 exact RGB checks with host exit0. Representative Tactical Commander
+and Modern Driver captures were inspected. These remain scoped presentation
+and lifecycle proof, with no added natural mission victory.
+
+The first aggregate gate terminated exit1:1,033 Python tests,22 failures and71
+skips. Independent triage split21 PNG-byte failures from one Unicorn SIGILL.
+All affected image pixels match; system Pillow12 uses a different zlib encoder
+than the existing canonical validation wheel. The exact failing material oracle
+passed with supported host permission, confirming the sandbox boundary. No
+fixtures, hash pins, runtime assertions or original instructions were changed.
+The canonical-interpreter aggregate rerun is active with source fingerprints;
+its eventual terminal result and drift check remain required. A separate
+macOS build-encoder preflight omission is recorded at tools/standalone/build.py
+235-239; no package rebuild is in this task's delivery scope.
+
+Original ROOT Hannover gained a genuine HIND kill at23806: AX3→2, ownclass17
+WORD0→1, new canonical message and ownprimary0. H78/GPS1/MainGun1 and lost
+armour remain real. It is still0/2 objectives while withdrawing for genuine
+service, and the winning campaign stays2/8.
+
+Canonical gate detail:1,024 Python tests passed in250.576seconds with two skips,
+zero Unicorn skips; pinned fixtures, preservation, audio assets and Web checks
+passed. Godot then exposed an incomplete MusicProbe test double: the viewer's
+existing supplemental.observe_frame interface was missing from the probe.
+Added a five-line test-only SupplementalProbe/property in
+ godot/tests/test_pc_optional_genesis.gd. Root inspected the integrated diff and
+reran the unchanged assertions with normal host permission:69 checks,0 errors,
+exit0. No production audio edit or golden refresh. The original aggregate
+invocation remains failed;79 remaining project checks are running through the
+installed godot-game-verification skill. Three external promo parse-only checks
+remain separately accounted for because that runner requires res:// scripts.
+
+ROOT's genuine reverse Western bridge traversal ended29528 at34766/79866/Z50,
+with unchanged H78/drives100/armour54,5,0,0/GPS1/MainGun1 and no new warning.
+Each bounded native sample retained Z50/raw64/no angular controls. This is
+actual reverse traversal evidence, without adopting the retracted road-priority
+explanation. Ordinary withdrawal continues on the original service approach.
+
+### 2026-10-28: quiet gate disposition and actual navigation repair
+
+ROOT observed all 79 remaining Godot diagnostics and three promo parse checks
+pass. The unchanged format-0 check passed in 24.058 seconds with its existing
+120-second deadline. The quiet full aggregate then exited 1: 1,032 Python tests,
+one failure, one error and two skips. Actual source changed during that run:
+`abrams_trace.h` differed from its build receipt, and the new rocket-audio test
+was absent from the validation list. No golden, deadline or check was weakened.
+Unrelated in-progress audio/core edits are preserved. No aggregate pass is claimed.
+
+The five task-owned original mission runs were released from the temporary
+resource hold. Their approved core, SHA256
+`37bff08762031c40fe5843e2be8dc98e6d5d777497284797590f7e6ec4fdc55e`,
+was backed up with its matching manifest for recoverability. ROOT directly
+verified Convoy's genuine SAGGER class credit at20365 against raw RAM and its
+per-frame hash; this is an individual credit, not a completed mission.
+
+ROOT's repaired Hannover diagonal maintained its cross-track line after exact
+throttle control, but a moving TADS query consumed the endpoint braking margin.
+The old arrival failed its along-distance bound at43545. A separately qualified
+actual-origin coast reached physical neutral43581 with all material unchanged.
+The failed arrival remains failed. The next public-road driver prioritises
+physical deceleration before moving sight queries and keeps the actual neutral
+100-raw arrival requirement.
+
+The performance profiler gained an opt-in, one-time native focus request after
+setup. Its actual-focus quarantine and exact-input acceptance are unchanged.
+Normal-host parse passed; prior focus-invalid FPS samples remain invalid and
+no target-rate performance acceptance is claimed.
+
+### 2026-10-29: focused timing and exact-history recovery preparation
+
+The isolated native benchmark completed all1,020 exact original control frames
+with actualfocus throughout, allfour stations, movement and unchanged Tactical
+1600x900/4MSAA/16anisotropy. ROOT independently checked the raw pacing receipt,
+input mismatches (none), audio failures (none), core pin and source fingerprint.
+Original-frame delivery measured53.430fps against the advertised59.469Hz;
+display mean was87.73fps with22.17ms p95 and102.68ms maximum. Target-rate
+performance remains open. Subsequent five foreign FX source changes are
+recorded, so this measures the retained candidate, not automatic acceptance
+of the later working tree. Rebuild versus transport attribution is next.
+
+All five paused original mission processes were subsequently absent. No new
+gameplay result is inferred. Private exact-history recovery is prepared from
+neutral START, with immutable old core37 and historical observer sources,
+without replacing the current default core60 or restoring combat checkpoints.
+Every recorded frame/key/RAM/videoRAM/framebuffer must match before continuation.
+Genuine unique-positive coverage remains4/8; the winning career remains2/8.
+ROOT additionally matched the retained BMP2, fourth Convoy BRDM2, Convoy T64 and
+Siegen HQ own-credit snapshots against their per-frame RAM hashes and primary0.
+These individual credits do not close their missions. The canonical aggregate
+is running; no terminal pass or frozen integrated-candidate claim is made.
+
+Working if: recoveries stop on first mismatch, all previous failures remain,
+and only actual full original endings advance the coverage counts.
+
+### 2026-10-29: barrel fixes in packaged app and Web
+
+The rounded driver/cupola barrels, thin black contours and analytic edge filtering
+are included in both editions. Final app build `693ff62dc026e64149ad` passed
+normal frozen-runtime import, preflight and original-game capture, plus both
+barrel views at 960x540 and 1600x900. Four source-ownership fixtures reported zero
+forbidden pixels. The app is installed in `/Applications`, with its previous
+copy retained as `M1 Abrams Battle Tank Fan Remaster.pre-barrels-20261029.app`.
+Player saves, imported content and private audio hashes were unchanged. This
+is an ad-hoc signed local update; no new notarized Release binary is claimed.
+
+The Web Godot pack and observer archive were rebuilt and packaged. The pinned
+Web CPU/WASM, matching corresponding-source archive and Pyodide runtime remain
+byte-exact. Actual browser play reached the original Mossel Defense SIM, then
+F4 driver and F3 cupola. Both forward barrels were visually inspected with
+Tactical, 4x MSAA and 16x anisotropy; their rounded tips and subtle smooth contours
+rendered without the false lip. No console warning/error was recorded. Native
+fixture captures remain separate from these genuine browser gameplay views.
+
+The Web publisher initially rejected an existing ignored local build lock.
+It now preserves that exact regular sentinel inode under a nonblocking lock,
+rejects foreign extras and invalid lock types, and excludes the sentinel from
+publication. Nineteen focused tests passed, including busy-lock refusal,
+staging mutation and rename rollback. Its two-rename promotion is not a
+no-gap exchange or a crash-durability guarantee.
+
+Final default validation completed with exit 0 in
+`artifacts/validation-20261029T125108Z`, with all 517 frozen code files unchanged.
+This supersedes the preceding ledger note that the aggregate was still running.
+The earlier aggregate also passed but preceded the publisher repair. Clean
+source-kit validation passed 212 tests with 22 skips in the original-free environment.
+Scheduling passed 221 checks and effect-inventory validation passed 6 tests.
+Original frame timing, visibility and ownership remain authoritative; the
+barrel changes affect presentation RGB only. No new target-FPS, campaign-ending
+or sustained-soak acceptance is inferred from this release work.
+
+Build, installation, package and local acceptance receipts are in
+`artifacts/release-barrels-20261029/`. Private originals and paid recordings
+remain outside Git and the public packages.

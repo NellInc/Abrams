@@ -54,6 +54,8 @@ var caption: Label
 var previous: Dictionary = {}
 var previous_program: Dictionary = {}
 var elapsed := 0.0
+var _live_process_begin_usec := 0
+var _live_process_credit_enabled := false
 var fps := 59.9227
 const INTRO_SPEED := 0.75
 const INTRO_SKIP_STEPS := 6
@@ -444,7 +446,7 @@ func _set_frontdoor(active: bool) -> void:
 	audio_menu.frontdoor_active=active
 	audio_menu.release_keys=true
 	audio_menu.shortcut_keys.clear()
-	elapsed=0.0
+	_reset_live_clock()
 	if active and pc_audio:
 		pc_audio.apply_music_context("menu",not pc_only or pc_audio.music_bank.independent)
 	_sync_web_controls()
@@ -750,7 +752,16 @@ func _observe_intro(image: Image, program: Dictionary, presentation: Dictionary)
 		intro_skip_step=-1
 		# A held skip key must never also cancel/exit the menu we just reached.
 		if audio_menu: audio_menu.release_keys=true
-		elapsed=0.0
+		_reset_live_clock()
+
+func _live_callback_elapsed_seconds() -> float:
+	return 0.0 if _live_process_begin_usec==0 else maxf(0.0,(Time.get_ticks_usec()-_live_process_begin_usec)/1000000.0)
+
+func _reset_live_clock() -> void:
+	# Retain the callback-start reference for the next delta, excluding work
+	# before a restore/menu/speed reset. No pre-reset credit in this callback.
+	elapsed=-_live_callback_elapsed_seconds()
+	_live_process_credit_enabled=false
 
 func _advance_live_frame() -> bool:
 	if capture or closing or state_control_pending or not pending_state_command.is_empty() or bridge.pending or not bridge.failure.is_empty():
@@ -764,20 +775,26 @@ func _advance_live_frame() -> bool:
 		if skipping:
 			intro_skip_step+=1
 			if intro_skip_step>=INTRO_SKIP_STEPS: intro_skip_step=-1
-			elapsed=0.0
+			_reset_live_clock()
 			inflight_fast=true
 			if pc_audio: pc_audio.set_transport_muted(true)
 		return skipping
 	var delivery_fps: float=fps*(INTRO_SPEED if intro_shot_active and fast_forward==1 else 1.0)
-	if elapsed<1.0/delivery_fps:return false
-	elapsed=frame_remainder(elapsed,delivery_fps)
+	var intra: float=_live_callback_elapsed_seconds() if _live_process_credit_enabled else 0.0
+	var available: float=elapsed+intra
+	if available<1.0/delivery_fps:return false
 	# Sample current original keys once, never queue a second outstanding frame.
 	var held := Keyboard.held()
 	if audio_menu: held=audio_menu.game_keys(held)
 	# Fast-forward changes wall-clock delivery only: the host still executes
 	# every original frame in order at its unchanged emulated CPU settings.
 	var sent: bool=bridge.step(fast_forward,held)
-	if sent: inflight_fast=fast_forward>1
+	if sent:
+		# Work can cross the deadline after poll/decoding. Dispatch now, then
+		# subtract its credit so the next Godot delta cannot count it twice.
+		# Working if one exact source frame is sent, with no catch-up burst.
+		elapsed=frame_remainder(available,delivery_fps)-intra
+		inflight_fast=fast_forward>1
 	return sent
 
 func _choose_graphics(mode: String) -> void:
@@ -846,7 +863,7 @@ func _choose_graphics_quality(samples: int, anisotropy: int) -> void:
 
 func _choose_speed(multiplier: int) -> void:
 	fast_forward=multiplier
-	elapsed=0.0
+	_reset_live_clock()
 	if pc_audio: pc_audio.set_transport_muted(multiplier>1 or inflight_fast or _state_load_muted())
 	if play_mode:
 		var app_name := str(ProjectSettings.get_setting("application/config/name"))
@@ -971,17 +988,25 @@ func _state_result(message: Dictionary) -> void:
 		audio_menu.set_state_status(message.get("slots",[]),str(message.get("message","State operation finished")))
 	_sync_web_controls(str(message.get("message", "")))
 	if pc_audio: pc_audio.set_transport_muted(fast_forward>1)
-	elapsed=0.0
+	_reset_live_clock()
 
 func _capture_deadline_msec() -> int:
 	return 180000 if boot_mode or "--capture-vehicle" in OS.get_cmdline_user_args() else 60000
 
 func _process(delta: float) -> bool:
+	_live_process_begin_usec=Time.get_ticks_usec()
+	_live_process_credit_enabled=true
+	var finished := _process_frame(delta)
+	_live_process_begin_usec=0
+	_live_process_credit_enabled=false
+	return finished
+
+func _process_frame(delta: float) -> bool:
 	# The first rendered cover is the only startup yield, with no guest running.
 	if not startup_ready and bridge.failure.is_empty(): return false
+	elapsed += delta
 	_poll_web_controls()
 	if is_instance_valid(control_notice) and Time.get_ticks_msec()>=notice_until:control_notice.hide()
-	elapsed += delta
 	for message in bridge.poll():
 		# A pending step/restore can reply after Close. Consume it so the host can
 		# exit, but never restart presentation audio after its shutdown drain.

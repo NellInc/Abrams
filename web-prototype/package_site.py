@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import contextlib
+import fcntl
 import io
 import json
+import os
 import re
+import stat
 import tempfile
 from pathlib import Path
 import shutil
@@ -15,6 +19,7 @@ from build_remaster_assets import generated_lock
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'web-prototype'
 TARGET = ROOT / 'website/dist/play'
+LOCAL_LOCK = '.generated/.abrams-build.lock'
 RUNTIME = (
     'build-info.json', 'core.js', 'core.wasm', 'game-inputs.json',
     'genesis-input.json', 'python-source.zip', 'remaster-assets.json',
@@ -75,6 +80,42 @@ def observer_drift(archive_path: Path) -> list[str]:
     return sorted(name for name in wanted.keys() | packaged.keys() if wanted.get(name) != packaged.get(name))
 
 
+def local_lock_identity(path: Path) -> tuple | None:
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(info.st_mode):
+        raise SystemExit('Refusing an invalid local browser build lock')
+    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_mode
+
+
+@contextlib.contextmanager
+def retained_lock(target: Path):
+    path = target / LOCAL_LOCK
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+    except FileNotFoundError:
+        yield None
+        return
+    except OSError as error:
+        raise SystemExit('Refusing an invalid local browser build lock') from error
+    try:
+        info = os.fstat(fd)
+        identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_mode)
+        if not stat.S_ISREG(info.st_mode):
+            raise SystemExit('Refusing an invalid local browser build lock')
+        if local_lock_identity(path) != identity:
+            raise SystemExit('Local browser build lock changed')
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise SystemExit('Local browser build lock is in use') from error
+        yield identity
+    finally:
+        os.close(fd)
+
+
 def verify_owned(target: Path) -> bytes | None:
     if not target.exists():
         return None
@@ -87,6 +128,10 @@ def verify_owned(target: Path) -> bytes | None:
     previous = json.loads(raw)
     records = previous.get('files', {})
     actual = {p.relative_to(target).as_posix() for p in target.rglob('*') if p.is_file()}
+    if local_lock_identity(target / LOCAL_LOCK) is not None:
+        actual.discard(LOCAL_LOCK)
+    if LOCAL_LOCK in records:
+        raise SystemExit('Local browser build lock cannot be published')
     if previous.get('schema') != 1 or not isinstance(records, dict) or set(records) | {'BUNDLE.json'} != actual or any(p.is_symlink() for p in target.rglob('*')):
         raise SystemExit('Refusing to replace changed browser site files')
     for name, row in records.items():
@@ -97,12 +142,17 @@ def verify_owned(target: Path) -> bytes | None:
 
 
 def install_bundle(inputs: dict[str, Path], target: Path, expected: dict | None = None) -> dict:
-    # Build in a sibling temporary directory before replacing the accepted bundle.
+    with retained_lock(target) as lock:
+        return _install_bundle(inputs, target, expected, lock)
+
+
+def _install_bundle(inputs: dict[str, Path], target: Path, expected: dict | None, lock: tuple | None) -> dict:
+    # Stage then promote with rollback. The two renames are not a no-gap exchange.
     # A copy/space/hash failure leaves it untouched; a failed rename restores it.
     target.parent.mkdir(parents=True, exist_ok=True)
     previous_manifest = verify_owned(target)
     for name in inputs:
-        if not re.fullmatch(r'[A-Za-z0-9_./-]+', name) or any(p in ('', '.', '..') for p in name.split('/')) or name == 'BUNDLE.json':
+        if not re.fullmatch(r'[A-Za-z0-9_./-]+', name) or any(p in ('', '.', '..') for p in name.split('/')) or name in ('BUNDLE.json', LOCAL_LOCK):
             raise SystemExit(f'Unsafe browser bundle path: {name}')
     temporary = Path(tempfile.mkdtemp(prefix='.abrams-play-', dir=target.parent))
     retain_backup = False
@@ -123,11 +173,17 @@ def install_bundle(inputs: dict[str, Path], target: Path, expected: dict | None 
         for name, wanted in (expected or {}).items():
             if name not in records or not isinstance(wanted, dict) or any(records[name].get(key) != value for key, value in wanted.items()):
                 raise SystemExit(f'Browser input differs from its build manifest: {name}')
+        if lock is not None:
+            preserved = staging / LOCAL_LOCK
+            preserved.parent.mkdir(parents=True, exist_ok=True)
+            os.link(target / LOCAL_LOCK, preserved, follow_symlinks=False)
+            if local_lock_identity(preserved) != lock:
+                raise SystemExit('Local browser build lock changed during packaging')
         (staging / 'BUNDLE.json').write_text(json.dumps({
             'schema': 1, 'original_pc_files_included': False,
             'files': records}, indent=2, sort_keys=True) + '\n')
         # Recheck ownership immediately before the swap, including all file hashes.
-        if verify_owned(target) != previous_manifest:
+        if verify_owned(target) != previous_manifest or local_lock_identity(target / LOCAL_LOCK) != lock:
             raise SystemExit('Browser site changed during packaging; previous build retained')
         moved = False
         if previous_manifest is not None:

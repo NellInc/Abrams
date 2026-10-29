@@ -106,6 +106,14 @@ class ProbeBridge extends "res://scripts/pc_bridge.gd":
 	var polls := 0
 	var requests: Array = []
 	var record_poll_rows := true
+	func start(python: String, state_path: String, save_path: String, log_path: String, backend: String = "reference", frame_audit := false) -> bool:
+		# Setup uses capture, while the measured interactive loop uses Play.
+		# Select Play's wire format before launch, without changing checkpoint data.
+		# Working if paired draw origins survive and the actual route stays exact.
+		var args := OS.get_cmdline_user_args()
+		if backend=="trace" and "--play" in args and "--interactive-clock" in args:
+			slim_samples=true
+		return super.start(python,state_path,save_path,log_path,backend,frame_audit)
 	func step(frames: int, keys: Array) -> bool:
 		var now := Time.get_ticks_usec()
 		var accepted := super.step(frames,keys)
@@ -134,12 +142,14 @@ func _initialize() -> void:
 	minimal_profile="--minimal-profile" in args
 	effects_study="--effects-study" in args
 	frame_telemetry="--frame-telemetry" in args
-	transport_probe="--transport-probe" in args or "--replay-controls" in args
+	transport_probe="--transport-probe" in args or "--replay-controls" in args or "--interactive-clock" in args
 	late_dispatch="--late-dispatch" in args
 	if transport_probe: bridge=ProbeBridge.new()
 	if transport_probe: bridge.record_poll_rows=not minimal_profile
 	presentation_cache_enabled="--no-presentation-cache" not in args
 	super._initialize()
+	if "--request-profile-focus" in args:
+		root.title="Abrams performance check"
 	draw_view.profile_builds="--build-timings" in args
 	if not capture or not trace_mode:
 		bridge.failure="Live profiler requires --trace --capture"
@@ -236,6 +246,11 @@ func _apply_sample(message: Dictionary) -> void:
 			awaiting_profile_focus=true
 			capture=true
 			capture_done=true
+			# Opt-in, one-time native focus request after setup. The actual
+			# has_focus quarantine and exact-input acceptance stay authoritative.
+			# Working if the measured route retains real focus, or is rejected.
+			if "--request-profile-focus" in OS.get_cmdline_user_args():
+				root.grab_focus()
 		else:_begin_profile(end)
 		return
 	if root.has_focus():focused_samples+=1
@@ -250,7 +265,7 @@ func _apply_sample(message: Dictionary) -> void:
 	if diagnostic_draws.size()<2 and (diagnostic_draws.is_empty() or diagnostic_draws[-1].sequence!=draw_sequence):
 		diagnostic_draws.append(previous_presentation.get("draw_pass",{}).duplicate(true))
 	route_stations[str(previous.get("station","unknown"))]=true
-	route_origins[JSON.stringify(previous.get("world",{}).get("window_origin",[]))]=true
+	route_origins[JSON.stringify(measured_draw.get("world",{}).get("window_origin",[]))]=true
 	profile_rows.append({"sequence":int(message.sequence),"draw_sequence":draw_sequence,"arrival_gap_ms":(start-profile_previous)/1000.0,
 		"build_timings_usec":draw_view.last_apply_timings_usec.duplicate() if draw_view.profile_builds else {},"mesh_rebuilt":draw_view.mesh_build_count>builds_before,"focused":root.has_focus(),"apply_ms":(end-start)/1000.0,"interval_ms":(end-profile_previous)/1000.0,
 		"world_position_raw":previous.get("world_position_raw",[]),"station":previous.get("station","unknown"),
@@ -275,7 +290,7 @@ func _begin_profile(now: int) -> void:
 	if interactive_clock:
 		capture=false
 		capture_done=false
-		elapsed=0.0
+		_reset_live_clock()
 		if not replay_keys.is_empty():
 			# Inject the first command only after real focus is acquired. A key
 			# held across the focus boundary is correctly quarantined by Play.
@@ -300,7 +315,12 @@ func _process(delta: float) -> bool:
 	var count := profile_rows.size()
 	var result := super._process(delta)
 	if awaiting_profile_focus and not closing and bridge.failure.is_empty():
-		if not root.has_focus() or fast_forward!=1:profile_focus_since=0
+		var args := OS.get_cmdline_user_args()
+		var ready_index := args.find("--profile-ready-file")
+		if ready_index>=0 and (ready_index+1>=args.size() or not FileAccess.file_exists(args[ready_index+1])):
+			profile_focus_since=0
+			return result
+		if not root.has_focus() or fast_forward!=1 or not Keyboard.held().is_empty():profile_focus_since=0
 		elif profile_focus_since==0:profile_focus_since=Time.get_ticks_msec()
 		elif Time.get_ticks_msec()-profile_focus_since>=250:_begin_profile(Time.get_ticks_usec())
 	if profile_rows.size()>count: profile_rows[-1].process_ms=(Time.get_ticks_usec()-start)/1000.0
@@ -349,6 +369,7 @@ func _capture() -> void:
 		"display_frame_intervals":distribution(display_intervals),"source_reply_intervals":distribution(profile_rows.map(func(row):return row.interval_ms)),
 		"memory_begin_bytes":profile_memory_begin,"memory_end_bytes":OS.get_static_memory_usage(),
 		"route_stations":route_stations.keys(),"window_origins":route_origins.keys(),
+		"window_origin_basis":"paired original draw pass", "host_slim_samples":bridge.slim_samples,
 		"effects_study":effects_study,"effect_studies":effect_studies,
 		"frame_telemetry":frame_telemetry,"display_rows":display_rows,
 		"presentation_load_ms":presentation_load_ms,
