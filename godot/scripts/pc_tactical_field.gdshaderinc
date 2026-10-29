@@ -29,7 +29,7 @@ vec3 field_enamel(vec3 original,vec2 p,float hardware) {
 vec3 field_round_barrel(vec3 original,vec2 p,int station) {
 	bool upper=station==3;
 	if(station!=3 && station!=4)return original;
-	float start=upper ? 85.0 : 31.0;
+	float start=upper ? 85.0 : 18.0;
 	float end=upper ? 110.0 : 77.0;
 	if(p.y<start || p.y>=end)return original;
 	float row=clamp(p.y-(upper ? 85.5 : 31.5),0.0,upper ? 24.0 : 45.0);
@@ -46,19 +46,38 @@ vec3 field_round_barrel(vec3 original,vec2 p,int station) {
 	vec3 enamel=upper ? vec3(0.55,0.57,0.425) : vec3(0.28,0.30,0.19);
 	vec3 colour=enamel*(0.36+0.56*diffuse);
 	colour+=reflection*(upper ? vec3(0.16,0.16,0.125) : vec3(0.08,0.08,0.06));
-	colour+=field_grain(p*vec2(7.0,9.0))*0.010+field_grain(p*1.7)*0.005;
+	// Grain follows the curved painted surface at a resolvable spatial scale.
+	// Fine satin texture avoids the earlier oversampled, flat-looking finish.
+	float grain_scale=min(24.0,half_width*0.75);
+	vec2 paint_uv=vec2(asin(clamp(x,-0.995,0.995))*grain_scale,p.y*1.3);
+	colour+=field_grain(paint_uv)*0.014+field_grain(p*0.23)*0.004;
 	// Elliptical seams wrap around the cylinder instead of joining flat facets.
 	float collar=upper ? 100.5+2.1*x*x : 56.0+3.4*dome;
 	float rim=upper ? 85.5+1.2*x*x : 74.0+1.4*dome;
 	float groove=1.0-smoothstep(0.10,0.34,abs(p.y-collar));
 	float end_rim=1.0-smoothstep(0.08,0.28,abs(p.y-rim));
-	float lip=1.0-smoothstep(0.10,0.42,abs(p.y-collar+0.42));
-	colour*=1.0-groove*0.48-end_rim*0.26;
-	colour+=lip*(upper ? 0.035 : 0.018)*vec3(1.0,1.0,0.8);
+	float lip=1.0-smoothstep(0.08,0.30,abs(p.y-collar+0.35));
+	float seat=1.0-smoothstep(0.20,0.85,abs(p.y-collar));
+	float rim_lip=1.0-smoothstep(0.06,0.24,abs(p.y-rim-(upper ? 0.32 : -0.32)));
+	colour*=1.0-groove*0.36-end_rim*0.22-seat*0.08;
+	colour+=(lip*(upper ? 0.045 : 0.026)+rim_lip*0.023)*(0.35+0.65*diffuse)*vec3(1.0,1.0,0.8);
+	if(!upper) {
+		// Continue the same smooth metal into both existing mounting collars.
+		// Their old donor seams were ragged; no new hardware or coverage is added.
+		float mount=21.0+6.5*dome;
+		float socket=34.0+6.4*dome;
+		float seams=(1.0-smoothstep(0.09,0.32,abs(p.y-mount)))
+			+(1.0-smoothstep(0.09,0.32,abs(p.y-socket)));
+		float bevels=(1.0-smoothstep(0.08,0.30,abs(p.y-mount+0.40)))
+			+(1.0-smoothstep(0.08,0.30,abs(p.y-socket+0.40)));
+		colour*=1.0+0.14*(1.0-smoothstep(24.0,42.0,p.y));
+		colour*=1.0-seams*0.34;
+		colour+=bevels*(0.012+0.023*diffuse)*vec3(1.0,1.0,0.8);
+	}
 	// The underside emerges from a curved collar. A straight horizontal fade
 	// would look like a cut even with a continuous cylindrical normal field.
 	float blend=upper ? smoothstep(start,start+0.8,p.y)*(1.0-smoothstep(end-0.6,end,p.y))
-		: smoothstep(32.0+2.6*dome,39.0+2.6*dome,p.y);
+		: smoothstep(17.5+1.6*dome,21.0+1.6*dome,p.y);
 	blend*=1.0-smoothstep(0.94,1.06,abs(across));
 	return mix(original,clamp(colour,vec3(0.0),vec3(1.0)),blend*0.96);
 }

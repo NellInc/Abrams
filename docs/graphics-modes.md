@@ -2774,3 +2774,25 @@ are the accepted result. Local source only, with no app/Web build or publication
 Working if: both caps and their surface highlights are continuous and rounded,
 curves fail closed outside the original fit tolerance, non-Tactical geometry
 restores exactly, and ownership and unrelated-screen-pixel checks stay clean.
+
+### Forward barrel collar and paint finish (29 October 2026)
+
+A further RGB-only pass extends the continuous driver finish through the two
+existing upper mounting collars. Smooth elliptical seams and narrow light-facing
+bevels replace their ragged donor ink. Both views receive restrained rim lighting,
+soft collar-seat shadows and curved satin-paint grain, with grain scale bounded
+by the source-profile radius. The accepted cap contours, mesh/cache code, source
+masks, opacity, UV registration, clocks and both caller shaders are unchanged.
+No new hardware, texture asset, camera data or audio change is introduced.
+
+The lead reviewed its own native retained-source replays at 960x540 and 1600x900.
+Same-process comparisons against the accepted 9511ec4 materials show zero changed
+pixels outside barrel regions. Source-ownership checks, including controlled
+driver offsets -16, 0 and +16, report zero forbidden pixels. The 88 cockpit checks
+pass; touched-file lint is clean. This is local visual replay evidence, with no
+fresh guest playthrough, performance or publication claim. Evidence:
+`artifacts/barrel-finish-20261029/acceptance.json`.
+
+Working if: the upper underside collars join cleanly into the rounded barrel,
+rim highlights stay restrained, accepted contours remain exact and unrelated
+screen pixels, source timing and ownership masks are unchanged.
