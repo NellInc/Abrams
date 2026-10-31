@@ -10,6 +10,8 @@ var genesis: Button
 var recheck: Button
 var dialog: FileDialog
 var import_kind := ""
+## A failed action's message, shown again after the recheck that follows it.
+var held_error := ""
 var runtime := OS.get_environment("ABRAMS_PYTHON")
 const InterfaceTheme = preload("res://scripts/pc_interface_theme.gd")
 var pc_state: Label
@@ -193,13 +195,16 @@ func _sync_controls() -> void:
     genesis.disabled = busy or not installed
     recheck.disabled = busy
     pc_state.text="Original PC game · Verified" if installed else "Original PC game · Required"
-    if not busy and root.gui_get_focus_owner() == null:
+    # A button disabled while focused keeps focus, so Enter would do nothing.
+    var focused := root.gui_get_focus_owner()
+    if not busy and (focused == null or (focused is BaseButton and focused.disabled)):
         if installed: play.grab_focus.call_deferred()
         else: pc.grab_focus.call_deferred()
 
 func _failed(text: String) -> void:
     busy = false
     installed = false
+    held_error = ""
     message.text = text
     genesis_state.text = "Genesis presentation · Optional"
     _sync_controls()
@@ -222,7 +227,7 @@ func _request(arguments: Array) -> void:
     thread = Thread.new()
     var error := _start_worker(func():
         var result := _run_runtime(PackedStringArray(["--launcher", "--invoke"] + arguments))
-        _completed.call_deferred(result[0], result[1], "--play" in arguments))
+        _completed.call_deferred(result[0], result[1], arguments[0]))
     if error != OK:
         thread = null
         _failed("Setup could not start verification (error %d). Close unused applications and choose Recheck installation." % error)
@@ -261,15 +266,24 @@ func _run_runtime(arguments: PackedStringArray) -> Array:
 func _valid_status(result: Variant) -> bool:
     return result is Dictionary and typeof(result.get("pc_installed")) == TYPE_BOOL and typeof(result.get("genesis_enabled")) == TYPE_BOOL
 
-func _completed(code: int, output: String, was_play: bool) -> void:
+## request is the runtime operation: --status, --play, --game or --genesis.
+func _completed(code: int, output: String, request: String) -> void:
     if thread != null:
         thread.wait_to_finish()
         thread = null
     busy = false
-    if was_play and code == 0:
+    if request == "--play" and code == 0:
         _request(["--status"])
         return
     var result = JSON.parse_string(output)
+    if code != 0 and request != "--status":
+        # A failed game, import or close changes nothing already verified. Keep
+        # its message, then recheck so the card and buttons show the real state
+        # instead of disabling Play on an intact installation.
+        held_error = str(result.get("error", output)) if result is Dictionary else output
+        if held_error.strip_edges() == "": held_error = "That action failed. Your originals and saves are unchanged."
+        _request(["--status"])
+        return
     installed = false
     genesis_state.text = "Genesis presentation · Optional"
     if code != 0:
@@ -282,6 +296,9 @@ func _completed(code: int, output: String, was_play: bool) -> void:
         genesis_state.text="Genesis presentation · Enabled" if installed and result.genesis_enabled else "Genesis presentation · Optional"
     else:
         message.text = "Setup returned an unexpected response. Choose Recheck installation. Existing saves have been preserved."
+    # The recheck after a failed action shows that action's error, not "Ready".
+    if code == 0 and _valid_status(result) and not held_error.is_empty(): message.text = held_error
+    held_error = ""
     _sync_controls()
     if "--setup-smoke" in OS.get_cmdline_user_args():
         if code != 0 or installed or not _valid_status(result):

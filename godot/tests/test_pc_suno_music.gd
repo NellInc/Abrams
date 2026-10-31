@@ -12,6 +12,28 @@ func check(ok: bool, label: String)->void:
 func packet(frame: int, enabled: bool=true, event: bool=false)->Dictionary:
 	return {"schema":3,"frame":frame,"epoch":1,"last_id":1 if event else 0,"active":true,"enabled":enabled,"loops":{},
 		"events":[{"id":1,"frame":frame,"epoch":1,"kind":"sound","ip":0x9107,"return_ip":0x33c4,"value":1,"backend":0,"enabled":true,"sample":"cannon","voice":"on_the_way"}] if event else []}
+## A save restarts the worker: primer at epoch 0, then SIM reattaches at a new
+## epoch, with original frames continuing from the checkpoint. The score keeps
+## its combat hold and outcome across that adoption.
+func check_save_continuation()->void:
+	var audio:=Audio.new()
+	root.add_child(audio)
+	await process_frame
+	var bank:=Score.new()
+	audio.music_bank=bank
+	var cannon:={"id":1,"frame":50000,"epoch":1,"kind":"sound","ip":0x9107,"return_ip":0x33c4,"value":1,"backend":0,"enabled":true,"sample":"cannon","voice":"on_the_way"}
+	check(audio.apply_audio({"schema":3,"frame":50000,"epoch":1,"last_id":1,"active":true,"enabled":true,"loops":{},"events":[cannon]}),"combat shot accepted before the save")
+	var hold:=[bank.battle_until,bank.battle_index]
+	check(hold[0]==50900 and hold[1]>=0,"shot holds battle score")
+	bank.observe_event({"voice":"pc_radio_complete"})
+	audio.continue_timeline()
+	check(audio.apply_audio({"schema":3,"frame":50000,"epoch":0,"last_id":0,"active":false,"enabled":false,"loops":{},"events":[]}),"resumed primer accepted")
+	check(audio.apply_audio({"schema":3,"frame":50001,"epoch":1,"last_id":0,"active":true,"enabled":true,"loops":{},"events":[]}),"resumed SIM packet accepted")
+	check([bank.battle_until,bank.battle_index]==hold and bank.source_frame==50001,"save keeps the remaining battle hold in original frames")
+	check(bank.result=="success","save keeps the visible mission outcome")
+	await audio.drain_for_shutdown()
+	root.remove_child(audio);audio.free()
+
 func run()->void:
 	var bank:=Score.new()
 	var source:=Image.create(320,200,false,Image.FORMAT_RGB8);source.fill(Color.BLACK)
@@ -53,8 +75,8 @@ func run()->void:
 	check(bank.context_for_frame(source,end,{"frontend_program":end,"text_runs":[]})=="friendly_fire","verdict holds across original END redraws")
 	bank.reset_score();source.set_pixel(0,0,Color.WHITE)
 	check(bank.context_for_frame(source,end,{"frontend_program":end,"text_runs":[run]}).is_empty(),"changed verdict pixels cannot assert guilt")
-	bank.update_source(packet(100));bank.observe_event({"sample":"cannon"});bank.rebase_source()
-	check(bank.battle_until==900 and bank.source_frame==0,"save-host restart preserves remaining hold")
+	await check_save_continuation()
+	bank.update_source(packet(100));bank.observe_event({"sample":"cannon"})
 	bank.reset_score();check(bank.result.is_empty() and bank.battle_until==-1,"restore clears outcome and combat holds")
 	if FileAccess.file_exists(bank.directory.path_join("manifest.json")):
 		bank.prewarm()

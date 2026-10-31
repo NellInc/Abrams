@@ -345,8 +345,9 @@ func continue_timeline() -> void:
 	receipts.clear()
 	loop_transitions.clear()
 	continuing_timeline=true
-	music_bank.rebase_source()
-	world_audio.reset_rocket_timeline()
+	# The score keeps its holds and outcome: the resumed worker continues the
+	# original frame count from the checkpoint, so nothing is rebased.
+	world_audio.continue_source_timeline()
 
 func play(cue: String, override_stream: AudioStream = null) -> void:
 	if not transport_muted: super.play(cue,override_stream)
@@ -559,9 +560,12 @@ func apply_audio(packet: Dictionary) -> bool:
 	supplemental.begin_packet()
 	# Adopting the resumed worker's epoch is not a program change. Its source
 	# gates (inactive with events, or sound disabled) still stop everything.
-	if (int(packet.epoch) != epoch and not continuing_timeline) or not packet.active or not packet.enabled: _stop_source_audio()
+	# Read before the flag clears: the first active resumed packet adopts the
+	# new epoch without resetting the score (holds, battle cue, outcome).
+	var adopting := continuing_timeline
+	if (int(packet.epoch) != epoch and not adopting) or not packet.active or not packet.enabled: _stop_source_audio()
 	if packet.active: continuing_timeline = false
-	if int(packet.epoch)!=epoch and not continuing_timeline: music_bank.reset_score()
+	if int(packet.epoch)!=epoch and not adopting: music_bank.reset_score()
 	music_bank.update_source(packet)
 	if music_bank.independent and packet.active and music_source_program=="SIM":
 		music_allowed=packet.enabled and not music_context.is_empty()

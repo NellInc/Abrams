@@ -62,6 +62,20 @@ class PortableOutputTests(unittest.TestCase):
         self.assertIsNotNone(children[0].poll())
         self.assertTrue(children[0].stdout.closed and children[0].stderr.closed)
 
+    def test_setup_timeout_reports_a_player_message(self):
+        timeout = subprocess.TimeoutExpired(['/internal/runtime/AbramsRuntime', '--game', '/chosen'], 300)
+        with patch.object(launcher, 'verify'), patch.object(launcher, 'invoke_runtime', side_effect=timeout), patch.object(sys, 'argv', ['launcher', '--bundle', '/synthetic', '--invoke', '--status']), contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(launcher.main(), 1)
+        self.assertEqual(output.getvalue().strip(), '{"error": "%s"}' % launcher.TIMEOUT_MESSAGE)
+
+    def test_launch_failure_is_recorded_for_the_windows_dialog(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / 'profile'
+            with patch.object(launcher, 'verify', side_effect=ValueError('Portable runtime changed: kit/x')), patch.object(sys, 'argv', ['launcher', '--bundle', '/synthetic', '--data-home', str(home)]), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(launcher.main(), 1)
+            self.assertEqual((home.resolve() / 'logs/setup.log').read_text(encoding='utf-8'), 'Startup failed: Portable runtime changed: kit/x\n')
+
     def test_setup_300_seconds_and_gameplay_no_timeout(self):
         for extra, expected in [(['--status'], 300), (['--play'], None)]:
             with self.subTest(extra=extra), patch.object(launcher, 'verify'), patch.object(launcher, 'invoke_runtime', return_value=subprocess.CompletedProcess([],0,'{}','')) as invoke, patch.object(sys, 'argv', ['launcher', '--bundle', '/synthetic', '--invoke', *extra]), contextlib.redirect_stdout(io.StringIO()):

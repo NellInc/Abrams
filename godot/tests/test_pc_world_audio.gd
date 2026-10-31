@@ -929,6 +929,18 @@ func environment_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	check(not world.players.cow.playing and world._cow_exposure == 6000, "long source gaps restart exposure without catchup")
 	audio.set_transport_muted(true);audio.set_transport_muted(false);world.admitted.assign(["cow"]);world.refresh()
 	check(not world.players.cow.playing, "pause/mute release cannot replay a consumed call")
+	# A save restarts the worker: primer at epoch 0, then SIM at a new epoch,
+	# with source frames continuing. The consumed call's cooldown survives.
+	for frame: int in range(6060,6400,60):
+		audio.apply_audio(packet(frame));world.admitted.assign(["cow"]);world.refresh()
+	var before_save: int = world._cow_fired
+	check(before_save >= 6180, "fresh call after exposure, before the save")
+	audio.continue_timeline()
+	audio.apply_audio({"schema":3,"frame":6400,"epoch":0,"last_id":0,"active":false,"enabled":false,"events":[],"loops":{}})
+	world.admitted.assign(["cow"]);world.refresh()
+	for frame: int in range(6401,7000,60):
+		audio.apply_audio(packet(frame));world.admitted.assign(["cow"]);world.refresh()
+	check(world._cow_fired == before_save and world._cow_epoch == 1 and not world._cow_continuing, "a save keeps the call cooldown across the resumed epochs")
 	audio.reset_timeline()
 	check(world._cow_fired == -1 and world._cow_exposure == -1, "checkpoint reset clears source-only scheduler")
 	check(await audio.drain_for_shutdown(), "new environment players drain through existing audio shutdown")

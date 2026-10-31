@@ -145,7 +145,30 @@ def main():
             'res://scripts/portable_setup.gd','--check-only'],env,log)
         return subprocess.call([str(renderer),'--path',str(bundle/'kit/godot'),
             '--script','res://scripts/portable_setup.gd',*extra],env=env)
+    except subprocess.TimeoutExpired:
+        print(json.dumps({'error':TIMEOUT_MESSAGE}));return 1
     except (ValueError,OSError,KeyError,subprocess.SubprocessError) as error:
-        print(json.dumps({'error':str(error)}));return 1
+        print(json.dumps({'error':str(error)}))
+        # The Windows launcher discards this output and its dialog sends the
+        # player to the profile logs, so the launch path records the reason.
+        if not args.invoke: record_startup_error(bundle,args.data_home,str(error))
+        return 1
+
+
+TIMEOUT_MESSAGE='Verification took longer than five minutes. Choose Recheck installation; your originals and saves are unchanged.'
+
+
+def record_startup_error(bundle,data_home,message):
+    """Best effort: append to setup.log in the requested profile, else the default one."""
+    for requested in ([data_home] if data_home else [])+[None]:
+        try:
+            home=profile_home(bundle,requested)
+            logs=managed(home,home/'logs');logs.mkdir(parents=True,exist_ok=True)
+            with managed(home,logs/'setup.log').open('a',encoding='utf-8') as stream:
+                stream.write('Startup failed: '+message+'\n')
+            return True
+        except (ValueError,OSError):
+            continue
+    return False
 
 if __name__=='__main__':raise SystemExit(main())

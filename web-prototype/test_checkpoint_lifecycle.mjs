@@ -74,6 +74,20 @@ test('pre-serialised sample JSON passes through take() unchanged; malformed JSON
   bridge.close();
 });
 
+test('a failure Godot detects reaches the page recovery once', async () => {
+  const statuses = [];
+  const bridge = createBridgeHost(new Uint8Array(1), new Uint8Array(1), 'a'.repeat(64), value => statuses.push(value));
+  FakeWorker.last.emit({type: 'packet', packet: {type: 'ready'}, rgb: new Uint8Array(192000)});
+  await bridge.first;
+  assert.equal(bridge.reportFailure('PC bridge response timed out'), true);
+  bridge.reportFailure('a second report');
+  bridge.close();
+  const errors = statuses.filter(value => value.type === 'error');
+  assert.deepEqual(errors.map(value => value.message), ['PC bridge response timed out']);
+  assert.equal(FakeWorker.last.stops, 1);
+  assert.equal(bridge.queueControl({op: 'graphics'}), false);
+});
+
 test('worker startup/send failures reject viewer readiness too', async () => {
   const bridge = host();
   FakeWorker.last.onerror({message: 'crashed'});
@@ -462,6 +476,10 @@ test('missing and bounded blocked storage permit ready with explicit durable war
     assert.deepEqual(replies.filter(message => message.type === 'progress').map(message => message.frame),
       [30, 60, 90, 120, 150, 180, 210, 240]);
     await assert.rejects(ctx.self.storedSlot('put', 1, {}), /Local checkpoint storage/);
+    // Any requester, including the in-canvas Session menu, is refused for the session.
+    await assert.rejects(ctx.self.state({op: 'save_state', id: 9, slot: 1}), /Checkpoints are unavailable in this session/);
+    await assert.rejects(ctx.self.state({op: 'load_state', id: 10, slot: 0}), /Checkpoints are unavailable in this session/);
+    assert.equal(cores[0].ops.some(message => message.op === 'capture'), false);
   }
 });
 

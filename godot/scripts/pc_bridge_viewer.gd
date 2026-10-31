@@ -12,6 +12,7 @@ const PlayDisplay = preload("res://scripts/pc_play_display.gd")
 const StartupSplash = preload("res://scripts/pc_startup_splash.gd")
 var tactical_dynamics = preload("res://scripts/pc_tactical_dynamics.gd").new()
 var tactical_dynamics_allowed := true
+var reduced_motion_preferred := false
 const Frontdoor = preload("res://scripts/pc_frontdoor.gd")
 const FrontdoorRoute = preload("res://scripts/pc_frontdoor_route.gd")
 var frontdoor: Control
@@ -162,8 +163,6 @@ func _initialize() -> void:
 	capture = "--capture" in OS.get_cmdline_user_args()
 	var args := OS.get_cmdline_user_args()
 	tactical_dynamics_allowed="--no-tactical-dynamics" not in args
-	if OS.has_feature("web"):
-		tactical_dynamics.reduced_motion=bool(JavaScriptBridge.eval("window.matchMedia('(prefers-reduced-motion: reduce)').matches"))
 	var graphics_error := graphics_launch_error(args)
 	if not graphics_error.is_empty():
 		printerr(graphics_error)
@@ -172,6 +171,11 @@ func _initialize() -> void:
 	boot_mode = "--boot" in args or ("--trace" not in args and "--reference" not in args)
 	trace_mode = boot_mode or "--trace" in OS.get_cmdline_user_args()
 	play_mode = trace_mode and "--play" in args and "--compare" not in args
+	# The player's reduced-motion preference stills both Tactical armour motion
+	# and the ending animation. Captures stay deterministic.
+	if play_mode and not capture:
+		reduced_motion_preferred=system_reduced_motion()
+		tactical_dynamics.reduced_motion=reduced_motion_preferred
 	if play_mode:
 		root.title = ProjectSettings.get_setting("application/config/name")
 		root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
@@ -363,7 +367,7 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		play_display.set_hud_style(audio_menu.hud_style)
 		tandem_frame.typography.set_hud_style(audio_menu.hud_style)
 		tandem_frame.frontend_art.set_hud_style(audio_menu.hud_style)
-		tandem_frame.frontend_art.splash_aftermath_art.motion_enabled=ending_motion_allowed(OS.get_cmdline_user_args())
+		tandem_frame.frontend_art.splash_aftermath_art.motion_enabled=ending_motion_allowed(OS.get_cmdline_user_args(),reduced_motion_preferred)
 		tandem_frame.gunner_trim.set_hud_style(audio_menu.hud_style)
 		# Offer Genesis only when its native pack actually loaded (hash-checked).
 		audio_menu.genesis_available=not pc_only and tandem_frame.native_graphics.loaded
@@ -895,6 +899,12 @@ func _reset_audio_timeline() -> void:
 	if state_control_op=="save_state" and pc_audio.has_method("continue_timeline"): pc_audio.call("continue_timeline")
 	else: pc_audio.reset_timeline()
 
+## Presentation audio stays muted through fast forward, a pending load and an
+## intro skip. The skip's next batch is sent later in the same sample; without
+## the skip here music would start and stop between the two calls.
+func _transport_mute() -> bool:
+	return fast_forward>1 or _state_load_muted() or intro_skip_step>=0
+
 func _state_load_muted() -> bool:
 	return state_control_op in STATE_LOAD_OPS or pending_state_command.get("op","") in STATE_LOAD_OPS
 
@@ -1094,16 +1104,19 @@ func _process_frame(delta: float) -> bool:
 		_animate_tactical_dynamics(delta)
 	return false
 
-static func ending_motion_allowed(args: Array) -> bool:
-	if "--no-ending-motion" in args: return false
+static func ending_motion_allowed(args: Array, reduced_motion: bool) -> bool:
+	return "--no-ending-motion" not in args and not reduced_motion
+
+## The browser's or macOS's reduced-motion preference. Read once at Play start.
+static func system_reduced_motion() -> bool:
 	if OS.has_feature("web"):
-		return not bool(JavaScriptBridge.eval("window.matchMedia('(prefers-reduced-motion: reduce)').matches"))
+		return bool(JavaScriptBridge.eval("window.matchMedia('(prefers-reduced-motion: reduce)').matches"))
 	if OS.get_name()=="macOS":
 		var preference: Array=[]
 		# Read the system preference only; never write a player setting.
 		if OS.execute("/usr/bin/defaults",["read","com.apple.universalaccess","reduceMotion"],preference,false)==0 and not preference.is_empty():
-			return str(preference[0]).strip_edges() not in ["1","true"]
-	return true
+			return str(preference[0]).strip_edges() in ["1","true"]
+	return false
 
 func _animate_ending(delta: float) -> void:
 	if _frontdoor_blocked() or capture or closing or state_control_pending or not pending_state_command.is_empty() or not play_mode or tandem_frame==null: return
@@ -1146,6 +1159,10 @@ func _apply_sample(message: Dictionary) -> void:
 	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.slots)
 		_sync_web_controls()
+	# The browser worker could not read checkpoint storage at boot.
+	if message.get("storage_warning") is String and audio_menu and audio_menu.has_method("set_checkpoints_unavailable"):
+		audio_menu.set_checkpoints_unavailable(message.storage_warning)
+		_sync_web_controls()
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
 		pc_audio.set_transport_muted(fast_forward>1 or inflight_fast or _state_load_muted())
 	var dynamics_transport:bool=not inflight_fast and fast_forward<=1 and not _state_load_muted()
@@ -1157,7 +1174,7 @@ func _apply_sample(message: Dictionary) -> void:
 	# Observation can clear an impulse without an animation tick (station/load).
 	if tandem_frame:tandem_frame.set_tactical_dynamics(tactical_dynamics.shift if tactical_dynamics.enabled else Vector2.ZERO)
 	if pc_audio and pc_audio.has_method("set_transport_muted"):
-		pc_audio.set_transport_muted(fast_forward>1 or _state_load_muted())
+		pc_audio.set_transport_muted(_transport_mute())
 	var state = message.get("state")
 	if not state is Dictionary and not trace_mode:
 		bridge.failure = "SIM state is unavailable. No substitute simulation was started."

@@ -438,9 +438,16 @@ class StandaloneRuntimeTests(unittest.TestCase):
     def test_invalid_or_symlinked_receipt_rejected(self):
         self.imported()
         receipt = self.home / 'content/genesis.json'
-        receipt.write_text(json.dumps({'schema': 1, 'rom_sha256': 'unsupported'}))
-        with self.assertRaises(ValueError):
-            runtime.genesis_enabled(self.home, self.manifest)
+        # Unrecognised or damaged content leaves Genesis off and PC play intact;
+        # adding the ROM again is the repair. A link is still refused outright.
+        for content in (json.dumps({'schema': 1, 'rom_sha256': 'unsupported'}),
+                        json.dumps({'schema': 99, 'rom_sha256': runtime.ROM_SHA, 'files': {}, 'unavailable': []}),
+                        '{"truncated', '\udcff'):
+            receipt.write_text(content, errors='surrogateescape')
+            self.assertFalse(runtime.genesis_enabled(self.home, self.manifest))
+            report = runtime.status(self.bundle, self.home)
+            self.assertTrue(report['pc_installed'])
+            self.assertIn('Add the Genesis ROM again', report['problem'])
         receipt.unlink()
         receipt.symlink_to(self.rom)
         with self.assertRaises(ValueError):

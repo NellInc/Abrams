@@ -144,9 +144,6 @@ func observe_event(_event: Dictionary) -> void:
 func reset_score() -> void:
 	pass
 
-func rebase_source() -> void:
-	pass
-
 func _load_intro_fingerprints() -> void:
 	if intro_checked: return
 	intro_checked=true

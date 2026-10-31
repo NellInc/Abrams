@@ -109,6 +109,8 @@ func poll() -> Array[Dictionary]:
 func close() -> void:
 	if closing: return
 	closing = true
+	# Godot-detected failures reach the page's Reload recovery, not a dead canvas.
+	if connected and not failure.is_empty(): host.reportFailure(failure)
 	if connected: host.close()
 
 func has_exited() -> bool:

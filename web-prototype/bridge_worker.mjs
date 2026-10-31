@@ -49,6 +49,9 @@ const storedSlots = new Map();
 const previousSlots = new Map();
 const previousKey = slot => `previous-${slot}`;
 let undo;
+// Set when boot could not read checkpoint storage: checkpoints stay refused for
+// the session, whatever requests them, so no unread slot is ever overwritten.
+let storageUnavailable = '';
 let buildId;
 let database;
 
@@ -286,6 +289,7 @@ async function boot(message) {
     throw new Error('Browser core build identity is missing');
   buildId = message.buildId;
   let storageWarning;
+  storageUnavailable = '';
   try {
     for (let slot = 0; slot <= 5; slot++) {
       const saved = await storedSlot('get', slot);
@@ -305,6 +309,7 @@ async function boot(message) {
     previousSlots.clear();
     undo = undefined;
     storageWarning = String(error?.message || error);
+    storageUnavailable = storageWarning;
   }
   core = await spawnCore();
   while (frames < HIDDEN_BOOT_FRAMES) {
@@ -366,6 +371,7 @@ async function state(message) {
       !Number.isInteger(message.slot) || message.slot < 0 || message.slot > 5 ||
       (message.op !== 'load_state' && message.slot === 0))
     throw new Error('Invalid local state request');
+  if (storageUnavailable) throw new Error(`Checkpoints are unavailable in this session: ${storageUnavailable}`);
   if (message.op === 'save_state') {
     const saved = checkpointRow(await core.call('capture', {frames}));
     const overwritten = storedSlots.get(message.slot);

@@ -86,7 +86,9 @@ vanish with their original source footprint, with no persistent debris or new
 collision. Menus, lost focus and the original pause freeze the explicit clocks;
 checkpoint timeline resets, station changes and graphics re-entry discard stale
 armour impulses. Captures remain deterministic unless explicitly advanced.
-Browser reduced-motion preference is honoured at startup; native Play accepts
+The browser's and macOS's reduced-motion preferences are honoured at Play
+startup, for this motion and the ending animation alike (31 October 2026; before
+then macOS stilled only the ending). Native Play also accepts
 `--no-tactical-dynamics`. Other graphics modes, gameplay and save formats are
 unchanged.
 

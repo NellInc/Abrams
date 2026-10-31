@@ -459,15 +459,19 @@ def genesis_state(home, manifest):
     receipt = managed(home, home/'content/genesis.json')
     if not receipt.exists(): return False, ''
     if not regular(receipt): raise ValueError('Genesis receipt must be a regular file')
-    data = json.loads(receipt.read_text())
+    # An unreadable or unrecognised receipt (another version's, or damaged)
+    # leaves Genesis off and PC play available; adding the ROM rewrites it.
+    unrecognised = (False, 'This version does not recognise the saved Genesis import. Add the Genesis ROM again to enable it.')
+    try: data = json.loads(receipt.read_text())
+    except (ValueError, UnicodeDecodeError): return unrecognised
     if data == {'schema': 1, 'rom_sha256': ROM_SHA}:
         return False, 'This version derives its Genesis presentation from the ROM itself. Add the Genesis ROM again to enable it.'
     if (not isinstance(data, dict) or set(data) != {'schema', 'rom_sha256', 'files', 'unavailable'}
             or data['schema'] != GENESIS_RECEIPT_SCHEMA or data['rom_sha256'] != ROM_SHA
             or not isinstance(data['files'], dict) or not isinstance(data['unavailable'], list)):
-        raise ValueError('Unsupported Genesis import receipt')
+        return unrecognised
     for digest in data['files'].values():
-        if not re.fullmatch(r'[0-9a-f]{64}', str(digest)): raise ValueError('Unsupported Genesis import receipt')
+        if not re.fullmatch(r'[0-9a-f]{64}', str(digest)): return unrecognised
         path = stored(home, digest)
         if not regular(path) or sha(path) != digest:
             return False, 'Imported Genesis data is missing or changed. Add the Genesis ROM again.'

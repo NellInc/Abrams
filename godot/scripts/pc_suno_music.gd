@@ -83,11 +83,6 @@ func reset_score() -> void:
 	result="";end_context="";last_program=""
 	_screen_bytes.clear();_screen_program="";_screen_context=""
 
-func rebase_source() -> void:
-	battle_until=maxi(-1,battle_until-source_frame)
-	crisis_until=maxi(-1,crisis_until-source_frame)
-	source_frame=0
-
 func gameplay_context(state: Variant, program: Dictionary) -> String:
 	if not state is Dictionary or state.get("basis")!="original-PC-SIM-read-only" or state.get("load_segment")!=program.get("load_segment") or state.get("station") not in ["gunner","commander","cupola","driver"]: return ""
 	if not result.is_empty(): return result

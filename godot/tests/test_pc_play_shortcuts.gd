@@ -259,6 +259,14 @@ func run() -> void:
 	menu.quick_load(1)
 	check(commands.size()==web_before,"cover blocks browser quick save and load")
 	menu.frontdoor_active=false
+	# Browser storage unreadable at boot: no checkpoint from any menu or chord.
+	menu.set_state_status([{"slot":1},{"slot":0}])
+	menu.set_checkpoints_unavailable("Local checkpoint storage is blocked by another tab")
+	menu.quick_save();menu.quick_load(1)
+	check(commands.size()==web_before and notices[-1].begins_with("Checkpoints are unavailable") and not menu.request_state("save_state",2),"unavailable storage refuses every checkpoint with its reason")
+	check(menu.save_popup.is_item_disabled(menu.save_popup.get_item_index(1)) and menu.load_popup.is_item_disabled(menu.load_popup.get_item_index(1)) and menu.load_popup.is_item_disabled(menu.load_popup.get_item_index(0)),"Session menu disables save and load")
+	check(menu.session_popup.get_item_text(menu.session_popup.get_item_index(100)).contains("blocked by another tab"),"Session menu names why checkpoints are unavailable")
+	menu.checkpoints_unavailable=""
 	check(FileAccess.get_file_as_bytes("user://pc_graphics.cfg")==profile and FileAccess.get_file_as_bytes("user://pc_audio.cfg")==audio_profile,"player's saved settings untouched")
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_PLAY_SHORTCUTS: %d checks, %d errors"%[checks,errors.size()])

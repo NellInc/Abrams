@@ -121,6 +121,12 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
       if (!value) return false;
       onControls?.(value); return true;
     },
+    // A failure Godot detected itself (timeout, invalid reply or audio) takes
+    // the worker-failure route, so the page offers Reload with this message.
+    reportFailure(message) {
+      fail(String(message || 'Original PC bridge failed'));
+      return true;
+    },
     close() {
       if (closed) return true;
       closed = true;

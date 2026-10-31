@@ -91,6 +91,7 @@ var _cow_epoch: int = -1
 var _cow_frame: int = -1
 var _cow_exposure: int = -1
 var _cow_fired: int = -1
+var _cow_continuing := false
 var streams: Dictionary = {}
 var players: Dictionary = {}
 var host: Node
@@ -632,6 +633,13 @@ func cue_gain(cue: String) -> float:
 
 func reset_source_timeline() -> void:
 	_cow_epoch = -1; _cow_frame = -1; _cow_exposure = -1; _cow_fired = -1
+	_cow_continuing = false
+	reset_rocket_timeline()
+
+## A save restarts the worker without rewinding the guest: its primer (epoch 0)
+## and reattached SIM epoch are adopted, keeping the call cooldown and exposure.
+func continue_source_timeline() -> void:
+	_cow_continuing = true
 	reset_rocket_timeline()
 
 func reset_rocket_timeline() -> void:
@@ -711,11 +719,13 @@ func _refresh_cow(player: AudioStreamPlayer, gain: float) -> void:
 	# Working if: held frames/re-entry/mute cannot replay a call or catch up.
 	var frame: int = host.last_frame
 	var epoch: int = host.epoch
-	if epoch != _cow_epoch or frame < _cow_frame:
+	if (epoch != _cow_epoch and not _cow_continuing) or frame < _cow_frame:
 		# Cow scheduling initializes independently of the same-draw rocket proof.
 		# Working if: first cow refresh cannot erase a qualified launch cache.
 		_cow_frame = -1; _cow_exposure = -1; _cow_fired = -1
-		_cow_epoch = epoch
+	_cow_epoch = epoch
+	# Adoption ends with the first active resumed packet's epoch.
+	if not host.continuing_timeline: _cow_continuing = false
 	if not allowed() or "cow" not in admitted or gain <= 0:
 		_cow_exposure = -1
 		host._remember_playback(player); player.stop()

@@ -42,6 +42,7 @@ var save_popup: PopupMenu
 var load_popup: PopupMenu
 var state_slots: Array = []
 var state_message := "Save states include the campaign disk. Loading rewinds both."
+var checkpoints_unavailable := ""
 var help_popup: PopupMenu
 # A quick save onto an occupied slot needs a second press inside this window.
 const OVERWRITE_CONFIRM_MSEC := 4000
@@ -348,6 +349,9 @@ func handle_shortcut(event: InputEvent) -> bool:
 ## is replaced only by a second press within OVERWRITE_CONFIRM_MSEC.
 func quick_save() -> void:
 	if frontdoor_active or busy: return
+	if not checkpoints_unavailable.is_empty():
+		control_notice.emit(checkpoints_unavailable)
+		return
 	var saved := _slot_entry(1)
 	if saved.is_empty() or Time.get_ticks_msec()<overwrite_armed_until:
 		overwrite_armed_until=0
@@ -359,6 +363,9 @@ func quick_save() -> void:
 ## Quick load from slot 1, or Undo last load (recovery slot 0), with feedback.
 func quick_load(slot: int) -> void:
 	if frontdoor_active or busy or slot not in [0,1]: return
+	if not checkpoints_unavailable.is_empty():
+		control_notice.emit(checkpoints_unavailable)
+		return
 	if not request_state("load_state",slot):
 		control_notice.emit("No recovery state available" if slot==0 else "Slot 1 is empty or unavailable")
 
@@ -432,8 +439,15 @@ func choose_speed(multiplier: int) -> bool:
 	control_notice.emit("8x fast forward (sound muted)" if multiplier==8 else "Normal speed")
 	return true
 
+## The browser could not read its checkpoint storage at startup: every save and
+## load is refused for the session, here as in the page toolbar and the worker.
+func set_checkpoints_unavailable(reason: String) -> void:
+	checkpoints_unavailable="Checkpoints are unavailable in this session: "+reason
+	state_message=checkpoints_unavailable
+	refresh_controls()
+
 func request_state(operation: String, slot: int) -> bool:
-	if frontdoor_active or busy or operation not in ["save_state","load_state","load_previous"]: return false
+	if frontdoor_active or busy or not checkpoints_unavailable.is_empty() or operation not in ["save_state","load_state","load_previous"]: return false
 	if operation=="save_state" and (slot<1 or slot>5): return false
 	if operation=="load_state" and not _has_slot(slot): return false
 	# Only a host that lists the archive accepts the operation.
@@ -507,16 +521,17 @@ func refresh_controls() -> void:
 	for index in speed_popup.item_count:
 		speed_popup.set_item_checked(index,speed_popup.get_item_id(index)==speed)
 		speed_popup.set_item_disabled(index,busy)
+	var refused: bool=busy or not checkpoints_unavailable.is_empty()
 	for slot in range(1,6):
-		save_popup.set_item_disabled(save_popup.get_item_index(slot),busy)
+		save_popup.set_item_disabled(save_popup.get_item_index(slot),refused)
 		var available := _has_slot(slot)
 		var saved := _slot_entry(slot)
 		var stored := "empty" if saved.is_empty() else str(saved.get("saved_at","saved")) if available else "invalid or incompatible"
 		# Saving names what it replaces, as Load does.
 		save_popup.set_item_text(save_popup.get_item_index(slot),("Slot %d (empty)"%slot if saved.is_empty() else "Slot %d (overwrite %s)"%[slot,stored])+(" ("+shortcut_prefix()+"S)" if slot==1 else ""))
-		load_popup.set_item_disabled(load_popup.get_item_index(slot),busy or not available)
+		load_popup.set_item_disabled(load_popup.get_item_index(slot),refused or not available)
 		load_popup.set_item_text(load_popup.get_item_index(slot),"Slot %d (%s)"%[slot,stored]+(" ("+shortcut_prefix()+"L)" if slot==1 else ""))
-	load_popup.set_item_disabled(load_popup.get_item_index(0),busy or not _has_slot(0))
+	load_popup.set_item_disabled(load_popup.get_item_index(0),refused or not _has_slot(0))
 	load_popup.set_item_text(load_popup.get_item_index(0),"Undo last load ("+shortcut_prefix()+"Shift+L)")
 	# Overwritten archives are listed only while the host advertises them, so
 	# the menu never offers an operation the host would reject.
@@ -527,5 +542,5 @@ func refresh_controls() -> void:
 		if previous.is_empty(): continue
 		if load_popup.get_item_index(PREVIOUS_ID)<0: load_popup.add_separator("",PREVIOUS_ID)
 		load_popup.add_item("Overwritten slot %d (%s)"%[slot,previous],PREVIOUS_ID+slot)
-		load_popup.set_item_disabled(load_popup.get_item_index(PREVIOUS_ID+slot),busy)
+		load_popup.set_item_disabled(load_popup.get_item_index(PREVIOUS_ID+slot),refused)
 	session_popup.set_item_text(session_popup.get_item_index(100),state_message)

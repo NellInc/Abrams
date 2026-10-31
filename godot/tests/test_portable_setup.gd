@@ -7,9 +7,11 @@ var starts := 0
 func _runtime_available() -> bool:
     return available
 
+var start_ok := false
+
 func _start_worker(_work: Callable) -> Error:
     starts += 1
-    return ERR_CANT_CREATE
+    return OK if start_ok else ERR_CANT_CREATE
 
 func check(ok: bool, label: String) -> void:
     if not ok: failures.append(label)
@@ -34,15 +36,35 @@ func run() -> void:
     busy = false
     for invalid in ["null", "[]", "{}", '{"pc_installed":"true","genesis_enabled":false}', '{"pc_installed":1,"genesis_enabled":false}', '{"pc_installed":true,"genesis_enabled":1}', '{"pc_installed":true}', '{"pc_installed":null,"genesis_enabled":false}']:
         installed = true
-        _completed(0, invalid, false)
+        _completed(0, invalid, "--status")
         check(not installed and play.disabled and genesis.disabled, "malformed status cannot reuse prior installation proof: " + invalid)
         check("unexpected response" in message.text and "Verified" not in pc_state.text, "malformed success remains visibly unverified")
-    _completed(0, '{"pc_installed":false,"genesis_enabled":false}', false)
+    _completed(0, '{"pc_installed":false,"genesis_enabled":false}', "--status")
     check(not installed and play.disabled and genesis.disabled and not recheck.disabled, "valid absent installation remains importable")
-    _completed(0, '{"pc_installed":true,"genesis_enabled":true}', false)
+    _completed(0, '{"pc_installed":true,"genesis_enabled":true}', "--status")
     check(installed and not play.disabled and not genesis.disabled and "Enabled" in genesis_state.text, "boolean verified proof enables play and optional import")
-    _completed(1, '{"error":"Synthetic verification failed"}', false)
+    _completed(1, '{"error":"Synthetic verification failed"}', "--status")
     check(not installed and play.disabled and "Synthetic verification failed" == message.text, "failed recheck invalidates prior proof and preserves error")
+    # A failed game or import keeps a verified install playable: its message
+    # survives the recheck that restores the real state.
+    for request in ["--play", "--game", "--genesis"]:
+        _completed(0, '{"pc_installed":true,"genesis_enabled":false}', "--status")
+        play.grab_focus()
+        start_ok = true
+        var before := starts
+        _completed(1, '{"error":"Synthetic game error"}', request)
+        check(starts == before + 1 and busy and held_error == "Synthetic game error", "failed " + request + " rechecks instead of clearing the install")
+        busy = false
+        thread = null
+        start_ok = false
+        _completed(0, '{"pc_installed":true,"genesis_enabled":false}', "--status")
+        check(installed and not play.disabled and message.text == "Synthetic game error" and held_error.is_empty(), "failed " + request + " leaves Play enabled and shows its error")
+    play.grab_focus()
+    installed = false
+    _sync_controls()
+    await process_frame
+    check(play.disabled and root.gui_get_focus_owner() == pc, "a focused button disabled by state hands focus to PC import")
+    _completed(0, '{"pc_installed":true,"genesis_enabled":false}', "--status")
     _pick("genesis")
     check(dialog.file_mode == FileDialog.FILE_MODE_OPEN_FILE and dialog.filters.size() == 1, "ROM picker supports raw file filters")
     check("*.md" in dialog.filters[0] and "*.bin" in dialog.filters[0] and "*.gen" in dialog.filters[0] and "*.smd" not in dialog.filters[0], "raw ROM guidance excludes interleaved SMD")

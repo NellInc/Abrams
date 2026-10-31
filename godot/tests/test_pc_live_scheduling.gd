@@ -138,6 +138,10 @@ func run() -> void:
 	check(audio_requested(true,["--audio"]),"legacy explicit audio remains supported")
 	check(not audio_requested(true,["--no-audio"]),"explicit diagnostic audio disable")
 	check(not audio_requested(false,[]),"reference-only protocol cannot enable trace audio")
+	# One reduced-motion preference governs the ending animation and armour motion.
+	check(ending_motion_allowed([],false) and not ending_motion_allowed([],true) and not ending_motion_allowed(["--no-ending-motion"],false),"ending motion follows the preference and its opt-out")
+	check(typeof(system_reduced_motion())==TYPE_BOOL,"system reduced-motion preference reads as a boolean")
+	check(not reduced_motion_preferred and not tactical_dynamics.reduced_motion,"diagnostics never read the system preference")
 	var chunked := capture_chunks([[413,["up"]],[3,["kp5"]],[120,[]]])
 	var expanded: Array = []
 	for step: Array in chunked:
@@ -424,6 +428,9 @@ func run() -> void:
 	for script in ["printf '{\"type\":\"error\",\"message\":\"Rebuild the local trace core for X\"}\\n'","exit 1"]:
 		var real := Bridge.new()
 		real.process=OS.execute_with_pipe("/bin/sh",["-c",script],false)
+		# As start() does: without it the 30 s response deadline counts from engine
+		# start, and a slow run reports a timeout instead of the exit under test.
+		real.request_started=Time.get_ticks_msec()
 		var deadline := Time.get_ticks_msec()+5000
 		while OS.is_process_running(int(real.process.pid)) and Time.get_ticks_msec()<deadline: OS.delay_msec(10)
 		real.poll()
@@ -553,6 +560,10 @@ func check_intro_controls(period: float) -> void:
 	root.window_input.emit(escape)
 	escape.pressed=false;root.window_input.emit(escape)
 	check(bridge.pending and intro_skip_step==0,"brief Escape tap latches while an original frame is outstanding")
+	check(_transport_mute(),"intro skip keeps presentation audio muted between its batches")
+	intro_skip_step=-1
+	check(not _transport_mute(),"normal speed without a skip or load is audible")
+	intro_skip_step=0
 	bridge.pending=false;elapsed=0.0
 	check(_advance_live_frame() and bridge.requests[-1]=={"frames":INTRO_SKIP_BATCH,"keys":[]},"latched skip immediately fast-forwards bounded neutral original frames")
 	bridge.pending=false
