@@ -106,15 +106,7 @@ func open_settings() -> void:
 		audio.add_child(row)
 		var title := _label(menu.TITLES[channel]+": %d%%"%menu.settings[channel])
 		row.add_child(title)
-		var slider := HSlider.new()
-		slider.min_value=0;slider.max_value=100;slider.step=1
-		slider.value=menu.settings[channel]
-		slider.custom_minimum_size.y=28
-		row.add_child(slider)
-		slider.value_changed.connect(func(value):
-			menu.choose(channel,int(value))
-			title.text=menu.TITLES[channel]+": %d%%"%menu.settings[channel]
-			_show_settings_error())
+		row.add_child(audio_slider(channel,title))
 	settings_error=_label("",16)
 	settings_error.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	stack.add_child(settings_error)
@@ -126,6 +118,26 @@ func open_settings() -> void:
 	_resize_settings()
 	_show_settings_error()
 	back.grab_focus()
+
+## A drag applies each gain live and saves once on release, instead of writing
+## the settings file and rebuilding every Audio submenu on each slider tick.
+## Clicks, keys and the wheel have no drag and save at once.
+func audio_slider(channel: String, title: Label) -> HSlider:
+	var slider := HSlider.new()
+	slider.min_value=0;slider.max_value=100;slider.step=1
+	slider.value=menu.settings[channel]
+	slider.custom_minimum_size.y=28
+	var dragging := [false]
+	slider.drag_started.connect(func(): dragging[0]=true)
+	slider.drag_ended.connect(func(changed):
+		dragging[0]=false
+		if changed: menu.choose(channel,int(slider.value))
+		_show_settings_error())
+	slider.value_changed.connect(func(value):
+		menu.choose(channel,int(value),not dragging[0])
+		title.text=menu.TITLES[channel]+": %d%%"%menu.settings[channel]
+		_show_settings_error())
+	return slider
 
 func _settings_group(title: String) -> VBoxContainer:
 	var group := VBoxContainer.new()

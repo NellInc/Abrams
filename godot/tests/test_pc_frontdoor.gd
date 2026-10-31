@@ -10,6 +10,59 @@ func run(source:Image,text:String,rect:Array,foreground:=1)->Dictionary:
 	var hash:=HashingContext.new();hash.start(HashingContext.HASH_SHA256)
 	hash.update(source.get_region(Rect2i(rect[0],rect[1],rect[2],rect[3])).get_data())
 	return {"text":text,"rect":rect.map(func(value):return float(value)),"foreground":foreground,"pixel_sha256":hash.finish().hex_encode()}
+func check_settings_slider()->void:
+	# A drag applies gains live but writes the mix and rebuilds the menus once.
+	var path:="user://frontdoor-slider-check-%d.cfg"%OS.get_process_id()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var menu:=Menu.new();menu.config_path=path;menu.quality_config_path=""
+	root.add_child(menu)
+	var mixes:=[0]
+	menu.mix_changed.connect(func():mixes[0]+=1)
+	var cover:=preload("res://scripts/pc_frontdoor.gd").new()
+	cover.menu=menu
+	var title:=Label.new()
+	var slider:HSlider=cover.audio_slider("master",title)
+	# Range emits value_changed only inside the tree, as on the Settings page.
+	root.add_child(slider)
+	slider.drag_started.emit()
+	slider.value=40;slider.value=30
+	check(menu.settings.master==30 and mixes[0]==2 and title.text.ends_with(": 30%"),"dragging applies each gain live")
+	check(not FileAccess.file_exists(path) and menu.popup.get_item_text(0)=="Master volume (100%)","dragging neither writes the mix nor rebuilds menus")
+	slider.drag_ended.emit(true)
+	var saved:=ConfigFile.new()
+	check(saved.load(path)==OK and saved.get_value("audio","master")==30 and menu.popup.get_item_text(0)=="Master volume (30%)","release saves the final gain once and refreshes menus")
+	slider.value=55
+	saved=ConfigFile.new()
+	check(saved.load(path)==OK and saved.get_value("audio","master")==55,"a click or key change without a drag saves at once")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	root.remove_child(slider)
+	cover.free();title.free();slider.free()
+	root.remove_child(menu);menu.free()
+
+func check_artwork_viewer()->void:
+	# The Web edition ships remasters without the original Genesis captures.
+	var empty:="user://frontdoor-art-check-%d"%OS.get_process_id()
+	DirAccess.make_dir_recursive_absolute(empty)
+	var scene:=load("res://scenes/art_review.tscn")
+	var web=scene.instantiate();web.embedded=true;web.art_root=ProjectSettings.globalize_path(empty)
+	root.add_child(web)
+	check(not web.can_compare and not web.controls[2].node.visible,"no originals: Extras hides the compare toggle")
+	web._toggle()
+	check(not web.original,"no originals: Tab cannot show missing captures")
+	check(web.errors.values().all(func(text):return text=="This artwork is not included in this edition."),"players never see a developer file path")
+	root.remove_child(web);web.free()
+	var review=scene.instantiate();review.art_root=ProjectSettings.globalize_path(empty)
+	root.add_child(review)
+	check(review.can_compare and str(review.errors.values()[0]).begins_with("Local artwork missing:"),"standalone review tool keeps its diagnostic")
+	root.remove_child(review);review.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(empty))
+	var directory:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	if FileAccess.file_exists(directory.path_join("local-art/genesis/source/title-original.png")):
+		var local=scene.instantiate();local.embedded=true
+		root.add_child(local)
+		check(local.can_compare and local.controls[2].node.visible,"originals present: Extras keeps the compare toggle")
+		root.remove_child(local);local.free()
+
 func _initialize()->void:
 	var source:=Image.create(320,200,false,Image.FORMAT_RGB8)
 	source.fill(Color.BLUE)
@@ -66,6 +119,12 @@ func _initialize()->void:
 	check(not menu.request_state("load_state",0),"cover blocks hidden loads")
 	check(not menu.choose_speed(8),"cover blocks hidden fast-forward")
 	menu.free()
+	# Scene-tree checks need _ready, which runs only after initialization.
+	finish.call_deferred()
+
+func finish()->void:
+	check_settings_slider()
+	check_artwork_viewer()
 	print("PC_FRONTDOOR: %d checks, %d errors"%[checks,errors.size()])
 	for error in errors:printerr("FAIL: "+error)
 	quit(0 if errors.is_empty() else 1)

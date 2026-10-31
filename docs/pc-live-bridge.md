@@ -13,8 +13,12 @@ that cannot be verified stops and offers the original game directly. Cancelling
 an original submenu back to its stable root restores the cover. Capture and
 diagnostic entry points retain their direct original-game routes.
 
-Settings uses the existing graphics and audio controller. Quit drains both
-presentation audio paths and closes the original host. Working if: guest frames
+Settings uses the existing graphics and audio controller. A slider drag applies
+its gain live and saves the mix once on release; clicks and keys save at once.
+The artwork comparison offers its original/remaster toggle only where the
+original Genesis captures exist; the Web edition, which publishes none, shows the
+remasters alone. Quit drains both presentation audio paths and closes the
+original host. Working if: guest frames
 and checkpoints remain blocked in Extras, held menu keys do not reach gameplay,
 and Scenario/Campaign keep their original setup and save behaviour.
 

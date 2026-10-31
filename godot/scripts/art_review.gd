@@ -33,11 +33,17 @@ var font: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
 var heading: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 var errors: Dictionary = {}
 var controls: Array[Dictionary] = []
+## Defaults to the checkout's local-art/genesis; tests may point elsewhere before _ready.
+var art_root := ""
+## The Web edition publishes no original Genesis captures, so its Extras viewer
+## shows the remasters alone instead of a missing-file page for every original.
+var can_compare := true
 
 func _ready() -> void:
 	# main.tscn turns auto_accept_quit off for its audio drain; the flag outlives the scene change, so accept close here.
 	if not embedded: get_tree().auto_accept_quit = true
-	var root := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-art/genesis")
+	if art_root.is_empty(): art_root = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-art/genesis")
+	var root := art_root
 	for entry in ART:
 		_load_art(root.path_join("source/"+entry.source),entry.source)
 		_load_art(root.path_join(entry.get("collection","remastered")+"/"+entry.remaster),entry.remaster)
@@ -46,8 +52,10 @@ func _ready() -> void:
 			_load_art(root.path_join("remastered/"+entry.portrait_remaster),entry.portrait_remaster)
 	_add_button("PREVIOUS",Rect2(32,842,170,40),func(): _change(-1))
 	_add_button("NEXT",Rect2(214,842,150,40),func(): _change(1))
-	_add_button("ORIGINAL / REMASTER  [TAB]",Rect2(390,842,390,40),_toggle)
+	var compare := _add_button("ORIGINAL / REMASTER  [TAB]",Rect2(390,842,390,40),_toggle)
 	_add_button("EXTRAS  [ESC]",Rect2(1212,842,356,40),_back)
+	can_compare = not embedded or ART.any(func(entry): return textures.has(entry.source))
+	compare.visible = can_compare
 	resized.connect(_layout)
 	_layout()
 	if "--capture-art" in OS.get_cmdline_user_args():
@@ -55,7 +63,8 @@ func _ready() -> void:
 
 func _load_art(filename: String, key: String) -> void:
 	if not FileAccess.file_exists(filename):
-		errors[key] = "Local artwork missing: " + filename.get_file() + ". See docs/genesis-art-workflow.md."
+		# Players never see a developer path; the standalone review tool does.
+		errors[key] = "This artwork is not included in this edition." if embedded else "Local artwork missing: " + filename.get_file() + ". See docs/genesis-art-workflow.md."
 		return
 	var image := Image.load_from_file(filename)
 	if image == null or image.is_empty():
@@ -63,7 +72,7 @@ func _load_art(filename: String, key: String) -> void:
 		return
 	textures[key] = ImageTexture.create_from_image(image)
 
-func _add_button(label: String, area: Rect2, action: Callable) -> void:
+func _add_button(label: String, area: Rect2, action: Callable) -> Button:
 	var button := Button.new()
 	button.text = label
 	# Every button has a key; without focus, Left/Right page instead of moving button focus after a click.
@@ -72,6 +81,7 @@ func _add_button(label: String, area: Rect2, action: Callable) -> void:
 	button.pressed.connect(action)
 	add_child(button)
 	controls.append({"node":button,"area":area})
+	return button
 
 func _layout() -> void:
 	var scale_factor := size/Vector2(1600,900)
@@ -86,6 +96,7 @@ func _change(direction: int) -> void:
 	queue_redraw()
 
 func _toggle() -> void:
+	if not can_compare: return
 	original = not original
 	queue_redraw()
 

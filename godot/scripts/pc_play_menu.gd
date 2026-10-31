@@ -418,8 +418,10 @@ func choose_graphics(mode: String, persist: bool=true) -> bool:
 		_save_graphics_settings("Graphics changed, but could not save settings")
 	refresh_controls()
 	# The viewer may reject a mode whose assets failed to load; report what is shown.
+	# A transient startup choice (persist=false) is not the player's action and
+	# would otherwise flash a confirmation over the startup cover at every launch.
 	var names := {"ega":"EGA","ega_upscaled":"EGA Upscaled","genesis":"Genesis","upscaled":"Genesis Upscaled","modern":"Modern","tactical":"Tactical"}
-	control_notice.emit("Graphics: "+names[graphics_mode] if graphics_mode==mode else names[mode]+" graphics are unavailable")
+	if persist: control_notice.emit("Graphics: "+names[graphics_mode] if graphics_mode==mode else names[mode]+" graphics are unavailable")
 	return graphics_mode==mode
 
 func choose_speed(multiplier: int) -> bool:

@@ -111,10 +111,12 @@ func load_settings() -> bool:
 	settings=loaded
 	return true
 
-func choose(channel: String, percent: int) -> bool:
+## persist=false applies the gain live (a slider drag) without writing the
+## settings file or rebuilding the menus; the final value is then persisted.
+func choose(channel: String, percent: int, persist: bool=true) -> bool:
 	if not DEFAULTS.has(channel) or percent<0 or percent>100: return false
 	settings[channel]=percent
-	_commit()
+	_commit(persist)
 	return true
 
 func reset_mix() -> bool:
@@ -122,14 +124,15 @@ func reset_mix() -> bool:
 	_commit()
 	return true
 
-func _commit() -> void:
+func _commit(persist: bool=true) -> void:
 	if audio: audio.set_mix(settings)
-	save_error=""
-	if not config_path.is_empty():
-		var file := ConfigFile.new()
-		for key in DEFAULTS: file.set_value("audio",key,settings[key])
-		if file.save(config_path)!=OK: save_error="Mix changed, but could not save it"
-	refresh()
+	if persist:
+		save_error=""
+		if not config_path.is_empty():
+			var file := ConfigFile.new()
+			for key in DEFAULTS: file.set_value("audio",key,settings[key])
+			if file.save(config_path)!=OK: save_error="Mix changed, but could not save it"
+		refresh()
 	mix_changed.emit()
 
 func refresh() -> void:

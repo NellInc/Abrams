@@ -366,6 +366,8 @@ func _process_event(event: Dictionary) -> void:
 			announce("GUNNER","Smoke out.","smoke")
 			_burst(sim.pos + Vector2(-sin(sim.turret),-cos(sim.turret))*12,false,true)
 		"voice":
+			# The radio report carries the radio cue; there is no spoken take.
+			sound.play(str(event.get("cue","radio")))
 			announce("RADIO",event.text,"")
 		"won":
 			announce("COMMANDER","Cease fire. Range complete.","cease_fire")
@@ -683,6 +685,15 @@ func _smoke_test() -> void:
 			return
 	commands.clear()
 	paused = true
+	# The radio report plays its radio cue as well as the caption.
+	sound.muted = false
+	var radio_events: Array = sim.tick({"radio":true})
+	for event in radio_events:
+		_process_event(event)
+	sound.muted = true
+	if not sound.effects.any(func(player): return player.get_meta("effect_cue","") == "radio") or not "RADIO" in subtitle:
+		_smoke_fail("radio report has no radio cue")
+		return
 	var real_save := range_save
 	if DirAccess.make_dir_recursive_absolute(_smoke_save_dir()) != OK:
 		_smoke_fail("smoke save directory")
