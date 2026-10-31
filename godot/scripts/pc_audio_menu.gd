@@ -15,10 +15,11 @@ var release_keys := false
 var focus_release_keys := false
 var window_focused := true
 var save_error := ""
+# Private native recordings are never a browser feature or bundled asset.
+const BROWSER_OMITTED := ["river","hind","field","cow","t80","t72","brdm","tank","m113","bradley","woodland","truck","tracks","foley","interface","fire","missileflight","trackedfallback","wheeledfallback"]
 
 func audio_channels() -> Array:
-	# Private native recordings are never a browser feature or bundled asset.
-	return DEFAULTS.keys().filter(func(key):return not OS.has_feature("web") or key not in ["river","hind","field","cow","t80","t72","brdm","tank","m113","bradley","woodland","truck","tracks","foley","interface","fire","missileflight","trackedfallback","wheeledfallback"])
+	return DEFAULTS.keys().filter(func(key):return not OS.has_feature("web") or key not in BROWSER_OMITTED)
 
 func _ready() -> void:
 	set_disable_shortcuts(true)
@@ -133,6 +134,10 @@ func _commit() -> void:
 
 func refresh() -> void:
 	if popup==null: return
+	# Submenus were added in audio_channels() order, so each title's item id is
+	# its position there. The browser omits private channels; DEFAULTS order
+	# would name a separator or a missing item instead.
+	var channels := audio_channels()
 	for key: String in menus:
 		var menu: PopupMenu=menus[key]
 		# Preferences support every integer, including gains between menu steps.
@@ -143,5 +148,5 @@ func refresh() -> void:
 			menu.add_radio_check_item("%d%%"%settings[key],settings[key])
 		for index in menu.item_count:
 			menu.set_item_checked(index,menu.get_item_id(index)==settings[key])
-		popup.set_item_text(popup.get_item_index(DEFAULTS.keys().find(key)),"%s (%d%%)"%[TITLES[key],settings[key]])
+		popup.set_item_text(popup.get_item_index(channels.find(key)),"%s (%d%%)"%[TITLES[key],settings[key]])
 	popup.set_item_text(popup.get_item_index(1002),save_error if not save_error.is_empty() else "Changes are saved for next launch" if not config_path.is_empty() else "Diagnostic mix, not saved")

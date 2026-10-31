@@ -196,7 +196,9 @@ class StateStore:
             archive.writestr('manifest.json', json.dumps(manifest))
             for name, raw in files.items(): archive.writestr(name, raw)
         target = self.path(slot)
-        if target.exists(): atomic_write(target.with_suffix('.previous.zip'), read_bounded(target, sum(LIMITS.values()) + sum(OPTIONAL_LIMITS.values()) + 65536))
+        # Only numbered slots offer their overwritten archive. Recovery slot 0 is
+        # replaced on every load and its predecessor is never listed or read.
+        if slot and target.exists(): atomic_write(target.with_suffix('.previous.zip'), read_bounded(target, sum(LIMITS.values()) + sum(OPTIONAL_LIMITS.values()) + 65536))
         atomic_write(target, buffer.getvalue())
         self.read(slot)
 

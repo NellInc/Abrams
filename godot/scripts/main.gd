@@ -304,7 +304,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_S: commands.smoke = true
 		KEY_R: commands.radio = true
 		KEY_D: show_damage = not show_damage
-		KEY_ENTER: commands.select_target = true
+		# Keypad Enter is Enter, as the original-game bridge maps it.
+		KEY_ENTER,KEY_KP_ENTER: commands.select_target = true
 		KEY_L: commands.lock_target = true
 		KEY_H: show_help = not show_help
 		KEY_Q:
@@ -670,6 +671,18 @@ func _smoke_test() -> void:
 	if not fired or not commands.is_empty():
 		_smoke_fail("space fire is not edge-triggered")
 		return
+	paused = false
+	for code in [KEY_ENTER,KEY_KP_ENTER]:
+		var enter := InputEventKey.new()
+		enter.keycode = code
+		enter.pressed = true
+		commands.clear()
+		_unhandled_key_input(enter)
+		if not commands.get("select_target",false):
+			_smoke_fail("Enter key %d does not select a target" % code)
+			return
+	commands.clear()
+	paused = true
 	var real_save := range_save
 	if DirAccess.make_dir_recursive_absolute(_smoke_save_dir()) != OK:
 		_smoke_fail("smoke save directory")

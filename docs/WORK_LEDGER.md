@@ -9017,3 +9017,103 @@ Packaged app/web were not rebuilt or published; no fresh live/device claim.
 
 Working if: only correctly moving and actually visible BRDM owners admit the
 approved loop, stored Off remains Off, and source timing/masks stay unchanged.
+
+
+## 31 October 2026: gameplay-flow and interface polish pass
+
+Nell asked for problems in gameplay, game flow, interface, game logic and
+processing, excluding models, maps and layouts. The original executables still
+own all gameplay; nothing below changes a guest frame, key or simulation
+outcome. Local only: no package, Web bundle or publication was rebuilt.
+
+Fixed, each with a new check that fails on the previous code:
+
+* Browser Audio menu. `refresh()` located each submenu title by its index in
+  `DEFAULTS`, but the browser omits private channels. On Web the Radio alerts
+  gain was written onto a separator and Switches addressed a missing item.
+  Titles now use `audio_channels()` order; the omitted list is the constant
+  `BROWSER_OMITTED`. `test_pc_audio_mix.gd` checks native and a browser-filtered
+  subclass: 786 checks, 0 errors (old lookup: 4 title failures).
+* Fast forward on return to the cover. A gameplay 8x stayed active on the cover,
+  where Tab is refused, muting the cover music and starting the next original
+  game at 8x without sound. `_set_frontdoor(true)` now restores normal speed,
+  menu radio and window title. `test_pc_live_scheduling.gd`: 229 checks, 0
+  errors at this step (without the fix: 6 failures).
+* Native quick-save/load refactor only; the browser defect below stays open.
+  The chord logic moved into `quick_save()` / `quick_load(slot)`, and the viewer
+  accepts `quick_save` / `quick_load` Web control ops, gated by open canvas
+  menus like the native chord. No shipped shell sends them yet.
+  `test_pc_play_shortcuts.gd`: 166 checks, 0 errors, including 8 new
+  direct-call checks.
+* Practice range: keypad Enter now selects a target, as Enter does and as the
+  original-game bridge maps it. `--smoke-test` passes (without the fix:
+  `RUNTIME_SMOKE_FAIL: Enter key 4194310`).
+* Checkpoints: loading no longer writes `slot-0.previous.zip`, which nothing
+  lists or reads; numbered slots keep their overwritten archive as before. The
+  browser worker already behaved this way. 40 save-state tests pass.
+* `pc_play_menu.gd` reader lookups are typed `Window`; the static lint now
+  reports 0 warnings across 78 scripts (previously 4).
+* `play-controls.md` named Genesis Upscaled as the first-launch mode; it is
+  Tactical, or Genesis Upscaled without the Modern catalogue.
+
+* Original EXIT (Nell, 31 October: "Fix everything proceed according to your
+  best judgment"). Choosing EXIT in the original root menu left Play at a bare
+  `C:\>` prompt (trace `pc-menu-text-trace-04/exit-dialog.png`, 640x350): the
+  cover never returned and keys reached DOS. Play now treats it as quitting the
+  game, as on a PC. `pc_bridge_host.original_exited()` flags a trace sample
+  when no program owns the active PSP and the paired display is not 320x200.
+  The first post-EXIT frame (still 320x200, no program) is not flagged. The
+  viewer keeps the last game frame, keeps executing, and calls the normal
+  `_close()` after 60 consecutive flagged frames; a flag-free sample restarts
+  the count. Captures and the comparison view never auto-close. A real cold-boot
+  host run through the root menu and EXIT flagged only the five post-EXIT
+  640x350 samples, host exit 0. `test_pc_bridge.py` (21 tests),
+  `test_pc_live_scheduling.gd` 237 checks, 0 errors (without the viewer hook: 2
+  failures). The host change is a no-op inside the game; live mission hosts
+  already running keep their loaded code. No `tools/pc_core/*.h` change.
+  Web source matches: `browser_observer.py` admits that DOS frame only without
+  a program and flags it, and `bridge_worker.mjs` resends the last game frame.
+  New `web-prototype/test_browser_observer.py` (3 tests; HEAD fails the DOS
+  case) and a worker test (18 of 18 pass). `npm --prefix web-prototype test`
+  passes.
+
+Web rebuild pending:
+
+The published browser bundle predates every item above. It still overwrites an
+occupied slot 1 from Ctrl+Alt/Cmd+S without confirmation, does not set aside
+Windows AltGr layout letters, and ends the original's EXIT with "Original game
+stopped". Packaging is blocked: `package_site.py` refuses unless
+`python-source.zip` equals every working-tree `tools/*.py`. At 14:40 on 31
+October the tree held another session's uncommitted
+`build_pc_tactical_roster.py`, `build_pc_tactical_vehicles.py` and
+`build_reference_maps.py`; packaging then would publish their unfinished code.
+When those land, rebuild (`build_observer.py`, `build_remaster.py`,
+`package_site.py`, `website/verify.py`) with this shell change, which
+`test_remaster_shell.mjs` pins to the deployed copy and so cannot precede it:
+
+* In `remaster.mjs`'s keydown handler, send `{op: 'quick_save'}` for S and
+  `{op: 'quick_load', slot: event.shiftKey ? 0 : 1}` for L, so the Godot menu
+  applies the overwrite confirmation and feedback.
+* Return before `preventDefault` when the platform is Windows
+  (`/^win/i.test(navigator.userAgentData?.platform || navigator.platform || '')`),
+  Ctrl and Alt are held, `event.key` is one character and it differs from
+  `event.code.slice(3)` ignoring case (an AltGr letter), as natively.
+* Add `quick_save` and `quick_load` to `command()`'s `busy` and
+  `storageWarning` refusals.
+* Update `test_remaster_shell.mjs`, which expects `save_state` from Ctrl+Alt+S.
+
+Then browser-check quick save twice onto an occupied slot, and the original
+EXIT closing normally.
+
+Verification limits: headless unit and fixture checks only. The new
+audio-mix fixture initially used `queue_free`; the existing 0.1 s supplemental
+timing check then failed in 3 of 5 runs on this heavily loaded machine (load
+average above 400). Freeing the fixture synchronously passed 5 of 5. Unmodified
+HEAD passed 7 of 7. Apart from the one headless host run above (no Godot
+window, scratch saves), no live, native-window, Web or performance tier was run.
+
+Working if: browser Audio titles name their own channels, the cover always plays
+at normal speed, the practice range accepts both Enter keys, recovery saves leave
+no unreachable archive, desktop Play closes after a sustained original EXIT and
+never on a game frame, and the browser items stay listed as pending until a
+rebuilt bundle passes the browser checks above.

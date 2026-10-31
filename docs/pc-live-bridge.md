@@ -133,6 +133,22 @@ Working if: a Play or Web sample carries no `state.world`, and every
 `draw_pass.world.dynamic` pointer appears in `draw_pass.objects` with
 `dynamic_instance` true.
 
+The original root menu's EXIT returns the emulated PC to a DOS prompt. A trace
+sample then carries `original_exited: true` when no program owns the active PSP
+and the paired display has left the game's 320x200 mode (the prompt is 640x350
+text). The first sample after EXIT is still 320x200 and carries no flag. The host
+keeps executing and sending the DOS framebuffer; the flag is informational.
+Ordinary Play keeps the last game frame and closes normally after 60 consecutive
+flagged source frames, so the campaign disk flushes as on Quit. Captures and the
+comparison view keep showing DOS. A real cold-boot host run (31 October 2026)
+flagged only the post-EXIT 640x350 samples, never the root menu. The Web sources
+flag it the same way (`browser_observer.py`), and `bridge_worker.mjs` resends the
+last game frame. The published Web bundle predates this and still stops with an
+error until its next rebuild (see `WORK_LEDGER.md`, 31 October).
+
+Working if: no game frame carries the flag, and Play closes only after a
+sustained original exit.
+
 ### Observer events changed in the 15 October 2026 core
 
 The following source changed on 15 October 2026 in `tools/pc_core/` and

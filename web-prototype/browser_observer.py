@@ -103,9 +103,14 @@ class BrowserObserver:
         which alone builds the packet sample, as desktop ``sample`` does.
         """
         self.frame += 1
-        if (len(packet) > MAX_PACKET or len(paired_ram) != 640 * 1024 or
-                len(current_ram) != 640 * 1024 or
-                (width, height, pitch) != (320, 200, 1280) or len(video) != pitch * height):
+        if len(packet) > MAX_PACKET or len(paired_ram) != 640 * 1024 or len(current_ram) != 640 * 1024:
+            raise ValueError('invalid paired browser frame')
+        # The original's own EXIT returns to the DOS prompt (640x350 text), with
+        # no original program, as desktop pc_bridge_host.original_exited. That
+        # frame is flagged for Godot to close Play; it is never presented.
+        exited = (active_program(paired_ram) is None and (width, height) != (320, 200)
+                  and pitch > 0 and len(video) == pitch * height)
+        if not exited and ((width, height, pitch) != (320, 200, 1280) or len(video) != pitch * height):
             raise ValueError('invalid paired browser frame')
         expected = []
         at = 0
@@ -209,8 +214,10 @@ class BrowserObserver:
                  'last_id': self.audio_sequence, 'events': events, **status}
         # Play-only surface, as desktop --slim-samples: undrawn actors never
         # leave the observer.
-        return slim_sample({'program': program, 'state': state, 'presentation': presentation,
-                            'audio': audio, 'events': count})
+        sample = slim_sample({'program': program, 'state': state, 'presentation': presentation,
+                              'audio': audio, 'events': count})
+        if exited: sample['original_exited'] = True
+        return sample
 
 
 def from_json(value: str) -> str:

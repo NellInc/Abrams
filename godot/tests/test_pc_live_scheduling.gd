@@ -49,6 +49,7 @@ class TestDraw extends Node3D:
 class TestFrame extends TextureRect:
 	var events: Array
 	var world_enabled := true
+	var graphics_mode := "ega"
 	func set_tactical_dynamics(_shift: Vector2) -> void: pass
 	func set_frame(_source: Image, _presentation: Dictionary, _world: Texture2D, _program: Dictionary={}) -> bool:
 		events.append("frame")
@@ -57,6 +58,24 @@ class TestFrame extends TextureRect:
 class TestAudio extends Node:
 	var failure := "synthetic invalid audio packet"
 	func apply_audio(_packet: Dictionary) -> bool: return false
+
+class TestWorldAudio extends RefCounted:
+	func stop() -> void: pass
+
+class TestMusicBank extends RefCounted:
+	var independent := true
+
+class TestCoverAudio extends Node:
+	var world_audio := TestWorldAudio.new()
+	var music_bank := TestMusicBank.new()
+	var transport_muted := false
+	var music_context := ""
+	func set_transport_muted(value: bool) -> void: transport_muted=value
+	func apply_music_context(context: String, _enabled: bool, _paused: bool=false) -> void: music_context=context
+
+class TestCover extends Control:
+	var active := false
+	func set_active(value: bool) -> void: active=value
 
 func check(ok: bool, why: String) -> void:
 	checks+=1
@@ -290,6 +309,8 @@ func run() -> void:
 	audio_menu.queue_free();audio_menu=null
 	_choose_speed(1);set_keys([])
 	check_intro_controls(period)
+	check_cover_speed_reset()
+	check_original_exit(period)
 
 	# Capture routes retain explicit batches and dispatch only after presentation.
 	capture=true
@@ -443,6 +464,62 @@ func finish() -> void:
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_LIVE_SCHEDULING: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)
+
+func check_cover_speed_reset() -> void:
+	# A gameplay fast forward must not follow the player back to the cover,
+	# where Tab is unavailable, nor into the next original game.
+	play_mode=true
+	audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+	audio_menu.config_path="";audio_menu.quality_config_path=""
+	root.add_child(audio_menu)
+	audio_menu.speed_selected.connect(_choose_speed)
+	pc_audio=TestCoverAudio.new();root.add_child(pc_audio)
+	frontdoor=TestCover.new();root.add_child(frontdoor)
+	play_display=Control.new();root.add_child(play_display)
+	check(audio_menu.choose_speed(8) and fast_forward==8 and pc_audio.transport_muted,"gameplay fast forward mutes original-event audio")
+	_set_frontdoor(true)
+	check(fast_forward==1 and audio_menu.speed==1 and not pc_audio.transport_muted,"returning to the cover restores normal speed and unmutes its music")
+	check(pc_audio.music_context=="menu" and frontdoor.active and audio_menu.frontdoor_active,"cover music selected after the speed reset")
+	check(audio_menu.speed_popup.is_item_checked(audio_menu.speed_popup.get_item_index(1)) and not audio_menu.speed_popup.is_item_checked(audio_menu.speed_popup.get_item_index(8)),"Session menu shows normal speed for the next game")
+	check(root.title==str(ProjectSettings.get_setting("application/config/name")),"window title drops the fast-forward marker")
+	check(not audio_menu.choose_speed(8) and fast_forward==1,"cover still refuses fast forward")
+	_set_frontdoor(false)
+	check(fast_forward==1 and not pc_audio.transport_muted and not frontdoor.active,"next original game starts at normal speed with sound")
+	_set_frontdoor(true)
+	check(fast_forward==1 and audio_menu.speed==1,"normal-speed return leaves speed untouched")
+	for node in [audio_menu,pc_audio,frontdoor,play_display]:node.queue_free()
+	audio_menu=null;pc_audio=null;frontdoor=null;play_display=null
+	play_mode=false
+
+func check_original_exit(period: float) -> void:
+	# The original's EXIT leaves DOS running. Play keeps executing without
+	# presenting the prompt, then closes after a sustained exit only.
+	play_mode=true
+	var exited:=valid_sample.duplicate(true);exited.original_exited=true
+	var before: int=bridge.requests.size()
+	events.clear()
+	for sequence in [100,130,159]:
+		exited.sequence=sequence;bridge.pending=false;elapsed=period
+		_apply_sample(exited)
+	check(not closing and bridge.requests.size()==before+3,"DOS frames keep the original executing below the exit window")
+	check(not events.has("frame") and not events.has("draw"),"the DOS prompt is never presented")
+	check(not _original_exited(valid_sample) and original_exit_since==-1,"a game frame (program handoff) restarts the exit count")
+	for sequence in [200,259]:
+		exited.sequence=sequence;bridge.pending=false;elapsed=period
+		_apply_sample(exited)
+	check(not closing,"59 exited frames after a handoff do not close Play")
+	exited.sequence=260;bridge.pending=false;elapsed=period
+	_apply_sample(exited)
+	check(closing and bridge.stopped,"a sustained original exit closes Play through the normal host shutdown")
+	closing=false;bridge.stopped=false;close_deadline=0;original_exit_since=-1
+	capture=true
+	exited.sequence=300;check(not _original_exited(exited),"captures keep showing DOS for diagnosis")
+	exited.sequence=900;check(not _original_exited(exited) and not closing,"captures never auto-close on exit")
+	capture=false;play_mode=false
+	exited.sequence=300;_original_exited(exited)
+	exited.sequence=900;check(not _original_exited(exited) and not closing,"comparison view never auto-closes on exit")
+	original_exit_since=-1
+	events.clear()
 
 func check_intro_controls(period: float) -> void:
 	var directory:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()

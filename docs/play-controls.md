@@ -7,6 +7,10 @@ menu navigation is withheld from the game until keys are
 released. The original continues running while a menu is open. Use its pause
 control first when you need time to choose.
 
+Choosing EXIT in the original game's own menu quits the game, as it did on a
+PC: the remaster closes normally about a second later, after the original has
+left for DOS. Use the cover's QUIT for the same result from the main menu.
+
 ## Player references
 
 **Help > Keyboard controls** opens the offline keyboard sheet. **Help > Scenarios
@@ -110,7 +114,8 @@ This control is separate from the original Shift+3 speed setting.
 Fast forward mutes effects, speech, motors and music. Event identities still
 advance, so returning to normal does not play accumulated calls or gunshots.
 Current motor loops and eligible frontend music can resume. Normal speed is
-restored on a fresh launch; fast forward is not a sticky preference.
+restored on a fresh launch and whenever play returns to the cover menu, where
+Tab is unavailable; fast forward is not a sticky preference.
 
 ## Graphics
 
@@ -123,7 +128,7 @@ Choose a mode under **Graphics** during play, menus or briefings. The current fr
 * **Modern** (Modernized in browser): refined source-bound low-poly scenery with the existing restored interfaces.
 * **Tactical**: the separate textured, Range-inspired battlefield treatment. **HUD Style** independently selects Restored or Tactical instruments and layouts.
 
-The first launch uses Genesis Upscaled. A successful explicit graphics selection is remembered with HUD style and scenery quality. If its required artwork/import is unavailable on a later launch, the viewer shows Genesis Upscaled and retains the saved preference. Restoring the supported import restores that preferred mode on the next launch. An equipped checkout can use `./Play.command --graphics ega` (or another mode ID) for a transient starting choice; this does not overwrite the preference. Explicit unavailable command-line requests report an error. See [graphics coverage](graphics-modes.md).
+The first launch uses Tactical with the Tactical HUD, or Genesis Upscaled where the Modern catalogue is unavailable. A successful explicit graphics selection is remembered with HUD style and scenery quality. If its required artwork/import is unavailable on a later launch, the viewer shows that default with a notice and retains the saved preference. Restoring the supported import restores that preferred mode on the next launch. An equipped checkout can use `./Play.command --graphics ega` (or another mode ID) for a transient starting choice; this does not overwrite the preference. Explicit unavailable command-line requests report an error. See [graphics coverage](graphics-modes.md).
 
 ## Scenery quality
 
@@ -163,6 +168,8 @@ that every mission or campaign has been completed.
 ## Browser play and recovery
 
 Choose your original PC folder, then Start remaster. The file picker shows your selection before verification. An optional Genesis ROM unlocks the Genesis-based remaster artwork and frontend music, and the browser derives the Genesis effects from your verified ROM. Since 15 October 2026 the browser edition publishes no captured Genesis screens, so its Genesis mode, Genesis newspaper, map frame and clipboard restorations and Genesis vehicle colours keep original PC pixels (see [release rights](release-rights.md)). EGA Upscaled preserves the original PC palette and skin colours; Genesis Upscaled retains the generated high-resolution artwork. Graphics and HUD Style remain independent.
+
+Known limit (31 October 2026): the published browser build's Ctrl+Alt+S writes slot 1 at once, without the second-press overwrite confirmation, and on Windows it does not set aside AltGr layout letters for S, L and G. The original's own EXIT also ends there with an "Original game stopped" message rather than a normal close. Parity with the desktop awaits the next Web rebuild.
 
 Use **Game keyboard** after interacting with browser controls to return keyboard focus to the game. **Fullscreen** keeps the browser controls available; Escape leaves browser fullscreen. Editing a browser selector does not trigger quick-save/load or graphics shortcuts.
 

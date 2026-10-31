@@ -243,7 +243,12 @@ async function pairedFrame(final) {
   nextRam = heap.subarray(frame.current, frame.current + RAM_BYTES);
   const json = observer.afterFrame(span(frame.trace), span(frame.claims), frame.pairedRam,
     nextRam, heap.subarray(video, video + pitch * height), width, height, pitch, final);
-  return final ? {json, rgb: rgbFrame(heap, video, width, height, pitch)} : null;
+  if (!final) return null;
+  // The original's own EXIT leaves the DOS prompt (640x350 text). The observer
+  // flags that sample; the last game frame stays on screen and Godot closes Play.
+  if ((width !== 320 || height !== 200) && JSON.parse(json).original_exited === true)
+    return {json, rgb: null};
+  return {json, rgb: rgbFrame(heap, video, width, height, pitch)};
 }
 
 // The observer's JSON object is spliced after the envelope, so the per-frame
@@ -347,7 +352,7 @@ async function step(message) {
   }
   lastSample = frame.json;
   lastProgram = observer.programName;
-  lastRgb = frame.rgb;
+  if (frame.rgb) lastRgb = frame.rgb;
   sendSample('sample', message.id, lastSample, lastRgb.slice());
 }
 

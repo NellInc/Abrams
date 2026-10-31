@@ -58,7 +58,7 @@ func _init() -> void:
 func _apply_hud_theme() -> void:
 	if _styled_hud==hud_style: return
 	_styled_hud=hud_style
-	var reader := get_tree().root.get_node_or_null("PlayerReference") if is_inside_tree() else null
+	var reader: Window = get_tree().root.get_node_or_null("PlayerReference") as Window if is_inside_tree() else null
 	if reader!=null:reader.call("set_hud_style",hud_style)
 	theme=preload("res://scripts/pc_interface_theme.gd").build()
 	_tactical_bar.visible=hud_style=="tactical"
@@ -224,7 +224,7 @@ func _ready() -> void:
 	help_popup.add_item("Original game credits",2)
 	help_popup.id_pressed.connect(func(index):
 		open_reference("keyboard-controls.html" if index==0 else "credits" if index==2 else "field-guide.html"))
-	var existing_reader := get_tree().root.get_node_or_null("PlayerReference")
+	var existing_reader: Window = get_tree().root.get_node_or_null("PlayerReference") as Window
 	if existing_reader!=null:
 		existing_reader.connect("reader_changed",_reader_changed)
 		if existing_reader.visible:_reader_changed(true)
@@ -317,7 +317,7 @@ func handle_shortcut(event: InputEvent) -> bool:
 	var code: int=event.keycode if event.keycode!=0 else event.physical_keycode
 	if code==KEY_TAB:
 		# Reference and native-menu Tab navigation belongs to their own controls.
-		var reader := get_tree().root.get_node_or_null("PlayerReference") if is_inside_tree() else null
+		var reader: Window = get_tree().root.get_node_or_null("PlayerReference") as Window if is_inside_tree() else null
 		if not window_focused or not open_menus.is_empty() or (reader!=null and reader.visible):return false
 		if event.meta_pressed or event.ctrl_pressed or event.alt_pressed or event.shift_pressed:return false
 		if "tab" not in shortcut_keys:shortcut_keys.append("tab")
@@ -339,21 +339,28 @@ func handle_shortcut(event: InputEvent) -> bool:
 	if event.shift_pressed and "shift" not in shortcut_keys: shortcut_keys.append("shift")
 	if not event.pressed or event.echo or not open_menus.is_empty():return true
 	match code:
-		KEY_S:
-			if busy:return true
-			var saved := _slot_entry(1)
-			if saved.is_empty() or Time.get_ticks_msec()<overwrite_armed_until:
-				overwrite_armed_until=0
-				request_state("save_state",1)
-			else:
-				overwrite_armed_until=Time.get_ticks_msec()+OVERWRITE_CONFIRM_MSEC
-				control_notice.emit("Slot 1 holds a save from %s. Press %sS again to overwrite it."%[str(saved.get("saved_at","earlier")),shortcut_prefix()])
-		KEY_L:
-			var slot := 0 if event.shift_pressed else 1
-			if not busy and not request_state("load_state",slot):
-				control_notice.emit("No recovery state available" if slot==0 else "Slot 1 is empty or unavailable")
+		KEY_S:quick_save()
+		KEY_L:quick_load(0 if event.shift_pressed else 1)
 		KEY_G:cycle_graphics()
 	return true
+
+## The quick-save chord, natively or from the browser shell: an occupied slot 1
+## is replaced only by a second press within OVERWRITE_CONFIRM_MSEC.
+func quick_save() -> void:
+	if frontdoor_active or busy: return
+	var saved := _slot_entry(1)
+	if saved.is_empty() or Time.get_ticks_msec()<overwrite_armed_until:
+		overwrite_armed_until=0
+		request_state("save_state",1)
+	else:
+		overwrite_armed_until=Time.get_ticks_msec()+OVERWRITE_CONFIRM_MSEC
+		control_notice.emit("Slot 1 holds a save from %s. Press %sS again to overwrite it."%[str(saved.get("saved_at","earlier")),shortcut_prefix()])
+
+## Quick load from slot 1, or Undo last load (recovery slot 0), with feedback.
+func quick_load(slot: int) -> void:
+	if frontdoor_active or busy or slot not in [0,1]: return
+	if not request_state("load_state",slot):
+		control_notice.emit("No recovery state available" if slot==0 else "Slot 1 is empty or unavailable")
 
 static func _layout_character(event: InputEventKey, code: int) -> bool:
 	# A genuine chord carries no printable text, a control character, or at
@@ -362,7 +369,7 @@ static func _layout_character(event: InputEventKey, code: int) -> bool:
 	return String.chr(event.unicode).to_lower()!=OS.get_keycode_string(code).to_lower()
 
 func game_keys(held: Array) -> Array:
-	var reader := get_tree().root.get_node_or_null("PlayerReference") if is_inside_tree() else null
+	var reader: Window = get_tree().root.get_node_or_null("PlayerReference") as Window if is_inside_tree() else null
 	if reader!=null and reader.visible:
 		release_keys=true
 		return []

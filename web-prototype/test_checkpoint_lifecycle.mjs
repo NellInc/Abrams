@@ -291,6 +291,31 @@ test('frames pair VGA RAM with their framebuffer and hand current RAM to audio',
   assert.deepEqual(plain(message.packet), {type: 'sample', id: 1, sequence: 11, fps: 59.9227, program: {name: 'SIM'}});
 });
 
+test('original EXIT to DOS is flagged with the last game frame; an unflagged DOS frame still fails', async () => {
+  const {ctx, seeded, observers, replies} = restoreContext();
+  const observer = observers[0];
+  let flag = true;
+  observer.afterFrame = (trace, claims, paired, current, video, width, height, pitch, final) =>
+    final ? JSON.stringify({program: null, state: null, presentation: {}, audio: {schema: 3, events: []}, events: 0,
+      ...(flag && width === 640 ? {original_exited: true} : {})}) : undefined;
+  const ordinary = seeded.postMessage.bind(seeded);
+  seeded.postMessage = message => {
+    if (message.op !== 'advance') return ordinary(message);
+    queueMicrotask(() => seeded.onmessage({data: {id: message.id, ok: true, result: {heap: seeded.heap,
+      pairedRam: new Uint8Array(RAM).fill(1), current: 0, trace: [0, 0], claims: [0, 0],
+      video: [VIDEO, 640, 350, 2560]}}}));
+  };
+  await step(ctx, 1);
+  const message = replies.find(item => item.type === 'packet');
+  assert.equal(JSON.parse(message.json).original_exited, true);
+  assert.ok(message.rgb.length === 192000 && message.rgb.every(value => value === 7), 'last game frame is resent');
+  assert.ok(ctx.self.inspect().lastRgb.every(value => value === 7), 'DOS never replaces the kept game frame');
+  replies.length = 0;
+  flag = false;
+  await step(ctx, 2);
+  assert.ok(replies.some(item => item.type === 'error' && /framebuffer is unavailable/.test(item.message)));
+});
+
 test('save_state persists the parsed presented sample; key changes reach the core in order', async () => {
   const {ctx, storage, seeded, replies} = restoreContext();
   await ctx.self.onmessage({data: {op: 'step', id: 1, frames: 1, keys: ['space', 'up']}});

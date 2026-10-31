@@ -60,6 +60,10 @@ var fps := 59.9227
 const INTRO_SPEED := 0.75
 const INTRO_SKIP_STEPS := 6
 const INTRO_SKIP_BATCH := 600
+## The original's own EXIT leaves the emulated PC at a DOS prompt with no way
+## back to the cover. Play closes once the host reports it for this many frames.
+const ORIGINAL_EXIT_FRAMES := 60
+var original_exit_since := -1
 var intro_active := false
 var intro_shot_active := false
 var intro_skip_step := -1
@@ -440,6 +444,13 @@ func _frontdoor_blocked() -> bool:
 
 func _set_frontdoor(active: bool) -> void:
 	if active and pc_audio: pc_audio.world_audio.stop()
+	# Tab cannot change speed on the cover, which is outside the original game.
+	# Return there at normal speed: a gameplay fast forward would otherwise mute
+	# the cover music and start the next original game at 8x without sound.
+	if active and fast_forward!=1:
+		audio_menu.speed=1
+		_choose_speed(1)
+		audio_menu.refresh_controls()
 	frontdoor.set_active(active)
 	play_display.visible=not active
 	audio_menu.visible=not active
@@ -946,6 +957,14 @@ func _poll_web_controls() -> void:
 		match str(action.get("op", "")):
 			"save_state", "load_state":
 				audio_menu.request_state(str(action.op), int(action.get("slot", -1)))
+			# The shell's keyboard chords take the native shortcut path: an
+			# occupied slot 1 needs a confirming second press, and an open
+			# canvas menu or reader withholds the chord, as natively.
+			"quick_save":
+				if audio_menu.open_menus.is_empty(): audio_menu.quick_save()
+			"quick_load":
+				var slot: int=_web_control_integer(action.get("slot"),1)
+				if slot>=0 and audio_menu.open_menus.is_empty(): audio_menu.quick_load(slot)
 			"graphics": audio_menu.choose_graphics(str(action.get("mode", "")))
 			"hud_style": audio_menu.choose_hud_style(str(action.get("style", "")))
 			"cycle_graphics": audio_menu.cycle_graphics()
@@ -1146,6 +1165,10 @@ func _apply_sample(message: Dictionary) -> void:
 	samples += 1
 	if capture: print("PC_VIEW_SAMPLE %d sequence=%d" % [samples, int(message.sequence)])
 	fps = float(message.fps)
+	if _original_exited(message):
+		# Keep the last original game frame; never present the DOS prompt.
+		if not closing: _advance_live_frame()
+		return
 	var image := _decoded_image
 	var web_rgb: bool = message.get("rgb_bytes") is PackedByteArray
 	var raw_rgb: PackedByteArray = message.rgb_bytes if web_rgb else PackedByteArray()
@@ -1301,6 +1324,21 @@ func _apply_sample(message: Dictionary) -> void:
 	if frontend:
 		caption.text = "GENESIS MOTOR POOL: original PC arming menu, values and controls"
 	previous = state
+
+## Ordinary Play treats the original's EXIT as quitting the game, as on a real
+## PC, and closes normally so the host flushes the campaign disk. Captures and
+## comparison views keep showing DOS for diagnosis. A sample without the flag
+## (a program handoff) restarts the count.
+func _original_exited(message: Dictionary) -> bool:
+	if not play_mode or capture or not message.get("original_exited",false):
+		original_exit_since=-1
+		return false
+	var sequence:=int(message.get("sequence",0))
+	if original_exit_since<0: original_exit_since=sequence
+	if sequence-original_exit_since>=ORIGINAL_EXIT_FRAMES and not closing:
+		print("PC_ORIGINAL_EXIT: closing Play at original sequence %d"%sequence)
+		_close()
+	return true
 
 func _capture() -> void:
 	if not campaign_capture_phase.is_empty():

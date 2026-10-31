@@ -109,6 +109,17 @@ def frame_audit(core):
             'width': width, 'height': height, 'pitch': pitch}
 
 
+def original_exited(program, video):
+    """True once the original's own EXIT has returned the emulated PC to DOS.
+
+    No original program owns the active PSP and the display has left the
+    game's 320x200 mode (the DOS prompt is 640x350 text). The first frame
+    after EXIT is still 320x200, so a missing program alone is not an exit.
+    Informational only: the host keeps executing and sampling every frame.
+    """
+    return program is None and video is not None and (video[1], video[2]) != (320, 200)
+
+
 def validate_command(command):
     if not isinstance(command, dict) or command.get("op") not in ("step", "quit", "save_state", "load_state", "load_previous"):
         raise ValueError("expected step, save_state, load_state, load_previous or quit")
@@ -270,6 +281,8 @@ def main():
             if session:
                 result.update(sample)
                 result["audio"] = session.drain_audio()
+                if original_exited(sample.get('program'), core.last_video):
+                    result["original_exited"] = True
             if args.frame_audit:
                 result["frame_audit"] = frame_audit(core)
             return result

@@ -255,6 +255,14 @@ func supplemental_source_controls() -> void:
 	for name: String in Audio.SupplementalAudio.CUES: DirAccess.remove_absolute(folder.path_join(name+".wav"))
 	DirAccess.remove_absolute(folder.path_join("manifest.json"));DirAccess.remove_absolute(folder)
 
+func check_channel_titles(menu: MenuBar, label: String) -> void:
+	var channels: Array=menu.audio_channels()
+	for index in channels.size():
+		var key: String=channels[index]
+		check(menu.popup.get_item_submenu_node(index)==menu.menus[key] and menu.popup.get_item_text(index)=="%s (%d%%)"%[Menu.TITLES[key],menu.settings[key]],"%s title names its own channel and gain: %s"%[label,key])
+	for index in range(channels.size(),menu.popup.item_count):
+		check(not menu.popup.get_item_text(index).ends_with("%)"),"%s footer item carries no channel gain: %d"%[label,index])
+
 func run() -> void:
 	var directory := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
 	output=directory.path_join("artifacts/pc-audio-mix-unit")
@@ -276,6 +284,22 @@ func run() -> void:
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
 	check(menu.get_menu_count()==1 and menu.menus.size()==32,"one external Audio menu, thirty-two independently specified gain groups")
+	check_channel_titles(menu,"native")
+	# The browser menu omits private channels. Each remaining title must still
+	# name its own submenu and gain, never a separator or a missing item.
+	var browser_script := GDScript.new()
+	browser_script.source_code="extends \"res://scripts/pc_audio_menu.gd\"\nfunc audio_channels() -> Array:\n\treturn DEFAULTS.keys().filter(func(key):return key not in BROWSER_OMITTED)\n"
+	check(browser_script.reload()==OK,"browser channel fixture compiles")
+	var browser: MenuBar=browser_script.new()
+	browser.config_path=""
+	root.add_child(browser)
+	check(browser.menus.size()==Menu.DEFAULTS.size()-Menu.BROWSER_OMITTED.size() and browser.menus.has("radio") and browser.menus.has("switch"),"browser fixture omits only private channels")
+	check_channel_titles(browser,"browser")
+	check(browser.choose("radio",40) and browser.choose("switch",30),"browser gains after omitted channels accepted")
+	check_channel_titles(browser,"browser after change")
+	# Freed synchronously: with queue_free the later 0.1 s supplemental timing
+	# check failed in 3 of 5 loaded runs (0 of 5 when freed here).
+	root.remove_child(browser);browser.free()
 	check(Menu.DEFAULTS.t72==100 and Menu.TITLES.t72=="T-72 engine" and menu.audio_channels().has("t72") and menu.menus.has("t72"),"native T72 has its own100% default and exact title")
 	var t72_choices: PopupMenu=menu.menus.t72
 	check(t72_choices.get_item_text(t72_choices.get_item_index(0))=="Off" and t72_choices.get_item_index(100)>=0,"native T72 exposes independent Off through100%")

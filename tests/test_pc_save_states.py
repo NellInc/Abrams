@@ -99,6 +99,14 @@ class SaveStateTests(unittest.TestCase):
         self.assertNotIn('message', rows[1])
         with self.assertRaises(ValueError): self.store.read(1, previous=True)
 
+    def test_recovery_slot_keeps_no_unreachable_archive(self):
+        self.store.write(0, self.capture)
+        (self.capture/'state.bin').write_bytes(b'changed')
+        self.store.write(0, self.capture)
+        self.assertEqual(self.store.read(0)[1]['state.bin'], b'changed')
+        self.assertFalse(self.store.path(0).with_suffix('.previous.zip').exists())
+        self.assertNotIn('previous_saved_at', self.store.slots()[0])
+
     def test_overwritten_archive_lists_without_a_live_slot(self):
         self.store.write(1, self.capture)
         self.store.write(1, self.capture)

@@ -9,12 +9,23 @@ from types import SimpleNamespace
 
 from tools.pc_live_state import SimStateReader, bearing
 from tools.pc_reference_core import PcReferenceCore, KEYS, MemoryDescriptor, ThrottleState
-from tools.pc_bridge_host import validate_command, frame_audit, lock_saves, FramePng
+from tools.pc_bridge_host import validate_command, frame_audit, lock_saves, FramePng, original_exited
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class PcBridgeTests(unittest.TestCase):
+    def test_original_exit_needs_no_program_and_the_dos_display(self):
+        # pc-menu-text-trace-04: the first sample after EXIT is still the
+        # 320x200 game frame; the DOS prompt that follows is 640x350 text.
+        start = {'name': 'START', 'psp': 477, 'load_segment': 493}
+        game, prompt = (b'', 320, 200, 1280), (b'', 640, 350, 2560)
+        self.assertFalse(original_exited(None, game))
+        self.assertTrue(original_exited(None, prompt))
+        self.assertFalse(original_exited(start, prompt))
+        self.assertFalse(original_exited(start, game))
+        self.assertFalse(original_exited(None, None))
+
     def test_frame_png_cache_requires_all_current_bytes_and_dimensions(self):
         import base64,io
         from PIL import Image
