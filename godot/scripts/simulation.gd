@@ -335,7 +335,8 @@ func _valid_snapshot(saved: Dictionary) -> bool:
 		return false
 	if saved.status == "active" and (remaining == 0 or saved.fuel <= 0 or saved.hull <= 0):
 		return false
-	if saved.status == "lost" and (remaining == 0 or (saved.fuel > 0 and saved.hull > 0)):
+	var spent: bool = saved.ammo.all(func(rounds): return int(rounds) <= 0)
+	if saved.status == "lost" and (remaining == 0 or (saved.fuel > 0 and saved.hull > 0 and not spent)):
 		return false
 	if saved.status != "active" and saved.speed != 0:
 		return false

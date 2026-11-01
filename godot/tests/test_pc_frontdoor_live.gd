@@ -68,7 +68,7 @@ func run_test()->void:
 	await shot("04-settings-compact")
 	check(frontdoor.settings_columns.columns==1,"compact settings scroll in one column")
 	var sliders=frontdoor.settings_page.find_children("*","HSlider",true,false)
-	check(sliders.size()==19,"all group, individual and private world mix channels accessible")
+	check(sliders.size()==audio_menu.audio_channels().size(),"all group, individual and private world mix channels accessible: %d of %d"%[sliders.size(),audio_menu.audio_channels().size()])
 	sliders[0].value=31
 	check(audio_menu.settings.master==31 and is_equal_approx(frontdoor.main.sound.volume,0.65*0.31),"settings and practice share master volume")
 	for channel in ["cannon","engine","turret","radio","switch"]:

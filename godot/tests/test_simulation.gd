@@ -275,6 +275,10 @@ func _test_completion() -> void:
 	check(sim.status == "lost" and _has_event(spent, "lost"), "expending every round ends the exercise")
 	saved = sim.snapshot()
 	check(sim.tick({"fire": true}).is_empty() and sim.snapshot() == saved, "ammunition loss terminal and immutable")
+	check(Sim.new().restore(saved), "ammunition-loss snapshot restorable")
+	var unspent: Dictionary = saved.duplicate(true)
+	unspent.ammo = [0, 0, 0, 1]
+	check(not Sim.new().restore(unspent), "a loss with rounds, fuel and hull left is rejected")
 	sim.reset()
 	sim.ammo = [0, 0, 0, 1]
 	sim.turret = sim.bearing_to(sim.targets[0].pos)

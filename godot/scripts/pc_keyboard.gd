@@ -97,7 +97,10 @@ static func record_alias(event: InputEvent) -> void:
 
 static func _track_modifier_sides(event: InputEventKey) -> void:
 	if event.keycode in SIDED:
-		if event.location==KEY_LOCATION_UNSPECIFIED: return
+		if event.location==KEY_LOCATION_UNSPECIFIED:
+			# A release that names no side cannot keep either side held.
+			if not event.pressed: modifier_sides.erase(event.keycode)
+			return
 		var sides: Dictionary = modifier_sides.get(event.keycode,{})
 		if event.pressed: sides[event.location]=true
 		else: sides.erase(event.location)

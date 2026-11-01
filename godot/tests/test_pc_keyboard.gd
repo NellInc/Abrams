@@ -173,6 +173,10 @@ func run() -> void:
 	send.call(KEY_3,KEY_3,false,KEY_LOCATION_UNSPECIFIED,true)
 	send.call(KEY_SHIFT,KEY_SHIFT,false,KEY_LOCATION_LEFT)
 	if not Keyboard.held().is_empty(): errors.append("both Shift sides released: "+str(Keyboard.held()))
+	# A release that names no side retires every tracked side.
+	send.call(KEY_SHIFT,KEY_SHIFT,true,KEY_LOCATION_LEFT)
+	send.call(KEY_SHIFT,KEY_SHIFT,false)
+	if not Keyboard.held().is_empty(): errors.append("unsided Shift release clears a tracked side: "+str(Keyboard.held()))
 	# A side whose release never arrived is retired by the next unshifted key.
 	send.call(KEY_SHIFT,KEY_SHIFT,true,KEY_LOCATION_LEFT)
 	Input.parse_input_event(_release(KEY_SHIFT)); Input.flush_buffered_events() # Deliberately omit record_alias.
