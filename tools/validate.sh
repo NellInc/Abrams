@@ -23,10 +23,6 @@ if [ "${1:-}" = --list ]; then LIST=1; fi
 PYTHON=${ABRAMS_PYTHON:-python3}
 GODOT_VERSION=4.7.2
 TIER=default
-OUT="artifacts/validation-$(date -u +%Y%m%dT%H%M%SZ)"
-if [ "$LIST" = 0 ]; then mkdir -p "$OUT"; fi
-# A GDScript runtime error before quit() leaves Godot running forever; bound every check.
-CHECK_TIMEOUT=${VALIDATE_CHECK_TIMEOUT:-1200}
 # A mistyped limit must fail, not silently disable itself in a [ -gt ] test.
 for limit in VALIDATE_CHECK_TIMEOUT VALIDATE_MAX_SKIPS; do
   eval "value=\${$limit:-}"
@@ -34,6 +30,10 @@ for limit in VALIDATE_CHECK_TIMEOUT VALIDATE_MAX_SKIPS; do
     ''|*[!0-9]*) [ -z "$value" ] || { echo "FAIL: $limit must be a whole number, not '$value'" >&2; exit 2; } ;;
   esac
 done
+OUT="artifacts/validation-$(date -u +%Y%m%dT%H%M%SZ)"
+if [ "$LIST" = 0 ]; then mkdir -p "$OUT"; fi
+# A GDScript runtime error before quit() leaves Godot running forever; bound every check.
+CHECK_TIMEOUT=${VALIDATE_CHECK_TIMEOUT:-1200}
 # A skip whose reason says unicorn itself is missing, in either unittest quote
 # style. Reasons that also need local inputs ("Requires unicorn, the original
 # SIM.EXE ...") or several modules ("needs ('unicorn', 'PIL')") are not counted:
