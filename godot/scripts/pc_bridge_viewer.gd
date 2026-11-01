@@ -475,7 +475,8 @@ func _frontdoor_select(destination: String) -> void:
 	if not _frontdoor_blocked() or frontdoor.busy: return
 	if frontdoor_route.begin(destination):
 		route_started=Time.get_ticks_msec()
-		frontdoor.show_route(frontdoor_route.failure if frontdoor_route.phase=="fallback" else "Opening "+destination.capitalize()+"...",frontdoor_route.phase=="fallback")
+		var title: String={"info":"M1-Info"}.get(destination,destination.capitalize())
+		frontdoor.show_route(frontdoor_route.failure if frontdoor_route.phase=="fallback" else "Opening "+title+"...",frontdoor_route.phase=="fallback")
 
 func _frontdoor_continue() -> void:
 	frontdoor_route.phase="playing"

@@ -2,13 +2,15 @@
 
 The original PC executable is the intended gameplay authority. Godot consumes
 read-only snapshots and supplies presentation. Ordinary Play opens a tank-cover
-main menu with Scenario, Campaign, Settings, Extras and Quit. The authored
+main menu with Scenario, Campaign, M1-Info, Settings, Extras and Quit. The authored
 practice range and artwork comparison live in Extras, in an isolated viewport.
 The original guest remains frozen while the cover or an Extras screen is open.
 
-Scenario and Campaign send a bounded sequence of normal original keys, verifying
-source-paired menu text before selecting either destination. Campaign stops at
-the original dropdown before any name entry or campaign-save decision. A route
+Scenario, Campaign and M1-Info send a bounded sequence of normal original keys,
+verifying source-paired menu text before selecting a destination. Campaign stops
+at the original dropdown before any name entry or campaign-save decision; M1-Info
+stops at the original CREW, AMMO and ARMAMENT dropdown, where the original owns
+every information page. A route
 that cannot be verified stops and offers the original game directly. Cancelling
 an original submenu back to its stable root restores the cover. Capture and
 diagnostic entry points retain their direct original-game routes.
@@ -20,7 +22,9 @@ original Genesis captures exist; the Web edition, which publishes none, shows th
 remasters alone. Quit drains both presentation audio paths and closes the
 original host. Working if: guest frames
 and checkpoints remain blocked in Extras, held menu keys do not reach gameplay,
-and Scenario/Campaign keep their original setup and save behaviour.
+and Scenario/Campaign keep their original setup and save behaviour. M1-Info:
+`test_pc_frontdoor_live.gd` (1 November 2026) opens the original dropdown, the
+crew page and returns to the cover; 85 checks, 0 errors.
 
 ## What runs locally
 

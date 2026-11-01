@@ -45,6 +45,11 @@ func pulse(code:int)->void:
 	key(code,false)
 	before=samples
 	await wait_until(func():return samples>=before+30 or _frontdoor_blocked(),"original key released")
+func button_named(label:String)->Button:
+	for entry in frontdoor.main.ui.buttons:
+		if entry.node.text==label:return entry.node
+	check(false,"button present: "+label)
+	return Button.new()
 func source_has(text:String)->bool:
 	return _decoded_image!=null and text in frontdoor_route.proof.verified_text(_decoded_image,previous_presentation)
 func check_fit()->void:
@@ -57,13 +62,13 @@ func run_test()->void:
 	audio_menu.quality_config_path=output.path_join("graphics.cfg")
 	check(_frontdoor_blocked() and frontdoor.visible,"ordinary Play lands on cover")
 	check(frontdoor.main.embedded and not auto_accept_quit,"embedded scene cannot own quit")
-	check(frontdoor.main.ui.buttons.map(func(entry):return entry.node.text)==["SCENARIO","CAMPAIGN","SETTINGS","EXTRAS","QUIT"],"five main actions")
+	check(frontdoor.main.ui.buttons.map(func(entry):return entry.node.text)==["SCENARIO","CAMPAIGN","M1-INFO","SETTINGS","EXTRAS","QUIT"],"six main actions")
 	var id:int=bridge.next_id
 	await shot("01-main-1280")
 	root.size=Vector2i(1152,648);await shot("02-main-wide");check_fit()
 	root.size=Vector2i(640,480);await shot("03-main-compact");check_fit()
 	check(bridge.next_id==id,"idle cover freezes original guest")
-	await click(frontdoor.main.ui.buttons[2].node)
+	await click(button_named("SETTINGS"))
 	check(is_instance_valid(frontdoor.settings_page),"pointer reaches embedded Settings button")
 	await shot("04-settings-compact")
 	check(frontdoor.settings_columns.columns==1,"compact settings scroll in one column")
@@ -98,16 +103,17 @@ func run_test()->void:
 		frontdoor.main.request_quit()
 		return
 	frontdoor.close_settings()
-	await click(frontdoor.main.ui.buttons[3].node)
+	await click(button_named("EXTRAS"))
 	check(frontdoor.main.screen=="extras","pointer reaches embedded Extras button")
 	await shot("06-extras")
-	frontdoor.main.ui.buttons[0].node.pressed.emit()
+	check(frontdoor.main.ui.buttons.map(func(entry):return entry.node.text)==["PRACTICE RANGE","COMPARE ARTWORK","PRACTICE CONTROLS","MISSION GUIDE","MAIN MENU"],"Extras offers no original-game destination")
+	button_named("PRACTICE RANGE").pressed.emit()
 	var ticks:int=frontdoor.main.sim.elapsed_ticks
 	await settle(20)
 	check(frontdoor.main.sim.elapsed_ticks>ticks and bridge.next_id==id,"practice runs while original guest remains frozen")
 	frontdoor.main.paused=true;frontdoor.main.ui.rebuild_buttons()
-	frontdoor.main.ui.buttons[-1].node.pressed.emit()
-	frontdoor.main.ui.buttons[1].node.pressed.emit()
+	button_named("EXTRAS").pressed.emit()
+	button_named("COMPARE ARTWORK").pressed.emit()
 	await shot("07-artwork")
 	check(frontdoor.artwork.embedded and not auto_accept_quit,"artwork retains viewer shutdown authority")
 	frontdoor.artwork._back();await settle()
@@ -129,7 +135,7 @@ func run_test()->void:
 	await shot("08-scenario")
 	await pulse(KEY_ESCAPE)
 	if not await wait_until(func():return _frontdoor_blocked(),"original scenario cancel returns to cover"):_close();return
-	frontdoor.main.ui.buttons[1].node.pressed.emit()
+	button_named("CAMPAIGN").pressed.emit()
 	if not await wait_until(func():return not _frontdoor_blocked(),"Campaign route completes"):_close();return
 	check(source_has("BEGIN") and not source_has("NAME:"),"Campaign stops before original name/save choice")
 	await shot("09-campaign")
@@ -140,6 +146,18 @@ func run_test()->void:
 	check(not _frontdoor_blocked(),"name cancellation retains campaign dropdown")
 	await pulse(KEY_ESCAPE)
 	if not await wait_until(func():return _frontdoor_blocked(),"campaign cancellation returns to cover"):_close();return
+	await settle()
+	button_named("M1-INFO").pressed.emit()
+	if not await wait_until(func():return not _frontdoor_blocked(),"M1-Info route completes"):_close();return
+	check(source_has("CREW") and source_has("AMMO") and source_has("ARMAMENT"),"M1-Info opens the original information menu")
+	await shot("10-m1-info")
+	await pulse(KEY_ENTER)
+	check(source_has("GUNNER") and source_has("LOADER") and not _frontdoor_blocked(),"original crew page stays in the original game")
+	await pulse(KEY_ESCAPE)
+	check(source_has("CREW") and not _frontdoor_blocked(),"page close returns to the original information menu")
+	await pulse(KEY_ESCAPE)
+	if not await wait_until(func():return _frontdoor_blocked(),"information close returns to cover"):_close();return
+	check(frontdoor.main.screen=="menu","M1-Info returns to the main menu")
 	frontdoor.main.set_screen("extras");frontdoor.main.start_range()
 	test_done=true
 	frontdoor.main.request_quit()

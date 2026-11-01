@@ -2,6 +2,9 @@ extends RefCounted
 ## Bounded ordinary-key navigation. No guest memory, save or simulation writes.
 const ROOT_LABELS := ["SCENARIO","CAMPAIGN","M1-INFO","EXIT"]
 const ROOT_RECTS := [[20,12,64,8],[104,12,64,8],[188,12,56,8],[264,12,32,8]]
+# The original M1-INFO dropdown, observed live (1 November 2026).
+const INFO_RECTS := {"CREW":[200,24,32,8],"AMMO":[200,36,32,8],"ARMAMENT":[184,48,64,8]}
+const TARGETS := {"scenario":0,"campaign":1,"info":2}
 const BOOT_STEPS := [[3,["return"]],[600,[]],[120,[]],[3,["escape"]],[180,[]],[3,["space"]],[300,[]],[60,["return"]],[120,[]],[300,[]]]
 const TextProof = preload("res://scripts/pc_frontend_music.gd")
 var proof = TextProof.new()
@@ -28,6 +31,8 @@ func classify(source: Image, program: Dictionary, presentation: Dictionary) -> D
 		result.submenu="scenario"
 	elif "CAMPAIGN" in verified and runs.any(func(run):return run.text=="BEGIN" and run.rect.map(func(value):return int(value))==[116,24,40,8]):
 		result.submenu="campaign"
+	elif INFO_RECTS.keys().all(func(label):return runs.any(func(run):return run.text==label and run.rect.map(func(value):return int(value))==INFO_RECTS[label])):
+		result.submenu="info"
 	if runs.size()!=4: return result
 	var seen: Array = []
 	var active := -1
@@ -54,7 +59,7 @@ func observe(source: Image, program: Dictionary, presentation: Dictionary, seque
 	return_ready=phase=="playing" and selected>=0 and sequence-root_since>=90
 
 func begin(choice: String) -> bool:
-	if phase not in ["idle","playing"] or choice not in ["scenario","campaign"]: return false
+	if phase not in ["idle","playing"] or not TARGETS.has(choice): return false
 	destination=choice;failure="";moves=0;return_ready=false
 	if selected>=0:
 		phase="select"
@@ -74,7 +79,7 @@ func next_step() -> Array:
 	if phase=="boot":phase="select"
 	if phase=="select":
 		if selected<0:_fail();return []
-		var target:=0 if destination=="scenario" else 1
+		var target:int=TARGETS[destination]
 		if selected==target:
 			phase="open";steps=[[3,["return"]],[60,[]]]
 		elif moves<3:

@@ -114,6 +114,26 @@ func _initialize()->void:
 	campaign=packet.duplicate(true);campaign.text_runs.append(run(source,"BEGIN",[116,24,40,8],4))
 	route.observe(source,program,campaign,283)
 	check(route.next_step().is_empty() and route.phase=="playing","hands original Campaign dropdown to player")
+	# M1-Info: the original information dropdown, observed live.
+	var info:=packet.duplicate(true)
+	for i in 4:info.text_runs[i].foreground=4 if i==2 else 1
+	for label in Route.INFO_RECTS:info.text_runs.append(run(source,label,Route.INFO_RECTS[label],4 if label=="CREW" else 1))
+	check(route.classify(source,program,info)=={"selected":-1,"submenu":"info"},"M1-Info dropdown never counts as root")
+	var moved:=info.duplicate(true);moved.text_runs[-1].rect=[185,48,64,8]
+	check(route.classify(source,program,moved).submenu=="","displaced information label is not the M1-Info dropdown")
+	var info_route:=Route.new()
+	check(not info_route.begin("exit") and not info_route.begin("") ,"only listed original destinations can be routed")
+	info_route.observe(source,program,packet,10)
+	check(info_route.begin("info") and info_route.phase=="select","M1-Info selection begins from the observed root")
+	check(info_route.next_step()==[3,["right"]],"moves right from Campaign toward M1-Info")
+	info_route.next_step()
+	var root_info:=packet.duplicate(true)
+	for i in 4:root_info.text_runs[i].foreground=4 if i==2 else 1
+	info_route.observe(source,program,root_info,60)
+	check(info_route.next_step()==[3,["return"]],"opens only verified selected M1-Info")
+	info_route.next_step()
+	info_route.observe(source,program,info,130)
+	check(info_route.next_step().is_empty() and info_route.phase=="playing","hands original information menu to player")
 	var boot:=Route.new();boot.begin("scenario")
 	var canonical:Array=JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/pc_boot_steps.json"))
 	check(Route.BOOT_STEPS.size()==10,"runtime bootstrap has exactly the observed prefix")

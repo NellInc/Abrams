@@ -67,11 +67,14 @@ func rebuild_buttons() -> void:
 		entry.node.queue_free()
 	buttons.clear()
 	if main.screen == "menu" and main.embedded:
-		button("SCENARIO",Rect2(90,515,420,54),func(): main.game_selected.emit("scenario"))
-		button("CAMPAIGN",Rect2(90,577,420,54),func(): main.game_selected.emit("campaign"))
-		button("SETTINGS",Rect2(90,639,420,54),func(): main.settings_selected.emit())
-		button("EXTRAS",Rect2(90,701,420,54),func(): main.set_screen("extras"))
-		button("QUIT",Rect2(90,763,420,54),main.request_quit)
+		# The original game's three destinations, in its own menu order. Extras
+		# never advances the original game, so M1-Info belongs here.
+		button("SCENARIO",Rect2(90,515,420,50),func(): main.game_selected.emit("scenario"))
+		button("CAMPAIGN",Rect2(90,573,420,50),func(): main.game_selected.emit("campaign"))
+		button("M1-INFO",Rect2(90,631,420,50),func(): main.game_selected.emit("info"))
+		button("SETTINGS",Rect2(90,689,420,50),func(): main.settings_selected.emit())
+		button("EXTRAS",Rect2(90,747,420,50),func(): main.set_screen("extras"))
+		button("QUIT",Rect2(90,805,420,50),main.request_quit)
 	elif main.screen in ["menu","extras"]:
 		button("PRACTICE RANGE",Rect2(90,515,420,54),main.start_range)
 		button("COMPARE ARTWORK",Rect2(90,577,420,54),main.open_artwork)
