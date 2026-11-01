@@ -30,6 +30,10 @@ var _river_present := false
 var _river_visible := false
 var _cached_pass: Dictionary = {}
 var _cached_config: Array = []
+var _cached_warnings: Array[String] = []
+# Held until a build completes: a runtime error mid-build leaves it in place,
+# so the compositor shows original pixels instead of a partial or stale world.
+const REPLAY_INCOMPLETE := "replay did not complete"
 # Sustained camera motion misses every frame, so its full deep snapshot is never
 # consulted. After this many consecutive camera-changing misses only the cheap
 # camera/object-count pre-key is kept; the first unchanged camera snapshots
@@ -253,6 +257,7 @@ func _mesh_config() -> Array:
 
 func apply_pass(pass_data: Dictionary) -> void:
 	var started: int=Time.get_ticks_usec() if profile_builds else 0
+	render_warnings.assign([REPLAY_INCOMPLETE])
 	last_apply_timings_usec={"reused":false,"ownership":0,"mapping":0,"tree_mapping":0,"upload":0,"foliage":0,"effects":0} if profile_builds else {}
 	var cacheable: bool = solid_enabled and pass_data.get("camera") is Dictionary and pass_data.get("materials") is Array and pass_data.get("palette_rgb") is Array and pass_data.get("objects") is Array and not pass_data.objects.is_empty()
 	if modern_enabled and not modern_assets.ready: cacheable=false
@@ -289,6 +294,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 					get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
 		if mesh_node.mesh!=null and mesh_node.mesh.get_surface_count()>0:
 			refresh_surface_shader(mesh_node.mesh.surface_get_material(0))
+		render_warnings.assign(_cached_warnings)
 		mesh_reuse_count += 1
 		_motion_misses=0
 		_previous_prekey=[pass_data.camera.duplicate(true),pass_data.objects.size()]
@@ -306,7 +312,6 @@ func apply_pass(pass_data: Dictionary) -> void:
 	mesh_build_count += 1
 	if retain_render_target and get_viewport() is SubViewport:
 		get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
-	render_warnings.clear()
 	ownership.clear()
 	tactical_vehicle_view.clear()
 	tactical_foliage.clear()
@@ -336,6 +341,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 	vehicle_polygon_count = 0
 	if solid_enabled:
 		_apply_surfaces(pass_data,effects_input)
+		render_warnings.erase(REPLAY_INCOMPLETE)
 		if _modern_active:
 			modern_frame_status="%d refined faces, %d tree planes, %d source fallbacks, %d observed round forms"%[modern_polygon_count,modern_tree_count,modern_fallback_polygon_count,source_round_count]
 		elif modern_enabled and pass_data.get("camera") is Dictionary:
@@ -343,6 +349,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 		if cacheable and mesh_node.mesh!=null and (not modern_enabled or _modern_active) and _motion_misses<MOTION_SNAPSHOT_SKIP:
 			_cached_pass=render_input.duplicate(true)
 			_cached_config=config.duplicate(true)
+			_cached_warnings.assign(render_warnings)
 		if profile_builds: last_apply_timings_usec.total=Time.get_ticks_usec()-started
 		return
 	var vertices := PackedVector3Array()
@@ -362,6 +369,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 			for i in edges:
 				vertices.append(camera_point(points[i]))
 				vertices.append(camera_point(points[(i + 1) % points.size()]))
+	render_warnings.erase(REPLAY_INCOMPLETE)
 	if vertices.is_empty():
 		mesh_node.mesh = null
 		return

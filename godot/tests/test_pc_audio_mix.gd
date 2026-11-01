@@ -454,6 +454,13 @@ func run() -> void:
 	resumed.continue_timeline()
 	check(resumed.apply_audio({"schema":3,"frame":22,"epoch":0,"last_id":0,"events":[],"active":false,"enabled":false}),"second primer accepted")
 	check(resumed.apply_audio(packet(23,true,true)) and resumed.effects[0].playing and resumed.voice.playing,"resumed cue plays")
+	# A save on the frame SIM exits: the resumed worker's first advancing packet
+	# is eventless and inactive, and must not keep the old mission's loops.
+	resumed.continue_timeline()
+	check(resumed.apply_audio({"schema":3,"frame":23,"epoch":0,"last_id":0,"events":[],"active":false,"enabled":false}),"exit-save primer accepted")
+	check(resumed.engine.playing and resumed.continuing_timeline,"exit-save primer keeps the loop until the source reports")
+	check(resumed.apply_audio({"schema":3,"frame":26,"epoch":0,"last_id":0,"events":[],"active":false,"enabled":false}) and resumed.failure.is_empty(),"eventless inactive packet after an exit save accepted: "+resumed.failure)
+	check(not resumed.engine.playing and not resumed.turret.playing and not resumed.voice.playing and not resumed.continuing_timeline,"a save at SIM exit stops the old mission's loops and voice")
 	resumed.reset_timeline()
 	check(not resumed.continuing_timeline and not resumed.effects[0].playing and not resumed.voice.playing and not resumed.engine.playing and not resumed.turret.playing,"load reset still stops everything")
 	check(resumed.apply_audio(packet(1,true,true)) and resumed.failure.is_empty(),"load reset accepts a fresh timeline")

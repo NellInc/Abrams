@@ -68,7 +68,11 @@ func _run() -> void:
 		await RenderingServer.frame_post_draw
 		var im := viewport.get_texture().get_image()
 		for i in 16: color_check(im, 40 + i * 16, 40, i, "palette")
+		var args := OS.get_cmdline_user_args()
 		var path := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("artifacts/pc-surface-palette-01.png")
+		if "--output" in args and args.find("--output")+1<args.size():
+			DirAccess.make_dir_recursive_absolute(args[args.find("--output")+1])
+			path = args[args.find("--output")+1].path_join("pc-surface-palette-01.png")
 		im.save_png(path)
 		view.apply_pass(fixture([quad(32,13,256,97,1024,17)]))
 		await process_frame

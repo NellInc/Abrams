@@ -51,7 +51,8 @@ func render(source: Image, label: String) -> void:
 		authorized.append(Rect2i(layer.rect[0],layer.rect[1],layer.rect[2],layer.rect[3]))
 	# FRAME-only fallback owns the border; every interior pixel is still checked.
 	if item.is_empty() and art.active.get("scene")=="map_frame":
-		for r in [Rect2i(0,0,320,10),Rect2i(0,10,10,166),Rect2i(310,10,10,166),Rect2i(0,176,320,11)]: authorized.append(r)
+		# The FRAME guard hash covers rows 176-199, so its rebuilt footer is authorized too.
+		for r in [Rect2i(0,0,320,10),Rect2i(0,10,10,166),Rect2i(310,10,10,166),Rect2i(0,176,320,24)]: authorized.append(r)
 	var frame_regions: Array[Rect2i]=[]
 	for r in item.get("frame_rects",[]):
 		frame_regions.append(Rect2i(r[0],r[1],r[2],r[3]))

@@ -5,7 +5,8 @@
 # tests, every headless Godot check and a parse of the promo capture scripts.
 # Opt-in tiers, each printed as NOT RUN when skipped:
 #   VALIDATE_NATIVE=1  windowed GPU checks (gl_compatibility): Modern ownership,
-#                      Tactical shader includes, startup cover, frontend scenes.
+#                      Tactical shader includes, startup cover, frontend scenes
+#                      and every harness's --native pixel comparison.
 #   VALIDATE_LIVE=1    checks that drive the original PC host (minutes to hours).
 # Every Godot check must print its exact completion receipt; a bounded run that
 # exits 0 without one fails. `tools/validate.sh --list` prints
@@ -132,6 +133,10 @@ receipt_for() {
     pc_tactical_*_gpu) counted "$1" ;;
     pc_startup_splash_native) echo '^PC_STARTUP_SPLASH: [1-9][0-9]* checks, 0 errors$' ;;
     pc_frontend_scene_native) echo '^PC_FRONTEND_SCENE: [1-9][0-9]* checks, 0 errors, [1-9][0-9]* selectors, 8 missions$' ;;
+    # A --native pixel run prints its headless receipt, reporting native=true
+    # and a nonzero native pixel count where the receipt names them.
+    *_native) base=$(receipt_for "${1%_native}") || return 1
+      printf '%s\n' "$base" | sed -e 's/native=false/native=true/' -e 's/\[0-9\]+ native pix/[1-9][0-9]* native pix/' ;;
     # Live tier.
     pc_live_bridge) echo '^PC_LIVE_BRIDGE: original movement, stations, braking, turret, firing and child shutdown passed;' ;;
     pc_session_bridge) echo '^PC_SESSION_BRIDGE: [1-9][0-9]* stages, [0-9]+ paired worlds, [0-9]+ exact RGB checks, 0 failures, host exit 0$' ;;
@@ -404,7 +409,7 @@ if [ "${VALIDATE_NATIVE:-0}" = 1 ] || [ "$LIST" = 1 ]; then
   run_check pc_tactical_dynamics_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_tactical_dynamics.gd -- --gpu --output "$(fresh native/tactical-dynamics)"
   # Modern's concealment guarantee lives in the GPU ownership mask; only these runs exercise it.
   # shellcheck disable=SC2086
-  run_check pc_modern_native ./tools/godot.sh $NATIVE --quit-after 1200 --script res://tests/test_pc_modern.gd -- --native --output "$(fresh native/modern)"
+  run_check pc_modern_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern.gd -- --native --output "$(fresh native/modern)"
   # shellcheck disable=SC2086
   run_check pc_modern_startup_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_modern_startup.gd
   if [ "$LIST" = 1 ] || [ -f local-art/pc-tactical-roster-v1/manifest.json ]; then
@@ -454,6 +459,48 @@ if [ "${VALIDATE_NATIVE:-0}" = 1 ] || [ "$LIST" = 1 ]; then
   run_check pc_startup_splash_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_startup_splash.gd -- --output "$(fresh native/startup-splash)"
   # shellcheck disable=SC2086
   run_check pc_frontend_scene_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_frontend_scene.gd -- --native --fixture "$ROOT/artifacts/intro-menu-20260930/trace/report.json" --output "$(fresh native/frontend-scene)"
+  # Pixel comparisons each harness runs only with --native. Frame caps are
+  # dropped: on a real window they depend on timing and can cut a run short;
+  # the gate's wall-clock limit bounds them instead. Every run writes to its own
+  # fresh folder, never a harness default beside a fixture or dated evidence.
+  # shellcheck disable=SC2086
+  run_check genesis_vehicle_studies_native ./tools/godot.sh $NATIVE --script res://tests/test_genesis_vehicle_studies.gd -- --native --output "$(fresh native/genesis-vehicle-studies)"
+  run_check pc_cockpit_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_cockpit_art.gd -- --native --output "$(fresh native/pc-cockpit-art)"
+  run_check pc_cockpit_refinement_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_cockpit_refinement.gd -- --native --output "$(fresh native/pc-cockpit-refinement)"
+  run_check pc_colour_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_colour.gd -- --native --output "$(fresh native/pc-colour)"
+  run_check pc_commander_trim_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_commander_trim.gd -- --native --output "$(fresh native/pc-commander-trim)"
+  run_check pc_cow_visibility_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_cow_visibility.gd -- --native --output "$(fresh native/pc-cow-visibility)"
+  run_check pc_cursor_struts_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_cursor_struts.gd -- --native --output "$(fresh native/pc-cursor-struts)"
+  run_check pc_dynamic_map_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_dynamic_map.gd -- --live --native --output "$(fresh native/pc-dynamic-map)"
+  run_check pc_effect_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_effect_art.gd -- --native --output "$(fresh native/pc-effect-art)"
+  run_check pc_effect_modes_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_effect_modes.gd -- --native --output "$(fresh native/pc-effect-modes)"
+  run_check pc_frontend_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_frontend_art.gd -- --native --output "$(fresh native/pc-frontend-art)"
+  run_check pc_frontend_completeness_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_frontend_completeness.gd -- --fixture "$ROOT/artifacts/pc-live-type-lifecycle-01/report.json" --native --output "$(fresh native/pc-frontend-completeness)"
+  run_check pc_genesis_style_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_genesis_style.gd -- --native --output "$(fresh native/pc-genesis-style)"
+  run_check pc_graphics_modes_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_graphics_modes.gd -- --native --output "$(fresh native/pc-graphics-modes)"
+  run_check pc_hill_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_hill_art.gd -- --native --output "$(fresh native/pc-hill-art)"
+  run_check pc_information_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_information_art.gd -- --tandem --native --output "$(fresh native/pc-information-art)"
+  run_check pc_instrument_damage_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_instrument_damage.gd -- --native --output "$(fresh native/pc-instrument-damage)"
+  run_check pc_instrument_lock_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_instrument_lock.gd -- --native --output "$(fresh native/pc-instrument-lock)"
+  run_check pc_intro_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_intro_art.gd -- --native --output "$(fresh native/pc-intro-art)"
+  run_check pc_map_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_map_art.gd -- --native --output "$(fresh native/pc-map-art)"
+  run_check pc_menu_text_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_menu_text.gd -- --native --output "$(fresh native/pc-menu-text)"
+  run_check pc_motor_pool_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_motor_pool_art.gd -- --text --native --output "$(fresh native/pc-motor-pool-art)"
+  run_check pc_newspapers_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_newspaper_art.gd -- --native --output "$(fresh native/pc-newspapers)"
+  run_check pc_plate_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_plate_art.gd -- --native --output "$(fresh native/pc-plate-art)"
+  run_check pc_play_display_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_play_display.gd -- --native --output "$(fresh native/pc-play-display)"
+  run_check pc_portrait_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_portrait_art.gd -- --native --output "$(fresh native/pc-portrait-art)"
+  run_check pc_portrait_coverage_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_portrait_coverage.gd -- --native --output "$(fresh native/pc-portrait-coverage)"
+  run_check pc_presentation_reuse_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_presentation_reuse.gd -- --native --output "$(fresh native/pc-presentation-reuse)"
+  run_check pc_render_quality_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_render_quality.gd -- --native --output "$(fresh native/pc-render-quality)"
+  run_check pc_sprites_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_sprites.gd -- --native --output "$(fresh native/pc-sprites)"
+  run_check pc_surfaces_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_surfaces.gd -- --native --output "$(fresh native/pc-surfaces)"
+  run_check pc_tandem_frame_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_tandem_frame.gd -- --native --output "$(fresh native/pc-tandem-frame)"
+  run_check pc_terrain_style_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_terrain_style.gd -- --native --output "$(fresh native/pc-terrain-style)"
+  run_check pc_typography_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_typography.gd -- --native --output "$(fresh native/pc-typography)"
+  run_check pc_vehicle_art_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_vehicle_art.gd -- --native --output "$(fresh native/pc-vehicle-art)"
+  run_check pc_wilson_completion_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_wilson_completion.gd -- --native --output "$(fresh native/pc-wilson-completion)"
+  run_check pc_world_audio_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_world_audio.gd -- --native --output "$(fresh native/pc-world-audio)"
 else
   echo 'NOT RUN native tier: Modern GPU ownership/concealment, Tactical shader includes, startup cover (set VALIDATE_NATIVE=1)' >> "$OUT/results.txt"
   echo 'NOTE: native Modern ownership checks NOT run (VALIDATE_NATIVE=1 runs them)' >&2
@@ -491,4 +538,12 @@ not_run pc_audio_menu_native 'interactive: a person chooses the Audio menu level
 not_run pc_native_window 'observer: real focus, menu and window changes come from a person or CUA'
 not_run pc_endurance_profile 'profiler: timing receipt only, no pass/fail contract'
 not_run pc_vehicle_studies 'research harness: needs local --assets authoring studies and reference/pc-vehicles'
+not_run pc_gauges_native 'research: --native compares against a fresh live trace (--fixture/--output from a new capture)'
+not_run pc_genesis_cockpits_native 'research: --native compares against a fresh live trace (--fixture/--output from a new capture)'
+not_run pc_gunner_trim_native 'research: --native compares against a fresh live trace (--fixture/--output from a new capture)'
+not_run pc_instrument_status_native 'research: --native compares against a fresh live trace (--fixture/--output from a new capture)'
+not_run pc_orientation_native 'research: --native compares against a fresh live trace (--fixture/--output from a new capture)'
+not_run pc_reticle_native 'research: --native compares against a fresh live trace (--fixture/--output from a new capture)'
+not_run pc_reticle_target_native 'research: --native compares against a fresh live trace (--fixture/--output from a new capture)'
+not_run pc_world_bearing_native 'research: --native compares against a fresh live trace (--fixture/--output from a new capture)'
 if [ "$LIST" = 0 ]; then printf 'VALIDATION_COMPLETE %s\n' "$OUT"; fi

@@ -22,6 +22,20 @@ func _run() -> void:
 	check(view.mesh_node.mesh.surface_get_array_len(0) == 6, "original triangle wire has three edges")
 	view.apply_pass({"objects": []})
 	check(view.mesh_node.mesh == null and view.source_points.is_empty(), "empty pass must clear previous geometry")
+	check(view.render_warnings.is_empty(), "a completed wire pass clears its incomplete marker")
+	# A build holds the incomplete marker until it finishes, so a runtime error
+	# mid-build shows original pixels instead of a partial or stale world.
+	var probe_script := GDScript.new()
+	probe_script.source_code = "extends \"res://scripts/pc_draw_pass.gd\"\nvar held := false\nfunc _apply_surfaces(_pass: Dictionary, _effects: Dictionary) -> void:\n\theld = render_warnings.has(REPLAY_INCOMPLETE)\n"
+	check(probe_script.reload() == OK, "incomplete-marker probe compiles")
+	var probe = probe_script.new()
+	root.add_child(probe)
+	probe.solid_enabled = true
+	probe.render_warnings.assign(["stale"])
+	probe.apply_pass({"objects": []})
+	check(probe.held, "surface build runs while the replay is marked incomplete")
+	check(probe.render_warnings.is_empty(), "a completed surface build clears the marker and stale warnings")
+	probe.queue_free()
 	# Regression: Tactical must contain real range-style mesh instances, with
 	# stable world placement and fail-closed source ownership eligibility.
 	var foliage = view.tactical_foliage
@@ -298,6 +312,7 @@ func snapshot_motion() -> void:
 	var builds: int=view.mesh_build_count
 	view.apply_pass(basis_pass(true,8))
 	check(view.mesh_build_count==builds and view.mesh_reuse_count>0,"identical pass after motion did not reuse")
+	check(view.render_warnings==view._cached_warnings,"a reused mesh restores its own build's warnings, not the incomplete marker")
 	var edited := basis_pass(true,8)
 	edited.objects[0].polygons[0].colors=[0,0]
 	view.apply_pass(edited)

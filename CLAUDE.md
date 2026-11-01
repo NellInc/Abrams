@@ -169,7 +169,7 @@ python3 -m unittest tests.test_pc_bridge.SomeCase.test_name    # one test
 # Slow; logs go to artifacts/validation-<UTC timestamp>/. Prefer targeted tests while iterating.
 ./tools/validate.sh
 ./tools/validate.sh --list                       # tier, name, receipt and command of every check; runs nothing
-VALIDATE_NATIVE=1 ./tools/validate.sh            # + windowed GPU tier (Modern ownership, Tactical shader includes, startup cover, frontend scenes)
+VALIDATE_NATIVE=1 ./tools/validate.sh            # + windowed GPU tier (Modern ownership, Tactical shader includes, startup cover, frontend scenes, every harness's --native pixel comparison)
 VALIDATE_LIVE=1 VALIDATE_SOAK_SECONDS=60 ./tools/validate.sh   # + checks that drive the original PC host (minutes to hours)
 VALIDATE_EXHAUSTIVE=1 ./tools/validate.sh        # full sweeps and benchmarks instead of sampled rows
 

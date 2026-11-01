@@ -585,14 +585,18 @@ func apply_audio(packet: Dictionary) -> bool:
 		return true
 	if int(packet.epoch) < epoch or int(packet.last_id) < last_event_id:
 		return _reject("Original audio timeline moved backwards")
-	if continuing_timeline and not packet.active and packet.events.is_empty():
-		# The resumed worker's primer (and any eventless frame before its
-		# observer reattaches) carries no source change: nothing stops.
+	if continuing_timeline and not packet.active and packet.events.is_empty() and last_frame < 0:
+		# The resumed worker's primer carries no source change: nothing stops.
+		# Its held frames repeat the primer's frame and stop at the guard above.
 		epoch = int(packet.epoch)
 		last_frame = int(packet.frame)
 		last_event_id = next_id
 		return true
 	supplemental.begin_packet()
+	# The resumed worker reattaches before its first frame, so a first advancing
+	# packet without SIM means the original left SIM at the save: its loops and
+	# voices stop, and the next mission starts a fresh score.
+	if continuing_timeline and not packet.active: continuing_timeline = false
 	# Adopting the resumed worker's epoch is not a program change. Its source
 	# gates (inactive with events, or sound disabled) still stop everything.
 	# Read before the flag clears: the first active resumed packet adopts the

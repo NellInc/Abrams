@@ -22,6 +22,14 @@ GENERIC = ('PASS', 'true', 'false', 'x')
 FORMAT = re.compile(r'%(?:\.\d+)?[dsf]')
 
 
+def manual_script(name):
+    """The harness a not_run row names: its own file, else the one it runs natively."""
+    script = 'test_' + name + '.gd'
+    if not (TESTS / script).exists() and name.endswith('_native'):
+        script = 'test_' + name[:-len('_native')] + '.gd'
+    return script
+
+
 def gate_table():
     result = subprocess.run(['sh', str(GATE), '--list'], cwd=ROOT, check=True, text=True, capture_output=True)
     return [line.split('\t', 3) for line in result.stdout.splitlines() if line.strip()]
@@ -211,11 +219,31 @@ class ValidateGateTests(unittest.TestCase):
         covered = set()
         for tier, name, receipt, command in self.table:
             if tier == 'manual':
-                covered.add('test_' + name + '.gd')
+                covered.add(manual_script(name))
                 self.assertTrue(command.strip() and command != '-', name)
             covered.update(re.findall(r'res://tests/(test_[\w]+\.gd)', command))
         self.assertEqual(sorted(scripts - covered), [], 'add these to tools/validate.sh (run_check or not_run)')
         self.assertEqual(sorted(covered - scripts), [], 'tools/validate.sh names tests that do not exist')
+
+    def test_every_native_pixel_mode_runs_or_is_explained(self):
+        # A harness's --native comparison never ran in any tier until
+        # 2026-11-01, so its receipts silently accepted the headless subset.
+        native = {path.name for path in TESTS.glob('test_*.gd') if '"--native"' in path.read_text()}
+        covered = set()
+        for tier, name, receipt, command in self.table:
+            if tier == 'manual':
+                covered.add(manual_script(name))  # not run at all, or its --native mode, with a reason
+            for script, after in re.findall(r'res://tests/(test_[\w]+\.gd)(.*)', command):
+                if tier != 'default' and re.search(r'(^| )--native( |$)', after):
+                    covered.add(script)
+        self.assertEqual(sorted(native - covered), [], 'run these with --native in the native tier, or not_run <name>_native with a reason')
+
+    def test_native_pixel_runs_write_only_fresh_output(self):
+        for tier, name, receipt, command in self.table:
+            if tier == 'native' and ' --native' in command:
+                with self.subTest(check=name):
+                    self.assertRegex(command, r'--output \S*/artifacts/validation-[0-9TZ]+/native/')
+                    self.assertNotIn('--quit-after', command)
 
     def test_default_tier_is_headless(self):
         for tier, name, receipt, command in self.table:

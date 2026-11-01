@@ -36,6 +36,7 @@ func render(source: Image, label: String) -> void:
 	var image := view.get_texture().get_image()
 	var height := int(art.active.get("height",0))
 	var map_frame: bool = art.active.get("scene","")=="map_frame"
+	var title_plate: bool = art.active.get("scene","")=="mission_title"
 	if map_frame:
 		check(art.map_art.active.get("content_preserved")==[10,10,300,166],"source-verified map content bounds")
 	var changed := 0
@@ -52,9 +53,13 @@ func render(source: Image, label: String) -> void:
 				if Rect2i(10,10,300,166).has_point(Vector2i(x/4,y/4)):
 					check(same,"protected map contents changed: "+label)
 				elif not same: changed+=1
+			elif title_plate and art.panels.GUARDS.any(func(r): return Rect2i(r[0],r[1],r[2],r[3]).has_point(Vector2i(x/4,y/4))):
+				# The BRIEF title plate redraws only its hash-verified guard chrome.
+				if not same: changed+=1
 			elif y>=height*4: check(same,"protected original text/fallback changed: "+label)
 			elif not same: changed+=1
 	if map_frame: check(changed>1000,"source-verified FRAME surround visibly remastered")
+	if title_plate: check(changed>1000,"source-verified title plate visibly remastered: "+label)
 	if height>0:
 		check(changed>100000,"restored office visibly drawn: "+label)
 		var office: Image = art.material.get_shader_parameter("office").get_image()

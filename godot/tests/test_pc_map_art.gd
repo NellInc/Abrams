@@ -33,7 +33,8 @@ func run()->void:
 		var view:=SubViewport.new();view.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(view)
 		var image:=TextureRect.new();image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;image.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
 		image.texture=ImageTexture.create_from_image(source);view.add_child(image);view.add_child(art)
-		var out:=folder.path_join("artifacts/finish-20260928/maps/native")
+		var args:=OS.get_cmdline_user_args()
+		var out:=args[args.find("--output")+1] if "--output" in args and args.find("--output")+1<args.size() else folder.path_join("artifacts/finish-20260928/maps/native")
 		DirAccess.make_dir_recursive_absolute(out)
 		for scale in [4,6]:
 			view.size=Vector2i(320,200)*scale;image.size=view.size;art.size=view.size
