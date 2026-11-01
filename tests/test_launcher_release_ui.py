@@ -35,6 +35,21 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn("'CFBundleDisplayName':APP_NAME", builder)
         self.assertIn("'CFBundleName':APP_NAME", builder)
 
+    def test_setup_requests_keep_streams_apart_with_a_deadline(self):
+        call = SOURCE.split('func call(_ arguments', 1)[1].split('\n    func ', 1)[0]
+        # Separate pipes drained together: a stray stderr line never fails a
+        # successful reply, and a full stderr pipe cannot stall the runtime.
+        self.assertIn('let out = Pipe(), err = Pipe()', call)
+        self.assertIn('process.standardError = err', call)
+        self.assertIn('DispatchQueue.global().async(group: drained)', call)
+        self.assertIn('Self.setupTimeout', call)
+        self.assertIn('process.terminate()', call)
+        self.assertIn('static let setupTimeout: TimeInterval = 300', SOURCE)
+        # A failed import rechecks installed state, then shows the failure again.
+        self.assertIn('self.recheck(after:', call)
+        # Both --data-home spellings select the requested profile.
+        self.assertIn('hasPrefix("--data-home=")', SOURCE)
+
     def test_native_clone_preserves_pinned_source_bytes(self):
         root = Path(__file__).resolve().parents[1]
         path = root / '.github/workflows/portable-alpha.yml'
@@ -152,13 +167,23 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn('Your source folder will stay unchanged.', SOURCE)
 
     def test_bounded_async_output_and_safe_close(self):
-        self.assertEqual(SOURCE.count('DispatchQueue.global().async'), 2)
-        self.assertIn('Self.readOutput(pipe, limit: 65536)', SOURCE)
-        self.assertIn('Self.readOutput(pipe, limit: 16384)', SOURCE)
+        call = SOURCE.split('func call(_ arguments', 1)[1].split('\n    func ', 1)[0]
+        play = SOURCE[SOURCE.index('@objc func play()'):SOURCE.index('@objc func openGitHub()')]
+        # Setup: one worker, its stderr drain and its deadline. Play: one worker.
+        self.assertEqual(call.count('DispatchQueue.global().async'), 3)
+        self.assertEqual(play.count('DispatchQueue.global().async'), 1)
+        self.assertEqual(SOURCE.count('DispatchQueue.global().async'), 4)
+        self.assertIn('Self.readOutput(out, limit: 65536)', call)
+        self.assertIn('Self.readOutput(err, limit: 65536)', call)
+        self.assertIn('Self.readOutput(pipe, limit: 16384)', play)
         self.assertIn('if tail.count > limit { tail = Data(tail.suffix(limit)) }', SOURCE)
         self.assertIn('func windowShouldClose(_ sender: NSWindow) -> Bool { canCloseLauncher() }', SOURCE)
         self.assertIn('if running != nil || busy {', SOURCE)
-        self.assertNotIn('process.terminate(', SOURCE)
+        # Only an owned setup request past its deadline is ended, as on the
+        # portable launcher; the game process is never signalled.
+        self.assertEqual(SOURCE.count('process.terminate('), 1)
+        self.assertIn('process.terminate(', call)
+        self.assertNotIn('terminate(', play)
 
     def test_play_failure_shows_runtime_error_or_newest_log_lines(self):
         play = SOURCE[SOURCE.index('@objc func play()'):SOURCE.index('@objc func openGitHub()')]

@@ -143,8 +143,14 @@ def main():
         renderer_preflight([str(renderer),'--headless','--audio-driver','Dummy',
             '--path',str(bundle/'kit/godot'),'--script',
             'res://scripts/portable_setup.gd','--check-only'],env,log)
-        return subprocess.call([str(renderer),'--path',str(bundle/'kit/godot'),
-            '--script','res://scripts/portable_setup.gd',*extra],env=env)
+        # The windowed setup can fail where the headless preflights passed (a
+        # graphics driver). Its console goes to setup.log, which the Windows
+        # launcher's failure dialog points to, and a failed exit is recorded.
+        with log.open('ab') as stream:
+            code=subprocess.call([str(renderer),'--path',str(bundle/'kit/godot'),
+                '--script','res://scripts/portable_setup.gd',*extra],env=env,stdout=stream,stderr=subprocess.STDOUT)
+        if code: record_startup_error(bundle,args.data_home,f'Setup window exited with code {code}')
+        return code
     except subprocess.TimeoutExpired:
         print(json.dumps({'error':TIMEOUT_MESSAGE}));return 1
     except (ValueError,OSError,KeyError,subprocess.SubprocessError) as error:

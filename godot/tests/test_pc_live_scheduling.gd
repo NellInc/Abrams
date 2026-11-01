@@ -46,6 +46,8 @@ class TestDraw extends Node3D:
 	var sprite_count := 0
 	var render_warnings: Array = []
 	var presentation_palette: Array = []
+	var tactical_effects := TestEffects.new()
+	func reset_water_animation() -> void: pass
 	func apply_pass(_drawing: Dictionary) -> void:
 		events.append("draw")
 		# What DrawPass hands Modern ownership.prepare as its extent.
@@ -59,6 +61,25 @@ class TestFrame extends TextureRect:
 	func set_frame(_source: Image, _presentation: Dictionary, _world: Texture2D, _program: Dictionary={}) -> bool:
 		events.append("frame")
 		return false
+
+class TestEffects extends RefCounted:
+	func reset_dynamics() -> void: pass
+
+# Graphics-switch order only: records when the frame is presented and the world rebuilt.
+class ModeFrame extends TextureRect:
+	var order: Array = []
+	var graphics_mode := "ega"
+	var modern_available := true
+	func set_tactical_dynamics(_shift: Vector2) -> void: pass
+	func set_graphics_mode(mode: String) -> bool:
+		graphics_mode=mode;order.append("present");return true
+
+class ModeDraw extends Node3D:
+	var order: Array
+	var modern_enabled := false
+	var tactical_landscape := false
+	var tactical_effects := TestEffects.new()
+	func apply_pass(_drawing: Dictionary) -> void: order.append("world")
 
 class TestAudio extends Node:
 	var failure := "synthetic invalid audio packet"
@@ -319,6 +340,8 @@ func run() -> void:
 	_choose_speed(1);set_keys([])
 	check_intro_controls(period)
 	check_cover_speed_reset()
+	check_timeline_reset_route()
+	check_graphics_switch_order()
 	check_original_exit(period)
 
 	# Capture routes retain explicit batches and dispatch only after presentation.
@@ -445,6 +468,17 @@ func run() -> void:
 	check(Bridge.start_failure("/opt/abrams/runtime/AbramsRuntime/AbramsRuntime")=="Could not start the game's PC core.","the bundled runtime's start failure carries no path or interpreter advice")
 	check(Bridge.start_failure("D:/abrams/runtime/AbramsRuntime/AbramsRuntime.exe")=="Could not start the game's PC core.","the Windows runtime's start failure carries no path")
 	check("ABRAMS_PYTHON" in Bridge.start_failure("/opt/test/python3"),"a checkout start failure keeps the interpreter hint")
+	# A checkpoint gets a longer response deadline than a frame step.
+	var timed := Bridge.new()
+	timed.process=OS.execute_with_pipe("/bin/sh",["-c","sleep 5"],false)
+	timed.pending=false
+	check(timed.state_command("save_state",2) and timed.response_deadline_msec==Bridge.STATE_DEADLINE_MSEC,"a checkpoint waits for its own longer deadline")
+	timed.request_started=Time.get_ticks_msec()-Bridge.STEP_DEADLINE_MSEC-1000
+	timed.poll()
+	check(timed.failure.is_empty(),"a checkpoint past the step deadline is still awaited")
+	timed.pending=false
+	check(timed.step(1,[]) and timed.response_deadline_msec==Bridge.STEP_DEADLINE_MSEC,"a frame step returns to the step deadline")
+	timed.kill()
 	# Harness-only kill ends a wedged child (one that never reads quit) and is a no-op without one.
 	var wedged := Bridge.new()
 	wedged.kill()
@@ -494,6 +528,47 @@ func finish() -> void:
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_LIVE_SCHEDULING: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)
+
+func check_graphics_switch_order() -> void:
+	# The last presentation of a mode switch follows the world rebuilt in that mode.
+	var saved_frame=tandem_frame;var saved_draw=draw_view;var saved_audio=pc_audio
+	var had_menu: bool=audio_menu!=null
+	if not had_menu:
+		audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+		audio_menu.config_path="";audio_menu.quality_config_path=""
+	var frame:=ModeFrame.new();var draw:=ModeDraw.new();draw.order=frame.order
+	tandem_frame=frame;draw_view=draw;pc_audio=null
+	_choose_graphics("tactical")
+	check(frame.order.has("world") and frame.order.rfind("present")>frame.order.rfind("world"),"a graphics switch presents after rebuilding the world: "+str(frame.order))
+	tandem_frame=saved_frame;draw_view=saved_draw;pc_audio=saved_audio
+	frame.free();draw.free()
+	if not had_menu:
+		audio_menu.free();audio_menu=null
+
+func check_timeline_reset_route() -> void:
+	# A load's restored sample restarts the cover route's root observation, and
+	# the idle cover never sends the guest a frame (Extras stays frozen).
+	frontdoor_route.selected=1;frontdoor_route.root_since=400;frontdoor_route.return_ready=true
+	var saved_audio=pc_audio;var saved_frame=tandem_frame
+	pc_audio=null;tandem_frame=null
+	_reset_timeline_presentation()
+	pc_audio=saved_audio;tandem_frame=saved_frame
+	check(frontdoor_route.selected==-1 and frontdoor_route.root_since==-1 and not frontdoor_route.return_ready,"a restored timeline restarts the route's root observation")
+	frontdoor_route.rest()
+	var sent: int=bridge.requests.size()
+	var had_menu: bool=audio_menu!=null
+	if not had_menu:
+		audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+		audio_menu.config_path="";audio_menu.quality_config_path=""
+	frontdoor=Control.new();audio_menu.frontdoor_active=true
+	var was_pending: bool=bridge.pending;var was_failure: String=bridge.failure;var was_closing: bool=closing
+	bridge.pending=false;bridge.failure="";closing=false
+	elapsed=1.0
+	check(not _advance_live_frame() and bridge.requests.size()==sent,"the idle cover and Extras send the original game no frame")
+	bridge.pending=was_pending;bridge.failure=was_failure;closing=was_closing
+	audio_menu.frontdoor_active=false;frontdoor.free();frontdoor=null
+	if not had_menu:
+		audio_menu.free();audio_menu=null
 
 func check_cover_speed_reset() -> void:
 	# A gameplay fast forward must not follow the player back to the cover,

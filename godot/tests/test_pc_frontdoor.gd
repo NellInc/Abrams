@@ -34,6 +34,17 @@ func check_settings_slider()->void:
 	slider.value=55
 	saved=ConfigFile.new()
 	check(saved.load(path)==OK and saved.get_value("audio","master")==55,"a click or key change without a drag saves at once")
+	# A change made elsewhere (browser toolbar, Play menu) reaches the open page.
+	var page:=Control.new();cover.settings_page=page
+	var holder:=VBoxContainer.new()
+	cover._choice(holder,"HUD style",Menu.HUD_STYLES,["Restored","Tactical"],func():return menu.hud_style,menu.choose_hud_style)
+	var choice:OptionButton=holder.get_child(1)
+	menu.choose("master",70)
+	menu.hud_style="restored"
+	cover.sync_settings()
+	check(slider.value==70 and title.text.ends_with(": 70%"),"open slider follows an outside mix change")
+	check(choice.selected==Menu.HUD_STYLES.find("restored"),"open choice follows an outside setting change")
+	cover.settings_page=null;page.free();holder.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	root.remove_child(slider)
 	cover.free();title.free();slider.free()

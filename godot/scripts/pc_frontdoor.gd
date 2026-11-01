@@ -15,6 +15,9 @@ var route_panel: Control
 var route_message: Label
 var original_button: Button
 var busy := false
+# Re-reads each open Settings control from the menu, so a change made
+# elsewhere (the browser toolbar or a chord) never leaves it stale.
+var settings_sync: Array[Callable] = []
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -36,6 +39,9 @@ func _ready() -> void:
 	main.artwork_selected.connect(open_artwork)
 	main.quit_selected.connect(func():quit_selected.emit())
 	menu.mix_changed.connect(_apply_mix)
+	menu.mix_changed.connect(sync_settings)
+	for changed: Signal in [menu.graphics_selected,menu.hud_style_selected,menu.quality_selected]:
+		changed.connect(func(_a=null,_b=null):sync_settings.call_deferred())
 	_apply_mix()
 	resized.connect(_resize_settings)
 	set_active(false)
@@ -96,10 +102,10 @@ func open_settings() -> void:
 	var modes: Array=menu.available_graphics_modes()
 	var names: Array=[]
 	for mode in modes:names.append({"ega":"EGA","ega_upscaled":"EGA Upscaled","genesis":"Genesis","upscaled":"Genesis Upscaled","modern":"Modern","tactical":"Tactical"}[mode])
-	_choice(display,"Graphics",modes,names,menu.graphics_mode,menu.choose_graphics)
-	_choice(display,"HUD style",menu.HUD_STYLES,["Restored","Tactical"],menu.hud_style,menu.choose_hud_style)
-	_choice(display,"Antialiasing",menu.QUALITY_LEVELS.msaa,["Off","2x","4x","8x"],menu.quality.msaa,func(value):menu.choose_quality("msaa",value))
-	_choice(display,"Texture filtering",menu.QUALITY_LEVELS.anisotropy,["Off","2x","4x","8x","16x"],menu.quality.anisotropy,func(value):menu.choose_quality("anisotropy",value))
+	_choice(display,"Graphics",modes,names,func():return menu.graphics_mode,menu.choose_graphics)
+	_choice(display,"HUD style",menu.HUD_STYLES,["Restored","Tactical"],func():return menu.hud_style,menu.choose_hud_style)
+	_choice(display,"Antialiasing",menu.QUALITY_LEVELS.msaa,["Off","2x","4x","8x"],func():return menu.quality.msaa,func(value):menu.choose_quality("msaa",value))
+	_choice(display,"Texture filtering",menu.QUALITY_LEVELS.anisotropy,["Off","2x","4x","8x","16x"],func():return menu.quality.anisotropy,func(value):menu.choose_quality("anisotropy",value))
 	var audio := _settings_group("AUDIO")
 	for channel in menu.audio_channels():
 		var row := VBoxContainer.new()
@@ -137,6 +143,10 @@ func audio_slider(channel: String, title: Label) -> HSlider:
 		menu.choose(channel,int(value),not dragging[0])
 		title.text=menu.TITLES[channel]+": %d%%"%menu.settings[channel]
 		_show_settings_error())
+	settings_sync.append(func():
+		if is_instance_valid(slider) and not dragging[0]:
+			slider.set_value_no_signal(menu.settings[channel])
+			title.text=menu.TITLES[channel]+": %d%%"%menu.settings[channel])
 	return slider
 
 func _settings_group(title: String) -> VBoxContainer:
@@ -147,24 +157,30 @@ func _settings_group(title: String) -> VBoxContainer:
 	group.add_child(_label(title,24))
 	return group
 
-func _choice(parent: Control, title: String, values: Array, names: Array, current: Variant, action: Callable) -> void:
+func _choice(parent: Control, title: String, values: Array, names: Array, current: Callable, action: Callable) -> void:
 	parent.add_child(_label(title))
 	var choice := OptionButton.new()
 	choice.custom_minimum_size.y=40
 	for name in names:choice.add_item(str(name))
-	choice.select(values.find(current))
+	choice.select(values.find(current.call()))
+	settings_sync.append(func():if is_instance_valid(choice):choice.select(values.find(current.call())))
 	parent.add_child(choice)
 	choice.item_selected.connect(func(index):action.call(values[index]);_show_settings_error())
 
+func sync_settings() -> void:
+	if not is_instance_valid(settings_page): return
+	for sync in settings_sync: sync.call()
+	_show_settings_error()
+
 func _show_settings_error() -> void:
-	if is_instance_valid(settings_error):settings_error.text="\n".join([menu.quality_error,menu.presentation_note,menu.save_error].filter(func(note):return not note.is_empty()))
+	if is_instance_valid(settings_error):settings_error.text="\n".join([menu.quality_error,menu.preference_note,menu.presentation_note,menu.save_error].filter(func(note):return not note.is_empty()))
 
 func _resize_settings() -> void:
 	if is_instance_valid(settings_columns):settings_columns.columns=2 if size.x>=900 else 1
 
 func close_settings() -> void:
 	if is_instance_valid(settings_page):settings_page.queue_free()
-	settings_page=null;settings_columns=null;settings_error=null
+	settings_page=null;settings_columns=null;settings_error=null;settings_sync.clear()
 	main.ui.show();main.set_screen("menu")
 
 func open_artwork() -> void:

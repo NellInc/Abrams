@@ -186,6 +186,25 @@ func _test_targeting() -> void:
 		if sim.selected_target == -1:
 			cycled_none = true
 	check(cycled_none, "selection cycle includes none")
+	# The lock drives the turret at its own rate: a target selected and then
+	# turned away from cannot be swung onto and hit in the same tick.
+	sim.reset()
+	sim.turret = sim.bearing_to(sim.targets[0].pos)
+	sim.tick({"select_target": true})
+	sim.control_hull = false
+	sim.turret = wrapf(sim.turret + PI, -PI, PI)
+	var events: Array = sim.tick({"lock_target": true, "fire": true})
+	check(sim.locked and not _has_event(events, "hit"), "lock cannot swing onto a target and hit in one tick")
+	var turn_step: float = float(sim.rules.turret_turn_rate) * Sim.DT
+	var ticks: int = 0
+	var fastest: float = 0.0
+	while absf(angle_difference(sim.turret, sim.bearing_to(sim.targets[0].pos))) > 0.0001 and ticks < 600:
+		var before: float = sim.turret
+		sim.tick({})
+		fastest = maxf(fastest, absf(angle_difference(before, sim.turret)))
+		ticks += 1
+	check(fastest <= turn_step + 0.000001, "locked turret turns no faster than the turret rate")
+	check(ticks > 200 and ticks < 600 and sim.locked, "lock brings the turret onto its target at the turret rate")
 
 func _test_snapshots() -> void:
 	var sim = Sim.new()

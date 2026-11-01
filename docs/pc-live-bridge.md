@@ -66,6 +66,9 @@ Shift+3 reaches the original system-speed command. A 530-frame baseline/trace
 comparison cycles its original speed index through 0, 1 and 2. The original
 also selects AX when its scancode-3 poll sees that chord; this behavior is retained.
 At most 16 held keys are sent per frame (the helper's limit), modifiers and arrows first.
+A frame step must answer within 30 seconds; a save or load (capture or restore
+plus a disk write, measured at 3 to 8 seconds) within 120 seconds, before Play
+reports the helper as stopped. The browser build allows 300 seconds.
 
 Closing the window asks only its own helper to exit and waits for its exit. It
 does not signal the separately running DOSBox-X app. If the helper has not exited

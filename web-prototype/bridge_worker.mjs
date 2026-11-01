@@ -105,6 +105,9 @@ function openDatabase() {
           db.close();
           if (database === opening) database = undefined;
         };
+        // The browser closes it itself when site data is cleared; reopen on
+        // the next checkpoint instead of failing every later one.
+        db.onclose = () => { if (database === opening) database = undefined; };
         finish(null, db);
       };
       request.onerror = () => finish(storageError('could not open', request.error));
@@ -136,24 +139,49 @@ async function storedSlot(operation, slot, value) {
   });
 }
 
-// Several rows in one readwrite transaction: all are stored or none are.
-async function storedRows(entries) {
+// A save reads the slot and its previous row inside the same readwrite
+// transaction that replaces them. Another Abrams tab may have saved since this
+// one booted, so the rows on disk, not this tab's copies, decide what is kept:
+// all rows are stored or none are, and a row this build cannot load never
+// replaces a previous row it can. Resolves to the previous row now stored.
+async function saveSlotRow(slot, saved) {
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     let transaction;
+    let kept;
     try {
       transaction = db.transaction('checkpoints', 'readwrite');
       const store = transaction.objectStore('checkpoints');
-      for (const [key, value] of entries) store.put(value, key);
+      const current = store.get(slot);
+      const previous = store.get(previousKey(slot));
+      previous.onsuccess = () => {
+        const overwritten = current.result ?? storedSlots.get(slot);
+        kept = previous.result ?? previousSlots.get(slot);
+        if (overwritten && (overwritten.buildId === buildId || kept?.buildId !== buildId)) {
+          store.put(overwritten, previousKey(slot));
+          kept = overwritten;
+        }
+        store.put(saved, slot);
+      };
     } catch (error) {
       try { transaction?.abort(); } catch {}
       reject(storageError('transaction could not start', error));
       return;
     }
-    transaction.oncomplete = () => resolve();
+    transaction.oncomplete = () => resolve(kept);
     transaction.onerror = () => reject(storageError('transaction failed', transaction.error));
     transaction.onabort = () => reject(storageError('transaction aborted', transaction.error));
   });
+}
+
+// The row on disk for a load: another tab may have replaced it since boot. A
+// read failure falls back to this tab's copy; a row from another build is not
+// loadable here.
+async function currentRow(key, cached) {
+  let stored;
+  try { stored = await storedSlot('get', key); } catch { return cached; }
+  if (stored === undefined) return cached;
+  return stored.buildId === buildId ? stored : null;
 }
 
 // Request/response client for one core_worker.mjs. A crashed or terminated
@@ -394,17 +422,11 @@ async function state(message) {
   if (storageUnavailable) throw new Error(`Checkpoints are unavailable in this session: ${storageUnavailable}`);
   if (message.op === 'save_state') {
     const saved = checkpointRow(await core.call('capture', {frames}));
-    const overwritten = storedSlots.get(message.slot);
-    // A row this build cannot load never replaces a previous row it can.
-    const keep = overwritten && (overwritten.buildId === buildId || !previousSlots.has(message.slot));
     // One transaction: a failed save (quota) leaves the slot and its previous
     // row exactly as they were.
-    await storedRows(keep ? [[previousKey(message.slot), overwritten], [message.slot, saved]]
-      : [[message.slot, saved]]);
-    if (keep) {
-      if (overwritten.buildId === buildId) previousSlots.set(message.slot, overwritten);
-      else previousSlots.delete(message.slot);
-    }
+    const kept = await saveSlotRow(message.slot, saved);
+    if (kept?.buildId === buildId) previousSlots.set(message.slot, kept);
+    else previousSlots.delete(message.slot);
     slots.set(message.slot, saved);
     storedSlots.set(message.slot, saved);
     postMessage({type: 'packet', packet: {type: 'state_result', id: message.id,
@@ -413,10 +435,13 @@ async function state(message) {
   }
   // load_previous never rewrites the slot; like any load it captures undo.
   const previousLoad = message.op === 'load_previous';
-  const saved = previousLoad ? previousSlots.get(message.slot)
-    : message.slot === 0 ? undo : slots.get(message.slot);
+  const saved = previousLoad ? await currentRow(previousKey(message.slot), previousSlots.get(message.slot))
+    : message.slot === 0 ? undo : await currentRow(message.slot, slots.get(message.slot));
+  if (saved === null) throw new Error(`Local ${previousLoad ? 'previous ' : ''}slot ${message.slot} was saved by a different version`);
   if (!saved) throw new Error(previousLoad ? `Local slot ${message.slot} has no previous save`
     : `Local slot ${message.slot} is empty`);
+  if (message.slot && previousLoad) previousSlots.set(message.slot, saved);
+  else if (message.slot) { slots.set(message.slot, saved); storedSlots.set(message.slot, saved); }
   const restoredSample = structuredClone(saved.sample);
   const restoredRgb = saved.rgb.slice();
   if (!(restoredRgb instanceof Uint8Array) || restoredRgb.byteLength !== 320 * 200 * 3 ||

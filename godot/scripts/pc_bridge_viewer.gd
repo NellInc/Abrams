@@ -394,7 +394,7 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		if preferred_unavailable:
 			var shown: String="Tactical" if audio_menu.graphics_mode=="tactical" else "Genesis Upscaled"
 			graphics_fallback_note="Saved graphics are unavailable with this import. Showing "+shown+"; preference retained."
-			audio_menu.quality_error=graphics_fallback_note
+			audio_menu.preference_note=graphics_fallback_note
 			audio_menu.refresh_controls()
 	if frontdoor_enabled():
 		frontdoor=Frontdoor.new()
@@ -848,10 +848,6 @@ func _choose_graphics(mode: String) -> void:
 		draw_view.tactical_landscape=was_tactical
 		audio_menu.graphics_mode=tandem_frame.graphics_mode
 		return
-	if play_display and play_display.hud_style=="tactical":
-		play_display.set_hud_frame(previous_presentation,previous_program,tandem_frame._current_plate_mask,
-			not tandem_frame.dynamic_map_art.packet.is_empty(),
-			tandem_frame.cockpit_art_ids==[1])
 	_reset_tactical_dynamics()
 	_choose_graphics_quality(audio_menu.quality.msaa,audio_menu.quality.anisotropy)
 	# Replay the already paired drawing only. No guest frame or audio advances.
@@ -863,6 +859,13 @@ func _choose_graphics(mode: String) -> void:
 		draw_view.apply_pass(displayed)
 	else:
 		draw_view.apply_pass({"objects":[]})
+	# Present again now the world is rebuilt in the new mode: whether the world
+	# may composite depends on this replay's own warnings, not the old mode's.
+	tandem_frame.set_graphics_mode(mode)
+	if play_display and play_display.hud_style=="tactical":
+		play_display.set_hud_frame(previous_presentation,previous_program,tandem_frame._current_plate_mask,
+			not tandem_frame.dynamic_map_art.packet.is_empty(),
+			tandem_frame.cockpit_art_ids==[1])
 	audio_menu.refresh_controls()
 
 func _choose_hud_style(style: String) -> void:
@@ -1187,14 +1190,17 @@ func _animate_tactical_dynamics(delta: float) -> void:
 	if effects_changed:play_display.world_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	if armour_changed or effects_changed:play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 
+## A load (or a restarted save worker) presents a new timeline.
+func _reset_timeline_presentation() -> void:
+	if tandem_frame: tandem_frame.frontend_art.splash_aftermath_art.reset_motion()
+	invalidate_presentation_cache()
+	draw_view.reset_water_animation()
+	_reset_tactical_dynamics()
+	_reset_audio_timeline()
+	if frontdoor_route: frontdoor_route.reset_observation()
+
 func _apply_sample(message: Dictionary) -> void:
-	if message.get("timeline_reset",false):
-		if tandem_frame: tandem_frame.frontend_art.splash_aftermath_art.reset_motion()
-		invalidate_presentation_cache()
-		draw_view.reset_water_animation()
-		_reset_tactical_dynamics()
-		_reset_audio_timeline()
-		if frontdoor_route: frontdoor_route.reset_observation()
+	if message.get("timeline_reset",false): _reset_timeline_presentation()
 	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.slots)
 		_sync_web_controls()

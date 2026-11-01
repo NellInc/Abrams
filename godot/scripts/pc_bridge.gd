@@ -11,6 +11,11 @@ var log_file: FileAccess
 var next_id := 0
 var waiting_id := -1
 var request_started := 0
+# Frames answer within milliseconds; a checkpoint (capture or restore plus a
+# disk write) measured 3 to 8 s and gets more room on a slow or busy machine.
+const STEP_DEADLINE_MSEC := 30000
+const STATE_DEADLINE_MSEC := 120000
+var response_deadline_msec := STEP_DEADLINE_MSEC
 var closing := false
 var expected_protocol := 2
 var python_path := ""
@@ -53,6 +58,7 @@ func step(frames: int, keys: Array) -> bool:
 	_write({"op": "step", "id": waiting_id, "frames": frames, "keys": keys.slice(0, Keyboard.MAX_KEYS)})
 	pending = true
 	request_started = Time.get_ticks_msec()
+	response_deadline_msec = STEP_DEADLINE_MSEC
 	return failure.is_empty()
 
 func state_command(operation: String, slot: int) -> bool:
@@ -63,6 +69,7 @@ func state_command(operation: String, slot: int) -> bool:
 	_write({"op":operation,"id":waiting_id,"slot":slot})
 	pending=true
 	request_started=Time.get_ticks_msec()
+	response_deadline_msec=STATE_DEADLINE_MSEC
 	return failure.is_empty()
 
 func _write(message: Dictionary) -> void:
@@ -118,7 +125,7 @@ func poll() -> Array[Dictionary]:
 		pending = false
 		messages.append(value)
 	# Keep the first, most specific failure (a host error line precedes its exit).
-	if failure.is_empty() and pending and not closing and Time.get_ticks_msec() - request_started > 30000:
+	if failure.is_empty() and pending and not closing and Time.get_ticks_msec() - request_started > response_deadline_msec:
 		failure = "The game's PC core stopped responding. " + _log_hint()
 	if failure.is_empty() and not closing and not OS.is_process_running(int(process.pid)):
 		failure = "The game's PC core stopped unexpectedly. " + _log_hint()

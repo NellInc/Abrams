@@ -30,6 +30,9 @@ var genesis_available := true
 var genesis_imported := false
 # A presentation asset problem the player should see (for example a damaged import).
 var presentation_note := ""
+# Why the saved graphics preference is not the mode shown. Unlike quality_error,
+# later saves keep it; choosing a mode explicitly replaces the preference.
+var preference_note := ""
 var modern_available := false
 var speed := 1
 var busy := false
@@ -426,6 +429,7 @@ func choose_graphics(mode: String, persist: bool=true) -> bool:
 	# Signal handlers synchronously resolve the actual mode or revert on failure.
 	if graphics_mode==mode and persist:
 		preferred_graphics_mode=mode
+		preference_note=""
 		_save_graphics_settings("Graphics changed, but could not save settings")
 	refresh_controls()
 	# The viewer may reject a mode whose assets failed to load; report what is shown.
@@ -521,7 +525,7 @@ func refresh_controls() -> void:
 	for key in quality_menus:
 		var menu: PopupMenu=quality_menus[key]
 		for index in menu.item_count: menu.set_item_checked(index,menu.get_item_id(index)==quality[key])
-	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else presentation_note if not presentation_note.is_empty() else "Antialiasing applies to Genesis Upscaled, Modern and Tactical scenery")
+	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else preference_note if not preference_note.is_empty() else presentation_note if not presentation_note.is_empty() else "Antialiasing applies to Genesis Upscaled, Modern and Tactical scenery")
 	for index in speed_popup.item_count:
 		speed_popup.set_item_checked(index,speed_popup.get_item_id(index)==speed)
 		speed_popup.set_item_disabled(index,busy)

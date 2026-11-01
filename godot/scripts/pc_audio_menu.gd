@@ -12,6 +12,7 @@ var menus: Dictionary = {}
 var popup: PopupMenu
 var open_menus: Dictionary = {}
 var release_keys := false
+var gated_keys: Dictionary = {}
 var focus_release_keys := false
 var window_focused := true
 var save_error := ""
@@ -67,7 +68,11 @@ func _focus_entered() -> void:
 func game_keys(held: Array) -> Array:
 	# Menu navigation must not also steer/fire in the original game. Closing
 	# with Enter/Escape waits for release; there is no reserved gameplay hotkey.
-	if not window_focused or not open_menus.is_empty(): return []
+	for name in gated_keys.keys():
+		if name not in held: gated_keys.erase(name)
+	if not window_focused or not open_menus.is_empty():
+		for name in held: gated_keys[name]=true
+		return []
 	if focus_release_keys:
 		if preload("res://scripts/pc_keyboard.gd").focus_rearmed(get_window()): focus_release_keys=false
 		else:
@@ -77,10 +82,13 @@ func game_keys(held: Array) -> Array:
 				focus_release_keys=false
 				release_keys=false
 			return []
+	# Each key held through a menu, reader or cover change waits for its own
+	# release. A new key passes at once, so one lost key-up (a menu that
+	# swallowed it) cannot withhold every other control.
 	if release_keys:
-		if held.is_empty(): release_keys=false
-		return []
-	return held
+		for name in held: gated_keys[name]=true
+		release_keys=false
+	return held.filter(func(name): return not gated_keys.has(name))
 
 func load_settings() -> bool:
 	settings=DEFAULTS.duplicate()

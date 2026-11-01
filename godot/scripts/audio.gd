@@ -62,6 +62,12 @@ func effect_gain(cue: String) -> float:
 	return volume*effects_volume*0.6*cue_gain(cue)
 
 func refresh_effect_gains() -> void:
+	# A mix change reaches a line already being spoken; 0% silences it.
+	var spoken := volume*voice_volume*0.8
+	voice.volume_db=linear_to_db(maxf(0.00001,spoken))
+	if spoken<=0 and voice.playing:
+		_remember_playback(voice)
+		voice.stop()
 	for player in effects:
 		var level := effect_gain(str(player.get_meta("effect_cue","")))
 		player.volume_db=linear_to_db(maxf(0.00001,level))

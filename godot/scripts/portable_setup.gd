@@ -223,7 +223,8 @@ func _request(arguments: Array) -> void:
         return
     busy = true
     _sync_controls()
-    message.text = "Game running. Close the game window to return here." if "--play" in arguments else "Verifying originals and installation…"
+    # A first launch prepares its installation (minutes) before the window opens.
+    message.text = "Game starting or running. Close the game window to return here." if "--play" in arguments else "Verifying originals and installation…"
     thread = Thread.new()
     var error := _start_worker(func():
         var result := _run_runtime(PackedStringArray(["--launcher", "--invoke"] + arguments))

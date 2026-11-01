@@ -78,6 +78,12 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if not embedded and what == NOTIFICATION_WM_CLOSE_REQUEST:
 		request_quit()
+	# Leaving the window pauses a running exercise, as Escape does.
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and screen == "range" and not paused and sim.status == "active" and not capture_mode:
+		paused = true
+		commands.clear()
+		sound.stop_all()
+		ui.rebuild_buttons()
 
 func request_quit() -> void:
 	if embedded:
@@ -762,6 +768,23 @@ func _smoke_test() -> void:
 	if not notice.is_empty() or flash != 0.0 or vehicle.recoil != 0.0 or _smoke_effects_playing():
 		_smoke_fail("restart keeps the previous exercise's notice, shake or sound")
 		return
+	# Losing application focus pauses a running exercise.
+	start_range()
+	notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	if not paused:
+		_smoke_fail("focus loss does not pause the range")
+		return
+	paused = false
+	# A voice line already playing follows the mix to silence.
+	sound.speak("on_the_way")
+	var spoke: bool = sound.voice.playing
+	sound.voice_volume = 0.0
+	sound.refresh_effect_gains()
+	if spoke and sound.voice.playing:
+		_smoke_fail("voice line keeps playing at 0% voice")
+		return
+	sound.voice_volume = 1.0
+	sound.refresh_effect_gains()
 	sound.muted = true
 	set_screen("manual")
 	await get_tree().process_frame

@@ -3,8 +3,9 @@
 Open `Abrams.app` and click **Play**, or use `Play.command` in an equipped
 source checkout. The Audio, Session, Graphics and Help menus sit outside the original
 display. On macOS they appear in the system menu bar. Tab toggles fast forward;
-menu navigation is withheld from the game until keys are
-released. The original continues running while a menu is open. Use its pause
+menu navigation is withheld from the game, and each key held through a menu or
+reader reaches the game again only after it is released; other keys pass at
+once. The original continues running while a menu is open. Use its pause
 control first when you need time to choose.
 
 Choosing EXIT in the original game's own menu quits the game, as it did on a

@@ -85,6 +85,12 @@ func settings_contract() -> void:
 	menu.quality_config_path=path
 	menu.graphics_popup.id_pressed.emit(102)
 	check(loaded.load_quality_settings() and loaded.quality==Menu.QUALITY_DEFAULTS and loaded.preferred_graphics_mode=="genesis" and loaded.hud_style=="tactical","native reset persists full quality and independent selections")
+	# The unavailable-preference note survives unrelated saves until the player picks a mode.
+	menu.preference_note="Saved graphics are unavailable with this import."
+	menu.choose_quality("anisotropy",8);menu.choose_hud_style("restored")
+	check(menu.preference_note=="Saved graphics are unavailable with this import." and menu.graphics_popup.get_item_text(menu.graphics_popup.get_item_index(101))==menu.preference_note,"preference note survives quality and HUD saves")
+	menu.choose_graphics("ega")
+	check(menu.preference_note.is_empty(),"choosing a mode replaces the noted preference")
 	DirAccess.remove_absolute(path)
 	check(not FileAccess.file_exists(path),"scratch quality config removed")
 	loaded.free();menu.free()

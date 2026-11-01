@@ -89,6 +89,10 @@ func run_test()->void:
 	options[0].item_selected.emit(0)
 	check(audio_menu.graphics_mode=="ega" and tandem_frame.graphics_mode=="ega","Settings applies actual graphics controller")
 	audio_menu.choose_graphics(old_mode)
+	await settle(2)
+	check(options[0].selected==audio_menu.available_graphics_modes().find(old_mode),"open Settings follows a mode chosen elsewhere")
+	audio_menu.choose("master",44)
+	check(sliders[0].value==44,"open Settings follows a mix changed elsewhere")
 	var old_msaa:int=audio_menu.quality.msaa
 	options[2].item_selected.emit(1)
 	check(audio_menu.quality.msaa==2 and frontdoor.stage.msaa_3d==Viewport.MSAA_2X,"cover and practice share graphics quality settings")

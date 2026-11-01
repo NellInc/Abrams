@@ -188,7 +188,8 @@ original full result compositions remain available in the master playlist.
 Battle passages keep their original pitch and tempo. Three battle arrangements
 rotate in authored order when a fresh encounter begins after the previous
 900-frame hold expires; continued fire never changes arrangements. Crisis
-interrupts temporarily, then returns to the same encounter arrangement.
+interrupts temporarily, then returns to the same encounter arrangement where it
+left off; a new encounter after a quiet spell starts its arrangement from the top.
 
 `python3 -m tools.import_suno_score --polish local-audio/suno-score-v1 --output
 <new-empty-directory>` rebuilds the edits from hash-verified originals. This

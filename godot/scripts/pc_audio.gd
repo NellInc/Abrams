@@ -44,6 +44,10 @@ var music_tail_gain := 0.0
 # continues instead of restarting.
 const MUSIC_GAP_HOLD_MSEC := 4000
 var music_gap_until := 0
+# A crisis interlude returns to the same encounter arrangement where it left
+# off, not from its opening bars.
+var crisis_return_track := ""
+var crisis_return_position := 0.0
 var music_mix := 70
 var music_context := ""
 var music_track := ""
@@ -251,12 +255,21 @@ func apply_music_context(context: String, enabled: bool, paused: bool=false) -> 
 			music_tail.play(music.get_playback_position())
 			_remember_playback(music_tail)
 			music_transition=0.6
+		var leaving_track := music_track
+		var leaving_position := music.get_playback_position() if is_instance_valid(music) and music.playing else music_resume_position
 		if is_instance_valid(music):
 			_remember_playback(music)
 			music.stop()
 		music_context=selected
 		music_track=music_bank.track_for_context(selected) if not selected.is_empty() else ""
 		music_resume_position=0.0
+		if selected=="crisis" and leaving_track in ["battle","battle_flank","battle_pressure"]:
+			crisis_return_track=leaving_track
+			crisis_return_position=leaving_position
+		elif selected!="crisis":
+			if music_track==crisis_return_track and not music_track.is_empty(): music_resume_position=crisis_return_position
+			crisis_return_track=""
+			crisis_return_position=0.0
 		music_completed=false
 		music_started=false
 	music_allowed=enabled and not paused and not selected.is_empty()
@@ -345,6 +358,8 @@ func reset_timeline() -> void:
 	music_source_program=""
 	music_bank.reset_score()
 	music_gap_until=0
+	crisis_return_track=""
+	crisis_return_position=0.0
 	continuing_timeline=false
 	source_attached=false
 	# A protocol failure remains latched. Restore is not a validation bypass.

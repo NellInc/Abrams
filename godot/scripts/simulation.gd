@@ -131,8 +131,12 @@ func tick(commands: Dictionary) -> Array[Dictionary]:
 		if commands.get("lock_target", false):
 			locked = not locked if selected_target >= 0 else false
 	if locked and selected_target >= 0:
-		turret = bearing_to(targets[selected_target].pos)
-		elevation = elevation_to(targets[selected_target].pos)
+		# The lock drives the turret and sight at their own rates: it cannot
+		# swing the gun onto a target outside the sight faster than the gunner.
+		var turn: float = angle_difference(turret, bearing_to(targets[selected_target].pos))
+		var turret_step: float = float(rules.turret_turn_rate) * DT
+		turret = wrapf(turret + clampf(turn, -turret_step, turret_step), -PI, PI)
+		elevation = move_toward(elevation, elevation_to(targets[selected_target].pos), float(rules.sight_turn_rate) * DT)
 	if station == 0 and commands.get("smoke", false) and smoke_count > 0:
 		smoke_count -= 1
 		events.append({"type": "smoke", "position": pos, "text": "Smoke deployed", "cue": "smoke"})

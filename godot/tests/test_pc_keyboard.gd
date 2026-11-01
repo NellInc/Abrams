@@ -183,6 +183,18 @@ func run() -> void:
 	send.call(KEY_A,KEY_A,true)
 	if Keyboard.held()!=["a"]: errors.append("unshifted key retires a missed Shift release: "+str(Keyboard.held()))
 	send.call(KEY_A,KEY_A,false)
+	# A key held through a menu waits for its own release; a new key passes, so
+	# one lost key-up cannot withhold every other control.
+	menu.focus_release_keys=false; menu.window_focused=true
+	menu.release_keys=true
+	if not menu.game_keys(["up"]).is_empty(): errors.append("key held through a menu is withheld")
+	if menu.game_keys(["up","space"])!=["space"]: errors.append("a new key passes while a stale key is withheld")
+	if menu.game_keys(["space"])!=["space"] or menu.game_keys(["up","space"])!=["up","space"]: errors.append("a released then re-pressed key reaches the game")
+	menu.open_menus["probe"]=true
+	menu.game_keys(["return"])
+	menu.open_menus.clear()
+	if not menu.game_keys(["return"]).is_empty(): errors.append("a menu's closing Enter waits for release")
+	menu.game_keys([])
 	menu.free()
 	for error in errors: printerr("FAIL: keyboard identity " + error)
 	print("PC_KEYBOARD: %d original, %d physical identity cases, event layout/release and 16-key cap; %d failures" % [cases.size(),physical_cases.size(),errors.size()])

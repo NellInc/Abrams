@@ -103,6 +103,8 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var setupArgs: [String] {
         let args = CommandLine.arguments
         if let index = args.firstIndex(of: "--data-home"), index+1 < args.count { return ["--data-home", args[index+1]] }
+        // The --data-home=/path spelling too: a tester must never land in the real profile.
+        if let joined = args.first(where: { $0.hasPrefix("--data-home=") }) { return ["--data-home", String(joined.dropFirst("--data-home=".count))] }
         return []
     }
 
@@ -269,23 +271,52 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         return tail
     }
+    static let setupTimeout: TimeInterval = 300
+    static let timeoutMessage = "Verification took longer than five minutes. Choose your folder again; your originals and saves are unchanged."
+    // Success replies are JSON on stdout; failures explain themselves on stderr
+    // (as {"error": ...} or plain text). A stray stderr line on success is ignored.
+    static func outcome(status: Int32, stdout: Data, stderr: Data, timedOut: Bool) -> (result: [String: Any]?, error: String?) {
+        if timedOut { return (nil, timeoutMessage) }
+        let reply = (try? JSONSerialization.jsonObject(with: stdout)) as? [String: Any]
+        if status == 0, let reply, reply["error"] == nil { return (reply, nil) }
+        for data in [stderr, stdout] {
+            if let message = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["error"] as? String { return (nil, message) }
+        }
+        let text = String(decoding: stderr.isEmpty ? stdout : stderr, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        return (nil, text.isEmpty ? "The runtime could not complete this operation." : String(text.suffix(1799)))
+    }
     func call(_ arguments: [String], completion: @escaping ([String: Any]) -> Void) {
         if busy || running != nil { return }
         busy = true; updateControls()
         let process = Process(); process.executableURL = runtime; process.arguments = setupArgs + arguments
-        let pipe = Pipe(); process.standardOutput = pipe; process.standardError = pipe
+        let out = Pipe(), err = Pipe(); process.standardOutput = out; process.standardError = err
         DispatchQueue.global().async {
             do {
                 try process.run()
-                let data = Self.readOutput(pipe, limit: 65536); process.waitUntilExit()
-                let result = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? ["error": String(data: data, encoding: .utf8) ?? "The runtime returned an unreadable response."]
+                // A setup request on a stalled disk or share must not hold the launcher forever.
+                var timedOut = false
+                let deadline = DispatchWorkItem { if process.isRunning { timedOut = true; process.terminate() } }
+                DispatchQueue.global().asyncAfter(deadline: .now() + Self.setupTimeout, execute: deadline)
+                // Drain both pipes at once: a full stderr pipe would otherwise stall the runtime.
+                var errors = Data()
+                let drained = DispatchGroup()
+                DispatchQueue.global().async(group: drained) { errors = Self.readOutput(err, limit: 65536) }
+                let data = Self.readOutput(out, limit: 65536)
+                drained.wait(); process.waitUntilExit(); deadline.cancel()
+                let (result, error) = Self.outcome(status: process.terminationStatus, stdout: data, stderr: errors, timedOut: timedOut)
                 DispatchQueue.main.async {
                     self.busy = false
-                    if process.terminationStatus != 0 || result["error"] != nil { self.showError(result["error"] as? String ?? "The runtime could not complete this operation.") }
-                    else { completion(result) }
+                    if let result { completion(result); return }
+                    self.showError(error ?? "The runtime could not complete this operation.")
+                    // A failed import may still have changed what is installed: recheck,
+                    // then show this failure again over the refreshed state.
+                    if arguments != ["--status"] { self.recheck(after: error ?? "") }
                 }
             } catch { DispatchQueue.main.async { self.busy = false; self.showError(error.localizedDescription) } }
         }
+    }
+    func recheck(after message: String) {
+        call(["--status"], completion: { self.refresh($0); self.showError(message) })
     }
     func showError(_ message: String) {
         updateControls()
@@ -327,7 +358,8 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         DispatchQueue.global().async {
             do {
                 try process.run()
-                DispatchQueue.main.async { self.status.stringValue = "Game session active" }
+                // A first launch prepares its installation before the window opens.
+                DispatchQueue.main.async { self.status.stringValue = "Game starting or running" }
                 let tail = Self.readOutput(pipe, limit: 16384)
                 process.waitUntilExit()
                 // Prefer the runtime's JSON error; otherwise show the newest log lines.

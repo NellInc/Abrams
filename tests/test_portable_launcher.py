@@ -76,6 +76,24 @@ class PortableOutputTests(unittest.TestCase):
                 self.assertEqual(launcher.main(), 1)
             self.assertEqual((home.resolve() / 'logs/setup.log').read_text(encoding='utf-8'), 'Startup failed: Portable runtime changed: kit/x\n')
 
+    def test_setup_window_output_and_failed_exit_reach_setup_log(self):
+        import tempfile
+        def crash(command, **kwargs):
+            kwargs['stdout'].write(b'Vulkan: no suitable device\n')
+            return 3
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / 'profile'
+            bundle = Path(directory) / 'bundle'; bundle.mkdir()
+            with patch.object(launcher, 'verify', return_value={'build_id': 'synthetic'}), \
+                    patch.object(launcher, 'renderer_import'), patch.object(launcher, 'renderer_preflight'), \
+                    patch.object(launcher.subprocess, 'call', side_effect=crash) as call, \
+                    patch.object(sys, 'argv', ['launcher', '--bundle', str(bundle), '--data-home', str(home)]):
+                self.assertEqual(launcher.main(), 3)
+            self.assertIs(call.call_args.kwargs['stderr'], subprocess.STDOUT)
+            log = (home.resolve() / 'logs/setup.log').read_text(encoding='utf-8')
+            self.assertIn('Vulkan: no suitable device', log)
+            self.assertTrue(log.endswith('Startup failed: Setup window exited with code 3\n'))
+
     def test_setup_300_seconds_and_gameplay_no_timeout(self):
         for extra, expected in [(['--status'], 300), (['--play'], None)]:
             with self.subTest(extra=extra), patch.object(launcher, 'verify'), patch.object(launcher, 'invoke_runtime', return_value=subprocess.CompletedProcess([],0,'{}','')) as invoke, patch.object(sys, 'argv', ['launcher', '--bundle', '/synthetic', '--invoke', *extra]), contextlib.redirect_stdout(io.StringIO()):

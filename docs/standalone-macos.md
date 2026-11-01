@@ -78,7 +78,10 @@ runs. Changed payload/content is refused and preserved for diagnosis. The app
 bundle itself is never used for saves, caches or Godot imports.
 
 For an independent profile, set `ABRAMS_DATA_HOME` to an absolute directory, or
-run `"M1 Abrams Battle Tank Fan Remaster.app/Contents/MacOS/Abrams" --data-home /absolute/profile/path`.
+run `"M1 Abrams Battle Tank Fan Remaster.app/Contents/MacOS/Abrams" --data-home /absolute/profile/path`
+(or `--data-home=/absolute/profile/path`). An import that takes longer than five
+minutes (a stalled network or cloud folder) is stopped and reported; the launcher
+then rechecks what is installed.
 The path must be absolute and outside the application (miscased paths into the app
 are refused too), and every setup request inherits it.
 Do not run two game instances against one profile. Close the game window before

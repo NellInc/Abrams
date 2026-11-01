@@ -143,6 +143,20 @@ func run()->void:
 		check(not audio.music_tail.playing,"crossfade tail ends")
 		audio.speak("on_the_way");audio._process(0.01)
 		check(absf(db_to_linear(audio.music.volume_db)-0.65*0.7*0.3*0.32)<0.00001,"crew voice ducks score by about ten dB")
+		# A crisis interlude returns to the encounter arrangement where it left off.
+		audio.apply_music_context("battle",true)
+		for i in 13:audio._process(0.05)
+		await create_timer(1.2).timeout
+		var battle_at: float=audio.music.get_playback_position()
+		audio.apply_music_context("crisis",true)
+		check(audio.music_track=="crisis" and audio.crisis_return_track=="battle","crisis remembers the interrupted arrangement")
+		audio.apply_music_context("battle",true)
+		await process_frame
+		check(audio.music.playing and audio.music.get_playback_position()>=battle_at-0.05,"battle resumes after crisis instead of restarting: %.2f from %.2f"%[audio.music.get_playback_position(),battle_at])
+		audio.apply_music_context("idyll",true);audio.apply_music_context("battle",true)
+		await process_frame
+		check(audio.music.get_playback_position()<0.5,"a new encounter after a quiet spell starts its arrangement from the top")
+		for i in 13:audio._process(0.05)
 		audio.music_source_program="SIM"
 		check(audio.apply_audio(packet(1,true,true)),"fresh source event accepted")
 		check(audio.music_bank.battle_until==901,"fresh event selects held battle")

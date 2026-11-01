@@ -174,21 +174,38 @@ self.storedSlots = storedSlots; self.previousSlots = previousSlots;`, context);
 }
 function fakeStorage(failWrite = false, failKey) {
   const writes = [];
-  // Like IndexedDB, a transaction commits all of its puts or none of them.
+  const rows = new Map();
+  // Like IndexedDB, a transaction commits all of its puts or none of them,
+  // after its reads have answered (puts may follow from a read's onsuccess).
   const db = {closeCount: 0, close() { this.closeCount++; }, transaction() {
     const pending = [];
-    const tx = {objectStore() { return {put(value, slot) {
-      if (!pending.length) queueMicrotask(() => {
-        if (failWrite || pending.some(write => write.slot === failKey)) { tx.error = new Error('quota'); tx.onabort(); }
-        else { writes.push(...pending); tx.oncomplete(); }
+    let reads = 0;
+    let scheduled = false;
+    const tx = {};
+    const commit = () => {
+      if (scheduled || reads) return;
+      scheduled = true;
+      queueMicrotask(() => {
+        if (pending.length && (failWrite || pending.some(write => write.slot === failKey))) {
+          tx.error = new Error('quota'); tx.onabort(); return;
+        }
+        for (const write of pending) rows.set(write.slot, write.value);
+        writes.push(...pending); tx.oncomplete?.();
       });
-      pending.push({value, slot});
-      return {};
-    }}; }};
+    };
+    tx.objectStore = () => ({
+      get(key) {
+        const request = {};
+        reads++;
+        queueMicrotask(() => { request.result = rows.get(key); request.onsuccess?.(); reads--; commit(); });
+        return request;
+      },
+      put(value, slot) { pending.push({value, slot}); commit(); return {}; },
+    });
     return tx;
   }};
   const indexedDB = {open() { const request = {result: db}; queueMicrotask(() => request.onsuccess()); return request; }};
-  return {indexedDB, db, writes};
+  return {indexedDB, db, writes, rows};
 }
 function restoreContext({observerFail = false, presentationFail = false, writeFail = false,
   failKey, coreFailures = {}} = {}) {
@@ -385,7 +402,7 @@ test('a previous row from another build is kept on disk but never offered', asyn
   assert.equal(replies.at(-1).packet.slots.some(row => 'previous_saved_at' in row), false);
   await ctx.self.onmessage({data: {op: 'load_previous', id: 2, slot: 2}});
   assert.equal(replies.at(-1).packet.success, false);
-  assert.match(replies.at(-1).packet.message, /no previous save/);
+  assert.match(replies.at(-1).packet.message, /saved by a different version/);
   assert.equal(storage.writes.length, 2);
 });
 
@@ -412,6 +429,31 @@ test('a row from another build never replaces a loadable previous row', async ()
   assert.deepEqual(storage.writes.map(write => write.slot), [3]);
   assert.equal(ctx.self.previousSlots.get(3), loadable);
   assert.equal(replies.at(-1).packet.slots[3].previous_saved_at, loadable.savedAt);
+});
+
+test("another tab's newer save decides what a save keeps and what a load restores", async () => {
+  const {ctx, storage, replies, saved} = restoreContext();
+  Object.assign(saved, {buildId: 'a'.repeat(64), savedAt: '2026-10-01T00:00:00.000Z'});
+  ctx.self.storedSlots.set(1, saved);
+  // Another tab saved slot 1 after this tab booted.
+  const newer = {...saved, savedAt: '2026-10-02T00:00:00.000Z', sample: {program: {name: 'other tab'}}};
+  storage.rows.set(1, newer);
+  await ctx.self.onmessage({data: {op: 'save_state', id: 1, slot: 1}});
+  assert.equal(replies.at(-1).packet.success, true);
+  assert.equal(storage.rows.get('previous-1'), newer, "the other tab's save becomes the previous row");
+  assert.equal(ctx.self.previousSlots.get(1), newer);
+  // A load restores the row on disk, not this tab's stale copy.
+  storage.rows.set(1, {...newer, sample: {program: {name: 'latest on disk'}}});
+  replies.length = 0;
+  await ctx.self.onmessage({data: {op: 'load_state', id: 2, slot: 1}});
+  assert.equal(replies.at(-1).packet.success, true);
+  assert.equal(replies.at(-1).packet.restored.program.name, 'latest on disk');
+  // A row another version wrote is refused, not restored.
+  storage.rows.set(2, {...saved, buildId: 'b'.repeat(64)});
+  replies.length = 0;
+  await ctx.self.onmessage({data: {op: 'load_state', id: 3, slot: 2}});
+  assert.equal(replies.at(-1).packet.success, false);
+  assert.match(replies.at(-1).packet.message, /different version/);
 });
 
 test('invalid keys and overlapping requests are rejected without touching the core', async () => {
@@ -452,6 +494,10 @@ test('version change closes database and a subsequent operation reopens it', asy
   assert.equal(storage.db.closeCount, 1);
   await ctx.self.openDatabase();
   assert.equal(opens, 2);
+  // Cleared site data: the browser closes the database without a version change.
+  storage.db.onclose();
+  await ctx.self.openDatabase();
+  assert.equal(opens, 3);
 });
 
 test('postcommit reply failure is fatal transport error, never a recoverable load rejection', async () => {
@@ -508,6 +554,28 @@ test('missing and bounded blocked storage permit ready with explicit durable war
     await assert.rejects(ctx.self.state({op: 'load_state', id: 10, slot: 0}), /Checkpoints are unavailable in this session/);
     assert.equal(cores[0].ops.some(message => message.op === 'capture'), false);
   }
+});
+
+test('the core worker passes the original EXIT frame and rejects an unbounded one', async () => {
+  const source = (await readFile(new URL('./core_worker.mjs', import.meta.url), 'utf8'))
+    .replace(/^import .*;\n/gm, '')
+    .replace(/^const port = .*;\n/m, 'const port = self;\n')
+    .replace(/^const node = .*;\n/m, 'const node = false;\n')
+    .replaceAll('import.meta.url', '"file:///core_worker.mjs"');
+  const context = vm.createContext({self: {}, Promise, Error, Uint8Array, SharedArrayBuffer});
+  vm.runInContext(source + '\nself.advance = advance; self.setCore = value => { core = value; };', context);
+  const heap = new Uint8Array(RAM + 8);
+  const video = {width: 640, height: 350, pitch: 2560};
+  context.self.setCore({HEAPU8: heap, _abrams_web_step: () => 1, _abrams_web_trace_overflow: () => 0,
+    _abrams_web_claim_fault: () => 0, _abrams_web_paired_ram: () => 4, _abrams_web_paired_ram_size: () => RAM,
+    _abrams_web_ram_now: () => 4, _abrams_web_video: () => 8, _abrams_web_video_width: () => video.width,
+    _abrams_web_video_height: () => video.height, _abrams_web_video_pitch: () => video.pitch,
+    _abrams_web_trace_events: () => 0, _abrams_web_trace_size: () => 0,
+    _abrams_web_claim_receipts: () => 0, _abrams_web_claim_receipts_size: () => 0});
+  const exited = context.self.advance({mode: 'none'});
+  assert.deepEqual([...exited.result.video].slice(1), [640, 350, 2560]);
+  Object.assign(video, {width: 4096, height: 350, pitch: 16384});
+  assert.throws(() => context.self.advance({mode: 'none'}), /lost its paired source/);
 });
 
 test('fatal host errors reach status callback once', async () => {
