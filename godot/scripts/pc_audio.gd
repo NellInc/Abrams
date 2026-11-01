@@ -364,7 +364,10 @@ func continue_timeline() -> void:
 	continuing_timeline=source_attached
 	# The score keeps its holds and outcome: the resumed worker continues the
 	# original frame count from the checkpoint, so nothing is rebased.
+	# The resumed worker restarts event ids either way, so rocket identity always
+	# resets; a menu save also starts the next mission's cow timeline afresh.
 	if continuing_timeline: world_audio.continue_source_timeline()
+	else: world_audio.reset_source_timeline()
 
 func play(cue: String, override_stream: AudioStream = null) -> void:
 	if not transport_muted: super.play(cue,override_stream)

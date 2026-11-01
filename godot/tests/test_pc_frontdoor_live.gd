@@ -61,6 +61,7 @@ func run_test()->void:
 	audio_menu.config_path=output.path_join("audio.cfg")
 	audio_menu.quality_config_path=output.path_join("graphics.cfg")
 	check(_frontdoor_blocked() and frontdoor.visible,"ordinary Play lands on cover")
+	check(frontdoor.stage.msaa_3d==PlayDisplay.MSAA_LEVELS[audio_menu.quality.msaa] and frontdoor.stage.anisotropic_filtering_level==PlayDisplay.ANISOTROPY_LEVELS[audio_menu.quality.anisotropy],"cover stage starts with the saved quality")
 	check(frontdoor.main.embedded and not auto_accept_quit,"embedded scene cannot own quit")
 	check(frontdoor.main.ui.buttons.map(func(entry):return entry.node.text)==["SCENARIO","CAMPAIGN","M1-INFO","SETTINGS","EXTRAS","QUIT"],"six main actions")
 	var id:int=bridge.next_id

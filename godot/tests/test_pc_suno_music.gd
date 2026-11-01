@@ -34,8 +34,10 @@ func check_save_continuation()->void:
 	# A save between missions resumes outside SIM: the next mission's SIM is a
 	# program change, so the last mission's outcome cannot score it.
 	check(audio.apply_audio({"schema":3,"frame":50100,"epoch":1,"last_id":0,"active":false,"enabled":false,"loops":{},"events":[]}),"debrief packet after the mission accepted")
+	audio.world_audio._rocket_epoch=1;audio.world_audio._rocket_seen.append(1);audio.world_audio._rocket_last=1
 	audio.continue_timeline()
 	check(not audio.continuing_timeline,"a save made outside SIM resumes nothing")
+	check(audio.world_audio._rocket_seen.is_empty() and audio.world_audio._rocket_epoch==-1,"a menu save clears rocket identity, so the next mission's launches play")
 	check(audio.apply_audio({"schema":3,"frame":50100,"epoch":0,"last_id":0,"active":false,"enabled":false,"loops":{},"events":[]}),"menu-save primer accepted")
 	check(audio.apply_audio({"schema":3,"frame":50200,"epoch":1,"last_id":0,"active":true,"enabled":true,"loops":{},"events":[]}),"next mission's SIM accepted")
 	check(bank.result=="" and bank.battle_until<0,"next mission starts without the last mission's outcome or holds")
