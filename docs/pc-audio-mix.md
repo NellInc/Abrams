@@ -211,7 +211,15 @@ for 600 ms, voices duck music by approximately 10 dB, and completed stingers and
 ending tracks do not restart on redraw. Stingers retain a crisp attack while
 the previous bed fades away. The independent score also works in
 PC-only mode without a Genesis import. Restoring a checkpoint clears outcome
-and combat holds; restarting the save worker retains their remaining duration.
+and combat holds; restarting the save worker retains their remaining duration
+only for a save made during a mission, so a save in a debrief or menu never
+carries a result into the next mission. Program changes pass through up to
+about 3 s of unrecognised frames (measured in the combat-loss trace: 134
+START to BRIEF, 36 BRIEF to SIM, 32 SIM to END, 210 END to START); the score
+keeps playing for up to 4 s across them, so the next screen crossfades and a
+matching result screen continues its stinger's aftermath instead of replaying
+it. A screen still unrecognised after 4 s stops the score. Fast forward mutes
+the score but still lets shots, damage and radio results update it.
 
 Focused local checks: `PC_SUNO_MUSIC: 68 checks, 0 errors`, including twelve actual
 PCM streams, source screen fixtures/reconstructions, combat release, friendly-fire

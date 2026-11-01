@@ -14,6 +14,7 @@ var request_started := 0
 var closing := false
 var expected_protocol := 2
 var python_path := ""
+var host_log_path := ""
 var killed := false
 ## Wall-clock cap on one poll's pipe drain; an idle host never stalls a frame.
 var read_budget_usec := 2000
@@ -28,6 +29,7 @@ static func default_python() -> String:
 
 func start(python: String, state_path: String, save_path: String, log_path: String, backend: String = "reference", frame_audit := false) -> bool:
 	var project_root := ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+	host_log_path = log_path
 	log_file = FileAccess.open(log_path, FileAccess.WRITE)
 	expected_protocol = 4 if backend == "trace" else 2
 	var arguments := ["-u",project_root.path_join("tools/pc_bridge_host.py"),"--saves",save_path,"--backend",backend]
@@ -37,7 +39,7 @@ func start(python: String, state_path: String, save_path: String, log_path: Stri
 	python_path = python
 	process = OS.execute_with_pipe(python, arguments, false)
 	if process.is_empty():
-		failure = "Could not start the local PC core host (python: %s; set ABRAMS_PYTHON to a Python 3 interpreter)." % python
+		failure = start_failure(python)
 		return false
 	request_started = Time.get_ticks_msec()
 	return true
@@ -117,9 +119,9 @@ func poll() -> Array[Dictionary]:
 		messages.append(value)
 	# Keep the first, most specific failure (a host error line precedes its exit).
 	if failure.is_empty() and pending and not closing and Time.get_ticks_msec() - request_started > 30000:
-		failure = "PC bridge response timed out; see the local host log."
+		failure = "The game's PC core stopped responding. " + _log_hint()
 	if failure.is_empty() and not closing and not OS.is_process_running(int(process.pid)):
-		failure = "PC core host exited%s; see the local host log." % ("" if python_path.is_empty() else " (python: %s)" % python_path)
+		failure = "The game's PC core stopped unexpectedly. " + _log_hint()
 	return messages
 
 func close() -> void:
@@ -140,3 +142,12 @@ func has_exited() -> bool:
 
 func exit_code() -> int:
 	return OS.get_process_exit_code(int(process.pid)) if not process.is_empty() and not killed else -1
+
+## Where the player can find the host's own account of a failure.
+func _log_hint() -> String:
+	return "Details are in the host log." if host_log_path.is_empty() else "Details are in " + ProjectSettings.globalize_path(host_log_path) + "."
+
+## The bundled runtime is the application's own; only a checkout needs the
+## interpreter hint.
+static func start_failure(python: String) -> String:
+	return "Could not start the game's PC core." + ("" if python.get_file().begins_with("AbramsRuntime") else " Set ABRAMS_PYTHON to a Python 3 interpreter (tried %s)." % python)

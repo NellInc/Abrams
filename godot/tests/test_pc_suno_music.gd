@@ -31,6 +31,21 @@ func check_save_continuation()->void:
 	check(audio.apply_audio({"schema":3,"frame":50001,"epoch":1,"last_id":0,"active":true,"enabled":true,"loops":{},"events":[]}),"resumed SIM packet accepted")
 	check([bank.battle_until,bank.battle_index]==hold and bank.source_frame==50001,"save keeps the remaining battle hold in original frames")
 	check(bank.result=="success","save keeps the visible mission outcome")
+	# A save between missions resumes outside SIM: the next mission's SIM is a
+	# program change, so the last mission's outcome cannot score it.
+	check(audio.apply_audio({"schema":3,"frame":50100,"epoch":1,"last_id":0,"active":false,"enabled":false,"loops":{},"events":[]}),"debrief packet after the mission accepted")
+	audio.continue_timeline()
+	check(not audio.continuing_timeline,"a save made outside SIM resumes nothing")
+	check(audio.apply_audio({"schema":3,"frame":50100,"epoch":0,"last_id":0,"active":false,"enabled":false,"loops":{},"events":[]}),"menu-save primer accepted")
+	check(audio.apply_audio({"schema":3,"frame":50200,"epoch":1,"last_id":0,"active":true,"enabled":true,"loops":{},"events":[]}),"next mission's SIM accepted")
+	check(bank.result=="" and bank.battle_until<0,"next mission starts without the last mission's outcome or holds")
+	# Fast forward mutes sound but the score still follows the game.
+	audio.set_transport_muted(true)
+	var fast_shot:=cannon.duplicate();fast_shot.id=1;fast_shot.frame=50300;fast_shot.epoch=1
+	check(audio.apply_audio({"schema":3,"frame":50300,"epoch":1,"last_id":1,"active":true,"enabled":true,"loops":{},"events":[fast_shot]}),"fast-forward shot accepted")
+	check(audio.receipts[-1].reason=="presentation-transport-muted","fast-forward shot stays silent")
+	check(bank.battle_until==51200,"fast forward keeps the battle hold the shot raised")
+	audio.set_transport_muted(false)
 	await audio.drain_for_shutdown()
 	root.remove_child(audio);audio.free()
 
@@ -150,6 +165,16 @@ func run()->void:
 		check(not audio.music.playing,"transport mute stops aftermath")
 		audio.set_transport_muted(false)
 		check(audio.music_track=="aftermath" and audio.music.playing,"unmute resumes aftermath without replaying stinger")
+		# A program change passes through unrecognised frames (SIM to END).
+		starts=audio.music_starts;audio.apply_music_context("",true)
+		check(audio.music.playing and audio.music_context=="success","program-change gap keeps the score playing")
+		audio.apply_music_context("success",true)
+		check(audio.music_track=="aftermath" and starts==audio.music_starts,"the same result after a gap neither replays the stinger nor restarts aftermath")
+		audio.apply_music_context("",true);audio.apply_music_context("menu",true)
+		check(audio.music.playing and audio.music_tail.playing and audio.music_track=="menu","a new screen after a gap crossfades")
+		for i in 13:audio._process(0.05)
+		audio.apply_music_context("",true);audio.music_gap_until=1;audio.apply_music_context("",true)
+		check(not audio.music.playing and not audio.music_tail.playing and audio.music_context.is_empty(),"a lasting unrecognised screen still stops the score")
 		audio.music_source_program="SIM";audio.music_bank.game_enabled=false;audio.music_bank.source_active=false
 		audio.apply_music_context("death",true)
 		check(audio.music.playing and audio.music_track=="stinger_death","verified destroyed screen may play after source SIM observer detaches")

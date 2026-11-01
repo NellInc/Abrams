@@ -38,6 +38,12 @@ var music_completed := false
 var music_started := false
 var music_transition := 0.0
 var music_tail_gain := 0.0
+# Program changes pass through up to about 3 s of unrecognised frames (210 at
+# END to START in the combat-loss trace). The score holds across that gap, so
+# the next screen crossfades and a matching screen (a result stinger's ending)
+# continues instead of restarting.
+const MUSIC_GAP_HOLD_MSEC := 4000
+var music_gap_until := 0
 var music_mix := 70
 var music_context := ""
 var music_track := ""
@@ -50,6 +56,9 @@ var motor_volume := 1.0
 var current_loops: Dictionary = {}
 # Set by continue_timeline() until the resumed worker reports active again.
 var continuing_timeline := false
+# Whether the last accepted packet came from an attached SIM. Only a save made
+# there resumes into the same program; a menu save's next SIM is a new mission.
+var source_attached := false
 const LIMITER_CEILING_DB := -1.0
 var presentation_bus := ""
 # Optional private recordings never enter tracked assets or web bundles.
@@ -226,6 +235,12 @@ func apply_music_context(context: String, enabled: bool, paused: bool=false) -> 
 	# Source-visible screen or accepted event only, never hidden world state.
 	var selected := context if context in music_bank.contexts else ""
 	if music_bank.independent and music_source_program=="SIM" and not music_bank.game_enabled and (selected!="death" or music_bank.source_active): enabled=false
+	if not selected.is_empty() or not enabled or paused: music_gap_until=0
+	elif not music_context.is_empty() and music_allowed:
+		if music_gap_until==0: music_gap_until=Time.get_ticks_msec()+MUSIC_GAP_HOLD_MSEC
+		if Time.get_ticks_msec()<music_gap_until:
+			_sync_music()
+			return
 	if selected!=music_context:
 		music_tail.stop()
 		music_transition=0.0
@@ -329,7 +344,9 @@ func reset_timeline() -> void:
 	music_started=false
 	music_source_program=""
 	music_bank.reset_score()
+	music_gap_until=0
 	continuing_timeline=false
+	source_attached=false
 	# A protocol failure remains latched. Restore is not a validation bypass.
 
 func continue_timeline() -> void:
@@ -344,10 +361,10 @@ func continue_timeline() -> void:
 	last_radio_message=0
 	receipts.clear()
 	loop_transitions.clear()
-	continuing_timeline=true
+	continuing_timeline=source_attached
 	# The score keeps its holds and outcome: the resumed worker continues the
 	# original frame count from the checkpoint, so nothing is rebased.
-	world_audio.continue_source_timeline()
+	if continuing_timeline: world_audio.continue_source_timeline()
 
 func play(cue: String, override_stream: AudioStream = null) -> void:
 	if not transport_muted: super.play(cue,override_stream)
@@ -573,6 +590,7 @@ func apply_audio(packet: Dictionary) -> bool:
 	if packet.active and not music_bank.independent: apply_music_context("",false)
 	epoch = int(packet.epoch)
 	last_frame = int(packet.frame)
+	source_attached = bool(packet.active)
 	muted = not packet.active or not packet.enabled
 	for event in packet.events:
 		if int(event.id) <= last_event_id: continue
@@ -586,8 +604,10 @@ func apply_audio(packet: Dictionary) -> bool:
 		var rocket: AudioStreamWAV
 		if event.kind=="sound" and int(event.ip)==0x9107 and int(event.return_ip)==0x034f and int(event.value)==15 and event.get("sample")=="pc_request_15":
 			rocket=world_audio.rocket_variant(event.get("guided_launch"),last_frame,epoch,true,reason.is_empty())
+		# Fast forward silences presentation, not the game: the score still
+		# follows its shots, damage and result while sound is muted.
+		if reason.is_empty() or reason=="presentation-transport-muted": music_bank.observe_event(event)
 		if reason.is_empty():
-			music_bank.observe_event(event)
 			if rocket!=null: play("rocketlaunch",rocket)
 			elif event.get("sample") != null: play(event.sample)
 			if event.get("voice") != null: speak(event.voice)

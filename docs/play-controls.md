@@ -62,6 +62,9 @@ Choose **Session > Save state > Slot 1 to 5**. Choose the corresponding entry un
 machine, original held-key state, displayed frame and writable campaign disk.
 Loading therefore rewinds campaign files as well as the current mission.
 
+A save chosen just before closing the window is written before the game
+quits; a load chosen then is dropped.
+
 Before loading, the current session is saved automatically. **Load state >
 Undo last load** restores that recovery slot. A later load replaces the recovery
 slot. Overwriting a numbered slot retains its preceding archive as

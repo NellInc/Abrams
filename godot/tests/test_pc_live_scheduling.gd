@@ -33,6 +33,11 @@ class TestBridge extends RefCounted:
 		return true
 	func close() -> void: stopped=true
 	func has_exited() -> bool: return false
+	func state_command(op: String, slot: int) -> bool:
+		if pending or stopped or not failure.is_empty(): return false
+		requests.append({"op":op,"slot":slot})
+		pending=true
+		return true
 
 class TestDraw extends Node3D:
 	var events: Array
@@ -434,7 +439,12 @@ func run() -> void:
 		var deadline := Time.get_ticks_msec()+5000
 		while OS.is_process_running(int(real.process.pid)) and Time.get_ticks_msec()<deadline: OS.delay_msec(10)
 		real.poll()
-		check(real.failure==("PC core host exited; see the local host log." if script=="exit 1" else "Rebuild the local trace core for X"),"host failure text survives its exit: "+real.failure)
+		check(real.failure==("The game's PC core stopped unexpectedly. Details are in the host log." if script=="exit 1" else "Rebuild the local trace core for X"),"host failure text survives its exit: "+real.failure)
+	var logged := Bridge.new();logged.host_log_path="/profile/logs/host.log"
+	check(logged._log_hint()=="Details are in /profile/logs/host.log.","a host failure names its log")
+	check(Bridge.start_failure("/opt/abrams/runtime/AbramsRuntime/AbramsRuntime")=="Could not start the game's PC core.","the bundled runtime's start failure carries no path or interpreter advice")
+	check(Bridge.start_failure("D:/abrams/runtime/AbramsRuntime/AbramsRuntime.exe")=="Could not start the game's PC core.","the Windows runtime's start failure carries no path")
+	check("ABRAMS_PYTHON" in Bridge.start_failure("/opt/test/python3"),"a checkout start failure keeps the interpreter hint")
 	# Harness-only kill ends a wedged child (one that never reads quit) and is a no-op without one.
 	var wedged := Bridge.new()
 	wedged.kill()
@@ -459,6 +469,19 @@ func run() -> void:
 	play_mode=false
 	var app_name := str(ProjectSettings.get_setting("application/config/name"))
 	check(fast_title==app_name+" (8x fast forward)" and root.title==app_name,"fast forward keeps the project window title")
+	# A save queued behind an outstanding step is written before the host quits.
+	var saved_failure: String=bridge.failure
+	bridge.failure="";bridge.pending=true;bridge.stopped=false
+	pending_state_command={"op":"save_state","slot":4}
+	_close()
+	check(closing and close_after_save and not bridge.stopped,"Close waits to send a queued save")
+	bridge.pending=false
+	_process_frame(0.0)
+	check(bridge.requests[-1]=={"op":"save_state","slot":4} and not bridge.stopped,"queued save is sent after the outstanding step")
+	bridge.pending=false
+	_process_frame(0.0)
+	check(bridge.stopped and not close_after_save and pending_state_command.is_empty(),"host quits once the save has replied")
+	closing=false;close_deadline=0;bridge.stopped=false;bridge.failure=saved_failure;state_control_pending=false
 	# A host that never exits after Close (has_exited stays false) cannot hold the window forever.
 	_close()
 	check(closing and close_deadline>Time.get_ticks_msec() and close_deadline<=Time.get_ticks_msec()+5000,"failed host gets a short close grace")
@@ -499,8 +522,26 @@ func check_cover_speed_reset() -> void:
 	audio_menu.open_menus.clear();audio_menu.open_menus["reference"]=true
 	check(not _cover_may_return(),"an open reader keeps the original on screen")
 	audio_menu.open_menus.clear();frontdoor_route.rest()
+	# A startup warning raised under the cover waits for the original game.
+	control_notice=Label.new();play_display.add_child(control_notice)
+	_set_frontdoor(true)
+	deferred_notice="Genesis cockpit art disabled: test"
+	_set_frontdoor(false)
+	check(control_notice.visible and control_notice.text=="Genesis cockpit art disabled: test","deferred startup warning shows on entering the original game")
+	check(deferred_notice.is_empty(),"deferred startup warning shows once")
+	control_notice.hide();_set_frontdoor(true);_set_frontdoor(false)
+	check(not control_notice.visible,"a later cover exit repeats no warning")
+	control_notice.queue_free();control_notice=null
 	_set_frontdoor(true)
 	check(fast_forward==1 and audio_menu.speed==1,"normal-speed return leaves speed untouched")
+	# The browser's graphics chord follows the native one: never on the cover.
+	var cover_mode: String=audio_menu.graphics_mode
+	_apply_web_control({"op":"cycle_graphics"})
+	check(audio_menu.graphics_mode==cover_mode,"browser graphics chord does nothing on the cover")
+	_set_frontdoor(false)
+	_apply_web_control({"op":"cycle_graphics"})
+	check(audio_menu.graphics_mode!=cover_mode,"browser graphics chord cycles in the original game")
+	_set_frontdoor(true)
 	for node in [audio_menu,pc_audio,frontdoor,play_display]:node.queue_free()
 	audio_menu=null;pc_audio=null;frontdoor=null;play_display=null
 	play_mode=false

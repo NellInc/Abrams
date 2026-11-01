@@ -157,7 +157,7 @@ func _choice(parent: Control, title: String, values: Array, names: Array, curren
 	choice.item_selected.connect(func(index):action.call(values[index]);_show_settings_error())
 
 func _show_settings_error() -> void:
-	if is_instance_valid(settings_error):settings_error.text="\n".join([menu.quality_error,menu.save_error]).strip_edges()
+	if is_instance_valid(settings_error):settings_error.text="\n".join([menu.quality_error,menu.presentation_note,menu.save_error].filter(func(note):return not note.is_empty()))
 
 func _resize_settings() -> void:
 	if is_instance_valid(settings_columns):settings_columns.columns=2 if size.x>=900 else 1

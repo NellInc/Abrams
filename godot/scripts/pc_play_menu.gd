@@ -253,14 +253,18 @@ func load_quality_settings() -> bool:
 	if error!=OK:
 		quality_error="Could not read saved graphics settings; using defaults"
 		return false
+	var valid := true
 	var loaded := {}
 	for key in QUALITY_LEVELS:
 		var value=file.get_value("graphics",key,QUALITY_DEFAULTS[key])
 		if not value is int or value not in QUALITY_LEVELS[key]:
-			quality_error="Invalid saved graphics settings; using defaults"
-			return false
+			valid=false
+			break
 		loaded[key]=value
-	quality=loaded
+	# A bad quality value resets quality alone; the saved HUD style and mode are
+	# independent and must survive the next save.
+	if valid: quality=loaded
+	else: quality_error="Invalid saved graphics settings; using defaults"
 	var saved_style=file.get_value("graphics","hud_style",DEFAULT_HUD_STYLE)
 	hud_style=saved_style if saved_style is String and saved_style in HUD_STYLES else DEFAULT_HUD_STYLE
 	if file.has_section_key("graphics","graphics_mode"):
@@ -269,7 +273,7 @@ func load_quality_settings() -> bool:
 			quality_error="Invalid saved graphics mode; using the launch default"
 			return false
 		preferred_graphics_mode=saved_mode
-	return true
+	return valid
 
 func _save_graphics_settings(failure_message: String) -> void:
 	quality_error=""

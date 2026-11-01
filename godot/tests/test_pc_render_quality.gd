@@ -69,6 +69,7 @@ func settings_contract() -> void:
 	cfg.set_value("graphics","msaa",16)
 	cfg.save(menu.quality_config_path)
 	check(not loaded.load_quality_settings() and loaded.quality==Menu.QUALITY_DEFAULTS,"invalid sample count falls back to complete defaults")
+	check(loaded.hud_style=="restored" and loaded.preferred_graphics_mode=="genesis","invalid sample count keeps the saved HUD style and mode")
 	for value in [4.0,"4",true]:
 		cfg.set_value("graphics","msaa",value);cfg.save(menu.quality_config_path)
 		check(not loaded.load_quality_settings(),"wrong preference type rejected")

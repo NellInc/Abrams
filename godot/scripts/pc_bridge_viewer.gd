@@ -103,6 +103,11 @@ var _decoded_image: Image
 var web_sync_queued := false
 # A damaged optional import, shown to the player instead of failing silently.
 var genesis_art_note := ""
+# Startup warnings raised while the cover hides the game view are shown when
+# the player first enters the original game.
+var deferred_notice := ""
+var graphics_fallback_note := ""
+var close_after_save := false
 
 func invalidate_presentation_cache() -> void:
 	_presentation_key.clear()
@@ -388,7 +393,8 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 			preferred_unavailable=true
 		if preferred_unavailable:
 			var shown: String="Tactical" if audio_menu.graphics_mode=="tactical" else "Genesis Upscaled"
-			audio_menu.quality_error="Saved graphics are unavailable with this import. Showing "+shown+"; preference retained."
+			graphics_fallback_note="Saved graphics are unavailable with this import. Showing "+shown+"; preference retained."
+			audio_menu.quality_error=graphics_fallback_note
 			audio_menu.refresh_controls()
 	if frontdoor_enabled():
 		frontdoor=Frontdoor.new()
@@ -428,7 +434,11 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 
 func _finish_startup_display() -> void:
 	if not play_mode: return
-	if not startup_splash.finished and not genesis_art_note.is_empty(): _show_control_notice(genesis_art_note)
+	if not startup_splash.finished:
+		var notes: Array=[graphics_fallback_note,genesis_art_note].filter(func(note):return not note.is_empty())
+		if not notes.is_empty():
+			if frontdoor and not frontdoor_shown: deferred_notice="\n".join(notes)
+			else: _show_control_notice("\n".join(notes))
 	status.hide()
 	startup_splash.finish()
 	if frontdoor and not frontdoor_shown:
@@ -469,6 +479,9 @@ func _set_frontdoor(active: bool) -> void:
 	_reset_live_clock()
 	if active and pc_audio:
 		pc_audio.apply_music_context("menu",not pc_only or pc_audio.music_bank.independent)
+	if not active and not deferred_notice.is_empty():
+		_show_control_notice(deferred_notice)
+		deferred_notice=""
 	_sync_web_controls()
 
 func _frontdoor_select(destination: String) -> void:
@@ -875,7 +888,8 @@ func _choose_hud_style(style: String) -> void:
 			tandem_frame.cockpit_art_ids==[1])
 
 func _choose_graphics_quality(samples: int, anisotropy: int) -> void:
-	if frontdoor:
+	# Headless startup runs before the cover's _ready has built its stage.
+	if frontdoor and frontdoor.stage:
 		frontdoor.stage.msaa_3d=PlayDisplay.MSAA_LEVELS[samples]
 		frontdoor.stage.anisotropic_filtering_level=PlayDisplay.ANISOTROPY_LEVELS[anisotropy]
 	if play_display:
@@ -970,31 +984,37 @@ func _poll_web_controls() -> void:
 		var action = JSON.parse_string(raw)
 		if not action is Dictionary: continue
 		handled = true
-		match str(action.get("op", "")):
-			"save_state", "load_state":
-				audio_menu.request_state(str(action.op), int(action.get("slot", -1)))
-			# The shell's keyboard chords take the native shortcut path: an
-			# occupied slot 1 needs a confirming second press, and an open
-			# canvas menu or reader withholds the chord, as natively.
-			"quick_save":
-				if audio_menu.open_menus.is_empty(): audio_menu.quick_save()
-			"quick_load":
-				var slot: int=_web_control_integer(action.get("slot"),1)
-				if slot>=0 and audio_menu.open_menus.is_empty(): audio_menu.quick_load(slot)
-			"graphics": audio_menu.choose_graphics(str(action.get("mode", "")))
-			"hud_style": audio_menu.choose_hud_style(str(action.get("style", "")))
-			"cycle_graphics": audio_menu.cycle_graphics()
-			"speed": audio_menu.choose_speed(1 if audio_menu.speed == 8 else 8)
-			"quality":
-				var samples: int=_web_control_integer(action.get("samples"),16)
-				if samples>=0:audio_menu.choose_quality(str(action.get("setting","")),samples)
-			"audio":
-				var percent: int=_web_control_integer(action.get("percent"),100)
-				if percent>=0:audio_menu.choose(str(action.get("channel","")),percent)
-			"reset_audio": audio_menu.reset_mix()
-			"reset_quality": audio_menu.reset_quality()
-			"help": audio_menu.open_reference("keyboard-controls.html")
+		_apply_web_control(action)
 	if handled: _sync_web_controls()
+
+## One browser toolbar or chord action, under the same gates as its native control.
+func _apply_web_control(action: Dictionary) -> void:
+	match str(action.get("op", "")):
+		"save_state", "load_state":
+			audio_menu.request_state(str(action.op), int(action.get("slot", -1)))
+		# The shell's keyboard chords take the native shortcut path: an
+		# occupied slot 1 needs a confirming second press, and an open
+		# canvas menu or reader withholds the chord, as natively.
+		"quick_save":
+			if audio_menu.open_menus.is_empty(): audio_menu.quick_save()
+		"quick_load":
+			var slot: int=_web_control_integer(action.get("slot"),1)
+			if slot>=0 and audio_menu.open_menus.is_empty(): audio_menu.quick_load(slot)
+		"graphics": audio_menu.choose_graphics(str(action.get("mode", "")))
+		"hud_style": audio_menu.choose_hud_style(str(action.get("style", "")))
+		# As the native chord: not on the cover, nor under an open menu or reader.
+		"cycle_graphics":
+			if not audio_menu.frontdoor_active and audio_menu.open_menus.is_empty(): audio_menu.cycle_graphics()
+		"speed": audio_menu.choose_speed(1 if audio_menu.speed == 8 else 8)
+		"quality":
+			var samples: int=_web_control_integer(action.get("samples"),16)
+			if samples>=0:audio_menu.choose_quality(str(action.get("setting","")),samples)
+		"audio":
+			var percent: int=_web_control_integer(action.get("percent"),100)
+			if percent>=0:audio_menu.choose(str(action.get("channel","")),percent)
+		"reset_audio": audio_menu.reset_mix()
+		"reset_quality": audio_menu.reset_quality()
+		"help": audio_menu.open_reference("keyboard-controls.html")
 
 func _send_state_command() -> void:
 	if pending_state_command.is_empty() or bridge.pending or state_control_pending: return
@@ -1052,7 +1072,8 @@ func _process_frame(delta: float) -> bool:
 		if frontdoor:
 			frontdoor.set_active(false)
 			play_display.show()
-		status.text = "Game stopped: " + bridge.failure + "\nClose this window to exit."
+		# The browser page offers its own Reload; there is no window to close.
+		status.text = "Game stopped: " + bridge.failure + ("" if OS.has_feature("web") else "\nClose this window to exit.")
 		status.show()
 		if play_mode: startup_splash.show_error(status.text)
 		if capture: _close()
@@ -1062,6 +1083,17 @@ func _process_frame(delta: float) -> bool:
 			if pc_audio: pc_audio.stop_all()
 			return false
 	if closing:
+		if close_after_save:
+			if not bridge.failure.is_empty(): pending_state_command.clear()
+			elif bridge.pending: return false
+			elif not pending_state_command.is_empty():
+				# Sent outside the closing guard, so no presentation restarts.
+				state_control_pending=false
+				_send_state_command()
+				if not pending_state_command.is_empty(): pending_state_command.clear()
+				return false
+			close_after_save=false
+			bridge.close()
 		if bridge.has_exited() and audio_drained: quit(0 if bridge.failure.is_empty() and bridge.exit_code() == 0 else 1)
 		elif _close_expired():
 			# Never signal the child: exiting closes its pipes, and a helper that
@@ -1435,7 +1467,12 @@ func _close() -> void:
 	# A failed (possibly hung) host gets a short grace; a healthy one time to flush.
 	close_deadline = Time.get_ticks_msec() + (5000 if not bridge.failure.is_empty() else 30000)
 	closing = true
-	bridge.close()
+	# A save the player chose but the bridge has not sent yet (a step was still
+	# outstanding) is written before the host quits. A queued load is dropped.
+	close_after_save = pending_state_command.get("op")=="save_state" and bridge.failure.is_empty()
+	if not close_after_save:
+		pending_state_command.clear()
+		bridge.close()
 
 func _close_expired() -> bool:
 	return close_deadline>0 and Time.get_ticks_msec()>=close_deadline
