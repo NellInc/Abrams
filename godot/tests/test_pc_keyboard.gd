@@ -148,7 +148,43 @@ func run() -> void:
 	event.physical_keycode=KEY_6; event.keycode=KEY_7; event.pressed=true
 	Keyboard.record_alias(event)
 	if not Keyboard.focus_quarantine.is_empty(): errors.append("fresh layout-changed press retires its old physical quarantine")
+	Keyboard.focus_quarantine.clear(); Keyboard.physical_presses.clear(); Keyboard.clear_aliases()
+	var send := func(code: int, physical: int, pressed: bool, location := KEY_LOCATION_UNSPECIFIED, shift := false) -> void:
+		var key := InputEventKey.new()
+		key.keycode=code; key.physical_keycode=physical; key.pressed=pressed; key.location=location; key.shift_pressed=shift
+		Input.parse_input_event(key.duplicate()); Input.flush_buffered_events(); root.window_input.emit(key)
+	# A release reported under a different keycode (Shift changed mid-hold)
+	# must not leave the press keycode held in the guest.
+	send.call(KEY_3,KEY_3,true)
+	send.call(KEY_SHIFT,KEY_SHIFT,true)
+	send.call(KEY_NUMBERSIGN,KEY_3,false,KEY_LOCATION_UNSPECIFIED,true)
+	send.call(KEY_SHIFT,KEY_SHIFT,false)
+	if "3" in Keyboard.held(): errors.append("release under a changed keycode frees the original key: "+str(Keyboard.held()))
+	send.call(KEY_3,KEY_3,true)
+	if "3" not in Keyboard.held(): errors.append("the same key pressed again is held")
+	send.call(KEY_3,KEY_3,false)
+	if not Keyboard.held().is_empty(): errors.append("the repeated key releases normally: "+str(Keyboard.held()))
+	# Left and right Shift share a keycode: releasing one keeps the other held.
+	send.call(KEY_SHIFT,KEY_SHIFT,true,KEY_LOCATION_LEFT)
+	send.call(KEY_SHIFT,KEY_SHIFT,true,KEY_LOCATION_RIGHT)
+	send.call(KEY_SHIFT,KEY_SHIFT,false,KEY_LOCATION_RIGHT)
+	send.call(KEY_3,KEY_3,true,KEY_LOCATION_UNSPECIFIED,true)
+	if Keyboard.held()!=["shift","3"]: errors.append("left Shift survives a right Shift release: "+str(Keyboard.held()))
+	send.call(KEY_3,KEY_3,false,KEY_LOCATION_UNSPECIFIED,true)
+	send.call(KEY_SHIFT,KEY_SHIFT,false,KEY_LOCATION_LEFT)
+	if not Keyboard.held().is_empty(): errors.append("both Shift sides released: "+str(Keyboard.held()))
+	# A side whose release never arrived is retired by the next unshifted key.
+	send.call(KEY_SHIFT,KEY_SHIFT,true,KEY_LOCATION_LEFT)
+	Input.parse_input_event(_release(KEY_SHIFT)); Input.flush_buffered_events() # Deliberately omit record_alias.
+	send.call(KEY_A,KEY_A,true)
+	if Keyboard.held()!=["a"]: errors.append("unshifted key retires a missed Shift release: "+str(Keyboard.held()))
+	send.call(KEY_A,KEY_A,false)
 	menu.free()
 	for error in errors: printerr("FAIL: keyboard identity " + error)
 	print("PC_KEYBOARD: %d original, %d physical identity cases, event layout/release and 16-key cap; %d failures" % [cases.size(),physical_cases.size(),errors.size()])
 	quit(0 if errors.is_empty() else 1)
+
+func _release(code: int) -> InputEventKey:
+	var key := InputEventKey.new()
+	key.keycode=code; key.physical_keycode=code; key.pressed=false
+	return key

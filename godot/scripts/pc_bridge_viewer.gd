@@ -446,6 +446,11 @@ func frontdoor_enabled() -> bool:
 func _frontdoor_blocked() -> bool:
 	return frontdoor!=null and audio_menu.frontdoor_active
 
+func _cover_may_return() -> bool:
+	# An open Play menu or reader belongs to the original game's session; the
+	# cover would hide its menu bar and leave the popup over the cover.
+	return not _frontdoor_blocked() and frontdoor_route.return_ready and Keyboard.held().is_empty() and not state_control_pending and pending_state_command.is_empty() and audio_menu.open_menus.is_empty()
+
 func _set_frontdoor(active: bool) -> void:
 	if active and pc_audio: pc_audio.world_audio.stop()
 	# Tab cannot change speed on the cover, which is outside the original game.
@@ -1156,6 +1161,7 @@ func _apply_sample(message: Dictionary) -> void:
 		draw_view.reset_water_animation()
 		_reset_tactical_dynamics()
 		_reset_audio_timeline()
+		if frontdoor_route: frontdoor_route.reset_observation()
 	if message.has("slots") and audio_menu and audio_menu.has_method("set_state_status"):
 		audio_menu.set_state_status(message.slots)
 		_sync_web_controls()
@@ -1219,7 +1225,7 @@ func _apply_sample(message: Dictionary) -> void:
 	if frontdoor:
 		var program: Dictionary=message.get("program",{}) if message.get("program") is Dictionary else {}
 		frontdoor_route.observe(image,program,message.get("presentation",{}),int(message.get("sequence",0)))
-		if not _frontdoor_blocked() and frontdoor_route.return_ready and Keyboard.held().is_empty() and not state_control_pending and pending_state_command.is_empty():
+		if _cover_may_return():
 			frontdoor_route.rest()
 			_set_frontdoor(true)
 	# The completed packet owns its pixels and metadata. Once validated, the

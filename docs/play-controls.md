@@ -40,7 +40,9 @@ replace. Use Session for slots 2 to 5. On Windows, natively and in its browsers,
 AltGr is reported as Ctrl+Alt: on keyboard layouts where AltGr+S, L or G types a
 character (for example Polish ś or ł), those shortcuts are unavailable; use the
 Session menu. Browsers on macOS are unaffected. The browser uses Ctrl+Alt on every
-platform, because browsers intercept Command chords.
+platform, because browsers intercept Command chords. Several Linux desktops
+(KDE, Xfce, Cinnamon) reserve Ctrl+Alt+L by default to lock the screen, so quick load does
+not reach the game there; use **Session > Load state**.
 
 You can keep steering or firing while using a save/load shortcut. Only the
 shortcut chord is withheld; unrelated held controls continue. A checkpoint
@@ -65,7 +67,10 @@ Undo last load** restores that recovery slot. A later load replaces the recovery
 slot. Overwriting a numbered slot retains its preceding archive as
 `slot-N.previous.zip`; when the host lists it, **Load state** also offers
 **Overwritten slot N (time)**, which loads that archive (saving the current
-session to Undo last load) without changing either slot file.
+session to Undo last load) without changing either slot file. The new save is
+written in full before the slot is rotated: a save that cannot be written
+leaves both files unchanged, and a damaged or incompatible slot never replaces
+a loadable overwritten archive.
 
 Checkpoint operations briefly stop source execution. A load mutes presentation
 audio from the moment it is requested. A save keeps sound from frames already

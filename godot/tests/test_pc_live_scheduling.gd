@@ -492,6 +492,13 @@ func check_cover_speed_reset() -> void:
 	check(not audio_menu.choose_speed(8) and fast_forward==1,"cover still refuses fast forward")
 	_set_frontdoor(false)
 	check(fast_forward==1 and not pc_audio.transport_muted and not frontdoor.active,"next original game starts at normal speed with sound")
+	frontdoor_route.phase="playing";frontdoor_route.return_ready=true
+	check(_cover_may_return(),"settled root with nothing open may return to the cover")
+	audio_menu.open_menus["session"]=true
+	check(not _cover_may_return(),"an open Session menu keeps the original on screen")
+	audio_menu.open_menus.clear();audio_menu.open_menus["reference"]=true
+	check(not _cover_may_return(),"an open reader keeps the original on screen")
+	audio_menu.open_menus.clear();frontdoor_route.rest()
 	_set_frontdoor(true)
 	check(fast_forward==1 and audio_menu.speed==1,"normal-speed return leaves speed untouched")
 	for node in [audio_menu,pc_audio,frontdoor,play_display]:node.queue_free()

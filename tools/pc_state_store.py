@@ -52,7 +52,7 @@ def sync_parent(path):
     try: os.fsync(directory)
     finally: os.close(directory)
 
-def atomic_write(path, raw):
+def atomic_write(path, raw, before_replace=None):
     path = Path(path)
     fd, name = tempfile.mkstemp(prefix='.' + path.name + '-', dir=path.parent)
     try:
@@ -60,6 +60,9 @@ def atomic_write(path, raw):
             stream.write(raw)
             stream.flush()
             os.fsync(stream.fileno())
+        # Runs only once the new bytes are durable, so a full disk or failed
+        # write leaves everything it would touch unchanged.
+        if before_replace: before_replace()
         os.replace(name, path)
         sync_parent(path.parent)
     finally:
@@ -198,8 +201,14 @@ class StateStore:
         target = self.path(slot)
         # Only numbered slots offer their overwritten archive. Recovery slot 0 is
         # replaced on every load and its predecessor is never listed or read.
-        if slot and target.exists(): atomic_write(target.with_suffix('.previous.zip'), read_bounded(target, sum(LIMITS.values()) + sum(OPTIONAL_LIMITS.values()) + 65536))
-        atomic_write(target, buffer.getvalue())
+        def keep_overwritten():
+            if not slot or not target.exists(): return
+            # A damaged or incompatible slot could never be loaded back, so it
+            # must not replace an overwritten archive that still can.
+            try: self.read(slot)
+            except (ValueError, OSError): return
+            atomic_write(target.with_suffix('.previous.zip'), read_bounded(target, sum(LIMITS.values()) + sum(OPTIONAL_LIMITS.values()) + 65536))
+        atomic_write(target, buffer.getvalue(), keep_overwritten)
         self.read(slot)
 
     def slots(self):

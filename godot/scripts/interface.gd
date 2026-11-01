@@ -270,9 +270,11 @@ func _instruments() -> void:
 	text(Vector2(674,766),"WEAPON SYSTEM",13,muted)
 	text(Vector2(674,808),WEAPONS[sim.weapon],36,cream,true)
 	var ready: bool = (sim.mg_cooldown_ticks == 0) if sim.weapon == 3 else (sim.reload_ticks == 0)
-	text(Vector2(804,803),"READY" if ready else "LOADING",22,green if ready else amber,true)
+	var empty: bool = int(sim.ammo[sim.weapon]) <= 0
+	text(Vector2(804,803),"EMPTY" if empty else "READY" if ready else "LOADING",22,amber if empty or not ready else green,true)
 	var main_loaded := reload_fraction(sim.reload_ticks)
 	var loaded := 1.0 - clampf(float(sim.mg_cooldown_ticks)/float(sim.rules.reload_ticks[3]),0,1) if sim.weapon == 3 else main_loaded
+	if empty: loaded = 0.0
 	rect(Rect2(805,816,153,3),Color("3b4536"))
 	rect(Rect2(805,816,153*loaded,3),green)
 	text(Vector2(1028,766),"SYSTEMS",13,muted)
@@ -308,6 +310,11 @@ func _instruments() -> void:
 
 # Loaded fraction of the main-gun reload in progress. A rise in reload ticks marks a new shot, whose length
 # is the span; weapon changes mid-reload therefore cannot mix up divisors (AX reloads 300 ticks, HEAT/SABOT 240).
+## A restored reload has no observed start; it is shown against the selected round's full reload.
+func resume_reload(ticks: int, span: int) -> void:
+	reload_seen = ticks
+	reload_span = maxi(span, ticks)
+
 func reload_fraction(ticks: int) -> float:
 	if ticks > reload_seen or reload_span < ticks:
 		reload_span = ticks

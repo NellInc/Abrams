@@ -136,6 +136,26 @@ async function storedSlot(operation, slot, value) {
   });
 }
 
+// Several rows in one readwrite transaction: all are stored or none are.
+async function storedRows(entries) {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    let transaction;
+    try {
+      transaction = db.transaction('checkpoints', 'readwrite');
+      const store = transaction.objectStore('checkpoints');
+      for (const [key, value] of entries) store.put(value, key);
+    } catch (error) {
+      try { transaction?.abort(); } catch {}
+      reject(storageError('transaction could not start', error));
+      return;
+    }
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(storageError('transaction failed', transaction.error));
+    transaction.onabort = () => reject(storageError('transaction aborted', transaction.error));
+  });
+}
+
 // Request/response client for one core_worker.mjs. A crashed or terminated
 // worker rejects every outstanding and later call.
 class CoreWorker {
@@ -375,14 +395,16 @@ async function state(message) {
   if (message.op === 'save_state') {
     const saved = checkpointRow(await core.call('capture', {frames}));
     const overwritten = storedSlots.get(message.slot);
-    if (overwritten) {
-      // Keep the overwritten row first: a failed slot write then leaves the
-      // previous row equal to the unchanged slot.
-      await storedSlot('put', previousKey(message.slot), overwritten);
+    // A row this build cannot load never replaces a previous row it can.
+    const keep = overwritten && (overwritten.buildId === buildId || !previousSlots.has(message.slot));
+    // One transaction: a failed save (quota) leaves the slot and its previous
+    // row exactly as they were.
+    await storedRows(keep ? [[previousKey(message.slot), overwritten], [message.slot, saved]]
+      : [[message.slot, saved]]);
+    if (keep) {
       if (overwritten.buildId === buildId) previousSlots.set(message.slot, overwritten);
       else previousSlots.delete(message.slot);
     }
-    await storedSlot('put', message.slot, saved);
     slots.set(message.slot, saved);
     storedSlots.set(message.slot, saved);
     postMessage({type: 'packet', packet: {type: 'state_result', id: message.id,

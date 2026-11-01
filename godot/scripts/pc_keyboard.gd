@@ -14,6 +14,14 @@ static var focus_quarantine: Dictionary = {}
 static var resetting_input := false
 static var focus_reset := false
 static var fresh_focus_press := false
+# Logical keys whose physical key was released under a different keycode (a
+# modifier changed mid-hold). Input keeps the press keycode down until the
+# same logical key is pressed and released again.
+static var stale_logical: Dictionary = {}
+# Left and right modifiers share one keycode, so Input forgets a modifier when
+# either side is released. Track each side that is still held.
+static var modifier_sides: Dictionary = {}
+const SIDED := [KEY_SHIFT,KEY_CTRL,KEY_ALT]
 
 static func encode(pressed: Array) -> Array:
 	var keys: Array = []
@@ -42,7 +50,11 @@ static func held() -> Array:
 		var press: Dictionary = physical_presses[owner]
 		if not (Input.is_physical_key_pressed(press.physical) if press.physical!=0 else Input.is_key_pressed(press.key)):
 			physical_presses.erase(owner)
-	var logical: Array = candidates().filter(func(key): return Input.is_key_pressed(key))
+	for key in stale_logical.keys():
+		if not Input.is_key_pressed(key): stale_logical.erase(key)
+	var logical: Array = candidates().filter(func(key): return Input.is_key_pressed(key) and not stale_logical.has(key))
+	for key in SIDED:
+		if key not in logical and not (modifier_sides.get(key,{}) as Dictionary).is_empty(): logical.append(key)
 	var active := resolve_pressed(logical,physical,genuine)
 	return encode(active.filter(func(key): return key not in focus_quarantine.values() or physical_presses.values().any(func(press): return press.key==key)))
 
@@ -56,6 +68,15 @@ static func record_alias(event: InputEvent) -> void:
 	if not event is InputEventKey or resetting_input: return
 	var physical: int = event.physical_keycode
 	var owner: int = physical if physical!=0 else event.keycode
+	_track_modifier_sides(event)
+	if event.pressed: stale_logical.erase(event.keycode)
+	else:
+		var press = physical_presses.get(owner)
+		if press is Dictionary and press.logical!=event.keycode and press.logical!=KEY_NONE:
+			var shared := false
+			for other in physical_presses:
+				if other!=owner and physical_presses[other].logical==press.logical: shared=true
+			if not shared: stale_logical[press.logical]=true
 	if not event.pressed:
 		physical_aliases.erase(physical)
 		physical_presses.erase(owner)
@@ -73,6 +94,20 @@ static func record_alias(event: InputEvent) -> void:
 		physical_aliases[physical]=event.keycode
 	else:
 		physical_aliases.erase(physical)
+
+static func _track_modifier_sides(event: InputEventKey) -> void:
+	if event.keycode in SIDED:
+		if event.location==KEY_LOCATION_UNSPECIFIED: return
+		var sides: Dictionary = modifier_sides.get(event.keycode,{})
+		if event.pressed: sides[event.location]=true
+		else: sides.erase(event.location)
+		if sides.is_empty(): modifier_sides.erase(event.keycode)
+		else: modifier_sides[event.keycode]=sides
+		return
+	# Any other key reports the operating system's own modifier state, which
+	# retires a side whose release was never delivered.
+	for flag in [[KEY_SHIFT,event.shift_pressed],[KEY_CTRL,event.ctrl_pressed],[KEY_ALT,event.alt_pressed]]:
+		if not flag[1]: modifier_sides.erase(flag[0])
 
 static func clear_aliases() -> void:
 	physical_aliases.clear()
@@ -104,6 +139,8 @@ static func initialize(window: Window) -> void:
 	clear_aliases()
 	physical_presses.clear()
 	focus_quarantine.clear()
+	stale_logical.clear()
+	modifier_sides.clear()
 	focus_reset=false
 	fresh_focus_press=false
 	alias_window=weakref(window)
@@ -134,6 +171,8 @@ static func focus_exited() -> void:
 	resetting_input=false
 	clear_aliases()
 	physical_presses.clear()
+	stale_logical.clear()
+	modifier_sides.clear()
 	focus_quarantine=captured
 	focus_reset=true
 	fresh_focus_press=false

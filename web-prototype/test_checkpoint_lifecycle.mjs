@@ -169,19 +169,21 @@ lastProgram = 'current'; lastRgb = new Uint8Array(192000).fill(7);
 zip = new Uint8Array(1); catalog = new Uint8Array(1);
 buildId = 'a'.repeat(64); slots.set(1, saved);
 }; self.state = state; self.boot = boot; self.openDatabase = openDatabase; self.storedSlot = storedSlot;
-self.storedSlots = storedSlots;`, context);
+self.storedSlots = storedSlots; self.previousSlots = previousSlots;`, context);
   return context;
 }
-function fakeStorage(failWrite = false) {
+function fakeStorage(failWrite = false, failKey) {
   const writes = [];
+  // Like IndexedDB, a transaction commits all of its puts or none of them.
   const db = {closeCount: 0, close() { this.closeCount++; }, transaction() {
+    const pending = [];
     const tx = {objectStore() { return {put(value, slot) {
-      const request = {};
-      queueMicrotask(() => {
-        if (failWrite) { tx.error = new Error('quota'); tx.onabort(); }
-        else { writes.push({value, slot}); tx.oncomplete(); }
+      if (!pending.length) queueMicrotask(() => {
+        if (failWrite || pending.some(write => write.slot === failKey)) { tx.error = new Error('quota'); tx.onabort(); }
+        else { writes.push(...pending); tx.oncomplete(); }
       });
-      return request;
+      pending.push({value, slot});
+      return {};
     }}; }};
     return tx;
   }};
@@ -189,8 +191,8 @@ function fakeStorage(failWrite = false) {
   return {indexedDB, db, writes};
 }
 function restoreContext({observerFail = false, presentationFail = false, writeFail = false,
-  coreFailures = {}} = {}) {
-  const storage = fakeStorage(writeFail);
+  failKey, coreFailures = {}} = {}) {
+  const storage = fakeStorage(writeFail, failKey);
   const {cores, FakeCoreWorker} = fakeCores();
   const {observers, runtime} = fakeObservers();
   const replies = [];
@@ -385,6 +387,31 @@ test('a previous row from another build is kept on disk but never offered', asyn
   assert.equal(replies.at(-1).packet.success, false);
   assert.match(replies.at(-1).packet.message, /no previous save/);
   assert.equal(storage.writes.length, 2);
+});
+
+test('a failed save keeps both the slot and its previous row', async () => {
+  const {ctx, storage, replies, saved} = restoreContext({failKey: 1});
+  Object.assign(saved, {buildId: 'a'.repeat(64), savedAt: '2026-10-01T00:00:00.000Z'});
+  const older = {...saved, savedAt: '2026-09-01T00:00:00.000Z'};
+  ctx.self.storedSlots.set(1, saved);
+  ctx.self.previousSlots.set(1, older);
+  await ctx.self.onmessage({data: {op: 'save_state', id: 1, slot: 1}});
+  assert.equal(replies.at(-1).packet.success, false);
+  assert.equal(storage.writes.length, 0);
+  assert.equal(ctx.self.storedSlots.get(1), saved);
+  assert.equal(ctx.self.previousSlots.get(1), older);
+});
+
+test('a row from another build never replaces a loadable previous row', async () => {
+  const {ctx, storage, replies, saved} = restoreContext();
+  Object.assign(saved, {buildId: 'b'.repeat(64), savedAt: '2026-10-01T00:00:00.000Z'});
+  const loadable = {...saved, buildId: 'a'.repeat(64), savedAt: '2026-09-01T00:00:00.000Z'};
+  ctx.self.storedSlots.set(3, saved);
+  ctx.self.previousSlots.set(3, loadable);
+  await ctx.self.onmessage({data: {op: 'save_state', id: 1, slot: 3}});
+  assert.deepEqual(storage.writes.map(write => write.slot), [3]);
+  assert.equal(ctx.self.previousSlots.get(3), loadable);
+  assert.equal(replies.at(-1).packet.slots[3].previous_saved_at, loadable.savedAt);
 });
 
 test('invalid keys and overlapping requests are rejected without touching the core', async () => {

@@ -99,6 +99,42 @@ class SaveStateTests(unittest.TestCase):
         self.assertNotIn('message', rows[1])
         with self.assertRaises(ValueError): self.store.read(1, previous=True)
 
+    def test_damaged_slot_never_replaces_its_overwritten_archive(self):
+        self.store.write(1, self.capture)
+        (self.capture/'state.bin').write_bytes(b'second')
+        self.store.write(1, self.capture)
+        kept = self.store.path(1).with_suffix('.previous.zip').read_bytes()
+        self.store.path(1).write_bytes(b'damaged by a partial copy')
+        (self.capture/'state.bin').write_bytes(b'third')
+        self.store.write(1, self.capture)
+        self.assertEqual(self.store.read(1)[1]['state.bin'], b'third')
+        self.assertEqual(self.store.path(1).with_suffix('.previous.zip').read_bytes(), kept)
+        self.assertIn('previous_saved_at', self.store.slots()[1])
+
+    def test_failed_save_keeps_slot_and_overwritten_archive(self):
+        self.store.write(1, self.capture)
+        (self.capture/'state.bin').write_bytes(b'second')
+        self.store.write(1, self.capture)
+        live = self.store.path(1).read_bytes()
+        kept = self.store.path(1).with_suffix('.previous.zip').read_bytes()
+        (self.capture/'state.bin').write_bytes(b'third')
+        real_mkstemp, real_fsync = tempfile.mkstemp, os.fsync
+        new_slot = set()
+        def staged(*args, **kwargs):
+            fd, name = real_mkstemp(*args, **kwargs)
+            if Path(name).name.startswith('.slot-1.zip-'): new_slot.add(fd)
+            return fd, name
+        def full_disk(fd):
+            # Only the new save's bytes fail to reach the disk.
+            if fd in new_slot: raise OSError(errno.ENOSPC, 'No space left on device')
+            return real_fsync(fd)
+        with patch('tools.pc_state_store.tempfile.mkstemp', side_effect=staged), \
+                patch('tools.pc_state_store.os.fsync', side_effect=full_disk):
+            with self.assertRaises(OSError): self.store.write(1, self.capture)
+        self.assertEqual(self.store.path(1).read_bytes(), live)
+        self.assertEqual(self.store.path(1).with_suffix('.previous.zip').read_bytes(), kept)
+        self.assertEqual(list(self.store.root.glob('.slot-1*')), [])
+
     def test_recovery_slot_keeps_no_unreachable_archive(self):
         self.store.write(0, self.capture)
         (self.capture/'state.bin').write_bytes(b'changed')

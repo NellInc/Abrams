@@ -73,7 +73,8 @@ func tick(commands: Dictionary) -> Array[Dictionary]:
 	mg_cooldown_ticks = maxi(0, mg_cooldown_ticks - 1)
 	if reload_ticks > 0:
 		reload_ticks -= 1
-		if reload_ticks == 0:
+		# The loader reports a round only when one is left to load.
+		if reload_ticks == 0 and _main_round_available():
 			events.append({"type": "reload", "text": "Weapon ready", "cue": "ready"})
 	if commands.has("station") and _integer_between(commands.station, 0, 3):
 		station = int(commands.station)
@@ -155,7 +156,16 @@ func tick(commands: Dictionary) -> Array[Dictionary]:
 		status = "lost"
 		speed = 0.0
 		events.append({"type": "lost", "text": "Exercise ended. Vehicle unavailable.", "cue": "lost"})
+	elif ammo.all(func(rounds): return int(rounds) <= 0):
+		status = "lost"
+		speed = 0.0
+		events.append({"type": "lost", "text": "Exercise ended. Ammunition expended.", "cue": "lost"})
 	return events
+
+func _main_round_available() -> bool:
+	if weapon < 3:
+		return int(ammo[weapon]) > 0
+	return int(ammo[0]) + int(ammo[1]) + int(ammo[2]) > 0
 
 func bearing_to(point: Vector2) -> float:
 	var delta: Vector2 = point - pos

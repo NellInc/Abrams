@@ -248,6 +248,40 @@ func _test_completion() -> void:
 	saved = sim.snapshot()
 	check(sim.tick({}).is_empty() and sim.snapshot() == saved, "loss terminal and immutable")
 	check(Sim.new().restore(saved), "losing snapshot restorable")
+	# The loader never reports a round that is not there.
+	sim.reset()
+	sim.ammo = [1, 0, 0, 80]
+	sim.turret = PI
+	sim.tick({"fire": true})
+	var reloaded := false
+	for tick in 260:
+		reloaded = reloaded or _has_event(sim.tick({}), "reload")
+	check(not reloaded and sim.reload_ticks == 0, "no Weapon ready after the selected weapon's last round")
+	sim.reset()
+	sim.ammo = [1, 3, 0, 80]
+	sim.tick({"fire": true})
+	sim.tick({"select_weapon": 1})
+	reloaded = false
+	for tick in 260:
+		reloaded = reloaded or _has_event(sim.tick({}), "reload")
+	check(reloaded, "Weapon ready when the newly selected weapon has rounds")
+	# Spent ammunition ends the exercise instead of leaving it unwinnable.
+	sim.reset()
+	sim.ammo = [0, 0, 0, 1]
+	sim.turret = PI
+	var spent: Array = []
+	for tick in 10:
+		spent.append_array(sim.tick({"machinegun": true}))
+	check(sim.status == "lost" and _has_event(spent, "lost"), "expending every round ends the exercise")
+	saved = sim.snapshot()
+	check(sim.tick({"fire": true}).is_empty() and sim.snapshot() == saved, "ammunition loss terminal and immutable")
+	sim.reset()
+	sim.ammo = [0, 0, 0, 1]
+	sim.turret = sim.bearing_to(sim.targets[0].pos)
+	for i in range(1, sim.targets.size()):
+		sim.targets[i].alive = false
+	sim.targets[0].hp = 1.0
+	check(_has_event(sim.tick({"machinegun": true}), "won") and sim.status == "won", "a last round that completes the range wins")
 
 func _test_corrected_controls() -> void:
 	var sim = Sim.new()
@@ -566,4 +600,6 @@ func _test_range_presentation() -> void:
 			ui.reload_fraction(sim.reload_ticks)
 			sim.tick({})
 	check(is_equal_approx(ui.reload_fraction(sim.reload_ticks), 1.0 - 1.0 / float(sim.rules.reload_ticks[1])), "reload bar span survives weapon switch")
+	ui.resume_reload(100, int(sim.rules.reload_ticks[0]))
+	check(is_equal_approx(ui.reload_fraction(100), 1.0 - 100.0 / float(sim.rules.reload_ticks[0])), "restored reload shows its loaded share")
 	ui.free()

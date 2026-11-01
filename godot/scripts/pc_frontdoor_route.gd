@@ -44,7 +44,8 @@ func classify(source: Image, program: Dictionary, presentation: Dictionary) -> D
 
 func observe(source: Image, program: Dictionary, presentation: Dictionary, sequence: int) -> void:
 	var view := classify(source,program,presentation)
-	if view.selected<0 or view.selected!=selected: root_since=-1
+	# A load can restore an earlier sequence; the dwell restarts from it.
+	if view.selected<0 or view.selected!=selected or sequence<root_since: root_since=-1
 	selected=view.selected
 	submenu=view.submenu
 	if selected>=0 and root_since<0: root_since=sequence
@@ -92,3 +93,7 @@ func _fail() -> void:
 
 func rest() -> void:
 	phase="idle";return_ready=false
+
+## A loaded or restored timeline is a new observation; its root dwell starts again.
+func reset_observation() -> void:
+	selected=-1;root_since=-1;return_ready=false

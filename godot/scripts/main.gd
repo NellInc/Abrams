@@ -309,7 +309,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_L: commands.lock_target = true
 		KEY_H: show_help = not show_help
 		KEY_Q:
+			# As Escape: the pause screen silences the range and drops queued actions.
 			paused = true
+			commands.clear()
+			sound.stop_all()
 			ui.rebuild_buttons()
 	get_viewport().set_input_as_handled()
 
@@ -321,6 +324,7 @@ func start_range() -> void:
 	sim.reset()
 	hit_count = 0
 	shots = 0
+	_reset_presentation()
 	commands.clear()
 	scan_angle = 0
 	map_overview = false
@@ -379,6 +383,14 @@ func announce(role: String, text: String, cue: String) -> void:
 	subtitle_time = 4.0
 	if not cue.is_empty():
 		sound.speak(cue)
+
+## A new or restored exercise starts without the last one's notice, shot shake or sounds.
+func _reset_presentation() -> void:
+	notice = ""
+	notice_time = 0.0
+	flash = 0.0
+	if vehicle: vehicle.recoil = 0.0
+	if sound: sound.stop_all()
 
 func set_notice(text: String) -> void:
 	notice = text
@@ -463,6 +475,8 @@ func load_range() -> void:
 		return
 	shots = data.shots
 	hit_count = data.hits
+	_reset_presentation()
+	ui.resume_reload(sim.reload_ticks,int(sim.rules.reload_ticks[sim.weapon if sim.weapon < 3 else 0]))
 	commands.clear()
 	clear_effects()
 	scan_angle = 0
@@ -588,6 +602,11 @@ func _smoke_cleanup_save(real_save: String) -> void:
 	if DirAccess.dir_exists_absolute(_smoke_save_dir()):
 		DirAccess.remove_absolute(_smoke_save_dir())
 	range_save = real_save
+
+func _smoke_effects_playing() -> bool:
+	for player in sound.effects:
+		if player.playing: return true
+	return false
 
 func _smoke_test() -> void:
 	start_range()
@@ -722,6 +741,28 @@ func _smoke_test() -> void:
 	if not kept:
 		_smoke_fail("failed save did not keep previous save")
 		return
+	# Q pauses as Escape does: silent, with queued actions dropped.
+	start_range()
+	sound.muted = false
+	sound.play("cannon")
+	commands.fire = true
+	var pause_key := InputEventKey.new()
+	pause_key.keycode = KEY_Q
+	pause_key.pressed = true
+	_unhandled_key_input(pause_key)
+	if not paused or not commands.is_empty() or _smoke_effects_playing():
+		_smoke_fail("Q pause keeps range sound or queued actions")
+		return
+	# Restart drops the last exercise's notice, shot shake and effect sounds.
+	set_notice("ALPHA: neutralised")
+	flash = 0.55
+	vehicle.recoil = 0.32
+	sound.play("impact")
+	start_range()
+	if not notice.is_empty() or flash != 0.0 or vehicle.recoil != 0.0 or _smoke_effects_playing():
+		_smoke_fail("restart keeps the previous exercise's notice, shake or sound")
+		return
+	sound.muted = true
 	set_screen("manual")
 	await get_tree().process_frame
 	set_screen("record")
