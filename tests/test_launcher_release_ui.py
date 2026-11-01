@@ -45,8 +45,9 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertIn('Self.setupTimeout', call)
         self.assertIn('process.terminate()', call)
         self.assertIn('static let setupTimeout: TimeInterval = 300', SOURCE)
-        # A failed import rechecks installed state, then shows the failure again.
-        self.assertIn('self.recheck(after:', call)
+        # A failed import rechecks installed state, then shows the failure once.
+        self.assertIn('if arguments != ["--status"] { self.recheck(after: message) }', call)
+        self.assertIn('heldError: message', SOURCE)
         # Both --data-home spellings select the requested profile.
         self.assertIn('hasPrefix("--data-home=")', SOURCE)
 

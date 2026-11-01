@@ -285,7 +285,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let text = String(decoding: stderr.isEmpty ? stdout : stderr, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         return (nil, text.isEmpty ? "The runtime could not complete this operation." : String(text.suffix(1799)))
     }
-    func call(_ arguments: [String], completion: @escaping ([String: Any]) -> Void) {
+    func call(_ arguments: [String], heldError: String? = nil, completion: @escaping ([String: Any]) -> Void) {
         if busy || running != nil { return }
         busy = true; updateControls()
         let process = Process(); process.executableURL = runtime; process.arguments = setupArgs + arguments
@@ -307,16 +307,18 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 DispatchQueue.main.async {
                     self.busy = false
                     if let result { completion(result); return }
-                    self.showError(error ?? "The runtime could not complete this operation.")
-                    // A failed import may still have changed what is installed: recheck,
-                    // then show this failure again over the refreshed state.
-                    if arguments != ["--status"] { self.recheck(after: error ?? "") }
+                    let message = error ?? "The runtime could not complete this operation."
+                    // A failed import may still have changed what is installed: recheck
+                    // first, then show this failure once over the refreshed state.
+                    if arguments != ["--status"] { self.recheck(after: message) }
+                    else { self.showError(heldError.map { "\($0)\n\n\(message)" } ?? message) }
                 }
             } catch { DispatchQueue.main.async { self.busy = false; self.showError(error.localizedDescription) } }
         }
     }
     func recheck(after message: String) {
-        call(["--status"], completion: { self.refresh($0); self.showError(message) })
+        // If the recheck itself fails, both failures share one alert.
+        call(["--status"], heldError: message, completion: { self.refresh($0); self.showError(message) })
     }
     func showError(_ message: String) {
         updateControls()
