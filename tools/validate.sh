@@ -502,7 +502,7 @@ if [ "${VALIDATE_NATIVE:-0}" = 1 ] || [ "$LIST" = 1 ]; then
   run_check pc_wilson_completion_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_wilson_completion.gd -- --native --output "$(fresh native/pc-wilson-completion)"
   run_check pc_world_audio_native ./tools/godot.sh $NATIVE --script res://tests/test_pc_world_audio.gd -- --native --output "$(fresh native/pc-world-audio)"
 else
-  echo 'NOT RUN native tier: Modern GPU ownership/concealment, Tactical shader includes, startup cover (set VALIDATE_NATIVE=1)' >> "$OUT/results.txt"
+  echo 'NOT RUN native tier: Modern GPU ownership/concealment, Tactical shader includes, startup cover, each harness --native pixel comparison (set VALIDATE_NATIVE=1)' >> "$OUT/results.txt"
   echo 'NOTE: native Modern ownership checks NOT run (VALIDATE_NATIVE=1 runs them)' >&2
 fi
 
