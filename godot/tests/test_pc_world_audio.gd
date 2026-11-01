@@ -13,6 +13,11 @@ var output: String
 var native: bool = false
 
 func _initialize() -> void: run.call_deferred()
+## Paint the whole original pixel containing a display texel. These masks are
+## exactly 5x the 256x97 clip, so one source pixel is a 5x5 texel block.
+func px(image: Image, x: int, y: int, colour: Color) -> void:
+	image.fill_rect(Rect2i(x/5*5,y/5*5,5,5),colour)
+
 func check(ok: bool, why: String) -> void:
 	checks += 1
 	if not ok: errors.append(why)
@@ -318,15 +323,15 @@ func tank_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		mask.fill(Color8(1,0,flag));check(World.visible_cues(mask,token)==["tank"], "generic inherits actual ordinary/guarded T80 ownership rules")
 	for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
 		mask.fill(colour);check(World.visible_cues(mask,token).is_empty(), "generic excludes occluders, lines, round forms and alpha")
-	mask.fill(Color8(2,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+	mask.fill(Color8(2,0,0));px(mask,800,241,Color8(1,0,0));px(mask,820,231,Color8(1,0,8))
 	check(World.visible_cues(mask,token)==["tank"], "thin generic silhouette uses identical separated same-owner narrow witnesses")
 	ui.fill(Color.WHITE);token.ui=ui.get_data()
 	check(World.visible_cues(mask,token).is_empty(), "original opaque UI silences generic exact scan")
 	ui.fill(Color.BLACK);token.ui=ui.get_data()
-	mask.set_pixel(820,231,Color8(2,0,8))
+	px(mask,820,231,Color8(2,0,8))
 	check(World.visible_cues(mask,token).is_empty(), "generic cannot combine two separate tiny owners")
 	for colour: Color in [Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
-		mask.set_pixel(820,231,colour)
+		px(mask,820,231,colour)
 		check(World.visible_cues(mask,token).is_empty(), "generic narrow scan retains exact line/round/alpha exclusions")
 	var directory: String=output.path_join("generated-tank-bank")
 	bank(directory,World.TANK_CUES,"private visible-tank fallback")
@@ -349,6 +354,10 @@ func tank_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		check(World.candidates(tank_source(121),world.streams.has("t80")).get(1,{}).get("cue")==("t80" if dedicated else "tank"), "validated stream availability chooses dedicated versus generic")
 		world.admitted.assign(["tank","hind"]);world.refresh()
 		check(player.playing and player.pitch_scale==1.0 and world.players.size()==(4 if dedicated else 3), "only one fixed-pitch centred generic player, independent of actor count")
+		world.admitted.erase("hind");world.refresh()
+		check(not world.players.hind.playing and world._resume_at.has("hind"), "a bed leaving admission remembers where it was")
+		world.admitted.append("hind");world.refresh()
+		check(world.players.hind.playing and not world._resume_at.has("hind"), "a bed returning within the window resumes")
 		var clock: Array=[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)]
 		check(audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"tank":40}) and is_equal_approx(db_to_linear(player.volume_db),0.65*0.30*0.40), "independent fallback gain applies without source pitch/RPM changes")
 		if dedicated:
@@ -370,8 +379,16 @@ func tank_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		var disabled: Dictionary=packet(2);disabled.active=false
 		check(audio.apply_audio(disabled) and not player.playing, "original inactive/pause envelope silences fallback")
 		world.refresh();check(not player.playing,"retained owner proof cannot reopen inactive original source")
+		audio.continuing_timeline=false;world._cow_continuing=true;world.stop()
+		check(not world._cow_continuing,"leaving the resumed program ends cow save adoption without a cow refresh")
 		check(await audio.drain_for_shutdown(),"generic uses existing clean audio shutdown");audio.free()
 	var reader: RefCounted=World.new()
+	# A bed that drops out briefly resumes where it was; a later return or a
+	# full stop (program change, load) restarts it.
+	reader._resume_at["hind"]=[3.25,1000]
+	check(is_equal_approx(reader.resume_position("hind",1500),3.25) and reader.resume_position("hind",1500)==0.0,"a brief admission gap resumes the bed once")
+	reader._resume_at["hind"]=[3.25,1000]
+	check(reader.resume_position("hind",1000+World.RESUME_WINDOW_MSEC)==0.0,"a later return restarts the bed")
 	var path: String=directory.path_join("tank.wav")
 	var good: PackedByteArray=FileAccess.get_file_as_bytes(path)
 	FileAccess.open(path,FileAccess.WRITE).store_string("corrupt")
@@ -423,17 +440,17 @@ func t72_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		mask.fill(Color8(1,0,flag));check(World.visible_cues(mask,token)==["t72"], "ordinary/guarded actual T72 owner admits")
 	for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
 		mask.fill(colour);check(World.visible_cues(mask,token).is_empty(), "foreign/line/round/alpha T72 pixels remain silent")
-	mask.fill(Color8(2,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+	mask.fill(Color8(2,0,0));px(mask,800,241,Color8(1,0,0));px(mask,820,231,Color8(1,0,8))
 	check(World.visible_cues(mask,token)==["t72"], "narrow separated actual same-owner T72 pixels qualify")
 	ui.fill(Color.WHITE);token.ui=ui.get_data()
 	check(World.visible_cues(mask,token).is_empty(), "original opaque UI blocks narrow T72 proof")
 	ui.fill(Color.BLACK);token.ui=ui.get_data()
 	for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
-		mask.set_pixel(820,231,colour)
+		px(mask,820,231,colour)
 		check(World.visible_cues(mask,token).is_empty(), "narrow T72 proof excludes foreign/line/round/alpha endpoints")
-	mask.fill(Color8(2,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(815,241,Color8(1,0,8))
+	mask.fill(Color8(2,0,0));px(mask,800,241,Color8(1,0,0));px(mask,815,241,Color8(1,0,8))
 	check(World.visible_cues(mask,token).is_empty(), "narrow T72 retains four-source-pixel minimum separation")
-	token.selected[2]={"cue":"t72"};mask.fill(Color8(0,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(2,0,8))
+	token.selected[2]={"cue":"t72"};mask.fill(Color8(0,0,0));px(mask,800,241,Color8(1,0,0));px(mask,820,231,Color8(2,0,8))
 	check(World.visible_cues(mask,token).is_empty(), "two selected T72 owners cannot pool isolated witnesses")
 	var directory: String=output.path_join("generated-t72-bank")
 	var fallback: String=output.path_join("t72-tank-control")
@@ -530,7 +547,7 @@ func brdm_checks(ui: Image, mask: Image) -> void:
 			mask.fill(Color8(1,0,flag));check(World.visible_cues(mask,token)==["brdm"],"dedicated BRDM retains ordinary and guarded owner proof")
 		for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,8,0),Color.TRANSPARENT]:
 			mask.fill(colour);check(World.visible_cues(mask,token).is_empty(),"foreign, line, hidden or transparent BRDM remains silent")
-		mask.fill(Color8(0,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+		mask.fill(Color8(0,0,0));px(mask,800,241,Color8(1,0,0));px(mask,820,231,Color8(1,0,8))
 		check(World.visible_cues(mask,token)==["brdm"],"thin BRDM retains separated same-owner pixel witnesses")
 		ui.fill(Color.WHITE);token.ui=ui.get_data()
 		check(World.visible_cues(mask,token).is_empty(),"original opaque UI blocks dedicated BRDM")
@@ -658,16 +675,16 @@ func family_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		mask.fill(Color8(1,0,8));check(World.visible_cues(mask,token)==[cue],"actual family owner qualifies")
 		for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,8,0)]:
 			mask.fill(colour);check(World.visible_cues(mask,token).is_empty(),"foreign/line/transparent family owner stays silent")
-		mask.fill(Color8(0,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+		mask.fill(Color8(0,0,0));px(mask,800,241,Color8(1,0,0));px(mask,820,231,Color8(1,0,8))
 		check(World.visible_cues(mask,token)==[cue],"thin family gets two separated same-owner source pixels")
 		ui.fill(Color.WHITE);token.ui=ui.get_data()
 		check(World.visible_cues(mask,token).is_empty(),"opaque original UI silences thin family")
-		ui.fill(Color.BLACK);token.ui=ui.get_data();mask.set_pixel(820,231,Color8(2,0,8))
+		ui.fill(Color.BLACK);token.ui=ui.get_data();px(mask,820,231,Color8(2,0,8))
 		check(World.visible_cues(mask,token).is_empty(),"separate family owners cannot combine witnesses")
-		mask.set_pixel(815,241,Color8(1,0,8))
+		px(mask,815,241,Color8(1,0,8))
 		check(World.visible_cues(mask,token).is_empty(),"family keeps four-source-pixel separation")
-		mask.set_pixel(815,241,Color8(0,0,0));mask.set_pixel(800,241,Color8(0,0,0))
-		for pixel: Vector2i in [Vector2i(800,236),Vector2i(790,241),Vector2i(810,241)]:mask.set_pixelv(pixel,Color8(1,0,8))
+		px(mask,815,241,Color8(0,0,0));px(mask,800,241,Color8(0,0,0))
+		for pixel: Vector2i in [Vector2i(800,236),Vector2i(790,241),Vector2i(810,241)]:px(mask,pixel.x,pixel.y,Color8(1,0,8))
 		check(World.visible_cues(mask,token)==[cue],"complete family scan finds separated endpoints around first witness")
 		check(JSON.stringify(data)==original,"family observation leaves source bytes unchanged")
 	var directory: String=base_directory+"-family"
@@ -737,23 +754,23 @@ func allied_checks(base_directory: String, ui: Image, mask: Image) -> void:
 			mask.fill(Color8(1,0,flag));check(World.visible_cues(mask,token)==[cue], "ordinary/guarded actual allied owner qualifies: "+cue)
 		for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0),Color.TRANSPARENT]:
 			mask.fill(colour);check(World.visible_cues(mask,token).is_empty(), "occluded/offscreen/line/round/alpha allied owners remain silent: "+cue)
-		mask.fill(Color8(2,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+		mask.fill(Color8(2,0,0));px(mask,800,241,Color8(1,0,0));px(mask,820,231,Color8(1,0,8))
 		check(World.visible_cues(mask,token)==[cue], "thin allied silhouette uses separated actual same-owner pixels: "+cue)
 		ui.fill(Color.WHITE);token.ui=ui.get_data()
 		check(World.visible_cues(mask,token).is_empty(), "opaque original UI blocks narrow allied proof: "+cue)
 		ui.fill(Color.BLACK);token.ui=ui.get_data()
-		mask.set_pixel(820,231,Color8(2,0,8))
+		px(mask,820,231,Color8(2,0,8))
 		check(World.visible_cues(mask,token).is_empty(), "different allied owners cannot combine tiny fragments: "+cue)
 		var pair: Dictionary=data.duplicate(true)
 		var second: Dictionary=data.objects[0].duplicate(true);second.pointer=124;pair.objects.append(second)
 		pair.world.dynamic.append({"pointer":124,"shape_index":shape,"speed_raw":-10});token.selected=World.candidates(pair)
 		# Both owners are now eligible: the background must belong to neither.
-		mask.fill(Color8(0,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(2,0,8))
+		mask.fill(Color8(0,0,0));px(mask,800,241,Color8(1,0,0));px(mask,820,231,Color8(2,0,8))
 		check(token.selected.size()==2 and World.visible_cues(mask,token).is_empty(), "two selected allied owners of the same class still cannot combine isolated witnesses: "+cue)
 		token.selected=World.candidates(data)
-		mask.set_pixel(815,241,Color8(1,0,8))
+		px(mask,815,241,Color8(1,0,8))
 		check(World.visible_cues(mask,token).is_empty(), "allied witnesses retain four-source-pixel separation: "+cue)
-		mask.set_pixel(815,241,Color8(2,0,8));mask.set_pixel(800,241,Color8(2,0,0));mask.set_pixel(800,236,Color8(1,0,0));mask.set_pixel(790,241,Color8(1,0,8));mask.set_pixel(810,241,Color8(1,0,0))
+		px(mask,815,241,Color8(2,0,8));px(mask,800,241,Color8(2,0,0));px(mask,800,236,Color8(1,0,0));px(mask,790,241,Color8(1,0,8));px(mask,810,241,Color8(1,0,0))
 		check(World.visible_cues(mask,token)==[cue], "complete allied scan finds separated endpoints around an intermediate first witness: "+cue)
 		check(World.visible_cues(Image.create(256,97,false,Image.FORMAT_RGBA8),token).is_empty(), "stale allied target size cannot lend visibility: "+cue)
 		check(JSON.stringify(data)==original, "allied qualification never mutates source: "+cue)
@@ -988,17 +1005,24 @@ func soviet_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	check(World.visible_cues(mask,token).is_empty(), "original UI cannot lend T80 visibility")
 	ui.fill(Color.BLACK)
 	token.ui=ui.get_data();mask.fill(Color8(2,0,0))
-	mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(820,231,Color8(1,0,8))
+	px(mask,800,241,Color8(1,0,0));px(mask,820,231,Color8(1,0,8))
 	check(World.visible_cues(mask,token)==["t80"], "thin T80 actual same-owner witnesses qualify between sparse grid points")
+	# A display-resolution sliver (one texel row above a ridge) covers no original
+	# pixel centre: the original shows nothing there, so the engine stays silent.
+	var sliver_restore: Image=mask.duplicate()
+	mask.fill(Color8(2,0,0))
+	for x: int in range(750,780): mask.set_pixel(x,240,Color8(1,0,0))
+	check(World.visible_cues(mask,token).is_empty(), "a sliver covering no original pixel centre cannot announce a T80")
+	mask.copy_from(sliver_restore)
 	ui.fill(Color.WHITE);token.ui=ui.get_data()
 	check(World.visible_cues(mask,token).is_empty(), "exact T80 scan retains original UI exclusion")
 	ui.fill(Color.BLACK);token.ui=ui.get_data()
-	mask.set_pixel(820,231,Color8(2,0,8))
+	px(mask,820,231,Color8(2,0,8))
 	check(World.visible_cues(mask,token).is_empty(), "exact T80 scan cannot combine different owners")
 	for colour: Color in [Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0)]:
-		mask.set_pixel(820,231,colour)
+		px(mask,820,231,colour)
 		check(World.visible_cues(mask,token).is_empty(), "exact T80 scan retains protected/round/alpha exclusion")
-	mask.fill(Color8(2,0,0));mask.set_pixel(800,241,Color8(1,0,0));mask.set_pixel(815,241,Color8(1,0,8))
+	mask.fill(Color8(2,0,0));px(mask,800,241,Color8(1,0,0));px(mask,815,241,Color8(1,0,8))
 	check(World.visible_cues(mask,token).is_empty(), "exact T80 scan retains four-original-pixel minimum separation")
 	var directory: String=output.path_join("generated-soviet-bank")
 	var environment: String=output.path_join("soviet-environment-control")

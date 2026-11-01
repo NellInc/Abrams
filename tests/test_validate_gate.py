@@ -180,6 +180,28 @@ class ValidateGateTests(unittest.TestCase):
             self.assertEqual(len(listed.stdout.splitlines()), len(self.table))
             self.assertEqual(sorted(p.name for p in Path(directory).iterdir()), ['tools'])
 
+    def test_mistyped_limits_fail_instead_of_disabling_themselves(self):
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / 'tools').mkdir()
+            shutil.copy2(GATE, Path(directory) / 'tools/validate.sh')
+            for name, value in [('VALIDATE_MAX_SKIPS', 'abc'), ('VALIDATE_CHECK_TIMEOUT', '10m')]:
+                run = subprocess.run(['sh', 'tools/validate.sh', '--list'], cwd=directory, text=True,
+                                     capture_output=True, env={'PATH': '/usr/bin:/bin', name: value})
+                self.assertEqual(run.returncode, 2, name)
+                self.assertIn(f'{name} must be a whole number', run.stderr)
+
+    def test_partial_skips_reach_the_summary(self):
+        # A passing check's own NOT RUN or SKIP lines are copied to results.txt,
+        # and a whole optional family that is absent is recorded there too.
+        source = GATE.read_text()
+        run_check = source.split('run_check() {', 1)[1].split('\n}\n', 1)[0]
+        self.assertIn("grep -E 'NOT[_ ]RUN|^SKIP:' \"$OUT/$name.log\" | sed \"s/^/NOT RUN in $name: /\" >> \"$OUT/results.txt\"", run_check)
+        self.assertIn("echo 'NOT RUN tactical vehicles and ground crews: optional Blender Tactical assets are not installed' >> \"$OUT/results.txt\"", source)
+        sample = 'PC_WORLD_AUDIO_RETAINED_JSON: NOT RUN\nSUNO_ASSETS_NOT_RUN: optional local masters absent\nPC_X: 5 checks, 0 errors\n'
+        noted = subprocess.run(['sh', '-c', "grep -E 'NOT[_ ]RUN|^SKIP:' | sed 's/^/NOT RUN in x: /'"], input=sample,
+                               text=True, capture_output=True).stdout.splitlines()
+        self.assertEqual(len(noted), 2)
+
     def test_check_names_are_unique(self):
         names = [row[1] for row in self.table]
         self.assertEqual(len(names), len(set(names)))

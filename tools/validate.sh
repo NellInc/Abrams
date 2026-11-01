@@ -27,6 +27,13 @@ OUT="artifacts/validation-$(date -u +%Y%m%dT%H%M%SZ)"
 if [ "$LIST" = 0 ]; then mkdir -p "$OUT"; fi
 # A GDScript runtime error before quit() leaves Godot running forever; bound every check.
 CHECK_TIMEOUT=${VALIDATE_CHECK_TIMEOUT:-1200}
+# A mistyped limit must fail, not silently disable itself in a [ -gt ] test.
+for limit in VALIDATE_CHECK_TIMEOUT VALIDATE_MAX_SKIPS; do
+  eval "value=\${$limit:-}"
+  case $value in
+    ''|*[!0-9]*) [ -z "$value" ] || { echo "FAIL: $limit must be a whole number, not '$value'" >&2; exit 2; } ;;
+  esac
+done
 # A skip whose reason says unicorn itself is missing, in either unittest quote
 # style. Reasons that also need local inputs ("Requires unicorn, the original
 # SIM.EXE ...") or several modules ("needs ('unicorn', 'PIL')") are not counted:
@@ -113,7 +120,6 @@ receipt_for() {
     runtime) echo '^RUNTIME_SMOKE_PASS:' ;;
     pc_portrait_art|pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_instrument_lock|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_audio_limiter|pc_tactical_hud|pc_tactical_effects|pc_tactical_world|pc_tactical_dynamics|pc_frontend_completeness|pc_frontdoor|pc_frontdoor_live|pc_draw_pass|pc_optional_genesis|pc_play_menu|pc_render_quality|pc_play_shortcuts|pc_bridge_transport|pc_reference_search|pc_genesis_cockpits|pc_portrait_coverage|pc_rocket_audio|pc_audio_mix|pc_frontend_music|pc_remaining_audio)
       counted "$1" ;;
-    pc_suno_music) echo '^PC_SUNO_MUSIC: [1-9][0-9]* checks, 0 errors$' ;;
     # Native tier.
     pc_modern_native) echo '^PC_MODERN: PASS; [1-9][0-9]* checks; native=true$' ;;
     pc_modern_startup_native) echo '^PC_MODERN_STARTUP: PASS; entered_before_load=false; native=true; prewarmed=true$' ;;
@@ -185,6 +191,9 @@ run_check() {
     fi
     cat "$OUT/$name.log"
     printf 'PASS %s\n' "$name" >> "$OUT/results.txt"
+    # A passing check that skipped part of itself (absent optional input) says
+    # so in the summary, not only in its own log.
+    grep -E 'NOT[_ ]RUN|^SKIP:' "$OUT/$name.log" | sed "s/^/NOT RUN in $name: /" >> "$OUT/results.txt" || true
   else
     rc=$?
     cat "$OUT/$name.log"
@@ -314,6 +323,7 @@ elif [ -f local-art/pc-tactical-vehicles-v1/manifest.json ]; then
   run_check pc_tactical_vehicles ./tools/godot.sh --headless --quit-after 1200 --script res://tests/test_pc_tactical_vehicles.gd
 else
   echo 'NOT RUN: optional Blender Tactical vehicle assets are not installed'
+  echo 'NOT RUN tactical vehicles and ground crews: optional Blender Tactical assets are not installed' >> "$OUT/results.txt"
 fi
 # Representative rows and one timed round by default; VALIDATE_EXHAUSTIVE=1 restores the full sweeps and benchmarks.
 if [ "${VALIDATE_EXHAUSTIVE:-0}" = 1 ]; then BENCH=--bench; SWEEP=--exhaustive; else BENCH=--sampled; SWEEP=--sampled; fi

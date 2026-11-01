@@ -326,6 +326,8 @@ def main():
             if command.get('op') == '_capture':
                 try:
                     destination = Path(command['directory'])
+                    # Attach as the resumed worker will, from this same RAM.
+                    if session: session.prepare_checkpoint()
                     core.local_overlay('flush')
                     raw = core.serialize_local()
                     (destination / 'state.bin').write_bytes(raw)

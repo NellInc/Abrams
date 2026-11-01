@@ -459,6 +459,15 @@ including occluders. No possible pose substitution or configured surface
 passthrough exists in that packet; protected standalone segments cannot be
 witnesses. This qualifies source ownership, not a new full-Tactical visual pass.
 
+1 November 2026: each narrow-scan witness must also own the display texel at
+its original pixel's centre, as the sparse grid already required. A
+display-resolution sliver (a texel row of hull above a ridge painted later)
+covers no original pixel centre, so the original shows nothing there and no
+engine bed starts. A bed that drops out of admission for under a second (a
+small Hind crossing the 4-pixel grid) resumes where it was instead of
+restarting its opening; a program change, load or other full stop still
+restarts it.
+
 The full-world diagnostic timed out at its100-second cap and is not acceptance
 or a performance diagnosis. An initial platform-name preflight and an initial
 wall-timer PCM-duration check also failed; their receipts are retained. The

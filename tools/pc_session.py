@@ -91,6 +91,16 @@ class PresentationSession:
             self.frontend=FrontendText(self.frontend_sources)
             self.frontend.attach(self.core)
 
+    def prepare_checkpoint(self):
+        """Settle observer attachment on the RAM a checkpoint captures.
+
+        A resumed worker decides attachment from the restored (post-frame) RAM,
+        and the native observer checkpoint refuses a mismatch. Without this, a
+        save on the frame that enters or leaves SIM records the previous mode,
+        and every load of that slot fails.
+        """
+        self.before_frame()
+
     def step(self, frames, keys=()):
         for _ in range(frames):
             self.before_frame()

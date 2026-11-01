@@ -107,6 +107,10 @@ var _proof_key: Array = []
 var _proof_mask: Image
 var _proof_inputs: Array = []
 var _proof_cues: Array[String] = []
+# A bed that drops out of admission for a moment (a small actor crossing the
+# sparse grid) resumes where it was instead of restarting its opening.
+const RESUME_WINDOW_MSEC := 1000
+var _resume_at: Dictionary = {}
 
 func _read_bank(folder: String, kind: String, expected: Array) -> Dictionary:
 	if folder.is_empty(): return {"streams":{}}
@@ -224,9 +228,18 @@ func stop() -> void:
 	pending.clear(); armed.clear(); admitted.clear()
 	_proof_key.clear(); _proof_mask = null; _proof_inputs.clear(); _proof_cues.clear()
 	_rocket_proof.clear()
+	_resume_at.clear()
+	# Leaving the resumed program ends save adoption even if no cow refresh ran
+	# in it, so the next mission's epoch resets the call cooldown.
+	if host and not host.continuing_timeline: _cow_continuing = false
 	for player: AudioStreamPlayer in players.values():
 		host._remember_playback(player)
 		player.stop()
+
+func resume_position(cue: String, now: int) -> float:
+	var held: Variant=_resume_at.get(cue)
+	_resume_at.erase(cue)
+	return float(held[0]) if held is Array and now-int(held[1])<RESUME_WINDOW_MSEC else 0.0
 
 func release() -> void:
 	stop()
@@ -577,6 +590,12 @@ static func narrow_visible(bytes: PackedByteArray, stride: int, token: Dictionar
 			if pixel.y >= height: continue
 			var source: Vector2i = Vector2i(clip[0]+floori((pixel.x+0.5)*extent.x/width),clip[1]+floori((pixel.y+0.5)*extent.y/height))
 			if source.x<0 or source.x>=320 or source.y<0 or source.y>=200 or token.ui[source.y*320+source.x] != 0: continue
+			# The original shows a pixel only where the owner covers its centre. A
+			# display-resolution sliver above a ridge covers none and is never a witness.
+			var centre: Vector2i = Vector2i(((Vector2(source.x+0.5,source.y+0.5)-Vector2(clip[0],clip[1]))/extent*Vector2(width,height)).floor())
+			if centre.x<0 or centre.y<0 or centre.x>=width or centre.y>=height: continue
+			var owned: int = (centre.y*width+centre.x)*stride
+			if bytes[owned]+(bytes[owned+1]<<8) != owner_id: continue
 			if cue in GROUND_MOTOR_CUES or cue in ["truck","wheeledfallback","brdm"]:
 				# Every endpoint is an actual observed pixel, never a bounding-box
 				# corner or a sum across actors. Before a pair succeeds, all points
@@ -769,10 +788,11 @@ func refresh() -> void:
 			present = admitted.any(func(item): return item in GROUND_MOTOR_CUES and cue_gain(item) > 0)
 			gain = cue_gain(cue) if present else 0.0
 		if not allowed() or not present or gain <= 0:
+			if player.playing and allowed(): _resume_at[cue]=[player.get_playback_position(),Time.get_ticks_msec()]
 			host._remember_playback(player); player.stop(); continue
 		# A single mono, fixed-pitch bed. Count, direction, range, allegiance and
 		# unseen motion never modulate it or create additional players.
 		player.volume_db = linear_to_db(gain)
 		player.pitch_scale = 1.0
 		if not player.playing:
-			player.play(); host._remember_playback(player)
+			player.play(resume_position(cue,Time.get_ticks_msec())); host._remember_playback(player)

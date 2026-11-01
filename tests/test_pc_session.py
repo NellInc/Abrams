@@ -22,6 +22,60 @@ def program_ram(name='SIM', psp=0x1DD):
 
 
 class SessionTests(unittest.TestCase):
+    def test_checkpoint_attach_mode_matches_what_a_resume_chooses(self):
+        # The native observer checkpoint refuses a resume whose attach mode
+        # (SIM collector or frontend text) differs from the captured one.
+        import tools.pc_session as session_module
+
+        class Native:
+            load, frontend = 0, False
+
+        class FakeCore:
+            def __init__(self, before, after, switch_after):
+                self.native, self.frame = Native(), 0
+                self.before, self.after, self.switch_after = before, after, switch_after
+                self.last_video = self.last_video_ram = None
+                self.core = object()
+            def conventional_memory(self):
+                return bytes(self.after if self.frame >= self.switch_after else self.before)
+            def run(self, frames, keys=()):
+                self.last_video_ram = self.conventional_memory(); self.frame += frames
+            def pause_at_frame_end(self): pass
+
+        class Reader:
+            def locate(self, ram):
+                program = active_program(ram)
+                return program['load_segment']*16 if program and program['name'] == 'SIM' else None
+
+        class Collector:
+            def __init__(self, reader, history_limit=2, **_):
+                self.error = None
+                self.audio = SimpleNamespace(drain=lambda: [])
+            def attach(self, core, load): core.native.load, core.native.frontend = load, False
+            def detach(self, core): core.native.load, core.native.frontend = 0, False
+            def paired_video(self, video): return {}
+
+        class Frontend:
+            def __init__(self, *_): self.error = None
+            def attach(self, core): core.native.load, core.native.frontend = 0, True
+            def detach(self, core): core.native.load, core.native.frontend = 0, False
+
+        saved = session_module.FrontendText, session_module.FrontendSources
+        session_module.FrontendText, session_module.FrontendSources = Frontend, lambda: None
+        try:
+            for before, after in [('START', 'SIM'), ('SIM', 'END'), ('START', 'BRIEF'), ('SIM', 'SIM')]:
+                with self.subTest(before=before, after=after):
+                    core = FakeCore(program_ram(before), program_ram(after), switch_after=5)
+                    live = PresentationSession(core, Reader(), b'shape', collector_factory=Collector)
+                    live.step(5)  # the last stepped frame changes the program in RAM
+                    live.prepare_checkpoint()
+                    captured = (core.native.load, core.native.frontend)
+                    resumed_core = FakeCore(program_ram(after), program_ram(after), switch_after=0)
+                    PresentationSession(resumed_core, Reader(), b'shape', collector_factory=Collector).before_frame()
+                    self.assertEqual(captured, (resumed_core.native.load, resumed_core.native.frontend))
+        finally:
+            session_module.FrontendText, session_module.FrontendSources = saved
+
     def test_combat_loss_route_waits_for_original_exit_without_quit(self):
         from tools.capture_pc_session import combat_loss_steps
         program='SIM'
