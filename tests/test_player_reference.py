@@ -101,6 +101,25 @@ class PlayerReference(unittest.TestCase):
         self.assertEqual(len(mapping['instruction_slices']),9)
         self.assertEqual(mapping['original_titles'][0],'NUREMBURG HIGHWAY')
 
+    def test_terrain_maps_show_static_structures_and_fit_their_terrain(self):
+        # Convoy and Siegen share terrain; only their bridges, buildings and
+        # one tree differ. Omitting structures made the two maps identical.
+        # Mass Destruction occupies 29 of 48 rows and must not sit half empty.
+        rows={r['name']:r for r in json.loads((REF/'maps-provenance.json').read_text())['maps']}
+        self.assertEqual(len(rows),8)
+        for name,row in rows.items():
+            self.assertGreaterEqual(row['features']['bridge'],1,name)
+            self.assertGreaterEqual(row['features']['building'],1,name)
+            x,y,w,h=row['frame_cells']
+            self.assertTrue(x>=0 and y>=0 and 0<w<=49 and 0<h<=49,name)
+        self.assertEqual(rows['Mass Destruction']['frame_cells'],[7,0,40,29])
+        convoy,siegen=((REF/rows[n]['file']).read_text() for n in ('Convoy','Siegen Infiltration'))
+        strip=lambda text:text[text.index('</title>'):]
+        self.assertNotEqual(strip(convoy),strip(siegen))
+        source=(ROOT/'tools/build_reference_maps.py').read_text()
+        self.assertNotIn('extent=50*4096',source)
+        for label in ['Bridge','Building','Trees']:self.assertIn(f"'{label}'",source)
+
     def test_contextual_controls_are_distinct(self):
         zoom = [r for r in DATA['keyboard_controls'] if r['name']=='Z']
         self.assertEqual({tuple(r['stations']) for r in zoom}, {('gunner',), ('commander',)})
@@ -232,6 +251,10 @@ class PlayerReference(unittest.TestCase):
             self.assertIn('scenario-',markup)
             self.assertEqual(markup.count('<figure '),2)
             self.assertIn(mission['name'],markup)
+        # Paired figures fill equal grid columns; the standalone map rule's auto
+        # margins would shrink each to its image's intrinsic width.
+        css=text.split('<style>',1)[1].split('</style>',1)[0]
+        self.assertGreater(css.index('.scenario-map-pair figure.maps,.scenario-map-pair figure.manual_maps{max-width:none;margin:24px 0}'),css.index('figure.maps,figure.manual_maps{max-width:720px;margin:24px auto}'))
 
     @unittest.skipUnless((REF/'field-guide.pdf').exists(), 'Generated private assets are outside the source-only kit')
     def test_pdf_scenario_pairs_share_landscape_pages(self):
@@ -278,6 +301,28 @@ class PlayerReference(unittest.TestCase):
             for obj in (page['/Resources'].get('/XObject') or {}).values():
                 image=obj.get_object()
                 if image.get('/Subtype')=='/Image':self.assertEqual(list(image.get('/Filter')),['/DCTDecode'])
+
+    def test_printed_html_is_light_and_shows_specifications(self):
+        for name in ('field-guide.html','keyboard-controls.html'):
+            text=(REF/name).read_text()
+            # A dark colour-scheme painted print margins near-black.
+            self.assertIn('@media print{:root{color-scheme:light}html{background:#fff}',text)
+            self.assertIn('addEventListener("beforeprint"',text)
+        css=(REF/'field-guide.html').read_text().split('@media print{',1)[1]
+        self.assertIn('.grid{display:block}',css)
+        self.assertNotIn('Modern model study.',(REF/'visuals.json').read_text())
+
+    def test_ranges_read_as_spans_not_lists(self):
+        html=(REF/'field-guide.html').read_text()
+        self.assertNotIn('Range: [',html)
+        for low,high in [(0,2500),(770,4000),(0,100)]:self.assertIn(f'Range: {low}–{high} m',html)
+        try:
+            from pypdf import PdfReader
+        except ImportError:
+            self.skipTest('PDF authoring dependency pypdf is unavailable')
+        text=PdfReader(REF/'field-guide.pdf').pages[27].extract_text()
+        self.assertNotIn('[',text)
+        self.assertIn('770–4000 m',text)
 
     def test_reader_copy_is_concise_and_credit_is_fan_remastered(self):
         author=(ROOT/'tools/build_player_reference.py').read_text()
@@ -370,6 +415,21 @@ class PlayerReferenceBuild(unittest.TestCase):
         self.builder, tmp = builder, tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.tmp = Path(tmp.name)
+
+    def test_model_studies_draw_exactly_back_to_front(self):
+        # A part standing on a long floor: the floor's centroid is nearer the
+        # viewer than the part's, so centroid sorting painted the floor over it.
+        floor=((-400.,-400.,0.),(400.,-400.,0.),(0.,400.,0.))
+        part=((-20.,300.,8.),(20.,300.,8.),(0.,300.,40.))
+        self.assertGreater(sum(self.builder._dot(p,self.builder.STUDY_VIEW) for p in floor)/3,sum(self.builder._dot(p,self.builder.STUDY_VIEW) for p in part)/3)
+        model={'shape_index':0,'triangles':[{'vertices':floor,'color':[90,110,70],'material':'paint'},{'vertices':part,'color':[200,40,30],'material':'paint'}],
+               'source_lines':[{'vertices':[(0.,300.,-50.),(0.,300.,-10.)]}]}
+        colours=[colour for _,colour in self.builder.model_polygons(model)]
+        self.assertGreater(colours[-1][0],3*colours[-1][1])  # the lit red part
+        # A line below the floor is drawn before (under) it.
+        self.assertEqual(colours[0],(45,54,47))
+        figures=json.loads((REF/'illustrations.json').read_text())['vehicles'] if (REF/'illustrations.json').exists() else []
+        for row in figures:self.assertGreaterEqual(row['polygons'],row['triangles']+row['lines'])
 
     def test_unchanged_content_rebuilds_byte_identical_pdf(self):
         from unittest import mock

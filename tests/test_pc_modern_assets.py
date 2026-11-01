@@ -1376,6 +1376,89 @@ class TacticalSceneAuthoringTests(unittest.TestCase):
                         if max(image.getpixel(pixel))<6:misses.append(i);break
                 self.assertFalse(misses,f'{shape}/{channel}: unseeded head charts {misses[:12]}')
 
+    def test_tank_skirts_hang_outside_the_upper_track_run(self):
+        # Revision 52: inset skirts let track shoes draw over them, and the
+        # T-64 gill plates' outer face was coplanar with the shoes (z-fight).
+        from tools.build_pc_tactical_roster import authored
+        base=load_catalog()
+        for shape,name in ((117,'gill_armour_panel'),(119,'side_skirt_panel'),(121,'side_skirt_panel')):
+            for master in (False,True):
+                model=authored(base['models'][shape],master)
+                skirt=[v for t in model['triangles'] if t['component']==name for v in t['vertices']]
+                track=[v for t in model['triangles'] if t['component']=='track_shoe' for v in t['vertices']]
+                self.assertTrue(skirt and track)
+                limit=base['models'][shape]['source_bounds']['max'][0]
+                self.assertGreaterEqual(max(v[0] for v in skirt)-max(v[0] for v in track),.5,(shape,master))
+                self.assertLessEqual(max(abs(v[0]) for v in skirt),limit,(shape,master))
+
+    def test_visible_parts_do_not_share_their_neighbours_face_planes(self):
+        # Revision 52: three same-facing coplanar overlaps that z-fought.
+        from tools.build_pc_tactical_roster import authored
+        base=load_catalog()
+        def xs(model,name):return [v[0] for t in model['triangles'] if t['component']==name for v in t['vertices']]
+        for master in (False,True):
+            m1=authored(base['models'][125],master)
+            fender=max(xs(m1,'fender_plate'));skirts=[x for i in range(7) for x in xs(m1,f'skirt_panel_{i}')]
+            self.assertLessEqual(fender,min(x for x in skirts if x>0)+1e-6,'M1A1 fender ends at the skirt inner face')
+            truck=authored(base['models'][159],master)
+            board=min(x for x in xs(truck,'truck_bed_sideboard') if x>0);stake=min(x for x in xs(truck,'truck_bed_stake') if x>0)
+            self.assertGreater(stake-board,.1,'truck stakes clear the sideboard inner face')
+            bradley=authored(base['models'][131],master)
+            def plane(t):
+                a,b,c=t['vertices'];n=cross(sub(b,a),sub(c,a));length=sum(v*v for v in n)**.5
+                n=[v/length for v in n];return n,sum(x*y for x,y in zip(n,a))
+            for role in ('commander','gunner'):
+                coaming=[plane(t) for t in bradley['triangles'] if t['component']==f'bradley_{role}_vision_coaming']
+                for glass in (t for t in bradley['triangles'] if t['component']==f'bradley_{role}_vision_glass'):
+                    n,d=plane(glass)
+                    near=[abs(d-e) for m,e in coaming if sum(x*y for x,y in zip(n,m))>.999]
+                    self.assertTrue(near and min(near)>=.025,(role,master,min(near) if near else None))
+
+    def test_body_bakes_give_every_chart_bake_texels(self):
+        # Revision 51: thin Smart Project charts (downpipes, gutters, tile lips,
+        # torn wreck edges) were under one texel wide, baked no samples and kept
+        # the black clear value in every map. Checked geometrically per chart.
+        from math import atan2,cos,sin
+        from PIL import Image
+        folder=ROOT/'local-art/pc-tactical-roster-v1'
+        checked=0
+        for directory in sorted(p for p in folder.iterdir() if p.is_dir() and p.name.isdigit()):
+            receipt_path=directory/'model.json'
+            if not receipt_path.exists():continue
+            receipt=json.loads(receipt_path.read_text())
+            shape=int(directory.name)
+            if receipt.get('finish_revision',0)<51 or shape in (0,1,45,46,47,108,114):continue
+            triangles=receipt['model']['triangles'];image=Image.open(directory/'albedo.png').convert('RGB')
+            size=image.width;parents=list(range(len(triangles)));owners={}
+            def root(i):
+                while parents[i]!=i:parents[i]=parents[parents[i]];i=parents[i]
+                return i
+            for i,t in enumerate(triangles):
+                # Same vertex sharing as make_object: position, owner, component.
+                component='crew_head_skin_surface' if t['component'].startswith(('crew_head_skin_surface','crew_head_nose_bridge','crew_head_neck')) else 'crew_hand_surface' if t['component'].startswith('crew_hand') else t['component']
+                for vertex,uv in zip(t['vertices'],t['uvs']):
+                    key=(tuple(vertex),t['source_primitive'],component,tuple(round(c,7) for c in uv))
+                    if key in owners:parents[root(i)]=root(owners[key])
+                    else:owners[key]=i
+            charts={}
+            for i,t in enumerate(triangles):charts.setdefault(root(i),[]).extend(t['uvs'])
+            narrow=[]
+            for points in charts.values():
+                cx=sum(p[0] for p in points)/len(points);cy=sum(p[1] for p in points)/len(points)
+                sxx=sum((p[0]-cx)**2 for p in points);syy=sum((p[1]-cy)**2 for p in points);sxy=sum((p[0]-cx)*(p[1]-cy) for p in points)
+                angle=.5*atan2(2*sxy,sxx-syy)
+                for ax,ay in ((cos(angle),sin(angle)),(-sin(angle),cos(angle))):
+                    values=[(p[0]-cx)*ax+(p[1]-cy)*ay for p in points]
+                    if (max(values)-min(values))*size<1.95:narrow.append(round((max(values)-min(values))*size,3));break
+            self.assertFalse(narrow,f'{shape}: charts narrower than two bake texels {narrow[:8]}')
+            clear=[]
+            for i,t in enumerate(triangles):
+                u,v=[sum(p[k] for p in t['uvs'])/3 for k in (0,1)]
+                if max(image.getpixel((min(size-1,int(u*size)),min(image.height-1,int(v*image.height)))))<=2:clear.append((i,t['component']))
+            self.assertFalse(clear,f'{shape}: triangles on unbaked clear texels {clear[:8]}')
+            checked+=1
+        if not checked:self.skipTest('no revision-51 body bakes installed')
+
     def test_crew_collar_is_closed_cloth_around_the_neck(self):
         from collections import Counter
         from tools.pc_tactical_crew_heads import geometry,FINISHES

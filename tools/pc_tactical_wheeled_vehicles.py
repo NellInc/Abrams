@@ -320,8 +320,10 @@ def geometry(base, master=False):
             x=side*42
             for z in (6,11):
                 block(0,[min(x,side*43),-78,z],[max(x,side*43),42,z+3],'olive','truck_bed_sideboard')
+            # Stakes start just outside the boards' inner face; a shared inner
+            # plane z-fought inside the bed. Working if the board face is unbroken.
             for y in (-76,-46,-16,14,39):
-                block(0,[min(x,side*43.5),y,3],[max(x,side*43.5),y+1.6,16],'steel','truck_bed_stake')
+                block(0,[min(side*42.15,side*43.5),y,3],[max(side*42.15,side*43.5),y+1.6,16],'steel','truck_bed_stake')
         # Large load boxes rest on the bed, visible only through the flap gap.
         for x0,x1,y0,y1,z0,z1 in ((-31,1,-70,-31,5,29),(3,32,-68,-29,5,29),(-24,22,-24,15,5,31)):
             block(0,[x0,y0,z0],[x1,y1,z1],'truck_crate_wood','truck_bed_cargo_crate')

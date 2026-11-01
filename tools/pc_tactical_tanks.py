@@ -104,14 +104,18 @@ def running_gear(out, src, shape, master):
                 tube(out,src,[inside,yy,top-radius*.22],[side*(w-1.1),yy,top-radius*.22],radius*.23,'tyre','return_roller',12)
         x0,x1=sorted((side*w*.71,side*w))
         box(out,src,[x0,rear,top+.1],[x1,front,top+.9],'olive','track_fender')
+        # Skirts hang outside the upper track run, inside the one-unit source
+        # margin. Inset panels let the track shoes draw over them, and the
+        # T-64 gill plates' outer face was coplanar with the shoes.
+        # Working if the upper run is hidden behind the skirts with no z-fight.
         if shape in (119,121):
             for i in range(6):
                 a=rear+i*(front-rear)/6
-                xx0,xx1=sorted((side*(w-.2),side*(w-.7)))
+                xx0,xx1=sorted((side*(w+.15),side*(w+.65)))
                 box(out,src,[xx0,a,top-radius*.40],[xx1,a+(front-rear)/6-.8,top],'equipment','side_skirt_panel')
         elif shape==117:
             for yy in (-50,-8,34,76):
-                xx0,xx1=sorted((side*(w-1.7),side*w))
+                xx0,xx1=sorted((side*(w-1.05),side*(w+.65)))
                 box(out,src,[xx0,yy,top-7],[xx1,yy+21,top],'olive_edge','gill_armour_panel')
 
 

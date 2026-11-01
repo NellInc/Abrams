@@ -67,6 +67,11 @@ def refs(row):
     return 'Manual p. '+', '.join(map(str,pages))
 
 
+def range_text(value):
+    low,high=value
+    return f'Range: {low}–{high} m'
+
+
 def model_shapes(catalog):
     return {row['name']:row['shapes']['primary'] for row in catalog['classes']}
 
@@ -104,32 +109,108 @@ def study_colour(model,triangle):
     return color
 
 
+# Study projection: screen axes and the direction towards the viewer.
+STUDY_X=(.78,.62,0.);STUDY_Y=(-.62*.32,.78*.32,.85)
+STUDY_VIEW=(STUDY_X[1]*STUDY_Y[2]-STUDY_X[2]*STUDY_Y[1],STUDY_X[2]*STUDY_Y[0]-STUDY_X[0]*STUDY_Y[2],STUDY_X[0]*STUDY_Y[1]-STUDY_X[1]*STUDY_Y[0])
+PLANE_EPSILON=.01  # raw units
+
+
+def _dot(a,b):return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]
+
+
+def _split(points,normal,offset):
+    """Split a 3D polygon or segment by a plane: (back, coplanar, front) pieces."""
+    sides=[_dot(normal,p)-offset for p in points]
+    if all(abs(s)<=PLANE_EPSILON for s in sides):return None,points,None
+    if all(s>=-PLANE_EPSILON for s in sides):return None,None,points
+    if all(s<=PLANE_EPSILON for s in sides):return points,None,None
+    back=[];front=[];closed=len(points)>2
+    for i in range(len(points) if closed else 1):
+        a,b=points[i],points[(i+1)%len(points)];sa,sb=sides[i],sides[(i+1)%len(points)]
+        if sa>=-PLANE_EPSILON:front.append(a)
+        if sa<=PLANE_EPSILON:back.append(a)
+        if (sa<-PLANE_EPSILON and sb>PLANE_EPSILON) or (sa>PLANE_EPSILON and sb<-PLANE_EPSILON):
+            t=sa/(sa-sb);cut=tuple(a[k]+(b[k]-a[k])*t for k in range(3));front.append(cut);back.append(cut)
+    if not closed:
+        b=points[1];front.append(b) if sides[1]>=-PLANE_EPSILON else back.append(b)
+    keep=lambda piece:piece if len(piece)>=(3 if closed else 2) else None
+    return keep(back),None,keep(front)
+
+
+def study_order(faces,lines):
+    """Exact back-to-front order for the fixed study view.
+
+    A BSP tree over the mesh planes splits faces that cross a plane, then each
+    node draws its far side, its own coplanar faces in catalogue order (as the
+    game's painter does) and its near side. Source lines are inserted into the
+    same tree but never split it. Centroid sorting drew roadwheels through
+    side plates and buried the Hind's cabin glazing.
+    """
+    root=None;stack=[]
+    def build(items):
+        node={'faces':[],'lines':[],'back':None,'front':None,'plane':None}
+        if not items:return node
+        best=None
+        for points,_ in items[:8]:
+            a=[points[1][k]-points[0][k] for k in range(3)];b=[points[2][k]-points[0][k] for k in range(3)]
+            n=(a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]);length=math.sqrt(_dot(n,n))
+            if length<1e-9:continue
+            n=tuple(x/length for x in n);d=_dot(n,points[0])
+            cost=sum(1 for q,_ in items if (lambda s:min(s)<-PLANE_EPSILON and max(s)>PLANE_EPSILON)([_dot(n,p)-d for p in q]))
+            if best is None or cost<best[0]:best=(cost,n,d)
+        if best is None:node['faces']=items;return node
+        node['plane']=best[1:];back=[];front=[]
+        for points,colour in items:
+            behind,on,ahead=_split(points,*node['plane'])
+            if on:node['faces'].append((on,colour))
+            if behind:back.append((behind,colour))
+            if ahead:front.append((ahead,colour))
+        node['back'],node['front']=back,front
+        return node
+    root=build(faces);stack=[root]
+    while stack:
+        node=stack.pop()
+        for side in ('back','front'):
+            if isinstance(node[side],list):node[side]=build(node[side]);stack.append(node[side])
+    for points,colour in lines:
+        pending=[(root,points)]
+        while pending:
+            node,segment=pending.pop()
+            if node['plane'] is None:node['lines'].append((segment,colour));continue
+            behind,on,ahead=_split(segment,*node['plane'])
+            if on:node['lines'].append((on,colour))
+            if behind:pending.append((node['back'],behind))
+            if ahead:pending.append((node['front'],ahead))
+    ordered=[];walk=[(root,False)]
+    while walk:
+        node,emit=walk.pop()
+        if emit:ordered.extend(node['faces']+node['lines']);continue
+        if node['plane'] is None:ordered.extend(node['faces']+node['lines']);continue
+        near,far=('front','back') if _dot(node['plane'][0],STUDY_VIEW)>=0 else ('back','front')
+        walk.extend([(node[near],False),(node,True),(node[far],False)])
+    return ordered
+
+
 def model_polygons(model,width=640,height=245):
     # Same existing authored mesh and colours, projected as a static catalogue study.
     faces=[]
     for triangle in model['triangles']:
         v=triangle['vertices']
-        points=[(p[0]*.78+p[1]*.62,p[2]*.85+(p[1]*.78-p[0]*.62)*.32) for p in v]
-        depth=sum(p[0]*.62-p[1]*.78+p[2]*.5 for p in v)/3
         a=[v[1][i]-v[0][i] for i in range(3)];b=[v[2][i]-v[0][i] for i in range(3)]
         n=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]
         length=math.sqrt(sum(x*x for x in n)) or 1
         light=.76+.24*abs(sum(n[i]*[.35,-.25,.9][i] for i in range(3))/length)
         color=tuple(min(255,round(x*light)) for x in study_colour(model,triangle))
-        faces.append((depth,points,color))
-    for line in model.get('source_lines',[]):
-        v=line['vertices']
-        if len(v)!=2:continue
-        points=[(p[0]*.78+p[1]*.62,p[2]*.85+(p[1]*.78-p[0]*.62)*.32) for p in v]
-        depth=sum(p[0]*.62-p[1]*.78+p[2]*.5 for p in v)/2
-        faces.append((depth,points,(45,54,47)))
-    all_points=[p for _,points,_ in faces for p in points]
+        faces.append(([tuple(map(float,p)) for p in v],color))
+    lines=[([tuple(map(float,p)) for p in line['vertices']],(45,54,47)) for line in model.get('source_lines',[]) if len(line['vertices'])==2]
+    ordered=[([(_dot(p,STUDY_X),_dot(p,STUDY_Y)) for p in points],color) for points,color in study_order(faces,lines)]
+    all_points=[p for points,_ in ordered for p in points]
     if not all_points:return []
     xmin=min(p[0] for p in all_points);xmax=max(p[0] for p in all_points)
     ymin=min(p[1] for p in all_points);ymax=max(p[1] for p in all_points)
     scale=min((width-28)/max(1,xmax-xmin),(height-22)/max(1,ymax-ymin))
     ox=(width-(xmax-xmin)*scale)/2;oy=(height-(ymax-ymin)*scale)/2
-    return [([(ox+(x-xmin)*scale,oy+(y-ymin)*scale) for x,y in points],color) for _,points,color in sorted(faces,key=lambda r:r[0])]
+    return [([(ox+(x-xmin)*scale,oy+(y-ymin)*scale) for x,y in points],color) for points,color in ordered]
 
 
 def stage_commit(staged):
@@ -157,10 +238,10 @@ def illustrations(data,staged):
         name=MODEL_NAMES.get(row['name'],row['name']);index=shapes[name]
         filename='vehicle-'+row['name'].lower().replace(' ','-')+'.svg'
         polygons=model_polygons(catalogue['models'][index])
-        markup=''.join(('<polyline fill="none" stroke-width="1.4" stroke="#{:02x}{:02x}{:02x}" points="'.format(*color) if len(pts)==2 else '<polygon fill="#{:02x}{:02x}{:02x}" points="'.format(*color))+' '.join(f'{x:.2f},{245-y:.2f}' for x,y in pts)+'"/>' for pts,color in polygons)
+        markup=''.join(('<polyline fill="none" stroke-width="1.4" stroke="#{:02x}{:02x}{:02x}" points="'.format(*color) if len(pts)==2 else '<polygon fill="#{0:02x}{1:02x}{2:02x}" stroke="#{0:02x}{1:02x}{2:02x}" stroke-width=".5" stroke-linejoin="round" points="'.format(*color))+' '.join(f'{x:.2f},{245-y:.2f}' for x,y in pts)+'"/>' for pts,color in polygons)
         svg=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 245" role="img"><title>{ESC(row["name"])}: current Modern mesh study</title>{markup}</svg>'
         staged[REF/filename]=svg
-        manifest.append({'name':row['name'],'shape_index':index,'svg':filename,'triangles':sum(len(pts)==3 for pts,_ in polygons),'lines':sum(len(pts)==2 for pts,_ in polygons),'model_sha256':hashlib.sha256(json.dumps(published['models'][index],sort_keys=True).encode()).hexdigest()})
+        manifest.append({'name':row['name'],'shape_index':index,'svg':filename,'triangles':len(catalogue['models'][index]['triangles']),'lines':sum(len(line['vertices'])==2 for line in catalogue['models'][index].get('source_lines',[])),'polygons':len(polygons),'model_sha256':hashlib.sha256(json.dumps(published['models'][index],sort_keys=True).encode()).hexdigest()})
     staged[REF/'illustrations.json']=(json.dumps({'catalog_sha256':hashlib.sha256((ROOT/'local-art/pc-modern/catalog.json').read_bytes()).hexdigest(),'kind':'static orthographic studies of current Modern mesh geometry','vehicles':manifest},indent=2)+'\n')
     return catalogue,shapes
 
@@ -168,19 +249,19 @@ def illustrations(data,staged):
 CSS='''
 :root{color-scheme:dark;--bg:#111a21;--cream:#f4ead4;--muted:#bec7c8;--gold:#e4b879;--line:#405058}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--cream);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:1050px;margin:auto;padding:40px 32px 64px}h1,h2{font-family:Barlow,system-ui,sans-serif;line-height:1.15;letter-spacing:0}h1{font-size:46px;margin:0 0 14px}h2{font-size:30px;margin:44px 0 18px}h3{font-size:21px;line-height:1.3;margin:0 0 8px;font-weight:650}p{max-width:72ch;margin:9px 0 16px}.lead{font-size:18px;color:var(--muted)}nav{display:flex;flex-wrap:wrap;gap:20px;padding:18px 0;margin:22px 0 28px;border-block:1px solid var(--line)}a{color:var(--gold);text-underline-offset:4px}a:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:5px}input{font:inherit;background:#19262e;color:var(--cream);border:1px solid #61727b;border-radius:8px;padding:10px 14px;width:100%;max-width:540px}label{display:block;margin:18px 0 8px}article{scroll-margin-top:24px;padding:24px 0;border-bottom:1px solid var(--line);break-inside:avoid}article header{display:flex;gap:14px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}.badge{color:var(--gold);font-size:13px}.friendly{color:#b5d8c5}.objective{font-weight:650;color:var(--cream)}.source{font-size:13px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 38px}figure{margin:18px 0;background:#e9e3d5;border-radius:12px;padding:10px}figure img{width:100%;height:auto;display:block}figcaption{font-size:12px;color:#39484c;text-align:center}dl{display:grid;grid-template-columns:minmax(120px,1fr) 1.65fr;gap:6px 16px;font-size:14px;margin:16px 0}dt{color:var(--muted)}dd{margin:0}table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0 24px}th{text-align:left;font-weight:650;color:var(--gold)}th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th:first-child,td:first-child{padding-left:0}kbd{display:inline-block;font-family:Barlow,system-ui,sans-serif;font-size:24px;line-height:1.25;font-weight:700;color:var(--cream);padding:4px 10px;background:#26343d;border:1px solid #52656e;border-radius:6px;white-space:normal}.key{width:210px}td:has(kbd){padding-right:28px}.scenario-map-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}.scenario-map-pair figure{margin:24px 0;min-width:0}figure.wireframes{background:#fff}figure.maps,figure.manual_maps{max-width:720px;margin:24px auto}.credits{margin:40px 0;padding-block:8px 24px;border-block:1px solid var(--line)}.credits dl{max-width:680px} .credits h3{font-size:25px}footer{margin-top:42px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}details{margin:12px 0}summary{cursor:pointer;color:var(--gold)}[hidden]{display:none!important}::selection{background:#724635;color:#fff}html{scrollbar-color:#70858d #111a21}
-@media(max-width:700px){main{padding:28px 20px}h1{font-size:36px}.grid,.scenario-map-pair{grid-template-columns:1fr}.key{width:135px}kbd{font-size:21px}table{font-size:16px}th,td{padding:9px 6px}}
+main{max-width:1050px;margin:auto;padding:40px 32px 64px}h1,h2{font-family:Barlow,system-ui,sans-serif;line-height:1.15;letter-spacing:0}h1{font-size:46px;margin:0 0 14px}h2{font-size:30px;margin:44px 0 18px}h3{font-size:21px;line-height:1.3;margin:0 0 8px;font-weight:650}p{max-width:72ch;margin:9px 0 16px}.lead{font-size:18px;color:var(--muted)}nav{display:flex;flex-wrap:wrap;gap:20px;padding:18px 0;margin:22px 0 28px;border-block:1px solid var(--line)}a{color:var(--gold);text-underline-offset:4px}a:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:5px}input{font:inherit;background:#19262e;color:var(--cream);border:1px solid #61727b;border-radius:8px;padding:10px 14px;width:100%;max-width:540px}label{display:block;margin:18px 0 8px}article{scroll-margin-top:24px;padding:24px 0;border-bottom:1px solid var(--line);break-inside:avoid}article header{display:flex;gap:14px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}.badge{color:var(--gold);font-size:13px}.friendly{color:#b5d8c5}.objective{font-weight:650;color:var(--cream)}.source{font-size:13px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 38px}figure{margin:18px 0;background:#e9e3d5;border-radius:12px;padding:10px}figure img{width:100%;height:auto;display:block}figcaption{font-size:12px;color:#39484c;text-align:center}dl{display:grid;grid-template-columns:minmax(120px,1fr) 1.65fr;gap:6px 16px;font-size:14px;margin:16px 0}dt{color:var(--muted)}dd{margin:0}table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0 24px}th{text-align:left;font-weight:650;color:var(--gold)}th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th:first-child,td:first-child{padding-left:0}kbd{display:inline-block;font-family:Barlow,system-ui,sans-serif;font-size:24px;line-height:1.25;font-weight:700;color:var(--cream);padding:4px 10px;background:#26343d;border:1px solid #52656e;border-radius:6px;white-space:normal}.key{width:210px}td:has(kbd){padding-right:28px}.scenario-map-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}.scenario-map-pair figure{margin:24px 0;min-width:0}figure.wireframes{background:#fff}figure.maps,figure.manual_maps{max-width:720px;margin:24px auto}.scenario-map-pair figure.maps,.scenario-map-pair figure.manual_maps{max-width:none;margin:24px 0}.credits{margin:40px 0;padding-block:8px 24px;border-block:1px solid var(--line)}.credits dl{max-width:680px} .credits h3{font-size:25px}footer{margin-top:42px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}details{margin:12px 0}summary{cursor:pointer;color:var(--gold)}[hidden]{display:none!important}::selection{background:#724635;color:#fff}html{scrollbar-color:#70858d #111a21}
+@media(max-width:700px){main{padding:28px 20px}.chords kbd{font-size:16px;padding:3px 7px}.chords td:has(kbd){padding-right:6px}.chords th:first-child{width:38%}h1{font-size:36px}.grid,.scenario-map-pair{grid-template-columns:1fr}.key{width:135px}kbd{font-size:21px}table{font-size:16px}th,td{padding:9px 6px}}
 @media(prefers-reduced-transparency:no-preference){nav{background:#152129d9;backdrop-filter:blur(12px);border-radius:10px;padding:18px}}
-@media print{body{background:white;color:#17242b}main{padding:0;max-width:none}h1{font-size:30px}h2{font-size:24px}nav,.search,.print-link{display:none}a,.badge,.source,dt,.lead,footer,th,kbd,.objective{color:#33484e}article{border-color:#b9c1c4}table{font-size:11px}th,td{padding:6px}kbd{background:#e1e4da;border-color:#66767b}figure{background:#eee}.grid{gap:24px}details{display:block}}
+@media print{:root{color-scheme:light}html{background:#fff}h2,h3{break-after:avoid}body{background:white;color:#17242b}main{padding:0;max-width:none}h1{font-size:30px}h2{font-size:24px}nav,.search,.print-link{display:none}a,.badge,.source,dt,.lead,footer,th,kbd,.objective{color:#33484e}article{border-color:#b9c1c4}table{font-size:11px}th,td{padding:6px}kbd{background:#e1e4da;border-color:#66767b}figure{background:#eee}.grid{display:block}.grid article{break-inside:avoid;padding:10px 0}.grid article p{margin:4px 0 6px}.grid figure{display:inline-block;width:38%;vertical-align:top;margin:4px 0;padding:4px}.grid figure+figure{margin-left:3%}.grid figcaption{font-size:9px}.grid details{margin:4px 0}.grid dl{grid-template-columns:auto 1fr auto 1fr;gap:3px 14px;font-size:11px;margin:8px 0}details{display:block}}
 '''
 
 
 def html_page(title,body,other):
-    # All links/assets are local. The only script is local catalogue filtering.
+    # All links/assets are local. Scripts: catalogue filtering, and opening disclosures for print.
     font='';fp=ROOT/'godot/assets/fonts/BarlowCondensed-SemiBold.ttf'
     import base64
     if fp.is_file():font='@font-face{font-family:Barlow;src:url(data:font/ttf;base64,'+base64.b64encode(fp.read_bytes()).decode()+') format("truetype");font-weight:600;font-display:swap}'
-    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data:; script-src 'unsafe-inline'"><title>{ESC(title)} | Abrams Fan Remaster</title><style>{font}{CSS}</style></head><body><main><h1>{ESC(title)}</h1><p class="lead">M1 Abrams Battle Tank Fan Remaster</p><p class="creator">Original game by <strong>Dynamix</strong>, published by <strong>Electronic Arts</strong>.</p><nav aria-label="Reference navigation">{other}<a href="#content">Read reference</a></nav>{body}{credit_html()}<footer>Original game by Dynamix. Fan Remastered by Nell Watson. Dedicated to David “Ming” Kenny.<br>Manual references use the original printed page numbers. Vehicle figures and threat ratings reproduce the manual's game-era data.</footer></main></body></html>'''
+    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data:; script-src 'unsafe-inline'"><title>{ESC(title)} | Abrams Fan Remaster</title><style>{font}{CSS}</style></head><body><main><h1>{ESC(title)}</h1><p class="lead">M1 Abrams Battle Tank Fan Remaster</p><p class="creator">Original game by <strong>Dynamix</strong>, published by <strong>Electronic Arts</strong>.</p><nav aria-label="Reference navigation">{other}<a href="#content">Read reference</a></nav>{body}{credit_html()}<script>addEventListener("beforeprint",()=>{{for(const d of document.querySelectorAll("details:not([open])")){{d.dataset.printOpened="";d.open=true}}}});addEventListener("afterprint",()=>{{for(const d of document.querySelectorAll("details[data-print-opened]")){{d.open=false;delete d.dataset.printOpened}}}})</script><footer>Original game by Dynamix. Fan Remastered by Nell Watson. Dedicated to David “Ming” Kenny.<br>Manual references use the original printed page numbers. Vehicle figures and threat ratings reproduce the manual's game-era data.</footer></main></body></html>'''
 
 
 def controls_html(data):
@@ -196,7 +277,7 @@ def controls_html(data):
     remaining=[r for i,r in enumerate(controls) if i not in covered]
     if remaining:sections.append('<section><h2>Additional context</h2><table>'+''.join(f'<tr><td><kbd>{ESC(r["name"])}</kbd></td><td>{ESC(r["description"])}</td></tr>' for r in remaining)+'</table></section>')
     chords=''.join(f'<tr><td>{ESC(action)}</td><td><kbd>{mac}</kbd></td><td><kbd>{other}</kbd></td></tr>' for action,mac,other in SHORTCUTS)
-    body='<p class="print-link"><a href="keyboard-controls.pdf">Printable keyboard sheet (PDF)</a></p><div id="content"><h2>Remaster shortcuts</h2><table><tr><th>Action</th><th>Desktop macOS</th><th>Windows / Linux / Browser</th></tr>'+chords+'</table><p>Press Tab to toggle 8x fast forward and normal speed. Session provides five save slots and Undo last load. Audio is muted during fast forward.</p><p>'+ESC(GRAPHICS_NOTE)+'</p><p>'+ESC(SHORTCUT_NOTE)+'</p><p>'+ESC(QUALITY_NOTE)+'</p><p>Pause with Esc before opening a reference if you want the original simulation to wait. Help never sends an extra command to the game. Release held keys after returning from a menu or another window.</p>'+''.join(sections)+'<p class="source">Original controls: manual pp. 4 to 7, with station and menu context on pp. 9 to 20. Remaster shortcuts are taken from the implemented Play controls.</p></div>'
+    body='<p class="print-link"><a href="keyboard-controls.pdf">Printable keyboard sheet (PDF)</a></p><div id="content"><h2>Remaster shortcuts</h2><table class="chords"><tr><th>Action</th><th>Desktop macOS</th><th>Windows / Linux / Browser</th></tr>'+chords+'</table><p>Press Tab to toggle 8x fast forward and normal speed. Session provides five save slots and Undo last load. Audio is muted during fast forward.</p><p>'+ESC(GRAPHICS_NOTE)+'</p><p>'+ESC(SHORTCUT_NOTE)+'</p><p>'+ESC(QUALITY_NOTE)+'</p><p>Pause with Esc before opening a reference if you want the original simulation to wait. Help never sends an extra command to the game. Release held keys after returning from a menu or another window.</p>'+''.join(sections)+'<p class="source">Original controls: manual pp. 4 to 7, with station and menu context on pp. 9 to 20. Remaster shortcuts are taken from the implemented Play controls.</p></div>'
     return html_page('Keyboard controls',body,'<a href="field-guide.html">Scenarios & vehicles</a>')
 
 
@@ -209,7 +290,7 @@ def catalogue_html(data):
         vehicles.append(f'<article data-search><header><h3>{ESC(row["name"])}</h3><span class="badge '+('friendly' if row['allegiance']=='FRIENDLY' else '')+'">'+row['allegiance']+'</span></header><p class="source">'+ESC(row['role'])+' · '+refs(row)+'</p>'+figure(row['name'],'wireframes')+figure(row['name'],'models')+'<p>'+ESC(row['description'])+'</p>'+'<details><summary>Manual specifications</summary><dl>'+specs+'</dl></details></article>')
     extra=[]
     for key,title in [('anti_tank_guided_weapons','Anti-tank guided weapons'),('ammunition_and_armament','Ammunition & armament'),('other_units_and_objectives','Other units & objectives')]:
-        entries=''.join('<article data-search><header><h3>'+ESC(row['name'])+'</h3><span class="source">'+refs(row)+'</span></header><p>'+ESC(row['description'])+'</p>'+('<p>Range: '+ESC(str(row['range_m']))+' m</p>' if row.get('range_m') is not None else '')+'</article>' for row in data[key])
+        entries=''.join('<article data-search><header><h3>'+ESC(row['name'])+'</h3><span class="source">'+refs(row)+'</span></header><p>'+ESC(row['description'])+'</p>'+('<p>'+ESC(range_text(row['range_m']))+'</p>' if row.get('range_m') is not None else '')+'</article>' for row in data[key])
         extra.append('<section><h2>'+ESC(title)+'</h2>'+entries+'</section>')
     body='<p class="print-link"><a href="field-guide.pdf">Printable scenario and vehicle catalogue (PDF)</a></p><div class="search"><label for="search">Find a scenario, vehicle or weapon</label><input id="search" type="search" placeholder="For example: Convoy, M113, sabot" autocomplete="off"><p id="count" role="status" aria-live="polite"></p></div><div id="content"><section id="scenarios"><h2>The eight scenarios</h2><p>'+ESC(data['training']['description'])+'</p><p>Choose your ammunition mix and governor in the Motor Pool. Each scenario pairs a NATO-style manual map with its extracted PC game-data map.</p>'+missions+'</section><section id="vehicles"><h2>Vehicle recognition</h2><p>Recognise friendly and enemy vehicles. Specifications and threat ratings follow the original game manual.</p><div class="grid">'+''.join(vehicles)+'</div></section>'+''.join(extra)+'<section><h2>Campaign and stations</h2><p>'+ESC(data['campaign']['description'])+'</p>'+''.join('<article data-search><h3>'+ESC(row['name'])+(' · '+row['key'] if row['key'] else '')+'</h3><p>'+ESC(row['description'])+'</p><p class="source">'+refs(row)+'</p></article>' for row in data['stations'])+'</section></div><script>const q=document.getElementById("search"),rows=[...document.querySelectorAll("[data-search]")],count=document.getElementById("count");q.addEventListener("input",()=>{let shown=0;for(const row of rows){row.hidden=!row.textContent.toLowerCase().includes(q.value.toLowerCase().trim());if(!row.hidden)shown++}count.textContent=q.value ? shown+(shown===1?" matching entry":" matching entries") : ""});</script>'
     return html_page('Scenarios & vehicles',body,'<a href="keyboard-controls.html">Keyboard controls</a><a href="#scenarios">Scenarios</a><a href="#vehicles">Vehicles</a>')
@@ -274,7 +355,7 @@ def keyboard_pdf(data):
             y=key_rows(b,rows,x,y,236)-24
     b.page('Remaster shortcuts & menus')
     y=b.h-126
-    y=b.para(SHORTCUT_NOTE,32,y,b.w-64,11)-12
+    y=b.para(SHORTCUT_NOTE,32,y,b.w-64,11)-30
     b.c.setFillColor(HexColor(INK));b.c.setFont('Barlow',20)
     for x,title in [(32,'Desktop macOS'),(276,'Windows / Linux / Browser'),(561,'Action')]:b.c.drawString(x,y,title)
     y-=18
@@ -291,7 +372,7 @@ def keyboard_pdf(data):
     y=b.heading('Menus and briefings',32,y,21)
     y=key_rows(b,[('Enter','Choose mission, day/night or skill; submit names or identification; advance credits and briefings.'),('Space','Advance past a mission-title screen.'),('Left / Right','Adjust ammunition in the Motor Pool.')],32,y,365,108)-22
     for title,text in [('Movement','Arrow keys and keypad control the hull or turret selected by C. Hull forward and reverse move the tank; turret mode raises and lowers the sight.'),('Scan and zoom','Gunner Z changes magnification. Commander Z changes map scale. Commander scan is relative to turret bearing.'),('References and saves','Pause with Esc if you want the simulation to wait while reading. Help sends no extra game command. Release held keys after returning. Save states restore the machine and campaign disk; back up your profile before upgrading. '+QUALITY_NOTE)]:
-        y=b.heading(title,32,y,21);y=b.para(ESC(text),32,y,365,10)-10
+        y=b.heading(title,32,y,21);y=b.para(ESC(text),32,y,365,10)-24
     credits_pdf(b,439,b.h-126,365)
     b.finish()
 
@@ -358,9 +439,8 @@ def pdf_image(b,file,x,y,width,height):
 def field_pdf(data,catalog,shapes):
     b=Book(PDF/'field-guide.pdf','Scenarios & vehicles',doc_title='M1 Abrams Battle Tank Fan Remaster – Field Guide: Scenarios & Vehicles');b.page('Scenarios & vehicles')
     y=b.h-135
-    y=b.heading('Eight missions. Know your crew and your targets.',32,y,23)
-    y=b.para('A remastered companion to the original DOS manual: scenario objectives, vehicle recognition, ammunition and anti-tank threats. The original simulation remains the authority during play.',32,y-12,b.w-64,12)
-    for title,desc in [('Scenario briefs','All eight missions, with their stated objectives and relevant hazards.'),('Vehicle recognition','All sixteen manual entries. M113, M1A1, M2 Bradley and M60A3 are friendly units.'),('Weapons and objectives','ATGW teams, tank ammunition and the convoy, bases and rescue objectives.'),('Source','Content is paraphrased from the supplied DOS manual. Page references use its printed numbering; add four for the PDF page number. Specifications and threat levels reflect the manual, and its threat ratings.')]:
+    y=b.para('A remastered companion to the original DOS manual: scenario objectives, vehicle recognition, ammunition and anti-tank threats. The original simulation remains the authority during play.',32,y+8,b.w-64,12)
+    for title,desc in [('Scenario briefs','All eight missions, with their stated objectives and relevant hazards.'),('Vehicle recognition','All sixteen manual entries. M113, M1A1, M2 Bradley and M60A3 are friendly units.'),('Weapons and objectives','ATGW teams, tank ammunition and the convoy, bases and rescue objectives.'),('Source','Content is paraphrased from the supplied DOS manual. Page references use its printed numbering; add four for the PDF page number. Specifications and threat ratings follow the manual.')]:
         y=b.heading(title,32,y-25)
         y=b.para(ESC(desc),32,y,b.w-64,11)
     y=b.para('Dedicated to David “Ming” Kenny.',32,y-25,b.w-64,12)
@@ -404,9 +484,11 @@ def field_pdf(data,catalog,shapes):
             if len(pts)==2:
                 b.c.setStrokeColor(Color(*(c/255 for c in color)));b.c.setLineWidth(.7)
                 b.c.line(32+pts[0][0],y-135+pts[0][1],32+pts[1][0],y-135+pts[1][1]);continue
-            b.c.setFillColor(Color(*(c/255 for c in color)));p=b.c.beginPath();p.moveTo(32+pts[0][0],y-135+pts[0][1])
+            # A hairline in the fill colour closes antialiasing seams between split pieces.
+            b.c.setFillColor(Color(*(c/255 for c in color)));b.c.setStrokeColor(Color(*(c/255 for c in color)));b.c.setLineWidth(.25)
+            p=b.c.beginPath();p.moveTo(32+pts[0][0],y-135+pts[0][1])
             for px,py in pts[1:]:p.lineTo(32+px,y-135+py)
-            p.close();b.c.drawPath(p,stroke=0,fill=1)
+            p.close();b.c.drawPath(p,stroke=1,fill=1)
         y=b.para('Modern model study',32,y-144,b.w-64,9,'#4c5a5e')
         y=b.para(ESC(row['description']),32,y-10,b.w-64,11)-12
         left=[];right=[]
@@ -421,19 +503,19 @@ def field_pdf(data,catalog,shapes):
         for row in data[key]:
             y=b.heading(row['name'],32,y,20)
             y=b.para(ESC(row['description']),32,y,b.w-64,10)
-            if row.get('range_m') is not None:y=b.para('Range: '+ESC(str(row['range_m']))+' m',32,y,b.w-64,9)
-            y=b.para(refs(row),32,y,b.w-64,8,'#4c5a5e')-9
+            if row.get('range_m') is not None:y=b.para(ESC(range_text(row['range_m'])),32,y,b.w-64,9)
+            y=b.para(refs(row),32,y,b.w-64,8,'#4c5a5e')-22
     for start in range(0,len(data['other_units_and_objectives']),5):
         b.page('Other units & objectives');y=b.h-127
         for row in data['other_units_and_objectives'][start:start+5]:
             y=b.heading(row['name'],32,y,20);y=b.para(ESC(row['description']),32,y,b.w-64,11)
-            y=b.para(refs(row),32,y,b.w-64,9,'#4c5a5e')-14
+            y=b.para(refs(row),32,y,b.w-64,9,'#4c5a5e')-22
     b.page('Campaign & crew');y=b.h-127
     y=b.para(ESC(data['campaign']['description']),32,y,b.w-64,11)-18
     for row in data['stations']:
         y=b.heading(row['name']+(' · '+row['key'] if row['key'] else ''),32,y,20)
         y=b.para(ESC(row['description']),32,y,b.w-64,11)
-        y=b.para(refs(row),32,y,b.w-64,9,'#4c5a5e')-12
+        y=b.para(refs(row),32,y,b.w-64,9,'#4c5a5e')-22
     b.finish()
 
 

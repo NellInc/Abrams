@@ -30,6 +30,18 @@ and objectives below. HTML pairs the maps in
 responsive columns.
 The terrain maps use the original PC world's terrain placement and
 geometry. They show static geography; moving units and objectives are omitted.
+Static structures placed in each world are drawn too: stone bridges (shapes
+45, 46 and 108), the gabled building on its earth pad (47 on 48) and trees
+(103, as fixed-size symbols because their crowns have no top-down area).
+Convoy and Siegen Infiltration share terrain; only these structures and one
+tree tell them apart. Hills are hillshaded per planar face, from the
+north-west, and tinted by each placed shape's summit, so a hill no longer
+splits into triangle-coloured patches. Each map is framed to the terrain
+present, cell-aligned with one empty cell of margin and the aspect kept,
+rather than a fixed 50-cell square that left Mass Destruction half empty.
+Bridge symbols keep a legible minimum size; everything else is to scale.
+Working if: Convoy and Siegen maps differ, every map shows its bridges and
+building, and no map has an empty band beyond its terrain.
 The extracted terrain diagrams remain vector in HTML and PDF. The native reader uses matching
 2400-pixel editions, preserving the compass and legend lettering.
 
@@ -59,10 +71,41 @@ only during authoring; players need neither.
 The builder sets ReportLab's invariant mode (`rl_config.invariant=1`: fixed
 dates and document `/ID`), so an unchanged rebuild with the same ReportLab
 release is byte-identical and a hash change means the content changed. PDF bytes
-still depend on that release; record it with each rebuild ([Unverified]: 5.0.1
-per the 15 October 2026 tooling review; no ReportLab is installed in this
-checkout's venvs). The PDFs in the tree predate invariant mode (they carry real
-creation dates), so the first invariant rebuild changes their bytes once.
+still depend on that release; record it with each rebuild. The 1 November 2026
+full rebuild used ReportLab 5.1.0 from `.runtime/full-validation-venv`; model
+studies came out byte-identical. Both tracked PDFs carry the invariant
+2000-01-01 creation date.
+
+Layout: ammunition ranges read as spans (`Range: 770–4000 m`), not lists.
+Printed headings keep a clear gap below the preceding page reference or
+paragraph. HTML scenario pairs fill two equal columns; the standalone map
+rule's auto margins had shrunk each figure to its image's own width, leaving
+the terrain map a third narrower with an unreadable legend. Under 700 px the
+shortcut table uses smaller key chips so its Action column stays readable.
+Working if: no PDF heading touches the line above it, and both maps in an HTML
+pair are equally wide.
+
+Model studies are drawn exactly back to front. A BSP tree over the mesh's
+planes splits any face that crosses another face's plane, and coplanar faces
+keep catalogue order. Source lines go into the same tree. Sorting whole
+triangles by centroid had shown the wrong face on 7-21% of each study's visible
+pixels: roadwheels cut through side plates, dark wedges on the M113 roof, the
+Hind's cabin glazing buried. Against a per-pixel depth render, the studies now
+differ only along one-pixel edges. A hairline in each polygon's own colour hides
+split seams. `illustrations.json` counts source triangles and lines, plus the
+drawn `polygons`.
+Working if: every tracked vehicle's study shows a complete roadwheel row inside
+its track bay.
+
+Printing the HTML: the print stylesheet switches to a light colour scheme.
+Under the screen's dark one, Chrome painted every page margin near-black.
+Closed "Manual specifications" disclosures open for printing and close
+afterwards. Vehicle cards print one per row, with the two figures side by side
+and the specifications in two columns, so two cards fit on a page and none
+splits. Headings stay with the content that follows. The field guide prints on
+22 pages instead of 29, with nothing stranded.
+Working if: a printed page has white margins and every vehicle shows its
+specifications.
 Working if: two consecutive invariant rebuilds produce identical PDF hashes.
 
 The packaged outputs include no original game, ROM or manual. Source hashes,

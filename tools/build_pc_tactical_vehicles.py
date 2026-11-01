@@ -264,7 +264,10 @@ def hull(out,sources,tank,master):
                            [[-27,29,-3.4],[27,29,-3.4],[27,70,-10.5],[-27,70,-10.5]]],'olive','sloped_glacis')
         box(out,sources,[-27,-64,-5],[27,-35,-2.6],'olive','engine_deck')
         for side in (-1,1):
-            xx0,xx1=sorted((side*27,side*31.5))
+            # End at the skirts' inner face: a full-width plate shared the
+            # skirts' outer face over z -3..-1.8 and z-fought along every panel.
+            # Working if the skirt face is unbroken and the fender meets its top.
+            xx0,xx1=sorted((side*27,side*31.0))
             box(out,sources,[xx0,-64,-3],[xx1,66,-1.8],'olive','fender_plate')
         hatch(out,sources,-5,40,-5.5,4.1,master,'driver_hatch')
         rear_y=-62;end=-39;w=46;deck=-2.5
@@ -415,7 +418,7 @@ def material(bpy, name, tank, camo_role=None):
     return finish(bpy,name,tank,camo_role)
 
 
-def make_object(bpy, model):
+def make_object(bpy, model, chart_texels=None):
     # Smart Project edits every selected mesh in multi-object edit mode.
     # Isolate this object so a later head/master cannot invalidate baked UVs.
     for previous in bpy.context.selected_objects:previous.select_set(False)
@@ -528,7 +531,82 @@ def make_object(bpy, model):
             bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT')
             bpy.ops.uv.pack_islands(rotate=True,scale=True,margin=.006)
             bpy.ops.object.mode_set(mode='OBJECT')
+        elif chart_texels:
+            widen_thin_charts(bpy,obj,chart_texels)
     return obj
+
+
+def uv_charts(mesh):
+    """Connected UV charts as (loops, centre, major axis, spans) in UV units."""
+    uv=mesh.uv_layers.active.data
+    parents=list(range(len(mesh.polygons)));owners={}
+    def root(i):
+        while parents[i]!=i:parents[i]=parents[parents[i]];i=parents[i]
+        return i
+    for poly in mesh.polygons:
+        for loop in poly.loop_indices:
+            key=(mesh.loops[loop].vertex_index,tuple(round(v,8) for v in uv[loop].uv))
+            if key in owners:parents[root(poly.index)]=root(owners[key])
+            else:owners[key]=poly.index
+    groups={}
+    for poly in mesh.polygons:groups.setdefault(root(poly.index),[]).extend(poly.loop_indices)
+    charts=[]
+    for loops in groups.values():
+        points=[(uv[i].uv[0],uv[i].uv[1]) for i in loops]
+        cx=sum(p[0] for p in points)/len(points);cy=sum(p[1] for p in points)/len(points)
+        sxx=sum((p[0]-cx)**2 for p in points);syy=sum((p[1]-cy)**2 for p in points)
+        sxy=sum((p[0]-cx)*(p[1]-cy) for p in points)
+        angle=.5*math.atan2(2*sxy,sxx-syy);major=(math.cos(angle),math.sin(angle));minor=(-major[1],major[0])
+        spans=[]
+        for axis in (major,minor):
+            values=[(p[0]-cx)*axis[0]+(p[1]-cy)*axis[1] for p in points]
+            spans.append(max(values)-min(values))
+        charts.append((loops,(cx,cy),major,spans))
+    return charts
+
+
+def widen_thin_charts(bpy,obj,texels,minimum=2.,gap=6.):
+    """Give every Smart Project chart at least `minimum` bake texels of width.
+
+    Thin parts (downpipes, gutters, trim lips, wreck torn edges) unwrap into
+    strips narrower than one texel. Cycles bakes texel centres only, so such a
+    chart keeps the black clear value in all five maps: black albedo, invalid
+    normals and zero occlusion. Widen only those charts along their own
+    principal axes, repack, and repeat until the packed layout keeps the width.
+    A strip two texels wide holds a texel centre at any orientation. The repack
+    keeps a fixed UV gap of `gap` pixels per 2048 (three bake pixels on the
+    1024 wreck bakes). Smart Project's scaled margin had spent far more, so
+    large surfaces gain texels rather than losing them; a six-pixel gap on the
+    1024 bakes measured a 27-31% large-surface loss and was rejected.
+    Crew heads keep their own chart minimum.
+    Working if every packed chart spans at least `minimum` texels on both axes.
+    """
+    mesh=obj.data;target=minimum/texels
+    passes=[]
+    for attempt in range(8):
+        # Edit-mode packing reallocates loop data; never reuse a stale layer.
+        uv=mesh.uv_layers.active.data
+        charts=uv_charts(mesh)
+        thin=[c for c in charts if min(c[3])<target*(1-1e-6)]
+        passes.append({'charts':len(charts),'thin':len(thin),'narrowest_texels':round(min(min(c[3]) for c in charts)*texels,4)})
+        if not thin:break
+        if attempt==7:raise ValueError(f'UV chart minimum not reached for {obj.name}: {passes}')
+        # Overshoot slightly so the uniform scale of the repack keeps the width.
+        goal=target*1.25
+        for loops,(cx,cy),major,spans in thin:
+            factors=[max(1.,goal/max(span,1e-9)) for span in spans]
+            minor=(-major[1],major[0])
+            for i in loops:
+                dx=uv[i].uv[0]-cx;dy=uv[i].uv[1]-cy
+                a=(dx*major[0]+dy*major[1])*factors[0];b=(dx*minor[0]+dy*minor[1])*factors[1]
+                uv[i].uv=(cx+a*major[0]+b*minor[0],cy+a*major[1]+b*minor[1])
+        for other in bpy.context.selected_objects:other.select_set(False)
+        obj.select_set(True);bpy.context.view_layer.objects.active=obj
+        bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.uv.pack_islands(rotate=True,scale=True,margin=gap/2048,margin_method='FRACTION')
+        bpy.ops.object.mode_set(mode='OBJECT')
+    obj['uv_chart_minimum']=json.dumps({'texels':texels,'minimum_texels':minimum,'gap_per_2048':gap,'passes':passes})
+    return passes
 
 
 def image_target(bpy,obj,label,size):

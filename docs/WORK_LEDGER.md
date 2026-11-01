@@ -9117,3 +9117,181 @@ at normal speed, the practice range accepts both Enter keys, recovery saves leav
 no unreachable archive, desktop Play closes after a sustained original EXIT and
 never on a game frame, and the browser items stay listed as pending until a
 rebuilt bundle passes the browser checks above.
+
+
+### 31 October 2026: model, map and layout polish (art only)
+
+Nell asked for problems in the models, maps and layouts to be found and fixed,
+excluding gameplay, flow, interface and processing. Two defects were fixed.
+
+Scenario terrain maps (player reference, field guide, website PDF). The extracted
+maps dropped every placed structure: stone bridges (shapes 45/46/108), the gabled
+building on its earth pad (47/48) and 147 trees (103). Convoy and Siegen
+Infiltration share terrain, so their maps were identical; their WLD files differ
+only in those structures. A fixed 50-cell frame left Mass Destruction (29 of 48
+rows) and The Road to Bonn half empty and every map off-centre. Hills were shaded
+per triangle centroid, so split quads showed a diagonal patchwork, and the PDF's
+same-colour edge strokes drew those splits as seams. `build_reference_maps.py`
+now draws bridges, buildings and trees, frames each map to its terrain (cell-
+aligned, one cell margin, aspect kept) and hillshades per planar face with one
+elevation band per placed shape. The new bridge on Mass Destruction sits where
+the manual marks "Bridge" and the building where it marks "M1 Base". Rebuilt
+with ReportLab 5.1.0 (`--field-guide-only --render-maps`); the website copy, its
+cache token and provenance were updated and `website/verify.py` passes. Checks:
+25 player-reference tests (2 ReportLab tests included), Godot interface
+reference 211 checks 0 errors, no polygon outside any map frame.
+
+Tactical models (local art pack, revision 51). Thin parts unwrapped into charts
+under one bake texel, which received no Cycles samples and kept the black clear
+value in all five maps. Base 156 had 1,640 of 7,740 triangle centroids on
+unbaked albedo, HQ 154 2,026; wreck torn edges, gutters, downpipes, bargeboards,
+tile lips, trim and foundations rendered black with invalid normals. Details,
+rejected candidates and measurements: `docs/modern-asset-register.md` revision
+51. Eighteen states were rebaked (Metal override, unchanged recipe otherwise);
+all now have zero unbaked-albedo centroids and charts of at least two texels,
+with large-surface texel density up 8.7-50.3%. The scoped packer replaced 138
+files; 39 states and all outside-tile bank pixels are exact. 132 modern-asset
+Python tests pass, including the new geometric regression.
+
+Godot headless admission reports 1,235,718 checks and 0 errors, ground crews 48
+checks and 0 errors, and every format shard 0 errors, but each run then trips
+the inherited 120-second wall-clock guard. That is host load: the 27-check
+malformed-roster shard took 333 s wall for 27.5 s CPU (load average 80-726
+during the session). A rescan of the installed bank tiles (what Godot samples)
+finds no black component in any of the 18 rebaked states; the only black
+components left in all 57 are gun bores and BMP-1 vision glass, dark by design.
+
+Second polishing pass (Nell: "Another polishing pass please"): 25 further states
+had smaller sets of unbaked slivers and were rebaked with the same recipe; Molot
+123 also picks up the committed but never-baked end-wheel clearance fix. All 55
+non-crew states are now free of unbaked centroids. 132 Python tests pass;
+admission again reports 1,235,718 checks and 0 errors and ground crews 48 and 0
+errors, each followed by the host-load wall-clock guard. Details in
+`docs/modern-asset-register.md` revision 51.
+
+Deep pass (Nell: "Another deep polishing pass please"), revision 52: a
+same-facing coplanar audit found visible faces sharing planes. T-72/T-80 side
+skirts sat inside the track's outer face (the upper run drew over them) and
+the T-64 gill plates were coplanar with the shoes; the M1A1 fender shared the
+skirts' outer face; truck stakes shared the sideboards' inner face; Bradley
+vision glass stood only 0.015 off its coaming. All fixed in source with two
+regression tests; 117, 119, 121, 125, 131 and 159 rebaked and installed (57
+files; 51 states exact). Skirt widening re-seeds the bounding-box-normalised
+camouflage on the three tanks. Contact faces (sills, foundations, toolbox
+bottoms) and the 0.04 sky-glazing panes were judged harmless and left. The
+admission check's wall-clock guard tripped under host load (361 s wall for 84 s
+CPU); it was not changed and the gate is not counted as passed. Native view
+shards were not run for the same reason. Packaged app, PCK and Web game bundle
+were not rebuilt; nothing was committed or pushed.
+
+Second deep pass (1 November 2026, Nell: "Another deep polishing pass please"):
+layouts. In the PDFs, ammunition ranges printed as Python lists
+(`Range: [770, 4000] m`), and "Manual p." lines and paragraphs sat against the
+next heading on field-guide pages 27-31 and keyboard pages 2-3. In the HTML
+field guide, every scenario's PC terrain map rendered a third narrower than
+its manual map: an equal-specificity `margin:auto` rule shrank grid figures to
+their images' own widths. At phone width the shortcut table's Action column
+wrapped one word per line. All four were fixed in `build_player_reference.py`,
+with two regression tests and a full ReportLab 5.1.0 rebuild (model studies
+byte-identical). The website PDF copies, cache tokens and provenance hashes
+follow. Checked and rejected on measurement: mip bleed from unbaked bank
+background (chart edges at most 1-5% darker at mip 4; the 8-pixel bake margin
+covers it); null or inward baked normals (17-30% of some hulls' area, on
+undersides and covered upper faces such as the hull top under the upper hull;
+0.3-0.7% of visible pixels in 16-view software renders); and Modern-catalogue
+coplanar pairs (painter order, not depth, so nothing flickers; a painter-order
+render of the Sagger and Spigot crews shows both shoulder straps, with only
+their tops under the shoulder yoke and hand, assuming program-order primitive
+draws). A 4-view albedo sweep of all 57 Tactical states found no new visible
+defect. Out of scope and unchanged: the in-app reader (`pc_reference_library.gd`
+`_plain`) still shows ranges as `0; 2500`. The Web edition still pins the
+previous 16 scenario-map files in `tools/package/web-publication.json`, so the
+next Web asset repackage must update those pins and take the regenerated maps.
+
+Third deep pass (1 November 2026, the same request again): the 16 vehicle model
+studies (SVG and field-guide PDF) sorted whole triangles by centroid. Against a
+per-pixel depth render, 7-21% of each study's visible pixels showed the wrong
+face: roadwheels drawn through side plates on every tracked vehicle, dark
+wedges across the M113 roof, the Hind's cabin glazing buried. `model_polygons`
+now orders exactly with a BSP tree. Faces split along the mesh planes, coplanar
+faces keep catalogue order, and source lines are inserted into the same tree.
+Only one-pixel edges now differ from the depth render (worst interior 0.04%,
+the Hind). A same-colour hairline hides the split seams, which are invisible at
+200 dpi in the PDF. A regression test reproduces the failure (a part standing on
+a long floor). Two consecutive rebuilds are byte-identical. The website PDF copy,
+token and hash follow, and the Web pins for the 16 `vehicle-*.svg` files are now
+stale too. Checked and left: foliage draws without a depth test, but instances
+already sort far to near, and in-mesh order errors are mostly blade over blade in
+one colour. The terrain and manual maps showed no label collisions or clipping.
+
+Fourth deep pass (1 November 2026): the field-guide cover opened with a tagline
+("Eight missions. Know your crew and your targets.") that Nell's no-taglines
+rule excludes. It is cut, and the cover's source note no longer says "threat"
+twice. The website PDF copy, token and hash follow. Measured clean: UV stretch
+over all 57 Tactical states (at most 2.7% of any model's area beyond 2.5:1
+anisotropy, all on thin trim that revision 51 widened on purpose; no face below
+a third of median density) and the HTML vehicle cards at desktop width. Found,
+not changed: two restored manual side views carry scan artefacts. The BTR's
+rear hull is a jumble of pixel-staircase boxes, and the BRDM-2's upper hull
+edge is stair-stepped. Both were refined with a built-in image-generation tool
+in an earlier session (`wireframes-provenance.json`). This session has no image
+generator, so regenerating them needs that tool and Nell's approval of the
+result.
+
+Follow-up (Nell: "use your best judgment on anything that needs
+fixed/tweaked/repaired, and then make another polishing pass"):
+
+* Drawings: both side views were cleaned with `gemini-3-pro-image` (Google key
+  from the keychain). Each was padded to 21:9, edited only in the defective
+  region, cropped back and overlaid on the previous plate. The first attempts
+  were rejected: the BTR lost its rear-deck tube or gained invented doors, and
+  the BRDM-2 gained a dome arc and lost its panel seams. The accepted BTR plate
+  (third prompt) has a clean sloped rear plate with the tube kept. The accepted
+  BRDM-2 plate (second prompt) smooths the stair-stepped hull and wheel-arch
+  edges and keeps the turret diagonals and seams. Elsewhere both overlay their
+  predecessors.
+* Records: `wireframes-provenance.json` carries the new and previous hashes.
+  Prompts, the edit script and the before images are in
+  `artifacts/wireframe-cleanup-20261101/` (local). PDF rebuilt and website copy
+  synced; the Web pins for the two drawings are now stale too.
+* Admission: rerun at load 110-210 gave `PC_TACTICAL_VEHICLES: 1235718 checks,
+  0 errors`, then the unchanged wall-clock guard tripped again. Still not
+  counted as passed.
+* Polishing pass:
+  * Clean on measurement: terrain detail textures and all ten Tactical
+    material textures tile seamlessly (blurred wrap seams within about twice
+    the interior variation).
+  * Found, not changed: about 14,000 coplanar T-junctions across the Tactical
+    meshes, mostly building frames, walls and sills and engine-grille insets.
+    They could sparkle as single-pixel cracks on the GPU. Confirming that needs
+    the native view shards on a quiet host; fixing it means rebuilding geometry
+    and rebaking most states.
+
+Next pass (Nell: "Use your best judgment on all issues, and then another deep
+polishing pass"):
+
+* Admission: rerun at load 54-297 gave `PC_TACTICAL_VEHICLES: 1235718 checks,
+  0 errors`, then the guard tripped (995 s wall for 89.5 s CPU). Still not
+  counted as passed; another session's load dominates this host.
+* Tests: `tests.test_pc_modern_assets` and `tests.test_player_reference`, 161
+  tests, OK (52 min under load).
+* Printed HTML references (headless Chrome print-to-PDF):
+  * Every page carried near-black side margins, because the screen's
+    `color-scheme: dark` set the print canvas. The print stylesheet now selects
+    light.
+  * Closed "Manual specifications" disclosures printed closed, so printouts
+    lost every vehicle's specs. A `beforeprint` handler opens them and
+    `afterprint` closes them again.
+  * Two-column vehicle cards were too tall to share a row, which stranded the
+    ACRV-2 specs on their own page and left a blank page. They now print one
+    per row, with figures side by side and specs in a four-column grid, two
+    cards to a page, and headings stay with their content. The field guide
+    prints on 22 pages instead of 29.
+  * The study caption "Modern model study." loses its stray full stop, to match
+    the other captions.
+* Regression test: `test_printed_html_is_light_and_shows_specifications`. The
+  screen layout and both authored PDFs are unchanged.
+
+Working if: Convoy and Siegen maps differ and every map shows its bridges and
+building without an empty band, no rebaked thin part renders black, and the
+admission gate passes within its unchanged guard on a quieter host.

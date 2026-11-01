@@ -181,8 +181,10 @@ def turret(out,src,kind,master):
                 def point(u,v,z):return [cx+dx*(radius+v)-dy*u,cy+dy*(radius+v)+dx*u,z]
                 solid(out,src,[[point(u,v,z) for u,v in ((-1.35,-.65),(1.35,-.65),(1.35,.65),(-1.35,.65))]
                                for z in (22.1,24.4)],'olive_edge','bradley_'+role+'_vision_coaming')
-                emit(out,src,[point(-1.03,.665,23.15),point(1.03,.665,23.15),
-                              point(1.03,.665,24.03),point(-1.03,.665,24.03)],
+                # Glass stands .04 off the coaming face, like building glazing;
+                # .015 was too close to separate in depth at range.
+                emit(out,src,[point(-1.03,.69,23.15),point(1.03,.69,23.15),
+                              point(1.03,.69,24.03),point(-1.03,.69,24.03)],
                      'optic','bradley_'+role+'_vision_glass')
         # Large raised twin TOW box on the left cheek, with recessed mouths,
         # hinge brackets and a folded lid, rather than two dots in a slab.

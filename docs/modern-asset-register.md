@@ -1,5 +1,99 @@
 # Modern source-bound asset register
 
+## Coplanar overlap repair, authoring revision 52
+
+A same-facing coplanar audit over all 57 states (triangles drawn together,
+different texels, overlap above 0.05 raw²) separated harmless contact faces
+(sills, foundations and toolboxes against what covers them, decal panes set
+0.04 off) from visible faces sharing a plane:
+
+- T-72 and T-80 side skirts sat 0.2 inside the track's outer face, so the upper
+  track run drew over them; the T-64 gill plates' outer face was coplanar with
+  the shoes. All now hang 0.65 outside the track (x 57.65 / 37.65), inside the
+  58 / 38 source bounds.
+- The M1A1 fender plate overlapped the skirt panels and shared their outer face
+  over z -3..-1.8 on every panel. It now ends at the skirts' inner face.
+- The truck's bed stakes shared the sideboards' inner face; they now start
+  0.15 outside it.
+- Bradley vision glass stood 0.015 off its coaming; it now stands 0.04 off, as
+  building glazing does.
+
+Triangle counts are unchanged. Regression tests:
+`test_tank_skirts_hang_outside_the_upper_track_run` and
+`test_visible_parts_do_not_share_their_neighbours_face_planes`. States 117,
+119, 121, 125, 131 and 159 rebaked with the revision-51 recipe.
+
+Working if: skirts hide the upper track run, and no listed pair flickers.
+
+## Sub-texel chart bake repair, authoring revision 51
+
+A read-only audit of every installed Tactical bake found thin parts sampling
+the black bake clear value. Smart Project unwrapped downpipes, gutters,
+bargeboards, tile lips, rafter tails, flashings, window trim, foundations and
+wreck torn edges into strips narrower than one bake texel. Cycles bakes texel
+centres only, so those charts received no samples in any of the five maps:
+black albedo, invalid normals and zero occlusion. Base 156 had 1,640 of 7,740
+triangle centroids on unbaked albedo; HQ 154 had 2,026, wreck donors 90 to 329.
+Bridges (their own plane layout) and crew heads (their own chart minimum)
+were already guarded and are unchanged.
+
+`widen_thin_charts` in `build_pc_tactical_vehicles.py` now widens only charts
+under two bake texels, along their own principal axes, then repacks with a
+fixed UV gap of six pixels per 2048 (`margin_method='FRACTION'`) and repeats
+until the packed layout keeps the width. Two candidates were rejected on
+measurement: a four-texel minimum with the default scaled margin cut Base 156
+large-surface texels by about 44% and visibly stepped its roof star; a
+six-bake-pixel gap cost the 1024-pixel wreck bakes 27-31%. In the final recipe
+the largest faces making up half of each model's surface gain texel density
+in all 18 states (+8.7% to +50.3%), because Smart Project's scaled margin had
+wasted that space. The roster builder applies it to the baked game mesh only;
+masters, bridges, crew heads and geometry are unchanged. Crew bodies 161/162
+take this Smart Project path too and would receive the guard if rebaked; they
+were deliberately not rebaked (three to five tiny boot/jacket slivers on
+approved sculpts), so that branch is untested on crews.
+
+Rebaked with the existing recipe on the validated Metal device override, 12
+samples, unchanged resolutions: twelve wreck donors (116-136, 140), HQ 153/154,
+Base 155/156, Farm 157 and the intact truck 159. Geometry, materials, owners
+and triangle order are identical (UVs only). All 18 now have zero triangle
+centroids on unbaked albedo, every chart spans at least 2.0 texels, and zero-
+occlusion centroids fell in every state. Author review of Workbench albedo
+renders (Base 156, HQ 153, T-72 wreck 120, truck 159, original versus final)
+shows black eave/gutter lines and torn-edge strokes replaced by their material
+colours, a stray black roof hairline removed, and unchanged camouflage, flag
+and lamps. This is author review, not independent artistic acceptance.
+Rebaking all 18 states took 1,456 s under heavy host load. The scoped packer
+replaced 138 files; 39 other states and every bank pixel outside the replaced
+tiles are exact. Triangle counts are unchanged (311,268 body; largest 8,190).
+
+Second pass, same recipe and code: 25 further states still had unbaked
+centroids (tank roadwheel hubs and service-case hardware, T-80 turbine vanes,
+Hind gear-door seams and intakes, cottage tile edges, farm-ruin yard stones,
+BTR/BRDM/truck wreck edges, command-station gutters, ruin tile edges). Rebaked:
+115-135 odd, 138, 139, 141-143, 145, 147-150, 152, 158, 160, 163 (aliases 144
+and 164 re-derived). All have zero unbaked centroids and charts of at least two
+texels; large-surface density changed -4.5% (BRDM) to +106.6% (cottage).
+Molot 123's previous bake predated committed f42da71 (end-wheel radius 3.76 to
+3.29 raw); its rebake carries that clearance fix in the sprocket and idler only
+(vertices, colours and four sprocket owners, verified against current source),
+and its camouflage blotches follow the current finish code. The installer
+permits exactly that scoped difference. 214 files replaced; 30 states exact.
+Only crew bodies 161/162 (three to five slivers) and the four already-clean
+states keep their earlier bakes. A rescan of all 57 bank tiles finds no black
+component apart from gun bores and BMP-1 vision glass, dark by design.
+Catalogue 99,611,220 bytes, inside the 96 MiB cap.
+
+Regression: `test_body_bakes_give_every_chart_bake_texels` checks every
+revision-51 bake geometrically (chart width) and for clear albedo texels.
+Evidence: `artifacts/tactical-sliver-fix-20261031/` (`bake-final.log`,
+`installation.json`, `before-pins.json`/`after-pins.json`, `review/`, the
+original files in `replaced-original/`, rejected candidates in
+`rejected-4texel-156/` and `superseded-gap6/`). Local only; no PCK, app or
+Web rebuild.
+
+Working if: no thin part of a rebaked state renders black from missing bake
+samples, and large surfaces keep at least their previous texel density.
+
 ## Tactical wreck-wheel polish, authoring revision 22
 
 All 57 Tactical states were reviewed in 114 hash-verified current GLB views.

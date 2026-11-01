@@ -32,7 +32,7 @@ SCENE=tuple(range(145,159))+(161,162)
 BRIDGES=(0,1,45,46,47,108,114)
 SCENE_SHAPES=tuple(sorted(ROSTER_SHAPES+SCENE+BRIDGES))
 BANKS={'pair':(2048,1024,1024),'intact':(4096,4096,1024),'wreck':(2048,2048,512),'scene':(4096,4096,1024),'bridge':(2048,1024,512)}
-FINISH_REVISION=50
+FINISH_REVISION=52
 from tools.pc_tactical_crews import SCULPT_PATH
 FINISH_SHA=hashlib.sha256("".join(sha(p) for p in (__file__,ROOT/"tools/build_pc_tactical_vehicles.py",ROOT/"tools/sculpt_pc_tactical_crews.py",ROOT/"tools/sculpt_pc_tactical_ground_crews.py",*sorted((ROOT/"tools").glob("pc_tactical_*.py")),*([SCULPT_PATH] if SCULPT_PATH.exists() else []))).encode()).hexdigest()
 
@@ -328,7 +328,10 @@ def main():
         bpy.data.orphans_purge(do_recursive=True)
         for image in list(bpy.data.images):
             if image.users==0:bpy.data.images.remove(image)
-        obj=make_object(bpy,model)
+        size=2048 if index in (115,125)+INTACT+SCENE else 1024
+        # Only the baked game mesh needs bake-texel chart widths; the master
+        # is a projection source whose UVs are never sampled.
+        obj=make_object(bpy,model,None if a.preview else size)
         print(f'TACTICAL_ROSTER_GEOMETRY {index}: {len(model["triangles"])} triangles',flush=True)
         if a.preview:
             if 'command_head' in model:
@@ -344,7 +347,7 @@ def main():
         # Per-model master maps retain 2048px intact and 1024px wreck sources.
         uv_repairs=guard_atlas_uvs(obj,model,index)
         high=make_object(bpy,authored(base['models'][index],True));high.name=obj.name.replace('_GAME','_MASTER')
-        bake(bpy,obj,high,directory,2048 if index in (115,125)+INTACT+SCENE else 1024)
+        bake(bpy,obj,high,directory,size)
         uv=obj.data.uv_layers.active.data
         for tri,poly in zip(model['triangles'],obj.data.polygons):tri['uvs']=[[round(float(uv[i].uv.x),8),round(1-float(uv[i].uv.y),8)] for i in poly.loop_indices]
         head_obj=None

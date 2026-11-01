@@ -248,15 +248,15 @@
     {
       "file": "dist/assets/guides/field-guide.pdf",
       "source": "docs/player-reference/field-guide.pdf",
-      "source_sha256": "f3c1f782aec297eee057ad1ba6366b04acbe48fe181020878f8b813c6b2bc7b8",
-      "output_sha256": "f3c1f782aec297eee057ad1ba6366b04acbe48fe181020878f8b813c6b2bc7b8",
+      "source_sha256": "9bbe16233ab9569e1b0c4f9d1334099f826ea47dc646a53e3a9264972beca628",
+      "output_sha256": "9bbe16233ab9569e1b0c4f9d1334099f826ea47dc646a53e3a9264972beca628",
       "kind": "Authored illustrated field guide with eight NATO/manual and extracted PC-data map pairs"
     },
     {
       "file": "dist/assets/guides/keyboard-controls.pdf",
       "source": "docs/player-reference/keyboard-controls.pdf",
-      "source_sha256": "4fdea02f5321b66064ba3e9e1e37c58eb41dca5bceccff086357fc4e6fde4003",
-      "output_sha256": "4fdea02f5321b66064ba3e9e1e37c58eb41dca5bceccff086357fc4e6fde4003",
+      "source_sha256": "6bd6b99072e1489ad5884258e204182e98f9207dfdb2137df643086a0cf688ec",
+      "output_sha256": "6bd6b99072e1489ad5884258e204182e98f9207dfdb2137df643086a0cf688ec",
       "kind": "Authored three-page remaster keyboard-controls reference."
     }
   ],
