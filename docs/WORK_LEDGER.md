@@ -9487,6 +9487,35 @@ is not on the tank either."
   dynamics 178, effect art 83,755, all 0 errors. A new live Play recording of
   the same route is in `play-record-06`.
 
+Nell: "A bigger, meatier explosion please, and why is there fire in front
+of the tank?"
+
+* Why: the original spawns the explosion object exactly at the wreck. In
+  the close T-64 kill the pool shows 29410 (shape 168) and wreck 29236 both
+  at [111205, 68515, 31], and the M60 is the same. Its sprite box is centred
+  on the tank (138–173 × 52–77 against 140–171 × 64–71). The redrawn
+  `effects-v2` fireball puts its flames in the bottom of that box, below the
+  wreck's base on screen, so it read as fire on the ground in front. The
+  sprite and its art are unchanged, because they also serve ordinary ground
+  hits.
+* Bigger: a blast centred on the wreck. There is a white flash, then a
+  billowing fireball (about 0.55 of the burst radius within a quarter
+  second) that cools rim-first to soot and rolls into a dark smoke column,
+  with a dust skirt along the ground. Fragments go from 9 to 14, and the life
+  from 1.1 to 1.6 s. The burst radius is never below 10 source px
+  (`BLAST_MIN_PIXELS`), so a 3 km kill shows a blast about the size of the
+  original sprite. The blast covers terrain and sky painted before the wreck
+  at any size; fragments still cross it only from 6 px. The wreck's share of
+  the radius rides in the fraction of UV2.x to scale the visibility probe.
+* A first pass read as a flat orange blob. Billow shading (lit crowns,
+  sooty folds, lit from above) was added after the pixel review.
+* Evidence: real draw pass `blast-m113` (422–1979 px from 0.05 to 1.2 s) and
+  `blast-t64` (6,995–35,054 px). Every pixel is admitted, and none changes
+  at 1.7 s. Live Play `play-record-07` reproduces the same kill (pass 683)
+  with the blast centred under the reticle. Gates: effects 117, viewer
+  dynamics 178, effect art 83,755, draw pass 58, native study 229 (`native-10`),
+  all 0 errors.
+
 Not verified: an open-form kill (6 px or more) in live Play, actual Godot Web
 (blocked on the Web rebuild), and whether the open form ever reads as a
 target in play.

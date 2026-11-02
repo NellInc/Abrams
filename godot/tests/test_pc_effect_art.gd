@@ -425,7 +425,8 @@ func kill_debris_study(alive: Dictionary) -> void:
 	view.tactical_effects.visible=true
 	check(still.get_data()==bare.get_data(),"debris: nothing draws before the explicit clock runs (capture determinism)")
 	var hull: Rect2=view.tactical_effects.drawn_rect(dead.objects[0],frame)
-	var envelope:=Rect2(hull.get_center()-Vector2.ONE*maxf(hull.size.x,hull.size.y)*1.4,Vector2.ONE*maxf(hull.size.x,hull.size.y)*2.8)
+	var radius:=maxf(maxf(hull.size.x,hull.size.y)*1.4,view.tactical_effects.BLAST_MIN_PIXELS)
+	var envelope:=Rect2(hull.get_center()-Vector2.ONE*radius,Vector2.ONE*radius*2.0)
 	var rows: Array=[]
 	for age in [0.15,0.35,0.6,0.9]:
 		var image:=await debris_frame(pair,age)
@@ -435,7 +436,7 @@ func kill_debris_study(alive: Dictionary) -> void:
 		rows.append({"age":age,"changed_pixels":result[0]})
 		image.save_png(output.path_join("kill-debris-%03d.png"%int(age*100)))
 	bare.save_png(output.path_join("kill-debris-bare.png"))
-	var spent:=await debris_frame(pair,1.2)
+	var spent:=await debris_frame(pair,view.tactical_effects.DEBRIS_LIFE+0.1)
 	check(spent.get_data()==bare.get_data(),"debris: spent burst leaves the exact frame")
 	# Later and earlier actors both cover it: debris never crosses an actor.
 	# The shield sits wholly above the wreck, across the fragments' rise, so in
@@ -469,9 +470,12 @@ func kill_debris_study(alive: Dictionary) -> void:
 	var far_hull: Rect2=view.tactical_effects.drawn_rect(far_dead.objects[0],frame)
 	var far_rows: Array=view.tactical_effects.puffs.filter(func(p: Array) -> bool: return p[4]==4.0)
 	var far_image:=await debris_frame(far,0.35)
-	var far_result:=changed_outside(far_bare,far_image,func(p: Vector2) -> bool: return far_hull.grow(0.25).has_point(p))
+	# The blast keeps a minimum radius; fragments alone stay on the wreck.
+	var far_radius:=maxf(maxf(far_hull.size.x,far_hull.size.y)*1.4,view.tactical_effects.BLAST_MIN_PIXELS)
+	var far_envelope:=Rect2(far_hull.get_center()-Vector2.ONE*far_radius,Vector2.ONE*far_radius*2.0).grow(0.25)
+	var far_result:=changed_outside(far_bare,far_image,func(p: Vector2) -> bool: return far_envelope.has_point(p))
 	check(far_rows.size()==1 and float(far_rows[0][10])==-3.0,"debris: small kill (%.1f px) uses the confined form"%maxf(far_hull.size.x,far_hull.size.y))
-	check(far_result[1]==0,"debris: confined fragments stay on the wreck (%d changed, %d escaped)"%[far_result[0],far_result[1]])
+	check(far_result[0]>20 and far_result[1]==0,"debris: a distant kill shows a visible blast inside its minimum envelope (%d changed, %d escaped)"%[far_result[0],far_result[1]])
 	far_image.save_png(output.path_join("kill-debris-confined.png"))
 	view.tactical_effects.reset_dynamics()
 	particle_rows.append({"case":"kill-debris","frames":rows,"confined_changed":far_result[0]})

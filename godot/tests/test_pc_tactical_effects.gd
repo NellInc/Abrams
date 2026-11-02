@@ -243,19 +243,24 @@ func kill_debris(effects: Node3D, directory: String, mapping: Dictionary, owners
 		var emitter: Color=effects._roots.get_pixel(int(rows[0][0])*2,0)
 		check(emitter.r==1.0 and emitter.g==4.0 and is_equal_approx(emitter.a,float(puff[9])+1.0),"root table carries owner, debris kind and birth")
 		var hull: Rect2=Effects.drawn_rect(dead.objects[0],frame)
-		check(Vector2(puff[1]).is_equal_approx(hull.get_center()) and is_equal_approx(float(puff[2]),maxf(hull.size.x,hull.size.y)*1.4),"debris quad is centred on the drawn wreck and spans its flight")
-		var ground:=hull.size.y*0.5/(maxf(hull.size.x,hull.size.y)*1.4)
+		var size:=maxf(hull.size.x,hull.size.y)
+		var radius:=maxf(size*1.4,Effects.BLAST_MIN_PIXELS)
+		check(Vector2(puff[1]).is_equal_approx(hull.get_center()) and is_equal_approx(float(puff[2]),radius),"debris quad is centred on the drawn wreck and spans its flight")
+		var ground:=hull.size.y*0.5/radius
+		var extent:=size*1.4/radius
 		var flags:PackedVector2Array=effects.node.mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV2]
-		var carried:=puff.size()==12 and is_equal_approx(float(puff[11]),ground)
-		for n in 6: carried=carried and is_equal_approx(flags[int(rows[0][0])*6+n].y,2.0+ground)
-		check(carried,"fragments land on the wreck's drawn base, carried to every debris vertex")
+		var carried:=puff.size()==13 and is_equal_approx(float(puff[11]),ground) and is_equal_approx(float(puff[12]),extent)
+		for n in 6:
+			var flag: Vector2=flags[int(rows[0][0])*6+n]
+			carried=carried and is_equal_approx(flag.y,2.0+ground) and floorf(flag.x)==float(rows[0][0]) and is_equal_approx(fposmod(flag.x,1.0)*2.0,extent)
+		check(carried,"ground line and wreck extent reach every debris vertex without disturbing its index")
 	var birth: float=effects._dynamics_clock
 	check(effects.advance_dynamics(0.05) and effects._dynamics_clock>birth,"live debris advances the explicit clock")
 	effects.prepare(dead,mapping,ownership,assets,art)
 	rows=debris_rows(effects)
 	check(rows.size()==1 and float(rows[0][1][9])==birth,"a later pass keeps the original birth, never restarts the burst")
 	check(not effects.advance_dynamics(NAN) and not effects.advance_dynamics(-1.0),"invalid deltas cannot age debris")
-	for n in 30: effects.advance_dynamics(0.05)
+	for n in ceili(Effects.DEBRIS_LIFE/0.05)+2: effects.advance_dynamics(0.05)
 	check(not effects.advance_dynamics(0.05),"spent debris stops redraws")
 	effects.prepare(dead,mapping,ownership,assets,art)
 	check(effects.counts.debris==0,"spent debris leaves the queue")
@@ -290,7 +295,7 @@ func kill_debris(effects: Node3D, directory: String, mapping: Dictionary, owners
 	check(effects.counts.debris==0 and effects._kill_births.get(99,[])==first,"an undrawn wreck hides its burst without dropping it")
 	effects.prepare(dead,mapping,ownership,assets,art)
 	check(effects.counts.debris==1 and effects._kill_births.get(99,[])==first and not first.is_empty(),"the returning wreck resumes the same burst")
-	for n in 30: effects.advance_dynamics(0.05)
+	for n in ceili(Effects.DEBRIS_LIFE/0.05)+2: effects.advance_dynamics(0.05)
 	effects.prepare(unseen,mapping,ownership,assets,art)
 	check(effects._kill_births.is_empty(),"a spent burst is dropped while undrawn")
 	# The original may leave a dying vehicle undrawn for a pass or two around

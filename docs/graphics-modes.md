@@ -85,8 +85,10 @@ effects and guided-missile motor glows do not acquire impact sparks. Effects
 vanish with their original source footprint, with no persistent debris or new
 collision.
 
-Kill debris (2 November 2026, Nell's agreement: "All of it please") throws
-nine tumbling fragments from a vehicle the original destroys on screen. The
+Kill debris (2 November 2026, Nell's agreement: "All of it please"; made
+bigger at Nell's request, "A bigger, meatier explosion please") sets off a
+blast and throws fourteen tumbling fragments from a vehicle the original
+destroys on screen. The
 trigger is the original's own swap. On a kill the vehicle keeps its pool slot
 and changes to its class's replacement (wreck) shape. Recorded campaign and
 bridge combat shows this for BRDM-2 141→142, M60 127→128, T-64 117→118 and
@@ -103,11 +105,13 @@ drawn twice, or across a pass the presentation cannot show (such as an
 unsupported palette), a rewound pass sequence, or a save, load or graphics
 switch. Buildings, aircraft and bridges are excluded.
 
-Fragments cover the wreck's own painted pixels and original impact sprites
-(shapes 168–185). If the wreck is drawn at least 6 source pixels across,
-they may also cross terrain and background the original painted before the
-wreck: open ground and sky behind it. Actors, trees, guided-missile flares
-and nearer terrain always cover them. A burst also needs a visible source:
+The burst covers the wreck's own painted pixels, original impact sprites
+(shapes 168–185), and terrain and background the original painted before
+the wreck: open ground and sky behind it. Actors, trees, guided-missile
+flares and nearer terrain always cover it, so a live vehicle beside or
+behind the kill is never hidden. Fragments cross that open ground only when
+the wreck is drawn at least 6 source pixels across; otherwise they stay on
+the wreck and impact sprites. A burst also needs a visible source:
 some pixel in the wreck's drawn rectangle must be painted by the wreck or an
 impact sprite. A wreck wholly hidden by a crest or actor throws nothing. The
 rectangle is probed on a grid, because a small wreck's centre is often a gap
@@ -115,24 +119,37 @@ or under the fireball. The fragments' flight comes from the
 wreck's pointer seed and the explicit dynamics clock, never from guest
 state. The fragments rise to between a third and four fifths of the burst
 radius (raised on 2 November at Nell's request), land on the wreck's drawn
-base, cool from embers to charcoal and are gone 1.1 seconds after the kill.
-The wreck itself also burns. Patchy flames on the wreck's own pixels only
-run white-yellow to orange to red embers and are out by about 0.9 s.
+base, cool from embers to charcoal and are gone 1.6 seconds after the kill.
+The blast is centred on the wreck. A white flash comes first, then a
+turbulent, billowing fireball that swells to about 0.55 of the burst radius
+in a quarter second. It cools from the rim to soot and rolls up into a dark
+smoke column, with a dust skirt pushed out along the ground. The burst
+radius is 1.4 times the wreck's drawn size, never below 10 source pixels, so
+a kill at 3 km still shows a blast about the size of the original's own
+impact sprite. The wreck itself also burns: patchy flames on the wreck's own
+pixels only run white-yellow to orange to red embers and are out by about
+0.9 s.
 
-The original's impact sprite does not always cover the wreck. In a traced
-M113 kill it covers only the wreck's left part, and the redrawn fireball
-fills only the lower middle of that footprint, so at range the fire read as
-beside the tank. The wreck fire puts it on the tank without moving or
-recolouring the original's impact sprite or its authored art.
+The original spawns its explosion exactly at the wreck's position. In the
+recorded close T-64 kill the explosion object and the wreck share world
+position [111205, 68515, 31], and the M60 kill is the same. The original's
+sprite is centred on the tank. The redrawn fireball (`effects-v2`)
+concentrates its flames in the bottom of the sprite's box, so on screen the
+fire sat below the wreck's base, in front of the tank. The kill blast now
+covers that moment, centred on the wreck. The impact sprite and its
+authored art are unchanged, because they also serve ordinary shell hits on
+the ground, where low flames are right.
 
 Nothing persists, collides
 or changes the original frame. Captures never run the clock, so nothing is
 drawn. The original pause, menus and lost focus freeze a burst mid-flight.
 Fast forward, reduced motion and `--no-tactical-dynamics` advance the guest
 without the clock, so they spend any burst instead of showing it frozen and
-replaying it late. This adds visible content the original does not have. The short life,
-the fade and the 6-pixel limit on crossing open ground keep it from reading
-as a distant target, but that has not been play-tested.
+replaying it late. This adds visible content the original does not have. The blast
+marks only a kill the original already marks with its own impact sprite.
+The short life, the fade and the 6-pixel limit on fragments crossing open
+ground keep stray specks from reading as a distant target, but that has not
+been play-tested.
 
 Menus, lost focus and the original pause freeze the explicit clocks;
 checkpoint timeline resets, station changes and graphics re-entry discard stale
@@ -152,21 +169,20 @@ case above queues none (`test_pc_tactical_effects.gd`). Fast forward,
 reduced motion and `--no-tactical-dynamics` spend a live burst through the
 real viewer gate, and the original pause holds it
 (`test_pc_tactical_dynamics.gd`). On native OpenGL the
-frame is exact before the clock runs and after the burst ends. Fragments are
-visible at 0.15–0.9 s and never change a pixel of an actor painted before or
-after the wreck, and a wholly hidden wreck throws nothing. A kill under
-6 pixels changes only its own drawn rectangle
-(`test_pc_effect_art.gd -- --tactical-particles`). A recorded original kill
-(campaign-road BRDM-2, passes 1384→1391, a 5×1-pixel wreck under an impact
-sprite) changes 18–48 screen pixels from 0.15 to 0.9 s, all owned by the
-wreck or the sprite, and none at 1.2 s. Of 15 distinct recorded kills, 3
-are drawn at 6 pixels or more and take the open form (T-64 31 px, M60 18 px,
-BRDM-2 17 px). Most are 3–5 px and stay confined. On those three real passes,
-fragments change 259–1778 screen pixels, every one on the wreck, an impact
-sprite, or terrain and background painted before the wreck, and none at
-1.2 s. Evidence:
+frame is exact before the clock runs and after the burst ends. The burst is
+visible at 0.15–0.9 s and never changes a pixel of an actor painted before
+or after the wreck, and a wholly hidden wreck throws nothing. A kill under
+6 pixels stays inside its 10-pixel minimum envelope
+(`test_pc_effect_art.gd -- --tactical-particles`). Through the real draw
+pass, a distant M113 kill (probe pass 124, a 4×1-pixel wreck) changes
+422–1979 screen pixels from 0.05 to 1.2 s, and the close T-64 kill
+6,995–35,054. Every pixel is on the wreck, an impact sprite, or terrain and
+background painted before the wreck, and none changes at 1.7 s. Of 15
+distinct recorded kills, 3 are drawn at 6 pixels or more, where fragments
+also cross open ground (T-64 31 px, M60 18 px, BRDM-2 17 px). Live Play
+recordings of a kill are in `play-record-05` to `-07`. Evidence:
 `artifacts/kill-debris-20261102/`. Not yet checked on actual Godot Web
-(waits for the Web rebuild) or seen in live Play.
+(waits for the Web rebuild).
 
 Graphics mode and **HUD Style** are independent. Choose Tactical in both menus
 for the complete Range-inspired scene and station-specific widescreen interfaces, or combine

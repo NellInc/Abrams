@@ -10,10 +10,14 @@ const MAX_PUFFS := 512
 const KILL_WRECKS := {115:116,117:118,119:120,121:122,123:124,125:126,127:128,129:130,
 	131:132,133:134,135:136,137:138,139:140,141:142,143:144,159:160}
 # Matches DEBRIS_LIFE in the shader.
-const DEBRIS_LIFE := 1.1
-# Kills drawn smaller than this (source pixels) keep debris on the wreck and on
-# impact sprites; larger kills may also throw it over earlier terrain and sky.
+const DEBRIS_LIFE := 1.6
+# Fragments from kills drawn smaller than this (source pixels) stay on the
+# wreck and impact sprites; larger kills may also throw them over earlier
+# terrain and sky. The blast itself may cover that ground at any size.
 const DEBRIS_OPEN_PIXELS := 6.0
+# A distant kill still gets a visible blast: the burst radius in source pixels
+# is never below this, however small the wreck is drawn.
+const BLAST_MIN_PIXELS := 10.0
 # How many original passes may separate the last intact drawing from the
 # wreck. SIM renders about 0.25 passes per guest frame (REA pilot stages), so
 # 8 is about half a second: a brief undrawn gap around the swap still counts,
@@ -245,12 +249,16 @@ func _debris(object: Dictionary, owner: int, seed: float, birth: float) -> void:
 	var centre:=hull.get_center()
 	var raw:=Modern.vec(Geometry.unproject(centre,depth,_frame))
 	var before:=puffs.size()
-	# Anchor -4 admits earlier terrain and sky as well; -3 keeps it on the wreck.
-	_puff(raw,size*1.4*depth/float(_frame.focal_pixels),1.0,4.0,seed,owner,centre,Rect2(),birth,-4.0 if size>=DEBRIS_OPEN_PIXELS else -3.0)
+	var radius:=maxf(size*1.4,BLAST_MIN_PIXELS)
+	# Anchor -4 lets fragments cross earlier terrain and sky; -3 keeps them on
+	# the wreck and impact sprites.
+	_puff(raw,radius*depth/float(_frame.focal_pixels),1.0,4.0,seed,owner,centre,Rect2(),birth,-4.0 if size>=DEBRIS_OPEN_PIXELS else -3.0)
 	if puffs.size()>before:
 		# Fragments land on the wreck's drawn base, in quad units. A side-on
 		# wreck is far wider than tall, so its width cannot set the ground.
-		puffs[-1].append(hull.size.y*0.5/(size*1.4))
+		puffs[-1].append(hull.size.y*0.5/radius)
+		# The wreck's share of the burst radius scales the visibility probe.
+		puffs[-1].append(size*1.4/radius)
 		counts.debris+=1
 
 # effect_mappings, when supplied, holds art.mapping(object,camera,palette) for
@@ -390,7 +398,8 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 			var raw: Array=Geometry.unproject(at,float(p[0]),_frame)
 			vertices.append(Vector3(raw[0],raw[2],-raw[1])/64.0)
 			# UV2.y: 1 confines to the restrict rectangle; debris carries 2 + ground.
-			uv.append((at-Vector2(p[1]))/float(p[2]));uv2.append(Vector2(float(i),2.0+float(p[11]) if p.size()>11 else 1.0 if p[8].has_area() else 0.0))
+			# UV2.x: index, plus half the wreck extent for a kill burst.
+			uv.append((at-Vector2(p[1]))/float(p[2]));uv2.append(Vector2(float(i)+(float(p[12])*0.5 if p.size()>12 else 0.0),2.0+float(p[11]) if p.size()>11 else 1.0 if p[8].has_area() else 0.0))
 	var arrays:=[];arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_TEX_UV]=uv;arrays[Mesh.ARRAY_TEX_UV2]=uv2
 	_mesh.clear_surfaces();_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays);node.mesh=_mesh

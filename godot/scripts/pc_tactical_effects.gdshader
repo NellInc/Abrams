@@ -13,6 +13,7 @@ uniform vec4 plume_projection=vec4(1.0,1.0,-0.5,0.5);
 varying vec4 emitter;
 varying vec4 anchor;
 varying float confined;
+varying float extent;
 varying vec3 plume_frame;
 #include "res://scripts/pc_tactical_effect_finish.gdshaderinc"
 float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
@@ -85,15 +86,15 @@ vec3 tactical_particle_volume(vec3 colour, vec2 q, float density, float kind, ve
     return clamp(colour,vec3(0.0),vec3(1.0));
 }
 
-// Kill debris: nine seeded fragments thrown up from the wreck in the quad's
-// screen-facing frame, falling to a local ground line and resting there until
-// they fade. Age comes only from the explicit dynamics clock.
-const float DEBRIS_LIFE=1.1;
+// Kill debris: fourteen seeded fragments thrown up from the wreck in the
+// quad's screen-facing frame, falling to a local ground line and resting
+// there until they fade. Age comes only from the explicit dynamics clock.
+const float DEBRIS_LIFE=1.6;
 vec4 kill_debris(vec2 q, float age, float seed, vec2 down, float pixel, float base) {
     vec2 right=vec2(down.y,-down.x);
     vec3 premultiplied=vec3(0.0);
     float coverage=0.0;
-    for (int k=0;k<9;k++) {
+    for (int k=0;k<14;k++) {
         float n=float(k);
         float a=hash(vec2(seed*17.0+n,3.1));
         float b=hash(vec2(seed*29.0+n,7.7));
@@ -145,9 +146,67 @@ vec4 wreck_fire(vec2 q, float age, float seed, vec2 down, float base) {
     return vec4(colour,alpha);
 }
 
+// Over-compositing for the blast layers (non-premultiplied in and out).
+vec4 over(vec4 top, vec4 under) {
+    float a=top.a+under.a*(1.0-top.a);
+    return vec4((top.rgb*top.a+under.rgb*under.a*(1.0-top.a))/max(a,0.0001),a);
+}
+
+// Kill blast, centred on the wreck: a white flash, a turbulent fireball that
+// swells to about 0.55 quad units and cools from its rim inward, a dark smoke
+// column rolling up out of it, and a dust skirt pushed out along the ground.
+// Everything stays inside the quad, softened before its edge.
+vec4 kill_blast(vec2 q, float age, float seed, vec2 down, float base) {
+    vec2 right=vec2(down.y,-down.x);
+    vec2 p=vec2(dot(q,right),-dot(q,down)); // +y up, origin at the wreck centre
+    float frame_edge=1.0-smoothstep(0.82,0.98,max(abs(p.x),abs(p.y)));
+    // Dust skirt along the ground line.
+    float spread=0.95*(1.0-exp(-age*4.5));
+    float skirt_n=noise(vec2(p.x*7.0+seed*5.0,age*2.0));
+    vec2 sd=vec2(p.x/max(spread,0.01),(p.y+base-0.03)/(0.10+0.08*age));
+    float dust_d=length(sd)+(skirt_n-0.5)*0.4;
+    float dust=(1.0-smoothstep(0.55,1.0,dust_d))*(1.0-smoothstep(0.35,1.35,age))*0.75;
+    vec4 layer=vec4(mix(vec3(0.42,0.37,0.29),vec3(0.55,0.50,0.40),skirt_n),dust);
+    // Smoke column rolling up out of the fireball.
+    float s=smoothstep(0.12,1.3,age);
+    vec2 sc=vec2(0.0,0.10+0.42*s);
+    float sr=0.22+0.20*s;
+    float sn=noise(p*5.5+vec2(seed*9.0,-age*1.6));
+    float sd2=length((p-sc)*vec2(1.0,0.85))/sr+(sn-0.5)*0.45;
+    float smoke=(1.0-smoothstep(0.6,1.0,sd2))*smoothstep(0.05,0.30,age)*(1.0-smoothstep(1.05,DEBRIS_LIFE,age))*0.9;
+    layer=over(vec4(mix(vec3(0.10,0.095,0.09),vec3(0.27,0.25,0.23),sn*0.8+p.y*0.3),smoke),layer);
+    // Fireball: fast swell, slow rise, turbulent rim, hot core cooling outward.
+    float r=0.55*(1.0-exp(-age*10.0))+0.04;
+    vec2 fc=vec2(0.0,0.02+0.16*smoothstep(0.1,0.8,age));
+    float fn=noise(p*7.0+vec2(seed*11.0,-age*3.0));
+    float fn2=noise(p*15.0+vec2(-seed*3.0,-age*6.0));
+    float fd=length(p-fc)/r+(fn-0.5)*0.42+(fn2-0.5)*0.16;
+    float cool=smoothstep(0.08,0.75,age);
+    float ball=(1.0-smoothstep(0.78,1.0,fd))*(1.0-smoothstep(0.55,0.95,age));
+    float heat=clamp((1.0-fd)*1.6,0.0,1.0)*(1.0-cool)+0.0;
+    vec3 fire=mix(vec3(0.55,0.08,0.02),vec3(1.0,0.48,0.08),smoothstep(0.05,0.45,heat+0.25*(1.0-cool)));
+    fire=mix(fire,vec3(1.0,0.90,0.55),smoothstep(0.55,0.9,heat));
+    // Billows: lit crowns and sooty folds give the ball volume, lit from above.
+    float fold=noise(p*11.0+vec2(seed*5.0,-age*4.5));
+    fire*=0.62+0.55*fold+0.18*clamp((p.y-fc.y)/r,-1.0,1.0);
+    // Burnt rim darkens to soot as the ball cools.
+    fire=mix(fire,vec3(0.13,0.11,0.10),smoothstep(0.35,0.95,cool)*smoothstep(0.35,0.9,fd));
+    fire=clamp(fire,vec3(0.0),vec3(1.0));
+    layer=over(vec4(fire,ball),layer);
+    // Flash: white-hot core in the first frames.
+    float flash=(1.0-smoothstep(0.0,0.09,age))*(1.0-smoothstep(0.0,0.30,length(p-vec2(0.0,0.03))));
+    layer=over(vec4(vec3(1.0,0.97,0.86),flash),layer);
+    layer.a*=frame_edge;
+    return layer;
+}
+
 void vertex() {
-    emitter=texture(roots,vec2((UV2.x*2.0+0.5)/root_width,0.5));
-    anchor=texture(roots,vec2((UV2.x*2.0+1.5)/root_width,0.5));
+    // UV2.x: puff index; its fraction carries a kill burst's wreck extent
+    // (wreck radius over burst radius, halved), zero for every other puff.
+    float index=floor(UV2.x);
+    emitter=texture(roots,vec2((index*2.0+0.5)/root_width,0.5));
+    anchor=texture(roots,vec2((index*2.0+1.5)/root_width,0.5));
+    extent=fract(UV2.x)*2.0;
     confined=UV2.y;
     plume_frame=plume_frame_at(anchor.xy);
 }
@@ -168,17 +227,18 @@ void fragment() {
     if (!debris && emitter.x>0.0 && root!=emitter.x) discard;
     vec4 owner_class=texture(allowed_terrain,vec2((id+0.5)/owner_count,0.5));
     if (debris) {
-        // Kill debris covers the wreck's own pixels and original impact
-        // sprites. The open form (anchor -4) adds terrain and background the
-        // original painted before the wreck. Actors, trees and nearer terrain
-        // always stay in front. Nothing draws without the explicit clock.
-        bool open=anchor.w<-3.5 && id<emitter.x && owner_class.r>0.5;
-        if (id!=emitter.x && owner_class.g<0.5 && !open) discard;
+        // A kill burst covers the wreck's own pixels, original impact sprites,
+        // and terrain and background the original painted before the wreck.
+        // Actors, trees and nearer terrain always stay in front. Fragments
+        // cross that open ground only in the open form (anchor -4, wrecks of
+        // 6 px or more). Nothing draws without the explicit clock.
+        bool behind=id<emitter.x && owner_class.r>0.5;
+        if (id!=emitter.x && owner_class.g<0.5 && !behind) discard;
         if (dynamics_time<0.0 || emitter.w<=0.0 || dynamics_time-(emitter.w-1.0)>DEBRIS_LIFE) discard;
         // The burst needs a visible source: some pixel of the wreck's drawn
-        // rectangle (half-extent 0.357 quad units) painted by the wreck or an
-        // impact sprite. A small wreck's centre may be a gap or covered, so
-        // probe a grid. A wreck wholly hidden by a crest throws nothing.
+        // rectangle (half-extent 0.357*extent quad units) painted by the wreck
+        // or an impact sprite. A small wreck's centre may be a gap or covered,
+        // so probe a grid. A wreck wholly hidden by a crest throws nothing.
         // Centre outward (0,-1,+1,-2,...), stopping at the first hit, so a
         // visible wreck usually costs one or two samples per fragment.
         vec2 uv_per_q=1.0/max(pixel*VIEWPORT_SIZE,vec2(0.0001));
@@ -187,7 +247,7 @@ void fragment() {
             int ix=i%7;int iy=i/7;
             float px=float((ix+1)/2)*(ix%2==1 ? -1.0 : 1.0);
             float py=float((iy+1)/2)*(iy%2==1 ? -1.0 : 1.0);
-            float probe=owner_at(anchor.xy+vec2(px*0.11,py*0.07)*uv_per_q);
+            float probe=owner_at(anchor.xy+vec2(px*0.11,py*0.07)*extent*uv_per_q);
             if (probe<0.0 || probe>=owner_count) continue;
             seen=probe==emitter.x || texture(allowed_terrain,vec2((probe+0.5)/owner_count,0.5)).g>0.5;
         }
@@ -252,12 +312,12 @@ void fragment() {
     if (debris) {
         float age=max(dynamics_time-(emitter.w-1.0),0.0);
         vec4 chunk=kill_debris(q,age,emitter.z,-plume_frame.xy,pixel,confined-2.0);
-        // Fire only on the wreck's own pixels: the impact sprite keeps its
-        // authored fireball, and the fire never spreads onto open ground.
+        if (id!=emitter.x && owner_class.g<0.5 && anchor.w>-3.5) chunk.a=0.0;
+        // Wreck fire only on the wreck's own pixels.
         vec4 fire=id==emitter.x ? wreck_fire(q,age,emitter.z,-plume_frame.xy,confined-2.0) : vec4(0.0);
-        float over=chunk.a+fire.a*(1.0-chunk.a);
-        colour=(chunk.rgb*chunk.a+fire.rgb*fire.a*(1.0-chunk.a))/max(over,0.0001);
-        alpha=over*anchor.z;
+        vec4 burst=over(chunk,over(fire,kill_blast(q,age,emitter.z,-plume_frame.xy,confined-2.0)));
+        colour=burst.rgb;
+        alpha=burst.a*anchor.z;
     }
     ALBEDO=OUTPUT_IS_SRGB ? colour : pow(colour,vec3(2.2));
     ALPHA=alpha;
