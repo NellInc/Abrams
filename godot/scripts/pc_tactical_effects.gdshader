@@ -99,12 +99,13 @@ vec4 kill_debris(vec2 q, float age, float seed, vec2 down, float pixel, float ba
         float b=hash(vec2(seed*29.0+n,7.7));
         float c=hash(vec2(seed*41.0+n,11.3));
         float d=hash(vec2(seed*53.0+n,19.9));
-        float lift=0.9+b*0.8;
+        // Apex lift^2/12 = 0.33..0.80 quad units above the wreck centre.
+        float lift=2.0+b*1.1;
         float ground=base+d*0.04;
-        // Gravity 3.2 quad units/s^2: landing solves -lift*t+1.6*t^2=ground.
-        float landing=(lift+sqrt(lift*lift+6.4*ground))/3.2;
+        // Gravity 6 quad units/s^2: landing solves -lift*t+3*t^2=ground.
+        float landing=(lift+sqrt(lift*lift+12.0*ground))/6.0;
         float t=min(age,landing);
-        vec2 at=right*((c-0.5)*0.24+(a-0.5)*1.1*t)+down*(-lift*t+1.6*t*t);
+        vec2 at=right*((c-0.5)*0.24+(a-0.5)*1.1*t)+down*(-lift*t+3.0*t*t);
         float angle=a*6.2832+(b-0.5)*16.0*t;
         vec2 local=mat2(vec2(cos(angle),-sin(angle)),vec2(sin(angle),cos(angle)))*(q-at);
         vec2 outside=abs(local)-vec2(0.030+0.040*c,0.018+0.026*d);
@@ -122,6 +123,26 @@ vec4 kill_debris(vec2 q, float age, float seed, vec2 down, float pixel, float ba
     }
     float fade=1.0-smoothstep(DEBRIS_LIFE-0.4,DEBRIS_LIFE,age);
     return vec4(premultiplied/max(coverage,0.0001),coverage*fade);
+}
+
+// Wreck fire: patchy flames licking up the wreck, hot at the kill and
+// cooling to smoke by about 0.9 s. The caller admits it only on the wreck's
+// own pixels, so it burns on the tank and nowhere else.
+vec4 wreck_fire(vec2 q, float age, float seed, vec2 down, float base) {
+    vec2 right=vec2(down.y,-down.x);
+    float x=dot(q,right);
+    float rise=base-dot(q,down); // 0 at the wreck's base, positive upward
+    if (rise<-0.05) return vec4(0.0);
+    float flicker=noise(vec2(x*22.0+seed*13.0,rise*14.0-age*16.0));
+    float tongue=noise(vec2(x*8.0-seed*7.0,rise*5.0-age*6.0));
+    float density=smoothstep(0.18,0.62,tongue*0.6+flicker*0.55-rise*0.9);
+    float heat=density*(1.0-smoothstep(0.25,0.75,age))*(0.75+0.6*flicker);
+    vec3 flame=mix(vec3(0.70,0.10,0.03),vec3(1.0,0.52,0.10),smoothstep(0.15,0.55,heat));
+    flame=mix(flame,vec3(1.0,0.93,0.62),smoothstep(0.65,0.95,heat));
+    vec3 smoke=mix(vec3(0.16,0.15,0.14),vec3(0.30,0.29,0.27),flicker);
+    vec3 colour=mix(smoke,flame,smoothstep(0.05,0.30,heat));
+    float alpha=density*(1.0-smoothstep(0.6,0.95,age));
+    return vec4(colour,alpha);
 }
 
 void vertex() {
@@ -229,9 +250,14 @@ void fragment() {
     }
     float alpha=density*anchor.z;
     if (debris) {
-        vec4 chunk=kill_debris(q,max(dynamics_time-(emitter.w-1.0),0.0),emitter.z,-plume_frame.xy,pixel,confined-2.0);
-        colour=chunk.rgb;
-        alpha=chunk.a*anchor.z;
+        float age=max(dynamics_time-(emitter.w-1.0),0.0);
+        vec4 chunk=kill_debris(q,age,emitter.z,-plume_frame.xy,pixel,confined-2.0);
+        // Fire only on the wreck's own pixels: the impact sprite keeps its
+        // authored fireball, and the fire never spreads onto open ground.
+        vec4 fire=id==emitter.x ? wreck_fire(q,age,emitter.z,-plume_frame.xy,confined-2.0) : vec4(0.0);
+        float over=chunk.a+fire.a*(1.0-chunk.a);
+        colour=(chunk.rgb*chunk.a+fire.rgb*fire.a*(1.0-chunk.a))/max(over,0.0001);
+        alpha=over*anchor.z;
     }
     ALBEDO=OUTPUT_IS_SRGB ? colour : pow(colour,vec3(2.2));
     ALPHA=alpha;

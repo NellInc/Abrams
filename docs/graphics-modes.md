@@ -113,8 +113,19 @@ impact sprite. A wreck wholly hidden by a crest or actor throws nothing. The
 rectangle is probed on a grid, because a small wreck's centre is often a gap
 or under the fireball. The fragments' flight comes from the
 wreck's pointer seed and the explicit dynamics clock, never from guest
-state. The fragments rise, land on a local ground line, cool from embers to
-charcoal and are gone 1.1 seconds after the kill. Nothing persists, collides
+state. The fragments rise to between a third and four fifths of the burst
+radius (raised on 2 November at Nell's request), land on the wreck's drawn
+base, cool from embers to charcoal and are gone 1.1 seconds after the kill.
+The wreck itself also burns. Patchy flames on the wreck's own pixels only
+run white-yellow to orange to red embers and are out by about 0.9 s.
+
+The original's impact sprite does not always cover the wreck. In a traced
+M113 kill it covers only the wreck's left part, and the redrawn fireball
+fills only the lower middle of that footprint, so at range the fire read as
+beside the tank. The wreck fire puts it on the tank without moving or
+recolouring the original's impact sprite or its authored art.
+
+Nothing persists, collides
 or changes the original frame. Captures never run the clock, so nothing is
 drawn. The original pause, menus and lost focus freeze a burst mid-flight.
 Fast forward, reduced motion and `--no-tactical-dynamics` advance the guest

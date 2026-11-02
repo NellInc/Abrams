@@ -9462,6 +9462,31 @@ to the run's own directory).
   schedule missed. The final recorder ignores the physical keyboard, never
   takes key focus, and hands focus back by bundle ID.
 
+Nell on the recording: "should ideally blow a bit higher, the explosion fire
+is not on the tank either."
+
+* Higher: fragment lift 0.9–1.7 → 2.0–3.1 quad units/s with gravity 3.2 → 6.
+  Apex 0.13–0.45 → 0.33–0.80 of the burst radius; flight still ends inside
+  the 1.1 s life.
+* Fire placement is original. In the headless probe's M113 kill (pass 124)
+  the impact sprite's opaque box is x 151–162, y 57–65, and the wreck is
+  x 157–161, y 61.7–62.3. The owner map shows the wreck still painted at the
+  sprite's right edge in the original, and its framebuffer agrees. On
+  recorded close kills (T-64 31 px, M60 18 px) the sprite box spans the
+  wreck. The redrawn fireball (`effects-v2`) fills only the lower middle of
+  the sprite's opaque footprint, so the visible fire sat beside the wreck.
+  The sprite's position and art are unchanged.
+* Change: the burst adds patchy wreck fire on the wreck's own pixels only.
+  It runs white-yellow, orange, then red embers, and is out by about 0.9 s.
+  A first version also admitted impact-sprite pixels and flood-filled the
+  sprite's blocky footprint over the authored fireball on the close T-64.
+  That was rejected on pixels and restricted to the wreck.
+* Evidence: `fire-check-m113b`, `fire-check-m60`, `fire-check-t64`. Every
+  changed pixel is wreck-, sprite- or earlier-terrain-owned, and none
+  changes at 1.2 s. Native study 229 (`native-08`), effects 117, viewer
+  dynamics 178, effect art 83,755, all 0 errors. A new live Play recording of
+  the same route is in `play-record-06`.
+
 Not verified: an open-form kill (6 px or more) in live Play, actual Godot Web
 (blocked on the Web rebuild), and whether the open form ever reads as a
 target in play.
