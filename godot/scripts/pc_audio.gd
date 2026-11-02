@@ -645,8 +645,9 @@ func apply_audio(packet: Dictionary) -> bool:
 	# Other-target launches have no original sound request. Their separate once-
 	# only tokens cannot renumber or replay the original event sequence.
 	var launches: Variant=packet.get("guided_launches",[])
-	if launches is Array and launches.size()<=64:
-		for launch: Variant in launches:
+	if launches is Array:
+		# Bounded, but never dropped whole: the first 64 still play.
+		for launch: Variant in launches.slice(0,64):
 			var rocket: AudioStreamWAV=world_audio.rocket_variant(launch,last_frame,epoch,false,packet.active and packet.enabled and not transport_muted)
 			if rocket!=null: play("rocketlaunch",rocket)
 	last_event_id = next_id

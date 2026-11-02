@@ -142,11 +142,15 @@ func _input(event: InputEvent) -> void:
 
 func _fit_to_host() -> void:
 	if tactical:_fit_tactical()
-	elif _restore_on_resize and visible:
-		# Web changes its canvas aspect after the HUD selection is delivered.
-		# Follow that transition only until this reader is closed or reopened.
-		_fit_restored()
-		position=(_extent(get_parent() as Window)-size)/2
+	elif visible and get_parent() is Window:
+		# Web changes its canvas aspect after the HUD selection is delivered:
+		# follow that transition until this reader is closed or reopened.
+		# Otherwise keep where the player put it, unless the smaller window
+		# would leave part of the reader (and its close controls) outside.
+		var extent := _extent(get_parent() as Window)
+		if _restore_on_resize or position.x<0 or position.y<0 or position.x+size.x>extent.x or position.y+size.y>extent.y:
+			_fit_restored()
+			position=(extent-size)/2
 
 # The scaled setup window (no stretch, content scale above 1) lays embedded
 # windows out in logical units; the game window keeps its pixel extent.

@@ -101,6 +101,13 @@ func run()->void:
  audio.set_transport_muted(false);restore_proof()
  check(audio.world_audio.rocket_variant(context(40,15),15,1,true)==null,"transport unmute never revives old rocket")
  check(audio.apply_audio(packet(16,5,[event(5,16,context(41,16))],[],false)) and audio.effects.all(func(p):return not p.playing),"original source mute stops and consumes")
+ # A packet over the 64-launch bound still voices its first launches; it is
+ # never silently dropped whole.
+ restore_proof()
+ var crowd:Array=[]
+ for crowd_token:int in range(50,115):crowd.append(context(crowd_token,17,false))
+ var before_crowd:int=audio.cursor
+ check(audio.apply_audio(packet(17,5,[],crowd)) and audio.cursor!=before_crowd and audio.effects[audio.cursor-1].stream==audio.world_audio.rocket_stream,"65 launches in one packet still voice the first")
  audio.reset_timeline();check(audio.world_audio._rocket_proof.is_empty() and audio.world_audio._rocket_seen.is_empty(),"restore resets proof/token history")
  check(await audio.drain_for_shutdown(),"all existing players drain")
  check(audio.world_audio.rocket_stream==null,"private attack reference released")

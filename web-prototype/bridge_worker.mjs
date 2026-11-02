@@ -419,7 +419,8 @@ async function state(message) {
       !Number.isInteger(message.slot) || message.slot < 0 || message.slot > 5 ||
       (message.op !== 'load_state' && message.slot === 0))
     throw new Error('Invalid local state request');
-  if (storageUnavailable) throw new Error(`Checkpoints are unavailable in this session: ${storageUnavailable}`);
+  // Storage is read once at boot, so only a page reload can retry it.
+  if (storageUnavailable) throw new Error(`Checkpoints are unavailable in this session: ${storageUnavailable} Reload the page to use checkpoints.`);
   if (message.op === 'save_state') {
     const saved = checkpointRow(await core.call('capture', {frames}));
     // One transaction: a failed save (quota) leaves the slot and its previous
@@ -437,17 +438,27 @@ async function state(message) {
   const previousLoad = message.op === 'load_previous';
   const saved = previousLoad ? await currentRow(previousKey(message.slot), previousSlots.get(message.slot))
     : message.slot === 0 ? undo : await currentRow(message.slot, slots.get(message.slot));
-  if (saved === null) throw new Error(`Local ${previousLoad ? 'previous ' : ''}slot ${message.slot} was saved by a different version`);
+  if (saved === null) {
+    // The menu stops offering a row this version can never load.
+    if (previousLoad) previousSlots.delete(message.slot); else slots.delete(message.slot);
+    throw new Error(`Local ${previousLoad ? 'previous ' : ''}slot ${message.slot} was saved by a different version`);
+  }
   if (!saved) throw new Error(previousLoad ? `Local slot ${message.slot} has no previous save`
     : `Local slot ${message.slot} is empty`);
   if (message.slot && previousLoad) previousSlots.set(message.slot, saved);
   else if (message.slot) { slots.set(message.slot, saved); storedSlots.set(message.slot, saved); }
+  if (!(saved.rgb instanceof Uint8Array)) throw new Error('Invalid local checkpoint presentation');
   const restoredSample = structuredClone(saved.sample);
   const restoredRgb = saved.rgb.slice();
-  if (!(restoredRgb instanceof Uint8Array) || restoredRgb.byteLength !== 320 * 200 * 3 ||
+  if (restoredRgb.byteLength !== 320 * 200 * 3 ||
       !restoredSample || !Number.isSafeInteger(saved.sequence) || saved.sequence < 0)
     throw new Error('Invalid local checkpoint presentation');
-  const previous = checkpointRow(await core.call('capture', {frames}));
+  // The recovery capture of the live game must not block the way back to a
+  // good save: without it the load proceeds and keeps the old recovery slot.
+  let previous;
+  let undoProblem = '';
+  try { previous = checkpointRow(await core.call('capture', {frames})); }
+  catch (error) { undoProblem = String(error?.message || error); }
   // Prepare every fallible restore component before persisting undo or
   // swapping. A failure terminates the prepared core and keeps the session.
   let fresh;
@@ -467,15 +478,17 @@ async function state(message) {
       sequence: saved.sequence, fps: FPS,
       restored: {type: 'sample', id: message.id, sequence: saved.sequence, fps: FPS,
         ...restoredSample, timeline_reset: true, held_frame: true},
-      success: true, slots: slotRows(previous), message: `Loaded ${previousLoad ? 'previous ' : ''}slot ${message.slot}`},
+      success: true, slots: slotRows(previous),
+      message: `Loaded ${previousLoad ? 'previous ' : ''}slot ${message.slot}` +
+        (previous ? '' : `; recovery slot not updated (${undoProblem})`)},
       rgb: responseRgb};
-    await storedSlot('put', 0, previous);
+    if (previous) await storedSlot('put', 0, previous);
   } catch (error) {
     freshObserver?.destroy();
     fresh?.terminate();
     throw error;
   }
-  storedSlots.set(0, previous);
+  if (previous) storedSlots.set(0, previous);
   const retiredCore = core;
   const retiredObserver = observer;
   core = fresh;
@@ -484,18 +497,20 @@ async function state(message) {
   held = new Set();
   frames = restored.frames;
   sequence = saved.sequence;
-  undo = previous;
+  if (previous) undo = previous;
   lastSample = JSON.stringify(restoredSample);
   lastProgram = restoredSample.program?.name ?? null;
   lastRgb = restoredRgb;
   framesSinceRestore = 0;
-  retiredObserver.destroy();
-  retiredCore.terminate();
   try { postMessage(response, [responseRgb.buffer]); }
   catch (cause) {
     const error = new Error('Checkpoint loaded, but the bridge response could not be delivered', {cause});
     error.committedTransportFailure = true;
     throw error;
+  } finally {
+    // The load is committed: retiring the old core can never turn it into a failure.
+    try { retiredObserver.destroy(); } catch {}
+    try { retiredCore.terminate(); } catch {}
   }
 }
 

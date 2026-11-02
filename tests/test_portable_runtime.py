@@ -161,6 +161,17 @@ class PortableContracts(unittest.TestCase):
             with patch('tools.standalone.entry.sys.executable',str(executable)):
                 self.assertEqual(bundle_path(),bundle)
 
+    def test_portable_folder_below_an_app_named_folder_finds_its_own_manifest(self):
+        from tools.standalone.entry import bundle_path
+        with tempfile.TemporaryDirectory() as temporary:
+            bundle=Path(temporary).resolve()/'Downloads.app'/'Abrams portable'
+            executable=bundle/'runtime/AbramsRuntime/AbramsRuntime'
+            executable.parent.mkdir(parents=True)
+            executable.write_text('synthetic runtime')
+            (bundle/'RUNTIME.json').write_text('{}')
+            with patch('tools.standalone.entry.sys.executable',str(executable)):
+                self.assertEqual(bundle_path(),bundle)
+
     def test_platform_default_homes_are_outside_install(self):
         with tempfile.TemporaryDirectory() as temporary:
             bundle=Path(temporary)/'installation/Abrams'

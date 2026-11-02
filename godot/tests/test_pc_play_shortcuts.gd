@@ -119,6 +119,9 @@ func run() -> void:
 			var mode_count:=modes.size()
 			check(menu.handle_shortcut(lettered) and modes.size()==mode_count+1,"chord carrying its own letter still dispatches")
 		check(menu.game_keys(["s"]).is_empty(),"trailing letter suppressed after modifier releases")
+		# The intro's Escape probe is read-only: S stays quarantined while held.
+		check(not menu.key_passes("s") and menu.key_passes("escape")==(menu.game_keys(["s","escape"])==["escape"]),"Escape probe agrees with the gate")
+		check(menu.game_keys(["s"]).is_empty(),"Escape probe keeps the held S quarantined")
 		menu.game_keys([])
 		check(menu.game_keys(["s","shift","3"])==["s","shift","3"],"fresh original controls return after release")
 		menu.session_popup.about_to_popup.emit()

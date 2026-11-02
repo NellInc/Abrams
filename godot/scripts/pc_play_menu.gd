@@ -397,6 +397,11 @@ func game_keys(held: Array) -> Array:
 	shortcut_keys=shortcut_keys.filter(func(name):return name in held)
 	return super.game_keys(held).filter(func(name):return name!="tab" and name not in shortcut_keys)
 
+func key_passes(name: String) -> bool:
+	var reader: Window = get_tree().root.get_node_or_null("PlayerReference") as Window if is_inside_tree() else null
+	if reader!=null and reader.visible: return false
+	return name!="tab" and name not in shortcut_keys and super.key_passes(name)
+
 func _submenu(parent: PopupMenu, title: String) -> PopupMenu:
 	var menu := PopupMenu.new()
 	menu.name=title

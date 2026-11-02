@@ -6,9 +6,11 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -193,6 +195,19 @@ class StandaloneRuntimeTests(unittest.TestCase):
         self.write_manifest()
         patch('tools.inspect_scenarios.decode_resource', side_effect=lambda data: data[::-1]).start()
         return pc_bytes, genesis_bytes
+
+    def test_abandoned_install_staging_is_removed_on_the_next_launch(self):
+        self.imported()
+        install = runtime.prepare_install(self.bundle, self.home)
+        versions = install.parent
+        old, recent = versions / '.install-old', versions / '.install-recent'
+        for path in (old, recent): (path / 'godot').mkdir(parents=True); (path / 'godot/x').write_text('copy')
+        aged = time.time() - runtime.STALE_STAGING_SECONDS - 60
+        os.utime(old, (aged, aged))
+        runtime.prepare_install(self.bundle, self.home)
+        self.assertFalse(old.exists())
+        self.assertTrue(recent.exists())  # possibly another launch's live copy
+        self.assertTrue(install.exists())  # an accepted version never matches
 
     def test_genesis_import_derives_pinned_data_and_receipt_lists_real_files(self):
         pc_bytes, genesis_bytes = self.derived_manifest()

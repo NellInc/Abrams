@@ -96,6 +96,18 @@ func run() -> void:
 	check(not reader.theme.has_color("caret_color","LineEdit") and not reader.theme.has_stylebox("scroll","VScrollBar") and reader.theme.get_stylebox("panel","PanelContainer").bg_color==restored_theme.get_stylebox("panel","PanelContainer").bg_color,"Modernized reader clears every Tactical-only theme override")
 	reader.close_reader()
 	check(not reader._restore_on_resize,"closing the reader clears transition-only resize handling")
+	# A Restored reader left partly outside after the window shrinks comes back
+	# inside; one that still fits keeps the player's placement.
+	reader.open_reader("Controls")
+	await process_frame
+	var host_extent: Vector2i=root.size
+	reader.position=host_extent-reader.size/2
+	root.size_changed.emit()
+	check(reader.position.x>=0 and reader.position.y>=0 and reader.position.x+reader.size.x<=host_extent.x and reader.position.y+reader.size.y<=host_extent.y,"Restored reader refits inside a smaller window: "+str(Rect2i(reader.position,reader.size)))
+	var placed: Vector2i=Vector2i(4,4);reader.position=placed
+	root.size_changed.emit()
+	check(reader.position==placed,"a reader that still fits keeps the player's placement")
+	reader.close_reader()
 	menu.window_focused=true
 	check(menu.game_keys(["space"]).is_empty(),"reader close quarantines the held trigger")
 	menu.game_keys([])

@@ -614,6 +614,24 @@ def sync_derived(resources, home, manifest, target):
         write_bytes(destination, source.read_bytes())
 
 
+STALE_STAGING_SECONDS = 6 * 3600
+
+
+def remove_stale_staging(versions):
+    """Remove install copies a killed or powered-off run abandoned.
+
+    Only unfinished `.install-*` directories untouched for hours: a live
+    install's staging is minutes old, and accepted versions never match.
+    """
+    cutoff = time.time() - STALE_STAGING_SECONDS
+    for path in versions.glob('.install-*'):
+        try:
+            if is_link(path) or not path.is_dir() or path.stat().st_mtime > cutoff: continue
+        except OSError:
+            continue
+        shutil.rmtree(path, ignore_errors=True)
+
+
 def prepare_install(bundle, home):
     resources, manifest = app_resources(bundle)
     payload_names(manifest)
@@ -635,6 +653,7 @@ def prepare_install(bundle, home):
     if fresh: validate_content(resources, content, records)
     home.mkdir(parents=True, exist_ok=True)
     if is_link(target): raise ValueError('Versioned installation cannot be a symlink or junction')
+    if target.parent.is_dir() and not is_link(target.parent): remove_stale_staging(target.parent)
     if not target.exists():
         if shutil.disk_usage(home).free < MIN_FREE: raise ValueError('At least 1 GiB of free disk space is required')
         target.parent.mkdir(parents=True, exist_ok=True)

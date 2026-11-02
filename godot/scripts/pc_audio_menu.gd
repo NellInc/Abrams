@@ -90,6 +90,14 @@ func game_keys(held: Array) -> Array:
 		release_keys=false
 	return held.filter(func(name): return not gated_keys.has(name))
 
+## Whether a press of `name` would reach the game now, changing no gate. A
+## probe must not trim the quarantine of keys it did not list.
+func key_passes(name: String) -> bool:
+	if not window_focused or not open_menus.is_empty(): return false
+	if focus_release_keys and not preload("res://scripts/pc_keyboard.gd").focus_rearmed(get_window()): return false
+	if release_keys: return false
+	return not gated_keys.has(name)
+
 func load_settings() -> bool:
 	settings=DEFAULTS.duplicate()
 	save_error=""

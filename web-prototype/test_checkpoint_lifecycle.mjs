@@ -456,6 +456,41 @@ test("another tab's newer save decides what a save keeps and what a load restore
   assert.match(replies.at(-1).packet.message, /different version/);
 });
 
+test('a slot another version overwrote stops being offered as loadable', async () => {
+  const {ctx, storage, replies, saved} = restoreContext();
+  storage.rows.set(1, {...saved, buildId: 'b'.repeat(64)});
+  await ctx.self.onmessage({data: {op: 'load_state', id: 1, slot: 1}});
+  assert.equal(replies.at(-1).packet.success, false);
+  assert.match(replies.at(-1).packet.message, /different version/);
+  assert.equal(replies.at(-1).packet.slots[1].valid, false);
+});
+
+test('a failed recovery capture still loads the slot and keeps the old recovery row', async () => {
+  const {ctx, storage, seeded, replies} = restoreContext();
+  const before = ctx.self.inspect();
+  const post = seeded.postMessage.bind(seeded);
+  seeded.postMessage = message => {
+    if (message.op !== 'capture') return post(message);
+    seeded.ops.push(message);
+    queueMicrotask(() => seeded.onmessage({data: {id: message.id, ok: false, message: 'Unable to allocate checkpoint memory'}}));
+  };
+  await ctx.self.onmessage({data: {op: 'load_state', id: 1, slot: 1}});
+  const result = replies.find(message => message.packet?.type === 'state_result').packet;
+  assert.equal(result.success, true, result.message);
+  assert.match(result.message, /recovery slot not updated \(Unable to allocate checkpoint memory\)/);
+  assert.equal(storage.writes.length, 0, 'recovery slot left as it was');
+  assert.equal(ctx.self.inspect().undo, before.undo);
+  assert.equal(seeded.terminated, 1, 'the old core is retired');
+});
+
+test('a checkpoint row without its frame image is refused with a clear message', async () => {
+  const {ctx, replies, saved} = restoreContext();
+  delete saved.rgb;
+  await ctx.self.onmessage({data: {op: 'load_state', id: 1, slot: 1}});
+  assert.equal(replies.at(-1).packet.success, false);
+  assert.equal(replies.at(-1).packet.message, 'Invalid local checkpoint presentation');
+});
+
 test('invalid keys and overlapping requests are rejected without touching the core', async () => {
   const {ctx, seeded, replies} = restoreContext();
   await ctx.self.onmessage({data: {op: 'step', id: 1, frames: 1, keys: ['not-a-key']}});

@@ -774,7 +774,9 @@ func _intro_input(event: InputEvent) -> void:
 	var code: int=event.keycode if event.keycode!=0 else event.physical_keycode
 	if code!=KEY_ESCAPE or event.meta_pressed or event.ctrl_pressed or event.alt_pressed: return
 	# Use the same menu, reference-reader and focus quarantine as ordinary keys.
-	if audio_menu and audio_menu.game_keys(["escape"])!=["escape"]: return
+	# A read-only query: probing with Escape alone must not release the gates
+	# of other keys still held (game_keys trims gates to the list it is given).
+	if audio_menu and not audio_menu.key_passes("escape"): return
 	if intro_skip_step<0: intro_skip_step=0
 
 func _observe_intro(image: Image, program: Dictionary, presentation: Dictionary) -> void:
