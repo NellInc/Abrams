@@ -91,7 +91,8 @@ origin-local IndexedDB. Reloading the page requires choosing the original PC
 folder again. A checkpoint is accepted only with its exact WebAssembly build
 identity; a row another version wrote stops being offered. If the recovery
 capture of the live game fails, a load still proceeds and says the recovery slot
-was not updated. A static host without isolation headers is supported by the local
+was not updated. One tab at a time owns checkpoints (Web Locks); another tab
+plays without saving or loading. A static host without isolation headers is supported by the local
 `remaster.service.worker.js`; the page waits for an isolated reload before it
 enables the game picker. No original files are cached by that worker.
 

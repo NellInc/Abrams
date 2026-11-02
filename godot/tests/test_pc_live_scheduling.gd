@@ -554,6 +554,14 @@ func check_timeline_reset_route() -> void:
 	_reset_timeline_presentation()
 	pc_audio=saved_audio;tandem_frame=saved_frame
 	check(frontdoor_route.selected==-1 and frontdoor_route.root_since==-1 and not frontdoor_route.return_ready,"a restored timeline restarts the route's root observation")
+	# A save continues the same paused guest; a load replaces it.
+	var saved_op: String=state_control_op
+	pc_audio=null;tandem_frame=null
+	tactical_dynamics.paused=true;state_control_op="save_state";_reset_timeline_presentation()
+	check(tactical_dynamics.paused,"a save's timeline reset keeps the original pause")
+	state_control_op="load_state";_reset_timeline_presentation()
+	check(not tactical_dynamics.paused,"a load's timeline reset releases the held pause")
+	pc_audio=saved_audio;tandem_frame=saved_frame;state_control_op=saved_op
 	frontdoor_route.rest()
 	var sent: int=bridge.requests.size()
 	var had_menu: bool=audio_menu!=null

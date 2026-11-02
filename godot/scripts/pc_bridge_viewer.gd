@@ -1200,6 +1200,9 @@ func _reset_timeline_presentation() -> void:
 	invalidate_presentation_cache()
 	draw_view.reset_water_animation()
 	_reset_tactical_dynamics()
+	# A save continues the same guest, so its pause holds. A load replaces it:
+	# the loaded game's own gate events decide again.
+	if state_control_op!="save_state": tactical_dynamics.paused=false
 	_reset_audio_timeline()
 	if frontdoor_route: frontdoor_route.reset_observation()
 
