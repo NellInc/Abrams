@@ -248,6 +248,15 @@ def supervise(args, argv, lock_saves, validate_command):
                         closing, worker = worker, None
                         try: closing.close()
                         except Exception as error: print(f'Checkpoint worker close: {error}', file=sys.stderr, flush=True)
+                    if client_closed.is_set() and not any(isinstance(item, str) and item.strip() for item in list(commands.queue)):
+                        # The client has gone and asked for nothing more. A resume
+                        # worker would only be killed mid-boot as an orphan (and the
+                        # save lost with it), so keep the requested save and stop.
+                        if operation == 'save_state':
+                            if not (capture / 'campaign.zip').exists():
+                                atomic_write(capture / 'campaign.zip', read_bounded(store.disk, MAX_DISK) if store.disk.exists() else b'')
+                            store.write(slot, capture)
+                        break
                     # Once the native worker has closed, always recover it even if
                     # the overlay read or a slot write fails (disk full, permissions, etc.).
                     previous_recovery = None

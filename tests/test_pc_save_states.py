@@ -572,6 +572,25 @@ class SupervisorCheckpointTests(unittest.TestCase):
         self.assertTrue(result['success'], result)
         self.assertEqual(self.store.read(1)[1]['campaign.zip'], self.disk.getvalue())
 
+    def test_save_after_the_client_has_gone_is_kept_without_an_orphan_worker(self):
+        def reply(worker, message):
+            worker.client_closed.wait(5)  # the client closed its pipe mid-save
+            return self.captured(message)
+        lines, made, _, raised = self.session(reply, [self.SAVE])
+        self.assertIsNone(raised)
+        self.assertEqual(len(made), 1, 'no resume worker started for a departed client')
+        self.assertEqual(self.store.read(1)[1]['state.bin'], b'native-state')
+
+    def test_load_after_the_client_has_gone_starts_nothing(self):
+        self.store.write(1, self.capture)
+        def reply(worker, message):
+            worker.client_closed.wait(5)
+            return self.captured(message)
+        lines, made, _, raised = self.session(reply, [{'op': 'load_state', 'id': 9, 'slot': 1}])
+        self.assertIsNone(raised)
+        self.assertEqual(len(made), 1)
+        self.assertFalse(self.store.path(0).exists())
+
     def test_damaged_live_overlay_still_loads_a_good_slot(self):
         self.store.write(1, self.capture)
         self.store.disk.write_bytes(b'not a campaign archive')

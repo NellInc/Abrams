@@ -55,6 +55,9 @@ Opening a native menu or leaving the window deliberately neutralizes game input.
 After returning, release all keys once before steering or firing again. This
 prevents an old key press from remaining active after focus loss. An already
 sent fast-forward batch finishes unchanged; input changes apply to the next batch.
+On macOS a letter or digit pressed while Cmd is held (Cmd+M, Cmd+H and other
+system chords) never reaches the original game until it is released; keys held
+before Cmd went down keep working.
 
 ## Save states
 
@@ -123,8 +126,9 @@ This control is separate from the original Shift+3 speed setting.
 Fast forward mutes effects, speech, motors and music. Event identities still
 advance, so returning to normal does not play accumulated calls or gunshots.
 Current motor loops and eligible frontend music can resume. Normal speed is
-restored on a fresh launch and whenever play returns to the cover menu, where
-Tab is unavailable; fast forward is not a sticky preference.
+restored on a fresh launch, whenever play returns to the cover menu, where
+Tab is unavailable, and when the game window loses focus (the original keeps
+running at normal speed); fast forward is not a sticky preference.
 
 ## Graphics
 

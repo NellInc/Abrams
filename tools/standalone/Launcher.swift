@@ -382,7 +382,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
             do {
                 try process.run()
                 // A first launch prepares its installation before the window opens.
-                DispatchQueue.main.async { self.status.stringValue = "Game starting or running" }
+                DispatchQueue.main.async { self.status.stringValue = "Preparing and starting the game" }
                 let log = Self.gameLog(home: home)
                 defer { try? log?.close() }
                 let tail = Self.readOutput(pipe, limit: 16384, log: log)

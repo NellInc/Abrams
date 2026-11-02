@@ -224,7 +224,7 @@ func _request(arguments: Array) -> void:
     busy = true
     _sync_controls()
     # A first launch prepares its installation (minutes) before the window opens.
-    message.text = "Game starting or running. Close the game window to return here." if "--play" in arguments else "Verifying originals and installation…"
+    message.text = "Preparing and starting the game. A first launch can take a few minutes before its window opens; close the game window to return here." if "--play" in arguments else "Verifying originals and installation…"
     thread = Thread.new()
     var error := _start_worker(func():
         var result := _run_runtime(PackedStringArray(["--launcher", "--invoke"] + arguments))
@@ -327,6 +327,6 @@ func _about() -> void:
 
 func _close() -> void:
     if busy:
-        message.text = "Please close the game window, or wait for verification to finish, before quitting."
+        message.text = "Please wait for the game to start and then close its window, or wait for verification to finish, before quitting."
     else:
         quit()

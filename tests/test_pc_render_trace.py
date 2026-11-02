@@ -321,19 +321,61 @@ class RenderTraceTests(unittest.TestCase):
             c.paired_video((b'\0'*4, 1, 1, 4))
 
     @requires('GAME')
-    def test_unknown_draw_lookups_name_the_missing_source(self):
+    def test_unknown_draw_lookups_mark_the_pass_unsupported_and_name_the_source(self):
+        # Decoder gaps never end Play: the pass is unsupported, so the
+        # compositor shows the original frame, and the entry names the source.
         world = lambda: {'unsupported': [], 'objects': [], 'world': {'static': [], 'dynamic': []}}
         c = self.collector(); c.active = world()
-        with self.assertRaisesRegex(ValueError, 'unknown sprite root object 0x3e7'):
-            self.event(c, 7, 0, b'\x80\x05', [0, 999] + [0] * 10)
+        self.event(c, 7, 0, b'\x80\x05', [0, 999] + [0] * 10)
+        self.assertIsNone(c.error)
+        self.assertEqual(c.active['unsupported'], [{'kind': 'unknown_sprite_object', 'pointer': 999}])
         c = self.collector(); c.active = world()
         raw = bytearray(0x1300); raw[0x12CC:0x12CE] = (0x4321).to_bytes(2, 'little')
-        with self.assertRaisesRegex(ValueError, 'unknown draw object 0x4321'):
-            self.event(c, 2, 0, bytes(raw))
+        self.event(c, 2, 0, bytes(raw))
+        self.assertIsNone(c.error)
+        self.assertEqual(c.active['unsupported'], [{'kind': 'unknown_object', 'pointer': 0x4321}])
+        self.assertIsNone(c.current)
         c = self.collector(); c.active = world()
         c.current = {'shape_index': 0, 'primitive_ids': [0xFFFF], 'polygons': []}
-        with self.assertRaisesRegex(ValueError, 'not in source shape'):
-            self.event(c, 6, 0, bytes(0x1A70))
+        self.event(c, 6, 0, bytes(0x1A70))
+        self.assertIsNone(c.error)
+        self.assertEqual(c.active['unsupported'][0]['kind'], 'unknown_primitive')
+        self.assertEqual(c.current['polygons'], [])
+
+    @requires('GAME')
+    def test_round_form_outside_the_decoder_marks_the_pass_unsupported(self):
+        import struct
+        c = self.collector()
+        c.active = {'unsupported': [], 'objects': [], 'page_offset': 0, 'world': {'static': [], 'dynamic': []}}
+        command = [1, 2, 3, 4]
+        c.current = {'pointer': 0x55, 'shape_index': 0, 'round_forms': [
+            {'command_offset': 7, 'command': command, 'status': 'pending', 'spans': []}]}
+        values = [1, 7, 0x55, 10, 100, 50, 0, 0, 319, 199, 0, 0x0102, 0x0000]
+        raw = struct.pack('<13H', *values) + bytes(command)
+        self.event(c, 46, 7, raw)  # unclipped world round form: a decoder limit
+        self.assertIsNone(c.error)
+        self.assertEqual(c.active['unsupported'], [{'kind': 'unclipped_round_form', 'pointer': 0x55}])
+        self.assertEqual(c.current['round_forms'][0]['status'], 'unsupported')
+        # Its later span and return events are ignored, not fatal.
+        self.event(c, 48, 7, struct.pack('<9H', 1, 7, 0x55, 60, 90, 20, 0, 0, 0))
+        self.event(c, 47, 7)
+        self.assertIsNone(c.error)
+        self.assertEqual(c.current['round_forms'][0]['status'], 'unsupported')
+
+    @requires('GAME')
+    def test_pass_without_a_readable_camera_is_skipped_and_its_page_stays_original(self):
+        c = self.collector()
+        page_raw = bytearray(0x10000); page_raw[0x35A8:0x35AA] = (0xA000).to_bytes(2, 'little')
+        self.event(c, 13, 0, bytes(page_raw))
+        self.assertIn(0, c.drawing_pages)
+        c.reader = type('Reader', (), {'read': staticmethod(lambda raw: None)})()
+        self.event(c, 1, 0, bytes(0x10000))
+        self.assertIsNone(c.error)
+        self.assertIsNone(c.active)
+        self.assertEqual(c.skipped_passes, 1)
+        self.assertIn(0, c.drawing_pages)  # scanout of this page finds no pass
+        self.event(c, 10, 0)
+        self.assertIsNone(c.scanout['draw_pass'])
 
     @requires('GAME')
     def test_redrawing_displayed_page_invalidates_scanout_even_if_pass_finishes(self):

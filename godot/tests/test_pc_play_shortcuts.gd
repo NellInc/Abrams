@@ -153,6 +153,20 @@ func run() -> void:
 		Input.flush_buffered_events()
 		menu.game_keys([])
 		check(not Input.is_key_pressed(KEY_S) and menu.game_keys(["s"])==["s"],"fully released chord restores original S")
+		if mac:
+			# Cmd+letter system chords never reach the original; a letter held
+			# before Cmd went down stays a game control.
+			menu.game_keys([]);menu.game_keys(["a"])
+			var cmd:=InputEventKey.new();cmd.keycode=KEY_META;cmd.pressed=true
+			Input.parse_input_event(cmd);Input.flush_buffered_events()
+			check(menu.game_keys(["a","m"])==["a"],"Cmd+M is a system chord; held A still plays")
+			check(menu.game_keys(["a","m"])==["a"],"the chord letter stays held back while held")
+			var cmd_up:=InputEventKey.new();cmd_up.keycode=KEY_META
+			Input.parse_input_event(cmd_up);Input.flush_buffered_events()
+			check(menu.game_keys(["a","m"])==["a"],"releasing Cmd first cannot leak M")
+			menu.game_keys(["a"])
+			check(menu.game_keys(["a","m"])==["a","m"],"a fresh M press after the chord reaches the game")
+			menu.game_keys([])
 		menu.set_state_status([])
 		# Host polling must preserve unrelated controls through real shortcut
 		# events, both modifier-release orders, failures, and recovery loads.

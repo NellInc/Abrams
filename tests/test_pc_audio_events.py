@@ -38,7 +38,9 @@ class AudioTests(unittest.TestCase):
         event, = audio.drain()
         self.assertEqual(event['kind'],'reload_complete')
         self.assertNotIn('voice',event)
-        with self.assertRaisesRegex(ValueError,'loading state'): audio.observe(self.event(ip=0x35EE))
+        # Outside the loading state it is dropped (readiness stays silent), never fatal.
+        audio.observe(self.event(ip=0x35EE))
+        self.assertEqual((audio.drain(), audio.dropped_reloads), ([], 1))
         with self.assertRaisesRegex(ValueError,'boundary'): audio.observe(b'')
         with self.assertRaisesRegex(ValueError,'boundary'): audio.observe(self.event(ip=123))
 

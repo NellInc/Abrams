@@ -10,6 +10,7 @@ var shortcut_is_macos := _uses_macos_shortcuts()
 # Only hosts that report AltGr as Ctrl+Alt screen out layout characters.
 var layout_filter := _altgr_is_ctrl_alt()
 var shortcut_keys: Array = []
+var _last_held: Array = []
 const MODES := ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]
 var graphics_mode := "upscaled"
 # Saved intent stays independent of temporary startup overrides and fallback.
@@ -392,9 +393,14 @@ func game_keys(held: Array) -> Array:
 	# survive save/load, including failures; menu/focus quarantine is separate.
 	if modifier:
 		for name in held:
-			if name in ["s","l","g","ctrl","alt"] or (name=="shift" and "l" in held):
+			# On macOS Cmd is never a game key: a letter or digit pressed while
+			# it is down belongs to a system chord (Cmd+M, Cmd+H, Cmd+Q...). One
+			# already held before Cmd went down stays a game control.
+			var system_chord: bool=shortcut_is_macos and name.length()==1 and name not in _last_held
+			if name in ["s","l","g","ctrl","alt"] or (name=="shift" and "l" in held) or system_chord:
 				if name not in shortcut_keys: shortcut_keys.append(name)
 	shortcut_keys=shortcut_keys.filter(func(name):return name in held)
+	_last_held=held.duplicate()
 	return super.game_keys(held).filter(func(name):return name!="tab" and name not in shortcut_keys)
 
 func key_passes(name: String) -> bool:
@@ -443,6 +449,12 @@ func choose_graphics(mode: String, persist: bool=true) -> bool:
 	var names := {"ega":"EGA","ega_upscaled":"EGA Upscaled","genesis":"Genesis","upscaled":"Genesis Upscaled","modern":"Modern","tactical":"Tactical"}
 	if persist: control_notice.emit("Graphics: "+names[graphics_mode] if graphics_mode==mode else names[mode]+" graphics are unavailable")
 	return graphics_mode==mode
+
+## The original keeps running through focus loss, but never accelerated
+## unattended: leaving the window returns fast forward to normal speed.
+func _focus_exited() -> void:
+	super._focus_exited()
+	if speed==8: choose_speed(1)
 
 func choose_speed(multiplier: int) -> bool:
 	if frontdoor_active or busy or multiplier not in [1,8]: return false

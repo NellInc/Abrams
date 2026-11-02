@@ -52,6 +52,16 @@ class TextTests(unittest.TestCase):
     def present(self,candidates,video,palette=None):
         return self.observer.present(candidates,video,320,200,self.palette if palette is None else palette)
 
+    def test_unmatched_entries_and_returns_are_dropped_not_fatal(self):
+        # An entry whose return was never seen is abandoned; the next one still works.
+        self.draw(b'LOAD  ')
+        raw,video=self.draw()
+        self.assertEqual(self.observer.counts['abandoned_entries'],1)
+        self.observer.finish(raw)
+        self.assertEqual(self.present(self.observer.scanout(0),video)[0]['text'],'READY ')
+        self.observer.finish(raw)  # an orphan return
+        self.assertEqual(self.observer.counts['orphan_returns'],1)
+
     def test_requires_completed_glyphs_then_matching_scanout_and_RGB_frame(self):
         raw,video=self.draw()
         self.assertEqual(self.observer.scanout(0),())
@@ -147,8 +157,9 @@ class TextTests(unittest.TestCase):
         self.assertEqual(len(self.observer.pages),MAX_CANDIDATES)
         self.assertEqual(self.observer.counts['candidate_evictions'],1)
 
-    def test_wire_schema_and_unpaired_return_rejected(self):
-        with self.assertRaisesRegex(ValueError,'without entry'): self.observer.finish(b'')
+    def test_wire_schema_rejected_and_unpaired_return_counted(self):
+        self.observer.finish(b'')
+        self.assertEqual(self.observer.counts['orphan_returns'],1)
         with self.assertRaisesRegex(ValueError,'entry snapshot'): self.observer.begin(b'',{})
         raw,_=self.draw()
         bad=bytearray(raw);struct.pack_into('<H',bad,0,51)

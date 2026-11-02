@@ -43,7 +43,12 @@ class TextRuns:
 
     def begin(self, ram, regs):
         if len(ram) != 640*1024: raise ValueError('invalid native text entry snapshot')
-        if self.pending is not None: raise ValueError('nested native text observation')
+        if self.pending is not None:
+            # An entry whose return was never observed is discarded; present()
+            # still proves every candidate's full pixel rectangle, so nothing
+            # unverified can be shown. This does not end Play.
+            self.counts['abandoned_entries'] += 1
+            self.pending = None
         ds, stack = regs['ds']*16, regs['ss']*16+regs['sp']
         if ds+65536 > len(ram) or stack+10 > len(ram): raise ValueError('invalid native text segments')
         caller, cs, pointer, x, y = struct.unpack_from('<5H',ram,stack)
@@ -97,7 +102,9 @@ class TextRuns:
             self.counts['unsupported: '+str(error)] += 1
 
     def finish(self, raw):
-        if self.pending is None: raise ValueError('native text return without entry')
+        if self.pending is None:
+            self.counts['orphan_returns'] += 1
+            return
         key, candidate = self.pending
         self.pending = None
         if not raw:

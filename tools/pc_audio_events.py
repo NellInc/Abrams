@@ -34,6 +34,9 @@ class AudioEvents:
     def __init__(self, limit=4096):
         self.limit = limit
         self.pending = deque()
+        # Reload completions seen outside the original loading state: dropped,
+        # so readiness stays silent; a recognition gap, not a reason to end Play.
+        self.dropped_reloads = 0
 
     def observe(self, raw, *, text_sequence=None, guided_launch=None):
         if len(raw) != 12: raise ValueError('invalid native audio boundary')
@@ -50,7 +53,9 @@ class AudioEvents:
         elif ip == 0x8DA3:
             event.update(kind='gate', enabled=value == 1 and backend in (0, 1))
         elif ip == 0x35EE:
-            if reload_state != 2: raise ValueError('reload completion outside original loading state')
+            if reload_state != 2:
+                self.dropped_reloads += 1
+                return
             # The separate readiness gate needs a newer, actually visible READY
             # draw. This original boundary alone remains silent.
             event['kind'] = 'reload_complete'

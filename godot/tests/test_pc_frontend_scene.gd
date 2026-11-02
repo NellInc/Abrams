@@ -14,8 +14,11 @@ var camera: Camera3D
 var output: String
 var menu_views:=0
 var started:=Time.get_ticks_msec()
+var finished:=false
 func _process(_delta: float)->bool:
-	if Time.get_ticks_msec()-started>120000: printerr("FAIL: scene test deadline");quit(2)
+	# quit() takes effect at the end of the frame; a run that already reported
+	# its receipt must not then fail the deadline on a loaded machine.
+	if not finished and Time.get_ticks_msec()-started>120000: printerr("FAIL: scene test deadline");quit(2)
 	return false
 func check(ok: bool, why: String)->void:
 	checks+=1
@@ -115,4 +118,5 @@ func run()->void:
 		file.store_string(JSON.stringify({"checks":checks,"errors":errors,"samples":records},"\t")+"\n")
 	for error in errors:printerr("FAIL: "+error)
 	print("PC_FRONTEND_SCENE: %d checks, %d errors, %d selectors, %d missions"%[checks,errors.size(),count,missions])
+	finished=true
 	quit(0 if errors.is_empty() else 1)

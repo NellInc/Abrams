@@ -110,6 +110,9 @@ class Collector:
         self.completed_count = 0
         self.pages = {}
         self.drawing_pages = set()
+        # Decoder gaps the original's frames show as its own pixels, counted.
+        self.skipped_passes = 0
+        self.vertex_mismatches = 0
         self.scanout = None
         self.ui_mask_slot = None
         self.plate_mask_slot = None
@@ -287,7 +290,13 @@ class Collector:
                 if self.active is not None: raise ValueError('nested original draw pass')
                 self.sequence += 1
                 state = self.reader.read(raw)
-                if not state or not state['camera']: raise ValueError('draw-start snapshot lacks supported camera')
+                if not state or not state['camera']:
+                    # read_camera declines a renderer state outside its decoder
+                    # (for example a queued pointer not yet allocated). Event 13
+                    # already marked this page as being drawn, so scanout shows
+                    # the original pixels until a later complete pass on it.
+                    self.skipped_passes += 1
+                    return
                 state['camera']['sampling'] = 'observed at original drawing callback entry; not a logic-tick claim'
                 self.guided.freeze(raw, state['load_segment'], self.sequence)
                 ds = state['load_segment'] * 16 + 0x19E00
@@ -315,7 +324,10 @@ class Collector:
                 self.composition_cx = None
                 if raw[0] & 128:
                     obj, dynamic = self.world_object(regs['bx'])
-                    if obj is None: raise ValueError(f"unknown sprite root object {regs['bx']:#x}")
+                    if obj is None:
+                        # Decoder gap, not provenance: the pass shows original pixels.
+                        self.active['unsupported'].append({'kind': 'unknown_sprite_object', 'pointer': regs['bx']})
+                        return
                     self.current = {'kind': 'sprite', 'pointer': regs['bx'], 'root': regs['di'],
                         'shape_index': obj['shape_index'], 'bitmap_index': raw[1], 'sprite_status': 'pending',
                         'dynamic_instance': dynamic,
@@ -354,7 +366,10 @@ class Collector:
             elif event == 2:
                 pointer = word(0x12CC)
                 obj, dynamic = self.world_object(pointer)
-                if obj is None: raise ValueError(f'unknown draw object {pointer:#x}')
+                if obj is None:
+                    self.active['unsupported'].append({'kind': 'unknown_object', 'pointer': pointer})
+                    self.composition_cx = None
+                    return
                 matrix = words(word(0x1CDA), 9)
                 self.current = {'pointer': pointer, 'shape_index': obj['shape_index'], 'root': regs['di'],
                     'dynamic_instance': dynamic,
@@ -367,23 +382,35 @@ class Collector:
                     expected, mode = compose(basis, orientation_mode(obj['orientation_u8']),
                         self.active['camera']['matrix_q14_columns'], self.active['camera']['matrix_mode'], self.composition_cx)
                     if (expected, mode) != (matrix, self.current['matrix_mode']):
-                        raise ValueError(f'actual live original composition mismatch for {pointer:#x}')
+                        # Our composition disagrees with the original's: never present it.
+                        self.active['unsupported'].append({'kind': 'composition_mismatch', 'pointer': pointer})
+                        self.current = None
+                        self.composition_cx = None
+                        return
                 self.active['objects'].append(self.current)
                 self.composition_cx = None
             elif event == 3 and self.current and self.current.get('kind') != 'sprite':
                 self.current['primitive_ids'].append(regs['si'])
             elif event == 6 and self.current and self.current.get('kind') != 'sprite':
                 count = word(0x1A69)
-                if not 0 <= count <= 16: raise ValueError('unsupported polygon buffer length')
+                if not 0 <= count <= 16:
+                    self.active['unsupported'].append({'kind': 'polygon_buffer_length', 'count': count})
+                    return
                 shape = self.shapes[self.current['shape_index']]
                 primitive_id = self.current['primitive_ids'][-1] if self.current['primitive_ids'] else None
                 primitive = self.shape_primitives[self.current['shape_index']].get(primitive_id)
-                if primitive is None: raise ValueError(f"primitive {primitive_id!r} not in source shape {shape['index']}")
+                if primitive is None:
+                    self.active['unsupported'].append({'kind': 'unknown_primitive', 'shape_index': shape['index'], 'primitive': primitive_id})
+                    return
                 vertices = primitive_camera_vertices(shape, primitive, self.current)
                 for encoded, expected in zip(primitive['encoded_indices'], vertices):
                     index = (encoded & 127) * 2
                     actual = [words(at + index, 1)[0] for at in (0x1519, 0x1619, 0x1719)]
-                    if actual != expected: raise ValueError(f'original vertex differs for shape {shape["index"]}, ref {encoded}: {actual} != {expected}')
+                    if actual != expected:
+                        # Reconstruction disagrees with the original's transformed vertex.
+                        self.vertex_mismatches += 1
+                        self.active['unsupported'].append({'kind': 'vertex_mismatch', 'shape_index': shape['index'], 'reference': encoded})
+                        return
                     self.vertices_checked += 1
                 self.current.setdefault('draw_order', []).append({'kind':'polygon','index':len(self.current['polygons'])})
                 self.current['polygons'].append({'primitive': self.current['primitive_ids'][-1] if self.current['primitive_ids'] else None,
@@ -445,12 +472,17 @@ class Collector:
                 raise ValueError('round-form command differs from source')
             if forms and forms[-1]['status'] in ('pending','observing'):
                 raise ValueError('nested round-form observation')
-            if len(forms) >= 32: raise ValueError('too many source round forms')
+            if len(forms) >= 32:
+                self.active['unsupported'].append({'kind': 'round_form_count', 'pointer': obj['pointer']})
+                forms.append({'command_offset':regs['di'],'command':list(raw),'status':'unsupported','spans':[]})
+                return
             forms.append({'command_offset':regs['di'],'command':list(raw),'status':'pending','spans':[]})
             return
         if not forms or forms[-1]['command_offset'] != offset:
             raise ValueError('round-form event lacks matching command')
         form=forms[-1]
+        if form['status'] == 'unsupported':
+            return  # already recorded; the pass shows original pixels
         if event == 47:
             if form['status'] == 'pending': form['status']='rejected-before-raster'
             elif form['status'] == 'observing': form['status']='observed'
@@ -465,10 +497,15 @@ class Collector:
             if form['status']!='pending':raise ValueError('duplicate round-form raster entry')
             if values[10]!=self.active['page_offset']:raise ValueError('round-form page mismatch')
             if list(raw[26:30])!=form['command']:raise ValueError('round-form raster command mismatch')
-            if values[12]&255 != 1:raise ValueError('unsupported unclipped world round form')
-            if values[11]&255 > 15 or values[11]>>8 > 15:raise ValueError('invalid round-form color')
             clip=list(map(signed,values[6:10]))
-            if not (0<=clip[0]<=clip[2]<320 and 0<=clip[1]<=clip[3]<200):raise ValueError('invalid round-form clip')
+            # Decoder limits, not provenance: record the form unsupported.
+            limit=('unclipped_round_form' if values[12]&255 != 1 else
+                   'round_form_color' if values[11]&255 > 15 or values[11]>>8 > 15 else
+                   'round_form_clip' if not (0<=clip[0]<=clip[2]<320 and 0<=clip[1]<=clip[3]<200) else None)
+            if limit:
+                form['status']='unsupported'
+                self.active['unsupported'].append({'kind':limit,'pointer':obj['pointer']})
+                return
             radius=min(max(0,signed(values[3])),102)
             form.update({'status':'observing','center':list(map(signed,values[4:6])),
                          'radius_raw':values[3],'radius':radius,'horizontal_radius':radius+radius//4,
@@ -480,10 +517,16 @@ class Collector:
             if form['status']!='observing':raise ValueError('round-form span outside raster lifetime')
             if values[6]!=form['page_offset']:raise ValueError('round-form span page mismatch')
             y,left=map(signed,values[3:5]);width=values[5]
-            if width>320:raise ValueError('round-form span too wide')
+            if width>320:
+                form['status']='unsupported'
+                self.active['unsupported'].append({'kind':'round_form_span_width','pointer':obj['pointer']})
+                return
             clip=form['clip'];right=min(left+width,clip[2]+1);left=max(left,clip[0])
             if clip[1]<=y<=clip[3] and left<right:
-                if len(form['spans'])>=64000:raise ValueError('too many round-form spans')
+                if len(form['spans'])>=64000:
+                    form['status']='unsupported'
+                    self.active['unsupported'].append({'kind':'round_form_span_count','pointer':obj['pointer']})
+                    return
                 # The original span receives AX/DX pattern words. Convert to
                 # exact palette indices so a renderer need not decode words.
                 # For one row the colour depends only on x parity: a solid or

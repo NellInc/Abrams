@@ -129,7 +129,15 @@ Protocol 4 adds `program`, nullable `state`, `render_epoch` and startup identity
 Program/state are read from the same `last_video_ram` boundary as the submitted
 framebuffer. No supported draw or initialized SIM state means full original
 framebuffer fallback. Loaded SHAPE.TBL bytes must match the source before a SIM
-state can be reported; a mismatch during an observed draw is an error. Original
+state can be reported; a mismatch during an observed draw is an error. Resource
+identity (SHAPE.TBL, EFFECTS.BMP, plate and strut bytes) and native-contract
+violations stay fatal. Decoder gaps are not (since 2 November 2026): an unknown
+drawn object, a composition, primitive or vertex disagreement, a polygon or
+round form outside the decoder's limits, and a pass whose camera the reader
+declines are recorded as `unsupported` (or the pass is skipped). The frame then
+shows its original pixels instead of ending Play. Unmatched text entries and
+returns, and a reload completion outside the loading state, are dropped and
+counted. Original
 modal writes remain protected by the scanline UI mask, including the fully
 opaque 64,000-pixel Q dialog.
 
