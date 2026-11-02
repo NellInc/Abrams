@@ -61,7 +61,9 @@ FIXTURES = {
 # the files beside it (comparison.json, reference frames).
 LIVE_FIXTURES = {
     'artifacts/pc-all-scenarios-trace-01': 'pc_scenario_frames',
-    'artifacts/pc-combat-loss-trace-01': 'pc_combat_outcome',
+    # The combat reference is recorded on the day (the original reads the host
+    # date); its pinned input is the neutral START snapshot it starts from.
+    'artifacts/pc-neutral-boot-01/neutral-boot': 'pc_combat_reference, pc_combat_outcome',
     'artifacts/pc-crew-trace-01': 'pc_crew_bridge',
     'artifacts/pc-play-final-controls-02/pacing.json': 'pc_mix_bridge',
     'artifacts/pc-radio-trace-01': 'pc_radio_bridge',

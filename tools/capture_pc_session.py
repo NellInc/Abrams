@@ -333,6 +333,9 @@ def main():
         (args.output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps({'mode':args.mode,'frames':len(records),'stages':len(samples),'checks':checks},indent=2))
         if not all(checks.values()): raise SystemExit(1)
+        # One-line receipt for tools/validate.sh. The original reads the host
+        # date, so a combat-loss reference is recorded fresh on the day it is used.
+        print(f"PC_SESSION_CAPTURE: {args.mode}; {len(records)} frames, {len(samples)} stages, {len(checks)} checks passed")
     finally:
         session.close()
         core.close()

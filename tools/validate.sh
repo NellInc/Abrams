@@ -144,6 +144,7 @@ receipt_for() {
     pc_crew_bridge) echo '^PC_CREW_NATIVE: \{"barks":[0-9]+,"child_exit":0,"errors":\[\],' ;;
     pc_radio_bridge) echo '^PC_RADIO_NATIVE: [1-9][0-9]* checks, 3716 frames, 0 errors$' ;;
     pc_warning_bridge) echo '^PC_WARNING_NATIVE: [1-9][0-9]* checks, 1060 frames, 0 errors$' ;;
+    pc_combat_reference) echo '^PC_SESSION_CAPTURE: trace; [1-9][0-9]* frames, [1-9][0-9]* stages, [1-9][0-9]* checks passed$' ;;
     pc_combat_outcome) echo '^PC_COMBAT_OUTCOME: [1-9][0-9]* checks, [1-9][0-9]* boundaries, 0 errors$' ;;
     pc_scenario_frames) echo '^PC_SCENARIO_FRAMES: [1-9][0-9]* checks, 32 cases, 0 errors$' ;;
     pc_conveniences) echo '^PC_CONVENIENCES: [1-9][0-9]* checks, 0 errors$' ;;
@@ -521,7 +522,11 @@ if [ "${VALIDATE_LIVE:-0}" = 1 ] || [ "$LIST" = 1 ]; then
   run_check pc_crew_bridge ./tools/godot.sh --script res://tests/test_pc_crew_bridge.gd -- --reference "$ROOT/artifacts/pc-crew-trace-01/report.json" --output "$(fresh live/crew)"
   run_check pc_radio_bridge ./tools/godot.sh --script res://tests/test_pc_radio_bridge.gd -- --fixture "$ROOT/artifacts/pc-radio-trace-01/report.json" --output "$(fresh live/radio)" --capture --trace --play --frame-audit
   run_check pc_warning_bridge ./tools/godot.sh --script res://tests/test_pc_warning_bridge.gd -- --fixture "$ROOT/artifacts/pc-warning-trace-03/report.json" --output "$(fresh live/warning)" --capture --trace --play --frame-audit
-  run_check pc_combat_outcome ./tools/godot.sh --script res://tests/test_pc_combat_outcome.gd -- --fixture "$ROOT/artifacts/pc-combat-loss-trace-01/report.json" --output "$(fresh live/combat)" --capture --boot --play --frame-audit
+  # The original reads the host date (it changes guest RAM from frame 272 of
+  # this route), so its reference is recorded the same day, from the pinned
+  # neutral START snapshot, then the production viewer must match it exactly.
+  run_check pc_combat_reference "$PYTHON" -m tools.capture_pc_session --mode trace --combat-loss --capture-ui --boot-state "$ROOT/artifacts/pc-neutral-boot-01/neutral-boot/reference.state" --output "$(fresh live/combat-reference)"
+  run_check pc_combat_outcome ./tools/godot.sh --script res://tests/test_pc_combat_outcome.gd -- --fixture "$(fresh live/combat-reference)/report.json" --output "$(fresh live/combat)" --capture --boot --play --frame-audit
   run_check pc_scenario_frames ./tools/godot.sh --script res://tests/test_pc_scenario_frames.gd -- --fixture "$ROOT/artifacts/pc-all-scenarios-trace-01/report.json" --output "$(fresh live/scenario-frames)" --capture --no-audio --play
   run_check pc_conveniences ./tools/godot.sh --script res://tests/test_pc_conveniences.gd -- --trace --play --frame-audit --capture --output "$(fresh live/conveniences)"
   run_check pc_mix_bridge ./tools/godot.sh --script res://tests/test_pc_mix_bridge.gd -- --play --trace --capture --capture-station gunner --interactive-clock --replay-controls --frame-audit --output "$(fresh live/mix)"

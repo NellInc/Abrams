@@ -170,17 +170,17 @@
    "read_by": "pc_scenario_frames",
    "sha256": "6abd196c83796dceb5d332a1ba856cea43a3f0c6b0b13768473cd1931a321de5"
   },
-  "artifacts/pc-combat-loss-trace-01": {
-   "files": 495,
-   "kind": "dir",
-   "read_by": "pc_combat_outcome",
-   "sha256": "5eb343575086afaba608670428a2502f8161faadea13d42213c6109a3ae65e15"
-  },
   "artifacts/pc-crew-trace-01": {
    "files": 33,
    "kind": "dir",
    "read_by": "pc_crew_bridge",
    "sha256": "4c32e77509a31e199055ae669c64a65bce1312758e867bb295585283d289e8a7"
+  },
+  "artifacts/pc-neutral-boot-01/neutral-boot": {
+   "files": 2,
+   "kind": "dir",
+   "read_by": "pc_combat_reference, pc_combat_outcome",
+   "sha256": "1f367d04d9d5f9eeb9eeb25b70ef8ca8a6c4b9bb7b25deb9319d003797eb8f38"
   },
   "artifacts/pc-play-final-controls-02/pacing.json": {
    "files": 1,
