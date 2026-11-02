@@ -393,6 +393,89 @@ func source_material_pair(name: String) -> void:
 	if name in ["effect-15","effect-17","effect-62"]:
 		JavaScriptBridge.eval("window.sourceMaterialImages=window.sourceMaterialImages||{};window.sourceMaterialImages["+JSON.stringify(name)+"]="+JSON.stringify([Marshalls.raw_to_base64(images[0].save_png_to_buffer()),Marshalls.raw_to_base64(images[1].save_png_to_buffer())]))
 
+func debris_frame(data: Dictionary, age: float) -> Image:
+	# A fresh kill, aged on the explicit clock only; no other clock is live.
+	view.tactical_effects.reset_dynamics()
+	view.apply_pass(data.alive);view.apply_pass(data.dead)
+	var steps:=int(round(age/0.05))
+	for n in steps: view.tactical_effects.advance_dynamics(0.05)
+	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+	return viewport.get_texture().get_image()
+
+func changed_outside(a: Image, b: Image, allowed: Callable) -> Array:
+	var changed:=0
+	var escaped:=0
+	for y in a.get_height():
+		for x in a.get_width():
+			if a.get_pixel(x,y)==b.get_pixel(x,y): continue
+			changed+=1
+			if not allowed.call(Vector2(x,y)/4.0+Vector2(32.125,13.125)): escaped+=1
+	return [changed,escaped]
+
+func kill_debris_study(alive: Dictionary) -> void:
+	view.tactical_landscape=true
+	var dead:=alive.duplicate(true)
+	dead.objects[0].shape_index=130;dead.world.dynamic[0].shape_index=130
+	var pair:={"alive":alive,"dead":dead}
+	var still:=await debris_frame(pair,0.0)
+	check(view.tactical_effects.counts.debris==1,"debris: observed kill queues debris")
+	view.tactical_effects.visible=false
+	await process_frame;RenderingServer.force_draw(false);RenderingServer.force_sync()
+	var bare:=viewport.get_texture().get_image()
+	view.tactical_effects.visible=true
+	check(still.get_data()==bare.get_data(),"debris: nothing draws before the explicit clock runs (capture determinism)")
+	var hull: Rect2=view.tactical_effects.drawn_rect(dead.objects[0],frame)
+	var envelope:=Rect2(hull.get_center()-Vector2.ONE*maxf(hull.size.x,hull.size.y)*1.4,Vector2.ONE*maxf(hull.size.x,hull.size.y)*2.8)
+	var rows: Array=[]
+	for age in [0.15,0.35,0.6,0.9]:
+		var image:=await debris_frame(pair,age)
+		var result:=changed_outside(bare,image,func(p: Vector2) -> bool: return envelope.has_point(p))
+		check(result[0]>20,"debris: fragments visible at %.2fs (%d px)"%[age,result[0]])
+		check(result[1]==0,"debris: fragments stay inside their flight envelope at %.2fs (%d escaped)"%[age,result[1]])
+		rows.append({"age":age,"changed_pixels":result[0]})
+		image.save_png(output.path_join("kill-debris-%03d.png"%int(age*100)))
+	bare.save_png(output.path_join("kill-debris-bare.png"))
+	var spent:=await debris_frame(pair,1.2)
+	check(spent.get_data()==bare.get_data(),"debris: spent burst leaves the exact frame")
+	# Later and earlier actors both cover it: debris never crosses an actor.
+	# The shield sits wholly above the wreck, across the fragments' rise, so in
+	# either painter order every pixel inside it belongs to the actor.
+	var shield:=Rect2(Vector2(hull.position.x,hull.position.y-hull.size.y*0.6),Vector2(hull.size.x,hull.size.y*0.55))
+	for order in ["later","earlier"]:
+		var covered_alive:=alive.duplicate(true);var covered_dead:=dead.duplicate(true)
+		for data: Dictionary in [covered_alive,covered_dead]:
+			if order=="later": data.objects.append(cover(shield,250.0))
+			else: data.objects.push_front(cover(shield,250.0))
+		var covered:={"alive":covered_alive,"dead":covered_dead}
+		var shielded_bare:=await debris_frame(covered,0.0)
+		var shielded:=await debris_frame(covered,0.35)
+		var result:=changed_outside(shielded_bare,shielded,func(p: Vector2) -> bool: return not shield.has_point(p))
+		check(result[0]>20 and result[1]==0,"debris: %s actor covers every fragment (%d changed, %d over the actor)"%[order,result[0],result[1]])
+		shielded.save_png(output.path_join("kill-debris-%s-actor.png"%order))
+	# A wreck the original hides entirely (a nearer crest or actor) throws
+	# nothing, even over the open ground beside it.
+	var hidden_alive:=alive.duplicate(true);var hidden_dead:=dead.duplicate(true)
+	for data: Dictionary in [hidden_alive,hidden_dead]: data.objects.append(cover(hull.grow(1.0),250.0))
+	var hidden:={"alive":hidden_alive,"dead":hidden_dead}
+	var hidden_bare:=await debris_frame(hidden,0.0)
+	check(view.tactical_effects.counts.debris==1 and hidden_bare.get_data()==(await debris_frame(hidden,0.35)).get_data(),"debris: a wholly hidden wreck throws nothing")
+	# A distant kill stays on its own drawn pixels.
+	var far_alive:=alive.duplicate(true)
+	for polygon: Dictionary in far_alive.objects[0].polygons:
+		for point: Array in polygon.camera_vertices: point[1]=float(point[1])*10.0
+	var far_dead:=far_alive.duplicate(true);far_dead.objects[0].shape_index=130
+	var far:={"alive":far_alive,"dead":far_dead}
+	var far_bare:=await debris_frame(far,0.0)
+	var far_hull: Rect2=view.tactical_effects.drawn_rect(far_dead.objects[0],frame)
+	var far_rows: Array=view.tactical_effects.puffs.filter(func(p: Array) -> bool: return p[4]==4.0)
+	var far_image:=await debris_frame(far,0.35)
+	var far_result:=changed_outside(far_bare,far_image,func(p: Vector2) -> bool: return far_hull.grow(0.25).has_point(p))
+	check(far_rows.size()==1 and float(far_rows[0][10])==-3.0,"debris: small kill (%.1f px) uses the confined form"%maxf(far_hull.size.x,far_hull.size.y))
+	check(far_result[1]==0,"debris: confined fragments stay on the wreck (%d changed, %d escaped)"%[far_result[0],far_result[1]])
+	far_image.save_png(output.path_join("kill-debris-confined.png"))
+	view.tactical_effects.reset_dynamics()
+	particle_rows.append({"case":"kill-debris","frames":rows,"confined_changed":far_result[0]})
+
 func particle_capture(data: Dictionary, tactical: bool) -> Image:
 	view.tactical_landscape=tactical
 	return await snapshot(data,true)
@@ -573,6 +656,7 @@ func tactical_particles(directory: String) -> void:
 	await particle_pair(invalid,"later-cover",false)
 	invalid.objects.reverse();await particle_pair(invalid,"earlier-cover",true)
 	invalid=sample(object_for(15,[300,120]));await particle_pair(invalid,"outside-clip",false)
+	await kill_debris_study(vehicle)
 	view.apply_pass({"objects":[]});check(view.tactical_effects.puffs.is_empty() and not view.tactical_effects.visible,"empty frame clears all particles")
 	JavaScriptBridge.eval("window.effectReport="+JSON.stringify(particle_rows))
 	FileAccess.open(output.path_join("particle-studies.json"),FileAccess.WRITE).store_string(JSON.stringify({"effects":particle_rows,"particle_materials":particle_material_rows,"source_materials":source_material_rows},"  "))

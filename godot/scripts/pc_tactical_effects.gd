@@ -4,11 +4,25 @@ const Geometry = preload("res://scripts/pc_surface_geometry.gd")
 const Modern = preload("res://scripts/pc_modern_assets.gd")
 const ShaderSource = preload("res://scripts/pc_tactical_effects.gdshader")
 const MAX_PUFFS := 512
+# Catalogue class table: each vehicle class's intact shape and the replacement
+# the original swaps into the same pool slot when it destroys that vehicle.
+# Buildings, aircraft and bridges are excluded.
+const KILL_WRECKS := {115:116,117:118,119:120,121:122,123:124,125:126,127:128,129:130,
+	131:132,133:134,135:136,137:138,139:140,141:142,143:144,159:160}
+# Matches DEBRIS_LIFE in the shader.
+const DEBRIS_LIFE := 1.1
+# Kills drawn smaller than this (source pixels) keep debris on the wreck and on
+# impact sprites; larger kills may also throw it over earlier terrain and sky.
+const DEBRIS_OPEN_PIXELS := 6.0
 var node: MeshInstance3D
 var material: ShaderMaterial
 var puffs: Array = []
 var counts: Dictionary = {}
 var _impact_births: Dictionary = {}
+# Drawn dynamic pointer -> shape from the previous prepared pass, and
+# pointer -> [birth, wreck shape] for kills observed between two such passes.
+var _drawn_shapes: Dictionary = {}
+var _kill_births: Dictionary = {}
 var _dynamics_clock := 0.0
 var _plume_phase := 0.0
 var _plumes_live := false
@@ -39,23 +53,44 @@ func clear() -> void:
 	node.mesh=null
 	puffs.clear()
 	_plumes_live=false
-	counts={"smoke":0,"missile":0,"exhaust":0,"effect":0}
+	counts={"smoke":0,"missile":0,"exhaust":0,"effect":0,"debris":0}
 	visible=false
 
 func reset_dynamics() -> void:
 	# A save or graphics switch does not rewind the guest: an impact already on
 	# screen keeps its spent burst instead of replaying it from age zero.
 	for key in _impact_births.keys():_impact_births[key]=-1.0
+	# Kill debris is dropped, and the next pass cannot be read as a kill.
+	_kill_births.clear()
+	_drawn_shapes.clear()
 	_dynamics_clock=0.0
 	_plume_phase=0.0
 	material.set_shader_parameter("dynamics_time",-1.0)
 	material.set_shader_parameter("plume_phase",0.0)
+
+## For frames that advance the guest without the explicit clock (fast forward,
+## dynamics or motion turned off). A burst born then would sit frozen at age
+## zero on a stale clock and play late, so live bursts are spent instead and
+## the clock is hidden. Observed shapes stay, so a wreck cannot re-trigger.
+## Returns true only when something on screen changes.
+func rest_dynamics() -> bool:
+	var shown=material.get_shader_parameter("dynamics_time") # null until first set
+	var changed:=not _kill_births.is_empty() or (shown!=null and float(shown)>=0.0)
+	for key in _impact_births.keys():
+		if float(_impact_births[key])>=0.0:_impact_births[key]=-1.0;changed=true
+	if not changed:return false
+	_kill_births.clear()
+	_dynamics_clock=0.0
+	material.set_shader_parameter("dynamics_time",-1.0)
+	return true
 
 func advance_dynamics(delta: float) -> bool:
 	if not visible or not is_finite(delta) or delta<=0.0:return false
 	var live:=false
 	for birth in _impact_births.values():
 		if _dynamics_clock-float(birth)<0.55:live=true;break
+	for kill: Array in _kill_births.values():
+		if _dynamics_clock-float(kill[0])<DEBRIS_LIFE:live=true;break
 	var elapsed:=minf(delta,0.05)
 	if live:
 		_dynamics_clock+=elapsed
@@ -152,6 +187,50 @@ static func engine_anchor(object: Dictionary, assets: RefCounted, frame: Diction
 			return {"engine":Modern.transform_point(point,fit)}
 	return {}
 
+# A kill is a drawn actor whose pointer showed its class's intact shape in the
+# previous prepared pass and its replacement now (traced: BRDM-2 141 -> 142 at
+# one pointer). Only drawn actors count: the allocated pool also holds
+# vehicles the original is not showing. A reused slot changes class, and a
+# pointer drawn twice in one pass is ambiguous; neither starts debris.
+func _observe_kills(data: Dictionary, previous: Dictionary) -> void:
+	for object: Dictionary in data.get("objects",[]):
+		var pointer:=int(object.get("pointer",-1))
+		if not object.get("dynamic_instance",false) or pointer<0: continue
+		_drawn_shapes[pointer]=int(object.get("shape_index",-1)) if pointer not in _drawn_shapes else -1
+	var births: Dictionary={}
+	for pointer: int in _drawn_shapes:
+		var shape: int=_drawn_shapes[pointer]
+		var kill: Array=_kill_births.get(pointer,[])
+		if shape<0: continue
+		if not kill.is_empty() and int(kill[1])==shape: births[pointer]=kill
+		elif KILL_WRECKS.get(int(previous.get(pointer,-1)),-1)==shape: births[pointer]=[_dynamics_clock,shape]
+	_kill_births=births
+
+# One screen-facing quad per kill, centred on the wreck's drawn rectangle and
+# wide enough for every fragment's flight. The shader animates the fragments
+# from the explicit dynamics clock and admits them pixel by pixel.
+func _debris(object: Dictionary, owner: int, seed: float, birth: float) -> void:
+	var hull:=drawn_rect(object,_frame)
+	if not hull.has_area(): return
+	var depth:=0.0
+	var points:=0
+	for polygon: Dictionary in object.get("polygons",[]):
+		for point: Array in polygon.get("camera_vertices",[]):
+			if float(point[1])>float(_frame.near_raw):depth+=float(point[1]);points+=1
+	if points==0: return
+	depth/=float(points)
+	var size:=maxf(hull.size.x,hull.size.y)
+	var centre:=hull.get_center()
+	var raw:=Modern.vec(Geometry.unproject(centre,depth,_frame))
+	var before:=puffs.size()
+	# Anchor -4 admits earlier terrain and sky as well; -3 keeps it on the wreck.
+	_puff(raw,size*1.4*depth/float(_frame.focal_pixels),1.0,4.0,seed,owner,centre,Rect2(),birth,-4.0 if size>=DEBRIS_OPEN_PIXELS else -3.0)
+	if puffs.size()>before:
+		# Fragments land on the wreck's drawn base, in quad units. A side-on
+		# wreck is far wider than tall, so its width cannot set the ground.
+		puffs[-1].append(hull.size.y*0.5/(size*1.4))
+		counts.debris+=1
+
 # effect_mappings, when supplied, holds art.mapping(object,camera,palette) for
 # every pass object in order (the draw pass already computed them this frame).
 func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets: RefCounted, art: RefCounted, effect_mappings: Array = []) -> void:
@@ -160,7 +239,12 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 	var previous_births:=_impact_births
 	clear()
 	_impact_births={}
+	# A pass that cannot be presented breaks the chain of observed shapes, so a
+	# vehicle that died while unseen never throws debris when it reappears.
+	var previous_shapes:=_drawn_shapes
+	_drawn_shapes={}
 	if mapping.is_empty() or ownership==null or not assets.supported_palette(data.get("palette_rgb",[])): return
+	_observe_kills(data,previous_shapes)
 	_frame=data.camera
 	_clip=Rect2(Vector2(_frame.clip[0],_frame.clip[1]),Vector2(_frame.clip[2]-_frame.clip[0]+1,_frame.clip[3]-_frame.clip[1]+1))
 	var origin: Vector3=mapping.origin
@@ -173,12 +257,16 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 	material.set_shader_parameter("plume_projection",Vector4(_clip.size.x,_clip.size.y,_clip.position.x-float(_frame.center[0]),float(_frame.center[1])-_clip.position.y)/float(_frame.focal_pixels))
 	var allowed:=Image.create(data.objects.size()+1,1,false,Image.FORMAT_RGBA8)
 	allowed.fill(Color.BLACK)
-	allowed.set_pixel(0,0,Color.WHITE)
+	allowed.set_pixel(0,0,Color(1.0,0.0,0.0)) # background: open ground/sky
 	for i in data.objects.size():
 		# Original terrain may receive a translucent smoke deployment; actors,
 		# trees and fallback commands always stay in front. Vehicle fumes and
 		# source effects are confined to their own painted pixels instead.
-		if assets.is_terrain(data.objects[i]): allowed.set_pixel(i+1,0,Color.WHITE)
+		# Green marks original impact sprites (shapes 168-185, not guided
+		# flares), the only foreign pixels kill debris may cross.
+		var object: Dictionary=data.objects[i]
+		var impact: bool=object.get("kind","")=="sprite" and int(object.get("shape_index",-1)) in range(168,186)
+		allowed.set_pixel(i+1,0,Color(1.0 if assets.is_terrain(object) else 0.0,1.0 if impact else 0.0,0.0))
 	var effects: Dictionary=data.get("world",{}).get("presentation_effects",{})
 	var smoke: Dictionary=effects.get("smoke",{})
 	if effects.get("schema",0)==1 and smoke.get("active",false) and world_position_ok(smoke.get("world_position_raw",[])):
@@ -210,6 +298,9 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 		var owner: int=i+1
 		var actor:=actor_for(object,data,actors)
 		var seed:=identity_seed(object)
+		var kill: Array=_kill_births.get(int(object.get("pointer",-1)),[])
+		if object.get("dynamic_instance",false) and not kill.is_empty() and int(object.get("shape_index",-1))==int(kill[1]) and _dynamics_clock-float(kill[0])<DEBRIS_LIFE:
+			_debris(object,owner,seed,float(kill[0]))
 		var effect: Dictionary=effect_mappings[i] if i<effect_mappings.size() else (art.mapping(object,_frame,data.palette_rgb) if art else {})
 		if not effect.is_empty():
 			# The original bitmap phase supplies the animation. Decorative ash
@@ -277,7 +368,8 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 			if p[8].has_area(): at=at.clamp(p[8].position,p[8].end)
 			var raw: Array=Geometry.unproject(at,float(p[0]),_frame)
 			vertices.append(Vector3(raw[0],raw[2],-raw[1])/64.0)
-			uv.append((at-Vector2(p[1]))/float(p[2]));uv2.append(Vector2(float(i),1.0 if p[8].has_area() else 0.0))
+			# UV2.y: 1 confines to the restrict rectangle; debris carries 2 + ground.
+			uv.append((at-Vector2(p[1]))/float(p[2]));uv2.append(Vector2(float(i),2.0+float(p[11]) if p.size()>11 else 1.0 if p[8].has_area() else 0.0))
 	var arrays:=[];arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_TEX_UV]=uv;arrays[Mesh.ARRAY_TEX_UV2]=uv2
 	_mesh.clear_surfaces();_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays);node.mesh=_mesh

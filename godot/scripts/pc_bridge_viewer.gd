@@ -1184,6 +1184,10 @@ func _reset_tactical_dynamics() -> void:
 
 func _animate_tactical_dynamics(delta: float) -> void:
 	if capture or closing or state_control_pending or not pending_state_command.is_empty() or not play_mode or not trace_mode or play_display==null or tandem_frame==null:return
+	# The guest runs on without the explicit clock: spend bursts, never freeze them.
+	if draw_view and (fast_forward>1 or not tactical_dynamics_allowed or tactical_dynamics.reduced_motion) and draw_view.tactical_effects.rest_dynamics():
+		play_display.world_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+		play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	if not tactical_dynamics_allowed or tandem_frame.graphics_mode!="tactical" or not tandem_frame.world_enabled or previous_program.get("name")!="SIM" or fast_forward>1:return
 	if audio_menu and (not audio_menu.window_focused or not audio_menu.open_menus.is_empty()):return
 	var armour_changed:bool=tactical_dynamics.advance(delta)

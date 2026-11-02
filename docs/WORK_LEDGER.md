@@ -9321,3 +9321,87 @@ entries and code alone; not pushed.
 Working if: Convoy and Siegen maps differ and every map shows its bridges and
 building without an empty band, no rebaked thin part renders black, and the
 admission gate passes within its unchanged guard on a quieter host.
+
+## 2 November 2026: Tactical kill debris
+
+Authorisation: Nell, 2 November 2026. Offered debris "inside the explosion's
+own pixels" and "flying out over empty ground and sky for about a second",
+with the risk that a speck can read as a distant vehicle named as theirs to
+decide. Reply: "All of it please." Suspension rocking of other vehicles was
+declined by agreement (the ownership clip limits it to under a pixel at
+ordinary range). Buildings were not offered and are excluded.
+
+Evidence for the trigger: recorded REA pilot passes
+(`artifacts/rea-victory-pilot-20261012/`) show 20 kills, every one keeping
+its pool pointer and swapping intact→replacement shape (BRDM-2 141→142,
+M60 127→128, T-64 117→118, M113 129→130). Some kills have an original impact
+sprite nearby and some do not. Drawn dynamic pointers were unique in all
+4,744 recorded passes. A slot was later reused by another class (28946:
+142 → T-72 119), which the class-pair check refuses.
+
+Changed: `pc_tactical_effects.gd` (kill observer, `KILL_WRECKS` matching the
+catalogue class table, one debris quad per kill, whitelist green channel for
+impact sprites) and `pc_tactical_effects.gdshader` (per-pixel admission;
+nine seeded fragments on the explicit clock, 1.1 s life). Tests:
+`test_pc_tactical_effects.gd` 106 checks, 0 errors; native
+`test_pc_effect_art.gd -- --tactical-particles` 228 checks, 0 errors, frames
+in `artifacts/kill-debris-20261102/native-03/`. Related headless gates pass
+(tactical world, dynamics, draw pass, effect modes, effect art, all eleven
+tactical-vehicle format shards). Four vehicle shards first hit the 120 s
+wall-clock limit while another repo's Godot test was running. HEAD and this
+change both pass shard 1 in 43–44 s; shard 4 took 100 s.
+
+Real-data smoke (treatment arm): the recorded campaign-road BRDM-2 kill
+(passes 1384→1391) through the real draw pass first threw nothing. The
+wreck is 5×1 pixels under an original impact sprite, and the single root
+pixel at its centre was background. The shader now probes a grid over the
+wreck's drawn rectangle for a wreck- or sprite-owned pixel. The kill then
+changes 18–43 screen pixels at 0.15–0.9 s, all owned by the wreck or the
+sprite, and none at 1.2 s (`artifacts/kill-debris-20261102/real-pass/`,
+scratch harness copied there). The native study gains a wholly-hidden-wreck
+check (229 checks, 0 errors, `native-04`).
+
+Reach of the open form: of 15 distinct recorded kills, 3 are drawn at 6 px
+or more (T-64 31 px, M60 18 px, BRDM-2 17 px), and one more at 5.9 px. Most
+are 3–5 px and stay confined. `DEBRIS_OPEN_PIXELS` is the knob if Nell wants
+more or fewer. The three open-form kills through the real draw pass
+(`real-pass-t64-close`, `real-pass-m60`, `real-pass-brdm-siegen`) change
+259–1778 screen pixels, all admitted by the rule, and none at 1.2 s. The
+close T-64 exposed a landing fault: the ground line scaled with wreck
+width, so fragments from a wide, flat side-on wreck landed in the
+foreground. Fragments now land on the wreck's drawn base (half-height,
+carried in UV2).
+
+Follow-up pass ("fix all issues ... best judgment", same day):
+
+* Fast forward, reduced motion and `--no-tactical-dynamics` advance the
+  guest without the explicit clock, so a kill there rendered at age zero on
+  a stale clock: a frozen clump of embers on the wreck that played late when
+  fast forward ended. New `rest_dynamics()` spends live bursts and hides the
+  clock; the viewer calls it on those frames. The original pause still
+  freezes a burst mid-flight, as it does sparks.
+* The visibility probe runs centre outward and stops at the first hit
+  (35 samples per fragment before). Output is unchanged: identical pixel
+  counts on both re-run real passes.
+* `DEBRIS_OPEN_PIXELS` stays 6. Below it, fragments thrown out would be
+  under a pixel, so the open form would add specks and no readable debris.
+* Source CI: three player-reference tests read generated private files the
+  source kit omits by design. They now carry the file's existing
+  `skipUnless` guard. The fourth failure is real and stays red:
+  `visuals.json` captions changed on 1 November (ddf647a), but the published
+  Web bundle (`remaster-assets-00.zip`) still holds the old bytes, which the
+  publication list correctly pins. In a full checkout the same check fails
+  for 49 published files: 35 player-reference files last changed in ddf647a
+  and 14 local `pc-tactical-roster-v1` files rebuilt since the bundle was
+  made. All 49 reach players with the pending Web rebuild above; the pins
+  stay as they are. Packaging is blocked again today by another session's
+  uncommitted tracked files.
+* Vehicle shard 4: 396 s at load average 253 (other sessions), against
+  100 s earlier. It does not exercise this code, and the 120 s limit is
+  deliberately inherited, so it is left alone.
+
+Final receipts: effects 111 checks, native study 229 (`native-06`), viewer
+dynamics 171, all 0 errors; viewer script parses.
+
+Not verified: a live kill in Play, actual Godot Web (blocked on the Web
+rebuild), and whether the open form ever reads as a target in play.

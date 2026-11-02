@@ -101,6 +101,7 @@ class PlayerReference(unittest.TestCase):
         self.assertEqual(len(mapping['instruction_slices']),9)
         self.assertEqual(mapping['original_titles'][0],'NUREMBURG HIGHWAY')
 
+    @unittest.skipUnless((REF/'scenario-convoy.svg').exists(), 'Generated private assets are outside the source-only kit')
     def test_terrain_maps_show_static_structures_and_fit_their_terrain(self):
         # Convoy and Siegen share terrain; only their bridges, buildings and
         # one tree differ. Omitting structures made the two maps identical.
@@ -302,6 +303,7 @@ class PlayerReference(unittest.TestCase):
                 image=obj.get_object()
                 if image.get('/Subtype')=='/Image':self.assertEqual(list(image.get('/Filter')),['/DCTDecode'])
 
+    @unittest.skipUnless((REF/'field-guide.html').exists(), 'Generated private assets are outside the source-only kit')
     def test_printed_html_is_light_and_shows_specifications(self):
         for name in ('field-guide.html','keyboard-controls.html'):
             text=(REF/name).read_text()
@@ -312,6 +314,7 @@ class PlayerReference(unittest.TestCase):
         self.assertIn('.grid{display:block}',css)
         self.assertNotIn('Modern model study.',(REF/'visuals.json').read_text())
 
+    @unittest.skipUnless((REF/'field-guide.html').exists(), 'Generated private assets are outside the source-only kit')
     def test_ranges_read_as_spans_not_lists(self):
         html=(REF/'field-guide.html').read_text()
         self.assertNotIn('Range: [',html)

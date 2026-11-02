@@ -85,6 +85,45 @@ vec3 tactical_particle_volume(vec3 colour, vec2 q, float density, float kind, ve
     return clamp(colour,vec3(0.0),vec3(1.0));
 }
 
+// Kill debris: nine seeded fragments thrown up from the wreck in the quad's
+// screen-facing frame, falling to a local ground line and resting there until
+// they fade. Age comes only from the explicit dynamics clock.
+const float DEBRIS_LIFE=1.1;
+vec4 kill_debris(vec2 q, float age, float seed, vec2 down, float pixel, float base) {
+    vec2 right=vec2(down.y,-down.x);
+    vec3 premultiplied=vec3(0.0);
+    float coverage=0.0;
+    for (int k=0;k<9;k++) {
+        float n=float(k);
+        float a=hash(vec2(seed*17.0+n,3.1));
+        float b=hash(vec2(seed*29.0+n,7.7));
+        float c=hash(vec2(seed*41.0+n,11.3));
+        float d=hash(vec2(seed*53.0+n,19.9));
+        float lift=0.9+b*0.8;
+        float ground=base+d*0.04;
+        // Gravity 3.2 quad units/s^2: landing solves -lift*t+1.6*t^2=ground.
+        float landing=(lift+sqrt(lift*lift+6.4*ground))/3.2;
+        float t=min(age,landing);
+        vec2 at=right*((c-0.5)*0.24+(a-0.5)*1.1*t)+down*(-lift*t+1.6*t*t);
+        float angle=a*6.2832+(b-0.5)*16.0*t;
+        vec2 local=mat2(vec2(cos(angle),-sin(angle)),vec2(sin(angle),cos(angle)))*(q-at);
+        vec2 outside=abs(local)-vec2(0.030+0.040*c,0.018+0.026*d);
+        float edge=length(max(outside,0.0))+min(max(outside.x,outside.y),0.0);
+        float hit=1.0-smoothstep(-0.5*pixel,0.5*pixel,edge);
+        // A third of the fragments leave hot and cool to charcoal.
+        float ember=step(0.62,b)*(1.0-smoothstep(0.04,0.35,age));
+        vec3 tone=mix(vec3(0.085,0.080,0.072),vec3(0.24,0.21,0.17),d);
+        // One lit face turns with the fragment, so the tumble reads.
+        float facing=dot(vec2(-sin(angle),cos(angle)),-down);
+        tone*=1.0+0.55*smoothstep(0.0,0.6,facing)*step(0.0,-local.y);
+        tone=mix(tone,vec3(1.0,0.56,0.20),ember);
+        premultiplied=tone*hit+premultiplied*(1.0-hit);
+        coverage=hit+coverage*(1.0-hit);
+    }
+    float fade=1.0-smoothstep(DEBRIS_LIFE-0.4,DEBRIS_LIFE,age);
+    return vec4(premultiplied/max(coverage,0.0001),coverage*fade);
+}
+
 void vertex() {
     emitter=texture(roots,vec2((UV2.x*2.0+0.5)/root_width,0.5));
     anchor=texture(roots,vec2((UV2.x*2.0+1.5)/root_width,0.5));
@@ -96,6 +135,8 @@ void fragment() {
     // Only colour grain is filtered; opacity and source coverage stay exact.
     vec2 q=UV;
     float filtered=1.0-smoothstep(0.12,0.65,max(length(dFdx(q*7.0)),length(dFdy(q*7.0))));
+    float pixel=max(length(dFdx(q)),length(dFdy(q)));
+    bool debris=emitter.y>3.5;
     float id=owner_at(SCREEN_UV);
     float root=owner_at(anchor.xy);
     // Emitter-owned puffs (vehicle fumes, flare glow, effect ash) require a
@@ -103,9 +144,36 @@ void fragment() {
     // nearer terrain, trees and actors that covered it cover the puff too.
     // Smoke deployments use only the observed terrain/background, never actors.
     if (id<0.0 || root<0.0 || id>=owner_count) discard;
-    if (emitter.x>0.0 && root!=emitter.x) discard;
-    if (confined>0.5) { if (id!=emitter.x) discard; }
-    else if (id!=emitter.x && texture(allowed_terrain,vec2((id+0.5)/owner_count,0.5)).r<0.5) discard;
+    if (!debris && emitter.x>0.0 && root!=emitter.x) discard;
+    vec4 owner_class=texture(allowed_terrain,vec2((id+0.5)/owner_count,0.5));
+    if (debris) {
+        // Kill debris covers the wreck's own pixels and original impact
+        // sprites. The open form (anchor -4) adds terrain and background the
+        // original painted before the wreck. Actors, trees and nearer terrain
+        // always stay in front. Nothing draws without the explicit clock.
+        bool open=anchor.w<-3.5 && id<emitter.x && owner_class.r>0.5;
+        if (id!=emitter.x && owner_class.g<0.5 && !open) discard;
+        if (dynamics_time<0.0 || emitter.w<=0.0 || dynamics_time-(emitter.w-1.0)>DEBRIS_LIFE) discard;
+        // The burst needs a visible source: some pixel of the wreck's drawn
+        // rectangle (half-extent 0.357 quad units) painted by the wreck or an
+        // impact sprite. A small wreck's centre may be a gap or covered, so
+        // probe a grid. A wreck wholly hidden by a crest throws nothing.
+        // Centre outward (0,-1,+1,-2,...), stopping at the first hit, so a
+        // visible wreck usually costs one or two samples per fragment.
+        vec2 uv_per_q=1.0/max(pixel*VIEWPORT_SIZE,vec2(0.0001));
+        bool seen=false;
+        for (int i=0;i<35 && !seen;i++) {
+            int ix=i%7;int iy=i/7;
+            float px=float((ix+1)/2)*(ix%2==1 ? -1.0 : 1.0);
+            float py=float((iy+1)/2)*(iy%2==1 ? -1.0 : 1.0);
+            float probe=owner_at(anchor.xy+vec2(px*0.11,py*0.07)*uv_per_q);
+            if (probe<0.0 || probe>=owner_count) continue;
+            seen=probe==emitter.x || texture(allowed_terrain,vec2((probe+0.5)/owner_count,0.5)).g>0.5;
+        }
+        if (!seen) discard;
+    }
+    else if (confined>0.5) { if (id!=emitter.x) discard; }
+    else if (id!=emitter.x && owner_class.r<0.5) discard;
     if (emitter.x==0.0 && texture(allowed_terrain,vec2((root+0.5)/owner_count,0.5)).r<0.5) discard;
     float coarse=noise(q*3.0+emitter.z*7.0);
     float detail=noise(q*7.0+emitter.z*11.0);
@@ -149,7 +217,7 @@ void fragment() {
         colour*=0.96+0.04*(billow*0.65+grain*0.35)*filtered;
     }
     if(anchor.w>=0.0 && anchor.w<=1.0)colour=tactical_impact_phase(colour,q,anchor.w);
-    if(dynamics_time>=0.0 && emitter.w>0.0) {
+    if(dynamics_time>=0.0 && emitter.w>0.0 && !debris) {
         // Short ballistic sparks, colour-only inside the incumbent alpha/mask.
         float age=max(dynamics_time-(emitter.w-1.0),0.0);
         float energy=1.0-smoothstep(0.16,0.55,age);
@@ -159,6 +227,12 @@ void fragment() {
         float spark=1.0-smoothstep(0.025,0.09,length(q-flight));
         colour=mix(colour,vec3(1.0,0.73,0.28),spark*energy*0.8);
     }
+    float alpha=density*anchor.z;
+    if (debris) {
+        vec4 chunk=kill_debris(q,max(dynamics_time-(emitter.w-1.0),0.0),emitter.z,-plume_frame.xy,pixel,confined-2.0);
+        colour=chunk.rgb;
+        alpha=chunk.a*anchor.z;
+    }
     ALBEDO=OUTPUT_IS_SRGB ? colour : pow(colour,vec3(2.2));
-    ALPHA=density*anchor.z;
+    ALPHA=alpha;
 }

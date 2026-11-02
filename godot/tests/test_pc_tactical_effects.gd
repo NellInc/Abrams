@@ -202,8 +202,108 @@ func run() -> void:
 	effects.prepare(sample([]),mapping,ownership,assets,art)
 	check(effects.puffs.is_empty() and not effects.visible,"empty frame clears all particles")
 	check(not effects._plumes_live and not effects.advance_dynamics(0.05),"empty source frame stops continuous plume redraws")
+	kill_debris(effects,directory,mapping,ownership,assets,art)
 	effects.free()
 	finish()
+
+func debris_rows(effects: Node3D) -> Array:
+	var rows: Array=[]
+	for n in effects.puffs.size():
+		if effects.puffs[n][4]==4.0: rows.append([n,effects.puffs[n]])
+	return rows
+
+func kill_debris(effects: Node3D, directory: String, mapping: Dictionary, ownership: Texture2D, assets: RefCounted, art: RefCounted) -> void:
+	# The class table must be the catalogue's own intact/replacement pairing.
+	var catalog: Dictionary=ModernAssets.new().load_catalogue(directory)
+	var models: Array=catalog.models.values() if catalog.models is Dictionary else catalog.models
+	var intact: Dictionary={}
+	var wrecks: Dictionary={}
+	for model: Dictionary in models:
+		for role: Dictionary in model.get("class_roles",[]):
+			var group: Dictionary=intact if role.variant=="primary" else wrecks if role.variant=="replacement" else {}
+			group[int(role.class_index)]=int(model.shape_index)
+	var pairs: Dictionary={}
+	for index: int in intact:
+		var shape: int=intact[index]
+		if index in wrecks and (shape in range(115,145) or shape==159):pairs[shape]=wrecks[index]
+	check(pairs==Effects.KILL_WRECKS,"kill table matches every catalogued vehicle class's replacement")
+	var alive:=vehicle(directory)
+	var dead:=alive.duplicate(true);dead.objects[0].shape_index=130;dead.world.dynamic[0].shape_index=130
+	effects.reset_dynamics()
+	effects.prepare(dead,mapping,ownership,assets,art)
+	check(effects.counts.debris==0,"a wreck first seen already destroyed throws nothing")
+	effects.prepare(alive,mapping,ownership,assets,art)
+	check(effects.counts.debris==0,"an intact vehicle throws nothing")
+	effects.prepare(dead,mapping,ownership,assets,art)
+	var rows:=debris_rows(effects)
+	check(effects.counts.debris==1 and rows.size()==1,"observed intact-to-wreck swap queues one debris quad")
+	if rows.size()==1:
+		var puff: Array=rows[0][1]
+		check(int(puff[6])==1 and float(puff[9])==effects._dynamics_clock and float(puff[10])==-4.0 and not Rect2(puff[8]).has_area(),"debris belongs to the wreck, starts now and may cross open ground")
+		var emitter: Color=effects._roots.get_pixel(int(rows[0][0])*2,0)
+		check(emitter.r==1.0 and emitter.g==4.0 and is_equal_approx(emitter.a,float(puff[9])+1.0),"root table carries owner, debris kind and birth")
+		var hull: Rect2=Effects.drawn_rect(dead.objects[0],frame)
+		check(Vector2(puff[1]).is_equal_approx(hull.get_center()) and is_equal_approx(float(puff[2]),maxf(hull.size.x,hull.size.y)*1.4),"debris quad is centred on the drawn wreck and spans its flight")
+		var ground:=hull.size.y*0.5/(maxf(hull.size.x,hull.size.y)*1.4)
+		var flags:PackedVector2Array=effects.node.mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV2]
+		var carried:=puff.size()==12 and is_equal_approx(float(puff[11]),ground)
+		for n in 6: carried=carried and is_equal_approx(flags[int(rows[0][0])*6+n].y,2.0+ground)
+		check(carried,"fragments land on the wreck's drawn base, carried to every debris vertex")
+	var birth: float=effects._dynamics_clock
+	check(effects.advance_dynamics(0.05) and effects._dynamics_clock>birth,"live debris advances the explicit clock")
+	effects.prepare(dead,mapping,ownership,assets,art)
+	rows=debris_rows(effects)
+	check(rows.size()==1 and float(rows[0][1][9])==birth,"a later pass keeps the original birth, never restarts the burst")
+	check(not effects.advance_dynamics(NAN) and not effects.advance_dynamics(-1.0),"invalid deltas cannot age debris")
+	for n in 30: effects.advance_dynamics(0.05)
+	check(not effects.advance_dynamics(0.05),"spent debris stops redraws")
+	effects.prepare(dead,mapping,ownership,assets,art)
+	check(effects.counts.debris==0,"spent debris leaves the queue")
+	# Refusals: each runs alive -> (gap) -> dead from a clean observation.
+	var reused:=alive.duplicate(true);reused.objects[0].shape_index=133;reused.world.dynamic[0].shape_index=133
+	var doubled:=alive.duplicate(true);doubled.objects.append(doubled.objects[0].duplicate(true))
+	var doubled_dead:=dead.duplicate(true);doubled_dead.objects.append(doubled_dead.objects[0].duplicate(true))
+	var unseen:=dead.duplicate(true);unseen.objects=[]
+	var thermal:=alive.duplicate(true);thermal.palette_rgb=thermal.palette_rgb.duplicate(true);thermal.palette_rgb[6]=[1,2,3]
+	var fixed:=alive.duplicate(true);fixed.objects[0].dynamic_instance=false
+	var fixed_dead:=dead.duplicate(true);fixed_dead.objects[0].dynamic_instance=false
+	for case: Array in [["reused slot of another class",[reused,dead]],["ambiguous pointer",[doubled,doubled_dead]],
+			["kill while not drawn",[alive,unseen,dead]],["unsupported palette between",[alive,thermal,dead]],
+			["static object",[fixed,fixed_dead]],["timeline reset between",[alive,null,dead]]]:
+		effects.reset_dynamics()
+		for pass_data in case[1]:
+			if pass_data==null: effects.reset_dynamics()
+			else: effects.prepare(pass_data,mapping,ownership,assets,art)
+		check(effects.counts.debris==0 and effects._kill_births.is_empty(),"%s throws nothing"%case[0])
+	# A distant kill keeps its debris on the wreck and impact sprites only.
+	var far:=alive.duplicate(true)
+	for polygon: Dictionary in far.objects[0].polygons:
+		for point: Array in polygon.camera_vertices: point[1]=float(point[1])*16.0
+	var far_dead:=far.duplicate(true);far_dead.objects[0].shape_index=130
+	effects.reset_dynamics()
+	effects.prepare(far,mapping,ownership,assets,art);effects.prepare(far_dead,mapping,ownership,assets,art)
+	rows=debris_rows(effects)
+	var far_size:=Effects.drawn_rect(far_dead.objects[0],frame).size
+	check(maxf(far_size.x,far_size.y)<Effects.DEBRIS_OPEN_PIXELS and rows.size()==1 and float(rows[0][1][10])==-3.0,"a small distant kill stays confined")
+	effects.reset_dynamics()
+	check(effects._kill_births.is_empty() and effects.material.get_shader_parameter("dynamics_time")==-1.0,"timeline reset drops debris and hides the clock")
+	# Fast forward / motion off: a burst is spent, never frozen at age zero.
+	var fresh:=Effects.new();root.add_child(fresh)
+	check(not fresh.rest_dynamics(),"resting a never-run clock changes nothing")
+	fresh.prepare(alive,mapping,ownership,assets,art);fresh.advance_dynamics(0.05)
+	fresh.prepare(dead,mapping,ownership,assets,art)
+	check(fresh.counts.debris==1 and fresh.rest_dynamics(),"rest spends a live kill burst")
+	check(fresh._kill_births.is_empty() and fresh.material.get_shader_parameter("dynamics_time")==-1.0 and not fresh.rest_dynamics(),"rest hides the clock once and is then idle")
+	fresh.prepare(dead,mapping,ownership,assets,art)
+	check(fresh.counts.debris==0 and not fresh.advance_dynamics(0.05),"a rested wreck cannot re-trigger or restart")
+	fresh.free()
+	# Whitelist: background is open ground (red), impact sprites green, flares not.
+	var marked:=alive.duplicate(true)
+	marked.objects.append({"kind":"sprite","shape_index":183,"polygons":[]})
+	marked.objects.append({"kind":"sprite","shape_index":186,"polygons":[]})
+	effects.prepare(marked,mapping,ownership,assets,art)
+	var whitelist: Image=effects.material.get_shader_parameter("allowed_terrain").get_image()
+	check(whitelist.get_pixel(0,0)==Color(1,0,0) and whitelist.get_pixel(1,0)==Color(0,0,0) and whitelist.get_pixel(2,0)==Color(0,1,0) and whitelist.get_pixel(3,0)==Color(0,0,0),"whitelist marks open background and impact sprites only")
 
 func finish() -> void:
 	print("PC_TACTICAL_EFFECTS: %d checks, %d errors"%[checks,errors.size()])

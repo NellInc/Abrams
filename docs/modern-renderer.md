@@ -108,7 +108,7 @@ Wheel geometry stays fixed, with subtle spoke/hub markings and track-band markin
 
 This is a position-anchored visual displacement cue, not a physical odometer or tangential wheel-travel calculation. The irrational axis weighting avoids exact cancellation for opposite-sign integer-grid x/y displacement. Correct accumulated wheel travel over arbitrary turning paths would require additional authoritative travel history; the renderer does not invent such history. Markings remain inside the unchanged wheel/track geometry and original ownership envelope.
 
-The Compatibility gate does not constitute a Forward+ comparison. There are no new dynamic shadows, volumetrics, debris, muzzle events, or sampled audio in this renderer. Existing source-triggered effects and audio remain in their established paths. Final mission-route, appearance, listening, long-session, and display-tier acceptance must be reported with their actual results rather than inferred from this bounded renderer test.
+The Compatibility gate does not constitute a Forward+ comparison. There are no new dynamic shadows, volumetrics, debris, muzzle events, or sampled audio in this renderer. Tactical alone adds short-lived kill debris, triggered by the original's wreck swap (see `graphics-modes.md`); Modern has none. Existing source-triggered effects and audio remain in their established paths. Final mission-route, appearance, listening, long-session, and display-tier acceptance must be reported with their actual results rather than inferred from this bounded renderer test.
 
 ## Recorded renderer result
 
