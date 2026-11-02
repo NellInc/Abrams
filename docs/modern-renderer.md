@@ -215,7 +215,9 @@ a stall. The mesh and ownership caches remain valid. The viewer requests
 camera is stationary, without decoding or recomposing the source frame.
 
 The clock rests during captures, source fallback, frontends, other graphics
-modes, state operations, open remaster menus and loss of focus. Checkpoint
+modes, state operations, open remaster menus, loss of focus, the original
+pause and fast forward. The original pause is held across saves, loads and
+graphics switches until the original sound gate shows it ended. Checkpoint
 timeline resets return it to phase zero. Captures and standalone renderer tests
 remain deterministic unless they explicitly advance the phase. Modern's static
 water and the other graphics modes retain their preceding treatment.

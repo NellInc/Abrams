@@ -43,7 +43,9 @@ func clear() -> void:
 	visible=false
 
 func reset_dynamics() -> void:
-	_impact_births={}
+	# A save or graphics switch does not rewind the guest: an impact already on
+	# screen keeps its spent burst instead of replaying it from age zero.
+	for key in _impact_births.keys():_impact_births[key]=-1.0
 	_dynamics_clock=0.0
 	_plume_phase=0.0
 	material.set_shader_parameter("dynamics_time",-1.0)

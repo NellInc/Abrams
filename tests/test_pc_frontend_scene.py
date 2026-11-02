@@ -149,6 +149,18 @@ class FrontendSceneTests(unittest.TestCase):
         self.scene.observe(50,{'di':shape['roots'][0]['offset']},data,0)
         primitive=shape['primitives'][0]
         self.scene.observe(51,{'si':primitive['offset']},data,0)
-        with self.assertRaisesRegex(ValueError,'vertex mismatch'):self.scene.observe(52,{},data,0)
+        # A mismatch drops the pass (original pixels show); it never ends Play.
+        self.scene.observe(52,{},data,0)
+        self.assertIsNone(self.scene.active)
+        self.assertEqual(self.scene.mismatches,1)
+        self.scene.observe(53,{},bytes(64000),0)
+        self.assertEqual(len(self.scene.completed),0)
+
+    def test_pointers_past_the_snapshot_drop_the_pass(self):
+        ram,regs,ds=self.snapshot();self.scene.observe(49,regs,ram,0)
+        data=bytearray(ram[ds:ds+65536])
+        struct.pack_into('<H',data,0x491c,0xffff)
+        self.scene.observe(50,{'di':0},data,0)
+        self.assertIsNone(self.scene.active)
 
 if __name__=='__main__':unittest.main()

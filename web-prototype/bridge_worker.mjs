@@ -326,6 +326,20 @@ async function applyKeys(keys) {
   held = next;
 }
 
+// One tab owns checkpoint storage at a time: two would share recovery slot 0
+// and show each other stale slot lists. The lock lasts this worker's life; a
+// browser without the Web Locks API keeps the previous behaviour.
+function claimCheckpointStorage() {
+  const locks = globalThis.navigator?.locks;
+  if (!locks?.request) return Promise.resolve(true);
+  return new Promise(resolve => {
+    locks.request('abrams-checkpoints', {ifAvailable: true}, lock => {
+      resolve(!!lock);
+      return lock ? new Promise(() => {}) : undefined;
+    }).catch(() => resolve(true));
+  });
+}
+
 async function boot(message) {
   if (core) throw new Error('The original game is already open');
   if (!(message.zip instanceof Uint8Array) || !(message.catalog instanceof Uint8Array) ||
@@ -338,7 +352,11 @@ async function boot(message) {
   buildId = message.buildId;
   let storageWarning;
   storageUnavailable = '';
-  try {
+  if (!await claimCheckpointStorage()) {
+    // This tab plays, but never shares recovery slot 0 or a stale slot list.
+    storageWarning = 'Another Abrams tab is using checkpoints.';
+    storageUnavailable = storageWarning;
+  } else try {
     for (let slot = 0; slot <= 5; slot++) {
       const saved = await storedSlot('get', slot);
       if (saved) storedSlots.set(slot, saved);

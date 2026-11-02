@@ -54,10 +54,29 @@ func contracts() -> void:
 	var held:=d.shift
 	check(not d.advance(0.05,false) and d.shift==held,"focus and menu freeze without clock catch-up")
 	var gate:={"id":4,"frame":32,"epoch":1,"kind":"gate","return_ip":0x4080,"enabled":false}
-	d.observe(sample(32,4,[gate]),true);held=d.shift
+	# Pause entry switches the original sound gate off (verified trace).
+	var pausing:=sample(32,4,[gate]);pausing.audio.enabled=false
+	d.observe(pausing,true);held=d.shift
 	check(d.paused and not d.advance(0.05) and d.shift==held,"original pause freezes response")
-	gate=gate.duplicate();gate.id=5;gate.frame=33;gate.return_ip=0x4092;gate.enabled=true
-	d.observe(sample(33,5,[gate]),true)
+	# A save, load or graphics switch while paused keeps the pause.
+	d.reset()
+	var still:=sample(33,4);still.audio.enabled=false;still.timeline_reset=true
+	d.observe(still,true)
+	check(d.paused,"reset and timeline break keep the original pause while its gate is off")
+	# Pause edges are read even while presentation is disabled (fast forward, other modes).
+	gate=gate.duplicate();gate.id=5;gate.frame=34;gate.return_ip=0x4092;gate.enabled=true
+	var resumed_off:=sample(34,5,[gate]);resumed_off.audio.enabled=false
+	d.observe(resumed_off,false)
+	check(not d.paused,"resume edge read while disabled")
+	gate=gate.duplicate();gate.id=6;gate.frame=35;gate.return_ip=0x4080;gate.enabled=false
+	var paused_off:=sample(35,6,[gate]);paused_off.audio.enabled=false
+	d.observe(paused_off,false)
+	check(d.paused,"pause edge read while disabled")
+	d.observe(sample(36,6),true)
+	check(not d.paused,"an open original sound gate is never paused")
+	d.reset()
+	gate=gate.duplicate();gate.id=7;gate.frame=37;gate.return_ip=0x4092;gate.enabled=true
+	d.observe(sample(37,7,[gate]),true)
 	check(not d.paused,"original resume releases freeze")
 	var restored:=sample(34,5,[shot(5,34)]);restored.timeline_reset=true
 	d.observe(restored,true)
@@ -232,7 +251,8 @@ func impacts_gpu() -> void:
 	var ownership:=ImageTexture.create_from_image(mask)
 	var packet:={"camera":frame,"palette_rgb":Modern.PC_PALETTE.duplicate(),"objects":[{"donor":0,"pointer":99,"polygons":[]}],"world":{}}
 	for donor in [0,1,2,3,18]:
-		packet.objects[0].donor=donor;effects.reset_dynamics()
+		# A distinct source actor per donor: a reset keeps an existing actor's burst spent.
+		packet.objects[0].donor=donor;packet.objects[0].pointer=99+donor;effects.reset_dynamics()
 		effects.prepare(packet,{"origin":Vector3.ZERO,"inverse":Basis.IDENTITY},ownership,Modern.new(),ImpactArt.new())
 		var before:=await snapshot(view)
 		if baseline_particles:
@@ -252,6 +272,13 @@ func impacts_gpu() -> void:
 		if donor in [0,1]:
 			effects.clear();effects.prepare(packet,{"origin":Vector3.ZERO,"inverse":Basis.IDENTITY},ownership,Modern.new(),ImpactArt.new())
 			check(effects._impact_births.values()[0]==0.0,"moving-camera mesh rebuild cannot restart an impact burst")
+			# A save or graphics switch (reset) does not rewind the guest: the
+			# impact already on screen keeps a spent burst rather than replaying.
+			var kept:=effects._impact_births.duplicate()
+			effects.reset_dynamics()
+			effects.prepare(packet,{"origin":Vector3.ZERO,"inverse":Basis.IDENTITY},ownership,Modern.new(),ImpactArt.new())
+			check(effects._impact_births.size()==kept.size() and effects._impact_births.values().all(func(birth):return float(birth)<0.0),"reset keeps an on-screen impact burst spent")
+			effects._impact_births=kept
 		check(animated==(donor in [0,1,2]),"registered impacts and smoke animate, unrelated hot effects stay static")
 		check((before.get_data()!=after.get_data())==(donor in [0,1,2]),"impact/plume colour motion visible, other effects exact")
 		var alpha_exact:=true

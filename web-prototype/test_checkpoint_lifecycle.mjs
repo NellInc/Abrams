@@ -88,6 +88,18 @@ test('a failure Godot detects reaches the page recovery once', async () => {
   assert.equal(bridge.queueControl({op: 'graphics'}), false);
 });
 
+test('a worker script that never loads, or an unreadable reply, fails with a real reason', async () => {
+  let bridge = host();
+  FakeWorker.last.onerror({});
+  await assert.rejects(bridge.first, /script could not load/);
+  bridge.close();
+  bridge = host();
+  FakeWorker.last.onmessageerror({});
+  await assert.rejects(bridge.first, /unreadable message/);
+  assert.equal(FakeWorker.last.stops, 1);
+  bridge.close();
+});
+
 test('worker startup/send failures reject viewer readiness too', async () => {
   const bridge = host();
   FakeWorker.last.onerror({message: 'crashed'});
@@ -589,6 +601,27 @@ test('missing and bounded blocked storage permit ready with explicit durable war
     await assert.rejects(ctx.self.state({op: 'load_state', id: 10, slot: 0}), /Checkpoints are unavailable in this session/);
     assert.equal(cores[0].ops.some(message => message.op === 'capture'), false);
   }
+});
+
+test('a second tab plays but leaves checkpoint storage to the tab that holds it', async () => {
+  const replies = [];
+  const {cores, FakeCoreWorker} = fakeCores();
+  const {runtime} = fakeObservers();
+  const requested = [];
+  const storage = fakeStorage();
+  const ctx = workerContext({Worker: FakeCoreWorker, loadObserverRuntime: async () => runtime,
+    indexedDB: storage.indexedDB, postMessage: message => replies.push(message),
+    navigator: {locks: {request(name, options, callback) {
+      requested.push([name, options.ifAvailable]);
+      return Promise.resolve(callback(null));
+    }}}});
+  await ctx.self.boot({zip: new Uint8Array(1), catalog: new Uint8Array(336060), buildId: 'a'.repeat(64)});
+  assert.deepEqual(requested, [['abrams-checkpoints', true]]);
+  const ready = JSON.parse(replies.find(message => message.packet?.type === 'ready').json);
+  assert.match(ready.storage_warning, /Another Abrams tab is using checkpoints/);
+  await assert.rejects(ctx.self.state({op: 'load_state', id: 1, slot: 0}), /Another Abrams tab.*Reload the page/);
+  assert.equal(cores[0].ops.some(message => message.op === 'capture'), false);
+  assert.equal(storage.writes.length, 0);
 });
 
 test('the core worker passes the original EXIT frame and rejects an unbounded one', async () => {

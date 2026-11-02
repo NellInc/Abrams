@@ -1170,6 +1170,8 @@ func _animate_ending(delta: float) -> void:
 func _animate_water(delta: float) -> void:
 	if capture or closing or state_control_pending or not pending_state_command.is_empty() or not play_mode or not trace_mode or play_display==null or tandem_frame==null or not tandem_frame.world_enabled or tandem_frame.graphics_mode!="tactical" or previous_program.get("name")!="SIM":return
 	if audio_menu and (not audio_menu.window_focused or not audio_menu.open_menus.is_empty()):return
+	# The original pause holds every explicit clock; fast forward rests it too.
+	if tactical_dynamics.paused or fast_forward>1:return
 	if draw_view.advance_water(delta):
 		# The same world texture changed on the GPU. Refresh the final cockpit
 		# without decoding source pixels or rebuilding its source-owned masks.

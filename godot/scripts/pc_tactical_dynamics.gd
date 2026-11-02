@@ -23,9 +23,22 @@ func clear_motion() -> void:
 	shift=Vector2.ZERO;velocity=Vector2.ZERO;target=Vector2.ZERO
 	_primed=false;_phase=0.0;_movement_age=0.0
 
+## A save, load or graphics switch resets motion, not the original pause: the
+## pause is held until the original sound gate shows it has ended.
 func reset() -> void:
 	clear_motion()
-	_epoch=-1;_frame=-1;_event=-1;_render_epoch=-1;_station="";paused=false;enabled=false
+	_epoch=-1;_frame=-1;_event=-1;_render_epoch=-1;_station="";enabled=false
+
+# Verified original pause/resume callsites, independent of F5 sound mute.
+# Pause entry (0x4080) always switches the original sound gate off and resume
+# (0x4092) back on, so a packet whose gate is on cannot be paused.
+func _track_pause(audio: Dictionary, epoch: int, frame: int) -> void:
+	for event: Dictionary in audio.get("events",[]):
+		if int(event.get("id",-1))<=_event or event.get("kind")!="gate":continue
+		if int(event.get("epoch",-2))!=epoch or frame-int(event.get("frame",-100)) not in range(0,7):continue
+		if int(event.get("return_ip",-1))==0x4080:paused=true
+		elif int(event.get("return_ip",-1))==0x4092:paused=false
+	if audio.get("active",false) and audio.get("enabled",false):paused=false
 
 static func position_ok(value: Variant) -> bool:
 	if not value is Array or value.size()!=3:return false
@@ -43,9 +56,11 @@ func observe(message: Dictionary, active: bool) -> void:
 	var render_epoch:=int(message.get("render_epoch",-1))
 	var discontinuity:bool=message.get("timeline_reset",false) or epoch!=_epoch or render_epoch!=_render_epoch or frame<_frame
 	if discontinuity:
-		clear_motion();paused=false;_event=int(audio.get("last_id",-1))
+		clear_motion();_event=int(audio.get("last_id",-1))
 		_epoch=epoch;_render_epoch=render_epoch
 	if not enabled:
+		# Pause edges are state: read them even while presentation is disabled.
+		_track_pause(audio,epoch,frame)
 		clear_motion();_event=int(audio.get("last_id",-1));_frame=frame
 		return
 	if frame<=_frame and not discontinuity:return
@@ -54,7 +69,6 @@ func observe(message: Dictionary, active: bool) -> void:
 	for event:Dictionary in audio.get("events",[]):
 		if int(event.get("id",-1))<=_event:continue
 		if int(event.get("epoch",-2))!=epoch or frame-int(event.get("frame",-100)) not in range(0,7):continue
-		# Verified original pause/resume callsites, independent of F5 sound mute.
 		if event.get("kind")=="gate":
 			if int(event.get("return_ip",-1))==0x4080:paused=true
 			elif int(event.get("return_ip",-1))==0x4092:paused=false
@@ -62,6 +76,7 @@ func observe(message: Dictionary, active: bool) -> void:
 		# a physical shot; a rejected trigger has no such dispatch.
 		if not paused and event.get("kind")=="sound" and event.get("sample")=="cannon" and int(event.get("ip",-1))==0x9107 and int(event.get("return_ip",-1))==0x33c4 and int(event.get("value",-1))==1:
 			velocity.y=minf(velocity.y+65.0,65.0);shots+=1
+	if audio.get("enabled",false):paused=false # an open sound gate is never paused
 	_event=int(audio.get("last_id",_event));_frame=frame
 	if paused:return
 	var raw:Variant=state.get("world_position_raw")

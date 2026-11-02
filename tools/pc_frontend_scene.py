@@ -97,7 +97,7 @@ class FrontendScene:
         # Immutable source tables are shared; observation state is per instance.
         self.anchors,self.shape_bytes,self.shapes,self.aliases=static_sources(directory)
         self.active=None;self.current=None;self.primitive=None;self.background=None
-        self.completed=deque(maxlen=4);self.sequence=0;self.vertices_checked=0
+        self.completed=deque(maxlen=4);self.sequence=0;self.vertices_checked=0;self.mismatches=0
 
     def clear(self):
         self.active=None;self.current=None;self.primitive=None;self.background=None
@@ -136,7 +136,11 @@ class FrontendScene:
             return
         if not self.active:return
         if event==50:
-            pointer=w(0x491c);index=raw[pointer+1]
+            # Guest pointers near the top of the DS snapshot cannot be read in full:
+            # that pass is incomplete and the menu keeps its original pixels.
+            pointer=w(0x491c)
+            if pointer+1>=len(raw) or w(0x532a)+18>len(raw):self.active=None;return
+            index=raw[pointer+1]
             if index>=len(self.shapes):self.active=None;return
             shape=self.shapes[index]
             if regs['di'] not in [r['offset'] for r in shape['roots']]:self.active=None;return
@@ -154,12 +158,17 @@ class FrontendScene:
             primitive=next((p for p in shape['primitives'] if p['offset']==self.primitive),None)
             if primitive is None:self.active=None;return
             vertices=primitive_camera_vertices(shape,primitive,self.current)
+            # A reconstruction that disagrees with the original's own vertices is
+            # never presented: the pass is dropped and the menu shows original
+            # pixels, as for every other miss here. It does not end Play.
             for encoded,expected in zip(primitive['encoded_indices'],vertices):
                 actual=[words(at+(encoded&127)*2,1)[0] for at in (0x4b69,0x4c69,0x4d69)]
-                if actual!=expected:raise ValueError('START source vertex mismatch')
+                if actual!=expected:
+                    self.mismatches+=1;self.active=None;self.current=None;return
                 self.vertices_checked+=1
             count=w(0x50b9)
-            if count>16:raise ValueError('START polygon exceeds source bounds')
+            if count>16:
+                self.mismatches+=1;self.active=None;self.current=None;return
             self.current['draw_order'].append({'kind':'polygon','index':len(self.current['polygons'])})
             self.current['primitive_ids'].append(self.primitive)
             self.current['polygons'].append({'primitive':self.primitive,'camera_vertices':vertices,

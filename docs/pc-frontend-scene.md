@@ -15,7 +15,10 @@ observer checkpoint ABI remains unchanged. Rebuild the trace core to obtain
 
 Every replayed polygon uses the original chosen primitive, actual matrix,
 camera, palette, painter order and clip. Computed vertices are checked against
-the original transformed vertex buffers. Twenty-one ANIM scenery shapes have
+the original transformed vertex buffers. A pass whose vertices or polygon size
+disagree, or whose guest pointers reach past the snapshot, is dropped and the
+menu keeps its original pixels; since 2 November 2026 it no longer ends Play.
+Twenty-one ANIM scenery shapes have
 exactly matching geometry and face colours in SHAPE.TBL; these reuse the
 existing Modern scenery. ANIM-only tank components retain their own geometry,
 rendered at high resolution, without being mistaken for gameplay shape IDs.
