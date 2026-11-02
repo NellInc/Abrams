@@ -334,9 +334,24 @@ rejected after the capture flush is still recovered by the rollback, which never
 revalidates it. A worker whose supervisor has gone (EPIPE, or EINVAL on Windows)
 shuts down quietly; any other output fault is reported.
 
+Since 1 November 2026:
+
+* The worker copies the flushed overlay into the capture before it replies, so
+  the copy pairs with the captured RAM. A failed copy refuses the capture while
+  the old worker is still live.
+* A save resumes the new worker from the capture before writing the slot. A
+  capture that cannot resume therefore never replaces a slot, or rotates its
+  archive away.
+* A failed load of recovery slot 0 writes that slot's previous contents back.
+* A damaged live overlay still refuses a save. It no longer blocks a load, which
+  replaces that overlay: the load proceeds without updating the recovery slot,
+  and its message says so.
+
 Working if: `python3 -m unittest tests.test_pc_save_states -v` passes, a `_capture`
-or out-of-range slot from the client is rejected, and a failed load leaves the
-session running from the recovery capture.
+or out-of-range slot from the client is rejected, a failed load leaves the
+session running from the recovery capture, an unresumable save leaves its slot
+unchanged, and a live save, load and slot-0 load through `tools/pc_bridge_host.py`
+each report success.
 
 Core logs use stderr. Godot uses [nonblocking process pipes](https://docs.godotengine.org/en/stable/classes/class_os.html#class-os-method-execute-with-pipe)
 with one request outstanding. If Godot exits or closes the pipe while a reply

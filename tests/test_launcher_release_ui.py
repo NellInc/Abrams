@@ -176,7 +176,10 @@ class LauncherReleaseUI(unittest.TestCase):
         self.assertEqual(SOURCE.count('DispatchQueue.global().async'), 4)
         self.assertIn('Self.readOutput(out, limit: 65536)', call)
         self.assertIn('Self.readOutput(err, limit: 65536)', call)
-        self.assertIn('Self.readOutput(pipe, limit: 16384)', play)
+        # The game's console is also kept in full in the profile's logs/game.log.
+        self.assertIn('Self.readOutput(pipe, limit: 16384, log: log)', play)
+        self.assertIn('let log = Self.gameLog(home: home)', play)
+        self.assertIn('try? log?.write(contentsOf: data)', SOURCE)
         self.assertIn('if tail.count > limit { tail = Data(tail.suffix(limit)) }', SOURCE)
         self.assertIn('func windowShouldClose(_ sender: NSWindow) -> Bool { canCloseLauncher() }', SOURCE)
         self.assertIn('if running != nil || busy {', SOURCE)

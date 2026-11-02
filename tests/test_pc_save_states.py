@@ -348,8 +348,8 @@ class SupervisorCheckpointTests(unittest.TestCase):
     STEP = {'op': 'step', 'id': 8, 'frames': 1, 'keys': []}
     QUIT = {'op': 'quit'}
 
-    def session(self, reply, commands, close_error=None, args=None, store=None):
-        worker = type('Worker', (FakeWorker,), {'made': [], 'reply': staticmethod(reply), 'close_error': close_error})
+    def session(self, reply, commands, close_error=None, args=None, store=None, base=None):
+        worker = type('Worker', (base or FakeWorker,), {'made': [], 'reply': staticmethod(reply), 'close_error': close_error})
         stdin = io.StringIO(''.join(json.dumps(command) + '\n' for command in commands))
         args = args or SimpleNamespace(saves=self.root/'saves', core=self.root/'core', content=self.root/'game.zip', backend='trace')
         out, err, raised = io.StringIO(), io.StringIO(), None
@@ -515,6 +515,74 @@ class SupervisorCheckpointTests(unittest.TestCase):
         self.assertEqual(self.store.path(1).with_suffix('.previous.zip').read_bytes(), previous)
         self.assertEqual(self.store.disk.read_bytes(), first['campaign.zip'])
         self.assertIn('previous_saved_at', result['slots'][1])
+
+    @staticmethod
+    def failing_resume(fails):
+        """A worker whose first resume from a workspace whose name starts with `fails` refuses."""
+        class Refusing(FakeWorker):
+            refused = []
+            def __init__(self, argv, lock, resume=None):
+                if resume and Path(resume).name.startswith(fails) and not type(self).refused:
+                    type(self).refused.append(resume)
+                    raise RuntimeError('Restored RAM does not match the checkpoint')
+                super().__init__(argv, lock, resume)
+        return Refusing
+
+    def test_unresumable_save_keeps_the_slot_and_its_archive(self):
+        self.store.write(1, self.capture)
+        kept = self.store.path(1).read_bytes()
+        lines, made, _, raised = self.session(lambda worker, message: self.captured(message), [self.SAVE, self.QUIT],
+                                              base=self.failing_resume('.capture-'))
+        self.assertIsNone(raised)
+        self.assertFalse(lines[1]['success'])
+        self.assertIn('does not match', lines[1]['message'])
+        self.assertTrue(lines[1]['restored'])
+        # Only a capture that resumed is ever written to a slot.
+        self.assertEqual(self.store.path(1).read_bytes(), kept)
+        self.assertFalse(self.store.path(1).with_suffix('.previous.zip').exists())
+
+    def test_failed_slot_write_keeps_the_worker_that_already_resumed(self):
+        def fail(*_): raise OSError(28, 'No space left on device')
+        with patch.object(self.store, 'write', side_effect=fail):
+            result, made, _ = self.supervise(lambda worker, message: self.captured(message))
+        self.assertFalse(result['success'])
+        self.assertIn('No space left', result['message'])
+        self.assertEqual(len(made), 2)  # the resumed worker is the rollback; no second restart
+
+    def test_failed_recovery_slot_load_keeps_that_undo_point(self):
+        (self.capture/'state.bin').write_bytes(b'undo-point')
+        self.store.write(0, self.capture)
+        (self.capture/'state.bin').write_bytes(b'live-session')
+        load = {'op': 'load_state', 'id': 9, 'slot': 0}
+        lines, made, _, raised = self.session(lambda worker, message: self.captured(message), [load, self.QUIT],
+                                              base=self.failing_resume('.restore-'))
+        self.assertIsNone(raised)
+        self.assertFalse(lines[1]['success'])
+        self.assertEqual(made[-1].state, b'live-session')  # rolled back to the live game
+        self.assertEqual(self.store.read(0)[1]['state.bin'], b'undo-point')
+
+    def test_worker_overlay_copy_pairs_with_the_captured_ram(self):
+        # A worker copies the flushed overlay inside its capture; a later change
+        # to the live file (a cold boot deleting SIM.OUT) never reaches the slot.
+        def reply(worker, message):
+            shutil.copy(self.capture/'campaign.zip', Path(message['directory'])/'campaign.zip')
+            self.store.disk.write_bytes(b'changed after the capture')
+            return self.captured(message)
+        result, made, _ = self.supervise(reply)
+        self.assertTrue(result['success'], result)
+        self.assertEqual(self.store.read(1)[1]['campaign.zip'], self.disk.getvalue())
+
+    def test_damaged_live_overlay_still_loads_a_good_slot(self):
+        self.store.write(1, self.capture)
+        self.store.disk.write_bytes(b'not a campaign archive')
+        load = {'op': 'load_state', 'id': 9, 'slot': 1}
+        lines, made, _, raised = self.session(lambda worker, message: self.captured(message), [load, self.QUIT])
+        self.assertIsNone(raised)
+        self.assertTrue(lines[1]['success'], lines[1])
+        self.assertIn('recovery slot not updated', lines[1]['message'])
+        self.assertIn('damaged campaign overlay', lines[1]['message'])
+        self.assertFalse(self.store.path(0).exists())
+        self.assertEqual(self.store.disk.read_bytes(), self.disk.getvalue())
 
     def test_load_previous_without_an_archive_keeps_the_live_worker(self):
         requests = []

@@ -210,6 +210,15 @@ class ValidateGateTests(unittest.TestCase):
                                text=True, capture_output=True).stdout.splitlines()
         self.assertEqual(len(noted), 2)
 
+    def test_unittest_skip_counts_reach_the_summary(self):
+        # The web-prototype unittest run, like reference, records its skips.
+        run_check = GATE.read_text().split('run_check() {', 1)[1].split('\n}\n', 1)[0]
+        self.assertIn("printf 'SKIPPED %s total=%s\\n' \"$name\" \"$skipped\" >> \"$OUT/results.txt\"", run_check)
+        script = "skipped=$(sed -n 's/^OK (skipped=\\([0-9][0-9]*\\))$/\\1/p' | tail -n 1); echo \"$skipped\""
+        for log, expected in [('Ran 9 tests\n\nOK (skipped=3)\n', '3'), ('Ran 9 tests\n\nOK\n', '')]:
+            counted = subprocess.run(['sh', '-c', script], input=log, text=True, capture_output=True).stdout.strip()
+            self.assertEqual(counted, expected)
+
     def test_check_names_are_unique(self):
         names = [row[1] for row in self.table]
         self.assertEqual(len(names), len(set(names)))

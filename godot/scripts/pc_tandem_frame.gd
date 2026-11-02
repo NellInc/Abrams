@@ -148,13 +148,19 @@ func _decoded_mask(slot: String, encoded: String) -> Image:
 	if cached.is_empty() or cached.encoded!=encoded:
 		_mask_cache.erase(slot)
 		var mask := Image.new()
-		if mask.load_png_from_buffer(Marshalls.base64_to_raw(encoded)) != OK or mask.get_size() != Vector2i(320,200) or mask.has_mipmaps(): return null
+		if mask.load_png_from_buffer(Marshalls.base64_to_raw(encoded)) != OK or mask.get_size() != Vector2i(320,200) or mask.has_mipmaps():
+			# Remember the failure: an unchanged bad mask is not decoded (and
+			# logged) again every frame.
+			_mask_cache[slot]={"encoded":encoded,"bytes":null}
+			return null
 		cached={"encoded":encoded,"bytes":mask.get_data(),"format":mask.get_format(),"texture":null}
 		_mask_cache[slot]=cached
+	if cached.bytes==null: return null
 	return Image.create_from_data(320,200,false,cached.format,cached.bytes)
 
 func _mask_texture(slot: String) -> ImageTexture:
-	var cached: Dictionary=_mask_cache[slot]
+	var cached: Dictionary=_mask_cache.get(slot,{})
+	if cached.get("bytes")==null: return null
 	if cached.texture==null: cached.texture=ImageTexture.create_from_image(Image.create_from_data(320,200,false,cached.format,cached.bytes))
 	return cached.texture
 

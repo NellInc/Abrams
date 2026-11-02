@@ -51,6 +51,10 @@ FIXTURES = {
     'artifacts/pc-portrait-lifecycle-trace-01': 'pc_portrait_coverage',
     'artifacts/pc-sprite-controls-02': 'pc_effect_art, pc_hill_art, pc_vehicle_art, pc_modern, pc_modern_mapping_reuse',
     'artifacts/performance-60fps-20260929/optimized-canvas/diagnostic-draws.json': 'pc_modern_mapping_reuse',
+    # Optional captures these checks skip, not fail, when absent.
+    'artifacts/environment-bindings-20261026/field-native-v2/retained-field-ownership.png': 'pc_world_audio',
+    'artifacts/finish-abrams-20261025/campaign-source-guided-26-01/campaign-first-original-battle-26-actual.json': 'pc_world_audio',
+    'artifacts/tactical-vehicles-20261017/original-approach/capture.json': 'pc_tactical_vehicles_format_*',
 }
 
 # Inputs of the opt-in VALIDATE_LIVE=1 tier. Each test reads its report and

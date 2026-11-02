@@ -55,6 +55,14 @@ const FAMILY_SHAPES := {133:"trackedfallback",135:"trackedfallback",139:"tracked
 	137:"wheeledfallback",141:"wheeledfallback",143:"wheeledfallback"}
 const CUE_PLAYERS := {"trackedfallback":"m113","wheeledfallback":"truck"}
 const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley", "trackedfallback"]
+# Cues whose recording names a vehicle class (and with it often a side).
+const CLASS_CUES := GROUND_MOTOR_CUES + ["truck", "wheeledfallback", "brdm"]
+# Same-owner witnesses must be this far apart (squared source pixels). In the
+# retained all-scenario capture, every class drawn at 2-6 source pixels is the
+# same one-row grey dash; recognisable outlines first appear at 8-10. A class
+# recording therefore waits until the original pixels could show the class.
+const WITNESS_SQ := 16.0
+const CLASS_WITNESS_SQ := 64.0
 const DETAIL_CUES := ["woodland", "truck", "tracks"]
 const CUES := ["river", "hind", "field", "cow", "t80", "t72", "brdm", "tank", "m113", "bradley", "woodland", "truck", "tracks", "missileflight", "trackedfallback", "wheeledfallback"]
 const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "brdm":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04,"missileflight":0.30,"trackedfallback":0.30,"wheeledfallback":0.30}
@@ -556,7 +564,7 @@ static func visible_cues(mask: Image, token: Dictionary) -> Array[String]:
 			# Require separated original pixels of the SAME source owner. A lone
 			# edge pixel or two separate tiny actors cannot announce a class.
 			if id not in witnesses: witnesses[id] = Vector2i(x, y)
-			elif Vector2(witnesses[id]).distance_squared_to(Vector2(x, y)) >= 16.0:
+			elif Vector2(witnesses[id]).distance_squared_to(Vector2(x, y)) >= (CLASS_WITNESS_SQ if cue in CLASS_CUES else WITNESS_SQ):
 				found.append(cue)
 				if found.size() == wanted.size(): return found
 	for cue: String in ["field", "t80", "t72", "brdm", "tank", "m113", "bradley", "woodland", "truck", "trackedfallback", "wheeledfallback"]:
@@ -596,17 +604,17 @@ static func narrow_visible(bytes: PackedByteArray, stride: int, token: Dictionar
 			if centre.x<0 or centre.y<0 or centre.x>=width or centre.y>=height: continue
 			var owned: int = (centre.y*width+centre.x)*stride
 			if bytes[owned]+(bytes[owned+1]<<8) != owner_id: continue
-			if cue in GROUND_MOTOR_CUES or cue in ["truck","wheeledfallback","brdm"]:
+			if cue in CLASS_CUES:
 				# Every endpoint is an actual observed pixel, never a bounding-box
 				# corner or a sum across actors. Before a pair succeeds, all points
-				# fit within <4 pixels of the first: at most49 lattice positions.
+				# fit within <8 pixels of the first: at most 225 lattice positions.
 				for witness: Vector2i in witnesses:
-					if Vector2(witness).distance_squared_to(Vector2(source))>=16.0: return true
+					if Vector2(witness).distance_squared_to(Vector2(source))>=CLASS_WITNESS_SQ: return true
 				if source not in witnesses: witnesses.append(source)
-				if witnesses.size()>49: return false
+				if witnesses.size()>225: return false
 			else:
 				if first.x<0: first=source
-				elif Vector2(first).distance_squared_to(Vector2(source))>=16.0: return true
+				elif Vector2(first).distance_squared_to(Vector2(source))>=WITNESS_SQ: return true
 	return false
 
 func after_draw() -> void:

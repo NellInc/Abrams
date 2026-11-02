@@ -68,7 +68,7 @@ Mutable files are outside the app, in
 * `content/` contains the verified PC import and optional Genesis revision receipt.
 * `versions/<build-id>/` contains a verified runnable copy of that app's payload.
 * `saves/` holds campaign disk changes, five save-state slots and load recovery.
-* `logs/` holds startup/bridge diagnostics and explicitly requested captures.
+* `logs/` holds startup/bridge diagnostics, explicitly requested captures and `game.log`, the game's complete console output per session (appended by the launcher from the output it already drains; a symlinked `logs/` or `game.log` is refused).
 
 An upgrade stages a new version without replacing older versions, imported
 content or saves. Older apps remain usable for rollback with the same data home,

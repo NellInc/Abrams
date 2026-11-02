@@ -683,11 +683,24 @@ Paid originals/derivatives remain outside Git and every package allowlist.
 
 Admission uses the current production painter-ownership target after an explicit
 single draw, plus the original scanout-paired binary UI mask. It requires two
-separated original-pixel witnesses for one owner. IDs, mesh, camera, dimensions,
+separated original-pixel witnesses for one owner: at least four source pixels
+apart for river, field, woodland, Hind and flight, and at least eight for any
+cue whose recording names a vehicle class (T-80, T-72, generic tank, M113,
+Bradley, BRDM, truck and the tracked/wheeled fallbacks; chain texture follows
+them). In the retained all-scenario capture (`pc-all-scenarios-trace-01`, 194
+drawn vehicles), every class drawn at 2-6 source pixels is the same one-row grey
+dash; recognisable outlines first appear at 8-10. Below eight pixels a vehicle
+stays silent rather than announcing its class or side (1 November 2026,
+`CLASS_WITNESS_SQ` in `pc_world_audio.gd`; a fidelity tightening Nell can veto).
+IDs, mesh, camera, dimensions,
 source audio frame/epoch and current visibility are checked again at consumption.
 No new ownership texture, shader, geometry or guest state is authored. No disk
 reads occur while admitting a frame. The bounded pixel grid can conservatively
 miss small visible fragments; it never extrapolates an occluded actor.
+
+Working if: a vehicle whose same-owner pixels lie seven source pixels apart stays
+silent, eight admits its class bed, and river, field, woodland and Hind keep the
+four-pixel rule (`test_pc_world_audio.gd`).
 
 River admission requires a pinned water-only object. Hind admission requires
 intact shape 163, a unique actor in the paired draw-start world snapshot and a

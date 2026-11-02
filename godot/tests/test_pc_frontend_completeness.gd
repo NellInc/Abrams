@@ -32,7 +32,8 @@ func run() -> void:
 	if not FileAccess.file_exists(fixture):
 		printerr("FAIL: frontend lifecycle fixture missing: "+fixture);quit(2);return
 	native="--native" in args
-	out=args[args.find("--output")+1] if "--output" in args else fixture.get_base_dir().path_join("rendered")
+	# Never beside the fixture: a new folder there changes the pinned input.
+	out=args[args.find("--output")+1] if "--output" in args and args.find("--output")+1<args.size() else ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("artifacts/pc-frontend-completeness-native")
 	if native: DirAccess.make_dir_recursive_absolute(out)
 	display=SubViewport.new();display.size=Vector2i(1280,800);display.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(display)
 	original=TextureRect.new();original.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;original.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST;original.size=display.size;display.add_child(original)

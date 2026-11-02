@@ -140,7 +140,9 @@ func run() -> void:
 	check(frame.typography.load_sources(repo.path_join("GAME")),"pinned original faces")
 	contracts()
 	var args:=OS.get_cmdline_user_args()
-	if "--native" in args:
+	if "--native" in args and not (args.find("--fixture")>=0 and args.find("--fixture")+1<args.size() and args.find("--output")>=0 and args.find("--output")+1<args.size()):
+		check(false,"native run requires --fixture and --output paths")
+	elif "--native" in args:
 		var output: String = args[args.find("--output")+1]
 		DirAccess.make_dir_recursive_absolute(output)
 		var path: String = args[args.find("--fixture")+1]

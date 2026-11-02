@@ -84,6 +84,12 @@ func _run() -> void:
 			var im := await snapshot()
 			for y in 200:
 				for x in 320: matches(im,source,x,y,1,"fallback")
+	# An undecodable mask falls back and is remembered, not decoded every frame.
+	var undecodable := packet(mask,clip)
+	undecodable.ui_overlay.mask_png=Marshalls.raw_to_base64("not a png".to_utf8_buffer())
+	check(not composite.set_frame(source,undecodable,world) and composite.fallback_reason=="invalid UI mask image", "undecodable mask accepted")
+	check(composite._mask_cache.get("ui",{}).get("encoded")==undecodable.ui_overlay.mask_png and composite._mask_cache.ui.bytes==null, "undecodable mask failure is cached")
+	check(not composite.set_frame(source,undecodable,world) and composite.fallback_reason=="invalid UI mask image", "cached undecodable mask still falls back")
 	mask.set_pixel(0,0,Color(0.5,0.5,0.5))
 	check(not composite.set_frame(source,packet(mask,clip),world), "nonbinary mask accepted")
 	mask.set_pixel(0,0,Color.WHITE)

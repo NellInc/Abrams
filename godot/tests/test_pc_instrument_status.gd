@@ -20,7 +20,9 @@ func run() -> void:
 			check(instruments.gauges.is_empty(),"no invented system off/unknown state "+spec.name)
 	var args := OS.get_cmdline_user_args()
 	if "--oracle" in args: system_oracle(args[args.find("--oracle")+1])
-	if "--native" in args:
+	if "--native" in args and not (args.find("--fixture")>=0 and args.find("--fixture")+1<args.size() and args.find("--output")>=0 and args.find("--output")+1<args.size()):
+		check(false,"native run requires --fixture and --output paths")
+	elif "--native" in args:
 		var output: String = args[args.find("--output")+1]
 		await native(args[args.find("--fixture")+1],output)
 		var receipt: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(output.path_join("report.json")))

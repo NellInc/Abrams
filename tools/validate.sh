@@ -199,6 +199,11 @@ run_check() {
     # A passing check that skipped part of itself (absent optional input) says
     # so in the summary, not only in its own log.
     grep -E 'NOT[_ ]RUN|^SKIP:' "$OUT/$name.log" | sed "s/^/NOT RUN in $name: /" >> "$OUT/results.txt" || true
+    # A unittest check's skip count is recorded too (reference has its own line).
+    if [ "$name" != reference ]; then
+      skipped=$(sed -n 's/^OK (skipped=\([0-9][0-9]*\))$/\1/p' "$OUT/$name.log" | tail -n 1)
+      if [ -n "$skipped" ]; then printf 'SKIPPED %s total=%s\n' "$name" "$skipped" >> "$OUT/results.txt"; fi
+    fi
   else
     rc=$?
     cat "$OUT/$name.log"

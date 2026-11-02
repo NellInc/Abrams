@@ -41,20 +41,28 @@ def sha(path):
     return result.hexdigest()
 
 
-def write_json(path, value):
+def _atomic(path, mode, write):
     # Same-directory exclusive temporary file, followed by atomic replacement.
-    with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, prefix='.'+path.name, delete=False) as stream:
-        json.dump(value, stream, indent=2); stream.write('\n'); stream.flush(); os.fsync(stream.fileno())
+    # A failed write (disk full) removes its temporary file instead of leaving it.
+    with tempfile.NamedTemporaryFile(mode=mode, dir=path.parent, prefix='.'+path.name, delete=False) as stream:
         temporary = Path(stream.name)
-    temporary.replace(path)
+        try:
+            write(stream); stream.flush(); os.fsync(stream.fileno())
+        except BaseException:
+            stream.close(); temporary.unlink(missing_ok=True)
+            raise
+    try: temporary.replace(path)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def write_json(path, value):
+    _atomic(path, 'w', lambda stream: (json.dump(value, stream, indent=2), stream.write('\n')))
 
 
 def write_bytes(path, data):
-    # Same-directory exclusive temporary file, followed by atomic replacement.
-    with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.'+path.name, delete=False) as stream:
-        stream.write(data); stream.flush(); os.fsync(stream.fileno())
-        temporary = Path(stream.name)
-    temporary.replace(path)
+    _atomic(path, 'w+b', lambda stream: stream.write(data))
 
 
 # Name-surrogate reparse tags; the stat module defines them only on Windows.
@@ -463,7 +471,7 @@ def genesis_state(home, manifest):
     # leaves Genesis off and PC play available; adding the ROM rewrites it.
     unrecognised = (False, 'This version does not recognise the saved Genesis import. Add the Genesis ROM again to enable it.')
     try: data = json.loads(receipt.read_text())
-    except (ValueError, UnicodeDecodeError): return unrecognised
+    except (ValueError, UnicodeDecodeError, OSError): return unrecognised
     if data == {'schema': 1, 'rom_sha256': ROM_SHA}:
         return False, 'This version derives its Genesis presentation from the ROM itself. Add the Genesis ROM again to enable it.'
     if (not isinstance(data, dict) or set(data) != {'schema', 'rom_sha256', 'files', 'unavailable'}
@@ -473,7 +481,9 @@ def genesis_state(home, manifest):
     for digest in data['files'].values():
         if not re.fullmatch(r'[0-9a-f]{64}', str(digest)): return unrecognised
         path = stored(home, digest)
-        if not regular(path) or sha(path) != digest:
+        try: intact = regular(path) and sha(path) == digest
+        except OSError: intact = False
+        if not intact:
             return False, 'Imported Genesis data is missing or changed. Add the Genesis ROM again.'
     rows = derived_rows(manifest, 'genesis')
     unavailable = {str(entry).split(': ', 1)[0] for entry in data['unavailable']}

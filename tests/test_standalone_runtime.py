@@ -223,6 +223,27 @@ class StandaloneRuntimeTests(unittest.TestCase):
         self.assertFalse(status['genesis_enabled'])
         self.assertIn('Genesis ROM again', status['problem'])
 
+    def test_unreadable_genesis_receipt_keeps_pc_play(self):
+        self.imported()
+        receipt = self.home / 'content/genesis.json'
+        receipt.write_text(json.dumps({'schema': 1, 'rom_sha256': runtime.ROM_SHA}))
+        with patch.object(Path, 'read_text', side_effect=PermissionError(13, 'Permission denied')):
+            enabled, problem = runtime.genesis_state(self.home, self.manifest)
+        self.assertFalse(enabled)
+        self.assertIn('Genesis ROM again', problem)
+        status = runtime.status(self.bundle, self.home)
+        self.assertTrue(status['pc_installed'])
+
+    def test_failed_atomic_write_leaves_no_temporary_file(self):
+        folder = self.root / 'atomic'; folder.mkdir()
+        with patch.object(runtime.os, 'fsync', side_effect=OSError(28, 'No space left on device')):
+            with self.assertRaises(OSError): runtime.write_bytes(folder / 'x.png', b'data')
+            with self.assertRaises(OSError): runtime.write_json(folder / 'x.json', {'a': 1})
+        self.assertEqual(list(folder.iterdir()), [])
+        runtime.write_json(folder / 'x.json', {'a': 1})
+        self.assertEqual(json.loads((folder / 'x.json').read_text()), {'a': 1})
+        self.assertEqual([p.name for p in folder.iterdir()], ['x.json'])
+
     def test_receipt_listing_pinned_data_as_unavailable_never_enables_genesis(self):
         # Every committed Genesis row claimed unavailable, with no data at all.
         table = json.loads((REPO / 'tools/standalone/import-derived.json').read_text())

@@ -1,5 +1,11 @@
 {
  "fixtures": {
+  "artifacts/environment-bindings-20261026/field-native-v2/retained-field-ownership.png": {
+   "files": 1,
+   "kind": "file",
+   "read_by": "pc_world_audio",
+   "sha256": "648a6a14ea3a669f322c7484a79cd58723edb39e6b0111e3ad56fd7eecf6352a"
+  },
   "artifacts/finish-20260928/cursor-struts/coverage-fixtures.json": {
    "files": 1,
    "kind": "file",
@@ -29,6 +35,12 @@
    "kind": "file",
    "read_by": "pc_instrument_lock",
    "sha256": "0b73985f83fb74464d2a61731e82cf086cde1e67e1fdd67b2f19fe3a0c6f77ab"
+  },
+  "artifacts/finish-abrams-20261025/campaign-source-guided-26-01/campaign-first-original-battle-26-actual.json": {
+   "files": 1,
+   "kind": "file",
+   "read_by": "pc_world_audio",
+   "sha256": "9336277d3955361b3dbd795ab0295e36b49ce83dfacd759f47f39441b7dc696a"
   },
   "artifacts/intro-menu-20260930/trace": {
    "files": 83,
@@ -143,6 +155,12 @@
    "kind": "file",
    "read_by": "pc_modern_mapping_reuse",
    "sha256": "ed989c98a401fdc5f9ceda4c2e56e26256fe423db509233fa3d15a9e1aba8942"
+  },
+  "artifacts/tactical-vehicles-20261017/original-approach/capture.json": {
+   "files": 1,
+   "kind": "file",
+   "read_by": "pc_tactical_vehicles_format_*",
+   "sha256": "92b00f82e1a88710efea1d95c0bb3ca8d1a940817351f11a8693e93dca1a71bf"
   }
  },
  "live": {

@@ -79,6 +79,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var running: Process?
     var busy = false
     var pcReady = false
+    var dataHome: String?
     let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "M1 Abrams Battle Tank Fan Remaster"
     let githubURL = URL(string: "https://github.com/NellInc/Abrams")!
     let cream = NSColor(calibratedRed: 0.95, green: 0.91, blue: 0.81, alpha: 1)
@@ -244,6 +245,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guard let result else { call(["--status"], completion: { self.refresh($0) }); return }
         let pc = result["pc_installed"] as? Bool ?? false
         let genesis = result["genesis_enabled"] as? Bool ?? false
+        if let home = result["data_home"] as? String, !home.isEmpty { dataHome = home }
         pcReady = pc
         pcState.stringValue = pc ? "VERIFIED" : "REQUIRED TO PLAY"
         pcState.textColor = pc ? .systemGreen : cream
@@ -261,15 +263,33 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         detail.toolTip = detail.stringValue
     }
     // Always drain the pipe, retaining only a bounded tail, including for setup failures.
-    static func readOutput(_ pipe: Pipe, limit: Int) -> Data {
+    // A game session also appends everything it reads to the profile's game log.
+    static func readOutput(_ pipe: Pipe, limit: Int, log: FileHandle? = nil) -> Data {
         var tail = Data()
         while true {
             let data = pipe.fileHandleForReading.availableData
             if data.isEmpty { break }
+            try? log?.write(contentsOf: data)
             tail.append(data)
             if tail.count > limit { tail = Data(tail.suffix(limit)) }
         }
         return tail
+    }
+    // logs/game.log in the data home the runtime reported. A symlinked folder or
+    // file is refused, as the runtime refuses links inside the profile.
+    static func gameLog(home: String?) -> FileHandle? {
+        guard let home, !home.isEmpty else { return nil }
+        let logs = URL(fileURLWithPath: home).appendingPathComponent("logs", isDirectory: true)
+        let url = logs.appendingPathComponent("game.log")
+        let manager = FileManager.default
+        if (try? manager.destinationOfSymbolicLink(atPath: logs.path)) != nil { return nil }
+        try? manager.createDirectory(at: logs, withIntermediateDirectories: true)
+        if (try? manager.destinationOfSymbolicLink(atPath: url.path)) != nil { return nil }
+        if !manager.fileExists(atPath: url.path) { manager.createFile(atPath: url.path, contents: nil) }
+        guard let handle = try? FileHandle(forWritingTo: url) else { return nil }
+        _ = try? handle.seekToEnd()
+        try? handle.write(contentsOf: Data("\n== game session ==\n".utf8))
+        return handle
     }
     static let setupTimeout: TimeInterval = 300
     static let timeoutMessage = "Verification took longer than five minutes. Choose your folder again; your originals and saves are unchanged."
@@ -357,12 +377,15 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let process = Process(); process.executableURL = runtime; process.arguments = setupArgs + ["--play"]
         let pipe = Pipe(); process.standardOutput = pipe; process.standardError = pipe
         running = process; updateControls()
+        let home = dataHome
         DispatchQueue.global().async {
             do {
                 try process.run()
                 // A first launch prepares its installation before the window opens.
                 DispatchQueue.main.async { self.status.stringValue = "Game starting or running" }
-                let tail = Self.readOutput(pipe, limit: 16384)
+                let log = Self.gameLog(home: home)
+                defer { try? log?.close() }
+                let tail = Self.readOutput(pipe, limit: 16384, log: log)
                 process.waitUntilExit()
                 // Prefer the runtime's JSON error; otherwise show the newest log lines.
                 let text = String(decoding: tail, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)

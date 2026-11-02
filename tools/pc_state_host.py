@@ -216,7 +216,14 @@ def supervise(args, argv, lock_saves, validate_command):
                 # All size, integrity and compatibility checks precede capture,
                 # including the live overlay the recovery image will carry.
                 selected = store.read(slot, previous=operation == 'load_previous')[1] if operation in ('load_state', 'load_previous') else None
-                validate_disk(read_bounded(store.disk, MAX_DISK) if store.disk.exists() else b'')
+                # A save must carry a valid overlay. A load replaces the live
+                # overlay with the slot's, so a damaged one only skips the
+                # recovery slot instead of blocking the way back to a good save.
+                live_overlay_error = None
+                try: validate_disk(read_bounded(store.disk, MAX_DISK) if store.disk.exists() else b'')
+                except ValueError as error:
+                    if not selected: raise
+                    live_overlay_error = str(error)
                 with capture_workspace(store.root) as directory:
                     capture = Path(directory)
                     try:
@@ -243,35 +250,58 @@ def supervise(args, argv, lock_saves, validate_command):
                         except Exception as error: print(f'Checkpoint worker close: {error}', file=sys.stderr, flush=True)
                     # Once the native worker has closed, always recover it even if
                     # the overlay read or a slot write fails (disk full, permissions, etc.).
+                    previous_recovery = None
+                    resumed_from_capture = False
                     try:
-                        disk = read_bounded(store.disk, MAX_DISK) if store.disk.exists() else b''
-                        atomic_write(capture / 'campaign.zip', disk)
-                        store.write(slot if operation == 'save_state' else 0, capture)
+                        # The worker copies the overlay paired with its RAM inside
+                        # the capture; read it here only from a worker that did not.
+                        if not (capture / 'campaign.zip').exists():
+                            disk = read_bounded(store.disk, MAX_DISK) if store.disk.exists() else b''
+                            atomic_write(capture / 'campaign.zip', disk)
+                        if operation == 'save_state':
+                            # Resume first: a slot is written only once its capture
+                            # has proven it resumes, so a failed save never replaces
+                            # (or rotates away) the archive the player still has.
+                            worker = OwnedWorker(argv, lock, capture)
+                            resumed_from_capture = True
+                            store.write(slot, capture)
+                        elif live_overlay_error is None:
+                            if slot == 0: previous_recovery = selected
+                            store.write(0, capture)
                         if selected:
                             with tempfile.TemporaryDirectory(prefix='.restore-', dir=store.root) as restore_dir:
                                 restore = Path(restore_dir)
                                 for name, raw in selected.items(): atomic_write(restore / name, raw)
                                 store.install_disk(selected['campaign.zip'])
                                 worker = OwnedWorker(argv, lock, restore)
-                        else:
-                            worker = OwnedWorker(argv, lock, capture)
                         message = {'save_state': f'Slot {slot} saved',
                                    'load_state': f'Slot {slot} loaded; previous session kept in recovery slot',
                                    'load_previous': f'Overwritten slot {slot} loaded; previous session kept in recovery slot'}[operation]
+                        if live_overlay_error is not None:
+                            message = message.split(';')[0] + f'; recovery slot not updated ({live_overlay_error})'
                         response.update(success=True, message=message,
                                         restored=worker.ready | {'type': 'sample', 'id': command['id'], 'timeline_reset': True})
                     except Exception:
-                        if worker is not None:
+                        # A worker resumed from this capture is already the rollback.
+                        if worker is not None and not resumed_from_capture:
                             try: worker.close()
                             except Exception: pass
                             worker = None
+                        if previous_recovery is not None:
+                            # A failed load of the recovery slot keeps that undo point.
+                            try:
+                                with tempfile.TemporaryDirectory(prefix='.recovery-', dir=store.root) as kept:
+                                    for name, raw in previous_recovery.items(): atomic_write(Path(kept) / name, raw)
+                                    store.write(0, Path(kept))
+                            except Exception as keep_error:
+                                print(f'Recovery slot could not be kept: {keep_error}', file=sys.stderr, flush=True)
                         # The resume worker reinstalls capture/campaign.zip, which also
                         # undoes a load's overlay replacement; if that copy was never
                         # written the overlay is untouched and kept. The live overlay
                         # is not revalidated here: recovery must not depend on it.
-                        worker = OwnedWorker(argv, lock, capture)
+                        if worker is None: worker = OwnedWorker(argv, lock, capture)
                         response['restored'] = worker.ready | {'type': 'sample', 'id': command['id'], 'timeline_reset': True}
-                        shutil.rmtree(capture)  # rollback succeeded; slot 0 remains the durable recovery
+                        shutil.rmtree(capture, ignore_errors=True)  # rollback succeeded; slot 0 remains the durable recovery
                         raise
             except Exception as error:
                 response['message'] = str(error)

@@ -329,6 +329,16 @@ def main():
                     # Attach as the resumed worker will, from this same RAM.
                     if session: session.prepare_checkpoint()
                     core.local_overlay('flush')
+                    # The overlay copy pairs with this RAM. Taken here, a failed
+                    # copy refuses the capture while this worker is still live,
+                    # instead of a resume against an overlay a cold boot changed.
+                    try:
+                        from tools.pc_state_store import atomic_write
+                    except ModuleNotFoundError as error:
+                        if error.name != 'tools': raise
+                        from pc_state_store import atomic_write
+                    disk_path = args.saves / (args.content.stem + '.pure.zip')
+                    atomic_write(destination / 'campaign.zip', disk_path.read_bytes() if disk_path.exists() else b'')
                     raw = core.serialize_local()
                     (destination / 'state.bin').write_bytes(raw)
                     if session:

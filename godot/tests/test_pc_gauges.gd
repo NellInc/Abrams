@@ -94,7 +94,10 @@ func run() -> void:
 	check(instruments.gauges.is_empty(),"wrong dimensions rejected")
 	var args := OS.get_cmdline_user_args()
 	if "--oracle" in args: original_cases(args[args.find("--oracle")+1])
-	if "--native" in args: await native(args[args.find("--fixture")+1],args[args.find("--output")+1])
+	if "--native" in args:
+		# A missing path must fail here, not write into a folder named after the next flag.
+		check(args.find("--fixture")>=0 and args.find("--fixture")+1<args.size() and args.find("--output")>=0 and args.find("--output")+1<args.size(),"native run requires --fixture and --output paths")
+		if errors.is_empty(): await native(args[args.find("--fixture")+1],args[args.find("--output")+1])
 	for error in errors: printerr("FAIL: "+error)
 	print("PC_GAUGES: %d checks, %d errors"%[checks,errors.size()])
 	quit(0 if errors.is_empty() else 1)

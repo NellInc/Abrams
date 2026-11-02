@@ -79,7 +79,9 @@ def read_bounded(path, limit):
 def validate_disk(raw):
     if not raw: return
     if len(raw) > MAX_DISK: raise ValueError('campaign overlay exceeds size limit')
-    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+    try: archive = zipfile.ZipFile(io.BytesIO(raw))
+    except DAMAGED as error: raise ValueError(f'damaged campaign overlay: {error}') from error
+    with archive:
         infos = archive.infolist()
         if len(infos) > 4096 or sum(i.file_size for i in infos) > MAX_DISK:
             raise ValueError('campaign overlay expands beyond size limit')
