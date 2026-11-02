@@ -9292,6 +9292,22 @@ polishing pass"):
 * Regression test: `test_printed_html_is_light_and_shows_specifications`. The
   screen layout and both authored PDFs are unchanged.
 
+2 November 2026 (same request): committed the work above as `ddf647a`, local
+only. Staged only this section of the ledger and left the other session's
+entries and code alone; not pushed.
+
+* Admission: rerun starting at load 13 gave
+  `PC_TACTICAL_VEHICLES: 1235718 checks, 0 errors`, then the guard tripped
+  again (1006 s wall for 93 s CPU). During the run, another session's
+  Playwright Chromium and Python jobs drove load to 236, and free memory was
+  nearly exhausted. The gate needs a host nothing else is using.
+* T-junctions resolved on measurement: building T-vertices mostly sit exactly
+  on their edges (median offset 0), which leaves only rounding-level gaps. The
+  remaining cases are frames and trim deliberately set 0.04-0.05 off the
+  surface, as glazing is: separate layers, not cracks in one surface. No
+  geometry change is warranted.
+* Ground-crew and crew-head sculpt renders reviewed: clean.
+
 Working if: Convoy and Siegen maps differ and every map shows its bridges and
 building without an empty band, no rebaked thin part renders black, and the
 admission gate passes within its unchanged guard on a quieter host.
