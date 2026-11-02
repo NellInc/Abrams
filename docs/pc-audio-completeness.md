@@ -688,8 +688,10 @@ apart for river, field, woodland, Hind and flight, and at least eight for any
 cue whose recording names a vehicle class (T-80, T-72, generic tank, M113,
 Bradley, BRDM, truck and the tracked/wheeled fallbacks; chain texture follows
 them). In the retained all-scenario capture (`pc-all-scenarios-trace-01`, 194
-drawn vehicles), every class drawn at 2-6 source pixels is the same one-row grey
-dash; recognisable outlines first appear at 8-10. Below eight pixels a vehicle
+drawn vehicles), the visible M113s and Bradleys at 3-4 source pixels are
+one-row grey dashes, and outlines appear in the 8-18 pixel BRDM and truck crops.
+No tank or tracked-fallback vehicle was unobscured in that capture, so the
+threshold for those classes is inference from the APCs. Below eight pixels a vehicle
 stays silent rather than announcing its class or side (1 November 2026,
 `CLASS_WITNESS_SQ` in `pc_world_audio.gd`; a fidelity tightening Nell can veto).
 IDs, mesh, camera, dimensions,

@@ -58,9 +58,10 @@ const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley", "trackedfal
 # Cues whose recording names a vehicle class (and with it often a side).
 const CLASS_CUES := GROUND_MOTOR_CUES + ["truck", "wheeledfallback", "brdm"]
 # Same-owner witnesses must be this far apart (squared source pixels). In the
-# retained all-scenario capture, every class drawn at 2-6 source pixels is the
-# same one-row grey dash; recognisable outlines first appear at 8-10. A class
-# recording therefore waits until the original pixels could show the class.
+# retained all-scenario capture the visible M113s and Bradleys at 3-4 source
+# pixels are one-row grey dashes, and outlines appear in the 8-18 pixel BRDM and
+# truck crops (no tank was unobscured there). A class recording therefore waits
+# until the original pixels could plausibly show the class.
 const WITNESS_SQ := 16.0
 const CLASS_WITNESS_SQ := 64.0
 const DETAIL_CUES := ["woodland", "truck", "tracks"]
