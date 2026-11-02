@@ -9308,6 +9308,16 @@ entries and code alone; not pushed.
   geometry change is warranted.
 * Ground-crew and crew-head sculpt renders reviewed: clean.
 
+2 November 2026, next pass (same request). Admission not rerun: load was 240.
+
+* The website still called the field guide 4.8 MB, but the BSP studies grew
+  it to 4,937,876 bytes; both labels now read 4.9 MB. `website/verify.py` now
+  fails if a decimal MB label or the "N illustrated pages" count disagrees with
+  the published PDF. It caught the stale label before the fix.
+* Checked clean: the website's eight manual-map WebPs match the
+  player-reference maps (compression differences only), and the website
+  layout holds at 1440 px and 390 px.
+
 Working if: Convoy and Siegen maps differ and every map shows its bridges and
 building without an empty band, no rebaked thin part renders black, and the
 admission gate passes within its unchanged guard on a quieter host.

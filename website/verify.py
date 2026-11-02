@@ -319,6 +319,16 @@ def main():
     for ref in page.refs:
         if urlsplit(ref).path.endswith(".pdf") and not token_matches(ref):
             errors.append(f"PDF cache token must be the file's own hash: {ref}")
+    # Stated field-guide size and page count must follow the published file.
+    guide = (DIST / "assets/guides/field-guide.pdf").read_bytes()
+    size_label = f"{len(guide) / 1e6:.1f}"
+    for stated in re.findall(r"(\d+\.\d)(?:&nbsp;|\s)MB", html):
+        if stated != size_label:
+            errors.append(f"Field guide size label {stated} MB must read {size_label} MB")
+    pages = len(re.findall(rb"/Type\s*/Page[^s]", guide))
+    for stated in re.findall(r"(\d+) illustrated pages", html):
+        if int(stated) != pages:
+            errors.append(f"Field guide page count {stated} must read {pages}")
     for favicon in ('href="favicon.svg"', 'href="favicon-32.png"', 'href="apple-touch-icon.png"'):
         if favicon not in html:
             errors.append("Missing star favicon format: " + favicon)
