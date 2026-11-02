@@ -127,8 +127,10 @@ Fast forward mutes effects, speech, motors and music. Event identities still
 advance, so returning to normal does not play accumulated calls or gunshots.
 Current motor loops and eligible frontend music can resume. Normal speed is
 restored on a fresh launch, whenever play returns to the cover menu, where
-Tab is unavailable, and when the game window loses focus (the original keeps
-running at normal speed); fast forward is not a sticky preference.
+Tab is unavailable, and on desktop when the game window loses focus (the
+original keeps running at normal speed; on the Web a hidden tab already stops
+the game, and the toolbar's speed button itself takes focus); fast forward is
+not a sticky preference.
 
 ## Graphics
 

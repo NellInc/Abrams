@@ -11,6 +11,7 @@ var shortcut_is_macos := _uses_macos_shortcuts()
 var layout_filter := _altgr_is_ctrl_alt()
 var shortcut_keys: Array = []
 var _last_held: Array = []
+var web_focus_keeps_speed := OS.has_feature("web")
 const MODES := ["ega","ega_upscaled","genesis","upscaled","modern","tactical"]
 var graphics_mode := "upscaled"
 # Saved intent stays independent of temporary startup overrides and fallback.
@@ -451,10 +452,12 @@ func choose_graphics(mode: String, persist: bool=true) -> bool:
 	return graphics_mode==mode
 
 ## The original keeps running through focus loss, but never accelerated
-## unattended: leaving the window returns fast forward to normal speed.
+## unattended: leaving the window returns fast forward to normal speed. Not on
+## the Web: its toolbar's speed toggle blurs the canvas before its click, and a
+## hidden browser tab already stops the game loop.
 func _focus_exited() -> void:
 	super._focus_exited()
-	if speed==8: choose_speed(1)
+	if speed==8 and not web_focus_keeps_speed: choose_speed(1)
 
 func choose_speed(multiplier: int) -> bool:
 	if frontdoor_active or busy or multiplier not in [1,8]: return false

@@ -179,6 +179,13 @@ func run() -> void:
 	check(menu.speed==1 and choices[-1]==["speed",1],"focus loss returns fast forward to normal speed")
 	menu._focus_entered()
 	check(menu.speed==1,"regaining focus does not resume 8x on its own")
+	# Web: a toolbar click blurs the canvas, then toggles speed. Dropping on
+	# blur would turn the toggle's "normal" press back into 8x.
+	menu.web_focus_keeps_speed=true
+	check(menu.choose_speed(8),"Web 8x")
+	menu._focus_exited();menu._focus_entered()
+	check(menu.choose_speed(1 if menu.speed==8 else 8) and menu.speed==1,"Web toolbar toggle after its own blur reaches normal speed")
+	menu.web_focus_keeps_speed=false
 	check(not menu.choose_speed(2) and not menu.choose_speed(4) and not menu.choose_speed(3) and menu.speed==1,"unsupported speed rejected")
 	check(not menu.request_state("load_state",1),"empty slot cannot load")
 	check(not menu.request_state("save_state",0),"automatic recovery cannot be overwritten by save menu")
