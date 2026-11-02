@@ -9400,8 +9400,33 @@ Follow-up pass ("fix all issues ... best judgment", same day):
   100 s earlier. It does not exercise this code, and the 120 s limit is
   deliberately inherited, so it is left alone.
 
-Final receipts: effects 111 checks, native study 229 (`native-06`), viewer
-dynamics 171, all 0 errors; viewer script parses.
+Committed as 58467c8 (only this session's hunks; the tactical-light
+session's uncommitted files stay theirs).
 
-Not verified: a live kill in Play, actual Godot Web (blocked on the Web
+Third pass (same day, "fix all issues"):
+
+* Live-gap risk: the recorded kill pairs are snapshots 7+ passes apart, and
+  none of the 8 combat-bearing render traces searched (combat loss, all
+  scenarios, vehicle approach, sprite, audio and reticle traces) holds a kill.
+  If the original ever leaves a dying vehicle undrawn for a pass, the
+  previous-pass trigger would never fire in Play. A fresh trace is not
+  reproducible: the REA pilot ran on core bd3877f…, and the current trace
+  core is 60f45558. The trigger now remembers the last intact drawing for
+  `KILL_WINDOW_PASSES` = 8 original passes, about 0.5 s at SIM's measured
+  0.25 passes per guest frame (951 REA stage intervals; p10 0.20, p90 0.33).
+  It keys on the pass `sequence`; a rewound sequence forgets. A burst whose
+  wreck goes undrawn for a pass keeps its birth and resumes.
+* Viewer gate test: `test_pc_tactical_dynamics.gd` now calls the real
+  viewer's `_animate_tactical_dynamics` with stand-in display nodes. Fast
+  forward, `--no-tactical-dynamics` and reduced motion spend a live burst and
+  redraw once, the pause holds it, and ordinary play ages it. With the fix
+  disabled, the five spend checks fail.
+* Web rebuild: still blocked. The tactical-light session's uncommitted Godot
+  scripts (last ledger write 20:32) would be packaged into the bundle.
+
+Final receipts: effects 117 checks, native study 229 (`native-07`), viewer
+dynamics 178, all 0 errors. The four real passes are unchanged (same pixel
+counts, no pixel outside the rule, none at 1.2 s).
+
+Not verified: a kill seen in live Play, actual Godot Web (blocked on the Web
 rebuild), and whether the open form ever reads as a target in play.

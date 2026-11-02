@@ -98,6 +98,50 @@ func contracts() -> void:
 	var turn:=sample(51);turn.state.heading_degrees=180;d.observe(turn,true)
 	check(not d.advance(0.05) and d.shift==Vector2.ZERO,"camera/heading alone cannot excite suspension")
 
+func stub(base:String,fields:String) -> Object:
+	var script:=GDScript.new();script.source_code="extends %s\n%s\n"%[base,fields]
+	script.reload();return script.new()
+
+# The real viewer's per-frame clock gate, with minimal stand-ins for its nodes.
+# The guest advancing without the explicit clock (fast forward, dynamics or
+# motion off) must spend a live kill burst, never hold it frozen at age zero.
+func viewer_rest() -> void:
+	var viewer:Object=load("res://scripts/pc_bridge_viewer.gd").new()
+	var effects:=Effects.new()
+	var display:=stub("Control","var world_viewport:=SubViewport.new()\nvar tandem_viewport:=SubViewport.new()")
+	viewer.play_mode=true;viewer.trace_mode=true;viewer.capture=false
+	viewer.play_display=display
+	viewer.tandem_frame=stub("TextureRect","var graphics_mode:=\"tactical\"\nvar world_enabled:=true")
+	viewer.draw_view=stub("Node3D","var tactical_effects")
+	viewer.draw_view.tactical_effects=effects
+	viewer.previous_program={"name":"SIM"}
+	viewer.tactical_dynamics.enabled=true
+	var live:=func() -> void:
+		effects.visible=true;effects._kill_births={7:[0.0,142]};effects._dynamics_clock=0.0
+		effects.material.set_shader_parameter("dynamics_time",0.0)
+		display.world_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+		display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+	for case:Array in [["fast forward","fast_forward",4],["--no-tactical-dynamics","tactical_dynamics_allowed",false]]:
+		live.call();viewer.set(case[1],case[2])
+		viewer._animate_tactical_dynamics(0.05)
+		check(effects._kill_births.is_empty() and effects.material.get_shader_parameter("dynamics_time")==-1.0,"viewer: %s spends a live burst"%case[0])
+		check(display.world_viewport.render_target_update_mode==SubViewport.UPDATE_ONCE and display.tandem_viewport.render_target_update_mode==SubViewport.UPDATE_ONCE,"viewer: %s redraws once to clear it"%case[0])
+		viewer.fast_forward=1;viewer.tactical_dynamics_allowed=true
+	live.call();viewer.tactical_dynamics.reduced_motion=true
+	viewer._animate_tactical_dynamics(0.05)
+	check(effects._kill_births.is_empty(),"viewer: reduced motion spends a live burst")
+	viewer.tactical_dynamics.reduced_motion=false
+	live.call();viewer.tactical_dynamics.paused=true
+	viewer._animate_tactical_dynamics(0.05)
+	check(not effects._kill_births.is_empty() and effects._dynamics_clock==0.0,"viewer: the original pause holds a burst mid-flight")
+	viewer.tactical_dynamics.paused=false
+	live.call();viewer._animate_tactical_dynamics(0.05)
+	check(effects._dynamics_clock>0.0 and not effects._kill_births.is_empty() and display.world_viewport.render_target_update_mode==SubViewport.UPDATE_ONCE,"viewer: ordinary play ages the burst and redraws")
+	display.world_viewport.free();display.tandem_viewport.free()
+	for node:Object in [display,viewer.tandem_frame,viewer.draw_view,effects]:node.free()
+	viewer.play_display=null;viewer.tandem_frame=null;viewer.draw_view=null
+	viewer.free()
+
 func snapshot(view:SubViewport) -> Image:
 	await process_frame
 	RenderingServer.force_draw(false);RenderingServer.force_sync()
@@ -339,6 +383,7 @@ func run() -> void:
 	if "--baseline-particles" in args:
 		baseline_particles=Shader.new();baseline_particles.code=FileAccess.get_file_as_string(args[args.find("--baseline-particles")+1])
 	contracts()
+	viewer_rest()
 	if "--gpu" in args or OS.has_feature("web"):
 		var gpu:bool=DisplayServer.get_name()!="headless" and RenderingServer.get_current_rendering_method()=="gl_compatibility" and not RenderingServer.get_video_adapter_name().is_empty()
 		check(gpu,"GPU verification requires real OpenGL/WebGL, never dummy rendering")

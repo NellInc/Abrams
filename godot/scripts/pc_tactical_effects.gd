@@ -14,15 +14,22 @@ const DEBRIS_LIFE := 1.1
 # Kills drawn smaller than this (source pixels) keep debris on the wreck and on
 # impact sprites; larger kills may also throw it over earlier terrain and sky.
 const DEBRIS_OPEN_PIXELS := 6.0
+# How many original passes may separate the last intact drawing from the
+# wreck. SIM renders about 0.25 passes per guest frame (REA pilot stages), so
+# 8 is about half a second: a brief undrawn gap around the swap still counts,
+# but a vehicle that died long out of view never throws debris on return.
+const KILL_WINDOW_PASSES := 8
 var node: MeshInstance3D
 var material: ShaderMaterial
 var puffs: Array = []
 var counts: Dictionary = {}
 var _impact_births: Dictionary = {}
-# Drawn dynamic pointer -> shape from the previous prepared pass, and
-# pointer -> [birth, wreck shape] for kills observed between two such passes.
-var _drawn_shapes: Dictionary = {}
+# Dynamic pointer -> [pass, intact shape] for its last intact drawing, and
+# pointer -> [birth, wreck shape] for observed kills. _pass is the original
+# pass sequence (or a prepare count when a pass carries none).
+var _intact_seen: Dictionary = {}
 var _kill_births: Dictionary = {}
+var _pass := -1
 var _dynamics_clock := 0.0
 var _plume_phase := 0.0
 var _plumes_live := false
@@ -62,7 +69,8 @@ func reset_dynamics() -> void:
 	for key in _impact_births.keys():_impact_births[key]=-1.0
 	# Kill debris is dropped, and the next pass cannot be read as a kill.
 	_kill_births.clear()
-	_drawn_shapes.clear()
+	_intact_seen.clear()
+	_pass=-1
 	_dynamics_clock=0.0
 	_plume_phase=0.0
 	material.set_shader_parameter("dynamics_time",-1.0)
@@ -187,23 +195,37 @@ static func engine_anchor(object: Dictionary, assets: RefCounted, frame: Diction
 			return {"engine":Modern.transform_point(point,fit)}
 	return {}
 
-# A kill is a drawn actor whose pointer showed its class's intact shape in the
-# previous prepared pass and its replacement now (traced: BRDM-2 141 -> 142 at
-# one pointer). Only drawn actors count: the allocated pool also holds
-# vehicles the original is not showing. A reused slot changes class, and a
-# pointer drawn twice in one pass is ambiguous; neither starts debris.
-func _observe_kills(data: Dictionary, previous: Dictionary) -> void:
+# A kill is a drawn actor whose pointer was last drawn with its class's intact
+# shape at most KILL_WINDOW_PASSES original passes ago and is now drawn as its
+# replacement (traced: BRDM-2 141 -> 142 at one pointer). Only drawn actors
+# count: the allocated pool also holds vehicles the original is not showing.
+# Any other drawn shape at the pointer (a reused slot, a wreck already seen)
+# forgets it, and a pointer drawn twice in one pass is ambiguous.
+func _observe_kills(data: Dictionary) -> void:
+	var sequence=data.get("sequence")
+	var now:int=int(sequence) if (sequence is int or sequence is float) and is_finite(float(sequence)) else _pass+1
+	if now<_pass: _intact_seen.clear() # a rewound timeline is not the same scene
+	_pass=now
+	var drawn: Dictionary={}
 	for object: Dictionary in data.get("objects",[]):
 		var pointer:=int(object.get("pointer",-1))
 		if not object.get("dynamic_instance",false) or pointer<0: continue
-		_drawn_shapes[pointer]=int(object.get("shape_index",-1)) if pointer not in _drawn_shapes else -1
+		drawn[pointer]=int(object.get("shape_index",-1)) if pointer not in drawn else -1
 	var births: Dictionary={}
-	for pointer: int in _drawn_shapes:
-		var shape: int=_drawn_shapes[pointer]
+	# A burst outlives a pass where its wreck is undrawn; it simply isn't shown.
+	for pointer: int in _kill_births:
+		if pointer not in drawn and _dynamics_clock-float(_kill_births[pointer][0])<DEBRIS_LIFE: births[pointer]=_kill_births[pointer]
+	for pointer: int in drawn:
+		var shape: int=drawn[pointer]
 		var kill: Array=_kill_births.get(pointer,[])
+		var seen: Array=_intact_seen.get(pointer,[])
+		_intact_seen.erase(pointer)
 		if shape<0: continue
 		if not kill.is_empty() and int(kill[1])==shape: births[pointer]=kill
-		elif KILL_WRECKS.get(int(previous.get(pointer,-1)),-1)==shape: births[pointer]=[_dynamics_clock,shape]
+		elif not seen.is_empty() and KILL_WRECKS[int(seen[1])]==shape and now-int(seen[0])<=KILL_WINDOW_PASSES: births[pointer]=[_dynamics_clock,shape]
+		elif shape in KILL_WRECKS: _intact_seen[pointer]=[now,shape]
+	for pointer: int in _intact_seen.keys():
+		if now-int(_intact_seen[pointer][0])>KILL_WINDOW_PASSES: _intact_seen.erase(pointer)
 	_kill_births=births
 
 # One screen-facing quad per kill, centred on the wreck's drawn rectangle and
@@ -239,12 +261,11 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 	var previous_births:=_impact_births
 	clear()
 	_impact_births={}
-	# A pass that cannot be presented breaks the chain of observed shapes, so a
+	# A pass that cannot be presented forgets every intact sighting, so a
 	# vehicle that died while unseen never throws debris when it reappears.
-	var previous_shapes:=_drawn_shapes
-	_drawn_shapes={}
-	if mapping.is_empty() or ownership==null or not assets.supported_palette(data.get("palette_rgb",[])): return
-	_observe_kills(data,previous_shapes)
+	if mapping.is_empty() or ownership==null or not assets.supported_palette(data.get("palette_rgb",[])):
+		_intact_seen.clear();return
+	_observe_kills(data)
 	_frame=data.camera
 	_clip=Rect2(Vector2(_frame.clip[0],_frame.clip[1]),Vector2(_frame.clip[2]-_frame.clip[0]+1,_frame.clip[3]-_frame.clip[1]+1))
 	var origin: Vector3=mapping.origin

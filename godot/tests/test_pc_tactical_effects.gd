@@ -267,14 +267,40 @@ func kill_debris(effects: Node3D, directory: String, mapping: Dictionary, owners
 	var thermal:=alive.duplicate(true);thermal.palette_rgb=thermal.palette_rgb.duplicate(true);thermal.palette_rgb[6]=[1,2,3]
 	var fixed:=alive.duplicate(true);fixed.objects[0].dynamic_instance=false
 	var fixed_dead:=dead.duplicate(true);fixed_dead.objects[0].dynamic_instance=false
+	var at:=func(data: Dictionary, sequence: int) -> Dictionary:
+		var copy:=data.duplicate(true);copy.sequence=sequence;return copy
+	var window: int=Effects.KILL_WINDOW_PASSES
 	for case: Array in [["reused slot of another class",[reused,dead]],["ambiguous pointer",[doubled,doubled_dead]],
-			["kill while not drawn",[alive,unseen,dead]],["unsupported palette between",[alive,thermal,dead]],
-			["static object",[fixed,fixed_dead]],["timeline reset between",[alive,null,dead]]]:
+			["unsupported palette between",[alive,thermal,dead]],
+			["static object",[fixed,fixed_dead]],["timeline reset between",[alive,null,dead]],
+			["kill long out of view",[at.call(alive,100),at.call(unseen,104),at.call(dead,101+window)]],
+			["rewound timeline",[at.call(alive,100),at.call(dead,90)]]]:
 		effects.reset_dynamics()
 		for pass_data in case[1]:
 			if pass_data==null: effects.reset_dynamics()
 			else: effects.prepare(pass_data,mapping,ownership,assets,art)
 		check(effects.counts.debris==0 and effects._kill_births.is_empty(),"%s throws nothing"%case[0])
+	# A burst survives a pass with its wreck undrawn, keeping its birth, and the
+	# wreck's return never starts a second one.
+	effects.reset_dynamics()
+	effects.prepare(alive,mapping,ownership,assets,art);effects.prepare(dead,mapping,ownership,assets,art)
+	var first: Array=effects._kill_births.get(99,[])
+	effects.advance_dynamics(0.05)
+	effects.prepare(unseen,mapping,ownership,assets,art)
+	check(effects.counts.debris==0 and effects._kill_births.get(99,[])==first,"an undrawn wreck hides its burst without dropping it")
+	effects.prepare(dead,mapping,ownership,assets,art)
+	check(effects.counts.debris==1 and effects._kill_births.get(99,[])==first and not first.is_empty(),"the returning wreck resumes the same burst")
+	for n in 30: effects.advance_dynamics(0.05)
+	effects.prepare(unseen,mapping,ownership,assets,art)
+	check(effects._kill_births.is_empty(),"a spent burst is dropped while undrawn")
+	# The original may leave a dying vehicle undrawn for a pass or two around
+	# the swap; a gap inside the window still counts as one observed kill.
+	for gap in [1,window]:
+		effects.reset_dynamics()
+		effects.prepare(at.call(alive,200),mapping,ownership,assets,art)
+		effects.prepare(at.call(unseen,200+gap-1 if gap>1 else 200),mapping,ownership,assets,art)
+		effects.prepare(at.call(dead,200+gap),mapping,ownership,assets,art)
+		check(effects.counts.debris==1,"kill after a %d-pass undrawn gap throws debris"%gap)
 	# A distant kill keeps its debris on the wreck and impact sprites only.
 	var far:=alive.duplicate(true)
 	for polygon: Dictionary in far.objects[0].polygons:

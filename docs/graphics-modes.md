@@ -90,13 +90,18 @@ nine tumbling fragments from a vehicle the original destroys on screen. The
 trigger is the original's own swap. On a kill the vehicle keeps its pool slot
 and changes to its class's replacement (wreck) shape. Recorded campaign and
 bridge combat shows this for BRDM-2 141→142, M60 127→128, T-64 117→118 and
-M113 129→130. Debris starts only when the same drawn pointer showed the
-intact shape in the previous presented pass and its own class's wreck now.
-It never starts for a wreck first seen already destroyed, a slot reused by
+M113 129→130. Debris starts only when a drawn pointer shows its class's
+wreck and was last drawn intact at most 8 original passes earlier, about
+half a second at SIM's measured 0.25 passes per guest frame. The window
+allows for the original leaving a dying vehicle undrawn for a pass or two.
+That gap has not been seen, because no recorded trace has consecutive passes
+across a kill. A burst whose wreck goes undrawn for a pass keeps its birth
+and resumes. Debris never starts for a wreck first seen already destroyed, a
+vehicle last drawn intact more than 8 passes earlier, a slot reused by
 another class, an allocated vehicle the original is not drawing, a pointer
-drawn twice, a pass the presentation cannot show (such as an unsupported
-palette), or across a save, load or graphics switch. Buildings, aircraft and
-bridges are excluded.
+drawn twice, or across a pass the presentation cannot show (such as an
+unsupported palette), a rewound pass sequence, or a save, load or graphics
+switch. Buildings, aircraft and bridges are excluded.
 
 Fragments cover the wreck's own painted pixels and original impact sprites
 (shapes 168–185). If the wreck is drawn at least 6 source pixels across,
@@ -132,7 +137,10 @@ cannot kick the armour, the neutral and non-Tactical compositor matches its
 predecessor, protected pixels and effect alpha are exact, and the same focused
 dynamics checks pass on native OpenGL and actual Godot Web. For kill debris:
 an observed intact-to-wreck swap queues exactly one burst and every refusal
-case above queues none (`test_pc_tactical_effects.gd`). On native OpenGL the
+case above queues none (`test_pc_tactical_effects.gd`). Fast forward,
+reduced motion and `--no-tactical-dynamics` spend a live burst through the
+real viewer gate, and the original pause holds it
+(`test_pc_tactical_dynamics.gd`). On native OpenGL the
 frame is exact before the clock runs and after the burst ends. Fragments are
 visible at 0.15–0.9 s and never change a pixel of an actor painted before or
 after the wreck, and a wholly hidden wreck throws nothing. A kill under
@@ -146,8 +154,8 @@ BRDM-2 17 px). Most are 3–5 px and stay confined. On those three real passes,
 fragments change 259–1778 screen pixels, every one on the wreck, an impact
 sprite, or terrain and background painted before the wreck, and none at
 1.2 s. Evidence:
-`artifacts/kill-debris-20261102/`. Not yet checked on actual Godot Web or in
-live Play.
+`artifacts/kill-debris-20261102/`. Not yet checked on actual Godot Web
+(waits for the Web rebuild) or seen in live Play.
 
 Graphics mode and **HUD Style** are independent. Choose Tactical in both menus
 for the complete Range-inspired scene and station-specific widescreen interfaces, or combine
