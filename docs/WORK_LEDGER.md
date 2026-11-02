@@ -9428,5 +9428,40 @@ Final receipts: effects 117 checks, native study 229 (`native-07`), viewer
 dynamics 178, all 0 errors. The four real passes are unchanged (same pixel
 counts, no pixel outside the rule, none at 1.2 s).
 
-Not verified: a kill seen in live Play, actual Godot Web (blocked on the Web
-rebuild), and whether the open form ever reads as a target in play.
+Live Play recording (Nell: "record it please"). Recorded through the
+production Play loop: the live profiler with a scratch subclass, Tactical
+graphics and HUD, gunner station, mission-entry state. Ordinary keys only:
+F1, then cycles of Return / L / Space until a kill is drawn. Nothing is
+written to the guest or to Play settings (setup runs under capture; saves go
+to the run's own directory).
+
+* Kill: T-62 115→116, pointer 29178, original pass 683, route frame 2271
+  (sixth fire cycle), about 3 km away. Production queued one burst at the
+  swap (`debris_queued` 1). The original drew "T-62 destroyed." and its
+  impact sprite in the same frames.
+* Every presented guest frame advances the Tactical clocks by exactly one
+  guest frame (1/59.92 s), is force-rendered and saved, so the clips play at
+  true game speed. The host ran at load average ~250, far below game speed,
+  and a hidden macOS window is never drawn, which defeated the movie writer.
+  Only the clocks' time source differs from Play.
+* Clips: `artifacts/kill-debris-20261102/play-record-05/clip/`:
+  `tactical-kill-play.mp4` (full Play frame, 4.2 s from about 1 s before the
+  kill) and `tactical-kill-zoom6x.mp4` (6× on the wreck). Frames are in
+  `../frames/`; 2,111 of 2,236 route frames have a distinct file.
+* What it shows: at this range the wreck is 3–5 px, so the burst takes the
+  confined form. Fragments are under a pixel, and in the zoom they cannot be
+  told from the original's smoke and spark pixels. This matches the recorded
+  campaign kills, most of which are this small. The open form (wrecks 6 px or
+  more) did not occur in this recording.
+* Earlier attempts and an incident: runs 01–04 are retained for reference.
+  In run 01 the window took native focus and real keystrokes (L, up-arrows,
+  Space) entered the game, probably the user's typing meant for another app.
+  Run 02 confirmed scripted-only keys. Runs 02 and 04 lost frames to the
+  hidden window. In run 04 the focus hand-back failed for VS Code (`open -a
+  Code`), leaving Godot frontmost on 12 of 3,004 polls. Run 03's fixed
+  schedule missed. The final recorder ignores the physical keyboard, never
+  takes key focus, and hands focus back by bundle ID.
+
+Not verified: an open-form kill (6 px or more) in live Play, actual Godot Web
+(blocked on the Web rebuild), and whether the open form ever reads as a
+target in play.
