@@ -77,6 +77,16 @@ Working if: actual original endings and cold disk Continue close the mission
 and campaign rows; focused tests, partial combat credits and contended timing
 never increase those counts or close performance acceptance.
 
+## Alpha 8, 3 November 2026
+
+Public pre-release `v0.1.0-alpha.8`, runtime source `eee1c8b375b511f231c598a6574ea7b19bc6f746`. macOS, Windows, Linux and Web use version `0.1.0-alpha.8`. It adds Tactical screen-space lighting, grounded kill blasts and debris, M1-Info on the cover, the desktop save and observer robustness work, and the browser page fixes.
+
+Mac Alpha 8 is Developer ID signed (build `0bf3629e0d63a78ac5cd`, 84 Mach-O files). Apple accepted submission `e778adad-92ba-4a50-b7df-1d82443850c2`; the ticket is stapled and Gatekeeper reports `Notarized Developer ID`. The released ZIP matches the accepted app member for member; the installed app was installed from that ZIP, keeps the previous app as rollback, and left saves and content unchanged.
+
+The Windows/Linux builds passed portable-alpha run 41661542328 (fetch and both native jobs). Both archives pass CRC, every manifest hash and size, exact closure, all 1,369 common frozen inputs, the original-free boundary and core-source correspondence. Interactive Windows/Linux graphics and audio remain unmeasured.
+
+The Web edition's WebAssembly core is unchanged from Alpha 7, so browser checkpoints made with Alpha 7 still load. All seven public release assets were checked against the local bytes by size and SHA-256.
+
 ## Alpha 7, 23 October 2026
 
 Runtime source `969eac16c98883f77441f8086acbc95eb0e442f6` supplies the full 57-model Tactical roster, animated tank-and-crew menu, revised HUD, independent 19-cue score, and stronger ending smoke and flames. macOS, Windows, Linux and Web use version `0.1.0-alpha.7`.

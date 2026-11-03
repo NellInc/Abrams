@@ -10428,3 +10428,24 @@ dispatch.
   `artifacts/release-20261103-portables/`; not published to a public release.
 * Gate: Python 1,072 tests (publication failures cleared by the approval),
   default Godot stage 98/99 then the tandem-frame engine-error fix.
+
+## 3 November 2026: Alpha 8 published
+
+Nell: "Do it!" (Alpha 8 release). Public pre-release
+https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.8, tag at
+eee1c8b (pushed as release/alpha8-20261103).
+
+* macOS: build 0bf3629e0d63a78ac5cd, Developer ID signed, Apple submission
+  e778adad-92ba-4a50-b7df-1d82443850c2 Accepted, stapled, Gatekeeper
+  `Notarized Developer ID`; released ZIP sealed member-for-member against the
+  accepted app and installed from its extraction; previous app kept as
+  `.pre-alpha8-20261103.app`; profile saves and content unchanged.
+* Windows/Linux: input 525c0b22... (draft native-input-alpha8-eee1c8b3);
+  first dispatch from main failed correctly (checkout build.py still
+  Alpha 7); run 41661542328 from the release branch passed. Linux
+  83df467b7ddc4e3e54f1, Windows ed84add162ad72db8a78 pass every audit check.
+* All seven public assets match local size and SHA-256; SHA256SUMS.txt
+  verifies locally. Receipts in `artifacts/release-alpha8-20261103/`.
+* Web: rebuilt for the Alpha 8 labels; WebAssembly core unchanged, so Alpha 7
+  browser checkpoints still load. Homepage downloads, labels (sizes 573, 575,
+  587 MB, decimal rounded up as before) and FAQ now name Alpha 8.
