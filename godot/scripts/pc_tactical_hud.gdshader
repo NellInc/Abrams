@@ -90,6 +90,9 @@ void fragment() {
 		} else if (source_gunner_corners && wide_station==1 && gunner_corner(p)) {
 			// Recolour only the 84 proven original grey pixels. No new scenery.
 			COLOR=vec4(0.055,0.067,0.059,1.0);
+		} else if (wide_station==1 && plate==1 && inside(p, vec4(40.0,110.0,280.0,120.0))) {
+			// Static plate where the crew-message line will draw: an empty readout.
+			COLOR=vec4(0.047,0.071,0.063,1.0);
 		} else if (wide_station==3 && plate==3) {
 			// Authored deck materials have already been finished by the paired compositor.
 			COLOR=source;

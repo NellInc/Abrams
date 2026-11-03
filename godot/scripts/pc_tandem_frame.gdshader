@@ -26,6 +26,9 @@ uniform float gunner_pixel_aspect = 1.0;
 uniform bool cupola_rail_verified = false;
 uniform bool status_art_enabled = false;
 uniform bool status_diagram_verified = false;
+// Tactical daylight grade, only with the Tactical light active on this frame.
+uniform bool tactical_grade = false;
+#include "res://scripts/pc_tactical_grade.gdshaderinc"
 
 bool in_box(vec2 p, vec4 box) {
 	return all(greaterThanEqual(p, box.xy)) && all(lessThan(p, box.zw));
@@ -275,6 +278,7 @@ void fragment() {
 	vec4 result = texture(TEXTURE, UV);
 	if (world_enabled && inside && texture(ui_mask, UV).r < 0.5) {
 		result = texture(world_texture, (pixel - camera_rect.xy) / camera_rect.zw);
+		if (tactical_grade) result.rgb = tactical_grade_colour(result.rgb);
 	}
 	// Legacy pilot retains the lower panel; Genesis art protects live cells.
 	// Camera geometry comes from the PC, regardless of the artwork's aperture.

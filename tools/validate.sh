@@ -147,6 +147,7 @@ receipt_for() {
     pc_combat_reference) echo '^PC_SESSION_CAPTURE: trace; [1-9][0-9]* frames, [1-9][0-9]* stages, [1-9][0-9]* checks passed$' ;;
     pc_combat_outcome) echo '^PC_COMBAT_OUTCOME: [1-9][0-9]* checks, [1-9][0-9]* boundaries, 0 errors$' ;;
     pc_scenario_frames) echo '^PC_SCENARIO_FRAMES: [1-9][0-9]* checks, 32 cases, 0 errors$' ;;
+    pc_tactical_light) echo '^PC_TACTICAL_LIGHT: [1-9][0-9]* checks, 32 cases, (2[4-9]|3[0-2]) active, 0 errors$' ;;
     pc_conveniences) echo '^PC_CONVENIENCES: [1-9][0-9]* checks, 0 errors$' ;;
     pc_endurance) echo '^PC_ENDURANCE_NATIVE: [1-9][0-9]* checks, 0 errors, [1-9][0-9]* segments$' ;;
     pc_play_resize) echo '^PC_PLAY_RESIZE: [1-9][0-9]* samples, 0 errors$' ;;
@@ -528,6 +529,8 @@ if [ "${VALIDATE_LIVE:-0}" = 1 ] || [ "$LIST" = 1 ]; then
   run_check pc_combat_reference "$PYTHON" -m tools.capture_pc_session --mode trace --combat-loss --capture-ui --boot-state "$ROOT/artifacts/pc-neutral-boot-01/neutral-boot/reference.state" --output "$(fresh live/combat-reference)"
   run_check pc_combat_outcome ./tools/godot.sh --script res://tests/test_pc_combat_outcome.gd -- --fixture "$(fresh live/combat-reference)/report.json" --output "$(fresh live/combat)" --capture --boot --play --frame-audit
   run_check pc_scenario_frames ./tools/godot.sh --script res://tests/test_pc_scenario_frames.gd -- --fixture "$ROOT/artifacts/pc-all-scenarios-trace-01/report.json" --output "$(fresh live/scenario-frames)" --capture --no-audio --play
+  # Tactical screen-space light: terrain-only shade, concealed actors unchanged.
+  run_check pc_tactical_light ./tools/godot.sh --audio-driver Dummy --script res://tests/test_pc_tactical_light.gd -- --fixture "$ROOT/artifacts/pc-all-scenarios-trace-01/report.json" --output "$(fresh live/tactical-light)" --capture --no-audio --play --graphics tactical
   run_check pc_conveniences ./tools/godot.sh --script res://tests/test_pc_conveniences.gd -- --trace --play --frame-audit --capture --output "$(fresh live/conveniences)"
   run_check pc_mix_bridge ./tools/godot.sh --script res://tests/test_pc_mix_bridge.gd -- --play --trace --capture --capture-station gunner --interactive-clock --replay-controls --frame-audit --output "$(fresh live/mix)"
   run_check pc_frontdoor_live ./tools/godot.sh --script res://tests/test_pc_frontdoor_live.gd -- --play --boot --no-audio --output "$(fresh live/frontdoor)"

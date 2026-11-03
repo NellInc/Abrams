@@ -2,7 +2,7 @@
 
 ## Scope and current boundary
 
-Modern is a Compatibility renderer presentation of a paired original draw pass. It adds no physics, targeting, collision, navigation, camera extrapolation, actor simulation, terrain displacement, lights, shadows, reflections, or positional audio. The existing PC simulation remains authoritative.
+Modern is a Compatibility renderer presentation of a paired original draw pass. It adds no physics, targeting, collision, navigation, camera extrapolation, actor simulation, terrain displacement, lights, shadows, reflections, or positional audio. The existing PC simulation remains authoritative. Tactical Play alone adds screen-space shade on source terrain from the visible static source depth (`tactical-light-research.md`); Modern is unchanged.
 
 The runtime uses the generated catalogue's bounded triangle geometry directly, rather than loading a separate scene graph per actor. The catalogue and its GLB previews share the same generated geometry. `docs/modern-asset-register.md` records source identities and unresolved families. Availability requires the pinned original SIM/shape resources, structurally valid geometry, and the pinned illustrated tree. An unsupported backend or missing resource leaves Modern unavailable. Unsupported source palettes use the original source palette and geometry for that frame.
 

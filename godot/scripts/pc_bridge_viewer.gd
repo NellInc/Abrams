@@ -12,6 +12,7 @@ const PlayDisplay = preload("res://scripts/pc_play_display.gd")
 const StartupSplash = preload("res://scripts/pc_startup_splash.gd")
 var tactical_dynamics = preload("res://scripts/pc_tactical_dynamics.gd").new()
 var tactical_dynamics_allowed := true
+var tactical_light_allowed := true
 var reduced_motion_preferred := false
 const Frontdoor = preload("res://scripts/pc_frontdoor.gd")
 const FrontdoorRoute = preload("res://scripts/pc_frontdoor_route.gd")
@@ -128,7 +129,8 @@ func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, p
 			"size":tandem_frame.size,"world":world,"mode":tandem_frame.graphics_mode,
 			"cockpits":cockpit_art_requested,"gunner":gunner_art_requested,
 			"text":tandem_frame.frontend_art.text_enabled,
-			"hud":play_display.hud_style if play_display else ""}
+			"hud":play_display.hud_style if play_display else "",
+			"light":draw_view.tactical_light.active if draw_view else false}
 		pixels=image.get_data()
 		if not _presentation_key.is_empty() and pixels==_presentation_pixels and key.recursive_equal(_presentation_key,64):
 			presentation_reuses+=1
@@ -168,6 +170,7 @@ func _initialize() -> void:
 	capture = "--capture" in OS.get_cmdline_user_args()
 	var args := OS.get_cmdline_user_args()
 	tactical_dynamics_allowed="--no-tactical-dynamics" not in args
+	tactical_light_allowed="--no-tactical-light" not in args
 	var graphics_error := graphics_launch_error(args)
 	if not graphics_error.is_empty():
 		printerr(graphics_error)
@@ -759,6 +762,7 @@ func _build_stage(viewport: SubViewport) -> void:
 	if tandem_frame: tandem_frame.world_replay = draw_view
 	draw_view.solid_enabled = trace_mode and not wire_mode
 	draw_view.retain_render_target = play_mode and trace_mode and not wire_mode
+	draw_view.screen_light_enabled = tactical_light_allowed and trace_mode and not wire_mode
 	camera.add_child(draw_view)
 	world_view.visible = not trace_mode
 

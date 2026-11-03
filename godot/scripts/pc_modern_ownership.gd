@@ -10,6 +10,7 @@ var camera: Camera3D
 var object_count := 0
 var triangle_count := 0
 var _flags := PackedVector2Array()
+const NO_LIGHT := 2.0
 
 func _init() -> void:
 	own_world_3d = true
@@ -34,7 +35,11 @@ func clear() -> void:
 # Authored effect alpha never extends ownership past the original sprite's
 # opaque pixels, so it cannot conceal an actor the original left visible.
 # _effect_art is ignored; it remains only until the draw pass stops passing it.
-func prepare(data: Dictionary, dimensions: Vector2i, _effect_art: RefCounted = null, protected_lines: Dictionary = {}, guarded_owners: Dictionary = {}, protected_surfaces: Dictionary = {}, pose_overrides: Dictionary = {}) -> bool:
+# light_classes (owner ID -> class) only labels UV2.y for the Tactical light's
+# source-depth target; the ID mask ignores it. Absent owners, sprites, round
+# commands are class 2: they neither cast nor receive (their depth is a fixed
+# unprojection, not the original's). Pose overrides keep their owner's class.
+func prepare(data: Dictionary, dimensions: Vector2i, _effect_art: RefCounted = null, protected_lines: Dictionary = {}, guarded_owners: Dictionary = {}, protected_surfaces: Dictionary = {}, pose_overrides: Dictionary = {}, light_classes: Dictionary = {}) -> bool:
 	clear()
 	if not data.get("camera") is Dictionary or not data.get("objects") is Array: return false
 	if data.objects.size()>65534 or dimensions.x<1 or dimensions.y<1: return false
@@ -56,12 +61,13 @@ func prepare(data: Dictionary, dimensions: Vector2i, _effect_art: RefCounted = n
 		var ordinary_flag:float=guarded_flag if id in guarded_owners else 0.0
 		var surfaces:Dictionary=protected_surfaces.get(int(object.get("shape_index",-1)),{})
 		var protected:Dictionary=protected_lines.get(int(object.get("shape_index",-1)),{})
+		var light_class:float=float(light_classes.get(id,NO_LIGHT))
 		var corrected := Colour.input_color([id&255,(id>>8)&255,0],compatible)
 		var color := Vector2(corrected.r,corrected.g)
 		if id in pose_overrides:
 			# One admitted replacement at exactly its original owner/painter slot.
 			# Old standing polygons and round stamps never enter this mask.
-			add_points(vertices,colours,pose_overrides[id].camera_triangles,color,false,guarded_flag)
+			add_points(vertices,colours,pose_overrides[id].camera_triangles,color,false,guarded_flag,light_class)
 			continue
 		if object.get("sprite") is Dictionary:
 			# Exactly the original opaque runs at this painter slot. Holes in an
@@ -82,12 +88,12 @@ func prepare(data: Dictionary, dimensions: Vector2i, _effect_art: RefCounted = n
 			if points.size()<2: continue
 			var fill := int(polygon.get("fill_mode",0))!=0 and points.size()>=3
 			var surface_flag:float=line_flag if int(polygon.get("primitive",-1)) in surfaces else ordinary_flag
-			if fill: add_points(vertices,colours,Geometry.triangle_vertices(points,frame),color,false,surface_flag)
+			if fill: add_points(vertices,colours,Geometry.triangle_vertices(points,frame),color,false,surface_flag,light_class)
 			if not fill or polygon.colors[0]!=polygon.colors[1]:
 				var edges: int = points.size() if points.size()>2 else 1
 				for edge in edges:
 					var flag:float=line_flag if not fill and int(polygon.get("primitive",-1)) in protected else surface_flag
-					add_points(vertices,colours,Geometry.line_vertices(points[edge],points[(edge+1)%points.size()],frame),color,false,flag)
+					add_points(vertices,colours,Geometry.line_vertices(points[edge],points[(edge+1)%points.size()],frame),color,false,flag,light_class)
 	object_count = data.objects.size()
 	if not vertices.is_empty():
 		var arrays := []
@@ -106,9 +112,9 @@ func prepare(data: Dictionary, dimensions: Vector2i, _effect_art: RefCounted = n
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	return true
 
-func add_points(vertices: PackedVector3Array, colours: PackedVector2Array, points: Array, color: Vector2, command: bool = false, line_flag:float=0.0) -> void:
+func add_points(vertices: PackedVector3Array, colours: PackedVector2Array, points: Array, color: Vector2, command: bool = false, line_flag:float=0.0, light_class:float=NO_LIGHT) -> void:
 	for point: Array in points:
 		vertices.append(Vector3(point[0],point[2],-point[1])/64.0)
 		colours.append(color)
-		_flags.append(Vector2(1.0 if command else line_flag,0))
+		_flags.append(Vector2(1.0 if command else line_flag,light_class))
 	triangle_count += points.size()/3

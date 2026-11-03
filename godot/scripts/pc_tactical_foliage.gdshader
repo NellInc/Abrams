@@ -10,6 +10,8 @@ uniform float source_focal;
 uniform mat3 camera_to_local;
 uniform vec3 horizon;
 uniform float source_eye_height = 0.0;
+// Tactical light: footprints lean away from the sun and darken slightly.
+uniform bool sun_footprint = false;
 varying vec4 plant;
 varying float light;
 varying float material_kind;
@@ -28,6 +30,22 @@ float tactical_leaf_highlight(float pixel) {
 }
 
 void vertex() {
+    if (sun_footprint && UV2.x>0.75) {
+        // The contact footprint leans away from the shared Tactical sun by the
+        // plant's height times the sun's cotangent, anchored at the root. The
+        // footprint quad, its alpha and its verified-grass gate are unchanged.
+        vec3 sun=normalize(vec3(-0.58,0.34,0.74));
+        vec3 camera_sun=inverse(camera_to_local)*vec3(sun.x,-sun.y,sun.z);
+        vec3 plant_sun=inverse(mat3(MODEL_MATRIX))*vec3(camera_sun.x,camera_sun.z,-camera_sun.y);
+        vec2 away=-plant_sun.xz;
+        float run=length(away);
+        if (run>0.0001 && plant_sun.y>0.05) {
+            float radius=INSTANCE_CUSTOM.w>0.5 ? 5.0 : 25.0;
+            float reach=min((INSTANCE_CUSTOM.w>0.5 ? 9.0 : 7.0)*run/plant_sun.y,radius*3.0);
+            vec2 direction=away/run;
+            VERTEX.xz+=direction*reach*clamp((dot(VERTEX.xz,direction)/radius+1.0)*0.5,0.0,1.0);
+        }
+    }
     // Face-local dominant planes keep leaf proportions on roof and side facets.
     float axis=mod(round(UV2.x*16.0),8.0);
     material_point=axis<0.5 ? VERTEX.zy : axis<1.5 ? VERTEX.xz : VERTEX.xy;
@@ -130,7 +148,7 @@ void fragment() {
         // clipped by exactly the same verified grass pixels as the plant.
         float radius=plant.w>0.5 ? 0.20 : 1.0;
         vec2 q=UV/vec2(radius,radius*0.72);
-        alpha=(1.0-smoothstep(0.25,1.0,length(q)))*0.26;
+        alpha=(1.0-smoothstep(0.25,1.0,length(q)))*(sun_footprint ? 0.34 : 0.26);
         leaf=vec3(0.075,0.105,0.052);
     }
     leaf=OUTPUT_IS_SRGB ? leaf : pow(leaf,vec3(2.2));

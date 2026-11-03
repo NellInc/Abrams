@@ -593,6 +593,8 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	material.set_shader_parameter("world_texture", world)
 	material.set_shader_parameter("ui_mask", _mask_texture("ui"))
 	material.set_shader_parameter("world_enabled", true)
+	var light = world_replay.get("tactical_light") if world_replay!=null else null
+	material.set_shader_parameter("tactical_grade",graphics_mode=="tactical" and light!=null and light.active)
 	world_enabled = true
 	fallback_reason = ""
 	_set_art(presentation,mask)

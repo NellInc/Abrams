@@ -10,7 +10,9 @@ const Colour = preload("res://scripts/pc_colour.gd")
 const TerrainStyle = preload("res://scripts/pc_terrain_style.gd")
 const TacticalFoliage = preload("res://scripts/pc_tactical_foliage.gd")
 const TacticalEffects = preload("res://scripts/pc_tactical_effects.gd")
+const TacticalLight = preload("res://scripts/pc_tactical_light.gd")
 var tactical_effects = TacticalEffects.new()
+var tactical_light = TacticalLight.new()
 var tactical_foliage = TacticalFoliage.new()
 var _foliage_pass: Dictionary = {}
 var _foliage_mapping: Dictionary = {}
@@ -56,7 +58,11 @@ var tactical_landscape := false:
 		if tactical_landscape!=value:clear_mesh_cache()
 		tactical_landscape=value
 		if not value and tactical_vehicle_view!=null:tactical_vehicle_view.clear()
+		# Its source classes enter the ownership mesh, so only a rebuild adds it.
+		if not value and tactical_light!=null:tactical_light.clear()
 		if value and _modern_active:
+			# The light itself needs a rebuild; until then footprints stay upright.
+			tactical_foliage.material.set_shader_parameter("sun_footprint",tactical_light.active)
 			tactical_foliage.prepare(_foliage_pass,_foliage_mapping,ownership.get_texture())
 			tactical_effects.prepare(_foliage_pass,_foliage_mapping,ownership.get_texture(),modern_assets,effect_art)
 			_effects_inputs={"rows":TacticalEffects.inputs(_foliage_pass).duplicate(true)}
@@ -71,6 +77,13 @@ var tactical_landscape := false:
 				refresh_surface_shader(active)
 				if retain_render_target and get_viewport() is SubViewport:
 					get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
+# Tactical screen-space light (pc_tactical_light.gd). Only the Play viewer opts
+# in, so standalone renderer tests keep their preceding Tactical pixels.
+var screen_light_enabled := false:
+	set(value):
+		if screen_light_enabled!=value: clear_mesh_cache()
+		screen_light_enabled=value
+		if not value and tactical_light!=null: tactical_light.clear()
 var modern_assets = ModernAssets.new()
 var tactical_vehicle_assets = preload("res://scripts/pc_tactical_vehicle_assets.gd").new()
 var tactical_vehicle_view = preload("res://scripts/pc_tactical_vehicle_view.gd").new()
@@ -130,6 +143,7 @@ func _init() -> void:
 	add_child(tactical_foliage)
 	add_child(tactical_effects)
 	add_child(tactical_vehicle_view)
+	add_child(tactical_light)
 
 
 func _groundlight_source() -> String:
@@ -203,6 +217,9 @@ func load_modern_assets(root: String) -> bool:
 static func camera_point(raw: Array) -> Vector3:
 	return Vector3(float(raw[0]), float(raw[2]), -float(raw[1])) / DISPLAY_SCALE
 
+func _screen_light_eligible(pass_data: Dictionary) -> bool:
+	return screen_light_enabled and solid_enabled and modern_enabled and tactical_landscape and TacticalLight.daylight(pass_data)
+
 func clear_mesh_cache() -> void:
 	_cached_pass.clear()
 	_cached_config.clear()
@@ -248,7 +265,7 @@ func _mesh_config() -> Array:
 	# Loaded presentation assets are immutable between loader revisions. Include
 	# the small mutable configuration arrays and texture references explicitly.
 	return [solid_enabled,modern_enabled,presentation_palette,
-		tactical_landscape,tactical_vehicle_assets.revision,tactical_vehicle_assets.ready,
+		tactical_landscape,screen_light_enabled,tactical_vehicle_assets.revision,tactical_vehicle_assets.ready,
 		get_viewport().get_visible_rect().size,RenderingServer.get_current_rendering_method(),
 		tactical_material_atlas,tactical_material_textures,modern_assets,modern_assets.revision,modern_assets.ready,modern_assets.colour_texture,modern_assets.tree_texture,
 		terrain_style,terrain_style.textures if terrain_style else {},terrain_style.hill_texture if terrain_style else null,
@@ -318,6 +335,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 	if retain_render_target and get_viewport() is SubViewport:
 		get_viewport().render_target_update_mode=SubViewport.UPDATE_ONCE
 	ownership.clear()
+	tactical_light.clear()
 	tactical_vehicle_view.clear()
 	tactical_foliage.clear()
 	tactical_effects.clear()
@@ -411,7 +429,8 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 			for index in pass_data.objects.size():
 				if not modern_assets.is_terrain(pass_data.objects[index]):guarded_owners[index+1]=true
 		var pose_overrides:Dictionary=tactical_vehicle_view.admit_poses(tactical_vehicle_assets,pass_data) if vehicle_masks else {}
-		_modern_active = ownership.prepare(pass_data,Vector2i(get_viewport().get_visible_rect().size),null,tactical_vehicle_assets.protected_lines if vehicle_masks else {},guarded_owners,tactical_vehicle_assets.protected_surfaces if vehicle_masks else {},pose_overrides)
+		var light_classes:Dictionary=TacticalLight.classes(pass_data,modern_assets) if _screen_light_eligible(pass_data) else {}
+		_modern_active = ownership.prepare(pass_data,Vector2i(get_viewport().get_visible_rect().size),null,tactical_vehicle_assets.protected_lines if vehicle_masks else {},guarded_owners,tactical_vehicle_assets.protected_surfaces if vehicle_masks else {},pose_overrides,light_classes)
 		if profile_builds: last_apply_timings_usec.ownership=Time.get_ticks_usec()-owner_started
 	var palette: Array = presentation_palette if presentation_palette.size() == 16 else pass_data.palette_rgb
 	if modern_enabled: palette = ModernAssets.DAY_PALETTE if _modern_active else pass_data.palette_rgb
@@ -648,6 +667,8 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 	if camera_basis_ready:
 		material.set_shader_parameter("camera_to_local",basis.inverse)
 		material.set_shader_parameter("world_origin",basis.origin)
+	if _modern_active and _screen_light_eligible(pass_data):
+		tactical_light.prepare(ownership,frame,basis)
 	material.set_shader_parameter("source_origin", Vector2(frame.clip[0], frame.clip[1]))
 	material.set_shader_parameter("source_dimensions", Vector2(frame.clip[2] - frame.clip[0] + 1, frame.clip[3] - frame.clip[1] + 1))
 	material.set_shader_parameter("source_focal_pixels",float(frame.focal_pixels))
@@ -673,6 +694,7 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 		_foliage_mapping=mapping
 		if tactical_landscape:
 			var prepare_started: int=Time.get_ticks_usec() if profile_builds else 0
+			tactical_foliage.material.set_shader_parameter("sun_footprint",tactical_light.active)
 			tactical_foliage.prepare(pass_data,mapping,ownership.get_texture(),blast_replaced)
 			if profile_builds:
 				last_apply_timings_usec.foliage=Time.get_ticks_usec()-prepare_started
@@ -828,6 +850,7 @@ func _prewarm_modern() -> bool:
 	var programs:Array=[_modern_shader,_groundlight_shader,ModernOwnership.ShaderSource]
 	if tactical_vehicle_assets.ready:programs.append(preload("res://scripts/pc_tactical_vehicles.gdshader"))
 	programs.append(TacticalEffects.ShaderSource)
+	programs.append(TacticalLight.DepthShader)
 	var mask:=Image.create(1,1,false,Image.FORMAT_RGBA8)
 	mask.fill(Color(1.0/255.0,0,8.0/255.0,1))
 	var ownership_texture:=ImageTexture.create_from_image(mask)
@@ -888,6 +911,7 @@ func _prewarm_modern() -> bool:
 			material.set_shader_parameter("root_width",2.0)
 			material.set_shader_parameter("plume_phase",0.3)
 		else:
+			if shader==TacticalLight.DepthShader:label="tactical-light-depth"
 			arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2(1.0/255.0,0),Vector2(1.0/255.0,0),Vector2(1.0/255.0,0)])
 		mesh.clear_surfaces();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 		mesh.surface_set_material(0,material)
@@ -897,6 +921,33 @@ func _prewarm_modern() -> bool:
 		var admitted:bool=image!=null and image.get_size()==Vector2i(64,64) and image.get_pixel(32,32).a>0.01
 		modern_prewarm_rows.append({"program":label,"render_usec":Time.get_ticks_usec()-begin,"admitted":admitted})
 		complete=complete and admitted
+	# The shade quad multiplies, so it is admitted when it darkens an opaque
+	# target: one terrain texel, seen level at eye height, loses open sky.
+	RenderingServer.viewport_set_transparent_background(warm,false)
+	var depth_texel:=Image.create(1,1,false,Image.FORMAT_RGBA8)
+	var code:=1+int(floor(clampf((log(500.0)/log(2.0)-4.0)/14.0,0.0,1.0)*4194302.0+0.5))
+	depth_texel.set_pixel(0,0,Color8(code>>14,(code>>6)&255,(code&63)*4+2,255))
+	var light_material:=ShaderMaterial.new()
+	light_material.shader=TacticalLight.LightShader
+	light_material.set_shader_parameter("source_depth",ImageTexture.create_from_image(depth_texel))
+	light_material.set_shader_parameter("source_origin",Vector2.ZERO)
+	light_material.set_shader_parameter("source_dimensions",Vector2.ONE)
+	light_material.set_shader_parameter("source_center",Vector2(0.5,0.5))
+	light_material.set_shader_parameter("source_focal_pixels",1.0)
+	light_material.set_shader_parameter("camera_to_local",Basis.IDENTITY)
+	light_material.set_shader_parameter("eye_height",64.0)
+	mesh.clear_surfaces();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+	mesh.surface_set_material(0,light_material)
+	var light_begin:=Time.get_ticks_usec()
+	var shaded:Array[float]=[]
+	for strength in [0.0,1.0]:
+		light_material.set_shader_parameter("light_strength",strength)
+		RenderingServer.force_draw(false);RenderingServer.force_sync()
+		var light_image:=RenderingServer.texture_2d_get(RenderingServer.viewport_get_texture(warm))
+		shaded.append(light_image.get_pixel(32,32).r if light_image!=null and light_image.get_size()==Vector2i(64,64) else -1.0)
+	var light_admitted:bool=shaded[0]>0.0 and shaded[1]>=0.0 and shaded[1]<shaded[0]-0.01
+	modern_prewarm_rows.append({"program":"tactical-light","render_usec":Time.get_ticks_usec()-light_begin,"admitted":light_admitted})
+	complete=complete and light_admitted
 	RenderingServer.viewport_set_active(warm,false)
 	RenderingServer.free_rid(instance)
 	RenderingServer.free_rid(warm_camera)

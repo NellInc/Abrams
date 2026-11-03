@@ -34,10 +34,15 @@ var anisotropic_samples := 16
 const TACTICAL_LAYOUTS := {
 	1: {"camera":Vector4(32,13,288,110), "source":[
 		Vector4(32,13,288,110),Vector4(11,139,94,174),Vector4(11,176,94,194),
-		Vector4(124,136,194,197),Vector4(224,139,265,193),Vector4(269,139,310,193),Vector4(0,197,320,200)],
-		"destination":[Vector4(0.057,0.105,0.943,0.670),Vector4(0.065,0.760,0.247,0.920),
+		Vector4(124,136,194,197),Vector4(224,139,265,193),Vector4(269,139,310,193),Vector4(0,197,320,200),
+		# The original crew-message line under the sight. Once the first message
+		# draws it, it persists for the mission; without it the station stays 4:3.
+		Vector4(40,110,280,120)],
+		# Sight and message share the optic aperture at one vertical source scale.
+		"destination":[Vector4(0.057,0.105,0.943,0.6111),Vector4(0.065,0.760,0.247,0.920),
 		Vector4(0.276,0.760,0.461,0.920),Vector4(0.489,0.760,0.647,0.920),
-		Vector4(0.674,0.760,0.812,0.920),Vector4(0.839,0.760,0.952,0.920),Vector4(0.055,0.937,0.945,0.945)]},
+		Vector4(0.674,0.760,0.812,0.920),Vector4(0.839,0.760,0.952,0.920),Vector4(0.055,0.937,0.945,0.945),
+		Vector4(0.08469,0.6178,0.91531,0.670)]},
 	2: {"camera":Vector4(0,10,320,53), "source":[
 		Vector4(0,10,320,53),Vector4(15,62,161,160),Vector4(14,176,94,194),
 		Vector4(102,176,163,194),Vector4(207,81,289,143),Vector4(207,143,289,187),Vector4(0,197,320,200)],

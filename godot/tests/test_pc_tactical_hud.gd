@@ -84,6 +84,21 @@ func run() -> void:
 	plate_packet.plate_overlay.mask_png=Marshalls.raw_to_base64(plate.save_png_to_buffer())
 	display.set_hud_frame(plate_packet,{"name":"SIM"})
 	check(display._wide_station==1,"live source border remains visible in the reflow")
+	# The original crew-message line persists after its first message.
+	plate.fill_rect(Rect2i(40,110,240,10),Color.BLACK)
+	plate_packet.plate_overlay.mask_png=Marshalls.raw_to_base64(plate.save_png_to_buffer())
+	display.set_hud_frame(plate_packet,{"name":"SIM"})
+	check(display._wide_station==1,"Gunner crew-message line remains wide")
+	var strip:Vector4=Display.TACTICAL_LAYOUTS[1].destination[7]
+	var sight:Vector4=Display.TACTICAL_LAYOUTS[1].destination[0]
+	check(strip.y>sight.w and strip.w<=0.6701 and strip.x>sight.x and strip.z<sight.z,"message line sits inside the optic below the sight")
+	check(absf((strip.w-strip.y)/10.0-(sight.w-sight.y)/97.0)<0.0001,"message line keeps the sight's vertical source scale")
+	for outside in [Vector2i(39,110),Vector2i(40,120),Vector2i(280,115)]:
+		plate.set_pixel(outside.x,outside.y,Color.BLACK)
+		plate_packet.plate_overlay.mask_png=Marshalls.raw_to_base64(plate.save_png_to_buffer())
+		display.set_hud_frame(plate_packet,{"name":"SIM"})
+		check(display._wide_station==0,"pixel beyond the message line restores 4:3: %s"%outside)
+		plate.set_pixel(outside.x,outside.y,Color8(1,1,1))
 	plate.set_pixel(0,0,Color.BLACK)
 	plate_packet.plate_overlay.mask_png=Marshalls.raw_to_base64(plate.save_png_to_buffer())
 	display.set_hud_frame(plate_packet,{"name":"SIM"})

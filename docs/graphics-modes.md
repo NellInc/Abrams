@@ -359,6 +359,35 @@ Working if: a source-forced 4:3 fallback retains verified Tactical instruments
 at their original coordinates, every unknown panel stays visible and unchanged,
 and Restored removes all retained overlay children immediately.
 
+### Gunner crew-message line in the wide layout (2 November 2026)
+
+The original draws its crew-message bar at source (40,110)–(280,120) on the
+first message and keeps it for the rest of the mission. The wide Gunner layout
+had no region for it, so after the first message every frame failed the
+coverage proof and Gunner stayed in the 4:3 fallback. In the 2 November combat
+trace that was frames 39–134 of 135. Across all 1,181 recorded plate masks, 488
+gunner frames failed for this reason alone; no other in-mission cause appeared.
+
+The strip is now the eighth mapped region (the shader's limit). It sits inside
+the same optic aperture, directly under the sight. The sight gives up about
+10% of its height, so sight and message share one vertical source scale. The
+bezel and housing art are unchanged. Plate pixels in the strip, before any
+message, draw as a dark empty readout. Message pixels keep their existing
+treatment.
+
+Evidence: the live `test_pc_radio_bridge.gd` run passed (22,725 checks,
+3,716 frames, 0 errors). Its message, alert, empty-bar and portrait frames all
+report `tactical_station: 1`, with the strip readable under the sight.
+`PC_TACTICAL_HUD` passed (967 checks), and its new cases fail if one pixel
+outside the strip is not plate. `PC_GRAPHICS_MODES` also passed (18,629
+checks). Commander, Cupola, Driver and Status have only mission-start plate
+samples (32 each; none for Status), so whether their message lines are covered
+is unverified. The Web bundle's `index.pck` predates this change.
+
+Working if: after a crew message, Gunner keeps the 16:9 housing with the
+message under the sight, and a non-plate pixel outside every mapped region
+still restores 4:3.
+
 The instrument-legibility pass gives speed and fuel scales contained endpoint
 labels and ticks registered to their segment rails. Readout columns measure the
 exact verified value before fitting their labels, giving long words such as
@@ -1249,6 +1278,75 @@ Working if: startup admits every required program before play, the first smoke
 surface transition avoids the previous large first-use stall, projected flow
 matches the original camera at pitched/off-centre roots, and moving-fold colour
 retains exact predecessor opacity and ownership.
+
+### Tactical screen-space light (local, 2 November 2026)
+
+In daylight, Tactical Play now shades the ground with the same fixed sun as
+its materials. The literature review and the choices behind this are in
+[tactical-light-research.md](tactical-light-research.md).
+
+* **Sun shadow and contact shading on terrain.** A second viewport redraws the
+  original ownership mesh in its own painter order. It keeps the forward depth
+  of the original surface visible at each pixel. A single multiplicative pass
+  then darkens and cools source terrain and the original ground background:
+  where visible scenery or a visible vehicle blocks the sun, where a face turns
+  from the sun, close to a building, tree, hill or vehicle, and toward the foot
+  of sloped terrain. Only what the original shows can shade: an actor it
+  concealed contributes nothing. Vehicles and wrecks drawn as polygons cast
+  shadows (Nell, 2 November 2026: "Add these please"), which extends their
+  visible footprint beyond the original silhouette. They are never darkened
+  themselves. Bitmap-drawn vehicles cast nothing. The pass runs before smoke,
+  exhaust and debris, so those stay unshaded.
+* **Cloud shadows.** Static, soft cloud patches lie across the terrain out to
+  the horizon (approved the same day). They are anchored to the world and
+  projected down the sun, so they stay put as the tank moves and have no
+  clock. They darken only terrain: a vehicle in a patch stays sunlit, which
+  changes how much it stands out from the ground behind it.
+* **Sun-leaning plant shadows.** Each decorative shrub and grass footprint now
+  leans away from the sun by its height, slightly darker than before. It stays
+  inside the same verified grass pixels.
+* **Grade.** Inside the 3D view, a filmic contrast curve is applied while the
+  light is active. It was strengthened at Nell's request: luminance slope is
+  0.78–1.22, so the darkest and brightest tones lose up to 22% of their local
+  contrast while mid-tones gain it. No channel reverses. Muted colours get a
+  lift of up to 30%, sunlit tones are warmer and shade cooler, without pushing
+  whites into clipping. HUD, reticle, cockpit art and text are outside it.
+
+The light uses no clock, so pause, menus and captures behave as before.
+Thermal and other non-daylight palettes, EGA, EGA Upscaled, Genesis, Genesis
+Upscaled and Modern are unchanged. `--no-tactical-light` restores the
+preceding Tactical pixels exactly. Startup prewarms the depth and shade
+programs, and the shade program is admitted only when it visibly darkens a
+target. Together they add about 0.39 s to the Modern catalogue's startup
+warm-up (165 ms and 220 ms, against about 1.73 s for the existing programs).
+
+Local verification replayed all 32 recorded scenario and station packets through
+the production viewer: 252 checks with 0 errors and 27 daylight cases. Shade
+changed only terrain or ground-background pixels and never brightened one.
+Depth coverage matched ownership exactly, and the depth encoding round-tripped
+with zero error. Inserting a wholly concealed actor, or concealed static
+scenery, left the lit scenery byte-identical. Toggling the light on an
+identical packet recomposes the retained frame, and toggling it back restores
+the frame byte for byte. A visible vehicle-sized card on open ground darkens
+only terrain beside it. The grade has no channel reversals on rendered
+ramps. Modern captures and Tactical with
+`--no-tactical-light` are pixel-identical to their pre-change baselines. With
+the light on, exactly the 27 daylight views differ, and only inside the 3D
+view at all four stations. Before vehicle and cloud shadows, whole-frame redraw
+timing with the pass on or off was within this machine's noise (four runs, 1.6–2.3 ms
+at 1280×485). With 32-step marching and horizon-wide cloud shadow it costs about
+1 ms more: 5.25 vs 4.31, 5.91 vs 4.58 and 5.54 vs 4.72 ms, measured while two other
+Godot processes were running. That is not a GPU-isolated or moving-gameplay
+measurement. Evidence:
+`artifacts/gorgeous-20261102/`. Local source only: the standalone apps and the
+Web edition are unchanged and nothing is published. The shaders have not yet
+been compiled on WebGL 2.
+
+Working if: `test_pc_tactical_light.gd` reports 32 cases with 0 errors, Modern
+and `--no-tactical-light` captures match their baselines, and daylight
+Tactical frames show sun-leaning plant shadows, vehicle shadows, soft cloud
+patches, cool shade on sun-averted slopes and hill feet settled into the
+ground.
 
 ## Tactical doors, timber and stone trim
 
