@@ -52,135 +52,135 @@
   },
   "docs/player-reference/scenario-convoy.png": {
    "set": "common",
-   "sha256": "f8955220cb6bc1f520c3287f370912cf64103b7a84925de157531c4fdc37e026"
+   "sha256": "f5aa7eb36c44c56d8bd2076c5d42ad41c70515cdf96ba6bcd915e4480f5fc66c"
   },
   "docs/player-reference/scenario-convoy.svg": {
    "set": "common",
-   "sha256": "37245c0a715171c9ca70c486b2a2f35b99dfacf3a9e1a72b62dd9146ab78b8a2"
+   "sha256": "aa22c7b1284c9a60ad702122f16fde1e9d0a2b568717aed0aaa68fff14776ea9"
   },
   "docs/player-reference/scenario-hannover-push.png": {
    "set": "common",
-   "sha256": "62060ff981c996698e44a1b1ada091b58a5ffd20869a651c673ceae7892c303d"
+   "sha256": "26b7d286de941d45e000979c23436d03158a6210f58e8e4e4c335b2dc8c82c6a"
   },
   "docs/player-reference/scenario-hannover-push.svg": {
    "set": "common",
-   "sha256": "14639aafb2c1fd4d2b1b7a08f46b6b6f49f796260061c2b1ea1fb58dc54887fe"
+   "sha256": "d61c2b3651cdacadff3588055676f38981c6fee78b2c44b3b8502415653ffa98"
   },
   "docs/player-reference/scenario-mass-destruction.png": {
    "set": "common",
-   "sha256": "c9f8952c7a8275bf2ea730ac101607e3578aa8983de4c995d2d4d0bd4c1aba08"
+   "sha256": "0d910b1be8eb48c0d5f7840ac7f869b887232cc1814d2c6d4fe1e464c64571ac"
   },
   "docs/player-reference/scenario-mass-destruction.svg": {
    "set": "common",
-   "sha256": "6703edb287397cb51c1dd5f6308a1d0135a12d70a34a293db578fa3132a024e7"
+   "sha256": "6b1b470e0cf4b23c6f12d5f724400109781d3a8ee2da22e8fa9af3483d7fc81d"
   },
   "docs/player-reference/scenario-nuremberg-highway.png": {
    "set": "common",
-   "sha256": "31bc5c061b5f87598a637ff9c1e385cd8726a5bdf79d71a8d24edc9937d0252e"
+   "sha256": "215bc7814d3aed0e5d9e80ab6df9b1df1c475b1fa896225abece10b61f2e838e"
   },
   "docs/player-reference/scenario-nuremberg-highway.svg": {
    "set": "common",
-   "sha256": "dd229b30b26d8449bc677a9fc95b66001e3ad25764ff563b2019ca2e8f9f6564"
+   "sha256": "c66796d892ac9b78a9e2f33a8a676575a7569aa981deaf214c5845dad5d010e8"
   },
   "docs/player-reference/scenario-siegen-infiltration.png": {
    "set": "common",
-   "sha256": "7b262f35e44f8a4d1a1a5e2d9ce5b93f60b84b73913e08d2c0eea2b1bd2f2742"
+   "sha256": "7ef9c9b511a7b66c819e4952573d9989bed6151dab3261902c9f202f46884711"
   },
   "docs/player-reference/scenario-siegen-infiltration.svg": {
    "set": "common",
-   "sha256": "891dd1eb114de8e22ad5181bcb200b766bf45ce8eb430edfe49b945ceb232b06"
+   "sha256": "e7afe00b62ea66ffc1be9b47878606b190094ab10fc7e5ab469023baedfd05bb"
   },
   "docs/player-reference/scenario-the-mossel-defense.png": {
    "set": "common",
-   "sha256": "5ff883d23f85b59ff173dd6f22343fa3efe13f7a38c46116c99114d4745615a9"
+   "sha256": "d2a5bfe3c42400b428dd1b2c94e713f817cb2e0befd546c60c1a7f8bc9c6503f"
   },
   "docs/player-reference/scenario-the-mossel-defense.svg": {
    "set": "common",
-   "sha256": "8d57673b0348e541bd4de2203e1197de8beece06d19cfd520fc05760ba1e8044"
+   "sha256": "7de54b447498c578c9556e9f904ce13e4b00c49144fa8aca926896e9d5a80700"
   },
   "docs/player-reference/scenario-the-mossel-intercept.png": {
    "set": "common",
-   "sha256": "6eaef8b0ffd2798b41aeca8f254947e7f8050b9d8edfdd4a9b944d0f9363fa89"
+   "sha256": "3e3e25fcd8c460e45bdd5b53b84fb81014a0b7ed30a9fa6273f6dfe1f16086c5"
   },
   "docs/player-reference/scenario-the-mossel-intercept.svg": {
    "set": "common",
-   "sha256": "03117d798428e8ee95a95c3a16a8fc3ecd38baaef2c13f5955c39ed935776416"
+   "sha256": "7f24ff8e28973d126e13733676124a656a72dd5cdd70b8cc133a7a3739a49eb2"
   },
   "docs/player-reference/scenario-the-road-to-bonn.png": {
    "set": "common",
-   "sha256": "5eb62a7154f6a28260814eec417ae531874b964140367f52a68cdf8d91b12a1b"
+   "sha256": "55ae09149e52a13dc4f01d21a9995316866292b3b25f60dc1a234c4f209441ff"
   },
   "docs/player-reference/scenario-the-road-to-bonn.svg": {
    "set": "common",
-   "sha256": "a4ca3143567603cf166438f4f49709f079e16685816b8e9b6abcb76dedf63651"
+   "sha256": "4196314b430ddff4514ddd7320bfb6d5994c6d28d47ed8c1d012f8310fd22992"
   },
   "docs/player-reference/vehicle-acrv-2.svg": {
    "set": "common",
-   "sha256": "76af5513aefa3d0cbb0c907e84fcb78b053c14da164137686ae8d3924b4fc1e0"
+   "sha256": "d02398dffe864a7627a284c51f84a55c84af869df276f17fc23a07987322a2e8"
   },
   "docs/player-reference/vehicle-bmp-1.svg": {
    "set": "common",
-   "sha256": "6a740a227b7749eda8c2ad4ea4b39783d5b083c991b96c8402c6f6bb5b7e2532"
+   "sha256": "bde3c0692f4545e749afa5af839c9affbd61b0c5547ba5bf50f9dd09d5646509"
   },
   "docs/player-reference/vehicle-bmp-2.svg": {
    "set": "common",
-   "sha256": "b44850f8816d0ee3c2b4eb2a3c8599941dfb17e2ca980deb9ce4325228a01269"
+   "sha256": "aa69b65bc451792e63f138f0886fc49484c380b7ab46e235f801141c94b48e7b"
   },
   "docs/player-reference/vehicle-brdm-2.svg": {
    "set": "common",
-   "sha256": "94889d2c092c40288ec8dd104481b81bcd1b6df661b9810bf5d1202e1f6c3cec"
+   "sha256": "67697539b419a610a705d7484da059c3f78854fa8dd853bdbdb1e6f356699211"
   },
   "docs/player-reference/vehicle-brdm-3.svg": {
    "set": "common",
-   "sha256": "9dc47497da4b498f1aa3d4fa45a27c5786e2852f5b4c60cf9c0cef72737e06cd"
+   "sha256": "06deb95ac6e6c6681cae118c2506a94db049143a02139061af94548eeafb7bff"
   },
   "docs/player-reference/vehicle-btr.svg": {
    "set": "common",
-   "sha256": "0da030c49ca5e915da48fbb6bc9925134b1dbbc525226ce0a057d4601742c8a0"
+   "sha256": "c522eb6af615e3d3c2dcf9ab917e166ce212b4788f36173705ebc9ab9c91082d"
   },
   "docs/player-reference/vehicle-fst-1.svg": {
    "set": "common",
-   "sha256": "7216ba97403a4633ae56f85c34171835880d2fd2c58584dbd180c5c4e4510587"
+   "sha256": "6fbb32e6576cb9e0e7a192fa22e32ef62ffd8049d568a6bdd9604bbf7dc490a9"
   },
   "docs/player-reference/vehicle-m113.svg": {
    "set": "common",
-   "sha256": "0afdeaea9f66f786a77fb2f97d370aee0a9d15fda88c249986fda44e616752eb"
+   "sha256": "00f75ce3e6700179040b8cd6525f0cc9e2a12f7155cf2bf072d9c1362bce5ea2"
   },
   "docs/player-reference/vehicle-m1a1-abrams.svg": {
    "set": "common",
-   "sha256": "724fe0b52e169ffa105dac39faf04c6c3e436b133d382d2bcefc39f4fc6e3911"
+   "sha256": "edd2c03e33e66142e77d598c9b52754fd25e3cc5b78c957430d2258206499074"
   },
   "docs/player-reference/vehicle-m2-bradley.svg": {
    "set": "common",
-   "sha256": "ad92eee208626d64314fc5ba363dbba6cf3a4537d9d18fdd3c338369c6571b73"
+   "sha256": "eac2596c7475e77959398bd00ce5eff585aa7eb00ed00fe68c6d271c65697b05"
   },
   "docs/player-reference/vehicle-m60a3.svg": {
    "set": "common",
-   "sha256": "ab33b1e6bf244019ebbadf35ce605e94184b37eb734b5a3723f3b89aea8387c7"
+   "sha256": "297a3e5e729946f95c4ed46ef0795886d7940cb0724a9c2a8c86a06cc2c65f02"
   },
   "docs/player-reference/vehicle-mi-24-hind.svg": {
    "set": "common",
-   "sha256": "c22b567e21d5e055f4f627f514328faf5afecf8213e206fa13ef4a06a1a500ab"
+   "sha256": "6bf0edfe1b5b96d6e6c613ce6da6b4ef9f6e9f3f73086c06d739cb1d5a22f502"
   },
   "docs/player-reference/vehicle-t-62.svg": {
    "set": "common",
-   "sha256": "494e80e6e7f13e9fabaf4a51806bd63131471a664d0d2d5ac17183512883a5df"
+   "sha256": "fc7985857a67a42e72ccd787a2c7e30f2133672618bb1c2403e81f27f7bb7701"
   },
   "docs/player-reference/vehicle-t-64.svg": {
    "set": "common",
-   "sha256": "8829e6f1ebf28918c76e3c72d206385064d0f2068df5d3646d7de2314f1ea78a"
+   "sha256": "b24f3dbc65d0e798b9f567baae7445ca77b6686cd77a5d14d1c093b7f8b87541"
   },
   "docs/player-reference/vehicle-t-72.svg": {
    "set": "common",
-   "sha256": "90f6e34cc2f9d402df0190c93cd860860581d22a5d052946a86d74b15edfe5e3"
+   "sha256": "63f46b73d26cf2c5dd2103d95c703b86a1fce6d928665bda24cf436ed28c1449"
   },
   "docs/player-reference/vehicle-t-80.svg": {
    "set": "common",
-   "sha256": "79a5aaf57fecf8c7dbfcdd04f6d5ba2022fa2e7e480f7bc5ac23240cfbcce162"
+   "sha256": "e5bbe7279a5bfdc2b9dace66fbcbc485b2adf0e0e88ab42ed3805833f2395490"
   },
   "docs/player-reference/visuals.json": {
    "set": "common",
-   "sha256": "5ea1ef7d1f18c3c463699aa15e43a2390b8ab777e2d0d326950752ee040a2881"
+   "sha256": "d12a5f1b6a964ec3e133fd898cba66d8c8bb9f5adaf2063836309474f1a0352a"
   },
   "docs/player-reference/wireframe-acrv-2.png": {
    "set": "common",
@@ -196,11 +196,11 @@
   },
   "docs/player-reference/wireframe-brdm-2.png": {
    "set": "common",
-   "sha256": "06ab9e32943e05a19a1b0524d012b71aec1646769f6bc1110f3219f0270e2a4e"
+   "sha256": "782462f5071db570a591c709d9e5e90dd00dea2e636d643ba5c7bad383e74eae"
   },
   "docs/player-reference/wireframe-btr.png": {
    "set": "common",
-   "sha256": "cb3fb3a00e6589e615a8340d2bb405bbe778947f9847db98e283fc2afb0eb020"
+   "sha256": "c42d50085d00a799ac161b371c2ef852c78a3c2e7dec104a7f3749cec60e988f"
   },
   "docs/player-reference/wireframe-m113.png": {
    "set": "common",
@@ -768,19 +768,19 @@
   },
   "local-art/pc-tactical-roster-v1/pair-albedo.png": {
    "set": "common",
-   "sha256": "5bda7d309b104a896ce8e49bdf0e3bfc21abc56d3a077f1345b3a8fee6c226fc"
+   "sha256": "9253d58d820d9d8290b762d0f00efbd55da08dcfe6cffb142395711f6dd70463"
   },
   "local-art/pc-tactical-roster-v1/wreck-normal.png": {
    "set": "common",
-   "sha256": "3f95d945f0c9bd6615f9168f780f20cfeb64854e01780f9dfd276306c7e6aa36"
+   "sha256": "2fbf61988780f9bbcdd96b279b3d6c4f62f21b2bebde602a470b4a1b74bbe49a"
   },
   "local-art/pc-tactical-roster-v1/intact-normal.png": {
    "set": "common",
-   "sha256": "bfb7dfde95f0b4e76bb38b9e2fa2da8758da61cbbd56f09d277612a0d1b6b45b"
+   "sha256": "faa771835b69b06b39176db6221c00c267d925c99cee038c1c0a422f96e79f84"
   },
   "local-art/pc-tactical-roster-v1/scene-normal.png": {
    "set": "common",
-   "sha256": "0c02c04df50a961c873effed94c463d5443e26ee74a5367a8c945a40e5a1359b"
+   "sha256": "30a2a579465ca414cb9d4235dcd84d397bc0a27012de8922f99bcf2fad3a7b49"
   },
   "local-art/pc-tactical-roster-v1/bridge-orm.png": {
    "set": "common",
@@ -788,11 +788,11 @@
   },
   "local-art/pc-tactical-roster-v1/scene-orm.png": {
    "set": "common",
-   "sha256": "d662ab7433a6a5c8665c08e3018629b8964a185841488eab796fc2560288c7ee"
+   "sha256": "a1d914e842e69fbb5c2433fb505cce9fb989611a5baf3694032637d3e58f96ba"
   },
   "local-art/pc-tactical-roster-v1/intact-orm.png": {
    "set": "common",
-   "sha256": "445f1d6618b4397fa46661b8c387c544e34652aa61c9a8205c871a3a186dc41e"
+   "sha256": "80bb3fb443962ca3b90d234c7f57b1a6fff23be8a894a8553b6a46da817fe592"
   },
   "local-art/pc-tactical-roster-v1/bridge-normal.png": {
    "set": "common",
@@ -800,35 +800,35 @@
   },
   "local-art/pc-tactical-roster-v1/manifest.json": {
    "set": "common",
-   "sha256": "1fba8c7176de9eb9f80668e5e6f84e7858a5716cb60b10abc097759ed6a87403"
+   "sha256": "b9ff5bf821cb3a30a42ae01b59df04d004f4cd361dcbb9c42677f242060d4910"
   },
   "local-art/pc-tactical-roster-v1/wreck-orm.png": {
    "set": "common",
-   "sha256": "3a425474c9901d2758750ffe7db16d9610a8e8d6b3da14c8d49edc5b860783d3"
+   "sha256": "67adf713b5c6e216fd960ecddbd490e990c29fd14aaf17869221b76e7dbb4493"
   },
   "local-art/pc-tactical-roster-v1/pair-normal.png": {
    "set": "common",
-   "sha256": "a0dbc336f5887e743f5af3161d9550eb4a97286c38470c5c9ec1fb62e85956d7"
+   "sha256": "828c89e4009f695d86b481a3ba590f28295ff3d4facc7148c6ba61252e4c69c4"
   },
   "local-art/pc-tactical-roster-v1/catalog.json": {
    "set": "common",
-   "sha256": "1b85143907c9787fedfa850cc2121b7e9e1788938293327386964cf2aef07eef"
+   "sha256": "e63c4af861a7d7febc2af3a28e839bc3e9baede92d40ed49911b17b55293ef2c"
   },
   "local-art/pc-tactical-roster-v1/wreck-albedo.png": {
    "set": "common",
-   "sha256": "e4c225b886a3ba162b42f61772bf87f55b50afc16e7a6fc79f6c4c754128f4a4"
+   "sha256": "7ace94d32870614bfc73acaab9aefa3d49d69a21d4abf81c1a1f9b90d1583df2"
   },
   "local-art/pc-tactical-roster-v1/intact-albedo.png": {
    "set": "common",
-   "sha256": "eb92d268f65e6dc2e699d8fadc009760c1b435f6141c4854a55f3f5510a7c750"
+   "sha256": "900d3ecc7bfe9532d1d37b88628eebb507a33626d435113f2888376c56d73454"
   },
   "local-art/pc-tactical-roster-v1/scene-albedo.png": {
    "set": "common",
-   "sha256": "637e68a64145223656df5d112a291d2ce2a5b6b53b00f42d3bb0770d16501748"
+   "sha256": "38fa3578a3c8d66970c4d6f798d58cbd77793416ec980fb01ca81310254a54c1"
   },
   "local-art/pc-tactical-roster-v1/pair-orm.png": {
    "set": "common",
-   "sha256": "8d4cc6116ab6357aa7f3539bee5f50766e9f066f42572149c5d1e1cd5a023a56"
+   "sha256": "deb48899ad036183f716348f4514f486413e9811e74d2228f212c6515f830542"
   },
   "local-art/pc-tactical-vehicles-v1/catalog.json": {
    "set": "common",

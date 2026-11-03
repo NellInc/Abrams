@@ -84,9 +84,11 @@ func _run() -> void:
 			var im := await snapshot()
 			for y in 200:
 				for x in 320: matches(im,source,x,y,1,"fallback")
-	# An undecodable mask falls back and is remembered, not decoded every frame.
+	# An unusable mask falls back and is remembered, not decoded every frame.
+	# A valid PNG of the wrong size takes that path without engine ERROR lines
+	# (the gate fails any check that prints one).
 	var undecodable := packet(mask,clip)
-	undecodable.ui_overlay.mask_png=Marshalls.raw_to_base64("not a png".to_utf8_buffer())
+	undecodable.ui_overlay.mask_png=Marshalls.raw_to_base64(Image.create(320,199,false,Image.FORMAT_L8).save_png_to_buffer())
 	check(not composite.set_frame(source,undecodable,world) and composite.fallback_reason=="invalid UI mask image", "undecodable mask accepted")
 	check(composite._mask_cache.get("ui",{}).get("encoded")==undecodable.ui_overlay.mask_png and composite._mask_cache.ui.bytes==null, "undecodable mask failure is cached")
 	check(not composite.set_frame(source,undecodable,world) and composite.fallback_reason=="invalid UI mask image", "cached undecodable mask still falls back")
