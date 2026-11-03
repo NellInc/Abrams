@@ -30,6 +30,8 @@ var _river_present := false
 var _river_visible := false
 var _cached_pass: Dictionary = {}
 var _cached_config: Array = []
+# Impact sprites a kill blast replaced in the cached mesh (see blast_sprites).
+var _blast_built: Dictionary = {}
 var _cached_warnings: Array[String] = []
 # Held until a build completes: a runtime error mid-build leaves it in place,
 # so the compositor shows original pixels instead of a partial or stale world.
@@ -279,7 +281,10 @@ func apply_pass(pass_data: Dictionary) -> void:
 	var effects_input: Dictionary={"rows":TacticalEffects.inputs(pass_data)} if modern_enabled and tactical_landscape else {}
 	# Full recursive content equality against an independent snapshot, never a
 	# sequence/hash-only identity. In-place edits and restored slot reuse miss.
-	if cacheable and not _cached_pass.is_empty() and mesh_node.mesh!=null and _cached_config==config and _cached_pass.recursive_equal(render_input,64):
+	# A kill blast starting or ending changes which impact sprites are drawn
+	# without changing the pass, so the replaced set is part of the cache key.
+	var blast_current: Dictionary=tactical_effects.blast_sprites(pass_data) if tactical_landscape and _modern_active else {}
+	if cacheable and not _cached_pass.is_empty() and mesh_node.mesh!=null and _cached_config==config and _cached_pass.recursive_equal(render_input,64) and blast_current==_blast_built:
 		if _modern_active:
 			_foliage_pass=pass_data
 			# A source smoke-clock or actor-identity change updates only the small
@@ -458,6 +463,13 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 	var effect_mappings: Array = []
 	effect_mappings.resize(pass_data.objects.size())
 	effect_mappings.fill({})
+	# Tactical: a kill's own impact sprite gives way to its blast (ground shows
+	# through; ownership is unchanged). See pc_tactical_effects.blast_sprites.
+	var blast_replaced: Dictionary={}
+	if _modern_active and tactical_landscape:
+		tactical_effects.observe_pass(pass_data,modern_assets)
+		blast_replaced=tactical_effects.blast_sprites(pass_data)
+	_blast_built=blast_replaced
 	for index in pass_data.objects.size():
 		if _modern_active and modern_assets.is_terrain(pass_data.objects[index]): ordered_objects.append(index)
 	for index in pass_data.objects.size():
@@ -478,7 +490,9 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 		# A pose-bearing model is atomic: failed admission uses only the common
 		# incumbent renderer, never its new geometry inside an old upright mask.
 		if int(object.get("shape_index",-1)) in tactical_vehicle_assets.gpu_poses:vehicle_detail=false
-		if object.get("sprite") is Dictionary:
+		if object.get("sprite") is Dictionary and index in blast_replaced:
+			sprite_count += 1
+		elif object.get("sprite") is Dictionary:
 			sprite_count += 1
 			var effect: Dictionary = effect_art.mapping(object,frame,pass_data.palette_rgb) if effect_art else {}
 			effect_mappings[index]=effect

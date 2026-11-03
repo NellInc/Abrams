@@ -9532,6 +9532,28 @@ on the target tank?"
   `blast-t64-video/`. Effects 117 and native study 229 (`native-11`), 0
   errors. Live Play re-recording: `play-record-08`.
 
+Nell, with a screenshot of `play-record-08`: "It's still showing fire/smoke
+in front of the actual tank?" This was taken as the requested yes to
+replacing the original's impact sprite (asked in the previous report).
+
+* The grey smoke and yellow sparks below the dome were the original impact
+  sprite: the `effects-v2` redraw plus Tactical ash and impact sparks.
+* Change: `blast_sprites()` picks impact sprites (shapes 168–185) whose
+  actor sits at exactly a live kill's wreck position, while the explicit
+  clock shows the blast. The draw pass skips them, so the terrain underpaint
+  shows and ownership is unchanged; prepare gives them no ash or sparks. The
+  draw pass calls `observe_pass()` before its object loop, so the kill is
+  known in time. The replaced set joins the mesh-cache key. A guided flare,
+  a sprite elsewhere, the clock hidden, a spent burst, and `rest_dynamics()`
+  each keep the sprite (headless 124 checks).
+* Evidence: `blast-m113` 377–777 px and `blast-t64` 6,305–27,755 px, all
+  admitted, none at 1.7 s, with no flames below the wreck from the first
+  blast frame. Live Play `play-record-09` shows the same kill with no fire or
+  smoke in front of the target. The close-kill video is in
+  `blast-t64-video-2/` (60 fps and quarter speed). Gates: draw pass 58,
+  viewer dynamics 178, effect art 83,755, effect modes 271, tactical world
+  17, native study 229 (`native-12`), all 0 errors.
+
 Not verified: an open-form kill (6 px or more) in live Play, actual Godot Web
 (blocked on the Web rebuild), and whether the open form ever reads as a
 target in play.

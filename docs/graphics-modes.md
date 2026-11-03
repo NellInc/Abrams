@@ -139,10 +139,22 @@ recorded close T-64 kill the explosion object and the wreck share world
 position [111205, 68515, 31], and the M60 kill is the same. The original's
 sprite is centred on the tank. The redrawn fireball (`effects-v2`)
 concentrates its flames in the bottom of the sprite's box, so on screen the
-fire sat below the wreck's base, in front of the tank. The kill blast now
-covers that moment, centred on the wreck. The impact sprite and its
-authored art are unchanged, because they also serve ordinary shell hits on
-the ground, where low flames are right.
+fire sat below the wreck's base, in front of the tank.
+
+While a kill's blast is showing, Tactical replaces that kill's own impact
+sprite with the ground (Nell, 3 November: "It's still showing fire/smoke in
+front of the actual tank?"). The sprite is an impact shape (168–185) whose
+original actor sits at exactly the wreck's world position. Its authored
+art, Tactical ash and sparks are not drawn, and the terrain underpaint shows
+through. Ownership is unchanged, so anything the original's sprite hid stays
+hidden and no actor is revealed. Ordinary shell hits, guided-missile flares
+and every other effect keep their sprites. So does every frame without the
+explicit clock: the kill frame itself, captures, fast forward, reduced
+motion, and the original pause before a burst starts. The draw pass
+observes the kill before drawing objects, and the replaced set is part of
+its mesh-cache key, so the sprite returns as soon as the blast ends. This is
+a presentation departure from the original's drawn sprite, made at Nell's
+request.
 
 Nothing persists, collides
 or changes the original frame. Captures never run the clock, so nothing is

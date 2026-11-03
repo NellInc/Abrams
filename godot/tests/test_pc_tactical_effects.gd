@@ -328,6 +328,31 @@ func kill_debris(effects: Node3D, directory: String, mapping: Dictionary, owners
 	fresh.prepare(dead,mapping,ownership,assets,art)
 	check(fresh.counts.debris==0 and not fresh.advance_dynamics(0.05),"a rested wreck cannot re-trigger or restart")
 	fresh.free()
+	# A kill's own impact sprite (spawned at the wreck's world position) gives
+	# way to the blast while it shows; nothing else does.
+	var impact:={"kind":"sprite","shape_index":168,"dynamic_instance":true,"pointer":77,"polygons":[]}
+	var impact_actor:={"pointer":77,"shape_index":168,"world_position_raw":[0,-300,0],"shape_header_word":2}
+	var with_impact:=func(data: Dictionary, position: Array) -> Dictionary:
+		var copy:=data.duplicate(true);copy.objects.append(impact.duplicate(true))
+		var actor:=impact_actor.duplicate(true);actor.world_position_raw=position
+		copy.world.dynamic.append(actor);return copy
+	var dead_impact: Dictionary=with_impact.call(dead,[0,-300,0])
+	effects.reset_dynamics()
+	effects.prepare(alive,mapping,ownership,assets,art);effects.prepare(dead_impact,mapping,ownership,assets,art)
+	check(effects.blast_sprites(dead_impact).is_empty(),"no replacement before the explicit clock shows the blast (captures keep the sprite)")
+	effects.advance_dynamics(0.05)
+	check(effects.blast_sprites(dead_impact)=={1:true},"the kill's co-located impact sprite is replaced while the blast shows")
+	check(effects.blast_sprites(with_impact.call(dead,[40,-300,0])).is_empty(),"an impact elsewhere keeps its sprite")
+	var other_shape: Dictionary=with_impact.call(dead,[0,-300,0]);other_shape.objects[1].shape_index=186;other_shape.world.dynamic[1].shape_index=186
+	check(effects.blast_sprites(other_shape).is_empty(),"a guided-missile flare at the wreck keeps its sprite")
+	effects.prepare(dead_impact,mapping,ownership,assets,art)
+	check(effects.counts.effect==0,"the replaced sprite gets no Tactical ash or sparks")
+	for n in ceili(Effects.DEBRIS_LIFE/0.05)+2: effects.advance_dynamics(0.05)
+	check(effects.blast_sprites(dead_impact).is_empty(),"after the blast the original sprite returns")
+	effects.reset_dynamics()
+	effects.prepare(alive,mapping,ownership,assets,art);effects.prepare(dead_impact,mapping,ownership,assets,art);effects.advance_dynamics(0.05)
+	effects.rest_dynamics()
+	check(effects.blast_sprites(dead_impact).is_empty(),"fast forward or motion off keeps the original sprite")
 	# Whitelist: background is open ground (red), impact sprites green, flares not.
 	var marked:=alive.duplicate(true)
 	marked.objects.append({"kind":"sprite","shape_index":183,"polygons":[]})

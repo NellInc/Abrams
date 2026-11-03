@@ -205,6 +205,45 @@ static func engine_anchor(object: Dictionary, assets: RefCounted, frame: Diction
 # count: the allocated pool also holds vehicles the original is not showing.
 # Any other drawn shape at the pointer (a reused slot, a wreck already seen)
 # forgets it, and a pointer drawn twice in one pass is ambiguous.
+## The draw pass observes a pass before drawing its objects, so the first
+## frame of a kill can already replace that kill's impact sprite. Observing the
+## same pass again in prepare() is harmless.
+func observe_pass(data: Dictionary, assets: RefCounted) -> void:
+	if not assets.supported_palette(data.get("palette_rgb",[])):
+		_intact_seen.clear();return
+	_observe_kills(data)
+
+## Object indices of impact sprites (shapes 168-185) that the original spawned
+## at a kill's wreck, while that kill's blast is showing. The original places
+## its explosion object at exactly the wreck's world position (traced: T-64
+## and M60 kills), and its redrawn fireball burns low, in front of the tank.
+## Tactical draws the ground there instead and lets the blast stand on the
+## wreck. Ownership still keeps hidden anything the original's sprite hid.
+## Ordinary hits, other effects, and any frame without the explicit clock
+## (captures, motion off) keep the original sprite.
+func blast_sprites(data: Dictionary, actors = null) -> Dictionary:
+	var hidden: Dictionary={}
+	var shown=material.get_shader_parameter("dynamics_time")
+	if _kill_births.is_empty() or shown==null or float(shown)<0.0: return hidden
+	if actors==null: actors=Modern.dynamic_index(data)
+	var wrecks: Dictionary={}
+	var objects: Array=data.get("objects",[])
+	for object: Dictionary in objects:
+		var kill: Array=_kill_births.get(int(object.get("pointer",-1)),[])
+		if kill.is_empty() or _dynamics_clock-float(kill[0])>=DEBRIS_LIFE: continue
+		var actor:=actor_for(object,data,actors)
+		if not actor.is_empty(): wrecks[_position_key(actor.world_position_raw)]=true
+	if wrecks.is_empty(): return hidden
+	for i in objects.size():
+		var object: Dictionary=objects[i]
+		if object.get("kind","")!="sprite" or int(object.get("shape_index",-1)) not in range(168,186): continue
+		var actor:=actor_for(object,data,actors)
+		if not actor.is_empty() and _position_key(actor.world_position_raw) in wrecks: hidden[i]=true
+	return hidden
+
+static func _position_key(raw: Array) -> Vector3i:
+	return Vector3i(int(raw[0]),int(raw[1]),int(raw[2]))
+
 func _observe_kills(data: Dictionary) -> void:
 	var sequence=data.get("sequence")
 	var now:int=int(sequence) if (sequence is int or sequence is float) and is_finite(float(sequence)) else _pass+1
@@ -322,6 +361,7 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 				_puff(raw,85.0+float(i%4)*13.0+age*65.0,0.30*(1.0-smoothstep(0.85,1.0,age)),0.0,float(i)*0.37,0,Geometry.project([raw.x,raw.y,raw.z],_frame))
 			counts.smoke=puffs.size()
 	var actors:=Modern.dynamic_index(data)
+	var replaced:=blast_sprites(data,actors)
 	for i in data.objects.size():
 		var object: Dictionary=data.objects[i]
 		var owner: int=i+1
@@ -330,7 +370,8 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 		var kill: Array=_kill_births.get(int(object.get("pointer",-1)),[])
 		if object.get("dynamic_instance",false) and not kill.is_empty() and int(object.get("shape_index",-1))==int(kill[1]) and _dynamics_clock-float(kill[0])<DEBRIS_LIFE:
 			_debris(object,owner,seed,float(kill[0]))
-		var effect: Dictionary=effect_mappings[i] if i<effect_mappings.size() else (art.mapping(object,_frame,data.palette_rgb) if art else {})
+		# A kill's own impact sprite is replaced by its blast: no ash or sparks.
+		var effect: Dictionary={} if i in replaced else effect_mappings[i] if i<effect_mappings.size() else (art.mapping(object,_frame,data.palette_rgb) if art else {})
 		if not effect.is_empty():
 			# The original bitmap phase supplies the animation. Decorative ash
 			# cannot escape its registered footprint or opaque ownership.
