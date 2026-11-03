@@ -9589,8 +9589,14 @@ the close T-64 on the dark sky; I had wrongly checked the live zoom clip):
   mid-hull and base (`base*(0.3+0.7*d)`) and settle out within 0.3 s. The
   skirt is narrower (0.6), fainter (0.5), never below the base, and gone by
   0.9 s.
-* The kill frame itself, before the clock starts, still shows the original
-  sprite for one frame in Play.
+* The kill frame itself, before the clock starts, still showed the original
+  sprite for one frame in Play. Nell: "Yes please if you can." The viewer
+  now sets `tactical_effects.clock_enabled` on frames whose clock runs. A
+  kill observed then replaces its sprite at once and shows the blast at age
+  zero. Captures and every clock-off mode are unchanged. Effects 125 and
+  viewer dynamics 180 checks; draw pass 58; native study 229 (`native-14`);
+  0 errors. Close clip `blast-t64-video-4/`. Live `play-record-11`: the kill
+  frame (route 2271) shows the flash on the target and no ground fire.
 * Evidence: `blast-t64-video-3/` (real speed and quarter speed). Effects 124
   and native study 229 (`native-13`), 0 errors.
 

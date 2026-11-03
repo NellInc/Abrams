@@ -34,6 +34,10 @@ var _impact_births: Dictionary = {}
 var _intact_seen: Dictionary = {}
 var _kill_births: Dictionary = {}
 var _pass := -1
+## Set by the Play viewer on frames whose explicit Tactical clock runs. A kill
+## then replaces its impact sprite and shows the blast's first frame on the
+## kill frame itself. False in captures, tests and every clock-off mode.
+var clock_enabled := false
 var _dynamics_clock := 0.0
 var _plume_phase := 0.0
 var _plumes_live := false
@@ -224,7 +228,7 @@ func observe_pass(data: Dictionary, assets: RefCounted) -> void:
 func blast_sprites(data: Dictionary, actors = null) -> Dictionary:
 	var hidden: Dictionary={}
 	var shown=material.get_shader_parameter("dynamics_time")
-	if _kill_births.is_empty() or shown==null or float(shown)<0.0: return hidden
+	if _kill_births.is_empty() or not (clock_enabled or (shown!=null and float(shown)>=0.0)): return hidden
 	if actors==null: actors=Modern.dynamic_index(data)
 	var wrecks: Dictionary={}
 	var objects: Array=data.get("objects",[])
@@ -265,7 +269,12 @@ func _observe_kills(data: Dictionary) -> void:
 		_intact_seen.erase(pointer)
 		if shape<0: continue
 		if not kill.is_empty() and int(kill[1])==shape: births[pointer]=kill
-		elif not seen.is_empty() and KILL_WRECKS[int(seen[1])]==shape and now-int(seen[0])<=KILL_WINDOW_PASSES: births[pointer]=[_dynamics_clock,shape]
+		elif not seen.is_empty() and KILL_WRECKS[int(seen[1])]==shape and now-int(seen[0])<=KILL_WINDOW_PASSES:
+			births[pointer]=[_dynamics_clock,shape]
+			# With Play's clock running, the blast is visible from the kill
+			# frame (age zero), before the first advance. The uniform already
+			# equals the clock whenever it is shown.
+			if clock_enabled: material.set_shader_parameter("dynamics_time",_dynamics_clock)
 		elif shape in KILL_WRECKS: _intact_seen[pointer]=[now,shape]
 	for pointer: int in _intact_seen.keys():
 		if now-int(_intact_seen[pointer][0])>KILL_WINDOW_PASSES: _intact_seen.erase(pointer)

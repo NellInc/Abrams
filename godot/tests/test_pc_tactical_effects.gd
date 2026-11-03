@@ -340,6 +340,13 @@ func kill_debris(effects: Node3D, directory: String, mapping: Dictionary, owners
 	effects.reset_dynamics()
 	effects.prepare(alive,mapping,ownership,assets,art);effects.prepare(dead_impact,mapping,ownership,assets,art)
 	check(effects.blast_sprites(dead_impact).is_empty(),"no replacement before the explicit clock shows the blast (captures keep the sprite)")
+	# Play's running clock replaces the sprite and shows the blast on the kill
+	# frame itself, before any advance.
+	effects.reset_dynamics()
+	effects.clock_enabled=true
+	effects.prepare(alive,mapping,ownership,assets,art);effects.prepare(dead_impact,mapping,ownership,assets,art)
+	check(effects.blast_sprites(dead_impact)=={1:true} and effects.material.get_shader_parameter("dynamics_time")==effects._dynamics_clock,"with Play's clock running, the kill frame already shows the blast instead of the sprite")
+	effects.clock_enabled=false
 	effects.advance_dynamics(0.05)
 	check(effects.blast_sprites(dead_impact)=={1:true},"the kill's co-located impact sprite is replaced while the blast shows")
 	check(effects.blast_sprites(with_impact.call(dead,[40,-300,0])).is_empty(),"an impact elsewhere keeps its sprite")

@@ -1184,6 +1184,8 @@ func _reset_tactical_dynamics() -> void:
 
 func _animate_tactical_dynamics(delta: float) -> void:
 	if capture or closing or state_control_pending or not pending_state_command.is_empty() or not play_mode or not trace_mode or play_display==null or tandem_frame==null:return
+	# Only frames that reach the clock below may show a kill from its first frame.
+	if draw_view: draw_view.tactical_effects.clock_enabled=false
 	# The guest runs on without the explicit clock: spend bursts, never freeze them.
 	if draw_view and (fast_forward>1 or not tactical_dynamics_allowed or tactical_dynamics.reduced_motion) and draw_view.tactical_effects.rest_dynamics():
 		play_display.world_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
@@ -1194,6 +1196,7 @@ func _animate_tactical_dynamics(delta: float) -> void:
 	if armour_changed:tandem_frame.set_tactical_dynamics(tactical_dynamics.shift)
 	var effects_changed:bool=false
 	if tactical_dynamics.enabled and not tactical_dynamics.paused and not tactical_dynamics.reduced_motion:
+		draw_view.tactical_effects.clock_enabled=true
 		effects_changed=draw_view.tactical_effects.advance_dynamics(delta)
 	if effects_changed:play_display.world_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	if armour_changed or effects_changed:play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE

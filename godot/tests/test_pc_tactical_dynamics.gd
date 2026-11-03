@@ -129,14 +129,17 @@ func viewer_rest() -> void:
 		viewer.fast_forward=1;viewer.tactical_dynamics_allowed=true
 	live.call();viewer.tactical_dynamics.reduced_motion=true
 	viewer._animate_tactical_dynamics(0.05)
-	check(effects._kill_births.is_empty(),"viewer: reduced motion spends a live burst")
+	check(effects._kill_births.is_empty() and not effects.clock_enabled,"viewer: reduced motion spends a live burst and keeps the kill-frame sprite")
 	viewer.tactical_dynamics.reduced_motion=false
 	live.call();viewer.tactical_dynamics.paused=true
 	viewer._animate_tactical_dynamics(0.05)
-	check(not effects._kill_births.is_empty() and effects._dynamics_clock==0.0,"viewer: the original pause holds a burst mid-flight")
+	check(not effects._kill_births.is_empty() and effects._dynamics_clock==0.0 and not effects.clock_enabled,"viewer: the original pause holds a burst mid-flight")
 	viewer.tactical_dynamics.paused=false
 	live.call();viewer._animate_tactical_dynamics(0.05)
 	check(effects._dynamics_clock>0.0 and not effects._kill_births.is_empty() and display.world_viewport.render_target_update_mode==SubViewport.UPDATE_ONCE,"viewer: ordinary play ages the burst and redraws")
+	check(effects.clock_enabled,"viewer: ordinary play lets a kill replace its sprite from the kill frame")
+	viewer.fast_forward=4;viewer._animate_tactical_dynamics(0.05)
+	check(not effects.clock_enabled,"viewer: fast forward withdraws kill-frame replacement");viewer.fast_forward=1
 	display.world_viewport.free();display.tandem_viewport.free()
 	for node:Object in [display,viewer.tandem_frame,viewer.draw_view,effects]:node.free()
 	viewer.play_display=null;viewer.tandem_frame=null;viewer.draw_view=null

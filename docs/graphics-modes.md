@@ -152,8 +152,11 @@ art, Tactical ash and sparks are not drawn, and the terrain underpaint shows
 through. Ownership is unchanged, so anything the original's sprite hid stays
 hidden and no actor is revealed. Ordinary shell hits, guided-missile flares
 and every other effect keep their sprites. So does every frame without the
-explicit clock: the kill frame itself, captures, fast forward, reduced
-motion, and the original pause before a burst starts. The draw pass
+explicit clock: captures, fast forward, reduced motion,
+`--no-tactical-dynamics`, lost focus or an open menu, and the original
+pause. While Play's clock runs, the viewer sets `clock_enabled`, so the kill
+frame itself already shows the blast's first flash and no impact sprite
+(Nell, 3 November: "Yes please if you can"). The draw pass
 observes the kill before drawing objects, and the replaced set is part of
 its mesh-cache key, so the sprite returns as soon as the blast ends. This is
 a presentation departure from the original's drawn sprite, made at Nell's
