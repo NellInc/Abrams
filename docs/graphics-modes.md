@@ -120,13 +120,17 @@ wreck's pointer seed and the explicit dynamics clock, never from guest
 state. The fragments rise to between a third and four fifths of the burst
 radius (raised on 2 November at Nell's request), land on the wreck's drawn
 base, cool from embers to charcoal and are gone 1.6 seconds after the kill.
-The blast is centred on the wreck. A white flash comes first, then a
-turbulent, billowing fireball that swells to about 0.55 of the burst radius
-in a quarter second. It cools from the rim to soot and rolls up into a dark
-smoke column, with a dust skirt pushed out along the ground. The burst
-radius is 1.4 times the wreck's drawn size, never below 10 source pixels, so
-a kill at 3 km still shows a blast about the size of the original's own
-impact sprite. The wreck itself also burns: patchy flames on the wreck's own
+The blast stands on the wreck's ground line, centred across it. A white
+flash comes first, then a turbulent, billowing fireball dome that swells to
+about half the burst radius in a quarter second. It cools from the rim to
+soot and rolls up into a dark smoke column, with a thin dust skirt pushed
+out along the ground. Nothing else reaches below the wreck's base. In the
+first version the blast was centred on the wreck's middle, so half of it
+hung over the ground in front and read as an explosion near the player's
+tank (Nell, 3 November). The burst radius is 1.4 times the wreck's drawn
+size, never below 6 source pixels. A kill at 3 km then shows a blast in
+scale with the tank; the first floor of 10 px made it about three tank
+widths and read as near. The wreck itself also burns: patchy flames on the wreck's own
 pixels only run white-yellow to orange to red embers and are out by about
 0.9 s.
 
@@ -172,11 +176,11 @@ real viewer gate, and the original pause holds it
 frame is exact before the clock runs and after the burst ends. The burst is
 visible at 0.15–0.9 s and never changes a pixel of an actor painted before
 or after the wreck, and a wholly hidden wreck throws nothing. A kill under
-6 pixels stays inside its 10-pixel minimum envelope
+6 pixels stays inside its 6-pixel minimum envelope
 (`test_pc_effect_art.gd -- --tactical-particles`). Through the real draw
 pass, a distant M113 kill (probe pass 124, a 4×1-pixel wreck) changes
-422–1979 screen pixels from 0.05 to 1.2 s, and the close T-64 kill
-6,995–35,054. Every pixel is on the wreck, an impact sprite, or terrain and
+123–565 screen pixels from 0.05 to 1.2 s, and the close T-64 kill
+5,219–26,978. Every pixel is on the wreck, an impact sprite, or terrain and
 background painted before the wreck, and none changes at 1.7 s. Of 15
 distinct recorded kills, 3 are drawn at 6 pixels or more, where fragments
 also cross open ground (T-64 31 px, M60 18 px, BRDM-2 17 px). Live Play

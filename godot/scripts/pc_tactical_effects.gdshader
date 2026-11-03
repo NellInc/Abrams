@@ -152,37 +152,41 @@ vec4 over(vec4 top, vec4 under) {
     return vec4((top.rgb*top.a+under.rgb*under.a*(1.0-top.a))/max(a,0.0001),a);
 }
 
-// Kill blast, centred on the wreck: a white flash, a turbulent fireball that
-// swells to about 0.55 quad units and cools from its rim inward, a dark smoke
-// column rolling up out of it, and a dust skirt pushed out along the ground.
-// Everything stays inside the quad, softened before its edge.
+// Kill blast, standing on the wreck's ground line: a white flash, a turbulent
+// fireball dome that swells to about 0.5 quad units and cools from its rim
+// inward, a dark smoke column rolling up out of it, and a dust skirt pushed
+// out along the ground. Nothing but the thin skirt reaches below the wreck's
+// base: ground nearer than the wreck reads as nearer the camera. Everything
+// stays inside the quad, softened before its edge.
 vec4 kill_blast(vec2 q, float age, float seed, vec2 down, float base) {
     vec2 right=vec2(down.y,-down.x);
     vec2 p=vec2(dot(q,right),-dot(q,down)); // +y up, origin at the wreck centre
     float frame_edge=1.0-smoothstep(0.82,0.98,max(abs(p.x),abs(p.y)));
+    float ground=-base;
+    float above=smoothstep(ground-0.015,ground+0.035,p.y);
     // Dust skirt along the ground line.
     float spread=0.95*(1.0-exp(-age*4.5));
     float skirt_n=noise(vec2(p.x*7.0+seed*5.0,age*2.0));
-    vec2 sd=vec2(p.x/max(spread,0.01),(p.y+base-0.03)/(0.10+0.08*age));
+    vec2 sd=vec2(p.x/max(spread,0.01),(p.y-ground-0.02)/(0.06+0.06*age));
     float dust_d=length(sd)+(skirt_n-0.5)*0.4;
-    float dust=(1.0-smoothstep(0.55,1.0,dust_d))*(1.0-smoothstep(0.35,1.35,age))*0.75;
+    float dust=(1.0-smoothstep(0.55,1.0,dust_d))*(1.0-smoothstep(0.35,1.35,age))*0.75*smoothstep(ground-0.05,ground,p.y);
     vec4 layer=vec4(mix(vec3(0.42,0.37,0.29),vec3(0.55,0.50,0.40),skirt_n),dust);
     // Smoke column rolling up out of the fireball.
     float s=smoothstep(0.12,1.3,age);
-    vec2 sc=vec2(0.0,0.10+0.42*s);
-    float sr=0.22+0.20*s;
+    vec2 sc=vec2(0.0,ground+0.16+0.38*s);
+    float sr=0.20+0.18*s;
     float sn=noise(p*5.5+vec2(seed*9.0,-age*1.6));
     float sd2=length((p-sc)*vec2(1.0,0.85))/sr+(sn-0.5)*0.45;
-    float smoke=(1.0-smoothstep(0.6,1.0,sd2))*smoothstep(0.05,0.30,age)*(1.0-smoothstep(1.05,DEBRIS_LIFE,age))*0.9;
+    float smoke=(1.0-smoothstep(0.6,1.0,sd2))*smoothstep(0.05,0.30,age)*(1.0-smoothstep(1.05,DEBRIS_LIFE,age))*0.9*above;
     layer=over(vec4(mix(vec3(0.10,0.095,0.09),vec3(0.27,0.25,0.23),sn*0.8+p.y*0.3),smoke),layer);
     // Fireball: fast swell, slow rise, turbulent rim, hot core cooling outward.
-    float r=0.55*(1.0-exp(-age*10.0))+0.04;
-    vec2 fc=vec2(0.0,0.02+0.16*smoothstep(0.1,0.8,age));
+    float r=0.50*(1.0-exp(-age*10.0))+0.04;
+    vec2 fc=vec2(0.0,ground+0.45*r+0.14*smoothstep(0.1,0.8,age));
     float fn=noise(p*7.0+vec2(seed*11.0,-age*3.0));
     float fn2=noise(p*15.0+vec2(-seed*3.0,-age*6.0));
     float fd=length(p-fc)/r+(fn-0.5)*0.42+(fn2-0.5)*0.16;
     float cool=smoothstep(0.08,0.75,age);
-    float ball=(1.0-smoothstep(0.78,1.0,fd))*(1.0-smoothstep(0.55,0.95,age));
+    float ball=(1.0-smoothstep(0.78,1.0,fd))*(1.0-smoothstep(0.55,0.95,age))*above;
     float heat=clamp((1.0-fd)*1.6,0.0,1.0)*(1.0-cool)+0.0;
     vec3 fire=mix(vec3(0.55,0.08,0.02),vec3(1.0,0.48,0.08),smoothstep(0.05,0.45,heat+0.25*(1.0-cool)));
     fire=mix(fire,vec3(1.0,0.90,0.55),smoothstep(0.55,0.9,heat));
@@ -194,7 +198,7 @@ vec4 kill_blast(vec2 q, float age, float seed, vec2 down, float base) {
     fire=clamp(fire,vec3(0.0),vec3(1.0));
     layer=over(vec4(fire,ball),layer);
     // Flash: white-hot core in the first frames.
-    float flash=(1.0-smoothstep(0.0,0.09,age))*(1.0-smoothstep(0.0,0.30,length(p-vec2(0.0,0.03))));
+    float flash=(1.0-smoothstep(0.0,0.09,age))*(1.0-smoothstep(0.0,0.30,length(p-vec2(0.0,ground+0.10))))*above;
     layer=over(vec4(vec3(1.0,0.97,0.86),flash),layer);
     layer.a*=frame_edge;
     return layer;

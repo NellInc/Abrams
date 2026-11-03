@@ -17,7 +17,7 @@ const DEBRIS_LIFE := 1.6
 const DEBRIS_OPEN_PIXELS := 6.0
 # A distant kill still gets a visible blast: the burst radius in source pixels
 # is never below this, however small the wreck is drawn.
-const BLAST_MIN_PIXELS := 10.0
+const BLAST_MIN_PIXELS := 6.0
 # How many original passes may separate the last intact drawing from the
 # wreck. SIM renders about 0.25 passes per guest frame (REA pilot stages), so
 # 8 is about half a second: a brief undrawn gap around the swap still counts,

@@ -9516,6 +9516,22 @@ of the tank?"
   dynamics 178, effect art 83,755, draw pass 58, native study 229 (`native-10`),
   all 0 errors.
 
+Nell on the live clip: "Explosion appears to be too close to the M1 and not
+on the target tank?"
+
+* Frames show the blast on the target, at the crosshair. It read as near
+  for two reasons. It was centred on the wreck's middle, so half of it hung
+  over the ground in front of the wreck's base. And the 10 px floor made a
+  3 km blast about three tank widths.
+* Change: the blast stands on the wreck's ground line. The fireball dome,
+  flash and smoke are clipped at the base, with only a thin dust skirt at
+  ground level, and the floor drops to 6 px (`BLAST_MIN_PIXELS`).
+* Evidence: `blast-m113` 123–565 px and `blast-t64` 5,219–26,978 px from
+  0.05 to 1.2 s, all admitted, none at 1.7 s. The close-kill video at 60 fps
+  through the real draw pass, plus a quarter-speed copy, is in
+  `blast-t64-video/`. Effects 117 and native study 229 (`native-11`), 0
+  errors. Live Play re-recording: `play-record-08`.
+
 Not verified: an open-form kill (6 px or more) in live Play, actual Godot Web
 (blocked on the Web rebuild), and whether the open form ever reads as a
 target in play.
