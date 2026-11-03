@@ -9554,6 +9554,24 @@ replacing the original's impact sprite (asked in the previous report).
   viewer dynamics 178, effect art 83,755, effect modes 271, tactical world
   17, native study 229 (`native-12`), all 0 errors.
 
+Nell on `play-record-09`: "Still seeing a little distortion between the M1
+and the target tank. In the IR clip, the blast sprite on the ground still
+seems too close, not on the target?"
+
+* Measured: during the burst, pixels 1–14 px below the target's base changed
+  (7–12 per frame). They were dark grass tufts before the kill and flat
+  ground (about 72,90,46) during it. The replaced impact sprite still owns
+  its pixels, and Tactical foliage only admits flat-field and background
+  owners, so the grass under its footprint vanished: a bald patch in front of
+  the tank.
+* Change: `pc_tactical_foliage.prepare()` takes `ground_owners` (the draw
+  pass's replaced set) and admits those owners as open ground.
+* Evidence: `play-record-10` (same kill, pass 683) changes 0–2 px in those
+  rows, which are spent fragments on the wreck's ground line. The blast's
+  base matches the target's base, centred under the crosshair. Clips
+  include a quarter-speed 4× zoom. Tactical world 17, effects 124, draw pass
+  58, 0 errors.
+
 Not verified: an open-form kill (6 px or more) in live Play, actual Godot Web
 (blocked on the Web rebuild), and whether the open form ever reads as a
 target in play.

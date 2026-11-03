@@ -154,7 +154,10 @@ motion, and the original pause before a burst starts. The draw pass
 observes the kill before drawing objects, and the replaced set is part of
 its mesh-cache key, so the sprite returns as soon as the blast ends. This is
 a presentation departure from the original's drawn sprite, made at Nell's
-request.
+request. Tactical grass and shrubs grow over a replaced sprite's footprint
+as on the open ground around it. At first they did not, because the sprite
+still owns those pixels, and a bald, flat patch showed in front of the wreck
+(Nell: "a little distortion between the M1 and the target tank").
 
 Nothing persists, collides
 or changes the original frame. Captures never run the clock, so nothing is

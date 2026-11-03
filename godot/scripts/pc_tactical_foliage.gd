@@ -187,7 +187,12 @@ func _planting_grid(layer: int, center: Vector2i, spacing: float, reach: int) ->
 	_grid_build_count+=1
 	return grid
 
-func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D) -> void:
+## ground_owners: object indices drawn as open ground this frame although the
+## original painted them (a kill's impact sprite replaced by its blast, see
+## pc_tactical_effects.blast_sprites). Plants grow there as on the ground
+## around them; without this the grass under the sprite's footprint vanished
+## and left a bald patch in front of the wreck.
+func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, ground_owners: Dictionary = {}) -> void:
 	clear()
 	if mapping.is_empty() or ownership==null: return
 	var background: Dictionary = data.background if data.get("background") is Dictionary else {}
@@ -212,7 +217,7 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D) -> voi
 			for raw: Array in polygon.camera_vertices:
 				var local: Vector3 = mapping.inverse*Vector3(raw[0],raw[1],raw[2])
 				flat = flat and absf(local.z+origin.z)<1.0
-		if flat: allowed.set_pixel(i+1,0,Color.WHITE)
+		if flat or i in ground_owners: allowed.set_pixel(i+1,0,Color.WHITE)
 	var a := Vector2(background.line[0][0],background.line[0][1])
 	var b := Vector2(background.line[1][0],background.line[1][1])
 	if a.x>b.x:

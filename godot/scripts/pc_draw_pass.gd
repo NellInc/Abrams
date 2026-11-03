@@ -673,7 +673,7 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 		_foliage_mapping=mapping
 		if tactical_landscape:
 			var prepare_started: int=Time.get_ticks_usec() if profile_builds else 0
-			tactical_foliage.prepare(pass_data,mapping,ownership.get_texture())
+			tactical_foliage.prepare(pass_data,mapping,ownership.get_texture(),blast_replaced)
 			if profile_builds:
 				last_apply_timings_usec.foliage=Time.get_ticks_usec()-prepare_started
 				prepare_started=Time.get_ticks_usec()
