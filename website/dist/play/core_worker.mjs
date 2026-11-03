@@ -89,7 +89,10 @@ function advance({mode, loadSegment}) {
   const width = core._abrams_web_video_width();
   const height = core._abrams_web_video_height();
   const pitch = core._abrams_web_video_pitch();
-  if (!video || width !== 320 || height !== 200 || pitch !== 1280)
+  // As the native frontend: any bounded frame passes. The original's EXIT to
+  // DOS leaves 320x200, and bridge_worker accepts that frame only when the
+  // observer flags the exit; every other non-320x200 frame still fails there.
+  if (!video || width < 1 || height < 1 || width > 2048 || height > 2048 || pitch < width * 4)
     throw new Error('The original PC frame lost its paired source');
   return {transfer: [pairedRam.buffer], result: {
     heap: core.HEAPU8, pairedRam, current,

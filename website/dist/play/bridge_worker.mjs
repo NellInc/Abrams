@@ -49,6 +49,9 @@ const storedSlots = new Map();
 const previousSlots = new Map();
 const previousKey = slot => `previous-${slot}`;
 let undo;
+// Set when boot could not read checkpoint storage: checkpoints stay refused for
+// the session, whatever requests them, so no unread slot is ever overwritten.
+let storageUnavailable = '';
 let buildId;
 let database;
 
@@ -102,6 +105,9 @@ function openDatabase() {
           db.close();
           if (database === opening) database = undefined;
         };
+        // The browser closes it itself when site data is cleared; reopen on
+        // the next checkpoint instead of failing every later one.
+        db.onclose = () => { if (database === opening) database = undefined; };
         finish(null, db);
       };
       request.onerror = () => finish(storageError('could not open', request.error));
@@ -131,6 +137,51 @@ async function storedSlot(operation, slot, value) {
     transaction.onerror = () => reject(storageError('transaction failed', transaction.error));
     transaction.onabort = () => reject(storageError('transaction aborted', transaction.error));
   });
+}
+
+// A save reads the slot and its previous row inside the same readwrite
+// transaction that replaces them. Another Abrams tab may have saved since this
+// one booted, so the rows on disk, not this tab's copies, decide what is kept:
+// all rows are stored or none are, and a row this build cannot load never
+// replaces a previous row it can. Resolves to the previous row now stored.
+async function saveSlotRow(slot, saved) {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    let transaction;
+    let kept;
+    try {
+      transaction = db.transaction('checkpoints', 'readwrite');
+      const store = transaction.objectStore('checkpoints');
+      const current = store.get(slot);
+      const previous = store.get(previousKey(slot));
+      previous.onsuccess = () => {
+        const overwritten = current.result ?? storedSlots.get(slot);
+        kept = previous.result ?? previousSlots.get(slot);
+        if (overwritten && (overwritten.buildId === buildId || kept?.buildId !== buildId)) {
+          store.put(overwritten, previousKey(slot));
+          kept = overwritten;
+        }
+        store.put(saved, slot);
+      };
+    } catch (error) {
+      try { transaction?.abort(); } catch {}
+      reject(storageError('transaction could not start', error));
+      return;
+    }
+    transaction.oncomplete = () => resolve(kept);
+    transaction.onerror = () => reject(storageError('transaction failed', transaction.error));
+    transaction.onabort = () => reject(storageError('transaction aborted', transaction.error));
+  });
+}
+
+// The row on disk for a load: another tab may have replaced it since boot. A
+// read failure falls back to this tab's copy; a row from another build is not
+// loadable here.
+async function currentRow(key, cached) {
+  let stored;
+  try { stored = await storedSlot('get', key); } catch { return cached; }
+  if (stored === undefined) return cached;
+  return stored.buildId === buildId ? stored : null;
 }
 
 // Request/response client for one core_worker.mjs. A crashed or terminated
@@ -243,7 +294,12 @@ async function pairedFrame(final) {
   nextRam = heap.subarray(frame.current, frame.current + RAM_BYTES);
   const json = observer.afterFrame(span(frame.trace), span(frame.claims), frame.pairedRam,
     nextRam, heap.subarray(video, video + pitch * height), width, height, pitch, final);
-  return final ? {json, rgb: rgbFrame(heap, video, width, height, pitch)} : null;
+  if (!final) return null;
+  // The original's own EXIT leaves the DOS prompt (640x350 text). The observer
+  // flags that sample; the last game frame stays on screen and Godot closes Play.
+  if ((width !== 320 || height !== 200) && JSON.parse(json).original_exited === true)
+    return {json, rgb: null};
+  return {json, rgb: rgbFrame(heap, video, width, height, pitch)};
 }
 
 // The observer's JSON object is spliced after the envelope, so the per-frame
@@ -270,6 +326,20 @@ async function applyKeys(keys) {
   held = next;
 }
 
+// One tab owns checkpoint storage at a time: two would share recovery slot 0
+// and show each other stale slot lists. The lock lasts this worker's life; a
+// browser without the Web Locks API keeps the previous behaviour.
+function claimCheckpointStorage() {
+  const locks = globalThis.navigator?.locks;
+  if (!locks?.request) return Promise.resolve(true);
+  return new Promise(resolve => {
+    locks.request('abrams-checkpoints', {ifAvailable: true}, lock => {
+      resolve(!!lock);
+      return lock ? new Promise(() => {}) : undefined;
+    }).catch(() => resolve(true));
+  });
+}
+
 async function boot(message) {
   if (core) throw new Error('The original game is already open');
   if (!(message.zip instanceof Uint8Array) || !(message.catalog instanceof Uint8Array) ||
@@ -281,7 +351,12 @@ async function boot(message) {
     throw new Error('Browser core build identity is missing');
   buildId = message.buildId;
   let storageWarning;
-  try {
+  storageUnavailable = '';
+  if (!await claimCheckpointStorage()) {
+    // This tab plays, but never shares recovery slot 0 or a stale slot list.
+    storageWarning = 'Another Abrams tab is using checkpoints.';
+    storageUnavailable = storageWarning;
+  } else try {
     for (let slot = 0; slot <= 5; slot++) {
       const saved = await storedSlot('get', slot);
       if (saved) storedSlots.set(slot, saved);
@@ -300,6 +375,7 @@ async function boot(message) {
     previousSlots.clear();
     undo = undefined;
     storageWarning = String(error?.message || error);
+    storageUnavailable = storageWarning;
   }
   core = await spawnCore();
   while (frames < HIDDEN_BOOT_FRAMES) {
@@ -347,7 +423,7 @@ async function step(message) {
   }
   lastSample = frame.json;
   lastProgram = observer.programName;
-  lastRgb = frame.rgb;
+  if (frame.rgb) lastRgb = frame.rgb;
   sendSample('sample', message.id, lastSample, lastRgb.slice());
 }
 
@@ -361,17 +437,15 @@ async function state(message) {
       !Number.isInteger(message.slot) || message.slot < 0 || message.slot > 5 ||
       (message.op !== 'load_state' && message.slot === 0))
     throw new Error('Invalid local state request');
+  // Storage is read once at boot, so only a page reload can retry it.
+  if (storageUnavailable) throw new Error(`Checkpoints are unavailable in this session: ${storageUnavailable} Reload the page to use checkpoints.`);
   if (message.op === 'save_state') {
     const saved = checkpointRow(await core.call('capture', {frames}));
-    const overwritten = storedSlots.get(message.slot);
-    if (overwritten) {
-      // Keep the overwritten row first: a failed slot write then leaves the
-      // previous row equal to the unchanged slot.
-      await storedSlot('put', previousKey(message.slot), overwritten);
-      if (overwritten.buildId === buildId) previousSlots.set(message.slot, overwritten);
-      else previousSlots.delete(message.slot);
-    }
-    await storedSlot('put', message.slot, saved);
+    // One transaction: a failed save (quota) leaves the slot and its previous
+    // row exactly as they were.
+    const kept = await saveSlotRow(message.slot, saved);
+    if (kept?.buildId === buildId) previousSlots.set(message.slot, kept);
+    else previousSlots.delete(message.slot);
     slots.set(message.slot, saved);
     storedSlots.set(message.slot, saved);
     postMessage({type: 'packet', packet: {type: 'state_result', id: message.id,
@@ -380,16 +454,29 @@ async function state(message) {
   }
   // load_previous never rewrites the slot; like any load it captures undo.
   const previousLoad = message.op === 'load_previous';
-  const saved = previousLoad ? previousSlots.get(message.slot)
-    : message.slot === 0 ? undo : slots.get(message.slot);
+  const saved = previousLoad ? await currentRow(previousKey(message.slot), previousSlots.get(message.slot))
+    : message.slot === 0 ? undo : await currentRow(message.slot, slots.get(message.slot));
+  if (saved === null) {
+    // The menu stops offering a row this version can never load.
+    if (previousLoad) previousSlots.delete(message.slot); else slots.delete(message.slot);
+    throw new Error(`Local ${previousLoad ? 'previous ' : ''}slot ${message.slot} was saved by a different version`);
+  }
   if (!saved) throw new Error(previousLoad ? `Local slot ${message.slot} has no previous save`
     : `Local slot ${message.slot} is empty`);
+  if (message.slot && previousLoad) previousSlots.set(message.slot, saved);
+  else if (message.slot) { slots.set(message.slot, saved); storedSlots.set(message.slot, saved); }
+  if (!(saved.rgb instanceof Uint8Array)) throw new Error('Invalid local checkpoint presentation');
   const restoredSample = structuredClone(saved.sample);
   const restoredRgb = saved.rgb.slice();
-  if (!(restoredRgb instanceof Uint8Array) || restoredRgb.byteLength !== 320 * 200 * 3 ||
+  if (restoredRgb.byteLength !== 320 * 200 * 3 ||
       !restoredSample || !Number.isSafeInteger(saved.sequence) || saved.sequence < 0)
     throw new Error('Invalid local checkpoint presentation');
-  const previous = checkpointRow(await core.call('capture', {frames}));
+  // The recovery capture of the live game must not block the way back to a
+  // good save: without it the load proceeds and keeps the old recovery slot.
+  let previous;
+  let undoProblem = '';
+  try { previous = checkpointRow(await core.call('capture', {frames})); }
+  catch (error) { undoProblem = String(error?.message || error); }
   // Prepare every fallible restore component before persisting undo or
   // swapping. A failure terminates the prepared core and keeps the session.
   let fresh;
@@ -409,15 +496,17 @@ async function state(message) {
       sequence: saved.sequence, fps: FPS,
       restored: {type: 'sample', id: message.id, sequence: saved.sequence, fps: FPS,
         ...restoredSample, timeline_reset: true, held_frame: true},
-      success: true, slots: slotRows(previous), message: `Loaded ${previousLoad ? 'previous ' : ''}slot ${message.slot}`},
+      success: true, slots: slotRows(previous),
+      message: `Loaded ${previousLoad ? 'previous ' : ''}slot ${message.slot}` +
+        (previous ? '' : `; recovery slot not updated (${undoProblem})`)},
       rgb: responseRgb};
-    await storedSlot('put', 0, previous);
+    if (previous) await storedSlot('put', 0, previous);
   } catch (error) {
     freshObserver?.destroy();
     fresh?.terminate();
     throw error;
   }
-  storedSlots.set(0, previous);
+  if (previous) storedSlots.set(0, previous);
   const retiredCore = core;
   const retiredObserver = observer;
   core = fresh;
@@ -426,18 +515,20 @@ async function state(message) {
   held = new Set();
   frames = restored.frames;
   sequence = saved.sequence;
-  undo = previous;
+  if (previous) undo = previous;
   lastSample = JSON.stringify(restoredSample);
   lastProgram = restoredSample.program?.name ?? null;
   lastRgb = restoredRgb;
   framesSinceRestore = 0;
-  retiredObserver.destroy();
-  retiredCore.terminate();
   try { postMessage(response, [responseRgb.buffer]); }
   catch (cause) {
     const error = new Error('Checkpoint loaded, but the bridge response could not be delivered', {cause});
     error.committedTransportFailure = true;
     throw error;
+  } finally {
+    // The load is committed: retiring the old core can never turn it into a failure.
+    try { retiredObserver.destroy(); } catch {}
+    try { retiredCore.terminate(); } catch {}
   }
 }
 

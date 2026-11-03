@@ -45,7 +45,13 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
   }
   worker.onerror = event => {
     if (closed || failed) return;
-    fail(`Original PC worker failed: ${event.message}`);
+    // A worker script that never loads (missing or partial deploy) has no message.
+    fail(`Original PC worker failed: ${event?.message || 'its script could not load'}`);
+  };
+  // A reply that cannot be deserialised is a failure now, not a later timeout.
+  worker.onmessageerror = () => {
+    if (closed || failed) return;
+    fail('Original PC worker sent an unreadable message');
   };
   worker.onmessage = event => {
     if (closed || failed) return;
@@ -120,6 +126,12 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
       const value = parseObject(json);
       if (!value) return false;
       onControls?.(value); return true;
+    },
+    // A failure Godot detected itself (timeout, invalid reply or audio) takes
+    // the worker-failure route, so the page offers Reload with this message.
+    reportFailure(message) {
+      fail(String(message || 'Original PC bridge failed'));
+      return true;
     },
     close() {
       if (closed) return true;
