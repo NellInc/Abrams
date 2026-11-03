@@ -10401,3 +10401,30 @@ renders as a dark readout under the sight before any message).
 Not verified: message lines on Commander, Cupola, Driver and Status (mission-start
 samples only), the Web bundle (stale `index.pck`), standalone builds. Nothing committed
 or pushed.
+
+## 3 November 2026: rebuild everything, commit and push (main 015f013)
+
+Nell asked to fix everything, rebuild everything, then commit and push all
+files. She approved the 49 changed published assets (Tactical roster, maps,
+vehicle drawings, visuals.json, wireframes) for publication and the portable
+dispatch.
+
+* Web: Godot pack, observer, asset parts and corresponding source rebuilt
+  from the committed tree; WebAssembly core unchanged (same build identity,
+  existing browser checkpoints stay loadable). Canvas fit checked in Chromium
+  at 1920x1080, 1280x720 and 900x700, both aspects. Pushed; Project webpage
+  and Source-only safeguards runs passed; live remaster.mjs, remaster.html,
+  bridge_worker.mjs and BUNDLE.json match the local build byte for byte.
+* macOS: build df7db09f3cb95527b70f (ad-hoc signed, verified, codesign
+  strict) installed in /Applications; the previous app is kept as
+  `M1 Abrams Battle Tank Fan Remaster.pre-20261103.app`. Read-only status of
+  the real profile is identical to the previous app's. Not notarized.
+* Windows/Linux: original-free input from 015f013 (469,509,953 bytes,
+  6da76266...) on private draft `native-input-20261103-015f0134` only; run
+  41644435162 passed fetch and both native jobs; both archives (Linux
+  93a546008271058eb816, Windows b248fa68480319fbea92) pass CRC, every
+  manifest hash and size, closure, all 1,369 common inputs, the original-free
+  boundary and core-source correspondence. Local in
+  `artifacts/release-20261103-portables/`; not published to a public release.
+* Gate: Python 1,072 tests (publication failures cleared by the approval),
+  default Godot stage 98/99 then the tandem-frame engine-error fix.
