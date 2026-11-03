@@ -14,7 +14,7 @@
     .setup { max-width: none; }
     .setup h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); }
     .player { margin-top: 24px; box-shadow: none; }
-    #game-canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #050705; }
+    #game-canvas { display: block; width: 100%; max-width: 100%; height: auto; margin-inline: auto; aspect-ratio: 4 / 3; background: #050705; }
     #game-canvas.tactical { aspect-ratio: 16 / 9; }
     #game-canvas[hidden], .player[hidden] { display: none; }
     body.playing .setup { position: absolute; width: 1px; height: 1px; padding: 0;

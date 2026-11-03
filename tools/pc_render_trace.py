@@ -497,15 +497,15 @@ class Collector:
             if form['status']!='pending':raise ValueError('duplicate round-form raster entry')
             if values[10]!=self.active['page_offset']:raise ValueError('round-form page mismatch')
             if list(raw[26:30])!=form['command']:raise ValueError('round-form raster command mismatch')
-            clip=list(map(signed,values[6:10]))
-            # Decoder limits, not provenance: record the form unsupported.
-            limit=('unclipped_round_form' if values[12]&255 != 1 else
-                   'round_form_color' if values[11]&255 > 15 or values[11]>>8 > 15 else
-                   'round_form_clip' if not (0<=clip[0]<=clip[2]<320 and 0<=clip[1]<=clip[3]<200) else None)
-            if limit:
+            if values[12]&255 != 1:
+                # A decoder limit, not provenance: the pass shows original pixels.
                 form['status']='unsupported'
-                self.active['unsupported'].append({'kind':limit,'pointer':obj['pointer']})
+                self.active['unsupported'].append({'kind':'unclipped_round_form','pointer':obj['pointer']})
                 return
+            # Impossible values from the native hook stay fatal (contract).
+            if values[11]&255 > 15 or values[11]>>8 > 15:raise ValueError('invalid round-form color')
+            clip=list(map(signed,values[6:10]))
+            if not (0<=clip[0]<=clip[2]<320 and 0<=clip[1]<=clip[3]<200):raise ValueError('invalid round-form clip')
             radius=min(max(0,signed(values[3])),102)
             form.update({'status':'observing','center':list(map(signed,values[4:6])),
                          'radius_raw':values[3],'radius':radius,'horizontal_radius':radius+radius//4,
@@ -517,16 +517,10 @@ class Collector:
             if form['status']!='observing':raise ValueError('round-form span outside raster lifetime')
             if values[6]!=form['page_offset']:raise ValueError('round-form span page mismatch')
             y,left=map(signed,values[3:5]);width=values[5]
-            if width>320:
-                form['status']='unsupported'
-                self.active['unsupported'].append({'kind':'round_form_span_width','pointer':obj['pointer']})
-                return
+            if width>320:raise ValueError('round-form span too wide')
             clip=form['clip'];right=min(left+width,clip[2]+1);left=max(left,clip[0])
             if clip[1]<=y<=clip[3] and left<right:
-                if len(form['spans'])>=64000:
-                    form['status']='unsupported'
-                    self.active['unsupported'].append({'kind':'round_form_span_count','pointer':obj['pointer']})
-                    return
+                if len(form['spans'])>=64000:raise ValueError('too many round-form spans')
                 # The original span receives AX/DX pattern words. Convert to
                 # exact palette indices so a renderer need not decode words.
                 # For one row the colour depends only on x parity: a solid or

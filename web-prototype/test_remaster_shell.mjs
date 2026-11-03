@@ -80,6 +80,7 @@ function fixture({missingManifest = false, engineFailure = false, capability = t
   return {ctx, el, events, sent, engines, hosts, replaced, storage, installs, copies, workers};
 }
 const settle = () => new Promise(resolve => setTimeout(resolve, 5));
+const plain = value => JSON.parse(JSON.stringify(value));
 const state = busy => ({busy, graphics: 'tactical', modes: ['ega', 'ega_upscaled', 'upscaled', 'modern', 'tactical'],
   hud_style: 'tactical', hud_styles: ['restored', 'tactical'], speed: 1,
   slots: [{slot: 1, exists: true, valid: true, program: 'SIM', saved_at: '2026-10-14T12:00:00Z'},
@@ -115,7 +116,12 @@ test('form editing owns shortcuts; canvas shortcut, focus and fullscreen work', 
   let prevented = 0;
   const event = target => ({target, code: 'KeyS', ctrlKey: true, altKey: true, preventDefault() {prevented++;}, stopImmediatePropagation() {}});
   const form = Object.assign(new Element(), {form: true}); f.events.keydown(event(form)); assert.equal(prevented, 0);
-  f.events.keydown(event(f.el('#game-canvas'))); assert.equal(prevented, 1); assert.equal(f.sent[0].op, 'save_state');
+  // As natively: the chord is a quick save (occupied slot confirms on a second press).
+  f.events.keydown(event(f.el('#game-canvas'))); assert.equal(prevented, 1); assert.equal(f.sent[0].op, 'quick_save');
+  // AltGr typing a different character (Polish AltGr+S = ś) is not a chord.
+  f.events.keydown({...event(f.el('#game-canvas')), key: 'ś'}); assert.equal(prevented, 1); assert.equal(f.sent.length, 1);
+  f.events.keydown({...event(f.el('#game-canvas')), getModifierState: key => key === 'AltGraph'}); assert.equal(f.sent.length, 1);
+  f.events.keydown({...event(f.el('#game-canvas')), code: 'KeyL', shiftKey: true}); assert.deepEqual(plain(f.sent.at(-1)), {op: 'quick_load', slot: 0});
   await f.el('#web-fullscreen').listeners.click(); assert.equal(f.el('#web-fullscreen').attrs['aria-pressed'], 'true');
   await f.el('#web-fullscreen').listeners.click(); assert.equal(f.el('#web-fullscreen').attrs['aria-pressed'], 'false');
   f.el('#web-focus').listeners.click(); assert.equal(f.el('#game-canvas').focused, true);
@@ -159,7 +165,12 @@ test('extended quality and all five gains dispatch incumbent controls and report
 });
 test('runtime failure exposes reload and retains real error through engine exit', async () => {
   const f = fixture(); await start(f);
-  f.hosts[0].status({type: 'error', message: 'source observer failed'});
+  f.hosts[0].status({type: 'error', message: 'source observer failed.'});
+  // The error reaches Godot before the bridge closes; the page shows it at once.
+  assert.equal(f.hosts[0].closed, undefined);
+  assert.match(f.el('#status').textContent, /source observer failed\. Reload/);
+  assert.doesNotMatch(f.el('#status').textContent, /\.\./);
+  await new Promise(resolve => setTimeout(resolve, 300));
   assert.equal(f.hosts[0].closed, true); assert.equal(f.engines[0].quits, 1);
   assert.equal(f.el('#web-controls').hidden, true); assert.equal(f.el('#game-canvas').hidden, true); assert.equal(f.el('#reload-page').hidden, false);
   assert.equal(f.el('.player').hidden, true); assert.equal(f.el('#reload-page').focused, true);
@@ -258,3 +269,16 @@ test('build templates match the deployed audio-capability controls', async () =>
   assert.equal(await readFile(new URL('./remaster.mjs', import.meta.url), 'utf8'), deployedSource);
   assert.equal(await readFile(new URL('./remaster.html', import.meta.url), 'utf8'), await readFile(new URL('../website/dist/play/remaster.html', import.meta.url), 'utf8'));
 });
+
+test('a refused toolbar choice returns to the game value without repeating the last message', async () => {
+  const f = fixture(); await start(f);
+  f.ctx.testAPI.updateToolbar({...state(false), graphics: 'tactical', message: 'Saved slot 1'});
+  f.el('#web-control-status').textContent = '';
+  f.el('#web-load-slot').listeners.change();
+  assert.equal(f.el('#web-control-status').textContent, '', 'changing the load slot does not repeat "Saved slot 1"');
+  f.hosts[0].queueControl = () => false;
+  f.el('#web-graphics').value = 'ega';
+  f.el('#web-graphics').listeners.change();
+  assert.equal(f.el('#web-graphics').value, 'tactical');
+});
+

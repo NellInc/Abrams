@@ -50,11 +50,12 @@ const descriptions = {
   modern: 'Modernized 3D: the existing remaster presentation.',
   tactical: 'Tactical 3D: textured terrain, grounded vegetation and source-driven effects.',
 };
-// Preserve the accepted CSS-pixel render extent, with no resolution/detail cuts.
+// The render bitmap is exactly the canvas's CSS box: never larger (a squashed
+// picture), never a different aspect. fitCanvas keeps that box on screen.
 const syncCanvasSize = () => {
   const bounds = canvas.getBoundingClientRect();
-  const width = Math.max(640, Math.round(bounds.width));
-  const height = Math.max(360, Math.round(bounds.height));
+  const width = Math.max(1, Math.round(bounds.width));
+  const height = Math.max(1, Math.round(bounds.height));
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
@@ -62,12 +63,45 @@ const syncCanvasSize = () => {
   }
 };
 new ResizeObserver(syncCanvasSize).observe(canvas);
+// While playing, the whole picture fits below the toolbar in the window: the
+// HUD's bottom rows and status line are never pushed below the fold.
+const fitCanvas = () => {
+  const container = canvas.parentElement;
+  if (canvas.hidden || !container || typeof window.innerHeight !== 'number') return;
+  const aspect = canvas.classList.contains?.('tactical') ? 16 / 9 : 4 / 3;
+  const top = canvas.getBoundingClientRect().top + (window.scrollY || 0);
+  const height = Math.max(120, window.innerHeight - top);
+  const width = Math.floor(Math.min(container.clientWidth, height * aspect));
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${Math.floor(width / aspect)}px`;
+};
+window.addEventListener('resize', fitCanvas);
+if (toolbar) new ResizeObserver(fitCanvas).observe(toolbar);
 function deadline(promise, milliseconds, message, onTimeout) {
   let timer;
   const timeout = new Promise((_, reject) => {
     timer = setTimeout(() => { onTimeout?.(); reject(new Error(message)); }, milliseconds);
   });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+// A hidden tab pauses Godot's frame loop: count only visible time, so a
+// background tab is not reported as a failed start.
+function visibleDeadline(promise, milliseconds, message) {
+  let timer, remaining = milliseconds, since = 0;
+  const visible = () => !document.hidden;
+  return new Promise((resolve, reject) => {
+    const run = () => {
+      clearTimeout(timer);
+      if (!visible()) return;
+      since = Date.now();
+      timer = setTimeout(() => { cleanup(); reject(new Error(message)); }, remaining);
+    };
+    const pause = () => { if (since) remaining -= Date.now() - since; since = 0; clearTimeout(timer); run(); };
+    const cleanup = () => { clearTimeout(timer); document.removeEventListener?.('visibilitychange', pause); };
+    document.addEventListener?.('visibilitychange', pause);
+    run();
+    promise.then(value => { cleanup(); resolve(value); }, error => { cleanup(); reject(error); });
+  });
 }
 function selectionChanged() {
   document.querySelector('#pc-selection').textContent = input.files.length
@@ -157,8 +191,8 @@ async function prepareIsolation() {
 prepareIsolation();
 const command = value => {
   if (!started || toolbar.hidden) return false;
-  if ((busy && ['save_state', 'load_state', 'speed'].includes(value.op)) ||
-      (storageWarning && ['save_state', 'load_state'].includes(value.op))) return false;
+  if ((busy && ['save_state', 'load_state', 'quick_save', 'quick_load', 'speed'].includes(value.op)) ||
+      (storageWarning && ['save_state', 'load_state', 'quick_save', 'quick_load'].includes(value.op))) return false;
   if (!host?.queueControl(value)) {
     notice('The game could not accept this action. Wait for the current operation, then try again.');
     return false;
@@ -209,7 +243,7 @@ function updateExtended(state) {
     : (state.audio?.master === 0 ? 'Master volume is muted. ' : '') +
       'Presentation mix. Original F5 and pause still control sound.';
 }
-function updateToolbar(state) {
+function updateToolbar(state, announce = true) {
   if (!state || !Array.isArray(state.modes) || !Array.isArray(state.slots)) {
     notice('The game returned unavailable control information.');
     return;
@@ -261,21 +295,28 @@ function updateToolbar(state) {
   toolbar.setAttribute('aria-busy', String(busy));
   speedButton.textContent = state.speed === 8 ? 'Normal speed' : '8× speed';
   speedButton.setAttribute('aria-pressed', String(state.speed === 8));
-  notice(state.message || '');
+  if (announce) notice(state.message || '');
+  fitCanvas();
 }
+// A refused selection returns to the game's actual value; refreshing the
+// toolbar this way never repeats the last status message.
+const refresh = () => { if (lastControls) updateToolbar(lastControls, false); };
+const choose = value => { if (!command(value)) refresh(); };
+// After a toolbar button, keys go back to the game.
+const act = value => { if (command(value)) canvas.focus(); };
 for (const [setting, select] of Object.entries(qualityControls))
-  select.addEventListener('change', () => command({op: 'quality', setting, samples: Number(select.value)}));
+  select.addEventListener('change', () => choose({op: 'quality', setting, samples: Number(select.value)}));
 for (const [channel, select] of Object.entries(audioControls))
-  select.addEventListener('change', () => command({op: 'audio', channel, percent: Number(select.value)}));
+  select.addEventListener('change', () => choose({op: 'audio', channel, percent: Number(select.value)}));
 resetAudioButton.addEventListener('click', () => command({op: 'reset_audio'}));
 resetQualityButton.addEventListener('click', () => command({op: 'reset_quality'}));
-saveButton.addEventListener('click', () => command({op: 'save_state', slot: Number(saveSlot.value)}));
-loadButton.addEventListener('click', () => command({op: 'load_state', slot: Number(loadSlot.value)}));
-loadSlot.addEventListener('change', () => { if (lastControls) updateToolbar(lastControls); });
-graphics.addEventListener('change', () => command({op: 'graphics', mode: graphics.value}));
-hudStyle.addEventListener('change', () => command({op: 'hud_style', style: hudStyle.value}));
-speedButton.addEventListener('click', () => command({op: 'speed'}));
-document.querySelector('#web-help').addEventListener('click', () => command({op: 'help'}));
+saveButton.addEventListener('click', () => act({op: 'save_state', slot: Number(saveSlot.value)}));
+loadButton.addEventListener('click', () => act({op: 'load_state', slot: Number(loadSlot.value)}));
+loadSlot.addEventListener('change', refresh);
+graphics.addEventListener('change', () => choose({op: 'graphics', mode: graphics.value}));
+hudStyle.addEventListener('change', () => choose({op: 'hud_style', style: hudStyle.value}));
+speedButton.addEventListener('click', () => act({op: 'speed'}));
+document.querySelector('#web-help').addEventListener('click', () => act({op: 'help'}));
 document.querySelector('#web-focus').addEventListener('click', () => {
   canvas.focus();
   notice('Game keyboard active. Tab toggles fast forward; use the controls above for remaster settings.');
@@ -294,18 +335,26 @@ fullscreenButton.addEventListener('click', async () => {
     canvas.focus();
   } catch (error) { notice(`Fullscreen unavailable: ${error?.message || error}`); }
 });
-document.addEventListener('fullscreenchange', syncFullscreen);
+document.addEventListener('fullscreenchange', () => { syncFullscreen(); fitCanvas(); });
 window.addEventListener('keydown', event => {
   if (!started || toolbar.hidden || !['KeyS', 'KeyL', 'KeyG'].includes(event.code)) return;
   if (event.target?.closest?.('input, select, textarea, button, [contenteditable="true"]')) return;
   const modifier = (event.metaKey && !event.ctrlKey && !event.altKey) ||
     (event.ctrlKey && event.altKey && !event.metaKey);
   if (!modifier || (event.shiftKey && event.code !== 'KeyL')) return;
+  // AltGr reports Ctrl+Alt on many layouts: a key that types a different
+  // character there (Polish AltGr+S is ś) is that character, not a chord.
+  if (event.getModifierState?.('AltGraph')) return;
+  const letter = event.code.slice(3).toLowerCase();
+  if (event.ctrlKey && typeof event.key === 'string' && event.key.length === 1 && event.key.toLowerCase() !== letter) return;
   event.preventDefault();
   event.stopImmediatePropagation();
   if (event.repeat) return;
+  // As the native chords: an occupied slot needs a confirming second press,
+  // and an open canvas menu or reader withholds the chord.
   if (event.code === 'KeyG') command({op: 'cycle_graphics'});
-  else command({op: event.code === 'KeyS' ? 'save_state' : 'load_state', slot: event.shiftKey ? 0 : 1});
+  else if (event.code === 'KeyS') command({op: 'quick_save'});
+  else command({op: 'quick_load', slot: event.shiftKey ? 0 : 1});
 }, true);
 function closeHost() {
   host?.close();
@@ -323,15 +372,24 @@ function resetPlayer() {
   document.querySelector('#web-storage-status').textContent = '';
   toolbar.hidden = true;
   canvas.hidden = true;
+  canvas.style && (canvas.style.width = canvas.style.height = '');
   player.hidden = true;
   document.body.classList.remove('playing');
   input.disabled = genesisInput.disabled = !isolationReady;
   selectionChanged();
 }
 window.addEventListener('pagehide', () => { startup?.abort(); closeHost(); engine?.requestQuit(); });
+// Leaving a running game asks first: progress since the last checkpoint is lost.
+window.addEventListener('beforeunload', event => {
+  if (!started || toolbar.hidden || reloadRequired) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
 startButton.addEventListener('click', async () => {
   if (started || reloadRequired || engine || !isolationReady) return;
   started = true;
+  // Ask the browser to keep checkpoints through storage pressure (best effort).
+  navigator.storage?.persist?.().catch(() => {});
   input.disabled = genesisInput.disabled = startButton.disabled = true;
   clearGenesisButton.disabled = true;
   document.querySelector('.setup').setAttribute('aria-busy', 'true');
@@ -387,17 +445,18 @@ startButton.addEventListener('click', async () => {
         if (lastControls) updateToolbar(lastControls);
       }
       if (message.type === 'error') {
-        runtimeFailure = `Original game stopped: ${message.message}. Reload to restart; saved slots are retained.`;
+        runtimeFailure = `Original game stopped: ${String(message.message).replace(/\.\s*$/, '')}. Reload to restart; saved slots are retained.`;
         notice(runtimeFailure);
+        // During startup the toolbar is still hidden: end the start now, and
+        // its handler shows this reason instead of a later generic timeout.
+        startup?.abort();
         if (!toolbar.hidden) {
           reloadRequired = true;
-          startup?.abort();
-          engine?.requestQuit();
-          resetPlayer();
           reloadButton.hidden = false;
-          reloadButton.focus();
           startButton.disabled = true;
           report(runtimeFailure);
+          // Let Godot receive the error before the page closes the bridge.
+          setTimeout(() => { engine?.requestQuit(); resetPlayer(); reloadButton.focus(); }, 250);
         }
       }
     }, updateToolbar);
@@ -434,12 +493,13 @@ startButton.addEventListener('click', async () => {
     for (const [path, bytes] of derived) engine.copyToFS('/' + path, bytes);
     report('Starting the remastered Godot presentation…');
     engineStarted = true;
-    await deadline(engine.start({args: ['--main-pack', 'index.pck', '--', '--boot', '--play',
+    await visibleDeadline(engine.start({args: ['--main-pack', 'index.pck', '--', '--boot', '--play',
       ...(genesisEnabled ? [] : ['--pc-only'])]}), 30000, 'The remaster could not start its viewer. Reload to retry safely.');
-    await deadline(host.viewerReady, 30000, 'The remastered viewer did not present an original game frame. Reload to retry safely.');
+    await visibleDeadline(host.viewerReady, 30000, 'The remastered viewer did not present an original game frame. Reload to retry safely.');
     report('Original PC game running. Choose Game keyboard to return focus after using browser controls.');
     toolbar.hidden = false;
     document.body.classList.add('playing');
+    fitCanvas();
     canvas.focus();
   } catch (error) {
     startup.abort();
@@ -447,7 +507,7 @@ startButton.addEventListener('click', async () => {
     engine?.requestQuit();
     resetPlayer();
     if (needsReload) { reloadRequired = true; startButton.disabled = true; reloadButton.hidden = false; }
-    report(`The remaster could not start: ${error?.message || error}${needsReload ? ' Use Reload page to start a clean engine; saved slots are retained.' : ' Correct the selection or connection, then try again.'}`);
+    report(runtimeFailure || `The remaster could not start: ${error?.message || error}${needsReload ? ' Use Reload page to start a clean engine; saved slots are retained.' : ' Correct the selection or connection, then try again.'}`);
     (needsReload ? reloadButton : startButton).focus();
   } finally {
     document.querySelector('.setup').setAttribute('aria-busy', 'false');
