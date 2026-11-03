@@ -9572,6 +9572,28 @@ seems too close, not on the target?"
   include a quarter-speed 4× zoom. Tactical world 17, effects 124, draw pass
   58, 0 errors.
 
+Nell on `blast-t64-video-2/close-t64-blast-quarter-speed.mp4` (the "IR clip":
+the close T-64 on the dark sky; I had wrongly checked the live zoom clip):
+"the blast sprite on the ground still seems too close, not on the target".
+
+* Harness artefact: the clip froze one original pass, so the original's
+  impact sprite never animated or ended. Its ground flames showed for 0.5 s
+  before the blast and 0.9 s after it. The probe trace shows the sprite
+  lasting about 1.3 s after a kill (passes 123–139, frames 502–580), shorter
+  than the 1.6 s burst, so in Play it does not return. The clip harness now
+  drops it at 1.3 s and starts at the kill. The pilot's "before" snapshot was
+  taken from a different (zoomed) view, so it is not used as a lead-in.
+* Real: fragments all landed on the wreck's drawn base, its nearest front
+  edge on a close tank, and lay there in a line in front of it. The dust
+  skirt was a wide band at the same line. Fragments now land between
+  mid-hull and base (`base*(0.3+0.7*d)`) and settle out within 0.3 s. The
+  skirt is narrower (0.6), fainter (0.5), never below the base, and gone by
+  0.9 s.
+* The kill frame itself, before the clock starts, still shows the original
+  sprite for one frame in Play.
+* Evidence: `blast-t64-video-3/` (real speed and quarter speed). Effects 124
+  and native study 229 (`native-13`), 0 errors.
+
 Not verified: an open-form kill (6 px or more) in live Play, actual Godot Web
 (blocked on the Web rebuild), and whether the open form ever reads as a
 target in play.

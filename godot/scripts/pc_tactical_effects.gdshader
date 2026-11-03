@@ -102,7 +102,9 @@ vec4 kill_debris(vec2 q, float age, float seed, vec2 down, float pixel, float ba
         float d=hash(vec2(seed*53.0+n,19.9));
         // Apex lift^2/12 = 0.33..0.80 quad units above the wreck centre.
         float lift=2.0+b*1.1;
-        float ground=base+d*0.04;
+        // Land on the wreck's own footprint (mid-hull to its base), never in a
+        // line along its nearest edge, which reads as debris in front of it.
+        float ground=base*(0.3+0.7*d);
         // Gravity 6 quad units/s^2: landing solves -lift*t+3*t^2=ground.
         float landing=(lift+sqrt(lift*lift+12.0*ground))/6.0;
         float t=min(age,landing);
@@ -111,7 +113,8 @@ vec4 kill_debris(vec2 q, float age, float seed, vec2 down, float pixel, float ba
         vec2 local=mat2(vec2(cos(angle),-sin(angle)),vec2(sin(angle),cos(angle)))*(q-at);
         vec2 outside=abs(local)-vec2(0.030+0.040*c,0.018+0.026*d);
         float edge=length(max(outside,0.0))+min(max(outside.x,outside.y),0.0);
-        float hit=1.0-smoothstep(-0.5*pixel,0.5*pixel,edge);
+        // Landed fragments settle out of sight within a third of a second.
+        float hit=(1.0-smoothstep(-0.5*pixel,0.5*pixel,edge))*(1.0-smoothstep(landing,landing+0.3,age));
         // A third of the fragments leave hot and cool to charcoal.
         float ember=step(0.62,b)*(1.0-smoothstep(0.04,0.35,age));
         vec3 tone=mix(vec3(0.085,0.080,0.072),vec3(0.24,0.21,0.17),d);
@@ -165,11 +168,11 @@ vec4 kill_blast(vec2 q, float age, float seed, vec2 down, float base) {
     float ground=-base;
     float above=smoothstep(ground-0.015,ground+0.035,p.y);
     // Dust skirt along the ground line.
-    float spread=0.95*(1.0-exp(-age*4.5));
+    float spread=0.60*(1.0-exp(-age*4.5));
     float skirt_n=noise(vec2(p.x*7.0+seed*5.0,age*2.0));
-    vec2 sd=vec2(p.x/max(spread,0.01),(p.y-ground-0.02)/(0.06+0.06*age));
+    vec2 sd=vec2(p.x/max(spread,0.01),(p.y-ground-0.05)/(0.05+0.05*age));
     float dust_d=length(sd)+(skirt_n-0.5)*0.4;
-    float dust=(1.0-smoothstep(0.55,1.0,dust_d))*(1.0-smoothstep(0.35,1.35,age))*0.75*smoothstep(ground-0.05,ground,p.y);
+    float dust=(1.0-smoothstep(0.55,1.0,dust_d))*(1.0-smoothstep(0.25,0.9,age))*0.5*smoothstep(ground-0.005,ground+0.02,p.y);
     vec4 layer=vec4(mix(vec3(0.42,0.37,0.29),vec3(0.55,0.50,0.40),skirt_n),dust);
     // Smoke column rolling up out of the fireball.
     float s=smoothstep(0.12,1.3,age);

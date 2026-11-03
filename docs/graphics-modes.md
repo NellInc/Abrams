@@ -118,13 +118,16 @@ rectangle is probed on a grid, because a small wreck's centre is often a gap
 or under the fireball. The fragments' flight comes from the
 wreck's pointer seed and the explicit dynamics clock, never from guest
 state. The fragments rise to between a third and four fifths of the burst
-radius (raised on 2 November at Nell's request), land on the wreck's drawn
-base, cool from embers to charcoal and are gone 1.6 seconds after the kill.
+radius (raised on 2 November at Nell's request), land on the wreck's own
+footprint between mid-hull and its drawn base, settle out of sight within a
+third of a second, and are gone 1.6 seconds after the kill. Landing them all
+on the drawn base laid a line of debris along a close wreck's nearest edge,
+which read as debris in front of the tank (Nell, 3 November).
 The blast stands on the wreck's ground line, centred across it. A white
 flash comes first, then a turbulent, billowing fireball dome that swells to
 about half the burst radius in a quarter second. It cools from the rim to
-soot and rolls up into a dark smoke column, with a thin dust skirt pushed
-out along the ground. Nothing else reaches below the wreck's base. In the
+soot and rolls up into a dark smoke column, with a narrow, faint dust skirt
+at the wreck's base that is gone by 0.9 s. Nothing else reaches below the wreck's base. In the
 first version the blast was centred on the wreck's middle, so half of it
 hung over the ground in front and read as an explosion near the player's
 tank (Nell, 3 November). The burst radius is 1.4 times the wreck's drawn
