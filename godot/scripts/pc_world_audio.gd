@@ -16,6 +16,11 @@ const BRDM_FRAME_COUNT := 271102
 # Original BRDM-2 and its source-labelled BRDM-3 launcher derivative share
 # this engine recording. Wrecks142/144 and BTR137 retain their old policies.
 const BRDM_SHAPES := [141,143]
+const VEHICLE_CUES := ["bmp","m60","t55"]
+const VEHICLE_FRAME_COUNTS := {"bmp":592208,"t55":553389,"m60":577007}
+# T-55 rear recording is the agreed T-62 donor. BMP-1 serves both original BMPs.
+# Intact source classes only; no new actor, movement or visibility inference.
+const VEHICLE_SHAPES := {115:"t55",127:"m60",133:"bmp",135:"bmp"}
 const FLIGHT_CUES := ["missileflight"]
 const FLIGHT_FRAME_COUNT := 384000
 const FLIGHT_PHASES := {
@@ -54,7 +59,7 @@ const ALLIED_SHAPES := {129:"m113", 131:"bradley"}
 const FAMILY_SHAPES := {133:"trackedfallback",135:"trackedfallback",139:"trackedfallback",
 	137:"wheeledfallback",141:"wheeledfallback",143:"wheeledfallback"}
 const CUE_PLAYERS := {"trackedfallback":"m113","wheeledfallback":"truck"}
-const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley", "trackedfallback"]
+const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley", "trackedfallback", "bmp", "m60", "t55"]
 # Cues whose recording names a vehicle class (and with it often a side).
 const CLASS_CUES := GROUND_MOTOR_CUES + ["truck", "wheeledfallback", "brdm"]
 # Same-owner witnesses must be this far apart (squared source pixels). In the
@@ -65,8 +70,8 @@ const CLASS_CUES := GROUND_MOTOR_CUES + ["truck", "wheeledfallback", "brdm"]
 const WITNESS_SQ := 16.0
 const CLASS_WITNESS_SQ := 64.0
 const DETAIL_CUES := ["woodland", "truck", "tracks"]
-const CUES := ["river", "hind", "field", "cow", "t80", "t72", "brdm", "tank", "m113", "bradley", "woodland", "truck", "tracks", "missileflight", "trackedfallback", "wheeledfallback"]
-const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "brdm":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04,"missileflight":0.30,"trackedfallback":0.30,"wheeledfallback":0.30}
+const CUES := ["river", "hind", "field", "cow", "t80", "t72", "brdm", "bmp", "m60", "t55", "tank", "m113", "bradley", "woodland", "truck", "tracks", "missileflight", "trackedfallback", "wheeledfallback"]
+const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "brdm":0.30, "bmp":0.30, "m60":0.30, "t55":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04,"missileflight":0.30,"trackedfallback":0.30,"wheeledfallback":0.30}
 const COW_EXPOSURE_FRAMES := 180
 const COW_COOLDOWN_FRAMES := 2400
 var directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-world-effects-v1")
@@ -78,6 +83,8 @@ var t72_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-t
 var t72_failure: String = ""
 var brdm_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-brdm-effects-v1")
 var brdm_failure: String = ""
+var vehicle_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-vehicle-engines-v1")
+var vehicle_failure: String = ""
 var flight_directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-missile-flight-v1")
 var flight_failure: String = ""
 var flight_sources: Dictionary = {}
@@ -146,6 +153,8 @@ func _read_bank(folder: String, kind: String, expected: Array) -> Dictionary:
 			return {"error":"invalid T72 frame count"}
 		if cue == "brdm" and stream.data.size() != BRDM_FRAME_COUNT * 2:
 			return {"error":"invalid BRDM frame count"}
+		if cue in VEHICLE_CUES and stream.data.size() != int(VEHICLE_FRAME_COUNTS[cue]) * 2:
+			return {"error":"invalid vehicle engine frame count"}
 		if cue == "missileflight" and stream.data.size() != FLIGHT_FRAME_COUNT * 2:
 			return {"error":"invalid flight frame count"}
 		if cue == "tank" and stream.data.size() != TANK_FRAME_COUNT * 2:
@@ -184,6 +193,11 @@ func setup(owner: Node) -> void:
 	if bank.has("error"):
 		brdm_failure = bank.error
 		push_warning("Private BRDM sound ignored: " + brdm_failure)
+	else: streams.merge(bank.streams)
+	bank = _read_bank(vehicle_directory, "private visible-vehicle engines", VEHICLE_CUES)
+	if bank.has("error"):
+		vehicle_failure = bank.error
+		push_warning("Private vehicle engines ignored: " + vehicle_failure)
 	else: streams.merge(bank.streams)
 	bank = _read_bank(tank_directory, "private visible-tank fallback", TANK_CUES)
 	if bank.has("error"):
@@ -415,7 +429,7 @@ static func flight_candidate(object: Dictionary, actors: Dictionary, data: Dicti
 		if not (clip[at] is int or clip[at] is float) or not is_finite(float(clip[at])) or clip[at] != floorf(float(clip[at])) or not exact_number(sprite.clip[at],int(clip[at])): return false
 	return clip[0] >= 0 and clip[0] <= clip[2] and clip[2] < 320 and clip[1] >= 0 and clip[1] <= clip[3] and clip[3] < 200
 
-static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t72: bool = false, flight_resources: Dictionary = {}, dedicated_brdm: bool = false) -> Dictionary:
+static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t72: bool = false, flight_resources: Dictionary = {}, dedicated_brdm: bool = false, dedicated_vehicles: Dictionary = {}) -> Dictionary:
 	var result: Dictionary = {}
 	if not data.get("objects") is Array or not data.get("camera") is Dictionary or not data.get("unsupported") is Array or not data.unsupported.is_empty(): return result
 	var actors: Dictionary = Modern.dynamic_index(data)
@@ -443,6 +457,8 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t
 			cue = "t80" if dedicated_t80 else "tank"
 		elif dedicated_t72 and moving_tank_candidate(object, actors, 119):
 			cue = "t72"
+		elif VEHICLE_SHAPES.has(int(object.get("shape_index", -1))) and dedicated_vehicles.has(VEHICLE_SHAPES[int(object.shape_index)]) and moving_vehicle_candidate(object, actors, int(object.shape_index)):
+			cue = VEHICLE_SHAPES[int(object.shape_index)]
 		elif TANK_SHAPES.any(func(shape): return moving_tank_candidate(object, actors, shape)):
 			cue = "tank"
 		elif moving_vehicle_candidate(object, actors, 129):
@@ -473,7 +489,7 @@ func observe(data: Dictionary, ownership: SubViewport, ui: Image, source_frame: 
 		stop(); return
 	var bits: PackedByteArray = ui.get_data()
 	if bits.count(0) + bits.count(255) != 64000: stop(); return
-	var selected: Dictionary = candidates(data, streams.has("t80"), streams.has("t72"), flight_sources, streams.has("brdm"))
+	var selected: Dictionary = candidates(data, streams.has("t80"), streams.has("t72"), flight_sources, streams.has("brdm"), streams)
 	var rockets: Dictionary = rocket_owners(data) if rocket_stream!=null else {}
 	for id: int in selected.keys():
 		if not streams.has(CUE_PLAYERS.get(selected[id].cue,selected[id].cue)) or cue_gain(selected[id].cue) <= 0: selected.erase(id)
@@ -568,7 +584,7 @@ static func visible_cues(mask: Image, token: Dictionary) -> Array[String]:
 			elif Vector2(witnesses[id]).distance_squared_to(Vector2(x, y)) >= (CLASS_WITNESS_SQ if cue in CLASS_CUES else WITNESS_SQ):
 				found.append(cue)
 				if found.size() == wanted.size(): return found
-	for cue: String in ["field", "t80", "t72", "brdm", "tank", "m113", "bradley", "woodland", "truck", "trackedfallback", "wheeledfallback"]:
+	for cue: String in ["field", "t80", "t72", "brdm", "bmp", "m60", "t55", "tank", "m113", "bradley", "woodland", "truck", "trackedfallback", "wheeledfallback"]:
 		if cue in wanted and cue not in found and narrow_visible(bytes,stride,token,cue): found.append(cue)
 	return found
 
@@ -767,15 +783,26 @@ func _refresh_cow(player: AudioStreamPlayer, gain: float) -> void:
 	_cow_fired = frame
 
 func refresh() -> void:
-	# Working if: a lone wheeled bed keeps its accepted level; simultaneous
-	# distinct BRDM/truck beds share the old donor's squared-gain budget.
-	# Only already-admitted visible classes contribute, never actor count.
-	var truck_gain: float=cue_gain("truck") if "truck" in admitted else 0.0
-	if "wheeledfallback" in admitted: truck_gain=maxf(truck_gain,cue_gain("wheeledfallback"))
-	var brdm_gain: float=cue_gain("brdm") if "brdm" in admitted else 0.0
-	var wheeled_scale: float=1.0
-	if truck_gain>0 and brdm_gain>0:
-		wheeled_scale=maxf(truck_gain,brdm_gain)/sqrt(truck_gain*truck_gain+brdm_gain*brdm_gain)
+	# Distinct replacements share each former donor's squared-gain budget.
+	# Working if: one bed keeps its accepted level, co-visible classes do not
+	# multiply it, and only admitted enabled cues (never counts) affect the split.
+	var gains: Dictionary = {}
+	for cue: String in players:
+		gains[cue] = cue_gain(cue) if cue in admitted else 0.0
+	for alias: String in CUE_PLAYERS:
+		var donor: String = CUE_PLAYERS[alias]
+		if donor in gains and alias in admitted:
+			gains[donor] = maxf(float(gains[donor]),cue_gain(alias))
+	for group: Array in [["truck","brdm"],["tank","m60","t55"],["m113","bmp"]]:
+		var squared: float = 0.0
+		var peak: float = 0.0
+		for cue: String in group:
+			var value: float = float(gains.get(cue,0.0))
+			squared += value * value
+			peak = maxf(peak,value)
+		if squared > 0:
+			for cue: String in group:
+				if cue in gains: gains[cue] = float(gains[cue]) * peak / sqrt(squared)
 	for cue: String in players:
 		var player: AudioStreamPlayer = players[cue]
 		var gain: float = cue_gain(cue)
@@ -790,7 +817,7 @@ func refresh() -> void:
 			if CUE_PLAYERS[alias] == cue and alias in admitted:
 				present = true
 				gain = maxf(gain,cue_gain(alias))
-		if cue in ["truck","brdm"]: gain*=wheeled_scale
+		if cue in gains: gain = float(gains[cue])
 		# Chain texture follows the same already-visible, source-moving tracked
 		# owners. Original idle channels, trucks and hidden motion cannot start it.
 		if cue == "tracks":

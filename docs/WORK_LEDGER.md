@@ -10449,3 +10449,42 @@ eee1c8b (pushed as release/alpha8-20261103).
 * Web: rebuilt for the Alpha 8 labels; WebAssembly core unchanged, so Alpha 7
   browser checkpoints still load. Homepage downloads, labels (sizes 573, 575,
   587 MB, decimal rounded up as before) and FAQ now name Alpha 8.
+
+## 4 November 2026: three acquired vehicle engines and local app rebuild
+
+Nell requested copying the three SoundDogs downloads from order
+`15585bc1-0f76-4376-b8c5-72d5a1eb3aa1`, integrating them and rebuilding the app.
+Originals were identified by embedded metadata, copied privately and SHA-bound:
+BMP-1 exterior10858818, M60A3 idle10967039 and T-55 rear idle10868536. Dedicated
+BMP-1/2 and M60A3 routing is installed; the T-55 is explicitly the agreed T-62
+substitute. T-64, BTR and ACRV donor policies are unchanged. The three masters
+are48k mono16, approximately-25LUFS, with exact loop frames and private provenance.
+Numerical loop continuity is checked; human review of these edits remains open.
+
+Implementation is restricted to the world-audio loader/routing/gain split,
+private-bank allowlist and saved individual controls. New controls inherit saved
+donor gain/Off only if no explicit new choice exists. Existing shared-donor
+coefficient budgets, source identity/motion qualification, actual owner/UI-pixel
+admission, original event/clocks/motor authority, mute rules and limiter remain.
+All133 sealed incumbent private audio/code surfaces remained byte-identical.
+Read-only Astra found no blocking contract regression; root inspected the actual
+diff and independently ran the load-bearing checks.
+
+Verification: world1523, mix856, source audio924, limiter33, play menu479,
+frontdoor85, actual built-app private loader28 and native Settings-only46,
+3974 checks with zero assertion failures. Corrected unsandboxed logs have zero
+engine/script errors. Static lint scanned79GD/31shaders with zero findings.
+Initial sandbox world execution had a macOS CA error. The first packaged-loader
+attempt skipped the launcher's import step and failed on unimported resources;
+it was discarded. The normal import and viewer parse preflight, corrected loader
+and native UI route then passed. Wide/compact/scrolled captures were inspected.
+These tests do not claim human listening of new loops or device-audio pacing.
+
+Local ARM64 app build1d49e7dfef6e52a9ebee passes payload/dependency and ad-hoc
+signature verification. It excludes paid recordings;13 banks/31 WAVs instead live
+in the owner's external profile/audio folder. Acquisition, looping, source seals,
+checks, build and installation receipts are in
+`artifacts/three-tank-engines-20261104/`. The previous installed app is retained
+as a recoverable backup. No new purchase, Web build, push or publication is part
+of this pass. Documentation here was recorded after app assembly; the packaged
+runtime scripts and tested prepared version match the implemented candidate.

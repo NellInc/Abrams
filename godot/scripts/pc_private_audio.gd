@@ -1,7 +1,7 @@
 extends RefCounted
 ## Explicit owner-managed native bank root. Never copies media or grants rights.
 const BANKS := ["pc-recorded-effects-v1","pc-world-effects-v1","pc-environment-effects-v1",
-	"pc-soviet-effects-v1","pc-t72-effects-v1","pc-brdm-effects-v1","pc-tank-fallback-v1",
+	"pc-soviet-effects-v1","pc-t72-effects-v1","pc-brdm-effects-v1","pc-vehicle-engines-v1","pc-tank-fallback-v1",
 	"pc-allied-effects-v1","pc-world-detail-v1","pc-missile-flight-v1",
 	"pc-supplemental-effects-v1","pc-rocket-effects-v1"]
 

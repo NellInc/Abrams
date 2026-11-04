@@ -25,6 +25,7 @@ func check(ok: bool, why: String) -> void:
 func isolated_audio() -> Node:
 	var audio: Node = Audio.new()
 	audio.world_audio.t72_directory = ""
+	audio.world_audio.vehicle_directory = ""
 	audio.world_audio.brdm_directory = ""
 	audio.world_audio.flight_directory = ""
 	audio.world_audio.tank_directory = ""
@@ -51,7 +52,7 @@ func bank(directory: String, cues: Array = World.BASE_CUES, kind: String = "priv
 	for cue: String in cues:
 		var stream: AudioStreamWAV = AudioStreamWAV.new()
 		stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=48000
-		var frames: int=World.ALLIED_FRAME_COUNTS[cue] if cue in World.ALLIED_CUES else World.FLIGHT_FRAME_COUNT if cue=="missileflight" else World.T80_FRAME_COUNT if cue=="t80" else World.T72_FRAME_COUNT if cue=="t72" else World.BRDM_FRAME_COUNT if cue=="brdm" else World.TANK_FRAME_COUNT if cue=="tank" else 48000
+		var frames: int=World.VEHICLE_FRAME_COUNTS[cue] if cue in World.VEHICLE_CUES else World.ALLIED_FRAME_COUNTS[cue] if cue in World.ALLIED_CUES else World.FLIGHT_FRAME_COUNT if cue=="missileflight" else World.T80_FRAME_COUNT if cue=="t80" else World.T72_FRAME_COUNT if cue=="t72" else World.BRDM_FRAME_COUNT if cue=="brdm" else World.TANK_FRAME_COUNT if cue=="tank" else 48000
 		var bytes: PackedByteArray=PackedByteArray();bytes.resize(frames*2);stream.data=bytes
 		var path: String=directory.path_join(cue+".wav")
 		check(stream.save_to_wav(path)==OK,"generated PCM writes")
@@ -142,6 +143,7 @@ func run() -> void:
 	await tank_checks(directory,ui,mask)
 	await t72_checks(directory,ui,mask)
 	await brdm_checks(ui,mask)
+	await vehicle_engine_checks(ui,mask)
 	await flight_checks(ui,mask)
 	await allied_checks(directory,ui,mask)
 	await detail_checks(directory,ui,mask)
@@ -525,6 +527,85 @@ func t72_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		manifest.cues.t72.sha256=FileAccess.get_sha256(path);FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
 		check(reader._read_bank(directory,"private visible-t72 cue",World.T72_CUES).has("error"), "T72 rejects wrong rate/channels/bit depth even with matching SHA")
 	check(JSON.stringify(data)==original, "T72 eligibility, masks and controls preserve original source")
+
+func vehicle_engine_checks(ui: Image, mask: Image) -> void:
+	var directory: String = output.path_join("generated-vehicle-bank")
+	bank(directory,World.VEHICLE_CUES,"private visible-vehicle engines")
+	var enabled: Dictionary = {"bmp":true,"m60":true,"t55":true}
+	for shape: int in [115,116,117,119,121,123,127,128,129,131,133,134,135,136,137,139,141,143]:
+		var data: Dictionary = tank_source(shape)
+		var before: String = JSON.stringify(data)
+		var chosen: Dictionary = World.candidates(data,true,false,{},false,enabled)
+		if not World.VEHICLE_SHAPES.has(shape):
+			check(chosen==World.candidates(data),"new engines leave other classes/wrecks unchanged: "+str(shape))
+			continue
+		var cue: String = World.VEHICLE_SHAPES[shape]
+		check(chosen.get(1,{}).get("cue")==cue,"exact source class chooses dedicated engine: "+str(shape))
+		check(World.candidates(data).get(1,{}).get("cue")==("trackedfallback" if cue=="bmp" else "tank"),"absent bank retains original donor")
+		for speed: Variant in [-32768,-1,1,32767,0,-32769,32768,0.5,NAN,INF,"10",true]:
+			var changed: Dictionary = data.duplicate(true);changed.world.dynamic[0].speed_raw=speed
+			check((not World.candidates(changed,true,false,{},false,enabled).is_empty())==(speed is int and speed in [-32768,-1,1,32767]),"engine preserves original movement gate")
+		for mutation: Dictionary in [{"pointer":123.5},{"pointer":"123"},{"shape_index":shape+0.5},{"dynamic_instance":false}]:
+			var changed: Dictionary = data.duplicate(true);changed.objects[0].merge(mutation,true)
+			check(World.candidates(changed,true,false,{},false,enabled).is_empty(),"engine rejects coerced source identity")
+		var duplicate: Dictionary = data.duplicate(true);duplicate.world.dynamic.append(duplicate.world.dynamic[0].duplicate())
+		check(World.candidates(duplicate,true,false,{},false,enabled).is_empty(),"engine rejects ambiguous source actor")
+		ui.fill(Color.BLACK)
+		var token: Dictionary = {"size":mask.get_size(),"clip":data.camera.clip,"selected":chosen,"ui":ui.get_data()}
+		mask.fill(Color8(1,0,8));check(World.visible_cues(mask,token)==[cue],"same original owner admits new recording")
+		for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,8,0),Color.TRANSPARENT]:
+			mask.fill(colour);check(World.visible_cues(mask,token).is_empty(),"new engine cannot expose hidden/foreign/line actors")
+		mask.fill(Color8(0,0,0));px(mask,800,241,Color8(1,0,0));px(mask,840,231,Color8(1,0,8))
+		check(World.visible_cues(mask,token)==[cue],"new engines retain exact thin-owner witnesses")
+		ui.fill(Color.WHITE);token.ui=ui.get_data()
+		check(World.visible_cues(mask,token).is_empty(),"opaque original UI blocks new engines")
+		check(JSON.stringify(data)==before,"new recording does not mutate source")
+	var audio: Node = isolated_audio();audio.recorded_effect_directory=""
+	audio.world_audio.directory="";audio.world_audio.environment_directory="";audio.world_audio.soviet_directory=""
+	audio.world_audio.vehicle_directory=directory
+	bank(output.path_join("vehicle-tank-control"),World.TANK_CUES,"private visible-tank fallback")
+	bank(output.path_join("vehicle-allied-control"),World.ALLIED_CUES,"private visible-allied cues")
+	bank(output.path_join("vehicle-detail-control"),World.DETAIL_CUES,"private visible-world detail")
+	audio.world_audio.tank_directory=output.path_join("vehicle-tank-control")
+	audio.world_audio.allied_directory=output.path_join("vehicle-allied-control")
+	audio.world_audio.detail_directory=output.path_join("vehicle-detail-control")
+	root.add_child(audio)
+	var world: RefCounted = audio.world_audio
+	check(world.vehicle_failure.is_empty(),"new engine bank validates atomically")
+	var clock: Array = [audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)]
+	for cue: String in World.VEHICLE_CUES:
+		var player: AudioStreamPlayer = world.players[cue]
+		check(player.stream.loop_end==World.VEHICLE_FRAME_COUNTS[cue] and player.bus==audio.presentation_bus,"new engine exact bounds and incumbent limiter")
+		world.admitted.assign([cue]);world.refresh()
+		check(player.playing and player.pitch_scale==1.0 and is_equal_approx(db_to_linear(player.volume_db),0.65*0.30),"single new engine keeps nominal accepted balance")
+		check(world.players.tracks.playing and not world.players.tank.playing and not world.players.m113.playing,"same actor preserves tracks without donor doubling")
+		audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,cue:0})
+		check(not player.playing and not world.players.tracks.playing,"new cue Off does not substitute donor or retain tracks")
+		audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,cue:100})
+	for group: Array in [["tank","m60","t55"],["m113","bmp"],["trackedfallback","bmp"]]:
+		world.admitted.assign(group);world.refresh()
+		var squared: float = 0.0
+		for cue: String in group:
+			var physical: String = World.CUE_PLAYERS.get(cue,cue)
+			squared += pow(db_to_linear(world.players[physical].volume_db),2)
+		check(is_equal_approx(squared,pow(0.65*0.30,2)),"co-visible new recordings share former donor budget: "+str(group))
+	check(clock==[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)],"new engines leave clocks/events/source motors unchanged")
+	audio.set_transport_muted(true)
+	check(world.players.values().all(func(p):return not p.playing),"all new engines obey transport mute")
+	audio.set_transport_muted(false)
+	check(world.players.values().all(func(p):return not p.playing),"unmute does not replay stale admission")
+	check(await audio.drain_for_shutdown(),"new bank drains cleanly");audio.free()
+	var reader: RefCounted = World.new()
+	var manifest_path: String = directory.path_join("manifest.json")
+	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+	var path: String = directory.path_join("bmp.wav")
+	var original: PackedByteArray = FileAccess.get_file_as_bytes(path)
+	var wrong: AudioStreamWAV = AudioStreamWAV.load_from_file(path)
+	wrong.data=wrong.data.slice(0,wrong.data.size()-2);wrong.save_to_wav(path)
+	manifest.cues.bmp.sha256=FileAccess.get_sha256(path)
+	FileAccess.open(manifest_path,FileAccess.WRITE).store_string(JSON.stringify(manifest))
+	check(reader._read_bank(directory,"private visible-vehicle engines",World.VEHICLE_CUES).has("error"),"valid-header wrong-length PCM rejects entire new bank")
+	FileAccess.open(path,FileAccess.WRITE).store_buffer(original)
 
 func brdm_checks(ui: Image, mask: Image) -> void:
 	var directory: String=output.path_join("generated-brdm-bank")

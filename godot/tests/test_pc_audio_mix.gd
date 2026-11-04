@@ -26,6 +26,7 @@ func packet(frame: int, enabled: bool=true, event: bool=false) -> Dictionary:
 func individual_controls() -> void:
 	var audio := Audio.new()
 	audio.world_audio.t72_directory=""
+	audio.world_audio.vehicle_directory=""
 	audio.world_audio.flight_directory=""
 	audio.recorded_effect_directory=""
 	root.add_child(audio)
@@ -90,6 +91,7 @@ func individual_controls() -> void:
 func auxiliary_source_controls() -> void:
 	var audio: Node = Audio.new()
 	audio.world_audio.t72_directory=""
+	audio.world_audio.vehicle_directory=""
 	audio.world_audio.flight_directory=""
 	audio.recorded_effect_directory = ""
 	root.add_child(audio)
@@ -116,7 +118,7 @@ func auxiliary_source_controls() -> void:
 func detail_audio(folder: String) -> Node:
 	var audio: Node=Audio.new()
 	audio.recorded_effect_directory="";audio.supplemental.directory=folder
-	for key: String in ["directory","environment_directory","soviet_directory","t72_directory","brdm_directory","flight_directory","tank_directory","allied_directory","detail_directory"]: audio.world_audio.set(key,"")
+	for key: String in ["directory","environment_directory","soviet_directory","vehicle_directory","t72_directory","brdm_directory","flight_directory","tank_directory","allied_directory","detail_directory"]: audio.world_audio.set(key,"")
 	root.add_child(audio)
 	return audio
 
@@ -271,6 +273,7 @@ func run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	var audio := Audio.new()
 	audio.world_audio.t72_directory=""
+	audio.world_audio.vehicle_directory=""
 	audio.world_audio.flight_directory=""
 	check(audio.set_mix({"master":100,"effects":100,"voice":30,"motors":100}),"launch preferences accepted before players exist")
 	root.add_child(audio)
@@ -283,7 +286,7 @@ func run() -> void:
 	root.add_child(menu)
 	var notifications: Array[Dictionary]=[]
 	menu.mix_changed.connect(func():notifications.append(menu.settings.duplicate()))
-	check(menu.get_menu_count()==1 and menu.menus.size()==32,"one external Audio menu, thirty-two independently specified gain groups")
+	check(menu.get_menu_count()==1 and menu.menus.size()==35,"one external Audio menu, thirty-five independently specified gain groups")
 	check_channel_titles(menu,"native")
 	# The browser menu omits private channels. Each remaining title must still
 	# name its own submenu and gain, never a separator or a missing item.
@@ -303,7 +306,7 @@ func run() -> void:
 	check(Menu.DEFAULTS.t72==100 and Menu.TITLES.t72=="T-72 engine" and menu.audio_channels().has("t72") and menu.menus.has("t72"),"native T72 has its own100% default and exact title")
 	var t72_choices: PopupMenu=menu.menus.t72
 	check(t72_choices.get_item_text(t72_choices.get_item_index(0))=="Off" and t72_choices.get_item_index(100)>=0,"native T72 exposes independent Off through100%")
-	for cue: String in ["m113","bradley","brdm","trackedfallback","wheeledfallback"]:
+	for cue: String in ["m113","bradley","brdm","bmp","m60","t55","trackedfallback","wheeledfallback"]:
 		check(Menu.DEFAULTS[cue]==100 and Menu.TITLES.has(cue) and menu.audio_channels().has(cue) and menu.menus.has(cue),"native allied control has an independent title and unchanged100% default: "+cue)
 		var choices: PopupMenu=menu.menus[cue]
 		check(choices.get_item_text(choices.get_item_index(0))=="Off" and choices.get_item_index(100)>=0,"native allied control exposes Off through100%: "+cue)
@@ -404,6 +407,13 @@ func run() -> void:
 	check(reload.load_settings() and reload.settings.effects==40 and reload.settings.motors==30 and reload.settings.hind==100 and reload.settings.river==100 and reload.settings.field==100 and reload.settings.cow==100 and reload.settings.t80==100 and reload.settings.tank==100 and reload.settings.m113==100 and reload.settings.bradley==100 and Audio.EFFECT_CUES.all(func(cue):return reload.settings[cue]==100),"old preferences keep original mix and acquire unchanged individual defaults")
 	check(["woodland","truck","tracks","foley","interface","fire"].all(func(cue):return reload.settings[cue]==100),"old saved preferences acquire all six private defaults without changing incumbent mix")
 	check(reload.settings.t72==100,"preferences missing both tank and T72 retain the new100% default")
+	for cue: String in ["bmp","m60","t55"]:
+		var donor: String = "trackedfallback" if cue=="bmp" else "tank"
+		for saved: Dictionary in [{donor:0},{donor:40},{donor:90,cue:0},{donor:0,cue:37},{cue:37},{}]:
+			var config: ConfigFile = ConfigFile.new()
+			for key: String in saved: config.set_value("audio",key,saved[key])
+			config.save(menu.config_path)
+			check(reload.load_settings() and reload.settings[cue]==int(saved.get(cue,saved.get(donor,100))),"new engine retains saved donor Off/balance unless explicitly overridden: "+cue)
 	for saved: Dictionary in [{"wheeledfallback":0},{"wheeledfallback":40},{"wheeledfallback":90,"brdm":0},{"wheeledfallback":0,"brdm":37},{"brdm":37},{}]:
 		var previous: ConfigFile=ConfigFile.new()
 		for key: String in saved: previous.set_value("audio",key,saved[key])
@@ -436,6 +446,7 @@ func run() -> void:
 	# started keep playing while the resumed observer restarts at epoch 0/id 0.
 	var resumed := Audio.new()
 	resumed.world_audio.t72_directory=""
+	resumed.world_audio.vehicle_directory=""
 	resumed.world_audio.flight_directory=""
 	root.add_child(resumed)
 	check(resumed.apply_audio(packet(20,true,true)) and resumed.effects[0].playing and resumed.voice.playing and resumed.engine.playing,"cue before save plays")

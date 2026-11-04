@@ -602,3 +602,42 @@ from the headless production-player and source/mask contract checks.
 Working if: the exact approved loop loads only for an eligible visible BRDM,
 old gain/Off survives, same-actor donor doubling and wheeled track noise remain
 absent, and mute/restore cannot reuse stale admission.
+
+## Three purchased vehicle engines (4 November 2026)
+
+The original SoundDogs WAVs from order `15585bc1-0f76-4376-b8c5-72d5a1eb3aa1`
+are preserved privately, unchanged in Downloads and in
+`local-audio/three-tank-engines-20261104/originals/`:
+
+* BMP-1 exterior, SKU10858818, supplies intact BMP-1/2 shapes133/135.
+* M60A3 stationary exterior idle, SKU10967039, supplies intact shape127.
+* T-55 rear idle, SKU10868536, is Nell's agreed T-62 substitute, shape115.
+  This is a T-55 recording, not an acquired T-62 recording.
+
+The new optional `pc-vehicle-engines-v1` bank validates all three files atomically.
+Fixed loop lengths are BMP592208, M60577007 and T55553389 frames, 48kHz mono16.
+Local numerical steady-section and splice selection retains their natural engine
+texture, uses only a short circular crossfade and static loudness matching to
+approximately -25LUFS, and leaves all other accepted masters unchanged. Edited
+loop listening is still unreviewed; numerical seam metrics do not establish
+subjective cleanliness. Three-wrap private previews and the reproducible recipe
+are retained beside the acquisition evidence.
+
+Availability chooses a dedicated recording before gain is applied. Missing or
+invalid new media retains the prior donors; a dedicated control set to Off never
+reintroduces a donor. Saved BMP gain inherits the prior tracked-family preference,
+and saved M60/T-62 gains inherit the prior generic-tank preference, only when the
+new explicit preference is absent. Co-visible replacements share each former
+donor's squared-gain budget. This preserves coefficient headroom rather than
+claiming identical perceived loudness for every recording phase. No original
+actor, camera, source audio event, speed gate, ownership/UI mask or guest clock
+was changed. Track eligibility and fixed presentation-bed pitch are preserved.
+
+The rebuilt local macOS app uses the owner's external profile audio folder.
+All13 validated banks,31 WAVs, are provisioned outside its bundle. Paid originals
+and derivatives remain excluded from Git and distributable app/Web payloads.
+Scoped source/mixer/limiter/menu checks, actual built-app loader checks and the
+native Settings-only route pass. The latter freezes the guest at one source
+sample and uses isolated settings, so it establishes neither battlefield
+listening nor device-audio pacing. Full evidence is retained under
+`artifacts/three-tank-engines-20261104/`. No Web rebuild or publication occurred.
