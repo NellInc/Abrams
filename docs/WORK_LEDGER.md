@@ -10497,3 +10497,43 @@ current levels. Installed BMP, M60A3 and T-55 donor WAV hashes were rechecked
 against the approved masters. No PCM, gain, runtime, settings or app changes
 were made. Acceptance is recorded in the private integration state and
 `artifacts/three-tank-engines-20261104/loop-acceptance-20261105.json`.
+
+## 5 November 2026: approved BTR-70/T-64 recording reuse and app rebuild
+
+Nell approved BRDM-2 loop reuse for intact BTR-70 shape137 and T-72 loop reuse
+for intact T-64 shape117, with current levels, original timing and visibility
+masks preserved. Logical `btr`/`t64` cues share the existing donor players and
+exact approved PCM, with independent saved controls inheriting the previous
+wheeled/generic-tank preference only when no explicit new preference exists.
+No streams, files or players are added. Wrecks and unrelated classes retain
+prior routing; valid donor availability selects reuse before user gain, so Off
+cannot reintroduce a fallback. Track eligibility stays tracked-only.
+
+Read-only Astra challenged an initial flat T-64 group split before build: it
+would have ducked an unchanged M60. Root confirmed and corrected the allocation
+to retain the former max generic request, split only its allocation, and credit
+any independently playing T-72 wave. The actual production-path counterexample
+checks pass; M60/T-55 levels and direct T-72 gain floors are preserved. Final
+bounded advisory review found no blocking defect. Root owns implementation and
+independently verified the coherent actual diff and load-bearing checks.
+
+Focused checks: world1641, mix900, original audio924, limiter33, Play menu491,
+frontdoor85, actual built-app alias/private-bank loader24, native Settings55:
+4153 checks, zero assertion failures, clean engine/script logs. Native Settings
+exercised both new sliders at Off/37/100, captured their readable layout, kept
+the guest frozen at one original sample and used isolated preferences. All680
+sealed incumbent PCM/manifests, original audio/render/camera/ownership code and
+existing saved preferences remained byte-identical. Production static lint is
+clean. Broader test lint retains one existing formatted voice-filename false
+positive and nine existing fixture/style warnings, with no introduced findings.
+A too-restrictive report helper was corrected; it was not a gameplay failure.
+
+Local ARM64 build5c316ea6205c23aea8bf passed payload/dependency and ad-hoc
+signature verification, normal resource import/viewer preflight and actual
+bundled-engine/private-root checks. These establish technical routing and
+Settings behavior, not a new battlefield/device-audio listening or pacing pass.
+The paid recordings remain outside the app in the owner-managed profile/audio
+folder. The previous installed app is retained as a rollback copy. No Web build,
+new purchase, push or public publication occurred. Receipts and captures are in
+`artifacts/engine-reuse-20261105/`. This ledger receipt follows app assembly;
+packaged changed runtime/test scripts match the tested candidate hashes.

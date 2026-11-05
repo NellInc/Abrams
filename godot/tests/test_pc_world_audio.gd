@@ -144,6 +144,7 @@ func run() -> void:
 	await t72_checks(directory,ui,mask)
 	await brdm_checks(ui,mask)
 	await vehicle_engine_checks(ui,mask)
+	await reuse_engine_checks(ui,mask)
 	await flight_checks(ui,mask)
 	await allied_checks(directory,ui,mask)
 	await detail_checks(directory,ui,mask)
@@ -416,8 +417,8 @@ func t72_checks(base_directory: String, ui: Image, mask: Image) -> void:
 	check(World.candidates(data).get(1,{}).get("cue")=="tank" and World.candidates(data,false).get(1,{}).get("cue")=="tank", "legacy one/two-argument classification keeps T72 generic")
 	check(World.candidates(JSON.parse_string(original),true,true).get(1,{}).get("cue")=="t72", "exact JSON moving model119 gets available dedicated T72")
 	for shape: int in World.TANK_SHAPES:
-		check(World.candidates(tank_source(shape),true,true).get(1,{}).get("cue")==("t72" if shape==119 else "t80" if shape==121 else "tank"), "dedicated T72 changes only intact119: "+str(shape))
-		check(World.candidates(tank_source(shape),false,true).get(1,{}).get("cue")==("t72" if shape==119 else "tank"), "T72 availability does not change T80 fallback: "+str(shape))
+		check(World.candidates(tank_source(shape),true,true).get(1,{}).get("cue")==("t72" if shape==119 else "t64" if shape==117 else "t80" if shape==121 else "tank"), "dedicated T72 serves intact119 and approved117 alias: "+str(shape))
+		check(World.candidates(tank_source(shape),false,true).get(1,{}).get("cue")==("t72" if shape==119 else "t64" if shape==117 else "tank"), "T72 availability does not change T80 fallback: "+str(shape))
 	for shape: int in [120,122,123,129,131,159,163]:
 		check(World.candidates(tank_source(shape),true,true)==World.candidates(tank_source(shape),true), "wreck and other class classifications unchanged: "+str(shape))
 	for speed: int in [-32768,-1,1,32767]:
@@ -528,6 +529,81 @@ func t72_checks(base_directory: String, ui: Image, mask: Image) -> void:
 		check(reader._read_bank(directory,"private visible-t72 cue",World.T72_CUES).has("error"), "T72 rejects wrong rate/channels/bit depth even with matching SHA")
 	check(JSON.stringify(data)==original, "T72 eligibility, masks and controls preserve original source")
 
+func reuse_engine_checks(ui: Image, mask: Image) -> void:
+	for spec: Array in [[117,"t64","tank"],[137,"btr","wheeledfallback"]]:
+		var shape: int = spec[0];var cue: String = spec[1]
+		var data: Dictionary = tank_source(shape);var original: String = JSON.stringify(data)
+		var chosen: Dictionary = World.candidates(data,true,true,{},true)
+		check(chosen.get(1,{}).get("cue")==cue,"approved alias uses exact original class: "+cue)
+		check(World.candidates(data).get(1,{}).get("cue")==spec[2],"absent donor retains previous routing: "+cue)
+		check(World.candidates(tank_source(shape+1),true,true,{},true).is_empty(),"alias cannot sound a wreck")
+		for speed: Variant in [-32768,-1,1,32767,0,-32769,32768,0.5,NAN,INF,"10",true]:
+			var changed: Dictionary = data.duplicate(true);changed.world.dynamic[0].speed_raw=speed
+			check((not World.candidates(changed,true,true,{},true).is_empty())==(speed is int and speed in [-32768,-1,1,32767]),"alias preserves exact signed movement gate")
+		for mutation: Dictionary in [{"pointer":123.5},{"pointer":"123"},{"shape_index":shape+0.5},{"dynamic_instance":false}]:
+			var changed: Dictionary = data.duplicate(true);changed.objects[0].merge(mutation,true)
+			check(World.candidates(changed,true,true,{},true).is_empty(),"alias rejects malformed drawn identity")
+		var duplicate: Dictionary = data.duplicate(true);duplicate.world.dynamic.append(duplicate.world.dynamic[0].duplicate())
+		check(World.candidates(duplicate,true,true,{},true).is_empty(),"alias rejects ambiguous original actor")
+		ui.fill(Color.BLACK)
+		var token: Dictionary = {"size":mask.get_size(),"clip":data.camera.clip,"selected":chosen,"ui":ui.get_data()}
+		for flag: int in [0,8]:
+			mask.fill(Color8(1,0,flag));check(World.visible_cues(mask,token)==[cue],"alias uses incumbent owner flags")
+		for colour: Color in [Color8(2,0,8),Color8(1,0,64),Color8(1,0,255),Color8(1,0,8,0),Color.TRANSPARENT]:
+			mask.fill(colour);check(World.visible_cues(mask,token).is_empty(),"hidden/foreign/line/alpha alias stays silent")
+		mask.fill(Color8(2,0,0));px(mask,800,241,Color8(1,0,0));px(mask,835,241,Color8(1,0,8))
+		check(World.visible_cues(mask,token).is_empty(),"alias retains8-source-pixel class witness threshold")
+		px(mask,840,241,Color8(1,0,8));check(World.visible_cues(mask,token)==[cue],"separated same-owner alias pixels qualify")
+		ui.fill(Color.WHITE);token.ui=ui.get_data()
+		check(World.visible_cues(mask,token).is_empty(),"opaque original UI blocks alias")
+		check(JSON.stringify(data)==original,"alias never edits original source")
+	var audio: Node = isolated_audio();audio.recorded_effect_directory=""
+	audio.world_audio.directory="";audio.world_audio.environment_directory="";audio.world_audio.soviet_directory=""
+	for spec: Array in [["t72_directory",World.T72_CUES,"private visible-t72 cue"],["brdm_directory",World.BRDM_CUES,"private visible-brdm cue"],["tank_directory",World.TANK_CUES,"private visible-tank fallback"],["vehicle_directory",World.VEHICLE_CUES,"private visible-vehicle engines"],["detail_directory",World.DETAIL_CUES,"private visible-world detail"]]:
+		var directory: String = output.path_join("reuse-"+spec[0]);bank(directory,spec[1],spec[2]);audio.world_audio.set(spec[0],directory)
+	root.add_child(audio)
+	var world: RefCounted = audio.world_audio
+	check(not world.players.has("btr") and not world.players.has("t64") and not world.streams.has("btr") and not world.streams.has("t64"),"reuse adds no duplicate player/stream/PCM")
+	var clock: Array = [audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)]
+	var nominal: float = 0.65*0.30
+	for pair: Array in [["brdm","btr"],["t72","t64"]]:
+		var donor: String = pair[0];var alias: String = pair[1];var player: AudioStreamPlayer = world.players[donor]
+		world.admitted.assign([donor,alias])
+		for levels: Array in [[100,100],[0,100],[100,0],[40,70],[0,0]]:
+			audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,donor:levels[0],alias:levels[1]})
+			var expected: float = nominal*maxi(levels[0],levels[1])/100.0
+			check(player.playing==(expected>0),"shared alias/donor Off affects only admitted contributions")
+			if expected>0:check(is_equal_approx(db_to_linear(player.volume_db),expected) and player.pitch_scale==1.0,"shared recording uses maximum gain, never sum or altered pitch")
+		check(not world.players.tracks.playing,"both muted leave no track texture")
+		audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,donor:100,alias:100})
+		world.admitted.assign([alias]);world.refresh()
+		check(world.players.tracks.playing==(alias=="t64"),"T64 keeps tracks; wheeled BTR has none")
+		var position: float = player.get_playback_position()
+		world.admitted.assign([donor,alias]);world.refresh();world.admitted.assign([donor]);world.refresh()
+		check(player.playing and player.get_playback_position()>=position,"same waveform handoff never restarts or duplicates the loop")
+		world.admitted.assign([alias]);audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,alias:0})
+		check(not player.playing and not world.players.tank.playing and not world.players.truck.playing,"alias Off never substitutes old donor")
+		audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,alias:100})
+	world.admitted.assign(["tank","t64","m60"]);world.refresh()
+	check(is_equal_approx(db_to_linear(world.players.m60.volume_db),nominal/sqrt(2.0)),"generic/T64 coexistence does not duck unchanged M60")
+	check(is_equal_approx(db_to_linear(world.players.tank.volume_db),nominal/2.0) and is_equal_approx(db_to_linear(world.players.t72.volume_db),nominal/2.0),"only former shared generic allocation is split")
+	world.admitted.assign(["tank","t64","t72"]);world.refresh()
+	check(is_equal_approx(db_to_linear(world.players.tank.volume_db),nominal) and is_equal_approx(db_to_linear(world.players.t72.volume_db),nominal),"direct T72 already covers T64 without paying twice or ducking generic tank")
+	for direct: int in [0,20,60,100]:
+		audio.set_mix({"master":100,"effects":100,"voice":100,"motors":100,"t72":direct})
+		world.admitted.assign(["tank","t64","m60","t72"]);world.refresh()
+		var power: float = 0.0
+		for cue: String in ["tank","t72","m60"]:power+=pow(db_to_linear(world.players[cue].volume_db),2)
+		check(power<=nominal*nominal*(1.0+pow(direct/100.0,2))+0.000001,"reuse retains former generic plus direct-T72 power ceiling")
+		check(db_to_linear(world.players.t72.volume_db)+0.000001>=nominal*direct/100.0,"direct T72 level never ducks")
+		check(is_equal_approx(db_to_linear(world.players.m60.volume_db),nominal/sqrt(2.0)),"unrelated M60 retains its old allocation")
+	check(clock==[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)],"reuse preserves original clocks/events/motor state")
+	audio.set_transport_muted(true);check(world.players.values().all(func(p):return not p.playing),"transport mute silences reused recordings")
+	audio.set_transport_muted(false);check(world.players.values().all(func(p):return not p.playing),"unmute cannot replay stale admission")
+	world.admitted.assign(["btr","t64"]);world.refresh();audio.reset_timeline()
+	check(world.admitted.is_empty() and world.players.values().all(func(p):return not p.playing),"checkpoint/timeline reset clears both aliases")
+	check(await audio.drain_for_shutdown(),"reused donor players drain cleanly");audio.free()
+
 func vehicle_engine_checks(ui: Image, mask: Image) -> void:
 	var directory: String = output.path_join("generated-vehicle-bank")
 	bank(directory,World.VEHICLE_CUES,"private visible-vehicle engines")
@@ -617,7 +693,7 @@ func brdm_checks(ui: Image, mask: Image) -> void:
 		var unchanged: String=JSON.stringify(data)
 		var selected: Dictionary=World.candidates(data,true,false,{},true)
 		var dedicated: bool=shape in World.BRDM_SHAPES
-		check(selected.get(1,{}).get("cue")=="brdm" if dedicated else selected==World.candidates(data),"BRDM availability changes only the intact family: "+str(shape))
+		check(selected.get(1,{}).get("cue")=="brdm" if dedicated else selected.get(1,{}).get("cue")=="btr" if shape==137 else selected==World.candidates(data),"BRDM availability changes only the approved intact family/alias: "+str(shape))
 		if not dedicated: continue
 		check(World.candidates(data).get(1,{}).get("cue")=="wheeledfallback","missing dedicated bank keeps incumbent donor")
 		for speed: Variant in [-32768,-1,1,32767,0,-32769,32768,0.5,NAN,INF,"10",true]:

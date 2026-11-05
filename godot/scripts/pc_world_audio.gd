@@ -14,7 +14,8 @@ const T72_FRAME_COUNT := 627720
 const BRDM_CUES := ["brdm"]
 const BRDM_FRAME_COUNT := 271102
 # Original BRDM-2 and its source-labelled BRDM-3 launcher derivative share
-# this engine recording. Wrecks142/144 and BTR137 retain their old policies.
+# this engine recording. Wrecks142/144 remain excluded. BTR137 reuses it
+# through its own saved-gain alias only when the donor bank validates.
 const BRDM_SHAPES := [141,143]
 const VEHICLE_CUES := ["bmp","m60","t55"]
 const VEHICLE_FRAME_COUNTS := {"bmp":592208,"t55":553389,"m60":577007}
@@ -58,10 +59,10 @@ const ALLIED_SHAPES := {129:"m113", 131:"bradley"}
 # player, so coexistence cannot sum identical waves or restart a live loop.
 const FAMILY_SHAPES := {133:"trackedfallback",135:"trackedfallback",139:"trackedfallback",
 	137:"wheeledfallback",141:"wheeledfallback",143:"wheeledfallback"}
-const CUE_PLAYERS := {"trackedfallback":"m113","wheeledfallback":"truck"}
-const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley", "trackedfallback", "bmp", "m60", "t55"]
+const CUE_PLAYERS := {"trackedfallback":"m113","wheeledfallback":"truck","btr":"brdm","t64":"t72"}
+const GROUND_MOTOR_CUES := ["t80", "t72", "tank", "m113", "bradley", "trackedfallback", "bmp", "m60", "t55", "t64"]
 # Cues whose recording names a vehicle class (and with it often a side).
-const CLASS_CUES := GROUND_MOTOR_CUES + ["truck", "wheeledfallback", "brdm"]
+const CLASS_CUES := GROUND_MOTOR_CUES + ["truck", "wheeledfallback", "brdm", "btr"]
 # Same-owner witnesses must be this far apart (squared source pixels). In the
 # retained all-scenario capture the visible M113s and Bradleys at 3-4 source
 # pixels are one-row grey dashes, and outlines appear in the 8-18 pixel BRDM and
@@ -70,8 +71,8 @@ const CLASS_CUES := GROUND_MOTOR_CUES + ["truck", "wheeledfallback", "brdm"]
 const WITNESS_SQ := 16.0
 const CLASS_WITNESS_SQ := 64.0
 const DETAIL_CUES := ["woodland", "truck", "tracks"]
-const CUES := ["river", "hind", "field", "cow", "t80", "t72", "brdm", "bmp", "m60", "t55", "tank", "m113", "bradley", "woodland", "truck", "tracks", "missileflight", "trackedfallback", "wheeledfallback"]
-const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "brdm":0.30, "bmp":0.30, "m60":0.30, "t55":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04,"missileflight":0.30,"trackedfallback":0.30,"wheeledfallback":0.30}
+const CUES := ["river", "hind", "field", "cow", "t80", "t72", "brdm", "btr", "t64", "bmp", "m60", "t55", "tank", "m113", "bradley", "woodland", "truck", "tracks", "missileflight", "trackedfallback", "wheeledfallback"]
+const CUE_FACTORS := {"river":0.20, "hind":0.30, "field":0.08, "cow":0.80, "t80":0.30, "t72":0.30, "brdm":0.30, "btr":0.30, "t64":0.30, "bmp":0.30, "m60":0.30, "t55":0.30, "tank":0.30, "m113":0.30, "bradley":0.30, "woodland":0.08, "truck":0.30, "tracks":0.04,"missileflight":0.30,"trackedfallback":0.30,"wheeledfallback":0.30}
 const COW_EXPOSURE_FRAMES := 180
 const COW_COOLDOWN_FRAMES := 2400
 var directory: String = PrivateAudio.bank_directory(private_audio_root,"pc-world-effects-v1")
@@ -457,6 +458,8 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t
 			cue = "t80" if dedicated_t80 else "tank"
 		elif dedicated_t72 and moving_tank_candidate(object, actors, 119):
 			cue = "t72"
+		elif dedicated_t72 and moving_tank_candidate(object, actors, 117):
+			cue = "t64" # Approved T72 donor, never an actual T64 recording claim.
 		elif VEHICLE_SHAPES.has(int(object.get("shape_index", -1))) and dedicated_vehicles.has(VEHICLE_SHAPES[int(object.shape_index)]) and moving_vehicle_candidate(object, actors, int(object.shape_index)):
 			cue = VEHICLE_SHAPES[int(object.shape_index)]
 		elif TANK_SHAPES.any(func(shape): return moving_tank_candidate(object, actors, shape)):
@@ -467,6 +470,8 @@ static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t
 			cue = "bradley"
 		elif moving_vehicle_candidate(object, actors, 159):
 			cue = "truck" # Original Truck class, recording make/model unspecified.
+		elif dedicated_brdm and moving_vehicle_candidate(object, actors, 137):
+			cue = "btr" # Approved BRDM donor, original BTR identity/gates retained.
 		elif dedicated_brdm and BRDM_SHAPES.any(func(shape): return moving_vehicle_candidate(object, actors, shape)):
 			cue = "brdm" # Availability, never user gain, chooses the recording.
 		elif FAMILY_SHAPES.has(int(object.get("shape_index", -1))) and moving_vehicle_candidate(object, actors, int(object.shape_index)):
@@ -584,7 +589,7 @@ static func visible_cues(mask: Image, token: Dictionary) -> Array[String]:
 			elif Vector2(witnesses[id]).distance_squared_to(Vector2(x, y)) >= (CLASS_WITNESS_SQ if cue in CLASS_CUES else WITNESS_SQ):
 				found.append(cue)
 				if found.size() == wanted.size(): return found
-	for cue: String in ["field", "t80", "t72", "brdm", "bmp", "m60", "t55", "tank", "m113", "bradley", "woodland", "truck", "trackedfallback", "wheeledfallback"]:
+	for cue: String in ["field", "t80", "t72", "brdm", "btr", "t64", "bmp", "m60", "t55", "tank", "m113", "bradley", "woodland", "truck", "trackedfallback", "wheeledfallback"]:
 		if cue in wanted and cue not in found and narrow_visible(bytes,stride,token,cue): found.append(cue)
 	return found
 
@@ -789,7 +794,15 @@ func refresh() -> void:
 	var gains: Dictionary = {}
 	for cue: String in players:
 		gains[cue] = cue_gain(cue) if cue in admitted else 0.0
+	# T64 previously shared one generic player with other tanks. Preserve that
+	# max request while budgeting M60/T55, then split only its allocation.
+	# Working if: new aliases never duck an unrelated accepted family bed.
+	var t64_gain: float = cue_gain("t64") if "t64" in admitted and players.has("t72") else 0.0
+	var tank_gain: float = float(gains.get("tank",0.0))
+	var generic_gain: float = maxf(tank_gain,t64_gain)
+	gains["tank"] = generic_gain
 	for alias: String in CUE_PLAYERS:
+		if alias == "t64": continue
 		var donor: String = CUE_PLAYERS[alias]
 		if donor in gains and alias in admitted:
 			gains[donor] = maxf(float(gains[donor]),cue_gain(alias))
@@ -803,6 +816,17 @@ func refresh() -> void:
 		if squared > 0:
 			for cue: String in group:
 				if cue in gains: gains[cue] = float(gains[cue]) * peak / sqrt(squared)
+	var generic_allocation: float = float(gains["tank"])
+	var family_scale: float = generic_allocation / generic_gain if generic_gain > 0 else 1.0
+	tank_gain *= family_scale
+	t64_gain *= family_scale
+	var direct_t72: float = float(gains.get("t72",0.0))
+	var requested_power: float = tank_gain * tank_gain + t64_gain * t64_gain
+	# Direct T72 can already cover the alias. Never duck the generic tank to
+	# pay twice for that shared waveform; otherwise retain the old power ceiling.
+	var split: float = minf(1.0,sqrt((generic_allocation * generic_allocation + direct_t72 * direct_t72) / requested_power)) if requested_power > 0 else 1.0
+	gains["tank"] = tank_gain * split
+	if "t72" in gains: gains["t72"] = maxf(direct_t72,t64_gain * split)
 	for cue: String in players:
 		var player: AudioStreamPlayer = players[cue]
 		var gain: float = cue_gain(cue)

@@ -641,3 +641,30 @@ native Settings-only route pass. The latter freezes the guest at one source
 sample and uses isolated settings, so it establishes neither battlefield
 listening nor device-audio pacing. Full evidence is retained under
 `artifacts/three-tank-engines-20261104/`. No Web rebuild or publication occurred.
+
+## Approved BTR-70 and T-64 donor reuse (5 November 2026)
+
+Nell approved using the existing BRDM-2 recording for BTR-70 shape137 and the
+existing T-72 recording for T-64 shape117. These are documented substitutes,
+with no claim that either is a newly obtained exact-model field recording.
+No PCM, bank manifest, mastering, source pitch or loop bounds change.
+
+Native logical cues `btr` and `t64` route to the existing `brdm` and `t72`
+players. No additional stream or player is created. Independent saved controls
+inherit the prior wheeled-family and generic-tank levels respectively, only
+when no explicit new value exists. Off never selects another recording. Missing
+or invalid donor banks retain the former truck/generic-tank routing.
+
+Shared donor and alias owners request a maximum rather than summing the same
+waveform, and handoffs retain playback position. The BTR stays in the existing
+wheeled coefficient budget and never starts tracks. T-64 keeps tracked-vehicle
+eligibility. Its former generic-tank allocation is preserved before splitting
+between generic/T-64 requests and merging into T-72. Unchanged M60/T-55 levels
+and independently admitted T-72 levels are retained, with the former total
+squared-gain ceiling. Source-class identity, signed nonzero movement, current
+frame, separated same-owner pixels, original UI masking and timeline/mute gates
+remain unchanged. Only the two intact requested classes receive the aliases.
+
+Focused verification and native app assembly/install receipts are retained in
+`artifacts/engine-reuse-20261105/`. Paid media remains in the owner-managed
+external audio root and outside the app, Git and public Web payloads.
