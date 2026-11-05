@@ -10576,3 +10576,32 @@ changed runtime/test scripts match the tested prepared app. This ledger receipt
 follows app assembly. No Web build, push or public publication occurred.
 Receipts, source seals, component approval and final capture are retained in
 artifacts/sonic-polish-20261105/.
+
+### 5 November: processed engine rejected, recorded engine restored
+
+Nell rejected the reconstructed engine in the final game mix. Its earlier
+component approval does not override that later judgment. The processed engine
+was removed from the active optional bank and loader, restoring the exact
+previous recorded master. The good shell impact is unchanged; hull/debris stay
+fully removed. The optional bank now publishes only impact and cannot replace
+an engine. Rejected audio and its matching app are preserved as recoverable
+copies, not installed as active content. Improving the engine remains open;
+restoring the previous recording does not claim to solve the earlier pulse.
+
+Focused rollback checks passed: polish42, mix900, source924, limiter33,
+real-bank14, bundled staging14 and installed-profile14, zero errors. A bounded
+original-core background capture passed1712frames,128events and3426motor checks;
+its post-limiter peak is-6.84dBTP with no clipped samples. These are functional
+Dummy-driver/mix checks, not a perceptual or device-audio acceptance claim.
+All760 sealed incumbent media/source/preference files remained unchanged, as did
+original event/motor/timeline functions and viewer/mask paths. Static lint is
+clean. Private recording character previews use only cuts, mono conversion and
+static gain, with no spectral reconstruction, envelope processing or loop edit.
+
+Local app31d7d065916161835625 passed payload/ad-hoc signature, normal import,
+viewer preflight and actual bundled/installed audio checks. The inactive app
+and both owner-managed audio directories were replaced with rollback copies
+retained. Current shell PCM is hash-identical to Nell's approval. No Web build,
+new purchase, push or public publication occurred. Receipts are retained in
+artifacts/sonic-polish-20261105/engine-rejection/. This receipt follows assembly;
+changed packaged runtime/test bytes match the tested source candidate.

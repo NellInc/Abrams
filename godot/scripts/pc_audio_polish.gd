@@ -1,7 +1,7 @@
 extends RefCounted
-## Accepted private engine and shell impact only. No extra detail players.
+## Accepted private shell impact only. Engine stays on its earlier recording.
 const PrivateAudio = preload("res://scripts/pc_private_audio.gd")
-const FRAMES := {"impact":134400,"engine":768000}
+const FRAMES := {"impact":134400}
 var directory: String = PrivateAudio.bank_directory(PrivateAudio.root_directory(),"pc-restrained-polish-v1")
 var streams: Dictionary = {}
 var failure: String = ""
@@ -28,19 +28,17 @@ func setup(host: Node) -> void:
 		if not entry is Dictionary or entry.get("file")!=cue+".wav" or not entry.get("sha256") is String:
 			failure="invalid entry"; return
 		path=directory.path_join(cue+".wav")
-		var limit: int = 2097152 if cue=="engine" else 1048576
-		if not FileAccess.file_exists(path) or FileAccess.get_size(path)>limit or FileAccess.get_sha256(path)!=entry.sha256:
+		if not FileAccess.file_exists(path) or FileAccess.get_size(path)>1048576 or FileAccess.get_sha256(path)!=entry.sha256:
 			failure="missing or changed PCM"; return
 		var stream: AudioStreamWAV = AudioStreamWAV.load_from_file(path)
 		if stream==null or stream.format!=AudioStreamWAV.FORMAT_16_BITS or stream.mix_rate!=48000 or stream.stereo or stream.data.size()!=int(FRAMES[cue])*2:
 			failure="invalid PCM format/duration"; return
-		stream.loop_mode=AudioStreamWAV.LOOP_FORWARD if cue=="engine" else AudioStreamWAV.LOOP_DISABLED
+		stream.loop_mode=AudioStreamWAV.LOOP_DISABLED
 		stream.loop_begin=0; stream.loop_end=int(FRAMES[cue])
 		pending[cue]=stream
-	# Working if: a bad final file leaves both incumbent streams intact;
-	# accepted sounds use the existing players and original event/loop controls.
+	# Working if: invalid content leaves the incumbent impact intact, and
+	# this bank cannot replace or add engine, hull or debris streams/players.
 	streams=pending
-	host.engine.stream=streams.engine
 
 func release() -> void:
 	streams.clear()
