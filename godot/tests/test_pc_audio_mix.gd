@@ -167,8 +167,10 @@ func supplemental_source_controls() -> void:
 	if not detail_fixture(folder): return
 	var audio: Node=detail_audio(folder)
 	var detail: RefCounted=audio.supplemental
-	check(detail.failure.is_empty() and detail.streams.size()==7 and detail.players.size()==7,"valid optional supplemental bank publishes exactly seven independent players")
+	check(detail.failure.is_empty() and detail.streams.size()==7 and detail.players.size()==6,"historical seven-cue bank retains only six playable detail cues")
 	for cue: String in Audio.SupplementalAudio.CUES:
+		if cue=="debris":
+			check(not detail.players.has(cue),"debris has no playback node at all"); continue
 		var player: AudioStreamPlayer=detail.players[cue]
 		check(player.bus==audio.presentation_bus and player.stream.mix_rate==48000 and player.stream.format==AudioStreamWAV.FORMAT_16_BITS and not player.stream.stereo and player.stream.loop_end==4800 and player.stream.loop_mode==(AudioStreamWAV.LOOP_FORWARD if cue=="fire" else AudioStreamWAV.LOOP_DISABLED),"supplemental exact format, loop mode and incumbent limiter: "+cue)
 	var menu: MenuBar=Menu.new();menu.config_path="";menu.audio=audio;root.add_child(menu)
@@ -177,19 +179,23 @@ func supplemental_source_controls() -> void:
 		id+=1
 		var source: Dictionary=JSON.parse_string(JSON.stringify(detail_packet(10+id,id,[detail_event(audio,cue,id,10+id)])))
 		var original: String=JSON.stringify(source)
-		check(audio.apply_audio(source) and detail.starts.get(cue,0)==1 and detail.players[cue].playing,"complete source-qualified event adds one detail start: "+cue)
+		var accepted: bool = audio.apply_audio(source)
+		var expected: int = 0 if cue=="debris" else 1
+		var playing: bool = not detail.players.has(cue) if cue=="debris" else detail.players[cue].playing
+		check(accepted and detail.starts.get(cue,0)==expected and playing,"qualified event preserves accepted detail and excludes all debris: "+cue)
 		var delivered: int=audio.delivered
-		check(audio.apply_audio(source) and detail.starts.get(cue,0)==1 and audio.delivered==delivered,"repeated source identity cannot replay supplemental detail: "+cue)
+		check(audio.apply_audio(source) and detail.starts.get(cue,0)==expected and audio.delivered==delivered,"repeated source identity cannot replay supplemental detail: "+cue)
 		check(JSON.stringify(source)==original,"supplemental dispatch never mutates source envelope: "+cue)
 	check(audio.delivered==6 and audio.cursor==2 and audio.last_voice=="smoke" and audio.engine.playing and audio.turret.playing,"detail leaves original effect/crew delivery, cadence and loops intact")
 	detail.play("fire")
 	var sequence: Array=[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)]
 	menu.choose("foley",0)
-	check(not detail.players.reload.playing and not detail.players.debris.playing and not detail.players.pressure.playing and detail.players.ui_accept.playing and detail.players.ui_back.playing and detail.players.ui_error.playing and detail.players.fire.playing,"Mechanical detail Off stops only reload/debris/pressure immediately")
+	check(not detail.players.reload.playing and not detail.players.pressure.playing and detail.players.ui_accept.playing and detail.players.ui_back.playing and detail.players.ui_error.playing and detail.players.fire.playing,"Mechanical detail Off stops only reload/pressure immediately")
 	check(audio.effects.any(func(player):return player.playing) and audio.voice.playing and audio.engine.playing,"detail mute never cuts original effects, crew or motor")
 	menu.choose("foley",40)
-	check(not detail.players.reload.playing and not detail.players.debris.playing and not detail.players.pressure.playing,"mechanical unmute cannot replay consumed one-shots")
-	gain(detail.players.debris,0.65*0.12*0.4,"Mechanical detail gain multiplies impact debris only")
+	check(not detail.players.reload.playing and not detail.players.pressure.playing,"mechanical unmute cannot replay consumed one-shots")
+	detail.play("debris")
+	check(not detail.players.has("debris") and not detail.starts.has("debris"),"direct calls and gain changes cannot reintroduce debris")
 	gain(detail.players.pressure,0.65*0.10*0.4,"Mechanical detail gain multiplies smoke pressure only")
 	check(sequence==[audio.last_frame,audio.epoch,audio.last_event_id,audio.delivered,audio.current_loops.duplicate(true)],"detail controls never advance original source clocks or events")
 	check(audio.apply_audio(detail_packet(20,7,[detail_event(audio,"reload",7,20)])),"fresh readiness after detail gain change accepted")

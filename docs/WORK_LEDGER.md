@@ -10537,3 +10537,42 @@ folder. The previous installed app is retained as a rollback copy. No Web build,
 new purchase, push or public publication occurred. Receipts and captures are in
 `artifacts/engine-reuse-20261105/`. This ledger receipt follows app assembly;
 packaged changed runtime/test scripts match the tested candidate hashes.
+
+## 5 November 2026: accepted steady engine and shell impact, grinding removed
+
+Nell approved the longer steady engine and stronger shell ding/explosion, then
+explicitly removed hull and debris because the grinding was annoying. The final
+optional private bank contains only the exact accepted engine (16-second PCM)
+and impact (2.8-second one-shot). The existing engine player and original effect
+pool use them directly. No hull player, movement observer, scatter dispatcher,
+or extra event/clock remains. Debris has no supplemental playback node and no
+source/direct-call route, including with a historical seven-file bank present.
+Previous media remain recoverable, outside public Git and app payloads. The
+free Bluezone component is attributed in NOTICE.md; no purchase occurred.
+
+Original event dispatch, motor period/amplitude, mute/transport, save/restore and
+loop-control functions are byte-identical to the delivered source. The viewer,
+renderer, camera and ownership/mask paths are unchanged. All760 sealed incumbent
+PCM/manifests/source/preference files remained byte-identical. Existing saved
+levels, crew, music, world/environment audio and the shared limiter are retained.
+
+Focused checks: polish43, mix900, original audio924, limiter33, world1642,
+Play menu491, frontdoor85, actual approved-bank16 and actual bundled-app bank16:
+4150 checks, zero assertion failures. Original-core capture also passed1712
+frames,128events,3426source-loop checks and3visible readiness checks. Its35.016s
+post-limiter stereo PCM has true peak-3.97dBTP and zero clipped samples. This is
+background headless original-core/production-mixer proof, not a device-audio,
+window-focus or performance claim. Component listening is accepted; the final
+combined crew/balance listening question is pending. An initial new fixture
+omitted the reset envelope's acknowledged sequence; it was corrected, without
+changing the production gate, and passed on rerun.
+
+Local ARM64 app4aad7ec509f6a1a9a9a6 passed payload/dependency and ad-hoc signature
+verification, normal resource import, viewer preflight and actual bundled-engine
+owner-profile audio checks. It is installed in /Applications with the previous
+app retained as a rollback copy. Only two private derivatives were atomically
+provisioned in the owner profile and checkout; no paid audio is packaged. All
+changed runtime/test scripts match the tested prepared app. This ledger receipt
+follows app assembly. No Web build, push or public publication occurred.
+Receipts, source seals, component approval and final capture are retained in
+artifacts/sonic-polish-20261105/.

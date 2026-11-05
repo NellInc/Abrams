@@ -45,6 +45,8 @@ func setup(owner: Node) -> void:
 	streams = pending
 	warning_voices = JSON.parse_string(FileAccess.get_file_as_string("res://data/pc_warning_voice_script.json")).cues
 	for cue: String in CUES:
+		# Retain the historical bank for recovery, never allocate debris audio.
+		if cue=="debris": continue
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
 		host.add_child(player); player.bus = host.presentation_bus; player.stream = streams[cue]
 		players[cue] = player
@@ -74,8 +76,8 @@ func observe_event(event: Dictionary) -> void:
 		if event.get("voice") == "pc_radio_complete": play("ui_accept")
 		elif event.get("voice") == "pc_radio_abort": play("ui_back")
 	elif event.kind == "sound":
-		if event.get("sample") == "impact": play("debris")
-		elif event.get("sample") == "smoke": play("pressure")
+		# Nell removed debris entirely. Original impact playback stays intact.
+		if event.get("sample") == "smoke": play("pressure")
 
 func begin_packet() -> void:
 	fire_visible = false

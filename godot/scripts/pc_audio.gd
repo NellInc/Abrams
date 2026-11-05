@@ -75,6 +75,8 @@ const WorldAudio = preload("res://scripts/pc_world_audio.gd")
 var world_audio = WorldAudio.new()
 const SupplementalAudio = preload("res://scripts/pc_supplemental_audio.gd")
 var supplemental = SupplementalAudio.new()
+const AudioPolish = preload("res://scripts/pc_audio_polish.gd")
+var polish = AudioPolish.new()
 
 func _recorded_effect_error(reason:String) -> bool:
 	if recorded_effect_failure.is_empty():
@@ -117,6 +119,7 @@ func _prewarm_recorded_effects() -> bool:
 	return true
 
 func get_stream(cue:String) -> AudioStream:
+	if polish.streams.has(cue): return polish.streams[cue]
 	return recorded_effect_streams[cue] if recorded_effect_streams.has(cue) else super.get_stream(cue)
 
 func _create_presentation_bus() -> void:
@@ -194,6 +197,7 @@ func _ready() -> void:
 	_create_presentation_bus()
 	world_audio.setup(self)
 	supplemental.setup(self)
+	polish.setup(self)
 	set_mix(mix)
 	# Verify and decode local frontend music before the first frontend frame.
 	var independent_bank:=SunoMusic.new()
@@ -397,6 +401,7 @@ func speak(cue: String) -> void:
 func release_streams() -> void:
 	world_audio.release()
 	supplemental.release()
+	polish.release()
 	super.release_streams()
 	if is_instance_valid(turret): turret.stream = null
 	if is_instance_valid(music): music.stream=null

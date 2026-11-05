@@ -31,10 +31,14 @@ func start() -> void:
 	output = args[args.find("--output")+1] if "--output" in args else directory.path_join("artifacts/pc-audio-native")
 	DirAccess.make_dir_recursive_absolute(output)
 	audio = PcAudio.new()
+	if "--polish-bank" in args: audio.polish.directory=args[args.find("--polish-bank")+1]
 	root.add_child(audio)
+	if "--polish-bank" in args and audio.polish.streams.size()!=2: errors.append("Explicit accepted two-cue polish bank is not active")
 	for name in ["engine","turret"]:
 		loop_frames[name] = audio[name].stream.loop_end
-		if int(loop_frames[name]) != 96000: errors.append("Compressed WAV loop has wrong sample-frame endpoint")
+		var expected: int = audio.polish.FRAMES.engine if name=="engine" and audio.polish.streams.has("engine") else 96000
+		if int(loop_frames[name]) != expected: errors.append("WAV loop has wrong sample-frame endpoint")
+		if name=="engine" and audio.polish.streams.has("engine") and audio.engine.stream!=audio.polish.streams.engine: errors.append("Active long engine bank does not own original loop player")
 	var steps := [[30,[]],[3,["f4"]],[30,[]],[60,["kp8"]],[60,[]],[3,["kp5"]],[240,[]],
 		[3,["f1"]],[60,[]],[3,["c"]],[30,[]],[60,["kp6"]],[30,[]],[3,["kp5"]],[90,[]],
 		[3,["space"]],[300,[]],
