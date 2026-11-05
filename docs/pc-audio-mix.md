@@ -618,10 +618,10 @@ The new optional `pc-vehicle-engines-v1` bank validates all three files atomical
 Fixed loop lengths are BMP592208, M60577007 and T55553389 frames, 48kHz mono16.
 Local numerical steady-section and splice selection retains their natural engine
 texture, uses only a short circular crossfade and static loudness matching to
-approximately -25LUFS, and leaves all other accepted masters unchanged. Edited
-loop listening is still unreviewed; numerical seam metrics do not establish
-subjective cleanliness. Three-wrap private previews and the reproducible recipe
-are retained beside the acquisition evidence.
+approximately -25LUFS, and leaves all other accepted masters unchanged. Nell
+approved all three repeated-loop previews on 5 November 2026 and requested that
+the loops and current levels be retained. Three-wrap private previews and the
+reproducible recipe are retained beside the acquisition evidence.
 
 Availability chooses a dedicated recording before gain is applied. Missing or
 invalid new media retains the prior donors; a dedicated control set to Off never

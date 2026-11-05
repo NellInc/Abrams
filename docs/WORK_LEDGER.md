@@ -10459,7 +10459,8 @@ BMP-1 exterior10858818, M60A3 idle10967039 and T-55 rear idle10868536. Dedicated
 BMP-1/2 and M60A3 routing is installed; the T-55 is explicitly the agreed T-62
 substitute. T-64, BTR and ACRV donor policies are unchanged. The three masters
 are48k mono16, approximately-25LUFS, with exact loop frames and private provenance.
-Numerical loop continuity is checked; human review of these edits remains open.
+Numerical loop continuity is checked. Listening review was pending at assembly
+and was accepted by Nell on 5 November 2026, with the loops and levels retained.
 
 Implementation is restricted to the world-audio loader/routing/gain split,
 private-bank allowlist and saved individual controls. New controls inherit saved
@@ -10488,3 +10489,11 @@ checks, build and installation receipts are in
 as a recoverable backup. No new purchase, Web build, push or publication is part
 of this pass. Documentation here was recorded after app assembly; the packaged
 runtime scripts and tested prepared version match the implemented candidate.
+
+### 5 November: three engine loops accepted
+
+Nell heard all three repeated-loop previews and approved the exact masters and
+current levels. Installed BMP, M60A3 and T-55 donor WAV hashes were rechecked
+against the approved masters. No PCM, gain, runtime, settings or app changes
+were made. Acceptance is recorded in the private integration state and
+`artifacts/three-tank-engines-20261104/loop-acceptance-20261105.json`.
