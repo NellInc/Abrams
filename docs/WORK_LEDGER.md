@@ -10605,3 +10605,39 @@ retained. Current shell PCM is hash-identical to Nell's approval. No Web build,
 new purchase, push or public publication occurred. Receipts are retained in
 artifacts/sonic-polish-20261105/engine-rejection/. This receipt follows assembly;
 changed packaged runtime/test bytes match the tested source candidate.
+
+### 6 November: selected one-second onboard engine integrated
+
+Nell preferred the second bass-pulse-softened audition and requested integration
+and a rebuilt app. The exact selected 48,000-frame onboard engine is now active
+in both owner-managed private banks, beside the unchanged approved shell impact.
+The strict optional loader validates both parent PCM bindings, filenames, SHA,
+48 kHz mono16 format and exact lengths before publishing either stream. It reuses
+the original engine player and impact pool. Hull/debris remain entirely absent
+from playback. The rejected reconstruction and previous app/banks stay recoverable.
+No licensed audio is added to public Git or the app bundle.
+
+Original event dispatch, period/amplitude throttle control, mute/transport and
+save/restore functions remain byte-identical to the delivered source. The viewer
+and all original camera/visibility/ownership paths are unchanged. All760 sealed
+incumbent files remain identical. The newer359-file seal differs only at the four
+planned polish manifest/provenance files; the shell PCM is hash-identical. Other
+accepted motors, environment, crew, music, saved gains and limiter remain intact.
+
+Focused checks passed: polish75, mix900, original audio924, limiter33, actual
+approved-bank16, bundled-app16 and installed-profile16, total1980 with zero
+assertion failures. Background original-core playback passed1712frames,128events,
+3426source-loop checks and the original four motor periods. Its43.839s post-limiter
+capture has true peak-6.84dBTP and zero clipped samples. These are functional
+headless Dummy-driver proofs, separate from device audio, OS focus and pacing.
+The engine component is human-selected; no additional human combined-mix judgment
+or perfect perceptual pulse-elimination claim is manufactured.
+
+ARM64 app9de1d783e801ca615efc is rebuilt and installed in /Applications. It passed
+payload/dependency and ad-hoc signature verification, normal resource import,
+viewer parse and actual bundled/default-profile audio loading. The inactive
+installed app and both private banks were replaced in a rollback-protected rename
+transaction, with old copies retained. Changed packaged runtime/test bytes match
+the qualified source. This ledger entry follows app assembly. No Web rebuild,
+new purchase, push, notarized release or public publication occurred. Receipts:
+artifacts/onboard-engine-20261106/delivery/.

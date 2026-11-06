@@ -1,7 +1,7 @@
 extends RefCounted
-## Accepted private shell impact only. Engine stays on its earlier recording.
+## Accepted one-second onboard engine and shell impact. No extra players.
 const PrivateAudio = preload("res://scripts/pc_private_audio.gd")
-const FRAMES := {"impact":134400}
+const FRAMES := {"impact":134400,"engine":48000}
 var directory: String = PrivateAudio.bank_directory(PrivateAudio.root_directory(),"pc-restrained-polish-v1")
 var streams: Dictionary = {}
 var failure: String = ""
@@ -33,12 +33,13 @@ func setup(host: Node) -> void:
 		var stream: AudioStreamWAV = AudioStreamWAV.load_from_file(path)
 		if stream==null or stream.format!=AudioStreamWAV.FORMAT_16_BITS or stream.mix_rate!=48000 or stream.stereo or stream.data.size()!=int(FRAMES[cue])*2:
 			failure="invalid PCM format/duration"; return
-		stream.loop_mode=AudioStreamWAV.LOOP_DISABLED
+		stream.loop_mode=AudioStreamWAV.LOOP_FORWARD if cue=="engine" else AudioStreamWAV.LOOP_DISABLED
 		stream.loop_begin=0; stream.loop_end=int(FRAMES[cue])
 		pending[cue]=stream
-	# Working if: invalid content leaves the incumbent impact intact, and
-	# this bank cannot replace or add engine, hull or debris streams/players.
+	# Working if: a bad final file leaves both incumbent streams intact;
+	# accepted timbres retain original players, source gates and throttle rules.
 	streams=pending
+	host.engine.stream=streams.engine
 
 func release() -> void:
 	streams.clear()

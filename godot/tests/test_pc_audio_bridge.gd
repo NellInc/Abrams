@@ -33,10 +33,12 @@ func start() -> void:
 	audio = PcAudio.new()
 	if "--polish-bank" in args: audio.polish.directory=args[args.find("--polish-bank")+1]
 	root.add_child(audio)
-	if "--polish-bank" in args and audio.polish.streams.size()!=1: errors.append("Explicit accepted shell-only polish bank is not active")
+	if "--polish-bank" in args and audio.polish.streams.size()!=2: errors.append("Explicit accepted engine/impact bank is not active")
 	for name in ["engine","turret"]:
 		loop_frames[name] = audio[name].stream.loop_end
-		if int(loop_frames[name]) != 96000: errors.append("Original recorded motor has wrong sample-frame endpoint")
+		var expected: int = audio.polish.FRAMES.engine if name=="engine" and audio.polish.streams.has("engine") else 96000
+		if int(loop_frames[name]) != expected: errors.append("Source motor has wrong presentation sample endpoint")
+		if name=="engine" and audio.polish.streams.has("engine") and audio.engine.stream!=audio.polish.streams.engine: errors.append("Accepted onboard engine is not on the original player")
 	var steps := [[30,[]],[3,["f4"]],[30,[]],[60,["kp8"]],[60,[]],[3,["kp5"]],[240,[]],
 		[3,["f1"]],[60,[]],[3,["c"]],[30,[]],[60,["kp6"]],[30,[]],[3,["kp5"]],[90,[]],
 		[3,["space"]],[300,[]],
