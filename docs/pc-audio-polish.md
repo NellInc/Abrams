@@ -38,3 +38,12 @@ and source amplitude changes, exact approved hashes, mute/checkpoint controls,
 source/mix/limiter tests, original-core background playback and actual bundled
 renderer/profile loading. Headless Dummy-driver capture is functional mixer
 proof, separate from device audio, OS focus, healthy-host pacing and human hearing.
+
+On 6 November, Nell also selected both revised ready and firing cues. The existing
+private banks now supply the revised cannon report (115,200 frames) and mechanical
+ready closure (10,080 frames). The original visible-READY event still owns the
+closure and unchanged “Up!” voice. Cannon dispatch, onset, duration, gain and the
+single-shot policy stay unchanged. Both revisions reuse owned/free materials;
+no new purchase or recording claim is made. Exact approved engine and shell
+impact files remain active, with hull/debris off. This data-only update uses the
+existing installed app loader; no app or Web rebuild is required.

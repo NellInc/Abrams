@@ -10641,3 +10641,39 @@ transaction, with old copies retained. Changed packaged runtime/test bytes match
 the qualified source. This ledger entry follows app assembly. No Web rebuild,
 new purchase, push, notarized release or public publication occurred. Receipts:
 artifacts/onboard-engine-20261106/delivery/.
+
+### 6 November: revised shell-ready and cannon report selected and installed
+
+Nell selected “Both revised” after the matched comparison and original-core game
+preview. The exact selected cannon (115,200 frames) and mechanical ready closure
+(10,080 frames) are installed in both checkout and installed-app private banks.
+Only their PCM, manifest SHA entries and provenance changed. Other files in the
+564- and760-file seals remain unchanged. Exact accepted engine and good shell
+impact hashes are preserved. Hull/debris remain absent from playback; crew,
+source periods/amplitudes, gains, original triggers/clocks and masks are unchanged.
+The ready cue still follows paired visible READY evidence, alongside the original
+“Up!” voice. No new player, event, early warning or positional cue is added.
+
+Actual installed-app renderer/prepared code passed21 staging and21 default owner-
+profile checks, zero audio assertion errors. Positive checks verify selected PCM,
+fixed duration/one-shot policy, existing player/bus/gain, once-only firing/ready,
+source packet immutability, original mute gates and shutdown. The preceding
+original-core candidate capture passed1712frames,3426loop checks,3shots/3ready
+cues,1smoke and1good impact. All original shot, ready and smoke frame numbers
+match the earlier route; smoke leaves the engine active. Human selection and
+background Dummy-driver technical proof remain separate from device/pacing claims.
+
+The prior ten-second silence was the deliberate F5 off/on test. The shorter gap
+was pause/resume. Both production gates remain intact. A first listening-only
+route removed pause, altered shot chronology and missed its expected impact; it
+was rejected as complete-mix evidence. Keeping the ordinary pause restored the
+original chronology and passed. The listening copy removes only exact-zero setup
+and pause spans, with raw capture retained. macOS CA-query and corrected meter-
+parser diagnostics remain in the artifacts; no audio test failure is concealed.
+
+App9de1d783e801ca615efc remains unchanged and signature-verified. Existing private
+loaders support these exact-format replacements, so rebuilding the app is
+unnecessary. Both destination bank pairs were rechecked inactive and promoted
+with rollback copies retained. No licensed media entered Git/app payloads; no
+Web build, new spending, push or public publication occurred. Full receipts:
+artifacts/ready-fire-20261106/delivery/. This entry follows the installed-bank check.
