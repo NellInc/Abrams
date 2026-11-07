@@ -1,5 +1,29 @@
 # Finish Abrams: ordered execution plan
 
+## Active all-platform publication, 7 November 2026
+
+Nell: "All of it please, let's package up a release for the website/web etc,
+all platforms." Publish Alpha9 through the established NellInc/Abrams GitHub
+release and abramsremastered.com GitHub Pages destinations: macOS ARM64,
+Windows/Linux x86_64 and Web. This releases the local-only publication and Apple
+submission restrictions for this update. Sign/notarize/staple Mac, use the
+existing private original-free input draft and native CI workflow for ports,
+verify downloaded assets/source/checksums, then update and verify served site
+bytes. Retain previous releases and player profiles. No private recordings,
+original game inputs or unrelated material may be published.
+
+Performance benchmarks, lengthy mission automation and other-chat coordination
+remain held. Do not run the unfiltered default gate: legacy mixed functional
+harnesses embed timing loops. Reuse the preceding 106 functional check results
+and 1,071 passing Python tests/two skips for unchanged production code; run
+version/package/source/publication checks for this release-only delta. Browser
+UI availability and target-OS graphics/audio evidence remain explicit limits,
+not grounds to bypass disabled browser access or fabricate device acceptance.
+
+Working if all four editions have a coherent Alpha9 identity, released bytes
+match verified artifacts, Mac is actually notarized, website links resolve to
+those assets, and no performance or natural campaign completion claim is added.
+
 ## Current bounded RC disposition, 7 November 2026
 
 Nell subsequently authorised final acceptance and local release-candidate

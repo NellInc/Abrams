@@ -18,8 +18,8 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = '0.1.0-alpha.8'
-BUNDLE_VERSION = '34'
+VERSION = '0.1.0-alpha.9'
+BUNDLE_VERSION = '35'
 APP_NAME = 'M1 Abrams Battle Tank Fan Remaster'
 REPOSITORY = 'https://github.com/NellInc/Abrams'
 sys.path.insert(0, str(ROOT))
