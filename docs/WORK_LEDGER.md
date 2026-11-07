@@ -10740,3 +10740,56 @@ remain explicitly separate from this completed code-level task.
 Working if each fixture row records its own expected station cockpit, duplicate
 or missing pairs fail the gate, and code/fixture coverage never inflates natural
 mission wins or performance acceptance.
+
+## 2026-11-07: Bounded final acceptance and local RC preparation
+
+Nell authorised the final acceptance pass and local candidate preparation while
+holding performance benchmarks, lengthy mission automation and other-chat
+coordination. Production source is clean commit `3f92031`; the only new code
+change is registration of the existing audio-polish harness in tools/validate.sh.
+The omission caused the initial full suite failure. Its focused 16 gate tests
+and 75 audio checks passed, then the corrected suite passed 1,071 of 1,073 Python
+tests with two explicit skips (portable-core opt-in and duplicate oracle wrapper).
+
+Produced with this chat's input; ROOT ran and inspected the checks and captures.
+The separate signed Mac build `4785f6dd77a6a1d59878` passed actual frozen import,
+normal cold Play, 88 frontdoor checks, 218 save/load/undo/graphics/input/RAM/video
+checks, optional Genesis import and cold cupola Play. The first custom UI launch
+omitted resource import; the first save harness invocation wrongly disabled its
+required audio object. Corrected production-startup/audio-enabled runs passed.
+No production fix was inferred from those invalid harness configurations.
+
+Bundled-renderer Tactical lighting passed 19 GPU checks. Effect modes passed
+19,930,842 checks, including 19,326,976 native pixel comparisons. ROOT inspected
+actual compact cover, Settings and driver frames. This proves no new natural
+mission win, eight-win campaign, human hearing judgement or sustained frame rate.
+
+The default aggregate unexpectedly includes embedded CPU microtiming loops in
+functional harnesses. They ran before ROOT identified this hold violation. ROOT
+apologised, excluded those samples from acceptance and stopped only the freshly
+verified task-owned Godot child `81812` (intro art), leaving controllers, shells and
+foreign jobs unsignalled. The aggregate exited 143, deliberately not green. Its
+interrupted intro check and remaining non-timing checks passed through the same
+listed commands. Typography and cow-visibility mixed timing harnesses remain
+held. No standalone FPS/endurance/soak benchmark or further timing harness ran.
+
+The Mac app passed post-runtime integrity, no embedded original fingerprints,
+no external non-system dylibs and archive CRC. All 1,497 ZIP payload entries equal
+the signed app. The exact signed core's corresponding source archive passed its
+source inventory. A separate Web export passed all 60 file hashes, six served-byte
+checks and COOP/COEP headers. Browser UI was blocked by disabled local-browser
+access; no alternative UI path bypassed that setting. The temporary local server
+was closed through its owning session. No active QA jobs remain at disposition.
+
+Prepared Mac/Web archives, original-free portable build inputs, corresponding
+core source, SHA256SUMS.txt and RC-STATUS.json under
+builds/release-candidate-20261107/final. Current RC remains local, signed but not
+newly notarized, with no push/upload/deployment or installed-app replacement.
+Windows/Linux native builds and interactive device checks are not claimed.
+Evidence: artifacts/release-candidate-20261107, including final results, corrected
+completion logs, archive-integrity.json and acceptance-disposition.json. All prior
+mission runs and prepared long-route inputs remain held and untouched.
+
+Working if every acceptance claim traces to the actual candidate or a named
+unchanged-source fixture, delivered bytes match their checksums, and performance,
+device/browser limits and invalid runs remain explicit.

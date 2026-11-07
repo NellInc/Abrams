@@ -1,5 +1,28 @@
 # Finish Abrams: ordered execution plan
 
+## Current bounded RC disposition, 7 November 2026
+
+Nell subsequently authorised final acceptance and local release-candidate
+preparation. That bounded pass is complete: source `3f92031`, Developer ID signed
+Mac build `4785f6dd77a6a1d59878`, 88 frontend checks, 218 save/resume/graphics checks,
+PC-only and optional-Genesis cold playback, GPU lighting/FX and exact archive
+integrity. The Python suite passed 1,071 tests with two skips. Fixed the existing
+missing audio-polish gate registration. The default aggregate was deliberately
+stopped when embedded timing samplers were identified; all remaining functional
+checks passed separately, while typography/cow-visibility timing harnesses remain
+held. Earlier inadvertent CPU microtimings are excluded from performance proof.
+
+Candidate archives, original-free portable inputs, matching core source,
+SHA256SUMS.txt and RC-STATUS.json are in builds/release-candidate-20261107/final.
+No performance, endurance, soak, lengthy mission automation, cross-chat messages,
+public release, Apple submission or installed-player-app replacement is active.
+Web bytes/hashes/headers pass; browser UI is blocked by disabled Work browser
+access. New Windows/Linux native binaries/device QA and new notarization are not
+claimed. Preserve these limits; do not resume historical gameplay steps below.
+
+Working if the RC is described as local with its exact build/commit and stated
+holds, and no interrupted aggregate or unavailable target is reported as green.
+
 ## Current scope override, 7 November 2026
 
 Nell changed the requested work to: "Just check this stuff in the code please,

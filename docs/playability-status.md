@@ -5,6 +5,54 @@ Godot renders the supported high-resolution layers and plays event-driven audio.
 The authored calibration range is separate. An earlier non-Modern completion pass passed its local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
+## Local release candidate, 7 November 2026
+
+Prepared from clean source `3f92031`. The separate Apple Silicon macOS app is
+Developer ID signed with hardened runtime and secure timestamps, build
+`4785f6dd77a6a1d59878`. Its original-free payload and native dependencies passed
+verification after runtime QA. Every ZIP payload member matches the signed app.
+The installed application and player profiles were not replaced.
+
+The actual bundled Python/importer and renderer passed PC-only import and cold
+Play, 88 frontend checks, 218 graphics/save/load/undo/resumed-RAM/video checks,
+optional Genesis import and cold cupola Play. Tactical lighting passed 19 GPU
+checks; effect modes passed 19,930,842 assertions including 19,326,976 native pixel
+comparisons. ROOT inspected compact cover/Settings and driver captures. These
+bounded checks confer no new mission victory, winning campaign or listening verdict.
+
+The Python release suite ran 1,073 tests: 1,071 passed and two documented skips.
+The gate exposed an omitted audio-polish test registration, fixed in `3f92031`;
+its 16 gate tests and 75 audio-polish checks passed. The initial packaged UI
+harness incorrectly skipped first-run resource import; another harness invocation
+disabled the audio object its assertions require. Corrected normal-startup and
+audio-enabled runs passed. Failed diagnostic logs are retained.
+
+The corrected default aggregate was deliberately stopped after discovering that
+legacy functional harnesses also collect CPU timing samples. That inadvertent
+collection was contrary to the benchmark hold; those samples are excluded from
+performance acceptance. The interrupted intro check and all remaining non-timing
+checks passed separately. Typography and cow-visibility mixed timing harnesses
+remain held, so there is no unqualified new full-aggregate pass. No standalone
+FPS, endurance or soak benchmark was launched. Performance acceptance stays held.
+
+A separate current Web export has 60 verified file hashes, six byte-verified
+served payloads and correct isolation headers. Browser UI inspection was blocked
+by disabled local-browser access in Work settings; that setting was not changed.
+An original-free portable input ZIP and exact signed-core corresponding source
+are ready. New Windows/Linux native binaries and target-OS interactive graphics
+and audio were not verified here. The Mac RC has not been submitted to Apple for
+notarization, uploaded, installed over the player app or published.
+
+Local artifacts are in `builds/release-candidate-20261107/final/`, including the
+Mac and Web ZIPs, `SHA256SUMS.txt` and `RC-STATUS.json`. Full receipts and retained
+failures are in `artifacts/release-candidate-20261107/`. The native acceptance pass
+is complete within the stated scope; the explicit held/unavailable gates above
+remain separate from this locally prepared candidate.
+
+Working if the delivered ZIP matches the verified signed app, profiles and
+originals stay outside distribution, and held or unavailable gates are never
+reported as a green full release.
+
 ## Current verification, 7 November 2026
 
 Nell changed the remaining work to a code-level coverage check. That audit is
