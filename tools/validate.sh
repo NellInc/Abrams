@@ -119,7 +119,7 @@ receipt_for() {
     pc_radio) echo '^PC_RADIO: [1-9][0-9]* checks, 0 failures$' ;;
     audio_shutdown) echo '^AUDIO_SHUTDOWN: three live playback instances released before teardown$' ;;
     runtime) echo '^RUNTIME_SMOKE_PASS:' ;;
-    pc_portrait_art|pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_instrument_lock|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_audio_limiter|pc_tactical_hud|pc_tactical_effects|pc_tactical_world|pc_tactical_dynamics|pc_frontend_completeness|pc_frontdoor|pc_frontdoor_live|pc_draw_pass|pc_optional_genesis|pc_play_menu|pc_render_quality|pc_play_shortcuts|pc_bridge_transport|pc_reference_search|pc_genesis_cockpits|pc_portrait_coverage|pc_rocket_audio|pc_audio_mix|pc_frontend_music|pc_remaining_audio)
+    pc_portrait_art|pc_cockpit_mask_reuse|pc_gunner_trim|pc_cockpit_refinement|pc_commander_trim|pc_instrument_damage|pc_instrument_status|pc_instrument_lock|pc_reticle_target|pc_newspapers|pc_wilson_completion|pc_map_art|pc_dynamic_map|pc_audio_limiter|pc_tactical_hud|pc_tactical_effects|pc_tactical_world|pc_tactical_dynamics|pc_frontend_completeness|pc_frontdoor|pc_frontdoor_live|pc_draw_pass|pc_optional_genesis|pc_play_menu|pc_render_quality|pc_play_shortcuts|pc_bridge_transport|pc_reference_search|pc_genesis_cockpits|pc_portrait_coverage|pc_rocket_audio|pc_audio_mix|pc_audio_polish|pc_frontend_music|pc_remaining_audio)
       counted "$1" ;;
     # Native tier.
     pc_modern_native) echo '^PC_MODERN: PASS; [1-9][0-9]* checks; native=true$' ;;
@@ -391,6 +391,7 @@ run_check pc_rocket_audio ./tools/godot.sh --headless --script res://tests/test_
 run_check pc_radio ./tools/godot.sh --headless --script res://tests/test_pc_radio.gd
 run_check pc_audio_limiter ./tools/godot.sh --headless --quit-after 10000 --script res://tests/test_pc_audio_limiter.gd
 run_check pc_audio_mix ./tools/godot.sh --headless --script res://tests/test_pc_audio_mix.gd
+run_check pc_audio_polish ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_audio_polish.gd -- --output "$(fresh audio-polish)"
 run_check pc_world_audio ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_world_audio.gd -- --output "$(fresh world-audio)"
 run_check pc_cow_visibility ./tools/godot.sh --headless --audio-driver Dummy --script res://tests/test_pc_cow_visibility.gd
 run_check pc_frontend_music ./tools/godot.sh --headless --script res://tests/test_pc_frontend_music.gd
