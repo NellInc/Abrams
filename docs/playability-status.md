@@ -5,6 +5,54 @@ Godot renders the supported high-resolution layers and plays event-driven audio.
 The authored calibration range is separate. An earlier non-Modern completion pass passed its local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
+## Alpha 9 published, 7 November 2026
+
+Public prerelease `v0.1.0-alpha.9` is available for Apple Silicon macOS,
+Windows/Linux x86_64 and the Web edition at https://abramsremastered.com/.
+The release tag and deployed website snapshot are
+`7c2a0e4bb1463b661a9cf7e769b1ed476a6479e2`; native runtime source is
+`dc260b93a8e79853ecbaec86d8fe10064e4bd1b0`, followed only by Web metadata/site
+updates. Source safeguards passed on the exact staged release commit.
+
+Mac build `c658685cd4e8b02b6bd8` is Developer ID signed, hardened and notarized:
+Apple accepted `09426efa-7a11-4448-8dce-894920b824f5` with no issues. Its ticket is
+stapled. The actual downloaded public ZIP passed ticket validation, deep strict
+signature checks and Gatekeeper's Notarized Developer ID assessment. Normal
+frozen import and cold cupola Play passed before submission.
+
+Native Windows build `0263afc438f99b7b6258` and Linux build
+`5d898a3377e006c63884` passed run 42379250646, including original-free native core,
+state/recovery contracts and frozen setup/About smoke. Windows ran 165 tests with
+10 platform/fixture skips; Linux ran 165 with seven skips plus 13 launcher UI
+contracts. Independent checks covered archive CRC, exact file closure, every
+manifest/runtime hash, all 1,372 common frozen inputs and each matching core-source
+inventory. Full interactive Windows/Linux graphics/audio validation remains
+incomplete; both are alpha ports.
+
+All seven public release assets match the verified local bytes and SHA-256
+checksums: three platform ZIPs, three corresponding-source archives and
+SHA256SUMS.txt. The private original-free CI input draft stayed unpublished.
+Neither original game, private recording banks nor player saves were uploaded.
+
+Pages run 42383105337 deployed the exact website commit. Five served entry/metadata
+files and all 60 Web payload hashes match the local snapshot; Alpha 9 download links
+and trailer preload="auto" were verified in served HTML. The current Python
+observer and Godot export ship together. Original Web core.js/core.wasm and its
+corresponding-source archive remain byte-identical to the preceding edition.
+Browser UI was not driven because local-browser access is disabled in Work
+settings. This is served-byte verification, not an interactive-browser claim.
+
+Performance benchmarks, lengthy mission automation and other-chat coordination
+remained held during publication. No new frame-rate or naturally won campaign
+claim is made. Modern and Tactical stay experimental. The previous RC's scoped
+functional acceptance and held mixed timing checks remain documented below.
+Existing installed apps, original inputs and player profiles were preserved.
+Final receipts: artifacts/release-alpha9-20261107/FINAL-STATUS.json.
+
+Working if public downloads and served site/Web bytes match their verified
+artifacts, every platform retains its true test boundary, and held performance
+and gameplay work is never reported as complete.
+
 ## Local release candidate, 7 November 2026
 
 Prepared from clean source `3f92031`. The separate Apple Silicon macOS app is

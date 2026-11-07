@@ -1,5 +1,27 @@
 # Finish Abrams: ordered execution plan
 
+## Completed Alpha 9 publication, 7 November 2026
+
+Nell's all-platform release is published: v0.1.0-alpha.9 on NellInc/Abrams and
+https://abramsremastered.com/ (live, verified in served bytes). Release/site
+commit 7c2a0e4, native runtime source dc260b9. Mac build c658685cd4e8b02b6bd8 is
+actually notarized/stapled and its public download passed Gatekeeper. Windows
+0263afc438f99b7b6258 and Linux 5d898a3377e006c63884 passed native run 42379250646
+and independent complete archive/source verification with 1,372 shared inputs.
+All seven public assets match verified local bytes. Exact-site source safeguards
+passed 42381736292, Pages deployed 42383105337, five served entry/metadata files
+and all 60 Web payload hashes match. Trailer preload auto remains intact.
+
+FINAL-STATUS.json under artifacts/release-alpha9-20261107 records full evidence,
+remaining device/browser limitations and the original-free private input draft
+that must stay unpublished. No automatic continuation is queued. Preserve prior
+releases, player profiles and held mission runs. Do not reopen the old gameplay
+plan below. Performance benchmarks, lengthy mission automation and other-chat
+coordination remain held. Further work requires a new assigned outcome.
+
+Working if the release is described with its exact source and platform limits,
+served/downloaded hashes remain traceable, and no held task is silently resumed.
+
 ## Active all-platform publication, 7 November 2026
 
 Nell: "All of it please, let's package up a release for the website/web etc,

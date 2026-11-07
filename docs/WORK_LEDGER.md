@@ -10793,3 +10793,63 @@ mission runs and prepared long-route inputs remain held and untouched.
 Working if every acceptance claim traces to the actual candidate or a named
 unchanged-source fixture, delivered bytes match their checksums, and performance,
 device/browser limits and invalid runs remain explicit.
+
+## 2026-11-07: Alpha 9 all-platform release and website publication
+
+Nell explicitly requested the release for the website/Web and all platforms,
+releasing the earlier local-only and Apple-submission restrictions for these
+established destinations. Performance benchmarks, lengthy mission automation
+and other-chat coordination stayed held. No new such jobs were launched.
+
+Produced with this chat's input. ROOT inspected the actual source delta and
+published notes, froze native runtime source dc260b9, then pinned the final
+release and website/Web snapshot to 7c2a0e4. Source-only safeguards passed
+run42381736292 on that exact commit. Local outgoing index and full reachable
+history passed original/private-data/credential and 100 MB Git checks. A codex
+staging branch kept incomplete download links off the live main website.
+
+Mac build c658685cd4e8b02b6bd8 passed its actual frozen importer and cold cupola
+launch, Developer ID signing and Apple submission 09426efa-7a11-4448-8dce-894920b824f5.
+Apple accepted with no issues. Staple, deep strict signature and Gatekeeper
+checks passed. The final ZIP was made after stapling. Its exact downloaded
+public copy passed the same ticket/signature/Gatekeeper checks.
+
+The first 585 MB private CI-input upload timed out at 900 seconds. GitHub's tag
+lookup also did not resolve an unpublished draft; ROOT used its authoritative
+release API URL instead. A transport-only deflated archive preserved every
+member's bytes/name/mode, and an HTTPS/1.1 probe plus upload completed. No TLS,
+authorization, boundary or release check was disabled. Input asset 720819656 stayed
+in private draft 437591006 and passed the workflow's own SHA/boundary checks.
+
+Native run 42379250646 passed both target jobs. Windows build 0263afc438f99b7b6258
+and Linux build 5d898a3377e006c63884 passed core serialization/recovery, native
+contracts and frozen setup/About smoke. ROOT downloaded both actual outputs,
+verified CRC and exact closure, every payload/runtime hash, all 1,372 shared
+input hashes per platform, no original fingerprints/forbidden derived files,
+and every matching source inventory file/core hash. These are native build and
+headless/setup contracts; full target-OS interactive graphics/audio is unverified.
+
+Alpha 9 prerelease 437605433 was published at tag 7c2a0e4 with exactly seven final
+assets: three app ZIPs, three matching GPL source archives and SHA256SUMS.txt.
+Every uploaded GitHub digest and every subsequently downloaded public asset
+matched the verified local SHA/size. Windows/Linux remained unsigned alpha
+ports; only Mac notarization is claimed. Prior releases were retained.
+
+After public downloads returned 200 with exact sizes, main fast-forwarded to
+7c2a0e4. Pages run 42383105337 succeeded. ROOT read the actual public domain:
+five entry/metadata files and all 60 Web payload hashes match the frozen snapshot;
+Alpha 9 links and trailer preload="auto" pass. The original Web CPU/core and GPL
+source archive stayed byte-exact, while observer Python and Godot presentation
+were refreshed together. Browser UI stayed unavailable under the disabled Work
+setting, which was not bypassed. No Render target, DNS change, original-game
+upload, private recording distribution or player-app/profile replacement occurred.
+
+Public destinations: https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.9
+and https://abramsremastered.com/ (live, verified in served bytes). Full receipts,
+CI/deployment IDs, archive/source manifests, public-download hashes, Apple logs
+and final disposition are in artifacts/release-alpha9-20261107. Large local
+binaries/private QA inputs remain ignored. Existing mission runs remain held.
+
+Working if all four editions identify Alpha 9, public bytes and matching sources
+remain traceable to their recorded inputs, and no unsupported device, campaign
+victory or performance assertion rides with the release.
