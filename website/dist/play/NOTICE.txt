@@ -10,6 +10,8 @@ The remaster is provided free of charge. Licences for the project's own code and
 
 Third-party software and fonts retain their own licences. The application includes dependency notices, and the release includes corresponding source for its modified DOSBox Pure core.
 
+Optional free-pack sound design: Designed by [Bluezone Corporation](https://www.bluezone-corporation.com/). Its sound files retain the producer's licence and are not supplied as standalone recordings.
+
 The software is supplied as is, without warranty. Save states depend on the supported game and core versions. Back up your profile before upgrading.
 
 Dedicated to the memory of **David “Ming” Kenny**.

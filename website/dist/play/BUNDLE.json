@@ -37,8 +37,8 @@
       "sha256": "efb917219f345230545e5fe56ed0df313418e604e1ce42bd5cc3789c4b6bd37f"
     },
     ".generated/godot/index.pck": {
-      "bytes": 20094792,
-      "sha256": "e06aeb3b82bd8e473ac81b7dfd019bd4c1f6ea26e2d8cefdeaf4e5f7c22da6ea"
+      "bytes": 20099764,
+      "sha256": "643bf813ff527fbef9cfddd011d6779dc86d64f10d2094376113de6547cc8d47"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
@@ -69,8 +69,8 @@
       "sha256": "831fd1e535084b972f87c6a35275de3d236efd5166f5e77ce89497710635e73c"
     },
     ".generated/python-source.zip": {
-      "bytes": 603949,
-      "sha256": "7b47a787b019ea3dd293029416ec88f002e22c289233106cf030e485d1a9e9d1"
+      "bytes": 604204,
+      "sha256": "9f9c2084f5bf5447bfd8d63ee05225b61c4dca08125256374c1632253d012cdc"
     },
     ".generated/remaster-assets-00.zip": {
       "bytes": 29517149,
@@ -173,8 +173,8 @@
       "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
     },
     "NOTICE.txt": {
-      "bytes": 1645,
-      "sha256": "3ad157e302b615974972849a0c52e32e0e2a31ee677aed4e6db23ecf95bbe19a"
+      "bytes": 1847,
+      "sha256": "4df02fb7921dff5384c2341deef4a6e7bdac711dcfdad7818499502ecfaecdaa"
     },
     "THIRD_PARTY.txt": {
       "bytes": 1425,
@@ -218,7 +218,7 @@
     },
     "remaster.html": {
       "bytes": 14761,
-      "sha256": "a0b1930c838b25f479395d2bcf66b4c05e74024466911c856e761a60b00108ee"
+      "sha256": "88297b18f584552b4884f0f648f932763245216263bd410f9ec4ab949b80f4f3"
     },
     "remaster.mjs": {
       "bytes": 27755,
