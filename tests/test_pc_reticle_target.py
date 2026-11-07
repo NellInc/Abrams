@@ -2,6 +2,7 @@ import hashlib
 import struct
 import unittest
 from tools.pc_reticle_target import TargetBoxRuns, lines, ink_pixels
+from tools.pc_pixel_bytes import bgrx_rect_rgb
 from tests._inputs import requires
 
 
@@ -46,6 +47,10 @@ class TargetBoxTests(unittest.TestCase):
                     packet=self.observer.present(candidate,video,320,200,self.palette)
                     self.assertEqual(packet['center'],[x,y]);self.assertEqual(packet['color'],color)
                     self.assertTrue(all(32<=px<=287 and 13<=py<=109 for px,py in ink_pixels(x,y)))
+                    left,top,w,h=packet['survival_rect']
+                    for px,py in ((left,top),(left+w-1,top+h-1)):
+                        bad=bytearray(video);bad[(py*320+px)*4]^=1
+                        self.assertFalse(self.observer.present(candidate,bad,320,200,self.palette))
 
     def test_all_line_fields_and_incomplete_draw_reject(self):
         for i in range(12):
@@ -65,14 +70,29 @@ class TargetBoxTests(unittest.TestCase):
             self.assertIsNone(self.observer.scanout(0),hex(at))
         raw=self.entry(color=2);self.begin(raw);self.complete(raw);self.assertIsNone(self.observer.scanout(0))
 
-    def test_full_sight_rgb_must_survive(self):
+    def test_clipped_box_interior_and_edges_must_survive(self):
         raw=self.entry();self.begin(raw);video=self.complete(raw);candidate=self.observer.scanout(0)
-        for x,y in ((32,13),(287,109),(159,60),(154,55)):
+        for x,y in ((159,60),(154,55),(164,65),(159,55),(164,60)):
             for c in range(3):
                 bad=bytearray(video);bad[(y*320+x)*4+c]^=1
                 self.assertFalse(self.observer.present(candidate,bad,320,200,self.palette))
         self.assertFalse(self.observer.present(candidate,video,640,100,self.palette))
         self.assertFalse(self.observer.present(candidate,video,320,200,None))
+
+    def test_later_outside_box_rgb_changes_preserve_box_and_hash_final_viewport(self):
+        raw=self.entry();self.begin(raw);video=self.complete(raw);candidate=self.observer.scanout(0)
+        original=self.observer.present(candidate,video,320,200,self.palette)
+        for x,y in ((40,70),(32,13),(287,109),(153,60),(165,60),(159,54),(159,66)):
+            for c in range(3):
+                changed=bytearray(video);changed[(y*320+x)*4+c]^=1
+                packet=self.observer.present(candidate,changed,320,200,self.palette)
+                self.assertEqual(packet['schema'],1)
+                self.assertEqual(packet['proof_version'],2)
+                self.assertEqual(packet['survival_rect'],[154,55,11,11])
+                self.assertEqual(packet['rect'],[32,13,256,97])
+                self.assertEqual(packet['pixel_sha256'],hashlib.sha256(
+                    bgrx_rect_rgb(changed,320,200,packet['rect'])).hexdigest())
+                self.assertNotEqual(packet['pixel_sha256'],original['pixel_sha256'])
 
     def test_malformed_callbacks_raise(self):
         with self.assertRaises(ValueError):self.observer.begin(b'',{'cs':0,'ds':0})

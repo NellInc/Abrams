@@ -71,7 +71,12 @@ class TargetBoxRuns:
         if not ink: self.counts['fully_clipped_draws']+=1;return
         if any(pixels[(py-y)*w+px-x]!=p['color'] for px,py in ink):
             self.counts['raster_mismatches']+=1;return
-        item={'schema':1,'source_sha256':SIM_SHA256,'rect':[x,y,w,h],'page_offset':page,
+        # Prove the complete clipped box, including its interior. Later cockpit
+        # drawing outside this rectangle does not overwrite the selected box.
+        left,top=max(cx-5,CLIP[0]),max(cy-5,CLIP[1])
+        right,bottom=min(cx+5,CLIP[2]),min(cy+5,CLIP[3])
+        item={'schema':1,'proof_version':2,'source_sha256':SIM_SHA256,
+              'rect':[x,y,w,h],'survival_rect':[left,top,right-left+1,bottom-top+1],'page_offset':page,
               'center':[cx,cy],'color':p['color'],'lines':[list(line) for line in p['lines']]}
         self.pages[page]=(item,pixels);self.counts['completed_draws']+=1
 
@@ -81,9 +86,13 @@ class TargetBoxRuns:
         if candidate is None or (width,height)!=(320,200) or not palette or len(palette)!=16:return {}
         item,pixels=candidate
         actual=bgrx_rect_rgb(raw,width,height,item['rect'])
-        if indexed_rgb(pixels,palette)!=actual:self.counts['frame_mismatches']+=1;return {}
+        x,y,w,h=item['rect'];left,top,box_w,box_h=item['survival_rect']
+        captured=b''.join(pixels[(py-y)*w+left-x:(py-y)*w+left-x+box_w]
+                          for py in range(top,top+box_h))
+        if indexed_rgb(captured,palette)!=bgrx_rect_rgb(raw,width,height,item['survival_rect']):
+            self.counts['frame_mismatches']+=1;return {}
         self.counts['presented_draws']+=1
         return item|{'pixel_sha256':hashlib.sha256(actual).hexdigest(),
-                     'basis':'four original target-box calls, completed gunner sight and exact scanout RGB'}
+                     'basis':'four original target-box calls, exact clipped box rectangle RGB survives scanout; final viewport RGB hash'}
 
     def report(self): return dict(self.counts)

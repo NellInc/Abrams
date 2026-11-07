@@ -10677,3 +10677,30 @@ unnecessary. Both destination bank pairs were rechecked inactive and promoted
 with rollback copies retained. No licensed media entered Git/app payloads; no
 Web build, new spending, push or public publication occurred. Full receipts:
 artifacts/ready-fire-20261106/delivery/. This entry follows the installed-bank check.
+
+## 2026-11-07: Target-box survival proof v2
+
+Corrected the presentation observer's whole-sight survival requirement. Four
+original target-box callbacks, context, page and raster validation remain
+required. The complete clipped 11 by 11 box rectangle, including its interior,
+now has to survive later drawing; unrelated pixels outside it may change.
+Schema1, the viewport rectangle and its final displayed RGB hash remain stable;
+`proof_version: 2` and `survival_rect` identify the revised proof scope.
+A changed portrait-region pixel outside the box reproduces the former rejection.
+Attribution of the live rejection to that portrait remains an inference because
+its intermediate callback candidate was not retained.
+
+Produced with internal-agent assistance and this chat's input. ROOT inspected
+all three changed files and reran 18 focused Python tests (all passed), the
+headless Godot target-box gate (211 checks, zero errors, no native pixel
+comparisons), and the 26-check native save/resume gate (all passed, exit0).
+The initial sandboxed Godot invocation completed assertions but emitted log and
+system-certificate access errors; the authorized unsandboxed rerun was clean.
+Current persistence receipt:
+`artifacts/finish-abrams-20261025/resume-missions-20261106/ROOT-native-save-resume-after-box-proof-verified.json`.
+Live mission processes and their pinned observers were not restarted or patched.
+Mission/campaign completion is still pending; these checks confer no mission win.
+
+Working if unrelated later UI preserves a visible, source-captured target box,
+any changed box pixel or invalid callback/page rejects it, and final viewport
+hash verification remains intact without guest writes.

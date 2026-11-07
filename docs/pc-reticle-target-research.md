@@ -23,9 +23,13 @@ Authority is unchanged `GAME/SIM.EXE`, SHA256
   copies the four actual call arguments, not a substitute projection formula.
 * Readback occurs at `6760`, after the entire original gunner draw. Host EGA
   backing planes are read without guest VGA latch reads or guest writes.
-* The complete sight rectangle (32,13,256,97) must survive scanout byte-for-byte
-  in the actual displayed RGB frame. The candidate belongs to the original
-  scanned page and presented triple-buffer slot.
+* Proof version 2 requires the complete clipped 11 by 11 target-box rectangle,
+  including its interior, to survive scanout byte-for-byte in displayed RGB.
+  Later drawing outside that rectangle may change. Packet schema 1 is retained;
+  `proof_version: 2` and `survival_rect` identify this narrower survival check.
+  `rect` stays (32,13,256,97), and `pixel_sha256` hashes that entire viewport in
+  the final displayed frame. The candidate belongs to the original scanned page
+  and presented triple-buffer slot.
 * Godot independently checks the source hash, integral coordinates, four exact
   lines, page, clip, palette, full crop hash and UI ownership/colour of every
   original ink pixel. Each frame clears old geometry before checking new data.
@@ -64,7 +68,7 @@ Receipts are under `artifacts/finish-20260928/`:
 
 The first target trace is retained. Readback at `674c` preceded remaining gunner
 cosmetics, so every whole-sight comparison rejected it. Moving readback to the
-verified routine return corrected timing without weakening the full-crop gate.
+verified routine return corrected timing for the then-current full-crop gate.
 The first native test also retained a false assertion that every fractional
 alignment must visibly change. Its analytic-coverage and outside-ink checks
 passed; the corrected test requires fractional refinement across the suite and
