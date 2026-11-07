@@ -5,6 +5,46 @@ Godot renders the supported high-resolution layers and plays event-driven audio.
 The authored calibration range is separate. An earlier non-Modern completion pass passed its local aggregate gate.
 HEAT artwork is now restored; target-rate performance and release acceptance remain open.
 
+## Current verification, 7 November 2026
+
+Nell changed the remaining work to a code-level coverage check. That audit is
+complete on local production candidate `e1a2e99`, with the test correction below.
+All eight original scenario mappings, SIM/END/START transitions, campaign
+New/Continue, successful and unsuccessful debriefs, retirement/death presentation,
+Moscow/Paris/Stalemate presentation and save/resume paths were reviewed. The
+original executables continue to own mission objectives, scoring and career
+outcomes. No production blocker was found in the reviewed integration paths.
+
+ROOT ran 119 focused Python tests, all passing without skips, plus eight existing
+headless Godot checks, all passing with clean logs under normal host permissions.
+The first sandboxed Godot run had filesystem/certificate access errors and is
+retained as invalid. All 32 scenario/station pairs also passed the production
+fixture replay in both Tactical (290 checks) and Modern (324 checks), with the
+correct station cockpit, visible world and no renderer warnings.
+
+The scenario gate previously accepted any cockpit and did not require unique
+8 by 4 coverage. Its report also retained mutable arrays, so historical rows all
+showed the final gunner cockpit. The corrected gate checks unique Cartesian
+coverage, VGA-paired station/source identity and the expected rendered cockpit;
+reports now snapshot each row's arrays. The fresh replay confirms all four
+cockpits across all eight missions. Evidence:
+`artifacts/code-coverage-review-20261107/`.
+
+The target-box observer correction in local commit `e1a2e99` separately passed
+18 focused Python tests, 211 headless Godot checks and the 26-check native
+save/resume gate, including original disk/RAM persistence and observer
+continuation. Code and fixture checks do not establish eight natural victories,
+a successful Moscow campaign arrival or sustained frame-rate performance.
+
+Five distinct full-positive original mission endings remain verified. Nuremberg,
+Siegen and an all-five Convoy success have no completed positive playthrough.
+The historical three-win career below subsequently failed; the current clean
+career is PLAYQD, Convoy Mission1, with no victories. All gameplay and prepared
+inputs are now held. Performance benchmarks remain on Nell's hold. No release
+is claimed. Runtime ownership and the current scope override are recorded in
+`artifacts/finish-abrams-20261025/resume-missions-20261106/ACTIVE.json`.
+The dated descriptions below are historical snapshots.
+
 ## Completion verification in progress, 28 October 2026
 
 Five distinct original missions have positive full endings: Bonn (365), Mossel

@@ -1,5 +1,66 @@
 # Finish Abrams: ordered execution plan
 
+## Current scope override, 7 November 2026
+
+Nell changed the requested work to: "Just check this stuff in the code please,
+made sure all bases are covered." Complete a finite source audit of all eight
+missions, campaign progression, endings and save/resume, using the existing
+focused checks. All gameplay runs and prepared inputs are held. Performance
+benchmarks remain on human hold. No coordination with other Codex chats. This
+scope supersedes the gameplay execution steps and acceptance campaign below;
+they are retained historical context, not the current task queue. Code coverage
+cannot establish eight natural victories or successful Moscow arrival.
+
+Working if the current code audit has terminal focused-check results and honest
+coverage limits, and no further gameplay or performance run is launched.
+
+## Code audit result, 7 November 2026
+
+Completed the finite code-only task: 119 focused Python tests, eight headless
+Godot checks and all 32 scenario/station fixture pairs in Tactical and Modern
+passed. Corrected the scenario gate's expected-station/unique-pair checks and
+mutable diagnostic snapshots. No production blocker found in the reviewed
+integration paths. Details and evidence are in docs/playability-status.md and
+artifacts/code-coverage-review-20261107. Do not resume gameplay or performance
+from this historical plan without a new instruction changing the current hold.
+
+## Historical gameplay continuation, 7 November 2026
+
+Performance benchmarks remain on human hold. Do not coordinate with other Codex
+chats. Internal leaf agents are authorised. The live operational authority is
+`artifacts/finish-abrams-20261025/resume-missions-20261106/ACTIVE.json`; its latest
+boundaries supersede the historical runtime and count3-career descriptions below.
+Do not restore an older career or failed run to choose a different outcome.
+
+Retained full-positive mission endings remain5/8: Siegen, Nuremberg and full-five
+Convoy are outstanding. The current ROOT career is PLAYQD, mission1 Convoy,
+not the historical count3 prefix. The winning original eight-mission campaign and
+actual Moscow ending remain incomplete. Native save/resume was refreshed after
+the target-box observer correction:26 checks passed, terminal exit0. Production
+implementation candidate is local commit `e1a2e99`; live private observers remain
+pinned and unchanged. No push or publication is authorised by this plan.
+
+Convoy type1 goal+5 counts objective-member losses. One loss disqualifies an
+all-five result; it does not itself terminate the native mission. Arrival can
+still set goal+7 and completed scoring uses required minus losses. Next15 has one
+verified destroyed friendly and four live-status friendlies. A separately labelled
+partial-ending-only continuation is being prepared for the requested various
+endings. It cannot close the still-open all-five acceptance row. Earlier negative
+debriefs reached through original Quit Anyway remain genuine negative debriefs,
+not evidence that the first loss automatically ended the original mission.
+
+Nell explicitly allowed the friendly repair base coordinates for QA. This covers
+the previously identified original Nuremberg kind11 friendly pads, not opposing
+placements. Keep all actual native inputs, cancelled unissued input, source and
+whole-run deadlines, failed attempts and original disk custody in the operational
+receipts. These deadlines are controller budgets measured in native frames, not
+alterations of original PC timers. Manual turret motion legitimately writes a nonzero angular step into
+OWN6460; source-specific traverse checks must distinguish it from lock error.
+
+Working if resumed work matches the actual live owners and boundaries in ACTIVE,
+holds survive, partial endings stay separately labelled, and no historical save
+or completed subset is substituted for the remaining mission/campaign outcome.
+
 ## Authority and source state
 
 Nell requested performance and full eight-mission/campaign verification, including successful endings and save/resume. Internal subagents are explicitly requested. No messages to other Codex chats. Nell subsequently requested execution until performance, all eight missions, the full campaign, save/resume and various endings are verified. Execute continuously across internal checkpoints. No publication target is established; preserve active game state.

@@ -10704,3 +10704,39 @@ Mission/campaign completion is still pending; these checks confer no mission win
 Working if unrelated later UI preserves a visible, source-captured target box,
 any changed box pixel or invalid callback/page rejects it, and final viewport
 hash verification remains intact without guest writes.
+
+## 2026-11-07: Finite mission, campaign and persistence code audit
+
+Nell requested a code check instead of further playthrough work. Reviewed all
+eight original scenario bindings and the common original-driven SIM/END/START
+lifecycle, campaign New/Continue, debrief/retirement/death/newspaper presentation,
+checkpoint integrity, fresh-worker restore, campaign-overlay ordering, held
+inputs and failed-load recovery. No production blocker found in these reviewed
+integration paths. This audit does not independently rederive every original
+objective/ending branch or prove a naturally won eight-mission campaign.
+
+Produced with internal-agent assistance and this chat's input. ROOT inspected
+the integrated test diff and production contracts, verified the nine original
+scenario-mapping instruction slices and all 32 fixture identities, and ran 119
+focused Python tests (all passed, no skips). Eight existing headless Godot checks
+passed with exit 0 and clean logs under normal host access. The initial sandbox
+attempt emitted filesystem/certificate errors and is retained as invalid.
+
+Fixed the existing scenario test to require all 32 unique scenario/station pairs,
+matching VGA-paired labels/source fingerprints and the expected rendered cockpit.
+Copied mutable cockpit/warning arrays into each report row; the old reports all
+showed the final gunner cockpit because they shared that mutable array. ROOT ran
+the corrected existing production-viewer fixture replay in Tactical and Modern:
+290 and 324 checks respectively, 32 cases each, zero errors/warnings, and correct
+cockpit IDs 1 through 4. No emulator gameplay or performance benchmark ran.
+Evidence: artifacts/code-coverage-review-20261107, including normal-access logs,
+Python log, scenario32-results.json and both mode-specific reports/captures.
+
+All gameplay/prepared inputs are held and performance remains on human hold.
+No other Codex chats were contacted, no production runtime code changed in this
+audit, and no build/release/push is claimed. Historical natural-playthrough gaps
+remain explicitly separate from this completed code-level task.
+
+Working if each fixture row records its own expected station cockpit, duplicate
+or missing pairs fail the gate, and code/fixture coverage never inflates natural
+mission wins or performance acceptance.
