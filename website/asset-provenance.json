@@ -229,10 +229,10 @@
   "media": [
     {
       "file": "dist/assets/video/abrams-fan-remaster-trailer.mp4",
-      "source": "artifacts/promo-20261024-v18/take-clear-final/abrams-promo.mp4",
-      "output_sha256": "936f96333269cf86024ffaecf5ba8fd44fd3def7b5b438923d438f7d64a990bb",
-      "origin": "V18 trailer with supersampled rotating comparisons, the Spigot/Fagot team and Tactical cupola fast-forward footage. David Kenny endcard, soundtrack, captions and timing retained. H.264/AAC, 1920x1080, 58.5 seconds.",
-      "source_sha256": "936f96333269cf86024ffaecf5ba8fd44fd3def7b5b438923d438f7d64a990bb",
+      "source": "artifacts/website-trailer-notice-20261111/abrams-promo.mp4",
+      "output_sha256": "9bd3ed6a129662b625c4772d52d8c67dd87c2780321d8739cfd9e8b64864fa3f",
+      "origin": "V18 trailer with the independent fan-remaster, non-affiliation, non-endorsement and non-sponsorship notice added to the closing card on 11 November 2026. Existing PC-copy requirement, David Kenny memorial, 58.5-second timing, all earlier shots and accepted AAC soundtrack retained. H.264/AAC, 1920x1080, 30 fps.",
+      "source_sha256": "9bd3ed6a129662b625c4772d52d8c67dd87c2780321d8739cfd9e8b64864fa3f",
       "duration_seconds": 58.5,
       "captions_burned_in": true
     },

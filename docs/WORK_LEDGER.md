@@ -10853,3 +10853,35 @@ binaries/private QA inputs remain ignored. Existing mission runs remain held.
 Working if all four editions identify Alpha 9, public bytes and matching sources
 remain traceable to their recorded inputs, and no unsupported device, campaign
 victory or performance assertion rides with the release.
+
+## 2026-11-11: Website and trailer independent-project notice
+
+Nell requested copy equivalent to the supplied fan-remake notice, adapted for
+Abrams Battle Tank. The homepage now names the required original PC copy and
+states that this independent fan remaster is not affiliated with, endorsed by
+or sponsored by Dynamix, Electronic Arts or the original game's rights holders.
+The same notice appears in the footer, the trailer's closing card and its
+accessible descriptive transcript. No other game or release content changed.
+
+The closing card retains the cover, PC-copy requirement, Nell credit, David
+“Ming” Kenny memorial and project URL. Only its centre-column notice was added.
+The 58.5-second, 1920×1080, 30 fps export fully decodes, retains the first 1,562
+video packets and all 2,737 AAC packets with their timestamps, and keeps the
+original fade and faststart container. The movie SHA-256 is
+`9bd3ed6a129662b625c4772d52d8c67dd87c2780321d8739cfd9e8b64864fa3f`.
+Movie cache references, sitemap date and asset provenance follow the new bytes.
+
+Self-review: this revision was produced and reviewed with my input in this chat.
+The altered closing card and its boundary/fade frames were inspected. The hero
+notice wraps without horizontal overflow at 1,280px and 390px viewport widths.
+`website/verify.py`, `node --check website/dist/app.js`,
+`node website/test-maps.cjs` and `git diff --check` pass. No new narration or
+soundtrack was generated; unchanged AAC packets are the audio-preservation proof.
+Local recipe, frame evidence and verification receipts are under
+`artifacts/website-trailer-notice-20261111/`. Publication follows the existing
+GitHub Pages workflow; the final served-byte receipt belongs in that directory.
+
+Working if the homepage visibly states the original-PC-copy requirement and
+independent status, the same non-affiliation notice is readable on the closing
+card and in its transcript, and the live movie matches the recorded hash while
+retaining automatic preload and the accepted soundtrack.

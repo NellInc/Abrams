@@ -375,6 +375,15 @@ def main():
         if any(private in text for private in ("currently private", "Downloads require repository access", "requires repository access", "GitHub is private")):
             errors.append(f"Private-only copy in the authorized public site: {name}")
     visible = page.visible_text()
+    fan_notice = ("An independent fan remaster, not affiliated with, endorsed by or "
+                  "sponsored by Dynamix, Electronic Arts or the original game’s rights holders.")
+    if f'<p class="hero-requirement">{fan_notice}</p>' not in html:
+        errors.append("The homepage hero must display the independent fan-remaster notice")
+    if '<p class="hero-requirement">Requires your own copy of <em>Abrams Battle Tank</em> for PC.</p>' not in html:
+        errors.append("The homepage hero must require the player's own Abrams Battle Tank PC copy")
+    endcard = re.search(r'\[End card:([^\]]+)\]', html)
+    if not endcard or fan_notice not in endcard[1]:
+        errors.append("The descriptive trailer transcript must include the closing fan-remaster notice")
     for commitment in ("Original game by Dynamix", "Published by Electronic Arts", "Fan Remastered by Nell Watson", "Dedicated to the memory of",
                        "David “Ming” Kenny", "original PC game", "optional", "neither"):
         if commitment not in visible:
