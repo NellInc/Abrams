@@ -10885,3 +10885,34 @@ Working if the homepage visibly states the original-PC-copy requirement and
 independent status, the same non-affiliation notice is readable on the closing
 card and in its transcript, and the live movie matches the recorded hash while
 retaining automatic preload and the accepted soundtrack.
+
+## 2026-11-13: Approved fan-preservation notice replacement
+
+Nell approved the proposed full website notice and shorter trailer wording,
+then explicitly requested applying both and publishing everything. The footer
+and NOTICE.md now share the approved three paragraphs: independent,
+noncommercial fan preservation for experimentation, education and research;
+free of charge; own supported original PC copy required; no originals bundled;
+original rights retained; unofficial and unaffiliated; licences limited to the
+remaster's own contributions. The hero carries the short preservation statement.
+The trailer's descriptive transcript matches its revised closing-card wording.
+No blanket fair-use claim, commercial-use ban or licence change was introduced.
+
+The rebuilt closing card retains the cover, credit, David “Ming” Kenny memorial
+and URL. All 2,737 AAC packets and timestamps and the first 1,562 video packets
+match the accepted prior movie. The 1,755-frame, 1920×1080, 30 fps, 58.5-second
+export fully decodes and retains faststart and the original final fade. SHA-256:
+`cee7ae0e96ee1fc944dee2938fdd885cf2f473790f903919560f3ebd7481ee27`.
+The movie's provenance, cache references and sitemap date follow the new bytes.
+
+Self-review: this revision was produced and reviewed with my input in this chat.
+The final card, cut boundary and fade frames were inspected; the footer wraps
+without horizontal overflow at 1,280px and 390px. Website verification, JavaScript
+syntax, map/player tests and diff checks pass. Existing licence files are unchanged.
+Evidence and the reproducible local edit recipe are retained under
+`artifacts/website-trailer-notice-20261113/`; publication follows the existing
+GitHub Pages workflow, with the served-byte result recorded there.
+
+Working if the approved full notice appears on the live website and in NOTICE.md,
+the approved shorter wording appears on the trailer closing card and transcript,
+and served movie bytes match the recorded hash with automatic preload retained.

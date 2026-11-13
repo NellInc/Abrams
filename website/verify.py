@@ -375,15 +375,28 @@ def main():
         if any(private in text for private in ("currently private", "Downloads require repository access", "requires repository access", "GitHub is private")):
             errors.append(f"Private-only copy in the authorized public site: {name}")
     visible = page.visible_text()
-    fan_notice = ("An independent fan remaster, not affiliated with, endorsed by or "
-                  "sponsored by Dynamix, Electronic Arts or the original game’s rights holders.")
-    if f'<p class="hero-requirement">{fan_notice}</p>' not in html:
-        errors.append("The homepage hero must display the independent fan-remaster notice")
+    preservation = "An independent, noncommercial fan preservation project."
+    fan_notice = ("Not affiliated with, endorsed by or sponsored by Dynamix, "
+                  "Electronic Arts or the original game’s rights holders.")
+    if f'<p class="hero-requirement">{preservation}</p>' not in html:
+        errors.append("The homepage hero must display the approved fan-preservation statement")
     if '<p class="hero-requirement">Requires your own copy of <em>Abrams Battle Tank</em> for PC.</p>' not in html:
         errors.append("The homepage hero must require the player's own Abrams Battle Tank PC copy")
     endcard = re.search(r'\[End card:([^\]]+)\]', html)
-    if not endcard or fan_notice not in endcard[1]:
-        errors.append("The descriptive trailer transcript must include the closing fan-remaster notice")
+    for statement in (preservation, "Free of charge. Your own original PC game is required.", fan_notice):
+        if not endcard or statement not in endcard[1]:
+            errors.append(f"The descriptive trailer transcript must include: {statement}")
+    # Keep the approved full notice identical on the public page and in the source notice.
+    notice = (ROOT.parent / "NOTICE.md").read_text()
+    approved_notice = (
+        "Abrams Battle Tank Fan Remaster is an independent, noncommercial fan preservation project for experimentation, education and research. The remaster is provided free of charge. Playing requires your own supported copy of the original PC game. Neither the original game nor the optional Sega Genesis ROM is included.",
+        "Abrams Battle Tank was developed by Dynamix and published by Electronic Arts. Original copyrights, trademarks and other rights remain with their respective holders. This project is unofficial and is not affiliated with, endorsed by or sponsored by Dynamix, Electronic Arts or the original game’s rights holders.",
+        "Licences for the remaster’s own contributions do not grant rights in the original game or third-party material.",
+    )
+    footer = html.split('<footer class="site-footer section-shell">', 1)[-1]
+    for paragraph in approved_notice:
+        if f"<p>{paragraph}</p>" not in footer or paragraph not in notice:
+            errors.append("The footer and NOTICE.md must retain the approved full project notice")
     for commitment in ("Original game by Dynamix", "Published by Electronic Arts", "Fan Remastered by Nell Watson", "Dedicated to the memory of",
                        "David “Ming” Kenny", "original PC game", "optional", "neither"):
         if commitment not in visible:

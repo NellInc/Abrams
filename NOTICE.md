@@ -1,12 +1,14 @@
 # Abrams Battle Tank Fan Remaster
 
-An unofficial, independent, noncommercial fan project celebrating the original game by Dynamix. It is not affiliated with, endorsed by or sponsored by the original game's developers, publishers or rights holders.
+## Project notice
 
-The project claims no ownership, moral rights or other rights in the original game or its content. All original copyrights, trademarks and other third-party rights remain with their respective holders. References to the original title and creators identify the game being remastered.
+Abrams Battle Tank Fan Remaster is an independent, noncommercial fan preservation project for experimentation, education and research. The remaster is provided free of charge. Playing requires your own supported copy of the original PC game. Neither the original game nor the optional Sega Genesis ROM is included.
 
-The remaster is provided free of charge. Licences for the project's own code and creative contributions apply only to rights the contributors can grant. They do not relicense the original game, extracted material, underlying artwork or third-party components. A remastered or generated version of an original asset does not erase the underlying rights.
+Abrams Battle Tank was developed by Dynamix and published by Electronic Arts. Original copyrights, trademarks and other rights remain with their respective holders. This project is unofficial and is not affiliated with, endorsed by or sponsored by Dynamix, Electronic Arts or the original game’s rights holders.
 
-**A separately obtained, supported copy of the original PC game is required to play.** The remaster does not contain the PC game or a Genesis ROM. The optional Genesis import cannot replace the required PC copy. Please respect the applicable terms of your original copies.
+Licences for the remaster’s own contributions do not grant rights in the original game or third-party material.
+
+The optional Genesis import cannot replace the required PC copy. Please respect the applicable terms of your original copies.
 
 Third-party software and fonts retain their own licences. The application includes dependency notices, and the release includes corresponding source for its modified DOSBox Pure core.
 
