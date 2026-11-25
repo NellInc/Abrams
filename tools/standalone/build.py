@@ -90,8 +90,8 @@ _cc_copyfile, _cc_copy, _cc_copy2, _cc_copytree = _cc_build()
 
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = '0.1.0-alpha.9'
-BUNDLE_VERSION = '35'
+VERSION = '0.1.0-alpha.10'
+BUNDLE_VERSION = '36'
 APP_NAME = 'M1 Abrams Battle Tank Fan Remaster'
 REPOSITORY = 'https://github.com/NellInc/Abrams'
 sys.path.insert(0, str(ROOT))
