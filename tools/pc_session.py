@@ -65,13 +65,19 @@ class PresentationSession:
         self.crew = CrewBarks()
         self.radio = RadioBarks()
         self.audio_state = {"active": False, "enabled": False}
+        self._post_ram_frame = -1
+        self._post_ram = None
+        self._paired_video_cache = None
 
     @staticmethod
     def identity(program):
         return (program['name'],program['psp']) if program else None
 
     def before_frame(self):
-        ram = self.core.conventional_memory()
+        if hasattr(self.core, 'memory_maps') and self._post_ram is not None and self._post_ram_frame == self.core.frame:
+            ram = self._post_ram
+        else:
+            ram = self.core.conventional_memory()
         program = active_program(ram)
         if self.identity(program) != self.identity(self.program):
             self.close(preserve_frontend=True)
@@ -86,10 +92,13 @@ class PresentationSession:
             self.collector = self.collector_factory(self.reader, history_limit=2, **options)
             self.collector.attach(self.core, program['load_segment'])
             self.epoch += 1
+            self._paired_video_cache = None
         elif self.trace and self.collector is None and self.frontend is None and hasattr(self.core,'core'):
             if self.frontend_sources is None:self.frontend_sources=FrontendSources()
             self.frontend=FrontendText(self.frontend_sources)
             self.frontend.attach(self.core)
+            self._paired_video_cache = None
+        return ram
 
     def prepare_checkpoint(self):
         """Settle observer attachment on the RAM a checkpoint captures.
@@ -99,23 +108,33 @@ class PresentationSession:
         save on the frame that enters or leaves SIM records the previous mode,
         and every load of that slot fails.
         """
+        self._post_ram = None
+        self._paired_video_cache = None
         self.before_frame()
 
     def step(self, frames, keys=()):
+        native_core = hasattr(self.core, 'memory_maps')
         for _ in range(frames):
-            self.before_frame()
+            pre_ram = self.before_frame()
             if self.collector and hasattr(self.collector, 'guided'):
                 self.collector.guided.before_frame(self.core.frame + 1, self.epoch)
-            self.core.run(1, keys)
+            if native_core:
+                self.core.run(1, keys, pre_ram=pre_ram)
+            else:
+                self.core.run(1, keys)
             if self.collector and self.collector.error: raise self.collector.error
             if self.frontend and self.frontend.error: raise self.frontend.error
             events = self.collector.audio.drain() if self.collector else []
             ram = self.core.conventional_memory()
+            if native_core:
+                self._post_ram_frame = self.core.frame
+                self._post_ram = ram
             program = active_program(ram)
             verified = (self.collector and self.identity(program) == self.identity(self.program)
                         and self.reader.locate(ram) == program['load_segment']*16)
             self.audio_state = audio_status(ram, program if verified else None)
             presentation = self.collector.paired_video(self.core.last_video) if verified else {}
+            self._paired_video_cache = (self.collector, self.collector.paired_video, self.core.last_video, presentation) if verified else None
             events += self.readiness.advance(self.core.frame, events, presentation, self.audio_state)
             events += self.crew.advance(presentation, self.audio_state)
             events += self.radio.advance(presentation, self.audio_state)
@@ -144,7 +163,13 @@ class PresentationSession:
             state = self.reader.read(ram)
         presentation = {'draw_pass': None, 'reason': 'original program has no active observed SIM view'}
         if self.collector and self.identity(program) == self.identity(self.program):
-            presentation = self.collector.paired_video(self.core.last_video)
+            cached = self._paired_video_cache
+            if (cached is not None and cached[0] is self.collector
+                    and cached[1] == self.collector.paired_video
+                    and cached[2] is self.core.last_video):
+                presentation = cached[3]
+            else:
+                presentation = self.collector.paired_video(self.core.last_video)
         elif self.frontend:
             candidate=self.frontend.paired_video(self.core.last_video,ram)
             if self.identity(candidate.get('frontend_program'))==self.identity(program):
@@ -174,6 +199,9 @@ class PresentationSession:
         self.readiness.pending = None
         self.crew.last_message = 0
         self.radio.last_message = 0
+        self._post_ram = None
+        self._post_ram_frame = -1
+        self._paired_video_cache = None
         if self.collector:
             self.collector.detach(self.core)
             self.collector = None

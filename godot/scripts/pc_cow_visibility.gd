@@ -7,7 +7,7 @@ const QUALIFIED_ENGINE: String = "ed1daf0bf"
 const MAX_OWNERS: int = 4
 const MAX_GROUPS: int = 32
 const MAX_TRIANGLES: int = 32768
-const MAX_PIXELS: int = 2097152
+const MAX_PIXELS: int = 8388608
 const CAMERA_PROPERTIES: Array[String] = ["projection", "fov", "size", "frustum_offset", "near", "far", "keep_aspect", "h_offset", "v_offset", "cull_mask"]
 const RASTER_PROPERTIES: Array[String] = ["size", "msaa_3d", "screen_space_aa", "scaling_3d_scale", "use_taa", "use_debanding", "mesh_lod_threshold", "texture_mipmap_bias", "anisotropic_filtering_level", "use_occlusion_culling"]
 var host: Node

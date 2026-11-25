@@ -153,7 +153,10 @@ func _decoded_mask(slot: String, encoded: String) -> Image:
 			# logged) again every frame.
 			_mask_cache[slot]={"encoded":encoded,"bytes":null}
 			return null
-		cached={"encoded":encoded,"bytes":mask.get_data(),"format":mask.get_format(),"texture":null}
+		var raw_bytes := mask.get_data()
+		var fmt := mask.get_format()
+		var is_binary := fmt == Image.FORMAT_L8 and raw_bytes.count(0) + raw_bytes.count(255) == raw_bytes.size()
+		cached={"encoded":encoded,"bytes":raw_bytes,"format":fmt,"binary":is_binary,"texture":null}
 		_mask_cache[slot]=cached
 	if cached.bytes==null: return null
 	return Image.create_from_data(320,200,false,cached.format,cached.bytes)
@@ -483,8 +486,8 @@ static func _driver_mask_claims(values: PackedByteArray, ui_bits: PackedByteArra
 	for y in 200:
 		var row := greens.slice(y*320,y*320+320)
 		if row.count(0)==320: continue
-		row.sort()
-		if row[319]>127: return -1
+		for v in row:
+			if v>127: return -1
 	return 1
 
 func load_graphics_sources(root: String) -> bool:
@@ -586,8 +589,7 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	# malformed provenance, and keep explicitly opaque black UI intact.
 	if mask.get_format() != Image.FORMAT_L8:
 		return _fallback("unsupported UI mask format")
-	var mask_bytes := mask.get_data()
-	if mask_bytes.count(0)+mask_bytes.count(255)!=mask_bytes.size(): return _fallback("nonbinary UI mask")
+	if not _mask_cache.get("ui", {}).get("binary", false): return _fallback("nonbinary UI mask")
 	if world == null: return _fallback("world texture unavailable")
 	material.set_shader_parameter("camera_rect", Vector4(clip[0], clip[1], clip[2]-clip[0]+1, clip[3]-clip[1]+1))
 	material.set_shader_parameter("world_texture", world)

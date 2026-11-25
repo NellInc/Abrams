@@ -38,6 +38,10 @@ var music_completed := false
 var music_started := false
 var music_transition := 0.0
 var music_tail_gain := 0.0
+const MUSIC_DUCK_ATTACK := 0.01
+const MUSIC_DUCK_RELEASE := 0.35
+var _music_duck_gain := 1.0
+var focus_muted := false
 # Program changes pass through up to about 3 s of unrecognised frames (210 at
 # END to START in the combat-loss trace). The score holds across that gap, so
 # the next screen crossfades and a matching screen (a result stinger's ending)
@@ -281,7 +285,7 @@ func apply_music_context(context: String, enabled: bool, paused: bool=false) -> 
 
 func _sync_music() -> void:
 	if not is_instance_valid(music): return
-	var active := music_allowed and not transport_muted and failure.is_empty() and volume*music_mix>0
+	var active := music_allowed and not transport_muted and not focus_muted and failure.is_empty() and volume*music_mix>0
 	if not active:
 		music_tail.stop()
 		music_transition=0.0
@@ -303,12 +307,14 @@ func _sync_music() -> void:
 		music_started=false
 		music_resume_position=0.0
 		music_transition=0.6
-	var duck:=0.32 if music_bank.independent and voice.playing and volume*voice_volume>0.0 else 1.0
-	var fade:=1.0-music_transition/0.6
-	var attack:=1.0 if music_track.begins_with("stinger_") else fade
+	var duck:=_music_duck_gain if music_bank.independent else 1.0
+	var fade:=clampf(1.0-music_transition/0.6,0.0,1.0)
+	# Equal-power crossfade avoids the -3 dB midpoint dip while keeping the exact 0.6 s window.
+	var attack:=1.0 if music_track.begins_with("stinger_") else sin(fade*PI*0.5)
 	music.volume_db=linear_to_db(maxf(0.00001,volume*float(music_mix)/100.0*0.30*duck*attack))
 	if music_tail.playing:
-		music_tail.volume_db=linear_to_db(maxf(0.00001,minf(music_tail_gain,volume*float(music_mix)/100.0*0.30)*duck*(1.0-fade)))
+		var release:=cos(fade*PI*0.5)
+		music_tail.volume_db=linear_to_db(maxf(0.00001,minf(music_tail_gain,volume*float(music_mix)/100.0*0.30)*duck*release))
 	if music.playing: return
 	var stream := music_bank.get_stream(music_track)
 	if stream==null: return
@@ -324,8 +330,21 @@ func _process(delta: float) -> void:
 	world_audio.maintain()
 	supplemental.refresh()
 	if not music_bank.independent: return
-	music_transition=maxf(0.0,music_transition-minf(delta,0.05))
+	var step := minf(delta,0.05)
+	music_transition=maxf(0.0,music_transition-step)
 	if music_transition==0.0 and music_tail.playing: music_tail.stop()
+	var speaking := voice.playing and volume*voice_volume>0.0
+	var duck_target := 0.32 if speaking else 1.0
+	var rate := (1.0-0.32)/(MUSIC_DUCK_ATTACK if speaking else MUSIC_DUCK_RELEASE)
+	_music_duck_gain=move_toward(_music_duck_gain,duck_target,rate*maxf(delta,0.0))
+	_sync_music()
+
+func set_focus_muted(value: bool) -> void:
+	if focus_muted==value: return
+	focus_muted=value
+	if value:
+		_stop_source_audio()
+	_sync_loops(current_loops)
 	_sync_music()
 
 func set_transport_muted(value: bool) -> void:
@@ -358,6 +377,7 @@ func reset_timeline() -> void:
 	music_allowed=false
 	music_resume_position=0.0
 	music_completed=false
+	_music_duck_gain=1.0
 	music_started=false
 	music_source_program=""
 	music_bank.reset_score()
@@ -389,14 +409,14 @@ func continue_timeline() -> void:
 	else: world_audio.reset_source_timeline()
 
 func play(cue: String, override_stream: AudioStream = null) -> void:
-	if not transport_muted: super.play(cue,override_stream)
+	if not transport_muted and not focus_muted: super.play(cue,override_stream)
 
 func effect_gain(cue: String) -> float:
 	if cue=="rocketlaunch": return volume*effects_volume*0.6*float(mix.get("missileflight",100))/100.0
 	return super.effect_gain(cue)
 
 func speak(cue: String) -> void:
-	if not transport_muted: super.speak(cue)
+	if not transport_muted and not focus_muted: super.speak(cue)
 
 func release_streams() -> void:
 	world_audio.release()
@@ -429,7 +449,7 @@ func _sync_loops(loops: Dictionary) -> void:
 	for name in ["engine", "turret"]:
 		var player: AudioStreamPlayer = engine if name == "engine" else turret
 		var source: Dictionary = loops.get(name,{})
-		var active := not muted and not transport_muted and volume*motor_volume*cue_gain(name)>0 and bool(source.get("active",false))
+		var active := not muted and not transport_muted and not focus_muted and volume*motor_volume*cue_gain(name)>0 and bool(source.get("active",false))
 		if active != bool(loop_states[name]):
 			loop_transitions.append({"name":name,"active":active,"frame":last_frame,"epoch":epoch})
 			if loop_transitions.size() > 64: loop_transitions.pop_front()
@@ -625,7 +645,7 @@ func apply_audio(packet: Dictionary) -> bool:
 		var reason := ""
 		if int(event.epoch) != epoch: reason = "previous-program"
 		elif not packet.active or not packet.enabled or not event.enabled: reason = "original-sound-gate"
-		elif transport_muted: reason = "presentation-transport-muted"
+		elif transport_muted or focus_muted: reason = "presentation-transport-muted"
 		elif last_frame - int(event.frame) > MAX_AGE_FRAMES: reason = "stale-diagnostic-step"
 		elif event.kind not in ["readiness_visible", "crew_visible", "radio_visible"] and (event.kind != "sound" or event.get("sample") == null): reason = "unmapped-original-request"
 		var rocket: AudioStreamWAV
@@ -653,7 +673,7 @@ func apply_audio(packet: Dictionary) -> bool:
 	if launches is Array:
 		# Bounded, but never dropped whole: the first 64 still play.
 		for launch: Variant in launches.slice(0,64):
-			var rocket: AudioStreamWAV=world_audio.rocket_variant(launch,last_frame,epoch,false,packet.active and packet.enabled and not transport_muted)
+			var rocket: AudioStreamWAV=world_audio.rocket_variant(launch,last_frame,epoch,false,packet.active and packet.enabled and not transport_muted and not focus_muted)
 			if rocket!=null: play("rocketlaunch",rocket)
 	last_event_id = next_id
 	last_crew_message = next_crew_id

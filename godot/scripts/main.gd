@@ -22,6 +22,7 @@ var environment: Environment
 var world_environment: WorldEnvironment
 var cover_scene: Node3D
 var landscape: Node3D
+var _range_world_ready := false
 var menu_mood := -1
 var light: DirectionalLight3D
 var fill_light: DirectionalLight3D
@@ -106,7 +107,8 @@ func _apply_mood(menu: bool) -> void:
 	menu_mood = int(menu)
 	world_environment.environment = cover_scene.environment if menu else environment
 	cover_scene.set_active(menu)
-	landscape.visible = not menu
+	if landscape:
+		landscape.visible = not menu
 	light.visible = not menu
 	fill_light.visible = not menu
 	vehicle.crew.visible = menu
@@ -161,8 +163,6 @@ func _setup_world() -> void:
 	light.shadow_enabled = true
 	light.directional_shadow_max_distance = 220
 	add_child(light)
-	landscape = Landscape.new()
-	add_child(landscape)
 	cover_scene = CoverScene.new()
 	add_child(cover_scene)
 	vehicle = Vehicle.new()
@@ -183,10 +183,31 @@ func _setup_world() -> void:
 	burst_mesh.rings = 4
 	burst_smoke = StandardMaterial3D.new()
 	burst_smoke.albedo_color = Color("b8bcac")
+	burst_smoke.roughness = 0.94
+	burst_smoke.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	burst_hit = StandardMaterial3D.new()
-	burst_hit.albedo_color = Color("dda057")
+	burst_hit.albedo_color = Color("e8a454")
+	burst_hit.roughness = 0.85
+	burst_hit.emission_enabled = true
+	burst_hit.emission = Color("ff8c32")
+	burst_hit.emission_energy_multiplier = 1.3
+	burst_hit.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	burst_dust = StandardMaterial3D.new()
-	burst_dust.albedo_color = Color("66665b")
+	burst_dust.albedo_color = Color("6e6b5c")
+	burst_dust.roughness = 0.96
+	burst_dust.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	# Defer the 30,000-clump Practice Range terrain and targets when embedded
+	# inside Abrams Cover so cold startup does not build unseen range geometry.
+	if not embedded:
+		_ensure_range_world()
+
+func _ensure_range_world() -> void:
+	if _range_world_ready:
+		return
+	_range_world_ready = true
+	landscape = Landscape.new()
+	landscape.visible = screen == "range"
+	add_child(landscape)
 	for target in sim.targets:
 		var model := Vehicle.new()
 		model.scale = Vector3(0.88,0.88,0.88)
@@ -194,6 +215,8 @@ func _setup_world() -> void:
 		model.position = Vector3(target.pos.x,0,target.pos.y)
 		model.rotation.y = PI + 0.18
 		target_nodes.append(model)
+	thermal_overlay_state = -1
+	_update_targets()
 
 func _physics_process(_delta: float) -> void:
 	if screen != "range" or paused or sim.status != "active":
@@ -327,6 +350,7 @@ func open_artwork() -> void:
 	else: get_tree().change_scene_to_file("res://scenes/art_review.tscn")
 
 func start_range() -> void:
+	_ensure_range_world()
 	sim.reset()
 	hit_count = 0
 	shots = 0
@@ -426,21 +450,38 @@ func _burst(at: Vector2, hit: bool, smoke := false) -> void:
 	root.position = Vector3(at.x,0.8,at.y)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 88 + effects.size()
+	var primary_mat: StandardMaterial3D = (burst_smoke if smoke else burst_dust).duplicate()
+	var hot_mat: StandardMaterial3D = burst_hit.duplicate() if (hit and not smoke) else null
+	var materials: Array[StandardMaterial3D] = [primary_mat]
+	if hot_mat != null:
+		materials.append(hot_mat)
 	for i in range(10):
 		var p := MeshInstance3D.new()
 		p.mesh = burst_mesh
 		p.scale = Vector3.ONE*(0.3+rng.randf()*0.5)
-		p.material_override = burst_smoke if smoke else (burst_hit if hit and i<4 else burst_dust)
+		p.material_override = hot_mat if (hot_mat != null and i < 4) else primary_mat
 		p.position = Vector3(rng.randf_range(-1.2,1.2),rng.randf_range(0,1.5),rng.randf_range(-1.2,1.2))
 		root.add_child(p)
-	effects.append({"node":root,"age":0.0,"duration":8.0 if smoke else 2.2,"smoke":smoke})
+	effects.append({"node":root,"age":0.0,"duration":8.0 if smoke else 2.2,"smoke":smoke,"materials":materials,"hot":hot_mat})
 
 func _update_effects(delta: float) -> void:
 	for i in range(effects.size()-1,-1,-1):
 		var fx: Dictionary = effects[i]
 		fx.age += delta
-		fx.node.scale = Vector3.ONE*(1.0+float(fx.age)*2.4)
-		fx.node.position.y += delta*0.85
+		var duration: float = maxf(float(fx.duration), 0.001)
+		var t: float = clampf(float(fx.age) / duration, 0.0, 1.0)
+		var ease_out: float = 1.0 - pow(1.0 - t, 2.2)
+		var max_expand: float = 10.5 if fx.smoke else 4.2
+		fx.node.scale = Vector3.ONE * (1.0 + ease_out * max_expand)
+		fx.node.position.y += delta * (0.95 * (1.0 - t * 0.65))
+		var alpha: float = 1.0 - smoothstep(0.55, 1.0, t)
+		for mat: StandardMaterial3D in fx.get("materials", []):
+			var col: Color = mat.albedo_color
+			col.a = alpha
+			mat.albedo_color = col
+		var hot_mat: StandardMaterial3D = fx.get("hot")
+		if hot_mat != null:
+			hot_mat.emission_energy_multiplier = maxf(0.0, 1.0 - t * 2.8) * 1.3
 		if fx.age >= fx.duration:
 			fx.node.queue_free()
 			effects.remove_at(i)

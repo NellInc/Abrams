@@ -105,7 +105,7 @@ class SimStateReader:
             raise ValueError('original SIM loop diagnostic instructions differ')
         return self.read(ram)
 
-    def read(self, ram: bytes) -> dict | None:
+    def read(self, ram: bytes, *, include_world: bool = True) -> dict | None:
         base = self.locate(ram)
         if base is None:
             return None
@@ -124,15 +124,14 @@ class SimStateReader:
         speed_raw = word(body + 36, signed=True)
         local_position = [word(body + delta, signed=True) for delta in (4, 6, 8)]
         origin = window_origin(ram, ds)
-        objects = read_objects(ram, ds)
-        return {
+        objects = read_objects(ram, ds) if include_world else None
+        result = {
             "schema": 2, "basis": "original-PC-SIM-read-only",
             "load_segment": base // 16,
             "scenario_resource_index": ram[ds + 0x8D74],
             "station": ("gunner", "commander", "cupola", "driver")[station],
             "position_raw": local_position,
             "world_position_raw": world_position(local_position, origin),
-            "world": objects,
             "camera": read_camera(ram, ds, objects),
             "position_units": "unverified-original-units",
             "hull_angle_u8": hull_angle, "turret_relative_u8": turret_angle,
@@ -145,3 +144,6 @@ class SimStateReader:
                                    struct.unpack_from("<4h", ram, ds + 0x79B4))),
             "selected_weapon": ("HEAT", "SABOT", "AX")[weapon] if weapon < 3 else "COAX",
         }
+        if include_world:
+            result["world"] = objects
+        return result

@@ -10,9 +10,11 @@ var camera: Camera3D
 var object_count := 0
 var triangle_count := 0
 var _flags := PackedVector2Array()
+var _material := ShaderMaterial.new()
 const NO_LIGHT := 2.0
 
 func _init() -> void:
+	_material.shader = ShaderSource
 	own_world_3d = true
 	transparent_bg = true
 	render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -103,9 +105,7 @@ func prepare(data: Dictionary, dimensions: Vector2i, _effect_art: RefCounted = n
 		arrays[Mesh.ARRAY_TEX_UV2] = _flags
 		var mesh := ArrayMesh.new()
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-		var material := ShaderMaterial.new()
-		material.shader = ShaderSource
-		mesh.surface_set_material(0,material)
+		mesh.surface_set_material(0,_material)
 		mesh_node.mesh = mesh
 	# The mask is immutable until the next paired prepare (including resize).
 	# A dependent scene samples it after this one draw; cache hits retain it.

@@ -3,6 +3,7 @@ extends Control
 signal game_selected(destination: String)
 signal quit_selected
 signal original_selected
+signal settings_closed
 var menu: MenuBar
 var main: Node3D
 var stage: SubViewport
@@ -11,10 +12,14 @@ var artwork: Control
 var settings_page: Control
 var settings_columns: GridContainer
 var settings_error: Label
+var _settings_overlay := false
 var route_panel: Control
 var route_message: Label
+var route_progress: ProgressBar
+var route_cancel: Button
 var original_button: Button
 var busy := false
+signal route_cancel_requested
 # Re-reads each open Settings control from the menu, so a change made
 # elsewhere (the browser toolbar or a chord) never leaves it stale.
 var settings_sync: Array[Callable] = []
@@ -40,7 +45,7 @@ func _ready() -> void:
 	main.quit_selected.connect(func():quit_selected.emit())
 	menu.mix_changed.connect(_apply_mix)
 	menu.mix_changed.connect(sync_settings)
-	for changed: Signal in [menu.graphics_selected,menu.hud_style_selected,menu.quality_selected]:
+	for changed: Signal in [menu.graphics_selected,menu.hud_style_selected,menu.quality_selected,menu.fullscreen_toggled,menu.reduced_motion_toggled,menu.focus_mute_changed]:
 		changed.connect(func(_a=null,_b=null):sync_settings.call_deferred())
 	_apply_mix()
 	resized.connect(_resize_settings)
@@ -81,8 +86,29 @@ func _label(value: String, font_size := 20) -> Label:
 	label.add_theme_font_size_override("font_size",font_size)
 	return label
 
-func open_settings() -> void:
+func _set_stage_paused(paused: bool) -> void:
+	if not is_instance_valid(stage) or not is_instance_valid(main): return
+	stage.render_target_update_mode=SubViewport.UPDATE_DISABLED if paused or not visible else SubViewport.UPDATE_ALWAYS
+	main.process_mode=Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
+	if paused: main.sound.stop_all()
+
+func _channel_bank_loaded(channel: String) -> bool:
+	if menu==null or menu.audio==null or channel not in menu.BROWSER_OMITTED: return true
+	if channel in ["foley","interface","fire"]:
+		return menu.audio.supplemental!=null and not menu.audio.supplemental.streams.is_empty()
+	var world=menu.audio.world_audio
+	if world==null: return false
+	var target: String=world.CUE_PLAYERS.get(channel,channel)
+	return world.streams.has(target)
+
+func open_settings(overlay := false) -> void:
+	if is_instance_valid(settings_page): return
+	_settings_overlay=overlay
+	if overlay:
+		visible=true
+		process_mode=Node.PROCESS_MODE_INHERIT
 	main.ui.hide()
+	_set_stage_paused(true)
 	var margin := _panel()
 	settings_page=margin.get_parent()
 	var stack := VBoxContainer.new()
@@ -106,18 +132,42 @@ func open_settings() -> void:
 	_choice(display,"HUD style",menu.HUD_STYLES,["Restored","Tactical"],func():return menu.hud_style,menu.choose_hud_style)
 	_choice(display,"Antialiasing",menu.QUALITY_LEVELS.msaa,["Off","2x","4x","8x"],func():return menu.quality.msaa,func(value):menu.choose_quality("msaa",value))
 	_choice(display,"Texture filtering",menu.QUALITY_LEVELS.anisotropy,["Off","2x","4x","8x","16x"],func():return menu.quality.anisotropy,func(value):menu.choose_quality("anisotropy",value))
+	if not OS.has_feature("web"):
+		_toggle(display,"Fullscreen",func():return menu.fullscreen_enabled,func(enabled):if enabled!=menu.fullscreen_enabled: menu.toggle_fullscreen())
+	_toggle(display,"Reduced motion",func():return menu.reduced_motion,menu.choose_reduced_motion)
+	_toggle(display,"Mute audio when unfocused",func():return menu.mute_when_unfocused,menu.choose_focus_mute)
+	var reset_display := Button.new()
+	reset_display.text="RESTORE FULL-QUALITY DEFAULTS"
+	reset_display.custom_minimum_size.y=38
+	reset_display.pressed.connect(func():menu.reset_quality();_show_settings_error())
+	display.add_child(reset_display)
 	var audio := _settings_group("AUDIO")
+	var reset_audio := Button.new()
+	reset_audio.text="RESTORE DEFAULT MIX"
+	reset_audio.custom_minimum_size.y=38
+	reset_audio.pressed.connect(func():menu.reset_mix();_show_settings_error())
+	audio.add_child(reset_audio)
+	var group_headers := {"master":"Core Mix","cannon":"Combat & Cockpit Cues","river":"Battlefield & World Beds"}
 	for channel in menu.audio_channels():
+		if group_headers.has(channel):
+			var heading := _label(group_headers[channel],18)
+			heading.modulate=Color("c8d2bc")
+			audio.add_child(heading)
 		var row := VBoxContainer.new()
 		audio.add_child(row)
 		var title := _label(menu.TITLES[channel]+": %d%%"%menu.settings[channel])
+		var slider := audio_slider(channel,title)
+		if not _channel_bank_loaded(channel):
+			row.modulate=Color(1,1,1,0.58)
+			row.tooltip_text="Optional private audio pack is not installed."
+			slider.tooltip_text=row.tooltip_text
 		row.add_child(title)
-		row.add_child(audio_slider(channel,title))
+		row.add_child(slider)
 	settings_error=_label("",16)
 	settings_error.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	stack.add_child(settings_error)
 	var back := Button.new()
-	back.text="MAIN MENU"
+	back.text="RETURN TO GAME" if overlay else "MAIN MENU"
 	back.custom_minimum_size.y=44
 	stack.add_child(back)
 	back.pressed.connect(close_settings)
@@ -167,6 +217,15 @@ func _choice(parent: Control, title: String, values: Array, names: Array, curren
 	parent.add_child(choice)
 	choice.item_selected.connect(func(index):action.call(values[index]);_show_settings_error())
 
+func _toggle(parent: Control, title: String, current: Callable, action: Callable) -> void:
+	var box := CheckBox.new()
+	box.text=title
+	box.button_pressed=bool(current.call())
+	box.custom_minimum_size.y=36
+	settings_sync.append(func():if is_instance_valid(box):box.set_pressed_no_signal(bool(current.call())))
+	parent.add_child(box)
+	box.toggled.connect(func(enabled):action.call(enabled);_show_settings_error())
+
 func sync_settings() -> void:
 	if not is_instance_valid(settings_page): return
 	for sync in settings_sync: sync.call()
@@ -179,9 +238,16 @@ func _resize_settings() -> void:
 	if is_instance_valid(settings_columns):settings_columns.columns=2 if size.x>=900 else 1
 
 func close_settings() -> void:
+	var was_overlay := _settings_overlay
+	_settings_overlay=false
 	if is_instance_valid(settings_page):settings_page.queue_free()
 	settings_page=null;settings_columns=null;settings_error=null;settings_sync.clear()
-	main.ui.show();main.set_screen("menu")
+	if was_overlay:
+		set_active(false)
+		settings_closed.emit()
+	else:
+		_set_stage_paused(false)
+		main.ui.show();main.set_screen("menu")
 
 func open_artwork() -> void:
 	main.ui.hide();main.hide();main.process_mode=Node.PROCESS_MODE_DISABLED
@@ -194,8 +260,9 @@ func open_artwork() -> void:
 		main.show();main.process_mode=Node.PROCESS_MODE_INHERIT
 		main.ui.show();main.set_screen("extras"))
 
-func show_route(message: String, failed := false) -> void:
+func show_route(message: String, failed := false, progress := -1.0) -> void:
 	busy=true;main.ui.hide()
+	_set_stage_paused(true)
 	if not is_instance_valid(route_panel):
 		var margin := _panel()
 		route_panel=margin.get_parent()
@@ -206,6 +273,14 @@ func show_route(message: String, failed := false) -> void:
 		route_message=_label("",24)
 		route_message.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		stack.add_child(route_message)
+		route_progress=ProgressBar.new()
+		route_progress.min_value=0.0;route_progress.max_value=100.0
+		route_progress.custom_minimum_size.y=24
+		stack.add_child(route_progress)
+		route_cancel=Button.new();route_cancel.text="BACK TO MENU"
+		route_cancel.custom_minimum_size.y=48
+		stack.add_child(route_cancel)
+		route_cancel.pressed.connect(func():route_cancel_requested.emit())
 		original_button=Button.new();original_button.text="CONTINUE ORIGINAL GAME"
 		original_button.custom_minimum_size.y=48
 		stack.add_child(original_button)
@@ -215,13 +290,19 @@ func show_route(message: String, failed := false) -> void:
 		stack.add_child(quit)
 		quit.pressed.connect(func():quit_selected.emit())
 	route_message.text=message
+	if is_instance_valid(route_progress):
+		route_progress.visible=not failed and progress>=0.0
+		if progress>=0.0: route_progress.value=clampf(progress*100.0,0.0,100.0)
+	if is_instance_valid(route_cancel):
+		route_cancel.visible=not failed
 	original_button.visible=failed
 	if failed:original_button.grab_focus()
 
 func clear_route() -> void:
 	busy=false
 	if is_instance_valid(route_panel):route_panel.queue_free()
-	route_panel=null
+	route_panel=null;route_progress=null;route_cancel=null
+	_set_stage_paused(false)
 	main.ui.show();main.set_screen("menu")
 
 func _unhandled_key_input(event: InputEvent) -> void:

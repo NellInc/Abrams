@@ -82,13 +82,20 @@ func observe_event(event: Dictionary) -> void:
 func begin_packet() -> void:
 	fire_visible = false
 
+var _fire_bytes := PackedByteArray()
+var _fire_match := false
+
 func observe_frame(source: Image, program: Dictionary, guard: Callable) -> void:
 	fire_visible = false
 	if not players.has("fire"): return
 	if allowed() and guard.is_valid() and guard.call() and program.get("name") == "SIM" and source != null and source.get_size() == Vector2i(320, 200) and source.get_format() == Image.FORMAT_RGB8:
-		var hash: HashingContext = HashingContext.new()
-		hash.start(HashingContext.HASH_SHA256); hash.update(source.get_data())
-		fire_visible = hash.finish().hex_encode() == SCENE1_RGB
+		var bytes := source.get_data()
+		if bytes != _fire_bytes:
+			_fire_bytes = bytes
+			var hash: HashingContext = HashingContext.new()
+			hash.start(HashingContext.HASH_SHA256); hash.update(bytes)
+			_fire_match = hash.finish().hex_encode() == SCENE1_RGB
+		fire_visible = _fire_match
 	fire_frame = host.last_frame; fire_epoch = host.epoch; fire_guard = guard
 	if not fire_visible: players.fire.stop()
 

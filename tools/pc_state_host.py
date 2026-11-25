@@ -71,7 +71,7 @@ class Worker:
             except Exception: pass
             raise
 
-    def read(self):
+    def read_raw(self):
         deadline = None
         while True:
             try:
@@ -93,19 +93,30 @@ class Worker:
         if isinstance(line, Exception): raise line
         if not line or not line.endswith('\n'):
             raise RuntimeError('Original-game worker ended before replying')
+        return line
+
+    def read(self):
+        line = self.read_raw()
         message = json.loads(line)
         if message.get('type') == 'error': raise RuntimeError(message.get('message', 'Original-game worker failed'))
         return message
 
-    def request(self, message):
+    def request_raw(self, raw_line):
         try:
-            self.process.stdin.write(json.dumps(message, separators=(',', ':')) + '\n')
+            self.process.stdin.write(raw_line)
             self.process.stdin.flush()
         except OSError as error:
             # The worker's own pipe, never the client's: report it, not a quiet exit.
             if _closed_pipe(error): raise RuntimeError('Original-game worker ended before accepting a command') from error
             raise
-        return self.read()
+        return self.read_raw()
+
+    def request(self, message):
+        raw_line = json.dumps(message, separators=(',', ':')) + '\n'
+        reply = self.request_raw(raw_line)
+        parsed = json.loads(reply)
+        if parsed.get('type') == 'error': raise RuntimeError(parsed.get('message', 'Original-game worker failed'))
+        return parsed
 
     def close(self):
         if self.killed: return
@@ -207,7 +218,20 @@ def supervise(args, argv, lock_saves, validate_command):
             validate_command(command)
             if command['op'] == 'quit': break
             if command['op'] == 'step':
-                send(worker.request(command))
+                if hasattr(worker, 'request_raw'):
+                    reply = worker.request_raw(json.dumps(command, separators=(',', ':')) + '\n')
+                    if not reply.startswith('{"type":"sample",'):
+                        parsed = json.loads(reply)
+                        if parsed.get('type') == 'error':
+                            raise RuntimeError(parsed.get('message', 'Original-game worker failed'))
+                    try:
+                        sys.stdout.write(reply)
+                        sys.stdout.flush()
+                    except OSError as error:
+                        if _closed_pipe(error): raise _ClientGone() from error
+                        raise
+                else:
+                    send(worker.request(command))
                 continue
             operation, slot = command['op'], command['slot']
             response = {'type': 'state_result', 'id': command['id'], 'success': False}

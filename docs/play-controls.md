@@ -160,15 +160,7 @@ grass in Modern stays procedural; Tactical uses its own material treatment.
 
 ## Audio
 
-The Audio menu provides Master, Sound effects, Crew voices, Engine and turret,
-and Music controls. The mix persists separately from campaign saves. Original
-F5 and pause still govern gameplay audio. Frontend music has its own Music and
-Master gates, and stays silent on unrecognized screens and during simulation.
-The four new arrangements use individual samples, including extracted Genesis
-percussion. They are authored arrangements, not recovered original scores. Native
-apps built after 15 October 2026 do not include them, because the percussion
-samples' redistribution rights are not established; equipped checkouts and the
-browser edition keep them, once a Genesis ROM is imported or verified.
+The Audio menu and **Session > Settings…** overlay provide Master, Sound effects, Crew voices, Engine and turret, Music, and individual combat, cockpit and battlefield channel controls, plus **Mute when unfocused**. The mix persists separately from campaign saves. Original F5 and pause still govern gameplay audio. Music ducks smoothly while crew speech plays and stays silent on unrecognized screens when no independent score track is installed. The independent authored soundtrack plays across menus, briefings and missions; legacy Genesis frontend arrangements remain available where a Genesis ROM is verified and their sample pack is present.
 
 ## Verification boundary
 
@@ -184,7 +176,7 @@ that every mission or campaign has been completed.
 
 Choose your original PC folder, then Start remaster. The file picker shows your selection before verification. An optional Genesis ROM unlocks the Genesis-based remaster artwork and frontend music, and the browser derives the Genesis effects from your verified ROM. Since 15 October 2026 the browser edition publishes no captured Genesis screens, so its Genesis mode, Genesis newspaper, map frame and clipboard restorations and Genesis vehicle colours keep original PC pixels (see [release rights](release-rights.md)). EGA Upscaled preserves the original PC palette and skin colours; Genesis Upscaled retains the generated high-resolution artwork. Graphics and HUD Style remain independent.
 
-Known limit (31 October 2026): the published browser build's Ctrl+Alt+S writes slot 1 at once, without the second-press overwrite confirmation, and on Windows it does not set aside AltGr layout letters for S, L and G. The original's own EXIT also ends there with an "Original game stopped" message rather than a normal close. When checkpoint storage is unreadable, the in-canvas Session menu can still save, and a failure Godot detects itself leaves the page without Reload page. After using a page control, game keys such as F5 reach the page until **Game keyboard** is chosen; F5 then reloads the page. Fixes for these await the next Web rebuild.
+Quick-save overwrite confirmation (`Ctrl+Alt+S` / `Cmd+S` pressed twice), AltGr layout guards, clean original `EXIT` handling, storage-unavailability guards, engine-failure reload recovery, overwritten-slot restore (`Restore overwritten`) and automatic canvas focus return after toolbar actions are active in the current browser shell.
 
 Use **Game keyboard** after interacting with browser controls to return keyboard focus to the game. **Fullscreen** keeps the browser controls available; Escape leaves browser fullscreen. Editing a browser selector does not trigger quick-save/load or graphics shortcuts.
 

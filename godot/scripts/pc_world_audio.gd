@@ -263,7 +263,21 @@ func stop() -> void:
 func resume_position(cue: String, now: int) -> float:
 	var held: Variant=_resume_at.get(cue)
 	_resume_at.erase(cue)
-	return float(held[0]) if held is Array and now-int(held[1])<RESUME_WINDOW_MSEC else 0.0
+	var pos: float = float(held[0]) if held is Array and now-int(held[1])<RESUME_WINDOW_MSEC else 0.0
+	var stream: AudioStreamWAV = streams.get(cue) as AudioStreamWAV
+	if pos > 0.0 and stream != null and stream.format == AudioStreamWAV.FORMAT_16_BITS and not stream.stereo and stream.mix_rate > 0:
+		var bytes: PackedByteArray = stream.data
+		var frames: int = bytes.size() >> 1
+		var start: int = clampi(int(round(pos * float(stream.mix_rate))), 0, maxi(0, frames - 1))
+		if frames > 2 and abs(bytes.decode_s16(start * 2)) > 64:
+			var limit: int = mini(frames - 1, start + 256)
+			var prev: int = bytes.decode_s16(start * 2)
+			for i: int in range(start + 1, limit + 1):
+				var cur: int = bytes.decode_s16(i * 2)
+				if (prev <= 0 and cur >= 0) or (prev >= 0 and cur <= 0):
+					return float(i) / float(stream.mix_rate)
+				prev = cur
+	return pos
 
 func release() -> void:
 	stop()
@@ -275,7 +289,7 @@ func release() -> void:
 	if RenderingServer.frame_post_draw.is_connected(after_draw): RenderingServer.frame_post_draw.disconnect(after_draw)
 
 func allowed() -> bool:
-	return is_instance_valid(host) and not host.muted and not host.transport_muted and host.failure.is_empty() and (not visibility_guard.is_valid() or visibility_guard.call())
+	return is_instance_valid(host) and not host.muted and not host.transport_muted and not host.focus_muted and host.failure.is_empty() and (not visibility_guard.is_valid() or visibility_guard.call())
 
 func maintain() -> void:
 	if not allowed(): stop()

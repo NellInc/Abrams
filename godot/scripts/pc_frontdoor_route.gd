@@ -11,6 +11,9 @@ var proof = TextProof.new()
 var phase := "idle"
 var destination := ""
 var steps: Array = []
+var _paused_boot_steps: Array = []
+var _boot_total := 0
+var _boot_done := 0
 var booted := false
 var selected := -1
 var submenu := ""
@@ -62,11 +65,17 @@ func begin(choice: String) -> bool:
 	if phase not in ["idle","playing"] or not TARGETS.has(choice): return false
 	destination=choice;failure="";moves=0;return_ready=false
 	if selected>=0:
+		_paused_boot_steps.clear()
 		phase="select"
+	elif not _paused_boot_steps.is_empty():
+		steps=_paused_boot_steps.duplicate(true)
+		_paused_boot_steps.clear()
+		phase="boot"
 	elif not booted:
-		booted=true;phase="boot"
+		booted=true;phase="boot";_boot_total=0;_boot_done=0
 		for step in BOOT_STEPS:
 			var remaining := int(step[0])
+			_boot_total+=remaining
 			while remaining>0:
 				var count:=mini(remaining,60)
 				steps.append([count,step[1].duplicate()]);remaining-=count
@@ -74,8 +83,26 @@ func begin(choice: String) -> bool:
 		_fail()
 	return true
 
+func cancel() -> void:
+	if phase=="boot":
+		_paused_boot_steps=steps.duplicate(true)
+	steps.clear()
+	phase="idle"
+	return_ready=false
+
+func progress() -> float:
+	if phase=="boot" and _boot_total>0:
+		return clampf(float(_boot_done)/float(_boot_total)*0.85,0.0,0.85)
+	if phase=="select": return 0.90
+	if phase=="open": return 0.96
+	if phase=="playing": return 1.0
+	return 0.0
+
 func next_step() -> Array:
-	if not steps.is_empty():return steps.pop_front()
+	if not steps.is_empty():
+		var next: Array=steps.pop_front()
+		if phase=="boot": _boot_done+=int(next[0])
+		return next
 	if phase=="boot":phase="select"
 	if phase=="select":
 		if selected<0:_fail();return []

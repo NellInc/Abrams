@@ -186,7 +186,15 @@ class PcReferenceCore:
         info = AVInfo()
         self.core.retro_get_system_av_info(C.byref(info))
         self._check()
+        self._last_av_info = info
         return info
+
+    @property
+    def last_fps(self):
+        info = getattr(self, "_last_av_info", None)
+        if info is None:
+            info = self.pause_at_frame_end()
+        return info.timing.fps
 
     def set_keys(self, names):
         keys = {KEYS[name] for name in names}
@@ -206,7 +214,7 @@ class PcReferenceCore:
         # Reporting zero here truncates every hold to a momentary key press.
         return int(port == 0 and device == 3 and index == 0 and key in self.pressed)
 
-    def run(self, count, keys=()):
+    def run(self, count, keys=(), pre_ram=None):
         if not 1 <= count <= 36000:
             raise ValueError("bounded frame count required")
         self.set_keys(keys)
@@ -214,7 +222,7 @@ class PcReferenceCore:
             if index == count - 1:
                 # retro_run submits the already completed framebuffer before
                 # advancing another frame. Pair it with RAM from that boundary.
-                self.last_video_ram = self.conventional_memory()
+                self.last_video_ram = pre_ram if (count == 1 and pre_ram is not None) else self.conventional_memory()
             self.core.retro_run()
             self.frame += 1
             self._check()

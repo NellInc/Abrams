@@ -15,6 +15,7 @@ varying vec4 anchor;
 varying float confined;
 varying float extent;
 varying vec3 plume_frame;
+varying float debris_seen;
 #include "res://scripts/pc_tactical_effect_finish.gdshaderinc"
 float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float noise(vec2 p) {
@@ -41,7 +42,7 @@ vec3 plume_billow(vec2 p,float phase,float seed) {
 }
 float owner_at(vec2 uv) {
     if (any(lessThan(uv,vec2(0.0))) || any(greaterThanEqual(uv,vec2(1.0)))) return -1.0;
-    vec2 id=round(texture(source_ownership,uv).rg*255.0);
+    vec2 id=round(textureLod(source_ownership,uv,0.0).rg*255.0);
     return id.x+256.0*id.y;
 }
 vec3 plume_frame_at(vec2 root) {
@@ -216,6 +217,25 @@ void vertex() {
     extent=fract(UV2.x)*2.0;
     confined=UV2.y;
     plume_frame=plume_frame_at(anchor.xy);
+    // Evaluate debris wreck visibility once per vertex rather than 35 probes
+    // per fragment. Unset ARRAY_COLOR defaults to b=1.0 and falls back safely.
+    debris_seen=1.0;
+    if (emitter.y>3.5) {
+        if (COLOR.b<0.5 && COLOR.r>0.0 && COLOR.g>0.0) {
+            bool seen=false;
+            for (int i=0;i<35 && !seen;i++) {
+                int ix=i%7;int iy=i/7;
+                float px=float((ix+1)/2)*(ix%2==1 ? -1.0 : 1.0);
+                float py=float((iy+1)/2)*(iy%2==1 ? -1.0 : 1.0);
+                float probe=owner_at(anchor.xy+vec2(px*0.11,py*0.07)*extent*COLOR.rg);
+                if (probe<0.0 || probe>=owner_count) continue;
+                seen=probe==emitter.x || textureLod(allowed_terrain,vec2((probe+0.5)/owner_count,0.5),0.0).g>0.5;
+            }
+            debris_seen=seen ? 1.0 : 0.0;
+        } else {
+            debris_seen=-1.0;
+        }
+    }
 }
 void fragment() {
     // Evaluate the quad footprint before source-ownership discard diverges.
@@ -248,17 +268,21 @@ void fragment() {
         // so probe a grid. A wreck wholly hidden by a crest throws nothing.
         // Centre outward (0,-1,+1,-2,...), stopping at the first hit, so a
         // visible wreck usually costs one or two samples per fragment.
-        vec2 uv_per_q=1.0/max(pixel*VIEWPORT_SIZE,vec2(0.0001));
-        bool seen=false;
-        for (int i=0;i<35 && !seen;i++) {
-            int ix=i%7;int iy=i/7;
-            float px=float((ix+1)/2)*(ix%2==1 ? -1.0 : 1.0);
-            float py=float((iy+1)/2)*(iy%2==1 ? -1.0 : 1.0);
-            float probe=owner_at(anchor.xy+vec2(px*0.11,py*0.07)*extent*uv_per_q);
-            if (probe<0.0 || probe>=owner_count) continue;
-            seen=probe==emitter.x || texture(allowed_terrain,vec2((probe+0.5)/owner_count,0.5)).g>0.5;
+        if (debris_seen < -0.5) {
+            vec2 uv_per_q=1.0/max(pixel*VIEWPORT_SIZE,vec2(0.0001));
+            bool seen=false;
+            for (int i=0;i<35 && !seen;i++) {
+                int ix=i%7;int iy=i/7;
+                float px=float((ix+1)/2)*(ix%2==1 ? -1.0 : 1.0);
+                float py=float((iy+1)/2)*(iy%2==1 ? -1.0 : 1.0);
+                float probe=owner_at(anchor.xy+vec2(px*0.11,py*0.07)*extent*uv_per_q);
+                if (probe<0.0 || probe>=owner_count) continue;
+                seen=probe==emitter.x || texture(allowed_terrain,vec2((probe+0.5)/owner_count,0.5)).g>0.5;
+            }
+            if (!seen) discard;
+        } else if (debris_seen < 0.5) {
+            discard;
         }
-        if (!seen) discard;
     }
     else if (confined>0.5) { if (id!=emitter.x) discard; }
     else if (id!=emitter.x && owner_class.r<0.5) discard;

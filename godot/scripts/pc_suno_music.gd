@@ -114,6 +114,13 @@ func context_for_frame(source: Image, program: Dictionary, presentation: Diction
 	return {"intro":"menu","debrief":"briefing"}.get(legacy,legacy)
 
 func _fingerprint(source: Image, program: String) -> String:
+	var has_program := false
+	for row in fingerprints:
+		if row is Dictionary and row.get("program") == program and row.get("context") in SCORE_CONTEXTS:
+			has_program = true
+			break
+	if not has_program:
+		return ""
 	var bytes:=source.get_data()
 	if bytes==_screen_bytes and program==_screen_program: return _screen_context
 	_screen_bytes=bytes;_screen_program=program;_screen_context=""

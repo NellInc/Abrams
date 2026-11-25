@@ -136,6 +136,7 @@ class StateStore:
         if is_link(overlay or saves): raise ValueError('campaign overlay folder must not be a symlink or junction')
         self.disk = Path(overlay or saves).resolve() / (Path(content).stem + '.pure.zip')
         if is_link(self.disk): raise ValueError('campaign overlay must not be a symlink or junction')
+        self._slot_cache = {}
 
     def path(self, slot):
         if type(slot) is not int or not 0 <= slot <= 5: raise ValueError('slot must be 0 to 5')
@@ -211,7 +212,35 @@ class StateStore:
             except (ValueError, OSError): return
             atomic_write(target.with_suffix('.previous.zip'), read_bounded(target, sum(LIMITS.values()) + sum(OPTIONAL_LIMITS.values()) + 65536))
         atomic_write(target, buffer.getvalue(), keep_overwritten)
+        self._slot_cache.pop(target, None)
+        self._slot_cache.pop(target.with_suffix('.previous.zip'), None)
         self.read(slot)
+
+    def _slot_metadata(self, slot, previous=False):
+        path = self.root / (f'slot-{slot}.previous.zip' if previous else f'slot-{slot}.zip')
+        if is_link(path):
+            self._slot_cache.pop(path, None)
+            raise ValueError('slot must not be a symlink or junction')
+        try:
+            info = os.lstat(path)
+        except FileNotFoundError:
+            self._slot_cache.pop(path, None)
+            return None
+        signature = (info.st_mtime_ns, info.st_size, getattr(info, 'st_ino', 0))
+        cached = self._slot_cache.get(path)
+        if cached is not None and cached[0] == signature:
+            status, payload = cached[1], cached[2]
+            if status == 'ok': return payload
+            raise ValueError(payload)
+        try:
+            manifest, _ = self.read(slot, previous=previous)
+        except Exception as error:
+            message = str(error) or type(error).__name__
+            self._slot_cache[path] = (signature, 'error', message)
+            raise
+        summary = {'saved_at': manifest['saved_at'], 'program': manifest['program']}
+        self._slot_cache[path] = (signature, 'ok', summary)
+        return summary
 
     def slots(self):
         result = []
@@ -219,18 +248,21 @@ class StateStore:
             row = {'slot': slot, 'exists': False, 'valid': False,
                    'label': 'Before last load' if slot == 0 else f'Slot {slot}'}
             try:
-                row['exists'] = (self.root / f'slot-{slot}.zip').exists()
+                path = self.root / f'slot-{slot}.zip'
+                row['exists'] = path.exists() or is_link(path)
                 if row['exists']:
-                    manifest, _ = self.read(slot)
-                    row.update(valid=True, saved_at=manifest['saved_at'], program=manifest['program'])
+                    summary = self._slot_metadata(slot, previous=False)
+                    if summary is not None:
+                        row.update(valid=True, saved_at=summary['saved_at'], program=summary['program'])
             # One damaged file must never break the listing (or the host that sends it).
             except Exception as error: row['message'] = str(error) or type(error).__name__
             # Listed only when it reads back whole; a damaged or incompatible
             # overwritten archive is simply absent and never affects the slot row.
             if slot:
                 try:
-                    if (self.root / f'slot-{slot}.previous.zip').exists():
-                        row['previous_saved_at'] = self.read(slot, previous=True)[0]['saved_at']
+                    summary = self._slot_metadata(slot, previous=True)
+                    if summary is not None:
+                        row['previous_saved_at'] = summary['saved_at']
                 except Exception: pass
             result.append(row)
         return result

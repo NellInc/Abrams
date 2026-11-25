@@ -435,13 +435,14 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 		counts.exhaust+=7
 	if puffs.is_empty(): return
 	puffs.sort_custom(func(a,b):return a[0]>b[0])
-	var vertices:=PackedVector3Array();var uv:=PackedVector2Array();var uv2:=PackedVector2Array()
+	var vertices:=PackedVector3Array();var uv:=PackedVector2Array();var uv2:=PackedVector2Array();var colors:=PackedColorArray()
 	# Each source root gets two texels: packed owner, normalized root/opacity.
 	# Texels past the current puff count are never addressed by a vertex.
 	for i in puffs.size():
 		var p: Array=puffs[i]
 		_roots.set_pixel(i*2,0,Color(float(p[6]),float(p[4]),float(p[5]),float(p[9])+1.0 if float(p[9])>=0.0 else 0.0))
 		_roots.set_pixel(i*2+1,0,Color(p[7].x,p[7].y,float(p[3]),float(p[10])))
+		var step_color := Color(float(p[2]) / maxf(_clip.size.x, 1.0), float(p[2]) / maxf(_clip.size.y, 1.0), 0.0, 1.0)
 		for corner: Vector2 in [Vector2(-1,-1),Vector2(1,-1),Vector2(1,1),Vector2(-1,-1),Vector2(1,1),Vector2(-1,1)]:
 			var at: Vector2=p[1]+corner*float(p[2])
 			if p[8].has_area(): at=at.clamp(p[8].position,p[8].end)
@@ -450,8 +451,9 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 			# UV2.y: 1 confines to the restrict rectangle; debris carries 2 + ground.
 			# UV2.x: index, plus half the wreck extent for a kill burst.
 			uv.append((at-Vector2(p[1]))/float(p[2]));uv2.append(Vector2(float(i)+(float(p[12])*0.5 if p.size()>12 else 0.0),2.0+float(p[11]) if p.size()>11 else 1.0 if p[8].has_area() else 0.0))
+			colors.append(step_color)
 	var arrays:=[];arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_TEX_UV]=uv;arrays[Mesh.ARRAY_TEX_UV2]=uv2
+	arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_TEX_UV]=uv;arrays[Mesh.ARRAY_TEX_UV2]=uv2;arrays[Mesh.ARRAY_COLOR]=colors
 	_mesh.clear_surfaces();_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays);node.mesh=_mesh
 	_roots_texture.update(_roots)
 	material.set_shader_parameter("source_ownership",ownership)

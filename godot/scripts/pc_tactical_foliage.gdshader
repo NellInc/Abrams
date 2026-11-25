@@ -21,6 +21,7 @@ varying float plant_height;
 varying vec3 leaf_normal;
 varying vec3 leaf_eye;
 varying vec2 material_point;
+varying float root_ok;
 #include "res://scripts/pc_tactical_materials.gdshaderinc"
 
 // Resolution-aware sheen only. Leaf colour, broad transmission, stems and
@@ -29,52 +30,65 @@ float tactical_leaf_highlight(float pixel) {
     return 1.0-smoothstep(0.02,0.09,pixel);
 }
 
-void vertex() {
-    if (sun_footprint && UV2.x>0.75) {
-        // The contact footprint leans away from the shared Tactical sun by the
-        // plant's height times the sun's cotangent, anchored at the root. The
-        // footprint quad, its alpha and its verified-grass gate are unchanged.
-        vec3 sun=normalize(vec3(-0.58,0.34,0.74));
-        vec3 camera_sun=inverse(camera_to_local)*vec3(sun.x,-sun.y,sun.z);
-        vec3 plant_sun=inverse(mat3(MODEL_MATRIX))*vec3(camera_sun.x,camera_sun.z,-camera_sun.y);
-        vec2 away=-plant_sun.xz;
-        float run=length(away);
-        if (run>0.0001 && plant_sun.y>0.05) {
-            float radius=INSTANCE_CUSTOM.w>0.5 ? 5.0 : 25.0;
-            float reach=min((INSTANCE_CUSTOM.w>0.5 ? 9.0 : 7.0)*run/plant_sun.y,radius*3.0);
-            vec2 direction=away/run;
-            VERTEX.xz+=direction*reach*clamp((dot(VERTEX.xz,direction)/radius+1.0)*0.5,0.0,1.0);
-        }
-    }
-    // Face-local dominant planes keep leaf proportions on roof and side facets.
-    float axis=mod(round(UV2.x*16.0),8.0);
-    material_point=axis<0.5 ? VERTEX.zy : axis<1.5 ? VERTEX.xz : VERTEX.xy;
-    plant=INSTANCE_CUSTOM;
-    material_kind=UV2.x;
-    material_kind=floor(material_kind*2.0)/2.0;
-    tone=UV2.y;
-    plant_height=clamp(VERTEX.y/(plant.w>0.5 ? 11.0 : 12.5),0.0,1.0);
-    // Undo the captured camera once so the sun does not rotate with the optic.
-    // Plant proportions vary independently, so normals need inverse scale.
-    vec3 view_normal=MODEL_NORMAL_MATRIX*NORMAL;
-    vec3 local_normal=camera_to_local*vec3(view_normal.x,-view_normal.z,view_normal.y);
-    local_normal=normalize(vec3(local_normal.x,-local_normal.y,local_normal.z));
-    leaf_normal=local_normal;
-    light=0.62+0.38*max(dot(local_normal,normalize(vec3(-0.58,0.34,0.74))),0.0);
-    vec3 view_position=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
-    vec3 local_eye=camera_to_local*vec3(-view_position.x,view_position.z,-view_position.y);
-    leaf_eye=vec3(local_eye.x,-local_eye.y,local_eye.z);
-    distance_fade=smoothstep(10.0,46.0,length(view_position));
-}
-
 bool grass_at(vec2 uv) {
     if (any(lessThan(uv,vec2(0.0))) || any(greaterThanEqual(uv,vec2(1.0)))) return false;
-    vec3 owner=texture(source_ownership,uv).rgb;
+    vec3 owner=textureLod(source_ownership,uv,0.0).rgb;
     float id=floor(owner.r*255.0+0.5)+256.0*floor(owner.g*255.0+0.5);
-    if (id>=owner_count || texture(allowed_ground,vec2((id+0.5)/owner_count,0.5)).r<0.5) return false;
+    if (id>=owner_count || textureLod(allowed_ground,vec2((id+0.5)/owner_count,0.5),0.0).r<0.5) return false;
     vec2 pixel=source_origin+uv*source_dimensions;
     vec3 ray=camera_to_local*vec3(pixel.x-source_center.x,source_focal,source_center.y-pixel.y);
     return ray.z < -0.001 && dot(horizon,vec3(pixel,1.0))>0.5;
+}
+
+void vertex() {
+    plant=INSTANCE_CUSTOM;
+    root_ok=grass_at(plant.xy) ? 1.0 : 0.0;
+    if (root_ok<0.5) {
+        VERTEX=vec3(0.0);
+        material_point=vec2(0.0);
+        material_kind=0.0;
+        tone=0.0;
+        plant_height=0.0;
+        leaf_normal=vec3(0.0,0.0,1.0);
+        leaf_eye=vec3(0.0,0.0,1.0);
+        light=1.0;
+        distance_fade=1.0;
+    } else {
+        if (sun_footprint && UV2.x>0.75) {
+            // The contact footprint leans away from the shared Tactical sun by the
+            // plant's height times the sun's cotangent, anchored at the root. The
+            // footprint quad, its alpha and its verified-grass gate are unchanged.
+            vec3 sun=normalize(vec3(-0.58,0.34,0.74));
+            vec3 camera_sun=inverse(camera_to_local)*vec3(sun.x,-sun.y,sun.z);
+            vec3 plant_sun=inverse(mat3(MODEL_MATRIX))*vec3(camera_sun.x,camera_sun.z,-camera_sun.y);
+            vec2 away=-plant_sun.xz;
+            float run=length(away);
+            if (run>0.0001 && plant_sun.y>0.05) {
+                float radius=INSTANCE_CUSTOM.w>0.5 ? 5.0 : 25.0;
+                float reach=min((INSTANCE_CUSTOM.w>0.5 ? 9.0 : 7.0)*run/plant_sun.y,radius*3.0);
+                vec2 direction=away/run;
+                VERTEX.xz+=direction*reach*clamp((dot(VERTEX.xz,direction)/radius+1.0)*0.5,0.0,1.0);
+            }
+        }
+        // Face-local dominant planes keep leaf proportions on roof and side facets.
+        float axis=mod(round(UV2.x*16.0),8.0);
+        material_point=axis<0.5 ? VERTEX.zy : axis<1.5 ? VERTEX.xz : VERTEX.xy;
+        material_kind=UV2.x;
+        material_kind=floor(material_kind*2.0)/2.0;
+        tone=UV2.y;
+        plant_height=clamp(VERTEX.y/(plant.w>0.5 ? 11.0 : 12.5),0.0,1.0);
+        // Undo the captured camera once so the sun does not rotate with the optic.
+        // Plant proportions vary independently, so normals need inverse scale.
+        vec3 view_normal=MODEL_NORMAL_MATRIX*NORMAL;
+        vec3 local_normal=camera_to_local*vec3(view_normal.x,-view_normal.z,view_normal.y);
+        local_normal=normalize(vec3(local_normal.x,-local_normal.y,local_normal.z));
+        leaf_normal=local_normal;
+        light=0.62+0.38*max(dot(local_normal,normalize(vec3(-0.58,0.34,0.74))),0.0);
+        vec3 view_position=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+        vec3 local_eye=camera_to_local*vec3(-view_position.x,view_position.z,-view_position.y);
+        leaf_eye=vec3(local_eye.x,-local_eye.y,local_eye.z);
+        distance_fade=smoothstep(10.0,46.0,length(view_position));
+    }
 }
 
 void fragment() {
@@ -87,7 +101,7 @@ void fragment() {
     float highlight_detail=tactical_leaf_highlight(light_pixel);
     // Both rooted position and covered pixel must be observed flat grass.
     // Original actors, trees, effects, roads and banks always remain on top.
-    if (!grass_at(plant.xy) || !grass_at(SCREEN_UV)) discard;
+    if (root_ok<0.5 || !grass_at(SCREEN_UV)) discard;
     vec3 leaf=mix(vec3(0.20,0.30,0.12),vec3(0.40,0.48,0.22),plant.z);
     // Root-to-tip variation follows the mesh, not the screen or a noise clock.
     // Broad gradients survive distance filtering without stippled leaf shimmer.

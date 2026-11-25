@@ -92,11 +92,14 @@ const STATE_LOAD_OPS := ["load_state","load_previous"]
 var inflight_fast := false
 # Presentation-only reuse. Host replies, input sampling, audio and world drawing
 # still run for every original frame. Assets are loaded before the first reply.
+const PRESENTATION_MOTION_SKIP := 4
 var presentation_cache_enabled := true
 var presentation_builds := 0
 var presentation_reuses := 0
 var _presentation_key: Dictionary = {}
 var _presentation_pixels := PackedByteArray()
+var _last_presentation_pixels := PackedByteArray()
+var _presentation_motion_misses := 0
 var _presentation_frontend := false
 var _decoded_png := ""
 var _decoded_rgb := PackedByteArray()
@@ -113,6 +116,8 @@ var close_after_save := false
 func invalidate_presentation_cache() -> void:
 	_presentation_key.clear()
 	_presentation_pixels.clear()
+	_last_presentation_pixels.clear()
+	_presentation_motion_misses = 0
 
 func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, program: Dictionary) -> bool:
 	var key: Dictionary = {}
@@ -134,9 +139,12 @@ func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, p
 		pixels=image.get_data()
 		if not _presentation_key.is_empty() and pixels==_presentation_pixels and key.recursive_equal(_presentation_key,64):
 			presentation_reuses+=1
+			_presentation_motion_misses=0
 			tandem_frame.remember_frame(image,presentation,world,program)
 			return _presentation_frontend
-	invalidate_presentation_cache()
+	var same_motion_pixels := not pixels.is_empty() and pixels == _last_presentation_pixels
+	_presentation_key.clear()
+	_presentation_pixels.clear()
 	presentation_builds+=1
 	tandem_frame.set_frame(image,presentation,world,program)
 	if play_display and play_display.hud_style=="tactical":
@@ -145,17 +153,25 @@ func _present_tandem(image: Image, presentation: Dictionary, world: Texture2D, p
 			tandem_frame.cockpit_art_ids==[1])
 	var frontend := false
 	if trace_mode and pc_presentation_requested: frontend=tandem_frame.present_frontend(program)
-	# Cache only successful paired compositions. Invalid input always takes the
-	# ordinary fail-closed path, and frontend transitions never reuse cockpit UI.
-	if not key.is_empty() and tandem_frame.world_enabled and not frontend:
-		_presentation_key=key.duplicate(true)
-		_presentation_pixels=pixels
-		_presentation_frontend=frontend
+	var cacheable: bool = not key.is_empty() and bool(tandem_frame.world_enabled) and not frontend
+	# Cache only successful paired compositions. During sustained pixel motion
+	# (4+ consecutive changing frames), skip deep-cloning the presentation dict
+	# until pixels settle; the first repeated frame snapshots again.
+	if cacheable:
+		_presentation_motion_misses = 0 if same_motion_pixels else _presentation_motion_misses + 1
+		_last_presentation_pixels = pixels
+		if _presentation_motion_misses < PRESENTATION_MOTION_SKIP:
+			_presentation_key=key.duplicate(true)
+			_presentation_pixels=pixels
+			_presentation_frontend=frontend
+	else:
+		_last_presentation_pixels.clear()
+		_presentation_motion_misses = 0
 	if play_display:
 		# Live cockpit art is entirely source-driven. Frontend animations keep
 		# their continuous render loop; only a verified static composition rests.
 		var source_owned_world: bool = draw_view.retain_render_target and world==world_viewport.get_texture()
-		play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE if source_owned_world and not _presentation_key.is_empty() else SubViewport.UPDATE_ALWAYS
+		play_display.tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE if source_owned_world and cacheable else SubViewport.UPDATE_ALWAYS
 	return frontend
 
 func _initialize() -> void:
@@ -358,6 +374,12 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 			audio_menu.quality_config_path=""
 		audio_menu.load_settings()
 		audio_menu.load_quality_settings()
+		if audio_menu.reduced_motion_override>=0:
+			reduced_motion_preferred=audio_menu.reduced_motion
+		else:
+			audio_menu.reduced_motion=reduced_motion_preferred
+		audio_menu.fullscreen_enabled=requested_fullscreen or root.mode==Window.MODE_FULLSCREEN or root.mode==Window.MODE_EXCLUSIVE_FULLSCREEN
+		tactical_dynamics.reduced_motion=reduced_motion_preferred
 		if pc_audio: pc_audio.set_mix(audio_menu.settings)
 		root.add_child(audio_menu)
 		audio_menu.graphics_selected.connect(_choose_graphics)
@@ -367,6 +389,9 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		audio_menu.state_requested.connect(_request_state)
 		audio_menu.control_notice.connect(_show_control_notice)
 		audio_menu.mix_changed.connect(_sync_web_controls)
+		audio_menu.fullscreen_toggled.connect(_set_fullscreen)
+		audio_menu.reduced_motion_toggled.connect(_set_reduced_motion)
+		audio_menu.settings_requested.connect(_open_ingame_settings)
 		_connect_web_resync()
 		audio_menu.resized.connect(_layout_audio_menu)
 		_layout_audio_menu.call_deferred()
@@ -403,9 +428,13 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		frontdoor=Frontdoor.new()
 		frontdoor.menu=audio_menu
 		root.add_child(frontdoor)
+		if is_instance_valid(frontdoor.main):
+			frontdoor.main.reduced_motion=reduced_motion_preferred
 		frontdoor.game_selected.connect(_frontdoor_select)
 		frontdoor.quit_selected.connect(_close)
 		frontdoor.original_selected.connect(_frontdoor_continue)
+		frontdoor.route_cancel_requested.connect(_frontdoor_cancel)
+		frontdoor.settings_closed.connect(_close_ingame_settings)
 		_choose_graphics_quality(audio_menu.quality.msaa,audio_menu.quality.anisotropy)
 		audio_menu.frontdoor_active=true
 		audio_menu.hide()
@@ -492,7 +521,47 @@ func _frontdoor_select(destination: String) -> void:
 	if frontdoor_route.begin(destination):
 		route_started=Time.get_ticks_msec()
 		var title: String={"info":"M1-Info"}.get(destination,destination.capitalize())
-		frontdoor.show_route(frontdoor_route.failure if frontdoor_route.phase=="fallback" else "Opening "+title+"...",frontdoor_route.phase=="fallback")
+		frontdoor.show_route(frontdoor_route.failure if frontdoor_route.phase=="fallback" else "Opening "+title+"...",frontdoor_route.phase=="fallback",frontdoor_route.progress())
+
+func _frontdoor_cancel() -> void:
+	if not _frontdoor_blocked() or not frontdoor.busy: return
+	frontdoor_route.cancel()
+	frontdoor.clear_route()
+
+func _open_ingame_settings() -> void:
+	if frontdoor==null or _frontdoor_blocked() or closing or state_control_pending or not pending_state_command.is_empty(): return
+	if pc_audio: pc_audio.world_audio.stop()
+	audio_menu.frontdoor_active=true
+	audio_menu.hide()
+	audio_menu.release_keys=true
+	audio_menu.shortcut_keys.clear()
+	frontdoor.open_settings(true)
+	_sync_web_controls()
+
+func _close_ingame_settings() -> void:
+	if frontdoor==null: return
+	play_display.visible=true
+	audio_menu.visible=true
+	audio_menu.frontdoor_active=false
+	audio_menu.release_keys=true
+	audio_menu.shortcut_keys.clear()
+	_reset_live_clock()
+	_sync_web_controls()
+
+func _set_fullscreen(enabled: bool) -> void:
+	if OS.has_feature("web") or DisplayServer.get_name()=="headless": return
+	root.mode=Window.MODE_FULLSCREEN if enabled else Window.MODE_WINDOWED
+	if audio_menu:
+		audio_menu.fullscreen_enabled=enabled
+		audio_menu.refresh_controls()
+
+func _set_reduced_motion(enabled: bool) -> void:
+	reduced_motion_preferred=enabled
+	tactical_dynamics.reduced_motion=enabled
+	if tandem_frame and tandem_frame.frontend_art:
+		tandem_frame.frontend_art.splash_aftermath_art.motion_enabled=ending_motion_allowed(OS.get_cmdline_user_args(),enabled)
+	if frontdoor and is_instance_valid(frontdoor.main):
+		frontdoor.main.reduced_motion=enabled
 
 func _frontdoor_continue() -> void:
 	frontdoor_route.phase="playing"
@@ -504,7 +573,10 @@ func _advance_frontdoor() -> bool:
 	if Time.get_ticks_msec()-route_started>120000:
 		frontdoor_route._fail()
 	var step: Array=frontdoor_route.next_step()
-	if not step.is_empty():return bridge.step(step[0],step[1])
+	if not step.is_empty():
+		var title: String={"info":"M1-Info"}.get(frontdoor_route.destination,frontdoor_route.destination.capitalize())
+		frontdoor.show_route("Opening "+title+"...",false,frontdoor_route.progress())
+		return bridge.step(step[0],step[1])
 	if frontdoor_route.phase=="playing":_frontdoor_continue()
 	elif frontdoor_route.phase=="fallback":frontdoor.show_route(frontdoor_route.failure,true)
 	return false
@@ -581,8 +653,16 @@ func _build_play_ui() -> void:
 	control_notice.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	control_notice.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	control_notice.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-	control_notice.add_theme_constant_override("outline_size",5)
+	control_notice.add_theme_constant_override("outline_size",4)
 	control_notice.add_theme_color_override("font_outline_color",Color.BLACK)
+	var notice_box := StyleBoxFlat.new()
+	notice_box.bg_color=Color(0.05,0.09,0.07,0.86)
+	notice_box.border_color=Color("65764e")
+	notice_box.set_border_width_all(1)
+	notice_box.set_corner_radius_all(6)
+	notice_box.content_margin_left=16;notice_box.content_margin_right=16
+	notice_box.content_margin_top=8;notice_box.content_margin_bottom=8
+	control_notice.add_theme_stylebox_override("normal",notice_box)
 	play_display.add_child(control_notice)
 	control_notice.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	control_notice.offset_left=24;control_notice.offset_right=-24;control_notice.offset_top=12
@@ -592,7 +672,9 @@ func _build_play_ui() -> void:
 func _show_control_notice(message: String) -> void:
 	if not is_instance_valid(control_notice):return
 	control_notice.text=message
-	notice_until=Time.get_ticks_msec()+2500
+	# Keep overwrite warnings visible for the full 4 s confirmation window.
+	var duration := 4200 if "again" in message else 2500
+	notice_until=Time.get_ticks_msec()+duration
 	control_notice.show()
 
 static func graphics_launch_error(args: Array) -> String:
@@ -999,7 +1081,7 @@ func _poll_web_controls() -> void:
 ## One browser toolbar or chord action, under the same gates as its native control.
 func _apply_web_control(action: Dictionary) -> void:
 	match str(action.get("op", "")):
-		"save_state", "load_state":
+		"save_state", "load_state", "load_previous":
 			audio_menu.request_state(str(action.op), int(action.get("slot", -1)))
 		# The shell's keyboard chords take the native shortcut path: an
 		# occupied slot 1 needs a confirming second press, and an open
@@ -1154,15 +1236,24 @@ func _process_frame(delta: float) -> bool:
 static func ending_motion_allowed(args: Array, reduced_motion: bool) -> bool:
 	return "--no-ending-motion" not in args and not reduced_motion
 
-## The browser's or macOS's reduced-motion preference. Read once at Play start.
+## The OS or browser reduced-motion preference. Read once at Play start.
 static func system_reduced_motion() -> bool:
 	if OS.has_feature("web"):
 		return bool(JavaScriptBridge.eval("window.matchMedia('(prefers-reduced-motion: reduce)').matches"))
-	if OS.get_name()=="macOS":
+	var os_name := OS.get_name()
+	if os_name=="macOS":
 		var preference: Array=[]
 		# Read the system preference only; never write a player setting.
 		if OS.execute("/usr/bin/defaults",["read","com.apple.universalaccess","reduceMotion"],preference,false)==0 and not preference.is_empty():
 			return str(preference[0]).strip_edges() in ["1","true"]
+	elif os_name=="Windows":
+		var out: Array=[]
+		if OS.execute("reg",["query","HKCU\\Control Panel\\Desktop\\WindowMetrics","/v","MinAnimate"],out,false)==0 and not out.is_empty():
+			return str(out[0]).strip_edges().ends_with("0")
+	elif os_name=="Linux":
+		var out: Array=[]
+		if OS.execute("gsettings",["get","org.gnome.desktop.interface","enable-animations"],out,false)==0 and not out.is_empty():
+			return str(out[0]).strip_edges()=="false"
 	return false
 
 func _animate_ending(delta: float) -> void:

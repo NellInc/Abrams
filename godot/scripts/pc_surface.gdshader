@@ -886,11 +886,12 @@ void fragment() {
         tree_dx=dFdx(UV2);tree_dy=dFdy(UV2);
         bark_footprint=abs(tree_dx)+abs(tree_dy);
     }
+    vec3 local_view=camera_to_local*original_view;
     vec2 terrain_dx=vec2(0.0);vec2 terrain_dy=vec2(0.0);
     vec2 terrain_footprint=vec2(0.0);
     if (tactical_landscape && modern_active &&
             ((UV.y>0.5 && UV.y<3.5) || (UV.y>6.5 && UV.y<9.5) || (UV.y>13.5 && UV.y<14.5))) {
-        vec3 local=camera_to_local*original_view;
+        vec3 local=local_view;
         if (UV.y>2.5 && UV.y<3.5) {
             // Evaluate the same background z=0 projection before source clipping.
             // The safe denominator prevents invalid helper-lane values at the
@@ -911,8 +912,7 @@ void fragment() {
     if (tactical_landscape && modern_active) {
         // Derivatives precede ownership discard, so cutout helper lanes remain
         // defined. Undo the source camera and its y sign, just as foliage does.
-        vec3 local=camera_to_local*original_view;
-        vec3 relative=vec3(local.x,-local.y,local.z);
+        vec3 relative=vec3(local_view.x,-local_view.y,local_view.z);
         tactical_position_dx=dFdx(relative);tactical_position_dy=dFdy(relative);
         vec3 face=cross(tactical_position_dx,tactical_position_dy);
         if (dot(face,face)>0.000001) {
@@ -924,7 +924,7 @@ void fragment() {
     }
     vec2 realism_uv=UV2;
     float family=realism_family;
-    vec3 realism_local=camera_to_local*original_view;
+    vec3 realism_local=local_view;
     bool realism_usable=true;
     if(UV.y>0.5 && UV.y<9.5 && !(UV.y>3.5 && UV.y<6.5)) {
         if(UV.y>2.5 && UV.y<3.5) {
@@ -953,9 +953,9 @@ void fragment() {
         realism_dx=dFdx(realism_uv);realism_dy=dFdy(realism_uv);
     }
     vec4 horizon_footprint=vec4(0.0);
-    if(tactical_landscape && modern_active && modern_environment_polish && camera_basis_ready && tactical_daylight_observed()) {
-        // Before owner discard and the per-fragment horizon/crown branches.
-        vec3 direction=normalize(camera_to_local*original_view);
+    if(tactical_landscape && modern_active && modern_environment_polish && camera_basis_ready && UV.y>15.5 && UV.y<16.5 && tactical_daylight_observed()) {
+        // Sky polygon only (constant UV.y, zero source_owner); skip on all non-sky fragments.
+        vec3 direction=normalize(local_view);
         vec2 angular=tactical_horizon_gradient(direction,dFdx(direction),dFdy(direction));
         vec2 source_pixel=SCREEN_UV*source_dimensions+source_origin;
         float elevation=-dot(vec3(source_pixel,1.0),source_horizon_line)/source_focal_pixels;
@@ -1045,8 +1045,7 @@ void fragment() {
         // The farm courtyard shares the restrained grass grain, keeping its
         // authored green. Source coordinates keep it fixed under camera motion.
         if (UV.y > 20.015 && UV.y < 20.04 && modern_surface_variation) {
-            vec3 local=camera_to_local*original_view;
-            vec2 ground=world_origin.xy+vec2(local.x,-local.y);
+            vec2 ground=world_origin.xy+vec2(local_view.x,-local_view.y);
             ALBEDO *= 1.0+ground_grain(ground)*0.5;
         }
         // Small source-position-linked running-gear markings. Geometry and
@@ -1105,13 +1104,13 @@ void fragment() {
         }
     } else if (UV.y > 15.5 && UV.y < 16.5 && modern_active) {
         ALBEDO=texture(material_means,vec2((round(UV.x)+0.5)/(pattern_width*0.5),0.5)).rgb;
-        if (modern_environment_polish && camera_basis_ready) ALBEDO=daylight_sky(camera_to_local*original_view,SCREEN_UV*source_dimensions+source_origin,horizon_footprint);
+        if (modern_environment_polish && camera_basis_ready) ALBEDO=daylight_sky(local_view,SCREEN_UV*source_dimensions+source_origin,horizon_footprint);
     } else if (UV.y > 14.5 && UV.y < 15.5 && modern_active) {
         // The original source-line path keeps its far/painter depth and exact
         // width; only the verified bridge framework's colour is replaced.
         ALBEDO=texture(modern_colours,vec2((UV.x+0.5)/modern_colour_count,0.5)).rgb;
     } else if (UV.y > 13.5 && UV.y < 14.5 && modern_active) {
-        vec3 local = camera_to_local*original_view;
+        vec3 local = local_view;
         vec2 water = world_origin.xy+vec2(local.x,-local.y);
         float broad = texture(field_detail,water/2048.0).r-0.4323640162;
         float fine = texture(road_detail,water/vec2(384.0,96.0)).r-0.4546305661;
@@ -1186,21 +1185,78 @@ void fragment() {
             ALBEDO=OUTPUT_IS_SRGB ? result : pow(result,vec3(2.2));
         }
     } else {
+    bool road=UV.y > 1.5 && UV.y < 2.5;
+    bool grass=(UV.y > 0.5 && UV.y < 3.5 && !road && abs(UV.x-8.0)<0.25)
+            || (UV.y > 6.5 && UV.y < 9.5 && abs(UV.x-19.0)<0.25);
+    bool terrain_usable=!(UV.y > 2.5 && UV.y < 3.5) || (world_origin.z > 0.0 && local_view.z < -0.0001);
+    if (modern_active && detail_levels > 1.0 && tactical_landscape && (grass || road) && terrain_usable) {
+        // Tactical grass and road compute their full surface directly without
+        // paying Modern's unused grain/mean/palette path first. Preserve the
+        // exact indentation of _groundlight_source() anchors below.
+        vec3 local=local_view;
+        if (UV.y > 2.5 && UV.y < 3.5) local *= -world_origin.z/local.z;
+        vec2 ground=world_origin.xy+vec2(local.x,-local.y);
+        if (modern_surface_variation && grass && UV.y>6.5) {
+            vec3 position=world_origin+vec3(local.x,-local.y,local.z);
+            if (UV.y>8.5) ground=position.xz;
+            else if (UV.y>7.5) ground=position.yz;
+        }
+        float broad_lod=tactical_ground_broad_lod(terrain_footprint,2048.0,vec2(textureSize(field_detail,0)));
+        float broad=textureLod(field_detail,ground/2048.0,broad_lod).r;
+        float middle=road ? textureGrad(road_detail,ground/384.0,terrain_dx/384.0,terrain_dy/384.0).r : textureGrad(field_detail,ground/384.0,terrain_dx/384.0,terrain_dy/384.0).r;
+        float fine=road ? textureGrad(road_detail,ground/96.0,terrain_dx/96.0,terrain_dy/96.0).r : textureGrad(field_detail,ground/96.0,terrain_dx/96.0,terrain_dy/96.0).r;
+        float fine_fade=tactical_ground_detail(terrain_footprint,96.0);
+        float colour_fade=tactical_ground_colour_fade(terrain_dx,terrain_dy,96.0);
+        // Hand fine colour to the already-filtered middle scale,
+        // rather than flattening that contribution to a constant.
+        float patch=clamp(broad*0.55+middle*0.30+mix(middle,fine,colour_fade)*0.15,0.0,1.0);
+        float slope_x=(road ? textureGrad(road_detail,(ground+vec2(24.0,0.0))/96.0,terrain_dx/96.0,terrain_dy/96.0).r : textureGrad(field_detail,(ground+vec2(24.0,0.0))/96.0,terrain_dx/96.0,terrain_dy/96.0).r)-fine;
+        float slope_y=(road ? textureGrad(road_detail,(ground+vec2(0.0,24.0))/96.0,terrain_dx/96.0,terrain_dy/96.0).r : textureGrad(field_detail,(ground+vec2(0.0,24.0))/96.0,terrain_dx/96.0,terrain_dy/96.0).r)-fine;
+        // Background ground has ray-projected depth; original faces
+        // keep their measured normals. Relief lies in each face's
+        // source UV tangent plane and converges to flat at distance.
+        vec3 face=UV.y>2.5 && UV.y<3.5 ? vec3(0.0,0.0,1.0) : tactical_normal;
+                    vec3 normal=tactical_slope_normal(face,vec2(slope_x,slope_y)*fine_fade,UV.y);
+        float sun=0.70+0.36*max(dot(normal,normalize(vec3(-0.58,0.34,0.74))),0.0);
+        float range=length(local.xy)/6000.0;
+        float distance_fade=1.0/(1.0+range*range);
+        vec3 base=grass ? mix(vec3(0.24,0.30,0.16),vec3(0.39,0.45,0.27),patch)
+                        : mix(vec3(0.29,0.27,0.24),vec3(0.40,0.37,0.33),patch);
+        if (road && modern_surface_variation) {
+            base=mix(vec3(0.29,0.29,0.27),vec3(0.40,0.39,0.35),patch);
+            base=tactical_road(base,ground,terrain_footprint,middle);
+        }
+        base*=mix(1.0,sun,distance_fade);
+        if(modern_environment_polish && modern_surface_variation && tactical_daylight_observed())base*=tactical_environment_tint(normal,0.55);
+        if (grass && modern_surface_variation && UV.y>6.5) {
+            // Broad pasture variation is tied to this source face.
+            // It changes grass colour only, never land classification.
+            float pasture=ground_noise(ground/640.0)*0.65+ground_noise(ground/1700.0)*0.35;
+            vec3 tint=mix(vec3(0.92,1.01,0.91),vec3(1.10,1.035,0.90),pasture);
+            base*=mix(vec3(1.0),tint,distance_fade*0.75+0.25);
+        }
+        if (grass) {
+            vec3 meadow=tactical_meadow(base,ground,terrain_footprint,mix(1.0,sun,distance_fade));
+            float upright=UV.y>6.5 && modern_surface_variation ? smoothstep(0.15,0.65,face.z) : 1.0;
+            base=mix(base,meadow,upright);
+        }
+        vec3 distant=road && modern_surface_variation ? vec3(0.46,0.46,0.42) : vec3(0.42,0.46,0.33);
+                    base=mix(base,distant,(1.0-distance_fade)*0.35);
+        ALBEDO=OUTPUT_IS_SRGB ? base : pow(base,vec3(2.2));
+    } else {
     vec2 pixel = floor(SCREEN_UV * source_dimensions + source_origin);
     vec2 phase = mod(pixel, 2.0);
     float level = detail_levels > 1.0 ? 16.0 : 0.0;
     if (detail_levels > 1.0 && UV.y > 0.5) {
-        vec3 local = camera_to_local*original_view;
-        bool usable = true;
-        if (UV.y > 2.5 && UV.y < 3.5) {
+        vec3 local = local_view;
+        bool usable = terrain_usable;
+        if (UV.y > 2.5 && UV.y < 3.5 && usable) {
             // The original flat background has no depth. Project only its
             // existing ground pixels onto z=0; the original horizon stays fixed.
-            usable = world_origin.z > 0.0 && local.z < -0.0001;
-            if (usable) local *= -world_origin.z/local.z;
+            local *= -world_origin.z/local.z;
         }
         if (usable) {
             vec2 ground = world_origin.xy+vec2(local.x,-local.y);
-            bool road = UV.y > 1.5 && UV.y < 2.5;
             float detail=0.0;
             if (road) detail=(tactical_landscape && modern_active && modern_surface_variation ? textureGrad(road_detail,ground/256.0,terrain_dx/256.0,terrain_dy/256.0).r : texture(road_detail,ground/256.0).r)-0.4546305661;
             else if (!modern_active) detail=texture(field_detail,ground/512.0).r-0.4323640162;
@@ -1242,15 +1298,13 @@ void fragment() {
                              (level+0.5)/detail_levels)).rgb*vec3(0.78,0.90,0.84);
         }
         if (modern_active && modern_surface_variation && detail_levels > 1.0 && UV.y > 0.5) {
-            vec3 local = camera_to_local*original_view;
-            bool usable = true;
-            if (UV.y > 2.5 && UV.y < 3.5) {
-                usable = world_origin.z > 0.0 && local.z < -0.0001;
-                if (usable) local *= -world_origin.z/local.z;
+            vec3 local = local_view;
+            bool usable = terrain_usable;
+            if (UV.y > 2.5 && UV.y < 3.5 && usable) {
+                local *= -world_origin.z/local.z;
             }
             if (usable) {
                 vec2 ground = world_origin.xy+vec2(local.x,-local.y);
-                bool road=UV.y > 1.5 && UV.y < 2.5;
                 float patch=road ? clamp((texture(field_detail,ground/4096.0).r-0.32)*2.5,0.0,1.0)
                                 : ground_noise(ground/2048.0);
                 bool hill = UV.y > 6.5;
@@ -1263,9 +1317,6 @@ void fragment() {
         // retains the road's existing coarse relief, without an olive cast.
         // Objects sharing source material indices never receive this paint.
         if (modern_active && detail_levels > 1.0) {
-            bool road=UV.y > 1.5 && UV.y < 2.5;
-            bool grass=(UV.y > 0.5 && UV.y < 3.5 && !road && abs(UV.x-8.0)<0.25)
-                    || (UV.y > 6.5 && UV.y < 9.5 && abs(UV.x-19.0)<0.25);
             if (road) {
                 float light=dot(ALBEDO,vec3(0.2126,0.7152,0.0722));
                 vec3 warm=vec3(1.045,1.0,0.935);
@@ -1274,70 +1325,8 @@ void fragment() {
                 vec3 fresh=vec3(0.88,1.085,0.98);
                 ALBEDO*=OUTPUT_IS_SRGB ? fresh : pow(fresh,vec3(2.2));
             }
-            if (tactical_landscape && (grass || road)) {
-                // The Range's three scales of field colour and grazing relief
-                // are painted only on original terrain faces. A filtered
-                // height-gradient gives dimensional light without displacement,
-                // added blades or actors hidden behind decorative scenery.
-                vec3 local=camera_to_local*original_view;
-                bool usable=true;
-                if (UV.y > 2.5 && UV.y < 3.5) {
-                    usable=world_origin.z>0.0 && local.z < -0.0001;
-                    if (usable) local *= -world_origin.z/local.z;
-                }
-                if (usable) {
-                    vec2 ground=world_origin.xy+vec2(local.x,-local.y);
-                    if (modern_surface_variation && grass && UV.y>6.5) {
-                        vec3 position=world_origin+vec3(local.x,-local.y,local.z);
-                        if (UV.y>8.5) ground=position.xz;
-                        else if (UV.y>7.5) ground=position.yz;
-                    }
-                    float broad_lod=tactical_ground_broad_lod(terrain_footprint,2048.0,vec2(textureSize(field_detail,0)));
-                    float broad=textureLod(field_detail,ground/2048.0,broad_lod).r;
-                    float middle=road ? textureGrad(road_detail,ground/384.0,terrain_dx/384.0,terrain_dy/384.0).r : textureGrad(field_detail,ground/384.0,terrain_dx/384.0,terrain_dy/384.0).r;
-                    float fine=road ? textureGrad(road_detail,ground/96.0,terrain_dx/96.0,terrain_dy/96.0).r : textureGrad(field_detail,ground/96.0,terrain_dx/96.0,terrain_dy/96.0).r;
-                    float fine_fade=tactical_ground_detail(terrain_footprint,96.0);
-                    float colour_fade=tactical_ground_colour_fade(terrain_dx,terrain_dy,96.0);
-                    // Hand fine colour to the already-filtered middle scale,
-                    // rather than flattening that contribution to a constant.
-                    float patch=clamp(broad*0.55+middle*0.30+mix(middle,fine,colour_fade)*0.15,0.0,1.0);
-                    float slope_x=(road ? textureGrad(road_detail,(ground+vec2(24.0,0.0))/96.0,terrain_dx/96.0,terrain_dy/96.0).r : textureGrad(field_detail,(ground+vec2(24.0,0.0))/96.0,terrain_dx/96.0,terrain_dy/96.0).r)-fine;
-                    float slope_y=(road ? textureGrad(road_detail,(ground+vec2(0.0,24.0))/96.0,terrain_dx/96.0,terrain_dy/96.0).r : textureGrad(field_detail,(ground+vec2(0.0,24.0))/96.0,terrain_dx/96.0,terrain_dy/96.0).r)-fine;
-                    // Background ground has ray-projected depth; original faces
-                    // keep their measured normals. Relief lies in each face's
-                    // source UV tangent plane and converges to flat at distance.
-                    vec3 face=UV.y>2.5 && UV.y<3.5 ? vec3(0.0,0.0,1.0) : tactical_normal;
-                    vec3 normal=tactical_slope_normal(face,vec2(slope_x,slope_y)*fine_fade,UV.y);
-                    float sun=0.70+0.36*max(dot(normal,normalize(vec3(-0.58,0.34,0.74))),0.0);
-                    float range=length(local.xy)/6000.0;
-                    float distance_fade=1.0/(1.0+range*range);
-                    vec3 base=grass ? mix(vec3(0.24,0.30,0.16),vec3(0.39,0.45,0.27),patch)
-                                    : mix(vec3(0.29,0.27,0.24),vec3(0.40,0.37,0.33),patch);
-                    if (road && modern_surface_variation) {
-                        base=mix(vec3(0.29,0.29,0.27),vec3(0.40,0.39,0.35),patch);
-                        base=tactical_road(base,ground,terrain_footprint,middle);
-                    }
-                    base*=mix(1.0,sun,distance_fade);
-                    if(modern_environment_polish && modern_surface_variation && tactical_daylight_observed())base*=tactical_environment_tint(normal,0.55);
-                    if (grass && modern_surface_variation && UV.y>6.5) {
-                        // Broad pasture variation is tied to this source face.
-                        // It changes grass colour only, never land classification.
-                        float pasture=ground_noise(ground/640.0)*0.65+ground_noise(ground/1700.0)*0.35;
-                        vec3 tint=mix(vec3(0.92,1.01,0.91),vec3(1.10,1.035,0.90),pasture);
-                        base*=mix(vec3(1.0),tint,distance_fade*0.75+0.25);
-                    }
-                    if (grass) {
-                        vec3 meadow=tactical_meadow(base,ground,terrain_footprint,mix(1.0,sun,distance_fade));
-                        float upright=UV.y>6.5 && modern_surface_variation ? smoothstep(0.15,0.65,face.z) : 1.0;
-                        base=mix(base,meadow,upright);
-                    }
-                    vec3 distant=road && modern_surface_variation ? vec3(0.46,0.46,0.42) : vec3(0.42,0.46,0.33);
-                    base=mix(base,distant,(1.0-distance_fade)*0.35);
-                    ALBEDO=OUTPUT_IS_SRGB ? base : pow(base,vec3(2.2));
-                }
-            }
             if (tactical_landscape && modern_surface_variation && !grass && UV.y>6.5 && UV.y<9.5) {
-                vec3 local=camera_to_local*original_view;
+                vec3 local=local_view;
                 vec3 position=world_origin+vec3(local.x,-local.y,local.z);
                 vec2 surface=position.xy;
                 if (UV.y>8.5) surface=position.xz;
@@ -1346,6 +1335,7 @@ void fragment() {
             }
         }
     } else ALBEDO = texture(material_patterns, lookup).rgb;
+    }
     }
     if(tactical_landscape && modern_active && modern_surface_variation && tactical_realism_ready && family>0.5 && realism_usable && detail_levels>1.0) {
         float gain=finish_sampled ? finish_sample.x : realism_gain(realism_uv,realism_dx,realism_dy,family,length(realism_local));
@@ -1361,7 +1351,7 @@ void fragment() {
         bool terrain=(UV.y>0.5 && UV.y<3.5) || (UV.y>6.5 && UV.y<9.5) || (UV.y>13.5 && UV.y<14.5);
         bool model=UV.y>19.5 && UV.y<21.5 && !(UV.y>20.04 && UV.y<20.08);
         if(terrain || model) {
-            vec3 relative=camera_to_local*original_view;
+            vec3 relative=local_view;
             bool usable=true;
             if(UV.y>2.5 && UV.y<3.5) {
                 usable=relative.z< -0.0001;

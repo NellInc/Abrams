@@ -69,7 +69,7 @@ Tactical (`tactical`) with the Tactical HUD is the default view; Genesis Upscale
 
 Standalone packages target **Apple Silicon macOS 14+**, **Windows x86_64** and **Linux x86_64**. Godot and Python are bundled; players do not need to install them.
 
-**Alpha 8 (`0.1.0-alpha.8`) is available for macOS, Windows, Linux and browser.**
+**Alpha 9 (`0.1.0-alpha.9`) is available for macOS, Windows, Linux and browser.**
 
 **You must supply the original PC game. The Genesis ROM is optional. Neither is bundled.**
 
@@ -80,7 +80,7 @@ Standalone packages target **Apple Silicon macOS 14+**, **Windows x86_64** and *
 
 The importer checks the supported editions and leaves your originals unchanged. Without Genesis, EGA, EGA Upscaled, Genesis Upscaled, Modern and Tactical remain playable. PC-only sessions include source-verified high-resolution frontend artwork, crew portraits, lettering, animated ending smoke and the independent soundtrack. A Genesis import additionally derives its native palette, effects and original-resolution plates from your own verified ROM into your profile; the ROM itself is not copied. Native app builds made after 15 October 2026 (Alpha 4 predates this) do not offer native Genesis graphics mode or sampled Genesis frontend arrangements. The authored FRAME surround and arming clipboard require only the verified PC sources.
 
-These are alpha packages. macOS Alpha 8 is Developer ID signed and notarized by Apple. Windows signing is not supplied. Intel Macs are not supported. See [macOS installation](docs/standalone-macos.md), [Windows/Linux installation](docs/standalone-portable.md) and the release notes for platform testing status.
+These are alpha packages. macOS Alpha 9 is Developer ID signed and notarized by Apple. Windows signing is not supplied. Intel Macs are not supported. See [macOS installation](docs/standalone-macos.md), [Windows/Linux installation](docs/standalone-portable.md) and the release notes for platform testing status.
 
 ## Controls
 
@@ -91,7 +91,7 @@ These are alpha packages. macOS Alpha 8 is Developer ID signed and notarized by 
 | Undo last load | **Cmd+Shift+L** | **Ctrl+Alt+Shift+L** |
 | Cycle graphics | **Cmd+G** | **Ctrl+Alt+G** |
 
-The **Session** menu provides all five save slots and normal/8x speed. **Graphics** selects a mode directly; **Audio** controls the mix. **Help** opens the in-app keyboard sheet, searchable scenario/vehicle field guide and original credits. The loading screen and setup offer the same offline guides. Printable PDFs are bundled, with larger, bold command labels, restored manual side views, Modern model studies and original manual maps alongside maps drawn from the original PC terrain. On macOS these are in the system menu bar. The game continues while a remaster menu is open, so pause first when needed. Original game controls remain unchanged.
+The **Session** menu provides all five save slots, **Settings…** for the full slider overlay, and normal/8x speed. **Graphics** selects a mode, HUD style, scenery quality, **Fullscreen** and **Reduced motion**. **Audio** controls the mix and **Mute when unfocused**. **Help** opens the in-app keyboard sheet, searchable scenario/vehicle field guide and original credits. The loading screen and setup offer the same offline guides. Printable PDFs are bundled, with larger, bold command labels, restored manual side views, Modern model studies and original manual maps alongside maps drawn from the original PC terrain. On macOS these are in the system menu bar. The game continues while a remaster menu is open, so pause first when needed. Original game controls remain unchanged.
 
 Save states restore both the running game and campaign disk. New checkpoints also preserve the remastered display. Saves live outside the app in the platform's player profile. Back up the whole profile before upgrading; checkpoints require a compatible core and game edition. See [controls and save behaviour](docs/play-controls.md).
 

@@ -46,7 +46,7 @@ function fixture({missingManifest = false, engineFailure = false, capability = t
   el('#web-load-slot').value = el('#web-save-slot').value = '1';
   for (const [key, values] of Object.entries({msaa: [0,2,4,8], anisotropy: [0,2,4,8,16]}))
     el('#web-' + key).options = values.map(value => Object.assign(new Element(), {value: String(value)}));
-  for (const key of ['master','effects','voice','motors','music','cannon','machinegun','impact','smoke','engine','turret']) {
+  for (const key of ['master','effects','voice','motors','music','cannon','machinegun','impact','smoke','engine','turret','radio','switch']) {
     el('#web-audio-' + key).options = Array.from({length: 11}, (_, index) => Object.assign(new Element(), {value: String(index * 10)}));
     el('#web-audio-' + key).parentLabel = new Element();
   }
@@ -153,13 +153,19 @@ test('extended quality and all five gains dispatch incumbent controls and report
   assert.equal(f.el('#web-reset-quality').disabled, false);
   assert.equal(f.el('#web-audio-cannon').disabled, true);
   assert.equal(f.el('#web-audio-cannon').parentLabel.hidden, true, 'unsupported new channels stay hidden on the old pack');
-  const individual = {cannon: 0, machinegun: 40, impact: 50, smoke: 60, engine: 70, turret: 80};
+  const individual = {cannon: 0, machinegun: 40, impact: 50, smoke: 60, engine: 70, turret: 80, radio: 90, switch: 50};
   f.ctx.testAPI.updateToolbar({...value, audio: {...value.audio, ...individual}});
   assert.equal(f.el('#web-reset-audio').disabled, false);
   for (const [key, percent] of Object.entries(individual)) {
     const select = f.el('#web-audio-' + key);
     assert.equal(select.disabled, false); assert.equal(select.parentLabel.hidden, false); assert.equal(select.value, String(percent));
   }
+  f.ctx.testAPI.updateToolbar({...value, slots: [{slot: 1, exists: true, valid: true, program: 'SIM', saved_at: '2026-10-14T12:00:00Z', previous_saved_at: '2026-10-13T12:00:00Z'}]});
+  assert.equal(f.el('#web-load-previous').hidden, false);
+  assert.equal(f.el('#web-load-previous').disabled, false);
+  f.el('#web-load-previous').listeners.click();
+  assert.deepEqual(plain(f.sent.at(-1)), {op: 'load_previous', slot: 1});
+  assert.match(f.el('#web-control-status').textContent, /Restoring overwritten slot 1/);
   f.ctx.testAPI.updateToolbar({...value, speed: 8}); assert.match(f.el('#web-audio-note').textContent, /muted during/);
   f.ctx.testAPI.updateToolbar(state(false)); assert.equal(f.el('#web-msaa').disabled, true); assert.equal(f.el('#web-reset-audio').disabled, true); assert.equal(f.el('#web-reset-quality').disabled, true);
 });

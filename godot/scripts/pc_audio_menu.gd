@@ -1,5 +1,6 @@
 extends MenuBar
 signal mix_changed
+signal focus_mute_changed(enabled: bool)
 ## Presentation-only gains. No bridge, source state, key binding or pause command.
 const DEFAULTS := {"master":100,"effects":100,"voice":100,"motors":100,"music":70,
 	"cannon":100,"machinegun":100,"impact":100,"smoke":100,"engine":100,"turret":100,"river":100,"hind":100,"radio":100,"switch":100,"field":100,"cow":100,"t80":100,"t72":100,"brdm":100,"btr":100,"t64":100,"bmp":100,"m60":100,"t55":100,"tank":100,"m113":100,"bradley":100,"woodland":100,"truck":100,"tracks":100,"foley":100,"interface":100,"fire":100,"missileflight":100,"trackedfallback":100,"wheeledfallback":100}
@@ -15,6 +16,7 @@ var release_keys := false
 var gated_keys: Dictionary = {}
 var focus_release_keys := false
 var window_focused := true
+var mute_when_unfocused := false
 var save_error := ""
 # Private native recordings are never a browser feature or bundled asset.
 const BROWSER_OMITTED := ["river","hind","field","cow","t80","t72","brdm","btr","t64","bmp","m60","t55","tank","m113","bradley","woodland","truck","tracks","foley","interface","fire","missileflight","trackedfallback","wheeledfallback"]
@@ -41,9 +43,11 @@ func _ready() -> void:
 		menus[key]=menu
 		popup.add_submenu_node_item(TITLES[key],menu)
 	popup.add_separator()
+	popup.add_check_item("Mute when unfocused",1003)
 	popup.add_item("Restore default mix",1000)
 	popup.id_pressed.connect(func(id):
-		if id==1000: reset_mix())
+		if id==1000: reset_mix()
+		elif id==1003: choose_focus_mute(not mute_when_unfocused))
 	popup.add_separator()
 	popup.add_item("Original F5 / pause still control sound",1001)
 	popup.set_item_disabled(popup.get_item_index(1001),true)
@@ -61,9 +65,13 @@ func _watch(menu: PopupMenu) -> void:
 func _focus_exited() -> void:
 	window_focused=false
 	focus_release_keys=true
+	if audio and mute_when_unfocused and audio.has_method("set_focus_muted"):
+		audio.set_focus_muted(true)
 
 func _focus_entered() -> void:
 	window_focused=true
+	if audio and audio.has_method("set_focus_muted"):
+		audio.set_focus_muted(false)
 
 func game_keys(held: Array) -> Array:
 	# Menu navigation must not also steer/fire in the original game. Closing
@@ -131,6 +139,16 @@ func load_settings() -> bool:
 		if file.has_section_key("audio",donor) and not file.has_section_key("audio",cue):
 			loaded[cue] = loaded[donor]
 	settings=loaded
+	var saved_focus_mute = file.get_value("preferences","mute_when_unfocused",false)
+	mute_when_unfocused=saved_focus_mute if saved_focus_mute is bool else false
+	return true
+
+func choose_focus_mute(enabled: bool) -> bool:
+	mute_when_unfocused=enabled
+	if audio and audio.has_method("set_focus_muted"):
+		audio.set_focus_muted(enabled and not window_focused)
+	_commit(true)
+	focus_mute_changed.emit(enabled)
 	return true
 
 ## persist=false applies the gain live (a slider drag) without writing the
@@ -153,6 +171,7 @@ func _commit(persist: bool=true) -> void:
 		if not config_path.is_empty():
 			var file := ConfigFile.new()
 			for key in DEFAULTS: file.set_value("audio",key,settings[key])
+			if mute_when_unfocused: file.set_value("preferences","mute_when_unfocused",true)
 			if file.save(config_path)!=OK: save_error="Mix changed, but could not save it"
 		refresh()
 	mix_changed.emit()
@@ -174,4 +193,6 @@ func refresh() -> void:
 		for index in menu.item_count:
 			menu.set_item_checked(index,menu.get_item_id(index)==settings[key])
 		popup.set_item_text(popup.get_item_index(channels.find(key)),"%s (%d%%)"%[TITLES[key],settings[key]])
+	var focus_index := popup.get_item_index(1003)
+	if focus_index>=0: popup.set_item_checked(focus_index,mute_when_unfocused)
 	popup.set_item_text(popup.get_item_index(1002),save_error if not save_error.is_empty() else "Changes are saved for next launch" if not config_path.is_empty() else "Diagnostic mix, not saved")

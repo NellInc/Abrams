@@ -58,11 +58,15 @@ static func held() -> Array:
 	var active := resolve_pressed(logical,physical,genuine)
 	return encode(active.filter(func(key): return key not in focus_quarantine.values() or physical_presses.values().any(func(press): return press.key==key)))
 
+static var _candidates_cache: Array = []
+
 static func candidates() -> Array:
-	var result: Array = SPECIAL.keys()
-	for bounds in [[KEY_A,KEY_Z],[KEY_0,KEY_9],[KEY_KP_0,KEY_KP_9],[KEY_F1,KEY_F12]]:
-		result.append_array(range(bounds[0],bounds[1]+1))
-	return result
+	if _candidates_cache.is_empty():
+		var result: Array = SPECIAL.keys()
+		for bounds in [[KEY_A,KEY_Z],[KEY_0,KEY_9],[KEY_KP_0,KEY_KP_9],[KEY_F1,KEY_F12]]:
+			result.append_array(range(bounds[0],bounds[1]+1))
+		_candidates_cache = result
+	return _candidates_cache
 
 static func record_alias(event: InputEvent) -> void:
 	if not event is InputEventKey or resetting_input: return

@@ -189,11 +189,11 @@ class BrowserObserver:
         state = None
         if (program and program['name'] == 'SIM' and
                 self.reader.locate(paired_ram) == program['load_segment'] * 16):
-            state = self.reader.read(paired_ram)
+            state = self.reader.read(paired_ram, include_world=False)
         presentation = {'draw_pass': None,
                         'reason': 'original program has no active observed SIM view'}
         if self.mode == 'sim' and self.collector and identity == self.identity:
-            presentation = self.collector.paired_video(frame_video)
+            presentation = bark_view if verified else self.collector.paired_video(frame_video)
         elif self.mode == 'frontend' and self.frontend:
             candidate = self.frontend.paired_video(frame_video, paired_ram)
             source = candidate.get('frontend_program')

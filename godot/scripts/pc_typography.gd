@@ -227,14 +227,9 @@ func _fixed_candidate(words: String, at: Vector2i, source: Image, font_name: Str
 	var font: PackedByteArray = fonts[FONT_SOURCES[font_name]]
 	var cell := Vector2i(font[0],font[1])
 	var box := Rect2i(at,Vector2i(words.length()*cell.x,cell.y))
-	var crop := source.get_region(box)
-	crop.convert(Image.FORMAT_RGB8)
-	var hash := HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256)
-	hash.update(crop.get_data())
 	return {"text":words,"rect":[box.position.x,box.position.y,box.size.x,box.size.y],
 		"font_sha256":FONT_SOURCES[font_name],"cell_size":[cell.x,cell.y],"foreground":1,
-		"uniform_background_rgb":[0,0,0],"pixel_sha256":hash.finish().hex_encode(),"kind":"verified_fixed_cell"}
+		"uniform_background_rgb":[0,0,0],"_local_fixed_source":source,"kind":"verified_fixed_cell"}
 
 func set_office_dialogue(source: Image, border_y: int) -> void:
 	clear_runs()
@@ -451,12 +446,15 @@ func verified_run(item: Variant, source: Image, ui: Image, palette: Array, curso
 					visible_ink = visible_ink or ink
 					if source.get_pixel(px,py).to_rgba32()!=(foreground if ink else background).to_rgba32(): return {}
 	if not visible_ink: return {}
-	var crop := source.get_region(box)
-	crop.convert(Image.FORMAT_RGB8)
-	var hash := HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256)
-	hash.update(crop.get_data())
-	if hash.finish().hex_encode()!=item.get("pixel_sha256"): return {}
+	# Fixed-cell candidates created locally against this exact Image object were
+	# just verified pixel-by-pixel above; skip redundant self-hashing.
+	if item.get("_local_fixed_source") != source:
+		var crop := source.get_region(box)
+		crop.convert(Image.FORMAT_RGB8)
+		var hash := HashingContext.new()
+		hash.start(HashingContext.HASH_SHA256)
+		hash.update(crop.get_data())
+		if hash.finish().hex_encode()!=item.get("pixel_sha256"): return {}
 	return {"text":words,"rect":Rect2(box),"foreground":foreground,"background":background,
 		"font_sha256":item.font_sha256,"cell_size":cell,"glyphs":font_geometry[item.font_sha256],
 		"outline_font":outline_fonts.fonts.get(item.font_sha256),

@@ -8,12 +8,21 @@ from __future__ import annotations
 import struct
 
 try:
-    from tools.pc_world import world_position, window_origin
+    from tools.pc_world import (world_position, window_origin,
+        STATIC_START, STATIC_STRIDE, STATIC_COUNT,
+        DYNAMIC_START, DYNAMIC_STRIDE, DYNAMIC_COUNT)
     from tools.inspect_shapes import primitive_vertices
 except ModuleNotFoundError as error:
     if error.name != 'tools': raise
-    from pc_world import world_position, window_origin
+    from pc_world import (world_position, window_origin,
+        STATIC_START, STATIC_STRIDE, STATIC_COUNT,
+        DYNAMIC_START, DYNAMIC_STRIDE, DYNAMIC_COUNT)
     from inspect_shapes import primitive_vertices
+
+_VALID_OBJECT_POINTERS = frozenset(
+    [STATIC_START + slot * STATIC_STRIDE for slot in range(STATIC_COUNT)] +
+    [DYNAMIC_START + slot * DYNAMIC_STRIDE for slot in range(DYNAMIC_COUNT)]
+)
 
 
 def signed16(value: int) -> int:
@@ -65,7 +74,7 @@ def select_static_faces(shape: dict, projected_size: int, delta: list[int]) -> d
             "opaque_commands": len(root["command_pointers"])}
 
 
-def read_camera(ram: bytes, ds: int, objects: dict) -> dict | None:
+def read_camera(ram: bytes, ds: int, objects: dict | None = None) -> dict | None:
     def words(at, count=1, signed=True):
         return list(struct.unpack_from("<" + ("h" if signed else "H") * count, ram, ds + at))
 
@@ -83,9 +92,13 @@ def read_camera(ram: bytes, ds: int, objects: dict) -> dict | None:
             or not 0 <= mode <= 3 or not 0 <= count <= 163):
         return None  # Initializing or a renderer state outside this decoder.
     pointers = words(0x6F58, count, signed=False)
-    allocated = {o["pointer"]: o for name in ("static", "dynamic") for o in objects[name]}
-    if any(p not in allocated for p in pointers):
-        return None  # VGA boundary can straddle object allocation/render passes.
+    if objects is not None:
+        allocated = {o["pointer"]: o for name in ("static", "dynamic") for o in objects[name]}
+        if any(p not in allocated for p in pointers):
+            return None  # VGA boundary can straddle object allocation/render passes.
+    else:
+        if any(p not in _VALID_OBJECT_POINTERS or not (ram[ds + p] & 128) for p in pointers):
+            return None  # VGA boundary can straddle object allocation/render passes.
     local = words(0x8B52, 3)
     return {"view_index": view, "position_local_raw": local, "world_position_raw": world_position(local, window_origin(ram, ds)),
             "matrix_q14_columns": words(0x117D, 9), "matrix_mode": mode,

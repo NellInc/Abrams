@@ -277,7 +277,7 @@ def main():
                 state["render_static_faces"] = static_faces_for_state(state, shapes)
             result = {"type": kind, "id": request_id, "sequence": sequence,
                     "state": state, "png": frame_png.encode(core),
-                    "fps": core.pause_at_frame_end().timing.fps}
+                    "fps": core.last_fps}
             if session:
                 result.update(sample)
                 result["audio"] = session.drain_audio()

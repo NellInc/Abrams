@@ -4,6 +4,7 @@ var thread: Thread
 var busy := false
 var installed := false
 var message: Label
+var progress: ProgressBar
 var play: Button
 var pc: Button
 var genesis: Button
@@ -109,6 +110,12 @@ func _initialize() -> void:
     _label(genesis_card,"Add an original Genesis ROM for its artwork. Import the PC game first. Neither original game is bundled.",15)
     genesis = _button(genesis_card, "Add Genesis ROM…", func(): _pick("genesis"))
     message = _label(column, "Checking local installation…", 16)
+    progress = ProgressBar.new()
+    progress.indeterminate = true
+    progress.show_percentage = false
+    progress.custom_minimum_size = Vector2(0, 10)
+    progress.visible = false
+    column.add_child(progress)
     recheck = _button(shell, "Recheck installation", func(): _request(["--status"]))
     var row := HBoxContainer.new()
     row.add_theme_constant_override("separation", 12)
@@ -124,6 +131,7 @@ func _initialize() -> void:
     column.add_child(link)
     dialog = FileDialog.new()
     dialog.theme=InterfaceTheme.build()
+    dialog.use_native_dialog = DisplayServer.get_name() != "headless"
     dialog.access = FileDialog.ACCESS_FILESYSTEM
     dialog.size = Vector2i(720, 480)
     dialog.dir_selected.connect(func(path): _request(["--game", path]))
@@ -190,6 +198,8 @@ func _pick(kind: String) -> void:
     dialog.popup_centered()
 
 func _sync_controls() -> void:
+    if progress:
+        progress.visible = busy
     play.disabled = busy or not installed
     pc.disabled = busy
     genesis.disabled = busy or not installed

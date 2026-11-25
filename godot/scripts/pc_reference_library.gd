@@ -21,6 +21,7 @@ var byline: Label
 var scroll: ScrollContainer
 var _restore_on_resize := false
 var result_count: Label
+var other_matches: Label
 var heading: BoxContainer
 var _narrow := false
 
@@ -66,6 +67,9 @@ func _ready() -> void:
 	column.add_child(search)
 	result_count=_label(column,"",15)
 	result_count.hide()
+	other_matches=_label(column,"",14)
+	other_matches.add_theme_color_override("font_color",Color("a7b09a"))
+	other_matches.hide()
 	scroll=ScrollContainer.new()
 	scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
@@ -87,6 +91,7 @@ func set_hud_style(style: String) -> void:
 	column.add_theme_constant_override("separation",12 if tactical else 16)
 	_replace_tabs()
 	result_count.visible=tactical
+	if not tactical and other_matches: other_matches.hide()
 	search.clear_button_enabled=tactical
 	if tactical:byline.add_theme_color_override("font_color",Color("a7b09a"))
 	else:byline.remove_theme_color_override("font_color")
@@ -135,10 +140,37 @@ func _update_narrow_layout() -> bool:
 	return true
 
 func _input(event: InputEvent) -> void:
-	if visible and event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE:
+	if not visible or not event is InputEventKey or not event.pressed:
+		return
+	if event.keycode==KEY_ESCAPE:
 		# Consume dismissal before the original-input bridge observes the key.
 		get_viewport().set_input_as_handled()
 		close_reader()
+		return
+	if scroll==null:
+		return
+	var step := maxi(120, int(scroll.size.y * 0.85))
+	match event.keycode:
+		KEY_PAGEDOWN:
+			scroll.scroll_vertical += step
+			get_viewport().set_input_as_handled()
+		KEY_PAGEUP:
+			scroll.scroll_vertical = maxi(0, scroll.scroll_vertical - step)
+			get_viewport().set_input_as_handled()
+		KEY_DOWN:
+			scroll.scroll_vertical += 64
+			get_viewport().set_input_as_handled()
+		KEY_UP:
+			scroll.scroll_vertical = maxi(0, scroll.scroll_vertical - 64)
+			get_viewport().set_input_as_handled()
+		KEY_HOME:
+			if not search.has_focus() or event.ctrl_pressed or event.meta_pressed:
+				scroll.scroll_vertical = 0
+				get_viewport().set_input_as_handled()
+		KEY_END:
+			if not search.has_focus() or event.ctrl_pressed or event.meta_pressed:
+				scroll.scroll_vertical = maxi(0, int(body.size.y))
+				get_viewport().set_input_as_handled()
 
 func _fit_to_host() -> void:
 	if tactical:_fit_tactical()
@@ -408,12 +440,60 @@ func _section_has_entries() -> bool:
 				if entry is Dictionary:return true
 	return false
 
+func _count_section_matches(tab: String) -> int:
+	if tab == "Credits":
+		if credits.is_empty(): return 0
+		var found := 0
+		var provenance := "Original game by "+str(credits.get("studio","Dynamix"))+"\nPublished by "+str(credits.get("publisher","Electronic Arts"))
+		var copyright_text := str(credits.get("copyright","Original game copyright 1988, 1989 Dynamix, Inc."))
+		if not tactical or _matches_text(provenance+" "+copyright_text): found += 1
+		for row in credits.get("rows",[]):
+			if row is Dictionary and (_matches_text(str(row.get("role",""))+" "+_plain(row.get("names",[]))) if tactical else _matches(row)): found += 1
+		if (_matches_text("Fan remaster Fan Remastered by Nell Watson Dedicated to David “Ming” Kenny") if tactical else _matches({"name":"Fan Remastered by Nell Watson Dedicated to David Ming Kenny"})): found += 1
+		return found
+	if content.is_empty(): return 0
+	var groups := {
+		"Controls":[["remaster_controls","Remaster shortcuts",true],["keyboard_controls","Keyboard controls",true],["stations","Crew stations",false],["joystick","Joystick",false]],
+		"Scenarios":[["missions","Scenarios",false],["campaign","Campaign",false],["training","Training",false]],
+		"Vehicles":[["vehicles","Vehicles",false],["other_units_and_objectives","Other units and objectives",false]],
+		"Weapons":[["ammunition_and_armament","Ammunition and armament",false],["anti_tank_guided_weapons","Guided weapons",false]]}
+	var total := 0
+	for spec in groups.get(tab, []):
+		var entries = content.get(spec[0], [])
+		if entries is Dictionary: entries = [entries]
+		if not entries is Array: continue
+		for entry in entries:
+			if entry is Dictionary and _matches(entry, spec[1], spec[2]):
+				total += 1
+	return total
+
+func _update_other_matches() -> void:
+	if other_matches == null: return
+	var query := search.text.strip_edges() if search else ""
+	if not tactical or query.is_empty():
+		other_matches.hide()
+		other_matches.text = ""
+		return
+	var parts: PackedStringArray = []
+	for tab in SECTIONS:
+		if tab == section: continue
+		var hits := _count_section_matches(tab)
+		if hits > 0:
+			parts.append("%s (%d)" % [tab, hits])
+	if parts.is_empty():
+		other_matches.hide()
+		other_matches.text = ""
+	else:
+		other_matches.text = "Also in other sections: " + ", ".join(parts)
+		other_matches.show()
+
 func _render() -> void:
 	for child in body.get_children():
 		body.remove_child(child)
 		child.queue_free()
 	if (section!="Credits" and (content.is_empty() or (tactical and not _section_has_entries()))) or (tactical and section=="Credits" and credits.is_empty()):
 		result_count.text="Guide data unavailable"
+		if other_matches: other_matches.hide()
 		_label(body,"The offline guide is missing or unreadable. Reinstall the complete application.")
 		return
 	var count := 0
@@ -453,4 +533,5 @@ func _render() -> void:
 				_label(body,"Fan Remastered by Nell Watson\nDedicated to David “Ming” Kenny")
 				count+=1
 	if tactical:result_count.text="%d matching %s"%[count,"entry" if count==1 else "entries"]
+	_update_other_matches()
 	if count==0:_label(body,"No matching entries. Clear the search or choose another section.")

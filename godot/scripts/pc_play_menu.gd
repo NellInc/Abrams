@@ -6,6 +6,12 @@ signal quality_selected(msaa_samples: int, anisotropic_samples: int)
 signal speed_selected(multiplier: int)
 signal state_requested(operation: String, slot: int)
 signal control_notice(message: String)
+signal fullscreen_toggled(enabled: bool)
+signal reduced_motion_toggled(enabled: bool)
+signal settings_requested
+var reduced_motion := false
+var reduced_motion_override := -1
+var fullscreen_enabled := false
 var shortcut_is_macos := _uses_macos_shortcuts()
 # Only hosts that report AltGr as Ctrl+Alt screen out layout characters.
 var layout_filter := _altgr_is_ctrl_alt()
@@ -190,6 +196,10 @@ func _ready() -> void:
 		speed_popup.add_radio_check_item("Normal speed" if multiplier==1 else "8x (Tab, sound muted)",multiplier)
 	speed_popup.id_pressed.connect(choose_speed)
 	session_popup.add_separator()
+	session_popup.add_item("Settings...",101)
+	session_popup.id_pressed.connect(func(id):
+		if id==101: settings_requested.emit())
+	session_popup.add_separator()
 	session_popup.add_item(state_message,100)
 	session_popup.set_item_disabled(session_popup.get_item_index(100),true)
 	graphics_popup=PopupMenu.new()
@@ -202,7 +212,9 @@ func _ready() -> void:
 	graphics_popup.set_item_disabled(MODES.find("tactical"),true)
 	graphics_popup.id_pressed.connect(func(index):
 		if index>=0 and index<MODES.size():choose_graphics(MODES[index])
-		elif index==102:reset_quality())
+		elif index==102:reset_quality()
+		elif index==103:toggle_fullscreen()
+		elif index==104:choose_reduced_motion(not reduced_motion))
 	graphics_popup.add_separator()
 	hud_popup=_submenu(graphics_popup,"HUD Style")
 	for index in HUD_STYLES.size():
@@ -219,6 +231,10 @@ func _ready() -> void:
 		menu.id_pressed.connect(func(samples):choose_quality(key,samples))
 		quality_menus[key]=menu
 	graphics_popup.add_item("Restore full-quality defaults (4× / 16×)",102)
+	graphics_popup.add_separator()
+	if not OS.has_feature("web"):
+		graphics_popup.add_check_item("Fullscreen",103)
+	graphics_popup.add_check_item("Reduced motion",104)
 	graphics_popup.add_item("",101)
 	graphics_popup.set_item_disabled(graphics_popup.get_item_index(101),true)
 	help_popup=PopupMenu.new()
@@ -230,6 +246,11 @@ func _ready() -> void:
 	help_popup.add_item("Original game credits",2)
 	help_popup.id_pressed.connect(func(index):
 		open_reference("keyboard-controls.html" if index==0 else "credits" if index==2 else "field-guide.html"))
+	# Present menus in standard order: Session | Graphics | Audio | Help.
+	move_child(session_popup,0)
+	move_child(graphics_popup,1)
+	move_child(popup,2)
+	move_child(help_popup,3)
 	var existing_reader: Window = get_tree().root.get_node_or_null("PlayerReference") as Window
 	if existing_reader!=null:
 		existing_reader.connect("reader_changed",_reader_changed)
@@ -278,6 +299,11 @@ func load_quality_settings() -> bool:
 			quality_error="Invalid saved graphics mode; using the launch default"
 			return false
 		preferred_graphics_mode=saved_mode
+	if file.has_section_key("preferences","reduced_motion"):
+		var saved_rm = file.get_value("preferences","reduced_motion")
+		if saved_rm is bool:
+			reduced_motion_override=1 if saved_rm else 0
+			reduced_motion=saved_rm
 	return valid
 
 func _save_graphics_settings(failure_message: String) -> void:
@@ -288,7 +314,25 @@ func _save_graphics_settings(failure_message: String) -> void:
 	file.set_value("graphics","hud_style",hud_style)
 	if not preferred_graphics_mode.is_empty():
 		file.set_value("graphics","graphics_mode",preferred_graphics_mode)
+	if reduced_motion_override>=0:
+		file.set_value("preferences","reduced_motion",reduced_motion_override==1)
 	if file.save(quality_config_path)!=OK: quality_error=failure_message
+
+func toggle_fullscreen() -> bool:
+	if OS.has_feature("web"): return false
+	fullscreen_enabled=not fullscreen_enabled
+	fullscreen_toggled.emit(fullscreen_enabled)
+	refresh_controls()
+	return true
+
+func choose_reduced_motion(enabled: bool) -> bool:
+	reduced_motion=enabled
+	reduced_motion_override=1 if enabled else 0
+	_save_graphics_settings("Reduced motion changed, but could not save settings")
+	reduced_motion_toggled.emit(enabled)
+	refresh_controls()
+	control_notice.emit("Reduced motion: " + ("On" if enabled else "Off"))
+	return true
 
 func choose_quality(key: String, samples: int) -> bool:
 	if not QUALITY_LEVELS.has(key) or samples not in QUALITY_LEVELS[key]: return false
@@ -545,6 +589,10 @@ func refresh_controls() -> void:
 	for key in quality_menus:
 		var menu: PopupMenu=quality_menus[key]
 		for index in menu.item_count: menu.set_item_checked(index,menu.get_item_id(index)==quality[key])
+	var fs_index := graphics_popup.get_item_index(103)
+	if fs_index>=0: graphics_popup.set_item_checked(fs_index,fullscreen_enabled)
+	var rm_index := graphics_popup.get_item_index(104)
+	if rm_index>=0: graphics_popup.set_item_checked(rm_index,reduced_motion)
 	graphics_popup.set_item_text(graphics_popup.get_item_index(101),quality_error if not quality_error.is_empty() else preference_note if not preference_note.is_empty() else presentation_note if not presentation_note.is_empty() else "Antialiasing applies to Genesis Upscaled, Modern and Tactical scenery")
 	for index in speed_popup.item_count:
 		speed_popup.set_item_checked(index,speed_popup.get_item_id(index)==speed)

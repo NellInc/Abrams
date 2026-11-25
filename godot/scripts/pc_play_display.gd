@@ -123,8 +123,8 @@ func set_hud_style(style: String) -> bool:
 	if style=="restored":
 		_hud_mask_bytes=""
 		_hud_mask_texture=null
-		_hud_mask_data.clear()
-		_panel_mask_bytes.clear()
+		_hud_mask_data=PackedByteArray()
+		_panel_mask_bytes=PackedByteArray()
 		_panel_mask_texture=null
 		_panel_mask_image=null
 	_set_wide_station(0)
@@ -148,8 +148,8 @@ func set_hud_frame(presentation: Dictionary, program: Dictionary, verified_panel
 			_panel_mask_image=verified_panel_mask.duplicate() if verified_panel_mask.get_size()==Vector2i(320,200) and verified_panel_mask.get_format()==Image.FORMAT_L8 and not verified_panel_mask.has_mipmaps() else null
 			_panel_mask_bytes=panel_bytes
 	if _fallback_pair_verified:
-		var same_frame_tags:=_source_cockpit_mask(presentation)
-		_fallback_pair_verified=same_frame_tags!=null and same_frame_tags.get_data()==_panel_mask_bytes
+		var same_frame_bytes := _source_cockpit_mask_bytes(presentation)
+		_fallback_pair_verified = not same_frame_bytes.is_empty() and same_frame_bytes == _panel_mask_bytes
 	_station=_source_station() if program.get("name")=="SIM" else 0
 	tactical_chrome.station=_station
 	var bounds:=Vector4.ZERO
@@ -166,7 +166,7 @@ func set_hud_frame(presentation: Dictionary, program: Dictionary, verified_panel
 	if program.get("name")!="SIM":
 		_hud_mask_bytes=""
 		_hud_mask_texture=null
-		_hud_mask_data.clear()
+		_hud_mask_data=PackedByteArray()
 		_set_wide_station(0)
 		_update_hud_material()
 		return
@@ -174,7 +174,7 @@ func set_hud_frame(presentation: Dictionary, program: Dictionary, verified_panel
 	if not overlay is Dictionary or overlay.get("width")!=320 or overlay.get("height")!=200 or not overlay.get("mask_png") is String:
 		_hud_mask_bytes=""
 		_hud_mask_texture=null
-		_hud_mask_data.clear()
+		_hud_mask_data=PackedByteArray()
 		_set_wide_station(0)
 		_update_hud_material()
 		return
@@ -185,31 +185,41 @@ func set_hud_frame(presentation: Dictionary, program: Dictionary, verified_panel
 		return
 	_hud_mask_bytes=""
 	_hud_mask_texture=null
-	_hud_mask_data.clear()
-	var mask:=Image.new()
-	if mask.load_png_from_buffer(Marshalls.base64_to_raw(encoded))==OK and mask.get_size()==Vector2i(320,200) and mask.get_format()==Image.FORMAT_L8:
-		var bits:=mask.get_data()
-		if bits.count(0)+bits.count(255)==bits.size():
-			_hud_mask_texture=ImageTexture.create_from_image(mask)
-			_hud_mask_bytes=encoded
-			_hud_mask_data=bits
+	_hud_mask_data=PackedByteArray()
+	# Reuse tandem_frame's already-decoded UI mask when present for this exact base64 string.
+	var cached_ui: Dictionary = tandem_frame._mask_cache.get("ui", {})
+	if cached_ui.get("encoded") == encoded and cached_ui.get("bytes") != null and cached_ui.get("format") == Image.FORMAT_L8:
+		var bits: PackedByteArray = cached_ui.bytes
+		var is_binary: bool = cached_ui.get("binary", bits.count(0) + bits.count(255) == bits.size())
+		if is_binary:
+			_hud_mask_texture = tandem_frame._mask_texture("ui")
+			_hud_mask_bytes = encoded
+			_hud_mask_data = bits.duplicate()
+	else:
+		var mask:=Image.new()
+		if mask.load_png_from_buffer(Marshalls.base64_to_raw(encoded))==OK and mask.get_size()==Vector2i(320,200) and mask.get_format()==Image.FORMAT_L8:
+			var bits:=mask.get_data()
+			if bits.count(0)+bits.count(255)==bits.size():
+				_hud_mask_texture=ImageTexture.create_from_image(mask)
+				_hud_mask_bytes=encoded
+				_hud_mask_data=bits
 	_set_wide_station(_safe_wide_station(bounds,verified_panel_mask))
 	_update_hud_material()
 
-func _source_cockpit_mask(presentation: Dictionary) -> Image:
+func _source_cockpit_mask_bytes(presentation: Dictionary) -> PackedByteArray:
 	# PC-only imports use the same verified original plate identity as donor
 	# imports. No optional ROM is required for any Tactical station layout.
 	var overlay=presentation.get("plate_overlay")
-	if not overlay is Dictionary or overlay.get("width")!=320 or overlay.get("height")!=200: return null
-	if not overlay.get("plates") is Dictionary or not overlay.get("mask_png") is String: return null
+	if not overlay is Dictionary or overlay.get("width")!=320 or overlay.get("height")!=200: return PackedByteArray()
+	if not overlay.get("plates") is Dictionary or not overlay.get("mask_png") is String: return PackedByteArray()
 	# The verdict depends only on the exact encoded mask and its plate sources.
 	var key:=[overlay.mask_png,overlay.plates]
 	if key==_source_mask_key:
-		return Image.create_from_data(320,200,false,Image.FORMAT_L8,_source_mask_bytes) if not _source_mask_bytes.is_empty() else null
+		return _source_mask_bytes
 	_source_mask_key=key.duplicate(true)
 	_source_mask_bytes=PackedByteArray()
 	var mask:=Image.new()
-	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK or mask.get_size()!=Vector2i(320,200) or mask.get_format()!=Image.FORMAT_L8: return null
+	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK or mask.get_size()!=Vector2i(320,200) or mask.get_format()!=Image.FORMAT_L8: return PackedByteArray()
 	var bits:=mask.get_data()
 	var recognised:=bits.count(0)
 	for id in TandemFrame.COCKPIT_SOURCES:
@@ -217,11 +227,15 @@ func _source_cockpit_mask(presentation: Dictionary) -> Image:
 		if count==0: continue
 		var plate=overlay.plates.get(str(id))
 		var expected:Array=TandemFrame.COCKPIT_SOURCES[id]
-		if not plate is Dictionary or plate.get("source")!=expected[0] or plate.get("source_sha256")!=expected[1]: return null
+		if not plate is Dictionary or plate.get("source")!=expected[0] or plate.get("source_sha256")!=expected[1]: return PackedByteArray()
 		recognised+=count
-	if recognised!=64000 or bits.count(0)==64000: return null
+	if recognised!=64000 or bits.count(0)==64000: return PackedByteArray()
 	_source_mask_bytes=bits
-	return mask
+	return _source_mask_bytes
+
+func _source_cockpit_mask(presentation: Dictionary) -> Image:
+	var bits := _source_cockpit_mask_bytes(presentation)
+	return Image.create_from_data(320,200,false,Image.FORMAT_L8,bits) if not bits.is_empty() else null
 
 func _source_station() -> int:
 	if _panel_mask_bytes.size()!=64000: return 0
@@ -284,6 +298,10 @@ func _update_hud_material() -> void:
 	background.color=Color("101a13") if hud_style=="tactical" and _tactical_graphics() else Color.BLACK
 	display.material=tactical_material if hud_style=="tactical" and _hud_mask_texture!=null and _tactical_graphics() else null
 	if display.material==null: _set_wide_station(0)
+	# Wide 16:9 Tactical reflow downscales the 4:3 tandem viewport into destination
+	# apertures; linear filtering keeps 4x MSAA edges and thin typography crisp,
+	# while 4:3, Restored, EGA and Genesis retain exact nearest-neighbour pixels.
+	display.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR if _wide_station!=0 and _tactical_graphics() else CanvasItem.TEXTURE_FILTER_NEAREST
 	tactical_chrome.fallback_tactical=hud_style=="tactical" and display.material!=null and _wide_station==0
 	var station: int=_wide_station
 	var layout: Dictionary=TACTICAL_LAYOUTS.get(station,{})
@@ -291,7 +309,7 @@ func _update_hud_material() -> void:
 		station=_station
 		layout=original_tactical_layout(station)
 	if station!=0 and display.material!=null and _panel_mask_texture!=null:
-		tactical_chrome.instruments.set_frame(tandem_frame,station,layout,(_panel_mask_image.duplicate() if _panel_mask_image!=null else _panel_mask_texture.get_image()),_hud_mask_data)
+		tactical_chrome.instruments.set_frame(tandem_frame,station,layout,(_panel_mask_image if _panel_mask_image!=null else _panel_mask_texture.get_image()),_hud_mask_data)
 	else:
 		tactical_chrome.instruments.clear()
 	var map_covered:=false
@@ -338,6 +356,14 @@ func set_graphics_quality(mode: String, samples: int, anisotropy: int) -> bool:
 		tandem_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	return true
 
+func _active_world_scale(rect_size: Vector2i) -> int:
+	if _wide_station == 0:
+		return world_scale(rect_size)
+	# Wide 16:9 Tactical fits inside rect_size; sizing the 3D world from the
+	# displayed 16:9 rect (capped at 8x on 4K/Retina) preserves full aperture
+	# sharpness while avoiding redundant 13x-15x MSAA fill cost.
+	return mini(world_scale(rect_size), 8)
+
 func _resize_targets() -> void:
 	var rect := wide_fitted_rect(Vector2i(size)) if _wide_station!=0 else fitted_rect(Vector2i(size))
 	if rect.size.x<4 or rect.size.y<3: return
@@ -356,7 +382,7 @@ func _resize_targets() -> void:
 	var source_extent:=Vector2i(rect.size.x,rect.size.x*3/4) if _wide_station!=0 else rect.size
 	tandem_viewport.size = source_extent
 	tandem_frame.size = source_extent
-	world_viewport.size = source_dimensions*world_scale(source_extent)
+	world_viewport.size = source_dimensions*_active_world_scale(rect.size)
 	# A retained source-paired scene must still refresh after a native resize.
 	if world_viewport.render_target_update_mode!=SubViewport.UPDATE_ALWAYS:
 		world_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
@@ -372,4 +398,4 @@ func description() -> Dictionary:
 		"source_clip_pixels":[source_dimensions.x,source_dimensions.y],
 		"msaa_samples":msaa_samples if graphics_mode in ["upscaled","modern","tactical"] else 0,
 		"anisotropic_samples":anisotropic_samples,
-		"world_scale":world_scale(tandem_viewport.size), "display_aspect":"16:9" if _wide_station!=0 else "4:3", "tactical_station":_wide_station}
+		"world_scale":_active_world_scale(rect.size), "display_aspect":"16:9" if _wide_station!=0 else "4:3", "tactical_station":_wide_station}

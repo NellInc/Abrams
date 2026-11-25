@@ -118,7 +118,9 @@ var terrain_active := false
 var camera_basis_ready := false
 var terrain_polygon_count := 0
 var hill_polygon_count := 0
-var _pattern_key := ""
+var _pattern_palette: Array = []
+var _pattern_materials: Array = []
+var _pattern_levels := -1
 var _pattern_texture: Texture2D
 var _mean_texture: Texture2D
 var render_warnings: Array[String] = []
@@ -444,8 +446,7 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 	var hills: bool = terrain_active and terrain_style.hill_texture!=null
 	var vehicle_basis:Dictionary=mapping if terrain_active else TerrainStyle.camera_basis(frame)
 	# Cache the compensated RGB ramps; the original palette/patterns never change.
-	var key := JSON.stringify([palette,pass_data.materials,levels])
-	if key != _pattern_key:
+	if levels != _pattern_levels or palette != _pattern_palette or pass_data.materials != _pattern_materials:
 		var compatibility := RenderingServer.get_current_rendering_method() == "gl_compatibility"
 		var texture := Image.create((material_count+16)*2,levels*2,false,Image.FORMAT_RGBAF if compatibility else Image.FORMAT_RGBA8)
 		var means := Image.create(material_count+16,levels,false,Image.FORMAT_RGBAF if compatibility else Image.FORMAT_RGBA8)
@@ -462,7 +463,9 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 						texture.set_pixel(index*2+x,level*2+y,Colour.input_color(rgb,compatibility))
 		_pattern_texture = ImageTexture.create_from_image(texture)
 		_mean_texture = ImageTexture.create_from_image(means)
-		_pattern_key = key
+		_pattern_palette = palette.duplicate(true)
+		_pattern_materials = pass_data.materials.duplicate(true)
+		_pattern_levels = levels
 	if pass_data.get("background") is Dictionary:
 		var backgrounds: Array = SurfaceGeometry.background_polygons(pass_data.background, frame)
 		if backgrounds.is_empty(): render_warnings.append("Unsupported vertical horizon")

@@ -28,11 +28,15 @@ const ART := [
 ]
 var page := 0
 var original := false
+var side_by_side := false
 var textures: Dictionary = {}
+var _art_paths: Dictionary = {}
+var _capture_active := false
 var font: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
 var heading: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 var errors: Dictionary = {}
 var controls: Array[Dictionary] = []
+var _split_button: Button
 ## Defaults to the checkout's local-art/genesis; tests may point elsewhere before _ready.
 var art_root := ""
 ## The Web edition publishes no original Genesis captures, so its Extras viewer
@@ -45,25 +49,37 @@ func _ready() -> void:
 	if art_root.is_empty(): art_root = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join("local-art/genesis")
 	var root := art_root
 	for entry in ART:
-		_load_art(root.path_join("source/"+entry.source),entry.source)
-		_load_art(root.path_join(entry.get("collection","remastered")+"/"+entry.remaster),entry.remaster)
+		_index_art(root.path_join("source/"+entry.source),entry.source)
+		_index_art(root.path_join(entry.get("collection","remastered")+"/"+entry.remaster),entry.remaster)
 		if entry.has("portrait_source"):
-			_load_art(root.path_join("source/"+entry.portrait_source),entry.portrait_source)
-			_load_art(root.path_join("remastered/"+entry.portrait_remaster),entry.portrait_remaster)
+			_index_art(root.path_join("source/"+entry.portrait_source),entry.portrait_source)
+			_index_art(root.path_join("remastered/"+entry.portrait_remaster),entry.portrait_remaster)
 	_add_button("PREVIOUS",Rect2(32,842,170,40),func(): _change(-1))
 	_add_button("NEXT",Rect2(214,842,150,40),func(): _change(1))
-	var compare := _add_button("ORIGINAL / REMASTER  [TAB]",Rect2(390,842,390,40),_toggle)
-	_add_button("EXTRAS  [ESC]",Rect2(1212,842,356,40),_back)
-	can_compare = not embedded or ART.any(func(entry): return textures.has(entry.source))
+	var compare := _add_button("ORIGINAL / REMASTER  [TAB]",Rect2(382,842,355,40),_toggle)
+	_add_button("EXTRAS  [ESC]",Rect2(1260,842,308,40),_back)
+	_split_button = _add_button("SIDE BY SIDE  [S]",Rect2(750,842,248,40),_toggle_split)
+	can_compare = not embedded or ART.any(func(entry): return _art_paths.has(entry.source))
 	compare.visible = can_compare
+	_split_button.visible = can_compare
+	_ensure_page_loaded(page)
 	resized.connect(_layout)
 	_layout()
 	if "--capture-art" in OS.get_cmdline_user_args():
+		_capture_active = true
 		_capture.call_deferred()
 
-func _load_art(filename: String, key: String) -> void:
+func _index_art(filename: String, key: String) -> void:
 	if not FileAccess.file_exists(filename):
 		# Players never see a developer path; the standalone review tool does.
+		errors[key] = "This artwork is not included in this edition." if embedded else "Local artwork missing: " + filename.get_file() + ". See docs/genesis-art-workflow.md."
+		return
+	_art_paths[key] = filename
+
+func _load_art(filename: String, key: String) -> void:
+	if textures.has(key) or errors.has(key):
+		return
+	if not FileAccess.file_exists(filename):
 		errors[key] = "This artwork is not included in this edition." if embedded else "Local artwork missing: " + filename.get_file() + ". See docs/genesis-art-workflow.md."
 		return
 	var image := Image.load_from_file(filename)
@@ -71,6 +87,30 @@ func _load_art(filename: String, key: String) -> void:
 		errors[key] = "Cannot read artwork: " + filename.get_file()
 		return
 	textures[key] = ImageTexture.create_from_image(image)
+
+func _page_keys(index: int) -> Array[String]:
+	var entry: Dictionary = ART[posmod(index, ART.size())]
+	var keys: Array[String] = [entry.remaster]
+	if can_compare:
+		keys.append(entry.source)
+	if entry.has("portrait_source"):
+		keys.append(entry.portrait_remaster)
+		if can_compare:
+			keys.append(entry.portrait_source)
+	return keys
+
+func _ensure_page_loaded(index: int) -> void:
+	for key in _page_keys(index):
+		if _art_paths.has(key):
+			_load_art(_art_paths[key], key)
+	if not _capture_active and textures.size() > 16:
+		var keep := {}
+		for offset in [-1, 0, 1]:
+			for key in _page_keys(index + offset):
+				keep[key] = true
+		for key in textures.keys():
+			if not keep.has(key):
+				textures.erase(key)
 
 func _add_button(label: String, area: Rect2, action: Callable) -> Button:
 	var button := Button.new()
@@ -93,11 +133,20 @@ func _layout() -> void:
 
 func _change(direction: int) -> void:
 	page = posmod(page+direction,ART.size())
+	_ensure_page_loaded(page)
 	queue_redraw()
 
 func _toggle() -> void:
 	if not can_compare: return
+	side_by_side = false
 	original = not original
+	_ensure_page_loaded(page)
+	queue_redraw()
+
+func _toggle_split() -> void:
+	if not can_compare: return
+	side_by_side = not side_by_side
+	_ensure_page_loaded(page)
 	queue_redraw()
 
 func _back() -> void:
@@ -111,39 +160,74 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_ESCAPE: _back()
 		KEY_LEFT: _change(-1)
 		KEY_RIGHT: _change(1)
+		KEY_S: _toggle_split()
 
 func _input(event: InputEvent) -> void:
 	# Intercept Tab before Control uses it for focus traversal.
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB:
 		_toggle()
 		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_change(-1)
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_change(1)
+			get_viewport().set_input_as_handled()
+
+func _draw_art_panel(entry: Dictionary, rect: Rect2, show_original: bool) -> void:
+	var key: String = entry.source if show_original else entry.remaster
+	if textures.has(key):
+		draw_texture_rect(textures[key], rect, false)
+		if entry.has("portrait_source"):
+			var portrait: String = entry.portrait_source if show_original else entry.portrait_remaster
+			if textures.has(portrait):
+				var p_rect := Rect2(rect.position + Vector2(80, 32) * (rect.size / Vector2(320, 200)), Vector2(136, 128) * (rect.size / Vector2(320, 200)))
+				draw_texture_rect(textures[portrait], p_rect, false)
+			else:
+				draw_string(font, rect.position + Vector2(20, rect.size.y * 0.5), errors.get(portrait, ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("e7b566"))
+	else:
+		draw_string(font, rect.position + Vector2(20, rect.size.y * 0.5), errors.get(key, "Local artwork missing. See docs/genesis-art-workflow.md."), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("e7b566"))
+
+func _fit_in_box(box: Rect2, aspect: float) -> Rect2:
+	var w: float = box.size.x
+	var h: float = w / maxf(aspect, 0.1)
+	if h > box.size.y:
+		h = box.size.y
+		w = h * aspect
+	return Rect2(box.position + (box.size - Vector2(w, h)) * 0.5, Vector2(w, h))
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO,size),Color("111413"))
 	draw_set_transform(Vector2.ZERO,0,size/Vector2(1600,900))
-	var label: String = ART[page].name
+	var entry: Dictionary = ART[page]
+	var label: String = entry.name
 	draw_string(heading,Vector2(32,39),label,HORIZONTAL_ALIGNMENT_LEFT,-1,30,Color("e1e4cd"))
+	var counter := "%d / %d" % [page + 1, ART.size()]
+	draw_string(font,Vector2(1470,35),counter,HORIZONTAL_ALIGNMENT_RIGHT,98,17,Color("e7b566"))
 	draw_string(font,Vector2(760,35),"PC GAMEPLAY  /  GENESIS VISUAL REFERENCE",HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color("a6b2a2"))
-	var art_rect := Rect2(188,63,1224,765) # Native 8:5 framing retained.
-	if ART[page].get("square",false): art_rect=Rect2(417.5,63,765,765)
-	if ART[page].get("wide",false): art_rect=Rect2(188,241.5,1224,408)
-	if original and ART[page].has("source_aspect"):
-		var height: float=1224.0/float(ART[page].source_aspect)
-		art_rect=Rect2(188,445.5-height/2,1224,height)
-	var key: String = ART[page].source if original else ART[page].remaster
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if original else CanvasItem.TEXTURE_FILTER_LINEAR
-	if textures.has(key):
-		draw_texture_rect(textures[key],art_rect,false)
-		if ART[page].has("portrait_source"):
-			var portrait: String = ART[page].portrait_source if original else ART[page].portrait_remaster
-			if textures.has(portrait):
-				var rect := Rect2(art_rect.position+Vector2(80,32)*(art_rect.size/Vector2(320,200)),Vector2(136,128)*(art_rect.size/Vector2(320,200)))
-				draw_texture_rect(textures[portrait],rect,false)
-			else:
-				draw_string(font,Vector2(250,430),errors.get(portrait,""),HORIZONTAL_ALIGNMENT_LEFT,-1,20,Color("e7b566"))
+	if side_by_side and can_compare:
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		var base_aspect := 1.0 if entry.get("square", false) else (3.0 if entry.get("wide", false) else 1.6)
+		var orig_aspect := float(entry.get("source_aspect", base_aspect))
+		var left_rect := _fit_in_box(Rect2(40, 82, 740, 700), orig_aspect)
+		var right_rect := _fit_in_box(Rect2(820, 82, 740, 700), base_aspect)
+		_draw_art_panel(entry, left_rect, true)
+		_draw_art_panel(entry, right_rect, false)
+		draw_line(Vector2(800, 72), Vector2(800, 804), Color(0.55, 0.62, 0.53, 0.35), 1.5)
+		draw_string(font, Vector2(40, 816), "ORIGINAL GENESIS", HORIZONTAL_ALIGNMENT_CENTER, 740, 17, Color("a6b2a2"))
+		draw_string(font, Vector2(820, 816), "LOCAL REMASTER", HORIZONTAL_ALIGNMENT_CENTER, 740, 17, Color("e7b566"))
+		draw_string(font, Vector2(1015, 868), "SIDE BY SIDE", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("e7b566"))
 	else:
-		draw_string(font,Vector2(250,430),errors.get(key,"Local artwork missing. See docs/genesis-art-workflow.md."),HORIZONTAL_ALIGNMENT_LEFT,-1,20,Color("e7b566"))
-	draw_string(font,Vector2(820,868),"ORIGINAL GENESIS" if original else "LOCAL REMASTER",HORIZONTAL_ALIGNMENT_LEFT,-1,18,Color("e7b566"))
+		var art_rect := Rect2(188,63,1224,765) # Native 8:5 framing retained.
+		if entry.get("square",false): art_rect=Rect2(417.5,63,765,765)
+		if entry.get("wide",false): art_rect=Rect2(188,241.5,1224,408)
+		if original and entry.has("source_aspect"):
+			var height: float=1224.0/float(entry.source_aspect)
+			art_rect=Rect2(188,445.5-height/2,1224,height)
+		texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if original else CanvasItem.TEXTURE_FILTER_LINEAR
+		_draw_art_panel(entry, art_rect, original)
+		draw_string(font,Vector2(1015,868),"ORIGINAL GENESIS" if original else "LOCAL REMASTER",HORIZONTAL_ALIGNMENT_LEFT,-1,18,Color("e7b566"))
 
 func _capture() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -158,6 +242,8 @@ func _capture() -> void:
 		push_error("--capture-art refuses output inside godot/ or the original sources: " + args[at+1])
 		get_tree().quit(2)
 		return
+	for p in range(ART.size()):
+		_ensure_page_loaded(p)
 	if not errors.is_empty():
 		push_error("Artwork capture needs all local source/remaster files.")
 		get_tree().quit(1)
@@ -167,6 +253,7 @@ func _capture() -> void:
 		page = p
 		for mode in [false,true]:
 			original = mode
+			side_by_side = false
 			queue_redraw()
 			await get_tree().process_frame
 			await RenderingServer.frame_post_draw
