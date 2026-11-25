@@ -308,7 +308,7 @@ class BuilderReceiptTests(unittest.TestCase):
         self.assertLess(written, main.index('staged.replace(output)'))
         self.assertLess(main.index('staged.replace(output)'), main.index("staged_manifest.replace(output.with_suffix('.json'))"))
         # The outgoing core/receipt pair is retained before either is replaced.
-        self.assertLess(written, main.index('shutil.copyfile(output, retained / output.name)'))
+        self.assertLess(written, main.index('_cc_copyfile(output, retained / output.name)'))
         self.assertLess(main.index("retained / output.with_suffix('.json').name"), main.index('staged.replace(output)'))
         self.assertIn("args.output_dir / 'previous' / sha(output)", main)
 

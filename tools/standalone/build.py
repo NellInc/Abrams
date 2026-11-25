@@ -17,6 +17,78 @@ import shutil
 import subprocess
 import sys
 
+
+# --- clone-first copies: APFS clones on macOS, plain shutil elsewhere (rule: "Reference inputs; clone, never copy") ---
+import shutil as _cc_shutil
+
+
+def _cc_build():
+    import ctypes
+    import os
+    import sys
+
+    names = ('copyfile', 'copy', 'copy2', 'copytree')
+    orig = {n: getattr(_cc_shutil, n) for n in names}
+    clonefile = None
+    if sys.platform == 'darwin':
+        try:
+            clonefile = ctypes.CDLL(None, use_errno=True).clonefile
+            clonefile.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint32)
+            clonefile.restype = ctypes.c_int
+        except (OSError, AttributeError):
+            clonefile = None
+    umask = os.umask(0)
+    os.umask(umask)
+
+    def clone(name, src, dst, follow):
+        # Clone only when shutil is unpatched, src is a regular file and dst does not exist yet; else plain shutil.
+        if clonefile is None or any(getattr(_cc_shutil, n) is not orig[n] for n in names):
+            return False  # a test has patched shutil: let the patched function handle it
+        if os.path.lexists(dst) or not (os.path.isfile(src) and (follow or not os.path.islink(src))):
+            return False
+        if clonefile(os.fsencode(src), os.fsencode(dst), 0 if follow else 1) != 0:
+            return False
+        os.chflags(dst, 0, follow_symlinks=False)  # clones inherit the source's flags (e.g. uchg)
+        if name == 'copy2':
+            _cc_shutil.copystat(src, dst, follow_symlinks=follow)
+        else:
+            if name == 'copy':
+                _cc_shutil.copymode(src, dst, follow_symlinks=follow)
+            else:
+                os.chmod(dst, 0o666 & ~umask)
+            os.utime(dst, None)
+        return True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        if clone('copyfile', src, dst, follow_symlinks):
+            return dst
+        return getattr(_cc_shutil, 'copyfile')(src, dst, follow_symlinks=follow_symlinks)
+
+    def make(name):
+        def copier(src, dst, *, follow_symlinks=True):
+            target = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
+            if clone(name, src, target, follow_symlinks):
+                return target
+            return getattr(_cc_shutil, name)(src, dst, follow_symlinks=follow_symlinks)
+        return copier
+
+    copy, copy2 = make('copy'), make('copy2')
+    mapped = {orig['copy2']: copy2, orig['copy']: copy, orig['copyfile']: copyfile}
+
+    def copytree(src, dst, *args, **kwargs):
+        patched = any(getattr(_cc_shutil, n) is not orig[n] for n in names)
+        if len(args) < 3 and not patched:  # copy_function not passed positionally; shutil not patched by a test
+            fn = kwargs.get('copy_function', orig['copy2'])
+            kwargs['copy_function'] = mapped.get(fn, fn)
+        return getattr(_cc_shutil, 'copytree')(src, dst, *args, **kwargs)
+
+    return copyfile, copy, copy2, copytree
+
+
+_cc_copyfile, _cc_copy, _cc_copy2, _cc_copytree = _cc_build()
+# --- end clone-first copies ---
+
+
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = '0.1.0-alpha.9'
 BUNDLE_VERSION = '35'
@@ -176,7 +248,7 @@ def clone_file(source, destination):
     if sys.platform == 'darwin':
         result=subprocess.run(['/bin/cp','-c',str(source),str(destination)],capture_output=True)
         if not result.returncode:return destination
-    shutil.copy2(source,destination)
+    _cc_copy2(source,destination)
     return destination
 
 
@@ -303,7 +375,7 @@ def build(output, godot, python, cache):
         dest=resources/'kit'/row['path'];dest.parent.mkdir(parents=True,exist_ok=True)
         clone_file(ROOT/row['path'],dest);dest.chmod(row['mode'])
         if sha(dest)!=row['sha256']:raise ValueError('Source changed during assembly: '+row['path'])
-    shutil.copytree(frozen,resources/'runtime/AbramsRuntime',symlinks=True,copy_function=clone_file)
+    _cc_copytree(frozen,resources/'runtime/AbramsRuntime',symlinks=True,copy_function=clone_file)
     # Copy/thin, never change the user's installed Godot application.
     subprocess.run(['lipo',str(godot),'-thin','arm64','-output',str(renderer)],check=True)
     renderer.chmod(0o755)
@@ -317,17 +389,17 @@ def build(output, godot, python, cache):
                 name='icon_%dx%d%s.png'%(extent,extent,'@2x' if scale==2 else '')
                 subprocess.run(['sips','-z',str(extent*scale),str(extent*scale),str(icon_source),'--out',str(iconset/name)],check=True,capture_output=True)
         subprocess.run(['iconutil','-c','icns',str(iconset)],check=True)
-    shutil.copyfile(icon_cache/'Abrams.icns',resources/'Abrams.icns')
+    _cc_copyfile(icon_cache/'Abrams.icns',resources/'Abrams.icns')
     (renderer_app/'Contents/Resources').mkdir()
-    shutil.copyfile(icon_cache/'Abrams.icns',renderer_app/'Contents/Resources/Abrams.icns')
+    _cc_copyfile(icon_cache/'Abrams.icns',renderer_app/'Contents/Resources/Abrams.icns')
     notices=resources/'notices';notices.mkdir()
     for name in ['LICENSE','NOTICE.md']:
-        shutil.copyfile(ROOT/name,notices/name)
-    shutil.copytree(ROOT/'LICENSES',notices/'LICENSES')
+        _cc_copyfile(ROOT/name,notices/name)
+    _cc_copytree(ROOT/'LICENSES',notices/'LICENSES')
     subprocess.run([str(godot),'--headless','--audio-driver','Dummy','--path',str(ROOT/'godot'),'--script',str(ROOT/'tools/standalone/licenses.gd'),'--',str(notices/'Godot.json')],check=True)
-    shutil.copyfile(ROOT/'.runtime/dosbox-pure-source/LICENSE',notices/'DOSBox-Pure-LICENSE.txt')
+    _cc_copyfile(ROOT/'.runtime/dosbox-pure-source/LICENSE',notices/'DOSBox-Pure-LICENSE.txt')
     # Licence texts captured from the interpreter that produced this frozen runtime.
-    shutil.copyfile(cache/'Python-runtime.json',notices/'Python-runtime.json')
+    _cc_copyfile(cache/'Python-runtime.json',notices/'Python-runtime.json')
     derived=native_derivations(ROOT)['derived']
     identity=hashlib.sha256(json.dumps({'files':rows,'derived':derived,'godot':sha(godot),'frozen':json.loads((cache/'frozen.json').read_text())},sort_keys=True).encode()).hexdigest()[:20]
     manifest={'schema':1,'version':VERSION,'repository':REPOSITORY,'build_id':identity,'originals_included':False,'files':rows,'derived':derived,'platform':'macOS arm64',

@@ -14,6 +14,78 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
+
+
+# --- clone-first copies: APFS clones on macOS, plain shutil elsewhere (rule: "Reference inputs; clone, never copy") ---
+import shutil as _cc_shutil
+
+
+def _cc_build():
+    import ctypes
+    import os
+    import sys
+
+    names = ('copyfile', 'copy', 'copy2', 'copytree')
+    orig = {n: getattr(_cc_shutil, n) for n in names}
+    clonefile = None
+    if sys.platform == 'darwin':
+        try:
+            clonefile = ctypes.CDLL(None, use_errno=True).clonefile
+            clonefile.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint32)
+            clonefile.restype = ctypes.c_int
+        except (OSError, AttributeError):
+            clonefile = None
+    umask = os.umask(0)
+    os.umask(umask)
+
+    def clone(name, src, dst, follow):
+        # Clone only when shutil is unpatched, src is a regular file and dst does not exist yet; else plain shutil.
+        if clonefile is None or any(getattr(_cc_shutil, n) is not orig[n] for n in names):
+            return False  # a test has patched shutil: let the patched function handle it
+        if os.path.lexists(dst) or not (os.path.isfile(src) and (follow or not os.path.islink(src))):
+            return False
+        if clonefile(os.fsencode(src), os.fsencode(dst), 0 if follow else 1) != 0:
+            return False
+        os.chflags(dst, 0, follow_symlinks=False)  # clones inherit the source's flags (e.g. uchg)
+        if name == 'copy2':
+            _cc_shutil.copystat(src, dst, follow_symlinks=follow)
+        else:
+            if name == 'copy':
+                _cc_shutil.copymode(src, dst, follow_symlinks=follow)
+            else:
+                os.chmod(dst, 0o666 & ~umask)
+            os.utime(dst, None)
+        return True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        if clone('copyfile', src, dst, follow_symlinks):
+            return dst
+        return getattr(_cc_shutil, 'copyfile')(src, dst, follow_symlinks=follow_symlinks)
+
+    def make(name):
+        def copier(src, dst, *, follow_symlinks=True):
+            target = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
+            if clone(name, src, target, follow_symlinks):
+                return target
+            return getattr(_cc_shutil, name)(src, dst, follow_symlinks=follow_symlinks)
+        return copier
+
+    copy, copy2 = make('copy'), make('copy2')
+    mapped = {orig['copy2']: copy2, orig['copy']: copy, orig['copyfile']: copyfile}
+
+    def copytree(src, dst, *args, **kwargs):
+        patched = any(getattr(_cc_shutil, n) is not orig[n] for n in names)
+        if len(args) < 3 and not patched:  # copy_function not passed positionally; shutil not patched by a test
+            fn = kwargs.get('copy_function', orig['copy2'])
+            kwargs['copy_function'] = mapped.get(fn, fn)
+        return getattr(_cc_shutil, 'copytree')(src, dst, *args, **kwargs)
+
+    return copyfile, copy, copy2, copytree
+
+
+_cc_copyfile, _cc_copy, _cc_copy2, _cc_copytree = _cc_build()
+# --- end clone-first copies ---
+
 try:
     from tools.source_guard import inside_source
     from tools.pc_trace_windows import WINDOW_BUNDLE_SCHEMAS
@@ -162,16 +234,16 @@ def main():
     baseline = args.output_dir / ('source-baseline'+suffix)
     if not baseline.exists(): raise ValueError('build and retain unmodified source-baseline.dylib first')
     header = ROOT / 'tools/pc_core/abrams_trace.h'
-    shutil.copyfile(header, target.with_name('abrams_trace.h'))
+    _cc_copyfile(header, target.with_name('abrams_trace.h'))
     ownership = ROOT / 'tools/pc_core/abrams_vga_ownership.h'
-    shutil.copyfile(ownership, target.with_name(ownership.name))
+    _cc_copyfile(ownership, target.with_name(ownership.name))
     plates = ROOT / 'tools/pc_core/abrams_plate_ownership.h'
-    shutil.copyfile(plates, target.with_name(plates.name))
+    _cc_copyfile(plates, target.with_name(plates.name))
     observer = ROOT / 'tools/pc_core/abrams_observer_checkpoint.h'
-    shutil.copyfile(observer, target.with_name(observer.name))
+    _cc_copyfile(observer, target.with_name(observer.name))
     target.write_text(changed, newline='\n')  # keep upstream LF bytes on Windows too
     state_overlay = ROOT / 'tools/pc_core/abrams_state_overlay.h'
-    shutil.copyfile(state_overlay, SOURCE / 'src/dos/abrams_state_overlay.h')
+    _cc_copyfile(state_overlay, SOURCE / 'src/dos/abrams_state_overlay.h')
     patch_hashes = {}
     for name, replacements in PATCHES.items():
         path = SOURCE / name
@@ -198,7 +270,7 @@ def main():
     # field is computed from the staged core before either file is replaced.
     staged=output.with_suffix('.next')
     staged_manifest=output.with_suffix('.json.next')
-    shutil.copyfile(SOURCE / ('dosbox_pure_libretro'+suffix), staged)
+    _cc_copyfile(SOURCE / ('dosbox_pure_libretro'+suffix), staged)
     # The header sends SIM events 26/28/29 as AWB1 RAM window bundles
     # (tools/pc_trace_windows.py); the event schemas below declare that.
     manifest = {'schema': 2, 'round_form_event_schema': 1, 'audio_event_schema': 1, 'guided_launch_event_schema': 1, 'guided_continuity_event_schema': 1, 'text_event_schema': WINDOW_BUNDLE_SCHEMAS[0], 'message_event_schema': WINDOW_BUNDLE_SCHEMAS[1], 'strut_event_schema': WINDOW_BUNDLE_SCHEMAS[2], 'driver_overlay_schema': 1, 'state_overlay_schema': 1, 'observer_checkpoint_schema': 1, 'observer_checkpoint_header_sha256': sha(observer), 'state_overlay_header_sha256': sha(state_overlay), 'video_patch_hashes': patch_hashes, 'upstream': 'https://github.com/schellingb/dosbox-pure', 'commit': UPSTREAM,
@@ -219,9 +291,9 @@ def main():
     if output.is_file() and sha(output) != manifest['trace_sha256']:
         retained = args.output_dir / 'previous' / sha(output)
         retained.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(output, retained / output.name)
+        _cc_copyfile(output, retained / output.name)
         if output.with_suffix('.json').is_file():
-            shutil.copyfile(output.with_suffix('.json'), retained / output.with_suffix('.json').name)
+            _cc_copyfile(output.with_suffix('.json'), retained / output.with_suffix('.json').name)
         print('retained previous core: ' + str(retained), file=sys.stderr)
     staged.replace(output)
     staged_manifest.replace(output.with_suffix('.json'))
