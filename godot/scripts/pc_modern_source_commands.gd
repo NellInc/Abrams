@@ -16,12 +16,18 @@ static func ordered(object: Dictionary) -> Array:
 static func round_runs(form: Dictionary, frame: Dictionary) -> Array:
 	var result: Array = []
 	if form.get("status","")!="observed" or not form.get("spans") is Array: return result
+	var clip: Array = frame.clip
+	var clip_left := int(clip[0])
+	var clip_top := int(clip[1])
+	var clip_right := int(clip[2]) + 1
+	var clip_bottom := int(clip[3])
 	for span in form.spans:
 		if not span is Dictionary: continue
 		var y := int(span.get("y",-32768))
-		var left := maxi(int(span.get("left",0)),int(frame.clip[0]))
-		var right := mini(int(span.get("right",0)),int(frame.clip[2])+1)
-		if y<int(frame.clip[1]) or y>int(frame.clip[3]) or right<=left: continue
+		if y<clip_top or y>clip_bottom: continue
+		var left := maxi(int(span.get("left",0)),clip_left)
+		var right := mini(int(span.get("right",0)),clip_right)
+		if right<=left: continue
 		var pattern = span.get("colors",null)
 		if pattern is Array:
 			# A dithered span: colors are [even x, odd x] by absolute screen x.

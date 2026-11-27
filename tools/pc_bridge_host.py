@@ -18,7 +18,6 @@ else:
     import fcntl
 import io
 import json
-import os
 from pathlib import Path
 import sys
 import struct
@@ -178,7 +177,6 @@ def main():
     os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
     core = None
     session = None
-    save_lock = None
 
     def send(message):
         # Slimmed only on the wire: checkpoints keep the complete packet.
@@ -381,7 +379,6 @@ def main():
         if core:
             if session: session.close()
             core.close()
-        if save_lock: save_lock.close()
         try: output.close()
         except OSError as error:
             if not _closed_pipe(error): raise

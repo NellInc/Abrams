@@ -3,6 +3,7 @@ extends Control
 ## No additional camera area or hidden world sample is introduced.
 const BAND := 1.65
 const ERROR := 0.98
+const CockpitEdgesShader = preload("res://scripts/pc_cockpit_edges.gdshader")
 var active := false
 var mesh: ArrayMesh
 var profiles: Array = []
@@ -13,7 +14,7 @@ var _geometry_cache: Dictionary = {}
 func _init() -> void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var effect:=ShaderMaterial.new()
-	effect.shader=preload("res://scripts/pc_cockpit_edges.gdshader")
+	effect.shader=CockpitEdgesShader
 	material=effect
 	resized.connect(_layout)
 	clear()
@@ -202,13 +203,33 @@ static func column_extents(tags:Image,assembly:Image,station:int,rail:bool,camer
 				if y<lower[x]:lower[x]=y
 	return [upper,lower]
 
-# One plane's per-column extents for pixels exactly equal to value. Each
-# column is copied out natively and searched with find/rfind, never per pixel.
+# One plane's per-column extents for pixels exactly equal to value. L8/R8
+# planes scan flat bytes with find(); other formats slice columns natively.
 static func claim_extents(plane:Image,value:int,station:int,camera_end:int) -> Array:
 	var upper:=PackedFloat32Array();upper.resize(320)
 	var lower:=PackedFloat32Array();lower.resize(320);lower.fill(camera_end)
 	var start:=77 if station==4 else 0
 	var split:=mini(77,camera_end)
+	if plane.get_format() in [Image.FORMAT_L8,Image.FORMAT_R8] and plane.get_width()==320:
+		var bytes:=plane.get_data()
+		if station==4 and split>0:
+			var cursor:=0
+			var limit:=split*320
+			while cursor<limit:
+				var hit:=bytes.find(value,cursor)
+				if hit<0 or hit>=limit: break
+				upper[hit%320]=(hit/320)+1
+				cursor=hit+1
+		var lower_cursor:=start*320
+		var lower_limit:=camera_end*320
+		while lower_cursor<lower_limit:
+			var hit:=bytes.find(value,lower_cursor)
+			if hit<0 or hit>=lower_limit: break
+			var x:=hit%320
+			if lower[x]==camera_end:
+				lower[x]=hit/320
+			lower_cursor=hit+1
+		return [upper,lower]
 	for x in 320:
 		var column:=plane.get_region(Rect2i(x,0,1,camera_end)).get_data()
 		if station==4 and split>0:

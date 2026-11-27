@@ -5,8 +5,10 @@ static var compatibility_inputs := PackedFloat32Array()
 const FRONTEND_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
 	[255,85,85],[170,85,0],[0,170,0],[85,255,85],[255,255,85],[0,0,0],
 	[255,85,85],[255,85,255],[255,255,85],[255,255,255]]
+static var _frontend_json_palette: Array = JSON.parse_string(JSON.stringify(FRONTEND_PALETTE))
 
 static func is_frontend_palette(palette: Array) -> bool:
+	if palette == FRONTEND_PALETTE or palette == _frontend_json_palette: return true
 	if palette.size()!=16: return false
 	for i in 16:
 		if not palette[i] is Array or palette[i].size()!=3: return false

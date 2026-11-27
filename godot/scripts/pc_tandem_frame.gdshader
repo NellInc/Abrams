@@ -49,7 +49,7 @@ float gunner_y(float y) {
 	return y;
 }
 float driver_y(float y) {
-	if (genesis_art || tactical_interior) {
+	if (genesis_art) {
 		if (y < 18.0) return y*1.5/18.0;
 		if (y < 46.0) return mix(1.5,28.0,(y-18.0)/28.0);
 		if (y < 77.0) return mix(28.0,60.0,(y-46.0)/31.0);
@@ -64,7 +64,7 @@ float driver_y(float y) {
 	return mix(122.0,200.0,(y-127.0)/73.0);
 }
 float cupola_y(float y) {
-	if (genesis_art || tactical_interior) return y;
+	if (genesis_art) return y;
 	if (y < 85.0) return y*74.0/85.0;
 	if (y < 114.0) return mix(74.0,101.0,(y-85.0)/29.0);
 	if (y < 159.0) return mix(101.0,146.0,(y-114.0)/45.0);
@@ -73,7 +73,7 @@ float cupola_y(float y) {
 
 vec2 driver_donor(vec2 p) {
 	if(tactical_interior)return field_driver_uv(p);
-	if ((genesis_art || tactical_interior) && p.y < 18.0) return vec2(50.0,0.5)/vec2(320.0,200.0);
+	if (genesis_art && p.y < 18.0) return vec2(50.0,0.5)/vec2(320.0,200.0);
 	return vec2(p.x,driver_y(p.y))/vec2(320.0,200.0);
 }
 
@@ -269,8 +269,8 @@ vec2 gunner_fastener(vec2 p, vec2 donor) {
 	return donor;
 }
 
-// Palette-preserving Scale3x neighbourhood rules, described at
-// https://www.scale2x.it/algorithm . Select source texels, never blend colours.
+// Composite the 3D world view, station plates and moving driver assembly over
+// the original PC framebuffer; Scale3x lives in pc_ega_upscale.gdshader.
 void fragment() {
 	vec2 pixel = UV * vec2(320.0, 200.0);
 	bool inside = all(greaterThanEqual(pixel, camera_rect.xy))

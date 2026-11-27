@@ -5,6 +5,7 @@ const CAMERA = Rect2i(32,13,256,97)
 const CORNER_RUNS = [7,5,3,2,2,1,1]
 const SCREWS = [Vector2(91,129),Vector2(224,131),Vector2(6,177),
 	Vector2(98,177),Vector2(6,197),Vector2(98,197),Vector2(221,196),Vector2(314,196)]
+const GunnerTrimShader = preload("res://scripts/pc_gunner_trim.gdshader")
 var active := false
 var corners_verified := false
 var hud_style := "restored"
@@ -13,12 +14,16 @@ var _ui_texture: ImageTexture
 var _plate_texture: ImageTexture
 var _ui_bytes := PackedByteArray()
 var _plate_bytes := PackedByteArray()
+var _rounded_style := StyleBoxFlat.new()
 var upload_count := 0
+static var _cached_corner_pixels: Array[Vector2i] = []
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_rounded_style.corner_detail = 16
+	_rounded_style.anti_aliasing = true
 	var shader := ShaderMaterial.new()
-	shader.shader = preload("res://scripts/pc_gunner_trim.gdshader")
+	shader.shader = GunnerTrimShader
 	material = shader
 	resized.connect(_layout)
 	clear()
@@ -40,24 +45,31 @@ func set_hud_style(style: String) -> void:
 	queue_redraw()
 
 static func corner_pixels() -> Array[Vector2i]:
-	var result: Array[Vector2i] = []
-	for y in 7:
-		for x in CORNER_RUNS[y]:
-			for p in [Vector2i(32+x,13+y),Vector2i(287-x,13+y),Vector2i(32+x,109-y),Vector2i(287-x,109-y)]: result.append(p)
-	return result
+	if _cached_corner_pixels.is_empty():
+		for y in 7:
+			for x in CORNER_RUNS[y]:
+				for p in [Vector2i(32+x,13+y),Vector2i(287-x,13+y),Vector2i(32+x,109-y),Vector2i(287-x,109-y)]: _cached_corner_pixels.append(p)
+	return _cached_corner_pixels
 
 func set_frame(source: Image, ui: Image, tags: Image, camera: Rect2i, world: Texture2D = null) -> void:
 	clear()
 	if camera!=CAMERA or world==null: return
 	for im in [source,ui,tags]:
 		if im==null or im.get_size()!=Vector2i(320,200): return
-	corners_verified = true
-	for p in corner_pixels():
-		if ui.get_pixelv(p).r!=1.0 or tags.get_pixelv(p).r!=0.0 or source.get_pixelv(p).to_rgba32()!=Color8(85,85,85).to_rgba32():
-			corners_verified = false
-			break
 	var owners := ui.get_data()
 	var bits := tags.get_data()
+	var l8_masks := ui.get_format() == Image.FORMAT_L8 and tags.get_format() == Image.FORMAT_L8
+	var grey_rgba := Color8(85,85,85).to_rgba32()
+	corners_verified = true
+	for p in corner_pixels():
+		if l8_masks:
+			var index := p.y*320+p.x
+			if owners[index]!=255 or bits[index]!=0 or source.get_pixelv(p).to_rgba32()!=grey_rgba:
+				corners_verified = false
+				break
+		elif ui.get_pixelv(p).r!=1.0 or tags.get_pixelv(p).r!=0.0 or source.get_pixelv(p).to_rgba32()!=grey_rgba:
+			corners_verified = false
+			break
 	if not unchanged(_ui_texture,ui,owners,_ui_bytes):
 		_ui_texture=upload(_ui_texture,ui)
 		_ui_bytes=owners
@@ -80,7 +92,7 @@ static func unchanged(current: ImageTexture, image: Image, bytes: PackedByteArra
 	return current!=null and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format() and bytes==last
 
 static func upload(current: ImageTexture, image: Image) -> ImageTexture:
-	if current!=null and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format():
+	if current!=null and DisplayServer.get_name()!="headless" and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format():
 		current.update(image)
 		return current
 	return ImageTexture.create_from_image(image)
@@ -101,12 +113,9 @@ func _panel(box: Rect2) -> void:
 	draw_polygon(points,PackedColorArray([Color("bfc0c0"),Color("afb0b2"),Color("9c9fa3"),Color("b1b3b5")]))
 
 func _rounded(box: Rect2, color: Color, radius: float) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.set_corner_radius_all(roundi(radius*minf(scale_xy.x,scale_xy.y)))
-	style.corner_detail = 16
-	style.anti_aliasing = true
-	draw_style_box(style,Rect2(box.position*scale_xy,box.size*scale_xy))
+	_rounded_style.bg_color = color
+	_rounded_style.set_corner_radius_all(roundi(radius*minf(scale_xy.x,scale_xy.y)))
+	draw_style_box(_rounded_style,Rect2(box.position*scale_xy,box.size*scale_xy))
 
 func screw_center(p: Vector2) -> Vector2: return p*scale_xy
 func screw_radius() -> float: return 2.65*minf(scale_xy.x,scale_xy.y)

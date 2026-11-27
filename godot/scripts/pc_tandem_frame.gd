@@ -3,18 +3,32 @@ extends TextureRect
 ## Missing attribution shows the actual source frame, never stale scenery.
 const COMPOSITOR = preload("res://scripts/pc_tandem_frame.gdshader")
 const COCKPIT_EDGES = preload("res://scripts/pc_cockpit_edges.gd")
-var typography = preload("res://scripts/pc_typography.gd").new()
-var damage_art = preload("res://scripts/pc_instrument_damage_art.gd").new()
-var dynamic_map_art = preload("res://scripts/pc_dynamic_map_art.gd").new()
-var gunner_trim = preload("res://scripts/pc_gunner_trim.gd").new()
-var commander_trim = preload("res://scripts/pc_commander_trim.gd").new()
+const CupolaMaterial = preload("res://scripts/pc_cupola_material.gd")
+const Typography = preload("res://scripts/pc_typography.gd")
+const InstrumentDamageArt = preload("res://scripts/pc_instrument_damage_art.gd")
+const DynamicMapArt = preload("res://scripts/pc_dynamic_map_art.gd")
+const GunnerTrim = preload("res://scripts/pc_gunner_trim.gd")
+const CommanderTrim = preload("res://scripts/pc_commander_trim.gd")
+const CupolaRail = preload("res://scripts/pc_cupola_rail.gd")
+const InstrumentArt = preload("res://scripts/pc_instrument_art.gd")
+const ReticleTargetArt = preload("res://scripts/pc_reticle_target_art.gd")
+const ReticleArt = preload("res://scripts/pc_reticle_art.gd")
+const PortraitArt = preload("res://scripts/pc_portrait_art.gd")
+const FrontendArt = preload("res://scripts/pc_frontend_art.gd")
+const NativeGraphics = preload("res://scripts/pc_native_graphics.gd")
+const EgaUpscaleShader = preload("res://scripts/pc_ega_upscale.gdshader")
+var typography = Typography.new()
+var damage_art = InstrumentDamageArt.new()
+var dynamic_map_art = DynamicMapArt.new()
+var gunner_trim = GunnerTrim.new()
+var commander_trim = CommanderTrim.new()
 var cockpit_edges = COCKPIT_EDGES.new()
-var cupola_rail = preload("res://scripts/pc_cupola_rail.gd").new()
-var instrument_art = preload("res://scripts/pc_instrument_art.gd").new()
-var target_box_art = preload("res://scripts/pc_reticle_target_art.gd").new()
-var reticle_art = preload("res://scripts/pc_reticle_art.gd").new()
-var portrait_art = preload("res://scripts/pc_portrait_art.gd").new()
-var frontend_art = preload("res://scripts/pc_frontend_art.gd").new()
+var cupola_rail = CupolaRail.new()
+var instrument_art = InstrumentArt.new()
+var target_box_art = ReticleTargetArt.new()
+var reticle_art = ReticleArt.new()
+var portrait_art = PortraitArt.new()
+var frontend_art = FrontendArt.new()
 var genesis_art_enabled := false
 # Empty after a verified load; otherwise names the first failing donor or step.
 var genesis_art_reason := "Genesis cockpit donors not loaded"
@@ -33,7 +47,7 @@ var tactical_art_textures: Dictionary = {}
 var tactical_art_reason := "Tactical interior donors not loaded"
 var graphics_mode := "upscaled"
 var modern_available := false
-var native_graphics = preload("res://scripts/pc_native_graphics.gd").new()
+var native_graphics = NativeGraphics.new()
 var _cached_source: Image
 var _cached_presentation: Dictionary = {}
 var _cached_world: Texture2D
@@ -44,6 +58,7 @@ var world_enabled := false
 var fallback_reason := "awaiting original framebuffer"
 const ART_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
 	[170,0,0],[170,85,0],[0,170,0],[85,255,85],[255,255,85],[0,0,0],[255,85,85],[0,0,170],[85,255,255],[255,255,255]]
+static var _art_json_palette: Array = JSON.parse_string(JSON.stringify(ART_PALETTE))
 const GUNNER_SOURCE_SHA256 = "359b4c55240fbfda8e1bbb36d71e6b8ebf4c1aa48ea7394c26764cbf69e5795b"
 const COCKPIT_SOURCES = {
 	1: ["GPS.BIN", GUNNER_SOURCE_SHA256],
@@ -81,6 +96,7 @@ var _source_bytes := PackedByteArray()
 var _source_shape: Array = []
 var _source_texture: ImageTexture
 var _composed_bytes := PackedByteArray()
+var _composed_inputs: Array = []
 var _composed_texture: ImageTexture
 # 1 when ImageTexture.update() round-trips on this renderer, 0 when not, -1 unknown.
 static var _update_round_trips := -1
@@ -96,7 +112,7 @@ func _init() -> void:
 	shader_material.shader = COMPOSITOR
 	material = shader_material
 	_upscaled_material = shader_material
-	_ega_material.shader = preload("res://scripts/pc_ega_upscale.gdshader")
+	_ega_material.shader = EgaUpscaleShader
 	add_child(damage_art)
 	damage_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dynamic_map_art)
@@ -238,8 +254,8 @@ func _load_cockpit_donors(root: String) -> String:
 		if image==null or image.get_size()!=Vector2i(1586,992): return "cockpit-v2 "+name+" unreadable or wrong size"
 		images[id] = image
 	if not cupola_rail.load_source(root): return "cupola rail source unavailable"
-	images[3]=preload("res://scripts/pc_cupola_material.gd").prepare(images[3])
-	images[4]=preload("res://scripts/pc_cupola_material.gd").prepare_driver(images[4])
+	images[3]=CupolaMaterial.prepare(images[3])
+	images[4]=CupolaMaterial.prepare_driver(images[4])
 	if images[3]==null or images[4]==null: return "cupola/driver material preparation failed"
 	set_gunner_art(images[1])
 	for id in [2,3,4]: set_cockpit_art(id,images[id])
@@ -335,6 +351,7 @@ func _art_palette_matches(palette: Variant) -> bool:
 	# Godot JSON numbers are floats. Nested Array equality distinguishes 0.0
 	# from 0, although scalar numeric equality does not. Compare components.
 	if not palette is Array or palette.size() != 16: return false
+	if palette == ART_PALETTE or palette == _art_json_palette: return true
 	for i in 16:
 		if not palette[i] is Array or palette[i].size() != 3: return false
 		for channel in 3:
@@ -630,13 +647,16 @@ func set_frame(source: Image, presentation: Dictionary, world: Texture2D, progra
 	if not typography.world_ink.is_empty() or not reticle_art.ink.is_empty() or not target_box_art.ink.is_empty():
 		# Retain the unmodified provenance mask for all art checks above. Only
 		# proven bearing and sight ink yield to this same frame's underlying world.
-		var composed_mask: Image = mask.duplicate()
-		for pixel in typography.world_ink: composed_mask.set_pixelv(pixel,Color.BLACK)
-		for pixel in reticle_art.ink: composed_mask.set_pixelv(pixel,Color.BLACK)
-		for pixel in target_box_art.ink: composed_mask.set_pixelv(pixel,Color.BLACK)
-		var composed_bytes := composed_mask.get_data()
-		if _composed_texture==null or composed_bytes!=_composed_bytes:
-			_composed_texture=_upload(_composed_texture,_image_shape(mask),composed_mask)
-			_composed_bytes=composed_bytes
+		var current_inputs := [mask.get_data(), typography.world_ink, reticle_art.rectangles, target_box_art.rectangles]
+		if _composed_texture==null or current_inputs!=_composed_inputs:
+			var composed_mask: Image = mask.duplicate()
+			for pixel in typography.world_ink: composed_mask.set_pixelv(pixel,Color.BLACK)
+			for rect in reticle_art.rectangles: composed_mask.fill_rect(rect,Color.BLACK)
+			for rect in target_box_art.rectangles: composed_mask.fill_rect(rect,Color.BLACK)
+			var composed_bytes := composed_mask.get_data()
+			if _composed_texture==null or composed_bytes!=_composed_bytes:
+				_composed_texture=_upload(_composed_texture,_image_shape(mask),composed_mask)
+				_composed_bytes=composed_bytes
+			_composed_inputs = [current_inputs[0], typography.world_ink.duplicate(), reticle_art.rectangles.duplicate(), target_box_art.rectangles.duplicate()]
 		material.set_shader_parameter("ui_mask",_composed_texture)
 	return true

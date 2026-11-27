@@ -14,9 +14,11 @@ static func validate(value:Variant,source:Dictionary,head:Variant) -> bool:
 	if lengths[lengths.min_axis_index()]<0.00001 or lengths[lengths.max_axis_index()]>4.0:return false
 	if lengths[lengths.max_axis_index()]/lengths[lengths.min_axis_index()]>1.00001 or basis.determinant()<=0:return false
 	if absf(basis.x.dot(basis.y))>lengths.x*lengths.y*0.00001 or absf(basis.x.dot(basis.z))>lengths.x*lengths.z*0.00001 or absf(basis.y.dot(basis.z))>lengths.y*lengths.z*0.00001:return false
+	var origin:=Modern.vec(value.head_origin)
+	var scale:=Vector3(18,18,15)
 	for triangle:Dictionary in head.get("triangles",[]):
 		for point:Array in triangle.vertices:
-			if not bounded(head_point(value,point),source.source_bounds):return false
+			if not bounded(basis*(Modern.vec(point)*scale)+origin,source.source_bounds):return false
 	return true
 
 static func bounded(point:Vector3,bounds:Dictionary) -> bool:

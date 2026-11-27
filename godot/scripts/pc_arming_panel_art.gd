@@ -22,10 +22,16 @@ var _rgb_expected := PackedByteArray()
 var active := false
 var backdrop: Texture2D
 var preserved: Color
+var _board := StyleBoxFlat.new()
 
 func _init() -> void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
+	_board.bg_color=Color(170.0/255,85.0/255,0)
+	_board.border_color=Color.BLACK
+	_board.set_border_width_all(1)
+	_board.corner_radius_top_left=4;_board.corner_radius_top_right=4
+	_board.corner_detail=12
 	resized.connect(queue_redraw)
 	clear()
 
@@ -118,13 +124,7 @@ func _draw() -> void:
 	draw_texture_rect_region(backdrop,Rect2(CLIP_RECT),Rect2(Vector2(CLIP_RECT.position)*ratio,Vector2(CLIP_RECT.size)*ratio))
 	# CLIP.BMP's brown board, white sheet and silver spring clip. Keep the
 	# source proportions and EGA colours; only the contours gain resolution.
-	var board := StyleBoxFlat.new()
-	board.bg_color=Color(170.0/255,85.0/255,0)
-	board.border_color=Color.BLACK
-	board.set_border_width_all(1)
-	board.corner_radius_top_left=4;board.corner_radius_top_right=4
-	board.corner_detail=12
-	draw_style_box(board,PANEL_RECT)
+	draw_style_box(_board,PANEL_RECT)
 	draw_rect(Rect2(PAPER_RECT.position+Vector2.ONE,PAPER_RECT.size),Color(170.0/255,170.0/255,170.0/255))
 	draw_rect(PAPER_RECT,Color.WHITE)
 	draw_set_transform(Vector2(239,87)*size/Vector2(320,200),0,size/Vector2(320,200))

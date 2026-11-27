@@ -16,8 +16,12 @@ var fit_point := 6
 var fixed_labels_enabled := false
 var status_numbers_enabled := false
 var hud_style := "restored"
+const OutlineFonts = preload("res://scripts/pc_outline_fonts.gd")
+const TacticalFont = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+const MonoFont = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
 var dialogue_glyphs: Dictionary = {}
-var outline_fonts = preload("res://scripts/pc_outline_fonts.gd").new()
+var outline_fonts = OutlineFonts.new()
+var tactical_font: Font = TacticalFont
 # Bounded expected glyph bytes only. Never cache source/UI validity, pixel
 # hashes, event identities or caller-visible run dictionaries. Colours are part
 # of the expected-byte key, never inherited from an earlier source packet.
@@ -38,8 +42,8 @@ class RunLabel extends Control:
 	var run: Dictionary
 	var tactical := false
 	var crew_styled := false
-	var tactical_font: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
-	var mono_font: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
+	var tactical_font: Font = TacticalFont
+	var mono_font: Font = MonoFont
 	var mesh: ArrayMesh
 	var mesh_key := ""
 	var fit_key := []
@@ -64,7 +68,7 @@ class RunLabel extends Control:
 			var scale: Vector2=size/run.rect.size
 			for segment in segments(run):
 				var box := Rect2(Vector2(segment.x,0)*scale,Vector2(segment.text.length()*run.cell_size.x,run.cell_size.y)*scale)
-				preload("res://scripts/pc_outline_fonts.gd").draw_text(self,run.outline_font,segment.text,box,run.cell_size,run.foreground)
+				OutlineFonts.draw_text(self,run.outline_font,segment.text,box,run.cell_size,run.foreground)
 			return
 		# Cache only this label's current text. No unbounded cache of live values.
 		var key: String = run.font_sha256+run.text+str(run.get("word_space",-1))
@@ -189,7 +193,7 @@ func _draw() -> void:
 	for run in runs:
 		if run.kind in ["crew_primary","crew_secondary"]: words[run.kind]=run.text
 	var text: String=words.crew_primary+words.crew_secondary
-	var face: Font=preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+	var face: Font=tactical_font
 	var inset:=Vector2(6,2)*size/Vector2(320,200)
 	var interior:=Rect2(box.position+inset,box.size-inset*2)
 	var point:=RunLabel.fitted_point(face,text,interior.size,self)
@@ -294,17 +298,33 @@ func _status_number(source: Image, y: int) -> Dictionary:
 	# a value from current simulation RAM; only the already visible digits count.
 	if not fonts.has(FONT_SOURCES["6X6.FNT"]): return {}
 	var bytes: PackedByteArray = fonts[FONT_SOURCES["6X6.FNT"]]
+	var white_rgba := Color.WHITE.to_rgba32()
+	var black_rgba := Color.BLACK.to_rgba32()
 	var words := ""
 	for cell in 3:
+		var row_bits := PackedByteArray()
+		row_bits.resize(6)
+		var cell_valid := true
+		for dy in 6:
+			var mask := 0
+			for dx in 6:
+				var rgb := source.get_pixel(83+cell*6+dx,y+dy).to_rgba32()
+				if rgb == white_rgba:
+					mask |= 128>>dx
+				elif rgb != black_rgba:
+					cell_valid = false
+					break
+			if not cell_valid: break
+			row_bits[dy] = mask
+		if not cell_valid: return {}
 		var matches := ""
 		for character in " 0123456789":
 			var code := character.unicode_at(0)
 			var same := true
 			for dy in 6:
-				for dx in 6:
-					var ink := (int(bytes[4+(code-32)*6+dy])&(128>>dx))!=0
-					if source.get_pixel(83+cell*6+dx,y+dy).to_rgba32()!=(Color.WHITE if ink else Color.BLACK).to_rgba32(): same=false; break
-				if not same: break
+				if (int(bytes[4+(code-32)*6+dy]) & 0xfc) != row_bits[dy]:
+					same = false
+					break
 			if same: matches+=character
 		if matches.length()!=1: return {}
 		words+=matches
@@ -323,26 +343,47 @@ func set_motor_pool_menu(source: Image, ui: Image, tags: Image) -> void:
 	for field in [[137,"HEAT"],[147,"SABOT"],[157,"AX"]]:
 		var digits := ""
 		for column in 2:
+			var row_bits := PackedByteArray()
+			row_bits.resize(6)
+			var cell_valid := true
+			for y in 6:
+				var mask := 0
+				for x in 6:
+					var actual := source.get_pixel(299+column*6+x,field[0]+y)
+					if actual.is_equal_approx(Color.BLACK):
+						mask |= 128>>x
+					elif not actual.is_equal_approx(Color.WHITE) and not actual.is_equal_approx(Color(170.0/255,0,0)):
+						cell_valid = false
+						break
+				if not cell_valid: break
+				row_bits[y] = mask
+			if not cell_valid:
+				digits = ""
+				break
 			var matches := ""
 			for character in " 0123456789":
+				var code := character.unicode_at(0)
 				var same := true
 				for y in 6:
-					for x in 6:
-						var ink := (int(bytes[4+(character.unicode_at(0)-32)*6+y])&(128>>x))!=0
-						var actual := source.get_pixel(299+column*6+x,field[0]+y)
-						if ink and not actual.is_equal_approx(Color.BLACK): same=false
-						if not ink and not actual.is_equal_approx(Color.WHITE) and not actual.is_equal_approx(Color(170.0/255,0,0)): same=false
+					if (int(bytes[4+(code-32)*6+y]) & 0xfc) != row_bits[y]:
+						same = false
+						break
 				if same: matches+=character
 			if matches.length()!=1: digits=""; break
 			digits+=matches
 		if digits.length()==2 and not digits.strip_edges().is_empty():
 			fields.append([245,field[0],field[1]+" ".repeat(9-field[1].length())+digits,Color.WHITE])
 	var candidates: Array=[]
+	var l8_tags := tags != null and tags.get_format() == Image.FORMAT_L8
 	for field in fields:
 		var eligible := true
-		for y in 6:
-			for x in field[2].length()*6:
-				if tags.get_pixel(field[0]+x,field[1]+y).r!=0: eligible=false
+		var field_box := Rect2i(field[0],field[1],field[2].length()*6,6)
+		if l8_tags:
+			eligible = tags.get_region(field_box).get_data().count(0) == field_box.get_area()
+		else:
+			for y in 6:
+				for x in field[2].length()*6:
+					if tags.get_pixel(field[0]+x,field[1]+y).r!=0: eligible=false
 		if not eligible: continue
 		for background in [Color.WHITE,Color(170.0/255,0,0)]:
 			var candidate := _fixed_candidate(field[2],Vector2i(field[0],field[1]),source)
@@ -581,11 +622,18 @@ func merge_frontend_runs(source: Image, ui: Image) -> void:
 		var expanded:=Rect2i(box.position-Vector2i(0,8),box.size+Vector2i(0,16))
 		if not Rect2i(0,0,320,200).encloses(expanded):continue
 		var safe:=true
-		for y in range(expanded.position.y,expanded.end.y):
-			for x in range(expanded.position.x,expanded.end.x):
-				if box.has_point(Vector2i(x,y)):continue
-				if ui.get_pixel(x,y).r!=1.0 or source.get_pixel(x,y)!=run.background:safe=false;break
-			if not safe:break
+		if ui.get_format()==Image.FORMAT_L8 and source.get_format() in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8]:
+			var empty:=Image.create_empty(box.size.x,8,false,source.get_format());empty.fill(run.background)
+			var empty_bytes:=empty.get_data()
+			for strip in [Rect2i(box.position.x,box.position.y-8,box.size.x,8),Rect2i(box.position.x,box.end.y,box.size.x,8)]:
+				if ui.get_region(strip).get_data().count(255)!=strip.get_area() or source.get_region(strip).get_data()!=empty_bytes:
+					safe=false;break
+		else:
+			for y in range(expanded.position.y,expanded.end.y):
+				for x in range(expanded.position.x,expanded.end.x):
+					if box.has_point(Vector2i(x,y)):continue
+					if ui.get_pixel(x,y).r!=1.0 or source.get_pixel(x,y)!=run.background:safe=false;break
+				if not safe:break
 		if safe:run.rect=Rect2(expanded)
 	runs=joined
 

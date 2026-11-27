@@ -8,6 +8,8 @@ const BOX = Rect2i(123,37,184,63)
 const DRAW_BOX = Rect2(123,37,182,63)
 const ORIGINS = [Vector2(176,32),Vector2(200,16),Vector2(208,56),Vector2(256,24),Vector2(136,40)]
 const EXTENTS = [Vector2(32,40),Vector2(72,24),Vector2(64,24),Vector2(48,56),Vector2(32,16)]
+const Outlines = preload("res://scripts/pc_outline_fonts.gd")
+const InstrumentDamageShader = preload("res://scripts/pc_instrument_damage_art.gdshader")
 var catalog: Array = []
 var patches: Array[Texture2D] = []
 var patch_nodes: Array[TextureRect] = []
@@ -15,6 +17,10 @@ var clipper := Control.new()
 var caption_font: FontFile
 var pristine: Texture2D
 var state := -1
+var _last_rgb_bytes := PackedByteArray()
+var _last_tag_bytes := PackedByteArray()
+var _last_rgb_hash := ""
+var _last_tag_hash := ""
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -33,6 +39,7 @@ func clear() -> void:
 func load_sources(root: String) -> bool:
 	clear()
 	catalog.clear()
+	_last_rgb_bytes.clear(); _last_tag_bytes.clear(); _last_rgb_hash = ""; _last_tag_hash = ""
 	patches.clear()
 	for node in patch_nodes: node.queue_free()
 	patch_nodes.clear()
@@ -80,7 +87,7 @@ func load_sources(root: String) -> bool:
 		node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var shader_material := ShaderMaterial.new()
-		shader_material.shader = preload("res://scripts/pc_instrument_damage_art.gdshader")
+		shader_material.shader = InstrumentDamageShader
 		shader_material.set_shader_parameter("changed_pixels",ImageTexture.create_from_image(mask))
 		node.material = shader_material
 		clipper.add_child(node)
@@ -111,15 +118,20 @@ func set_frame(source: Image, ui: Image, tags: Image) -> void:
 	rgb.convert(Image.FORMAT_RGB8)
 	var tag := tags.get_region(BOX)
 	tag.convert(Image.FORMAT_R8)
-	var context := HashingContext.new()
-	context.start(HashingContext.HASH_SHA256)
-	context.update(rgb.get_data())
-	var rgb_hash := context.finish().hex_encode()
-	context.start(HashingContext.HASH_SHA256)
-	context.update(tag.get_data())
-	var tag_hash := context.finish().hex_encode()
+	var rgb_bytes := rgb.get_data()
+	var tag_bytes := tag.get_data()
+	if rgb_bytes != _last_rgb_bytes or tag_bytes != _last_tag_bytes:
+		var context := HashingContext.new()
+		context.start(HashingContext.HASH_SHA256)
+		context.update(rgb_bytes)
+		_last_rgb_hash = context.finish().hex_encode()
+		context.start(HashingContext.HASH_SHA256)
+		context.update(tag_bytes)
+		_last_tag_hash = context.finish().hex_encode()
+		_last_rgb_bytes = rgb_bytes
+		_last_tag_bytes = tag_bytes
 	for entry in catalog:
-		if entry.rgb_sha256==rgb_hash and entry.tags_sha256==tag_hash:
+		if entry.rgb_sha256==_last_rgb_hash and entry.tags_sha256==_last_tag_hash:
 			state = int(entry.bits)
 			break
 	_layout()
@@ -139,7 +151,7 @@ func _draw() -> void:
 	var empty_blue := Rect2(Vector2(151,17.5),Vector2(6,9))
 	draw_texture_rect_region(pristine,Rect2(clear_box.position*scale_xy,clear_box.size*scale_xy),Rect2(empty_blue.position*Vector2(pristine.get_size())/Vector2(320,200),empty_blue.size*Vector2(pristine.get_size())/Vector2(320,200)))
 	var label := Rect2(Vector2(123,37)+(Vector2(123,19)-Vector2(119,16))*ratio,Vector2(26,5)*ratio)
-	preload("res://scripts/pc_outline_fonts.gd").draw_text(self,caption_font,"A",Rect2(label.position*scale_xy,label.size*scale_xy),Vector2(26,5),Color8(238,238,238))
+	Outlines.draw_text(self,caption_font,"A",Rect2(label.position*scale_xy,label.size*scale_xy),Vector2(26,5),Color8(238,238,238))
 
 func _layout() -> void:
 	var factor := size/Vector2(320,200)

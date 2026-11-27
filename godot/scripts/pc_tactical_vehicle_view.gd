@@ -43,6 +43,8 @@ static func rigid_group_fit(model:Dictionary,group:Dictionary,object:Dictionary,
 		if lengths[lengths.max_axis_index()]/lengths[lengths.min_axis_index()]>1.02:continue
 		if absf(transform.x.dot(transform.y))/(lengths.x*lengths.y)>.02 or absf(transform.x.dot(transform.z))/(lengths.x*lengths.z)>.02 or absf(transform.y.dot(transform.z))/(lengths.y*lengths.z)>.02:continue
 		var valid:=true;var error:=0.0
+		var focal_pixels:=float(frame.focal_pixels)
+		var near_y:=float(frame.near_raw)
 		for primitive in observed:
 			var source:Array=model.faces[primitive].source;var camera:Array=observed[primitive].camera_vertices
 			if source.size()!=camera.size():valid=false;break
@@ -50,8 +52,8 @@ static func rigid_group_fit(model:Dictionary,group:Dictionary,object:Dictionary,
 				if not Modern.vector_ok(camera[i]):valid=false;break
 				var actual:=Modern.vec(camera[i]);var predicted:=Modern.transform_point(Modern.vec(source[i]),fit)
 				var raw_error:=actual.distance_to(predicted)
-				var pixel_error:=raw_error*float(frame.focal_pixels)/float(frame.near_raw)
-				if actual.y>=float(frame.near_raw) and predicted.y>=float(frame.near_raw):pixel_error=Modern.Geometry.project(camera[i],frame).distance_to(Modern.Geometry.project([predicted.x,predicted.y,predicted.z],frame))
+				var pixel_error:=raw_error*focal_pixels/near_y
+				if actual.y>=near_y and predicted.y>=near_y:pixel_error=Modern.Geometry.project(camera[i],frame).distance_to(Modern.Geometry.project([predicted.x,predicted.y,predicted.z],frame))
 				error=maxf(error,pixel_error)
 				if raw_error>2.0001 or pixel_error>Modern.ANCHOR_TOLERANCE:valid=false;break
 			if not valid:break
@@ -144,13 +146,15 @@ static func dynamic_pose_context_fit(model:Dictionary,object:Dictionary,frame:Di
 	if absf(transform.x.dot(transform.y))/(lengths.x*lengths.y)>.002 or absf(transform.x.dot(transform.z))/(lengths.x*lengths.z)>.002 or absf(transform.y.dot(transform.z))/(lengths.y*lengths.z)>.002:return {}
 	transform=transform.orthonormalized()
 	var origin:=Modern.vec(origin_value);var error:=0.0
+	var focal_pixels:=float(frame.focal_pixels)
+	var near_y:=float(frame.near_raw)
 	for polygon:Dictionary in object.polygons:
 		var source:Array=model.faces[int(polygon.primitive)].source
 		for i in source.size():
 			var actual:=Modern.vec(polygon.camera_vertices[i]);var predicted:=transform*Modern.vec(source[i])+origin
 			var raw_error:=actual.distance_to(predicted)
-			var pixel_error:=raw_error*float(frame.focal_pixels)/float(frame.near_raw)
-			if actual.y>=float(frame.near_raw) and predicted.y>=float(frame.near_raw):pixel_error=Modern.Geometry.project(polygon.camera_vertices[i],frame).distance_to(Modern.Geometry.project([predicted.x,predicted.y,predicted.z],frame))
+			var pixel_error:=raw_error*focal_pixels/near_y
+			if actual.y>=near_y and predicted.y>=near_y:pixel_error=Modern.Geometry.project(polygon.camera_vertices[i],frame).distance_to(Modern.Geometry.project([predicted.x,predicted.y,predicted.z],frame))
 			if raw_error>2.0001 or pixel_error>Modern.ANCHOR_TOLERANCE:return {}
 			error=maxf(error,pixel_error)
 	return {"basis":transform,"origin":origin,"error":error,"primitive":-1,"context_fit":true}

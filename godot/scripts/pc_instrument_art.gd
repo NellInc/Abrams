@@ -4,6 +4,8 @@ extends Control
 # Plates are decoded from the player's verified GAME files (desktop builder or
 # browser import), so pins cover decoded RGB8 pixels, not one PNG encoder.
 const SOURCE_HASH = "cd54a3984a855a804a08a32833c2ca694e73f42bd643943d365ad5be710e66ed"
+const EgaUpscaleShader = preload("res://scripts/pc_ega_upscale.gdshader")
+const OrientationArt = preload("res://scripts/pc_orientation_art.gd")
 # Source rectangles are PC coordinates. Donor rectangles are measured pixels
 # in the Genesis-derived 1586x992 illustration, never guessed gameplay values.
 const CELLS = [
@@ -40,7 +42,7 @@ var pc_rounds_enabled := true
 var pc_rounds: Dictionary = {}
 var gauges: Array[Dictionary] = []
 var plates: Dictionary = {}
-var orientation = preload("res://scripts/pc_orientation_art.gd").new()
+var orientation = OrientationArt.new()
 const PLATES = {
 	1:["gps-bin","cd54a3984a855a804a08a32833c2ca694e73f42bd643943d365ad5be710e66ed"],
 	2:["tc-bin","2bd471a10f3f4be5ed1e000c25fe6c9f3a49a03be56a1573042197b0473d1035"],
@@ -60,22 +62,29 @@ const LAMPS = [
 # commander miniature and full STATUS placements. No blink/off state here.
 const SYSTEM_NAMES = ["gps","smoke_dischargers","coax","main_gun","ballistic_computer","thermal_equipment",
 	"radio","halon","turret_motors","left_tread","right_tread","engine"]
+static var _cached_system_lamps: Array[Dictionary] = []
 
 static func system_lamps() -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
-	for station in [2,5]:
-		for i in 12:
-			var right := i>=6
-			var row := i%6
-			var box := Rect2i(284 if right else 208,172+row*2,3,1) if station==2 else Rect2i(301 if right else 11,109+row*13,10,6)
-			result.append({"name":("commander_" if station==2 else "status_")+SYSTEM_NAMES[i],
-				"plate":station,"source":box,"guard":box.grow(1),"system":i})
-	return result
+	if _cached_system_lamps.is_empty():
+		for station in [2,5]:
+			for i in 12:
+				var right := i>=6
+				var row := i%6
+				var box := Rect2i(284 if right else 208,172+row*2,3,1) if station==2 else Rect2i(301 if right else 11,109+row*13,10,6)
+				_cached_system_lamps.append({"name":("commander_" if station==2 else "status_")+SYSTEM_NAMES[i],
+					"plate":station,"source":box,"guard":box.grow(1),"system":i})
+	return _cached_system_lamps
 
 const INACTIVE = Color8(85,85,85)
 const GREEN = Color8(0,170,0)
 const RED = Color8(170,0,0)
 const YELLOW = Color8(255,255,85)
+static var INACTIVE_RGBA: int = INACTIVE.to_rgba32()
+static var GREEN_RGBA: int = GREEN.to_rgba32()
+static var RED_RGBA: int = RED.to_rgba32()
+static var YELLOW_RGBA: int = YELLOW.to_rgba32()
+static var BLACK_RGBA: int = Color.BLACK.to_rgba32()
+static var _fastener_circle_40: PackedVector2Array = PackedVector2Array()
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -146,7 +155,7 @@ func _load_pc_rounds() -> void:
 			icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 			icon.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
 			var effect:=ShaderMaterial.new()
-			effect.shader=preload("res://scripts/pc_ega_upscale.gdshader")
+			effect.shader=EgaUpscaleShader
 			effect.set_shader_parameter("ega_upscaled",true)
 			icon.material=effect
 			add_child(icon)
@@ -183,45 +192,64 @@ func set_frame(source: Image, ui: Image, tags: Image, diagram: Dictionary = {}) 
 	if plates.has(4):
 		for item in DRIVER_FASTENERS:
 			if _owned_region(ui,tags,item.source,4) and _same_region(source,plates[4],item.source): active.append(item)
+	var l8_masks := ui.get_format() == Image.FORMAT_L8 and tags.get_format() == Image.FORMAT_L8
+	var ui_bytes := ui.get_data() if l8_masks else PackedByteArray()
+	var tag_bytes := tags.get_data() if l8_masks else PackedByteArray()
 	for spec in BARS:
 		if not _guard_matches(spec,source,ui,tags): continue
 		var colors: Array[Color] = []
 		var valid := true
 		var inactive := false
 		var lit := 0
+		var plate_id: int = int(spec.plate)
 		for i in spec.count:
 			var x: int = spec.source.position.x+i*2
 			var color := source.get_pixel(x,186)
-			var expected: Color = RED if i<spec.red else GREEN
-			if color.to_rgba32()==INACTIVE.to_rgba32(): inactive = true
-			elif inactive or color.to_rgba32()!=expected.to_rgba32(): valid = false
+			var color_rgba := color.to_rgba32()
+			var expected_rgba: int = RED_RGBA if i<spec.red else GREEN_RGBA
+			if color_rgba==INACTIVE_RGBA: inactive = true
+			elif inactive or color_rgba!=expected_rgba:
+				valid = false
+				break
 			else: lit += 1
 			# Every strip must come from a subsequent original draw. Gaps must
 			# remain the source plate's black, with no text/overlay corruption.
 			for y in range(186,192):
-				if not _dynamic_pixel(source,ui,tags,Vector2i(x,y),color): valid = false
-				if i<spec.count-1:
-					if source.get_pixel(x+1,y).to_rgba32()!=Color.BLACK.to_rgba32() or ui.get_pixel(x+1,y).r!=1.0 or roundi(tags.get_pixel(x+1,y).r*255)!=spec.plate: valid = false
+				if l8_masks:
+					var idx := y*320+x
+					if ui_bytes[idx]!=255 or tag_bytes[idx]!=0 or source.get_pixel(x,y).to_rgba32()!=color_rgba:
+						valid = false
+						break
+					if i<spec.count-1:
+						if ui_bytes[idx+1]!=255 or tag_bytes[idx+1]!=plate_id or source.get_pixel(x+1,y).to_rgba32()!=BLACK_RGBA:
+							valid = false
+							break
+				else:
+					if not _dynamic_pixel(source,ui,tags,Vector2i(x,y),color):
+						valid = false
+						break
+					if i<spec.count-1:
+						if source.get_pixel(x+1,y).to_rgba32()!=BLACK_RGBA or ui.get_pixel(x+1,y).r!=1.0 or roundi(tags.get_pixel(x+1,y).r*255)!=plate_id:
+							valid = false
+							break
+			if not valid: break
 			colors.append(color)
 		if valid: gauges.append(spec.merged({"kind":"bar","colors":colors,"lit":lit}))
 	for spec in LAMPS+system_lamps():
 		if not _guard_matches(spec,source,ui,tags): continue
 		var color := source.get_pixelv(spec.source.position)
-		var allowed := [GREEN.to_rgba32(),RED.to_rgba32(),YELLOW.to_rgba32()]
-		if not spec.has("system"): allowed.append(Color.BLACK.to_rgba32())
-		if spec.has("lock"): allowed = [RED.to_rgba32(),Color.BLACK.to_rgba32()]
+		var allowed := [GREEN_RGBA,RED_RGBA,YELLOW_RGBA]
+		if not spec.has("system"): allowed.append(BLACK_RGBA)
+		if spec.has("lock"): allowed = [RED_RGBA,BLACK_RGBA]
 		if color.to_rgba32() not in allowed: continue
-		var valid := true
-		for y in range(spec.source.position.y,spec.source.end.y):
-			for x in range(spec.source.position.x,spec.source.end.x):
-				if not _dynamic_pixel(source,ui,tags,Vector2i(x,y),color): valid = false
-		if spec.plate==4:
+		var valid := _dynamic_region(source,ui,tags,spec.source,color)
+		if valid and spec.plate==4:
 			# The driver readout frame is drawn after DRIVER.BIN. Its exact
 			# blue top, bottom and right edges are context, never repainted.
-			for y in range(189,198):
-				for x in range(233,253):
-					if spec.source.has_point(Vector2i(x,y)): continue
-					if not _dynamic_pixel(source,ui,tags,Vector2i(x,y),Color8(85,85,255)): valid = false
+			for border in _outside(Rect2i(233,189,20,9),spec.source):
+				if not _dynamic_region(source,ui,tags,border,Color8(85,85,255)):
+					valid = false
+					break
 		if valid: gauges.append(spec.merged({"kind":"lamp","color":color}))
 	queue_redraw()
 
@@ -269,6 +297,20 @@ static func _outside(guard: Rect2i, inner: Rect2i) -> Array[Rect2i]:
 
 func _dynamic_pixel(source: Image, ui: Image, tags: Image, p: Vector2i, color: Color) -> bool:
 	return ui.get_pixelv(p).r==1.0 and tags.get_pixelv(p).r==0.0 and source.get_pixelv(p).to_rgba32()==color.to_rgba32()
+
+func _dynamic_region(source: Image, ui: Image, tags: Image, box: Rect2i, color: Color) -> bool:
+	if not _owned_region(ui,tags,box,0): return false
+	if source.get_format() in [Image.FORMAT_RGB8,Image.FORMAT_RGBA8]:
+		var crop := source.get_region(box)
+		if crop.get_format() != Image.FORMAT_RGBA8:
+			crop.convert(Image.FORMAT_RGBA8)
+		var rgba := color.to_rgba32()
+		var word := PackedByteArray([(rgba>>24)&255,(rgba>>16)&255,(rgba>>8)&255,rgba&255]).to_int32_array()[0]
+		return crop.get_data().to_int32_array().count(word) == box.get_area()
+	for y in range(box.position.y,box.end.y):
+		for x in range(box.position.x,box.end.x):
+			if source.get_pixel(x,y).to_rgba32()!=color.to_rgba32(): return false
+	return true
 
 func _beveled_cell(box: Rect2, color: Color, bevel: float) -> void:
 	# Same flat colour field and clipped, machined edges as the Genesis donor.
@@ -333,16 +375,20 @@ func _layout_orientation() -> void:
 func _driver_fastener(box:Rect2)->void:
 	# Tiny original instrument-pod heads: output-space circles, no live ink.
 	draw_rect(box,Color8(85,85,85))
-	var scale_xy:=size/Vector2(320,200)
-	var radius:=2.2*minf(scale_xy.x,scale_xy.y)
-	for ring in [[1.0,Color("191d1c")],[0.81,Color("b9bdb9")],[0.63,Color("686e68")]]:
-		var points:=PackedVector2Array()
+	if _fastener_circle_40.is_empty():
 		for i in 40:
 			var angle:=TAU*i/40.0
-			points.append(box.get_center()+Vector2(cos(angle),sin(angle))*radius*ring[0]/scale_xy)
+			_fastener_circle_40.append(Vector2(cos(angle),sin(angle)))
+	var scale_xy:=size/Vector2(320,200)
+	var radius:=2.2*minf(scale_xy.x,scale_xy.y)
+	var center:=box.get_center()
+	for ring in [[1.0,Color("191d1c")],[0.81,Color("b9bdb9")],[0.63,Color("686e68")]]:
+		var points:=PackedVector2Array()
+		var ring_scale: Vector2 = Vector2.ONE*(radius*float(ring[0]))/scale_xy
+		for unit in _fastener_circle_40:
+			points.append(center+unit*ring_scale)
 		draw_colored_polygon(points,ring[1])
 		points.append(points[0]);draw_polyline(points,ring[1],0.1,true)
-	var center:=box.get_center()
 	var dx:=Vector2(radius*0.52/scale_xy.x,0)
 	var dy:=Vector2(0,radius*0.52/scale_xy.y)
 	draw_line(center-dx,center+dx,Color("191d1c"),0.36,true)

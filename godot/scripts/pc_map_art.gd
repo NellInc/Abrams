@@ -3,15 +3,20 @@ extends Control
 const CATALOG_SHA:="8b1fc84c34f69262e9aa4373d50da8e3541b0c9d8af20b65d483da2d256d86de"
 var catalog:Dictionary={}
 var active:Dictionary={}
+var _last_guard_bytes:=PackedByteArray()
+var _last_guard_ok:=false
+static var _unit_circle_64:PackedVector2Array=PackedVector2Array()
 func _init()->void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	clip_contents=true
+	if _unit_circle_64.is_empty():
+		for i in 64:_unit_circle_64.append(Vector2.from_angle(TAU*i/64.0)*2.3)
 	resized.connect(queue_redraw)
 	hide()
 func clear()->void:
 	active.clear();hide();queue_redraw()
 func load_sources(root_path:String)->bool:
-	clear();catalog.clear()
+	clear();catalog.clear();_last_guard_bytes.clear();_last_guard_ok=false
 	var path:=root_path.path_join("local-art/pc-map-frame-v1/frame.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA:return false
 	var data=JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -28,11 +33,18 @@ func set_frame(source:Image,program:Dictionary,presentation:Dictionary={})->bool
 	if catalog.is_empty() or program.get("name") not in ["START","END"]:return false
 	if source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8:return false
 	if presentation.has("frontend_program") and presentation.frontend_program!=program:return false
-	var hash:=HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256)
+	var combined:=PackedByteArray()
 	for r in catalog.guard_rects:
-		hash.update(source.get_region(Rect2i(int(r[0]),int(r[1]),int(r[2]),int(r[3]))).get_data())
-	if hash.finish().hex_encode()!=catalog.border_rgb_sha256:return false
+		combined.append_array(source.get_region(Rect2i(int(r[0]),int(r[1]),int(r[2]),int(r[3]))).get_data())
+	if combined==_last_guard_bytes:
+		if not _last_guard_ok:return false
+	else:
+		var hash:=HashingContext.new()
+		hash.start(HashingContext.HASH_SHA256)
+		hash.update(combined)
+		_last_guard_bytes=combined
+		_last_guard_ok=hash.finish().hex_encode()==catalog.border_rgb_sha256
+		if not _last_guard_ok:return false
 	active={"scene":"map_frame","name":"Original FRAME vector surround","program":program.name,
 		"rivets":catalog.rivets.size(),"content_preserved":[10,10,300,166],"footer_rebuilt":[0,187,320,13]}
 	show();queue_redraw();return true
@@ -60,7 +72,7 @@ func _draw()->void:
 	for rivet in catalog.rivets:
 		var c:=Vector2(rivet.center[0],rivet.center[1])
 		var edge:=PackedVector2Array()
-		for i in 64:edge.append((c+Vector2.from_angle(TAU*i/64.0)*2.3)*factor)
+		for v in _unit_circle_64:edge.append((c+v)*factor)
 		draw_colored_polygon(edge,shade)
 		var highlight:=PackedVector2Array()
 		var rotation:=-float(rivet.quarter_turns)*PI/2.0

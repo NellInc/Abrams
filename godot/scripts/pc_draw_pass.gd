@@ -11,6 +11,9 @@ const TerrainStyle = preload("res://scripts/pc_terrain_style.gd")
 const TacticalFoliage = preload("res://scripts/pc_tactical_foliage.gd")
 const TacticalEffects = preload("res://scripts/pc_tactical_effects.gd")
 const TacticalLight = preload("res://scripts/pc_tactical_light.gd")
+const TacticalVehicleAssets = preload("res://scripts/pc_tactical_vehicle_assets.gd")
+const TacticalVehicleView = preload("res://scripts/pc_tactical_vehicle_view.gd")
+const TacticalVehicleShader = preload("res://scripts/pc_tactical_vehicles.gdshader")
 var tactical_effects = TacticalEffects.new()
 var tactical_light = TacticalLight.new()
 var tactical_foliage = TacticalFoliage.new()
@@ -20,6 +23,7 @@ var _effects_inputs: Dictionary = {}
 # Per-object running-gear anchors of the current pass (null where none), built
 # once from one pass-wide actor index and shared by the mesh key and mapping.
 var _motion_anchors: Array = []
+var _pass_actors: Dictionary = {}
 var profile_builds := false
 var last_apply_timings_usec: Dictionary = {}
 var mesh_build_count := 0
@@ -85,8 +89,8 @@ var screen_light_enabled := false:
 		screen_light_enabled=value
 		if not value and tactical_light!=null: tactical_light.clear()
 var modern_assets = ModernAssets.new()
-var tactical_vehicle_assets = preload("res://scripts/pc_tactical_vehicle_assets.gd").new()
-var tactical_vehicle_view = preload("res://scripts/pc_tactical_vehicle_view.gd").new()
+var tactical_vehicle_assets = TacticalVehicleAssets.new()
+var tactical_vehicle_view = TacticalVehicleView.new()
 var tactical_material_textures: Dictionary = {}
 var tactical_material_atlas: Texture2D
 var modern_prewarmed := false
@@ -290,19 +294,21 @@ func apply_pass(pass_data: Dictionary) -> void:
 	# The world snapshot is consumed solely for visible running-gear phase.
 	# Off-screen actors must still simulate, but cannot dirty this visible mesh.
 	var motion_inputs: Array = []
+	var actors: Dictionary = {}
 	if modern_enabled and pass_data.get("objects") is Array:
-		var actors: Dictionary=ModernAssets.dynamic_index(pass_data)
+		actors = ModernAssets.dynamic_index(pass_data)
 		for object: Dictionary in pass_data.objects:
 			var anchor: float=modern_assets.running_gear_anchor(object,pass_data,actors)
 			motion_inputs.append(anchor if is_finite(anchor) else null)
 	_motion_anchors=motion_inputs
+	_pass_actors=actors
 	render_input["world"]=motion_inputs
-	var effects_input: Dictionary={"rows":TacticalEffects.inputs(pass_data)} if modern_enabled and tactical_landscape else {}
+	var effects_input: Dictionary={"rows":TacticalEffects.inputs(pass_data,actors)} if modern_enabled and tactical_landscape else {}
 	# Full recursive content equality against an independent snapshot, never a
 	# sequence/hash-only identity. In-place edits and restored slot reuse miss.
 	# A kill blast starting or ending changes which impact sprites are drawn
 	# without changing the pass, so the replaced set is part of the cache key.
-	var blast_current: Dictionary=tactical_effects.blast_sprites(pass_data) if tactical_landscape and _modern_active else {}
+	var blast_current: Dictionary=tactical_effects.blast_sprites(pass_data,actors) if tactical_landscape and _modern_active else {}
 	if cacheable and not _cached_pass.is_empty() and mesh_node.mesh!=null and _cached_config==config and _cached_pass.recursive_equal(render_input,64) and blast_current==_blast_built:
 		if _modern_active:
 			_foliage_pass=pass_data
@@ -311,7 +317,7 @@ func apply_pass(pass_data: Dictionary) -> void:
 			# Preserve the existing terrain/actor mesh cache.
 			if tactical_landscape and not _effects_inputs.recursive_equal(effects_input,64):
 				var effects_started: int=Time.get_ticks_usec() if profile_builds else 0
-				tactical_effects.prepare(pass_data,_foliage_mapping,ownership.get_texture(),modern_assets,effect_art)
+				tactical_effects.prepare(pass_data,_foliage_mapping,ownership.get_texture(),modern_assets,effect_art,[],actors)
 				if profile_builds: last_apply_timings_usec.effects=Time.get_ticks_usec()-effects_started
 				_effects_inputs=effects_input.duplicate(true)
 				if retain_render_target and get_viewport() is SubViewport:
@@ -490,7 +496,7 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 	var blast_replaced: Dictionary={}
 	if _modern_active and tactical_landscape:
 		tactical_effects.observe_pass(pass_data,modern_assets)
-		blast_replaced=tactical_effects.blast_sprites(pass_data)
+		blast_replaced=tactical_effects.blast_sprites(pass_data,_pass_actors)
 	_blast_built=blast_replaced
 	for index in pass_data.objects.size():
 		if _modern_active and modern_assets.is_terrain(pass_data.objects[index]): ordered_objects.append(index)
@@ -702,7 +708,7 @@ func _apply_surfaces(pass_data: Dictionary, effects_input: Dictionary) -> void:
 			if profile_builds:
 				last_apply_timings_usec.foliage=Time.get_ticks_usec()-prepare_started
 				prepare_started=Time.get_ticks_usec()
-			tactical_effects.prepare(pass_data,mapping,ownership.get_texture(),modern_assets,effect_art,effect_mappings)
+			tactical_effects.prepare(pass_data,mapping,ownership.get_texture(),modern_assets,effect_art,effect_mappings,_pass_actors)
 			if profile_builds: last_apply_timings_usec.effects=Time.get_ticks_usec()-prepare_started
 			# apply_pass already walked these inputs for its cache check.
 			_effects_inputs=effects_input.duplicate(true)
@@ -812,7 +818,12 @@ func _add_effect(vertices: PackedVector3Array, materials: PackedVector2Array, ef
 		_effect_uvs.append(uv.position+(point-target.position)/target.size*uv.size)
 
 func _add_modern(vertices: PackedVector3Array, materials: PackedVector2Array, facet: Dictionary) -> void:
-	var material_uv:=Vector2(modern_assets.colour_indices[modern_assets.colour_key(facet.color)],float(facet.get("kind",20))+_owner*32)
+	var rgb: Array = facet.color
+	var packed_rgb: int = (int(rgb[0])<<16)|(int(rgb[1])<<8)|int(rgb[2])
+	var colour_idx: int = int(modern_assets.colour_packed_indices.get(packed_rgb,-1))
+	if colour_idx < 0:
+		colour_idx = modern_assets.colour_indices[modern_assets.colour_key(rgb)]
+	var material_uv:=Vector2(colour_idx,float(facet.get("kind",20))+_owner*32)
 	for point: Array in facet.points:
 		vertices.append(camera_point(point))
 		materials.append(material_uv)
@@ -851,7 +862,7 @@ func _prewarm_modern() -> bool:
 	arrays[Mesh.ARRAY_TEX_UV2]=PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO])
 	var mesh:=ArrayMesh.new()
 	var programs:Array=[_modern_shader,_groundlight_shader,ModernOwnership.ShaderSource]
-	if tactical_vehicle_assets.ready:programs.append(preload("res://scripts/pc_tactical_vehicles.gdshader"))
+	if tactical_vehicle_assets.ready:programs.append(TacticalVehicleShader)
 	programs.append(TacticalEffects.ShaderSource)
 	programs.append(TacticalLight.DepthShader)
 	var mask:=Image.create(1,1,false,Image.FORMAT_RGBA8)
@@ -892,7 +903,7 @@ func _prewarm_modern() -> bool:
 			if modern_assets.tree_texture!=null:material.set_shader_parameter("modern_tree",modern_assets.tree_texture)
 			material.set_shader_parameter("tactical_material_ready",tactical_material_textures.size()==3)
 			for name in tactical_material_textures:material.set_shader_parameter("tactical_"+str(name)+"_detail",tactical_material_textures[name])
-		elif shader==preload("res://scripts/pc_tactical_vehicles.gdshader"):
+		elif shader==TacticalVehicleShader:
 			label="tactical-vehicle"
 			material.set_shader_parameter("tactical_vehicle_albedo",tactical_vehicle_assets.albedo_atlas)
 			material.set_shader_parameter("tactical_vehicle_normal",tactical_vehicle_assets.normal_atlas)

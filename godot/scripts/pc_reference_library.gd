@@ -22,6 +22,7 @@ var scroll: ScrollContainer
 var _restore_on_resize := false
 var result_count: Label
 var other_matches: Label
+var other_matches_bar: HFlowContainer
 var heading: BoxContainer
 var _narrow := false
 
@@ -67,9 +68,13 @@ func _ready() -> void:
 	column.add_child(search)
 	result_count=_label(column,"",15)
 	result_count.hide()
-	other_matches=_label(column,"",14)
+	other_matches_bar=HFlowContainer.new()
+	other_matches_bar.add_theme_constant_override("h_separation",6)
+	other_matches_bar.add_theme_constant_override("v_separation",6)
+	other_matches_bar.hide()
+	column.add_child(other_matches_bar)
+	other_matches=_label(other_matches_bar,"Also in other sections:",14)
 	other_matches.add_theme_color_override("font_color",Color("a7b09a"))
-	other_matches.hide()
 	scroll=ScrollContainer.new()
 	scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
@@ -91,7 +96,7 @@ func set_hud_style(style: String) -> void:
 	column.add_theme_constant_override("separation",12 if tactical else 16)
 	_replace_tabs()
 	result_count.visible=tactical
-	if not tactical and other_matches: other_matches.hide()
+	if not tactical and other_matches_bar: other_matches_bar.hide()
 	search.clear_button_enabled=tactical
 	if tactical:byline.add_theme_color_override("font_color",Color("a7b09a"))
 	else:byline.remove_theme_color_override("font_color")
@@ -240,11 +245,11 @@ func close_reader() -> void:
 	content.clear(); visuals.clear(); credits.clear(); _textures.clear()
 	reader_changed.emit(false)
 
-func show_section(tab: String) -> void:
+func show_section(tab: String, keep_search: bool=false) -> void:
 	if tab!=section: _textures.clear() # Hold one section's illustrations at a time.
 	section=tab if tab in SECTIONS else "Controls"
 	if search==null:return
-	search.text=""
+	if not keep_search: search.text=""
 	for button in tabs.get_children(): button.button_pressed=button.text==section
 	_render()
 	if tactical:
@@ -468,24 +473,26 @@ func _count_section_matches(tab: String) -> int:
 	return total
 
 func _update_other_matches() -> void:
-	if other_matches == null: return
+	if other_matches_bar == null: return
+	for child in other_matches_bar.get_children():
+		if child != other_matches:
+			other_matches_bar.remove_child(child)
+			child.queue_free()
 	var query := search.text.strip_edges() if search else ""
 	if not tactical or query.is_empty():
-		other_matches.hide()
-		other_matches.text = ""
+		other_matches_bar.hide()
 		return
-	var parts: PackedStringArray = []
+	var found_any := false
 	for tab in SECTIONS:
 		if tab == section: continue
 		var hits := _count_section_matches(tab)
 		if hits > 0:
-			parts.append("%s (%d)" % [tab, hits])
-	if parts.is_empty():
-		other_matches.hide()
-		other_matches.text = ""
-	else:
-		other_matches.text = "Also in other sections: " + ", ".join(parts)
-		other_matches.show()
+			found_any = true
+			var jump := Button.new()
+			jump.text = "%s (%d)" % [tab, hits]
+			jump.pressed.connect(func(): show_section(tab, true))
+			other_matches_bar.add_child(jump)
+	other_matches_bar.visible = found_any
 
 func _render() -> void:
 	for child in body.get_children():
@@ -493,7 +500,7 @@ func _render() -> void:
 		child.queue_free()
 	if (section!="Credits" and (content.is_empty() or (tactical and not _section_has_entries()))) or (tactical and section=="Credits" and credits.is_empty()):
 		result_count.text="Guide data unavailable"
-		if other_matches: other_matches.hide()
+		if other_matches_bar: other_matches_bar.hide()
 		_label(body,"The offline guide is missing or unreadable. Reinstall the complete application.")
 		return
 	var count := 0

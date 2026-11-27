@@ -8,6 +8,8 @@ const PALETTE = [Color8(0,0,0),Color8(255,255,255),Color8(170,170,170),Color8(85
 	Color8(85,255,255),Color8(255,255,255)]
 var packet: Dictionary = {}
 var source_rect := Rect2i()
+var _last_crop_bytes := PackedByteArray()
+var _last_crop_sha := ""
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -37,10 +39,14 @@ func set_frame(source: Image, ui: Image, tags: Image, plates: Dictionary, item: 
 	if not _guard_matches(source,ui,tags,plates[plate],guard,box,plate): return false
 	var crop := source.get_region(box)
 	crop.convert(Image.FORMAT_RGB8)
-	var hash := HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256)
-	hash.update(crop.get_data())
-	if hash.finish().hex_encode()!=item.get("pixel_sha256"): return false
+	var crop_bytes := crop.get_data()
+	if crop_bytes != _last_crop_bytes:
+		var hash := HashingContext.new()
+		hash.start(HashingContext.HASH_SHA256)
+		hash.update(crop_bytes)
+		_last_crop_bytes = crop_bytes
+		_last_crop_sha = hash.finish().hex_encode()
+	if _last_crop_sha!=item.get("pixel_sha256"): return false
 	if not item.get("grid") is Array or item.grid.size()<5 or item.grid.size()>9: return false
 	if not item.get("quads") is Array or item.quads.size()!=4: return false
 	for line in item.grid:

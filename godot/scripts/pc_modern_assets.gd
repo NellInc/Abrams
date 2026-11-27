@@ -80,6 +80,7 @@ var material_atlas: Texture2D
 var tree_texture: Texture2D
 var colour_texture: Texture2D
 var colour_indices: Dictionary = {}
+var colour_packed_indices: Dictionary = {}
 var tree_metadata: Dictionary = {}
 var status := "Modern assets unavailable"
 var ready := false
@@ -477,6 +478,7 @@ func configure(data: Dictionary) -> bool:
 	if accepted.is_empty(): return false
 	models = accepted
 	colour_indices.clear()
+	colour_packed_indices.clear()
 	var rgbs: Array = []
 	for model: Dictionary in models.values():
 		for face: Dictionary in model.faces.values():
@@ -484,11 +486,13 @@ func configure(data: Dictionary) -> bool:
 				var key:=colour_key(face.line_colour)
 				if key not in colour_indices:
 					colour_indices[key]=rgbs.size();rgbs.append(face.line_colour)
+				colour_packed_indices[(int(face.line_colour[0])<<16)|(int(face.line_colour[1])<<8)|int(face.line_colour[2])]=colour_indices[key]
 			for triangle: Dictionary in face.triangles:
 				var key := colour_key(triangle.color)
 				if key not in colour_indices:
 					colour_indices[key]=rgbs.size()
 					rgbs.append(triangle.color)
+				colour_packed_indices[(int(triangle.color[0])<<16)|(int(triangle.color[1])<<8)|int(triangle.color[2])]=colour_indices[key]
 	var compatible := RenderingServer.get_current_rendering_method()=="gl_compatibility"
 	var image := Image.create(rgbs.size(),1,false,Image.FORMAT_RGBAF if compatible else Image.FORMAT_RGBA8)
 	for i in rgbs.size(): image.set_pixel(i,0,Colour.input_color(rgbs[i],compatible))
@@ -861,26 +865,27 @@ static func tree_colour_variant(object: Dictionary, frame: Dictionary) -> float:
 	var y:=roundi(float(origin[1])-float(delta[1]))
 	return float(posmod(x*31+y*17,257))/256.0
 
+const TREE_SOURCES := {
+	10549: [[-160,0,128],[160,0,128],[0,0,480]],
+	10564: [[0,160,128],[0,-160,128],[0,0,480]],
+	10541: [[-32,0,0],[32,0,0],[32,0,128],[-32,0,128]],
+	10571: [[0,32,128],[0,32,0],[0,-32,0],[0,-32,128]]
+}
+const TREE_UVS := {
+	10549: [Vector2(0.0,0.805),Vector2(1.0,0.805),Vector2(0.5,0.005)],
+	10564: [Vector2(1.0,0.805),Vector2(0.0,0.805),Vector2(0.5,0.005)],
+	10541: [Vector2(0.4,0.995),Vector2(0.6,0.995),Vector2(0.6,0.805),Vector2(0.4,0.805)],
+	10571: [Vector2(0.6,0.805),Vector2(0.6,0.995),Vector2(0.4,0.995),Vector2(0.4,0.805)]
+}
+
 func tree_mapping(object: Dictionary, polygon: Dictionary, frame: Dictionary, palette: Array) -> Array:
-	if tree_texture==null or not supported_palette(palette) or int(object.get("shape_index",-1))!=103 or int(object.get("root",-1))!=10523: return []
+	if tree_texture==null or int(object.get("shape_index",-1))!=103 or int(object.get("root",-1))!=10523: return []
 	var primitive := int(polygon.get("primitive",-1))
-	var source: Array = []
-	# Exact crossed source planes, no camera-facing or enlarged billboard.
-	if primitive==10549: source=[[-160,0,128],[160,0,128],[0,0,480]]
-	elif primitive==10564: source=[[0,160,128],[0,-160,128],[0,0,480]]
-	elif primitive==10541: source=[[-32,0,0],[32,0,0],[32,0,128],[-32,0,128]]
-	elif primitive==10571: source=[[0,32,128],[0,32,0],[0,-32,0],[0,-32,128]]
-	else: return []
+	if not TREE_SOURCES.has(primitive) or not supported_palette(palette): return []
+	var source: Array = TREE_SOURCES[primitive]
 	var points: Array = polygon.get("camera_vertices",[])
 	if source.size()!=points.size() or anchor_frame(source,points,frame).is_empty(): return []
-	var uv: Array = []
-	var crown := primitive in [10549,10564]
-	for raw: Array in source:
-		var horizontal: float = raw[0] if primitive in [10549,10541] else raw[1]
-		var u := (horizontal/320.0)+0.5
-		var v := lerpf(0.805,0.005,(float(raw[2])-128.0)/352.0) if crown else lerpf(0.995,0.805,float(raw[2])/128.0)
-		uv.append(Vector2(u,v))
-	return Geometry.textured_triangles(points,uv,frame)
+	return Geometry.textured_triangles(points,TREE_UVS[primitive],frame)
 
 static func colour_key(rgb: Array) -> String:
 	return "%d,%d,%d"%[int(rgb[0]),int(rgb[1]),int(rgb[2])]

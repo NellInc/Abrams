@@ -2,6 +2,7 @@ extends MenuBar
 signal mix_changed
 signal focus_mute_changed(enabled: bool)
 ## Presentation-only gains. No bridge, source state, key binding or pause command.
+const Keyboard = preload("res://scripts/pc_keyboard.gd")
 const DEFAULTS := {"master":100,"effects":100,"voice":100,"motors":100,"music":70,
 	"cannon":100,"machinegun":100,"impact":100,"smoke":100,"engine":100,"turret":100,"river":100,"hind":100,"radio":100,"switch":100,"field":100,"cow":100,"t80":100,"t72":100,"brdm":100,"btr":100,"t64":100,"bmp":100,"m60":100,"t55":100,"tank":100,"m113":100,"bradley":100,"woodland":100,"truck":100,"tracks":100,"foley":100,"interface":100,"fire":100,"missileflight":100,"trackedfallback":100,"wheeledfallback":100}
 const TITLES := {"master":"Master volume","effects":"Sound effects","voice":"Crew voices","motors":"Engine and turret","music":"Music",
@@ -82,7 +83,7 @@ func game_keys(held: Array) -> Array:
 		for name in held: gated_keys[name]=true
 		return []
 	if focus_release_keys:
-		if preload("res://scripts/pc_keyboard.gd").focus_rearmed(get_window()): focus_release_keys=false
+		if Keyboard.focus_rearmed(get_window()): focus_release_keys=false
 		else:
 			# One neutral sample satisfies every quarantine: a reader that took
 			# window focus must not need a second all-keys-up frame.
@@ -96,13 +97,15 @@ func game_keys(held: Array) -> Array:
 	if release_keys:
 		for name in held: gated_keys[name]=true
 		release_keys=false
+	if gated_keys.is_empty() or held.is_empty():
+		return held.duplicate()
 	return held.filter(func(name): return not gated_keys.has(name))
 
 ## Whether a press of `name` would reach the game now, changing no gate. A
 ## probe must not trim the quarantine of keys it did not list.
 func key_passes(name: String) -> bool:
 	if not window_focused or not open_menus.is_empty(): return false
-	if focus_release_keys and not preload("res://scripts/pc_keyboard.gd").focus_rearmed(get_window()): return false
+	if focus_release_keys and not Keyboard.focus_rearmed(get_window()): return false
 	if release_keys: return false
 	return not gated_keys.has(name)
 

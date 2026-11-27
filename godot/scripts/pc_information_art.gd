@@ -4,12 +4,17 @@ extends Control
 ## additionally requires the complete frame, including its otherwise variable footer.
 const CATALOG_SHA := "835ef4cc94a560f35a3ba74a928e39a533833300866c6b8692ffd12de8d0b203"
 const COMPLETION_SHA := "65da8be43af5d62ff6fd77e374393c6621effacea556ad02e120a4f80e35c769"
+const Outlines = preload("res://scripts/pc_outline_fonts.gd")
 var caption_text_enabled := true
 var caption_fonts: Dictionary = {}
 var catalog: Dictionary = {}
 var textures: Dictionary = {}
 var active: Dictionary = {}
 var overlays: Dictionary = {}
+var _last_bytes := PackedByteArray()
+var _last_fingerprint := ""
+var _last_full_sha := ""
+var _last_footer_sha := ""
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -26,6 +31,7 @@ func clear() -> void:
 
 func load_sources(root_path: String) -> bool:
 	clear(); catalog.clear(); textures.clear(); overlays.clear(); caption_fonts.clear()
+	_last_bytes.clear(); _last_fingerprint = ""; _last_full_sha = ""; _last_footer_sha = ""
 	var path := root_path.path_join("local-art/pc-information-v3/information.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA: return false
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -92,21 +98,31 @@ func set_frame(source: Image, program: Dictionary) -> bool:
 	clear()
 	if catalog.is_empty() or program.get("name")!="START": return false
 	if source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8: return false
+	var bytes := source.get_data()
 	var hash := HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256)
-	hash.update(source.get_data().slice(0,320*int(catalog.recognition_height)*3))
-	var fingerprint := hash.finish().hex_encode()
+	if bytes != _last_bytes:
+		hash.start(HashingContext.HASH_SHA256)
+		hash.update(bytes.slice(0,320*int(catalog.recognition_height)*3))
+		_last_bytes = bytes
+		_last_fingerprint = hash.finish().hex_encode()
+		_last_full_sha = ""
+		_last_footer_sha = ""
+	var fingerprint := _last_fingerprint
 	var matches: Array = catalog.entries.filter(func(e):return e.rgb_sha256==fingerprint)
 	if matches.size()!=1: return false
 	if matches[0].has("full_rgb_sha256"):
-		hash.start(HashingContext.HASH_SHA256); hash.update(source.get_data())
-		if hash.finish().hex_encode() not in matches[0].get("observed_full_rgb_sha256",[matches[0].full_rgb_sha256]): return false
+		if _last_full_sha.is_empty():
+			hash.start(HashingContext.HASH_SHA256); hash.update(bytes)
+			_last_full_sha = hash.finish().hex_encode()
+		if _last_full_sha not in matches[0].get("observed_full_rgb_sha256",[matches[0].full_rgb_sha256]): return false
 	active = matches[0].duplicate(true)
 	if active.has("page_frame"):
 		active.frame_rects=active.page_frame.rects.duplicate(true)
-		hash.start(HashingContext.HASH_SHA256)
-		hash.update(source.get_data().slice(320*175*3))
-		if hash.finish().hex_encode() in active.page_frame.footer_sha256:
+		if _last_footer_sha.is_empty():
+			hash.start(HashingContext.HASH_SHA256)
+			hash.update(bytes.slice(320*175*3))
+			_last_footer_sha = hash.finish().hex_encode()
+		if _last_footer_sha in active.page_frame.footer_sha256:
 			active.frame_rects.append(active.page_frame.footer_rect)
 	visible = true
 	queue_redraw()
@@ -182,4 +198,4 @@ func _draw() -> void:
 		# Native vector contours follow the source caption, not a substitute face.
 		var box:=Rect2(Vector2(r[0],r[1])*size/Vector2(320,200),Vector2(r[2],r[3])*size/Vector2(320,200))
 		draw_set_transform(Vector2.ZERO)
-		preload("res://scripts/pc_outline_fonts.gd").draw_text(self,caption_fonts[caption.art_sha256],caption.glyph,box,Vector2(r[2],r[3]),Color8(fg[0],fg[1],fg[2]))
+		Outlines.draw_text(self,caption_fonts[caption.art_sha256],caption.glyph,box,Vector2(r[2],r[3]),Color8(fg[0],fg[1],fg[2]))

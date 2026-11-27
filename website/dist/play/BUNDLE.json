@@ -37,8 +37,8 @@
       "sha256": "efb917219f345230545e5fe56ed0df313418e604e1ce42bd5cc3789c4b6bd37f"
     },
     ".generated/godot/index.pck": {
-      "bytes": 20099764,
-      "sha256": "643bf813ff527fbef9cfddd011d6779dc86d64f10d2094376113de6547cc8d47"
+      "bytes": 20140996,
+      "sha256": "52dbd4f8a27a0b9a49f7fdc08192cdc1af635a43f5225f4fcbef4090a5cf05e1"
     },
     ".generated/godot/index.wasm": {
       "bytes": 39514754,
@@ -69,8 +69,8 @@
       "sha256": "831fd1e535084b972f87c6a35275de3d236efd5166f5e77ce89497710635e73c"
     },
     ".generated/python-source.zip": {
-      "bytes": 604204,
-      "sha256": "9f9c2084f5bf5447bfd8d63ee05225b61c4dca08125256374c1632253d012cdc"
+      "bytes": 607192,
+      "sha256": "0a5f225fbd97d94a90e96afae5c8e85c971245b26af5980dfcba85b6530c4b89"
     },
     ".generated/remaster-assets-00.zip": {
       "bytes": 29517149,
@@ -173,8 +173,8 @@
       "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
     },
     "NOTICE.txt": {
-      "bytes": 1847,
-      "sha256": "4df02fb7921dff5384c2341deef4a6e7bdac711dcfdad7818499502ecfaecdaa"
+      "bytes": 1612,
+      "sha256": "63a75afc587acc6510261a54084dc8d8adccf8d44c38f9cbe115ef89bee592bf"
     },
     "THIRD_PARTY.txt": {
       "bytes": 1425,
@@ -189,12 +189,12 @@
       "sha256": "a3260b525c579d790fff8f5cbc9058e9fbadf2759dc959dfe2c9051e53708dc4"
     },
     "bridge_host.mjs": {
-      "bytes": 6534,
-      "sha256": "a5187aa29ba920a30717929e17ac2ec2d3c77ecfec68b934e86d817757be716a"
+      "bytes": 6660,
+      "sha256": "b8c53da67f9c9276ac5d86840b1e6da5498ce4b7fea845567c6b89a5ed0192fa"
     },
     "bridge_worker.mjs": {
-      "bytes": 23846,
-      "sha256": "8557eed31e1c1b4ecb6cbdb67b19213b70256dee238ec7dc35b0270286fa98ad"
+      "bytes": 24959,
+      "sha256": "2aa361873a23c8dfd3c016def9a8e30736703a1468db0030397f9f4cdd96338f"
     },
     "browser_observer.mjs": {
       "bytes": 4339,
@@ -217,12 +217,12 @@
       "sha256": "7c3173b44bfececa2d77f27f94663e60195434a9542a0f792171086435571f15"
     },
     "remaster.html": {
-      "bytes": 14761,
-      "sha256": "88297b18f584552b4884f0f648f932763245216263bd410f9ec4ab949b80f4f3"
+      "bytes": 15760,
+      "sha256": "33483406b81aa2ecf3236ed6727d6affd4a440af34b1f81fabf24e2d4cb7db6d"
     },
     "remaster.mjs": {
-      "bytes": 27755,
-      "sha256": "59555b6828125a0d83510fed48b42478a2c0b42d859f5416154fef99413a06e3"
+      "bytes": 29464,
+      "sha256": "87d059a65c3ada56be66ecfc65894ca078c6bed36d548ee7365911fc7fe888ec"
     },
     "remaster.service.worker.js": {
       "bytes": 4557,

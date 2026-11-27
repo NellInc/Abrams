@@ -3,6 +3,11 @@ extends Control
 ## may replace a panel; unknown ink keeps the complete original panel visible.
 const FieldPanel = preload("res://scripts/pc_tactical_panel.gd")
 const Ink = preload("res://scripts/pc_instrument_art.gd")
+const Typography = preload("res://scripts/pc_typography.gd")
+const OrientationArt = preload("res://scripts/pc_orientation_art.gd")
+const DamageStates = preload("res://scripts/pc_tactical_damage_states.gd")
+const MonoFont = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
+const TitleFont = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 const CREAM = Color("e3e4cd")
 const MUTED = Color("c1ccba")
 const RULE = Color("526b58")
@@ -15,13 +20,22 @@ const NAVIGATION_FILLS = [Color("203529"),Color("324b33"),Color("425e3d"),Color(
 const DAMAGE_ZONES: Array[Rect2] = [Rect2(176,52,70,69),Rect2(211,7,102,28),Rect2(204,124,112,24),Rect2(310,34,60,84),Rect2(33,66,98,24)]
 const SYSTEMS = ["GPS","SMOKE DISCHARGERS","COAX","MAIN GUN","BALLISTIC COMPUTER","THERMAL",
 	"RADIO","HALON","TURRET MOTORS","LEFT TREAD","RIGHT TREAD","ENGINE"]
-var font: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
-var title: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+const REPRESENTED_POSITIONS := {
+	1: [Vector2(52,143),Vector2(52,154),Vector2(16,165),Vector2(52,165),Vector2(173,188),
+		Vector2(227,144),Vector2(227,157),Vector2(227,170),Vector2(227,183),Vector2(272,144),Vector2(272,170)],
+	2: [Vector2(261,134)],
+	4: [Vector2(90,191),Vector2(132,191),Vector2(186,191)],
+	5: [Vector2(83,52),Vector2(83,60),Vector2(83,68),Vector2(83,76),Vector2(83,84),Vector2(83,92)]
+}
+var font: Font = MonoFont
+var title: Font = TitleFont
 var verifier = Ink.new()
 var damage_catalog: Array = []
 var panels: Array[Dictionary] = []
 var runs: Array = []
 var gauges: Array = []
+var _runs_by_pos: Dictionary = {}
+var _gauges_by_name: Dictionary = {}
 var orientation: Dictionary = {}
 var damage := -1
 var station := 0
@@ -31,6 +45,12 @@ var in_place := false
 var _clips: Array[Control] = []
 var _ink: CanvasItem = self
 var _paint_state: Array = []
+var _last_damage_rgb := PackedByteArray()
+var _last_damage_tags := PackedByteArray()
+var _last_damage_rgb_sha := ""
+var _last_damage_tag_sha := ""
+var _text_layout_cache: Dictionary = {}
+var _row_layout_cache: Dictionary = {}
 
 class PanelInk extends Control:
 	var renderer: Control
@@ -50,28 +70,36 @@ func load_sources(root_path: String) -> void:
 	FieldPanel.load_sources(root_path)
 	verifier.load_pc_sources(root_path)
 	damage_catalog.clear()
-	var catalog=preload("res://scripts/pc_tactical_damage_states.gd")
-	for name in catalog.SOURCE_HASHES:
-		if FileAccess.get_sha256(root_path.path_join("GAME/"+name))!=catalog.SOURCE_HASHES[name]: return
-	damage_catalog=catalog.STATES.duplicate(true)
+	_last_damage_rgb.clear();_last_damage_tags.clear();_last_damage_rgb_sha="";_last_damage_tag_sha=""
+	_text_layout_cache.clear();_row_layout_cache.clear()
+	for name in DamageStates.SOURCE_HASHES:
+		if FileAccess.get_sha256(root_path.path_join("GAME/"+name))!=DamageStates.SOURCE_HASHES[name]: return
+	damage_catalog=DamageStates.STATES.duplicate(true)
 
 func _damage_state(source: Image, mask: Image, tags: Image) -> int:
 	var box:=Rect2i(123,37,184,63)
 	if mask.get_region(box).get_data().count(255)!=184*63: return -1
 	var crop:=source.get_region(box)
-	crop.convert(Image.FORMAT_RGB8)
-	var rgb:=HashingContext.new()
-	rgb.start(HashingContext.HASH_SHA256);rgb.update(crop.get_data())
-	var sha:=rgb.finish().hex_encode()
-	var tag:=HashingContext.new()
-	tag.start(HashingContext.HASH_SHA256);tag.update(tags.get_region(box).get_data())
-	var tag_sha:=tag.finish().hex_encode()
+	if crop.get_format()!=Image.FORMAT_RGB8: crop.convert(Image.FORMAT_RGB8)
+	var crop_bytes:=crop.get_data()
+	var tag_bytes:=tags.get_region(box).get_data()
+	if crop_bytes!=_last_damage_rgb or tag_bytes!=_last_damage_tags:
+		var rgb:=HashingContext.new()
+		rgb.start(HashingContext.HASH_SHA256);rgb.update(crop_bytes)
+		_last_damage_rgb_sha=rgb.finish().hex_encode()
+		var tag:=HashingContext.new()
+		tag.start(HashingContext.HASH_SHA256);tag.update(tag_bytes)
+		_last_damage_tag_sha=tag.finish().hex_encode()
+		_last_damage_rgb = crop_bytes
+		_last_damage_tags = tag_bytes
 	for entry in damage_catalog:
-		if entry.rgb_sha256==sha and entry.tags_sha256==tag_sha: return int(entry.bits)
+		if entry.rgb_sha256==_last_damage_rgb_sha and entry.tags_sha256==_last_damage_tag_sha:
+			return int(entry.bits)
 	return -1
 
 func _reset_frame() -> void:
-	panels.clear(); runs.clear(); gauges.clear(); orientation={}; damage=-1; station=0
+	panels.clear(); runs.clear(); gauges.clear(); _runs_by_pos.clear(); _gauges_by_name.clear()
+	orientation={}; damage=-1; station=0
 	rejected.clear()
 	in_place=false
 
@@ -93,6 +121,8 @@ func set_frame(frame: Control, id: int, layout: Dictionary, tags: Image, ui: Pac
 	var source: Image=frame._cached_source
 	var mask:=Image.create_from_data(320,200,false,Image.FORMAT_L8,ui)
 	runs=frame.typography.runs.filter(_represented)
+	for run in runs:
+		if not _runs_by_pos.has(run.rect.position): _runs_by_pos[run.rect.position]=run
 	# Reuse the same visible-pixel predicates with PC-only sources. Existing
 	# Restored/Modernized renderers and their optional artwork stay untouched.
 	var proof: Control=frame.instrument_art
@@ -100,6 +130,8 @@ func set_frame(frame: Control, id: int, layout: Dictionary, tags: Image, ui: Pac
 		verifier.set_frame(source,mask,tags,frame._cached_presentation.get("orientation",{}))
 		proof=verifier
 	gauges=proof.gauges.duplicate()
+	for gauge in gauges:
+		if not _gauges_by_name.has(gauge.name): _gauges_by_name[gauge.name]=gauge
 	orientation=proof.orientation.packet.duplicate(true)
 	damage=_damage_state(source,mask,tags) if id==5 else -1
 	if not frame.typography.fonts.is_empty():
@@ -111,7 +143,9 @@ func set_frame(frame: Control, id: int, layout: Dictionary, tags: Image, ui: Pac
 				if _run(Vector2(83,y)).is_empty(): candidates.append(frame.typography._status_number(source,y))
 		for candidate in candidates:
 			var run: Dictionary=frame.typography.verified_run(candidate,source,mask,frame._cached_presentation.get("palette_rgb",[]))
-			if not run.is_empty() and _represented(run): runs.append(run)
+			if not run.is_empty() and _represented(run):
+				runs.append(run)
+				if not _runs_by_pos.has(run.rect.position): _runs_by_pos[run.rect.position]=run
 	var covered: Image=tags.duplicate()
 	for run in runs:
 		if not run.get("transparent_world",false): covered.fill_rect(Rect2i(run.rect),Color8(id,id,id))
@@ -152,6 +186,8 @@ func set_frame(frame: Control, id: int, layout: Dictionary, tags: Image, ui: Pac
 
 func _invalidate_paint() -> void:
 	_paint_state.clear()
+	_text_layout_cache.clear()
+	_row_layout_cache.clear()
 	_place_panels()
 
 func _drawing_state() -> Array:
@@ -231,36 +267,34 @@ static func _uncovered_black(source: Image, tags: Image, box: Rect2i, id: int) -
 		if rgb[at]!=0 or rgb[at+1]!=0 or rgb[at+2]!=0: return false
 	return true
 
+static var _all_driver_border_points: Array[Vector2i] = []
+
 static func _driver_border_points(box: Rect2i) -> Array[Vector2i]:
+	if _all_driver_border_points.is_empty():
+		for rect in [Rect2i(64,189,45,9),Rect2i(112,189,39,9),Rect2i(154,189,51,9),Rect2i(208,189,45,9)]:
+			for x in range(rect.position.x,rect.end.x):
+				for y in [rect.position.y,rect.end.y-1]:
+					_all_driver_border_points.append(Vector2i(x,y))
+			for y in range(rect.position.y+1,rect.end.y-1):
+				for x in [rect.position.x,rect.end.x-1]:
+					_all_driver_border_points.append(Vector2i(x,y))
+	if box.encloses(Rect2i(64,189,189,9)): return _all_driver_border_points
 	var points: Array[Vector2i]=[]
-	for rect in [Rect2i(64,189,45,9),Rect2i(112,189,39,9),Rect2i(154,189,51,9),Rect2i(208,189,45,9)]:
-		for x in range(rect.position.x,rect.end.x):
-			for y in [rect.position.y,rect.end.y-1]:
-				if box.has_point(Vector2i(x,y)): points.append(Vector2i(x,y))
-		for y in range(rect.position.y+1,rect.end.y-1):
-			for x in [rect.position.x,rect.end.x-1]:
-				if box.has_point(Vector2i(x,y)): points.append(Vector2i(x,y))
+	for p in _all_driver_border_points:
+		if box.has_point(p): points.append(p)
 	return points
 
 func _represented(run: Dictionary) -> bool:
 	# A verified string is still unsafe to erase unless this renderer displays
 	# that exact field. Unexpected messages inside an instrument stay native.
 	var at: Vector2=run.rect.position
-	var values: Array=[]
-	if station==1:
-		values=[Vector2(52,143),Vector2(52,154),Vector2(16,165),Vector2(52,165),Vector2(173,188)]
-		for y in [144,157,170,183]: values.append(Vector2(227,y))
-		for y in [144,170]: values.append(Vector2(272,y))
-	elif station==2: values=[Vector2(261,134)]
-	elif station==4: values=[Vector2(90,191),Vector2(132,191),Vector2(186,191)]
-	elif station==5:
-		for y in [52,60,68,76,84,92]: values.append(Vector2(83,y))
-	if at in values: return true
-	for entry in preload("res://scripts/pc_typography.gd").FIXED_LABELS:
+	if at in REPRESENTED_POSITIONS.get(station, []): return true
+	for entry in Typography.FIXED_LABELS:
 		if at==Vector2(entry[1],entry[2]) and run.text.strip_edges()==entry[0]: return true
 	return false
 
 func _run(at: Vector2) -> Dictionary:
+	if _runs_by_pos.has(at): return _runs_by_pos[at]
 	for run in runs:
 		if run.rect.position==at: return run
 	return {}
@@ -269,6 +303,7 @@ func _value(x: int, y: int) -> String:
 	return str(_run(Vector2(x,y)).get("text","")).strip_edges()
 
 func _gauge(name: String) -> Dictionary:
+	if _gauges_by_name.has(name): return _gauges_by_name[name]
 	for gauge in gauges:
 		if gauge.name==name: return gauge
 	return {}
@@ -302,12 +337,19 @@ func _text_point(height: int, heading: bool=false) -> int:
 func _text_layout(words: String, box: Rect2, height: int=19, right: bool=false, heading: bool=false, centred: bool=false) -> Dictionary:
 	var face: Font=title if heading else font
 	var point:=_text_point(height,heading)
+	var cache_key := [face, words, box, point, right, centred]
+	if _text_layout_cache.has(cache_key):
+		return _text_layout_cache[cache_key]
 	while point>1 and (face.get_string_size(words,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x>box.size.x or face.get_height(point)>box.size.y): point-=1
 	var width:=face.get_string_size(words,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x
 	var x:=box.end.x-width if right else box.position.x
 	if centred: x=box.position.x+(box.size.x-width)*0.5
 	var y:=box.position.y+(box.size.y-face.get_height(point))*0.5+face.get_ascent(point)
-	return {"point":point,"at":Vector2(x,y),"width":width}
+	var result := {"point":point,"at":Vector2(x,y),"width":width}
+	if _text_layout_cache.size() >= 128:
+		_text_layout_cache.clear()
+	_text_layout_cache[cache_key] = result
+	return result
 
 func _text(words: String, box: Rect2, height: int=19, colour: Color=CREAM, right: bool=false, heading: bool=false, centred: bool=false) -> void:
 	var face: Font=title if heading else font
@@ -318,11 +360,18 @@ func _row_layout(box: Rect2, value: String, selected: bool=false, important: boo
 	# Allocate from the exact visible value. Long readings receive space before
 	# fitting the label; neither column can reach the other or the panel edge.
 	var point:=_text_point(27 if important else 23)
+	var cache_key := [font, box, value, point, selected]
+	if _row_layout_cache.has(cache_key):
+		return _row_layout_cache[cache_key]
 	while point>1 and font.get_height(point)>box.size.y: point-=1
 	var width:=clampf(font.get_string_size(value,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x+2,box.size.x*0.22,box.size.x*0.58)
 	var left:=18.0 if selected else 10.0
 	var right:=box.end.x-10
-	return [Rect2(box.position+Vector2(left,0),Vector2(maxf(1,right-width-10-box.position.x-left),box.size.y)),Rect2(right-width,box.position.y,width,box.size.y)]
+	var result: Array[Rect2] = [Rect2(box.position+Vector2(left,0),Vector2(maxf(1,right-width-10-box.position.x-left),box.size.y)),Rect2(right-width,box.position.y,width,box.size.y)]
+	if _row_layout_cache.size() >= 128:
+		_row_layout_cache.clear()
+	_row_layout_cache[cache_key] = result
+	return result
 
 func _row(box: Rect2, label: String, value: String, colour: Color=CREAM, selected: bool=false, important: bool=false) -> void:
 	var warning: bool=colour in [RED,AMBER] and not selected
@@ -475,7 +524,7 @@ func _navigation(box: Rect2) -> void:
 		if quad.filled: _ink.draw_colored_polygon(points,NAVIGATION_FILLS[index])
 		points.append(points[0]);_ink.draw_polyline(points,DIAGRAM_EDGE,_diagram_stroke(1.7),true)
 		for i in quad.edges.size():
-			var c: Color=preload("res://scripts/pc_orientation_art.gd").PALETTE[int(quad.edges[i])]
+			var c: Color=OrientationArt.PALETTE[int(quad.edges[i])]
 			_ink.draw_line(points[i],points[i+1],_state_colour(c) if c in [Ink.RED,Ink.GREEN,Ink.YELLOW] else CREAM,_diagram_stroke(2),true)
 	_ink.draw_line(Vector2(box.position.x+10,box.end.y-32),Vector2(box.end.x-10,box.end.y-32),RULE,1,true)
 	_row(Rect2(box.position.x,box.end.y-30,box.size.x,30),"HEADING",_value(173,188) if station==1 else _value(261,134))

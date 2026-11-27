@@ -80,6 +80,9 @@ var intro_checked := false
 var intro_phase := ""
 var _last_start_bytes := PackedByteArray()
 var _last_start_intro := ""
+var _verified_text_bytes := PackedByteArray()
+var _verified_text_runs: Array = []
+var _verified_text_result: Array[String] = []
 
 func context_for_frame(source: Image, program: Dictionary, presentation: Dictionary) -> String:
 	intro_phase=""
@@ -109,7 +112,11 @@ func context_for_frame(source: Image, program: Dictionary, presentation: Diction
 func verified_text(source: Image, presentation: Dictionary) -> Array[String]:
 	var found: Array[String] = []
 	var runs= presentation.get("text_runs")
-	if not runs is Array: return found
+	if not runs is Array or runs.is_empty(): return found
+	var src_bytes := source.get_data() if source != null and source.get_format() == Image.FORMAT_RGB8 and source.get_size() == Vector2i(320, 200) else PackedByteArray()
+	if not src_bytes.is_empty() and src_bytes == _verified_text_bytes and runs == _verified_text_runs:
+		return _verified_text_result.duplicate()
+	var hash := HashingContext.new()
 	for run in runs:
 		if not run is Dictionary or not run.get("text") is String or run.text.strip_edges().is_empty(): continue
 		var box=run.get("rect")
@@ -120,10 +127,13 @@ func verified_text(source: Image, presentation: Dictionary) -> Array[String]:
 		if not valid: continue
 		var rect:=Rect2i(int(box[0]),int(box[1]),int(box[2]),int(box[3]))
 		if rect.size.x<=0 or rect.size.y<=0 or not Rect2i(0,0,320,200).encloses(rect): continue
-		var hash := HashingContext.new()
 		hash.start(HashingContext.HASH_SHA256);hash.update(source.get_region(rect).get_data())
 		if hash.finish().hex_encode()!=run.pixel_sha256: continue
 		found.append(run.text)
+	if not src_bytes.is_empty():
+		_verified_text_bytes = src_bytes
+		_verified_text_runs = runs.duplicate(true)
+		_verified_text_result = found.duplicate()
 	return found
 
 func gameplay_context(_state: Variant, _program: Dictionary) -> String:
@@ -142,7 +152,8 @@ func observe_event(_event: Dictionary) -> void:
 	pass
 
 func reset_score() -> void:
-	pass
+	_last_start_bytes.clear();_last_start_intro=""
+	_verified_text_bytes.clear();_verified_text_runs.clear();_verified_text_result.clear()
 
 func _load_intro_fingerprints() -> void:
 	if intro_checked: return

@@ -1,6 +1,8 @@
 extends RefCounted
 ## Authored terrain detail on observed PC surfaces. Never adds geometry.
 const PC_PALETTE = preload("res://scripts/pc_tandem_frame.gd").ART_PALETTE
+const Colour = preload("res://scripts/pc_colour.gd")
+static var _pc_json_palette: Array = JSON.parse_string(JSON.stringify(PC_PALETTE))
 const ASSETS = {
 	"field": "36eb892810f7f233b6ca4bff909ce1990ff727e6307350445398e6ef6bd6109c",
 	"road": "737334a62f68cde25b62a61356c468888a12071fa1352bace2c32594af8be480"}
@@ -74,11 +76,11 @@ func load_assets(directory: String) -> bool:
 
 func mapping(frame: Dictionary, palette: Array) -> Dictionary:
 	if textures.size() != 2 or palette.size() != 16: return {}
-	var frontend: bool = preload("res://scripts/pc_colour.gd").is_frontend_palette(palette)
-	for i in 16:
-		if not palette[i] is Array or palette[i].size() != 3: return {}
-		for c in 3:
-			if palette[i][c] != PC_PALETTE[i][c] and not frontend: return {}
+	if palette != PC_PALETTE and palette != _pc_json_palette and not Colour.is_frontend_palette(palette):
+		for i in 16:
+			if not palette[i] is Array or palette[i].size() != 3: return {}
+			for c in 3:
+				if palette[i][c] != PC_PALETTE[i][c]: return {}
 	return camera_basis(frame)
 
 # The observed source camera basis alone. It needs no terrain texture or palette,

@@ -124,6 +124,7 @@ func stop() -> void:
 
 func release() -> void:
 	stop()
+	_fire_bytes.clear(); _fire_match = false
 	if RenderingServer.frame_post_draw.is_connected(after_draw): RenderingServer.frame_post_draw.disconnect(after_draw)
 	for player: AudioStreamPlayer in players.values(): player.stream = null
 	streams.clear()

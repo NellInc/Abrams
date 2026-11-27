@@ -10,12 +10,18 @@ const PcCamera = preload("res://scripts/pc_camera.gd")
 const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
 const PlayDisplay = preload("res://scripts/pc_play_display.gd")
 const StartupSplash = preload("res://scripts/pc_startup_splash.gd")
-var tactical_dynamics = preload("res://scripts/pc_tactical_dynamics.gd").new()
+const TacticalDynamics = preload("res://scripts/pc_tactical_dynamics.gd")
+var tactical_dynamics = TacticalDynamics.new()
 var tactical_dynamics_allowed := true
 var tactical_light_allowed := true
 var reduced_motion_preferred := false
 const Frontdoor = preload("res://scripts/pc_frontdoor.gd")
 const FrontdoorRoute = preload("res://scripts/pc_frontdoor_route.gd")
+const PlayMenu = preload("res://scripts/pc_play_menu.gd")
+const InterfaceTheme = preload("res://scripts/pc_interface_theme.gd")
+const TerrainStyle = preload("res://scripts/pc_terrain_style.gd")
+const EffectArt = preload("res://scripts/pc_effect_art.gd")
+const GenesisStyle = preload("res://scripts/pc_genesis_style.gd")
 var frontdoor: Control
 var frontdoor_route = FrontdoorRoute.new()
 var frontdoor_shown := false
@@ -41,7 +47,7 @@ var gunner_art_requested := false
 var cockpit_art_requested := false
 var pc_only := false
 var pc_presentation_requested := false
-var genesis_style = preload("res://scripts/pc_genesis_style.gd").new()
+var genesis_style = GenesisStyle.new()
 var genesis_colours_requested := false
 var previous_presentation: Dictionary = {}
 var world_viewport: SubViewport
@@ -361,7 +367,7 @@ func _complete_startup(directory: String, args: Array, paint_first: bool) -> voi
 		pc_audio = PcAudio.new()
 		root.add_child(pc_audio)
 	if play_mode:
-		audio_menu=preload("res://scripts/pc_play_menu.gd").new()
+		audio_menu=PlayMenu.new()
 		# A browser has no application menu bar. Always show the controls in canvas.
 		if OS.has_feature("web"): audio_menu.prefer_global_menu=false
 		audio_menu.genesis_available=not pc_only
@@ -647,7 +653,7 @@ func _build_play_ui() -> void:
 	startup_splash.load_cover("/" if OS.has_feature("web") else ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir())
 	startup_splash.reference_selected.connect(func(name):
 		if audio_menu:audio_menu.open_reference(name)
-		else:preload("res://scripts/pc_interface_theme.gd").show_reference(root,name))
+		else:InterfaceTheme.show_reference(root,name))
 	status=startup_splash.message
 	control_notice=_label("",18)
 	control_notice.mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -699,12 +705,12 @@ func _load_world_presentation(directory: String, args: Array) -> void:
 	if genesis_colours_requested: genesis_style.load_palette(directory.path_join("reference/genesis/extracted/gunner/palette.gpl"))
 	if trace_mode: tandem_frame.frontend_art.text_enabled = "--original-text" not in args
 	if trace_mode and pc_presentation_requested and not wire_mode and "--flat-world" not in args:
-		var terrain := preload("res://scripts/pc_terrain_style.gd").new()
+		var terrain := TerrainStyle.new()
 		if terrain.load_assets(directory.path_join("local-art/pc-terrain-remastered/detail-v1")):
 			if not pc_only and "--original-hills" not in args: terrain.load_hills(directory)
 			draw_view.terrain_style = terrain
 	if trace_mode and cockpit_art_requested and not wire_mode and "--original-effects" not in args:
-		var effects := preload("res://scripts/pc_effect_art.gd").new()
+		var effects := EffectArt.new()
 		if effects.load_assets(directory): draw_view.effect_art = effects
 	# Modern is optional and preloaded. Toggling performs no file I/O.
 	if trace_mode and pc_presentation_requested and not wire_mode:
@@ -1382,7 +1388,11 @@ func _apply_sample(message: Dictionary) -> void:
 	_observe_intro(image,message.get("program",{}) if message.get("program") is Dictionary else {},message.get("presentation",{}))
 	_advance_live_frame()
 	# Play hides this rect; only captures and the comparison viewer read it.
-	if (capture or not play_mode) and (changed or picture.texture==null): picture.texture = ImageTexture.create_from_image(image)
+	if (capture or not play_mode) and (changed or picture.texture==null):
+		if picture.texture is ImageTexture and DisplayServer.get_name()!="headless" and Vector2i(picture.texture.get_size())==image.get_size() and (picture.texture as ImageTexture).get_format()==image.get_format():
+			(picture.texture as ImageTexture).update(image)
+		else:
+			picture.texture = ImageTexture.create_from_image(image)
 	previous_program = message.get("program", {}) if message.get("program") is Dictionary else {}
 	# The intro's authored shot is timed by original frames, never by wall clock.
 	var frontend_layer = tandem_frame.get("frontend_art")

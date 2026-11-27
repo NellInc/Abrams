@@ -53,17 +53,17 @@ The two run in tandem: the original PC executables run inside DOSBox Pure, while
 
 ## Features
 
-* Tank-cover main menu with **Scenario**, **Campaign**, **Settings**, **Extras** and **Quit**. Extras contains the separate practice range and artwork comparison.
+* Tank-cover main menu with **Scenario**, **Campaign**, **M1-Info**, **Settings**, **Extras** and **Quit**. Extras contains the separate practice range and artwork comparison.
 * High-resolution cockpits, portraits, briefings, information screens and ending newspapers, retaining the original visual style.
 * Reconstructed typefaces, animated intro credits and a memorial dedication.
 * Instant switching between six graphics modes: **EGA**, **EGA Upscaled**, **Genesis**, **Genesis Upscaled**, and the experimental **Modern** and **Tactical**, with an independent **HUD Style** (Restored or Tactical).
 * Sample-based sound effects, generative crew speech and an independent authored soundtrack, with separate volume controls.
 * Five save-state slots, quick save/load and **Undo last load**, alongside the original campaign saves.
 * **8x fast forward, toggled with Tab**, with sound muted during accelerated play.
-* Resizable windows and fullscreen, preserving the complete 4:3 display.
+* Resizable windows and fullscreen, with reflowed 16:9 widescreen layouts on verified Tactical HUD stations and complete 4:3 framing for Restored, EGA, Genesis and unverified overlays.
 * **4× MSAA and 16× anisotropic filtering** for remastered scenery, adjustable in Graphics.
 
-Tactical (`tactical`) with the Tactical HUD is the default view; Genesis Upscaled (`upscaled`) stands in when the Modern catalogue has not been derived from your PC files. EGA Upscaled enlarges the original PC frame using only its own colours. Genesis mode uses original-resolution Genesis artwork where available; unmatched areas keep PC graphics. Modern adds source-bound low-poly vehicle and building detail, illustrated trees and a restrained battlefield palette. Tactical uses the same source-bound geometry with a Calibration Range-inspired palette and decorative near-field plants. HUD Style selects Restored or Tactical instruments and layouts independently of the graphics mode. The original PC simulation, terrain and camera remain authoritative. Modern and Tactical remain experimental while performance tuning and playtesting continue. See [graphics modes](docs/graphics-modes.md).
+Tactical (`tactical`) with the Tactical HUD is the default view, while Genesis Upscaled (`upscaled`) stands in if the 3D model catalogue has not been built from your PC files yet. EGA Upscaled enlarges the original PC picture using only its original 16 colours. Genesis mode uses original-resolution Genesis artwork where available and keeps PC graphics elsewhere. Modern replaces flat 1989 shapes with clean low-poly vehicles, buildings and trees in a restrained battlefield palette. Tactical pairs those 3D models with textured terrain, grounded vegetation and dynamic lighting. HUD Style switches between Restored and Tactical instruments independently of the graphics mode, while the original PC simulation, terrain heightmap and camera remain authoritative. Modern and Tactical remain experimental while performance tuning and playtesting continue. See [graphics modes](docs/graphics-modes.md).
 
 ## Install
 

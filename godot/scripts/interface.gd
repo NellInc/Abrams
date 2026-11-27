@@ -1,14 +1,17 @@
 extends Control
 ## Resolution-independent instrument panel; actual buttons retain keyboard focus.
+const HeadingFont = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+const MonoFont = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
 var main: Node3D
-var heading_font: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
-var mono: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
+var heading_font: Font = HeadingFont
+var mono: Font = MonoFont
 var cream := Color("e3e4cd")
 var muted := Color("9aa592")
 var amber := Color("e7b566")
 var green := Color("c5e1ac")
 var panel := Color(0.055,0.076,0.062,0.94)
 var buttons: Array[Dictionary] = []
+var _button_styles: Dictionary = {}
 var gradient_texture: GradientTexture2D
 var top_veil: GradientTexture2D
 var bottom_veil: GradientTexture2D
@@ -110,30 +113,33 @@ func button(label: String, area: Rect2, action: Callable) -> void:
 	b.add_theme_color_override("font_pressed_color",Color("0c160e"))
 	b.add_theme_color_override("font_focus_color",amber)
 	b.add_theme_color_override("font_hover_pressed_color",Color("0c160e"))
-	for state in ["normal","hover","pressed","focus"]:
-		# A quiet glass row; the amber spine marks hover and keyboard focus without shouting.
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.03,0.045,0.035,0.58)
-		style.border_color = Color(0.54,0.6,0.47,0.32)
-		style.border_width_bottom = 1
-		style.border_width_left = 2
-		style.content_margin_left = 20
-		style.corner_radius_top_right = 2
-		style.corner_radius_bottom_right = 2
-		if state == "hover":
-			style.bg_color = Color(amber,0.12)
-			style.border_color = amber
-			style.border_width_left = 4
-		elif state == "pressed":
-			style.bg_color = amber
-			style.border_color = amber
-			style.border_width_left = 4
-		elif state == "focus":
-			style.bg_color = Color(amber,0.10)
-			style.border_color = amber
-			style.set_border_width_all(1)
-			style.border_width_left = 4
-		b.add_theme_stylebox_override(state,style)
+	if _button_styles.is_empty():
+		for state in ["normal","hover","pressed","focus"]:
+			# A quiet glass row; the amber spine marks hover and keyboard focus without shouting.
+			var style := StyleBoxFlat.new()
+			style.bg_color = Color(0.03,0.045,0.035,0.58)
+			style.border_color = Color(0.54,0.6,0.47,0.32)
+			style.border_width_bottom = 1
+			style.border_width_left = 2
+			style.content_margin_left = 20
+			style.corner_radius_top_right = 2
+			style.corner_radius_bottom_right = 2
+			if state == "hover":
+				style.bg_color = Color(amber,0.12)
+				style.border_color = amber
+				style.border_width_left = 4
+			elif state == "pressed":
+				style.bg_color = amber
+				style.border_color = amber
+				style.border_width_left = 4
+			elif state == "focus":
+				style.bg_color = Color(amber,0.10)
+				style.border_color = amber
+				style.set_border_width_all(1)
+				style.border_width_left = 4
+			_button_styles[state] = style
+	for state in _button_styles:
+		b.add_theme_stylebox_override(state,_button_styles[state])
 	b.pressed.connect(action)
 	b.mouse_entered.connect(func(): main.sound.play("switch"))
 	add_child(b)

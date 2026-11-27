@@ -1,10 +1,14 @@
 extends Control
 ## Tactical framing. Live instruments and map remain source-verified.
 const FieldPanel = preload("res://scripts/pc_tactical_panel.gd")
+const TacticalInstruments = preload("res://scripts/pc_tactical_instruments.gd")
+const TacticalMap = preload("res://scripts/pc_tactical_map.gd")
+const HeadingFont = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+const MonoFont = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
 var wide_station := 0
 var station := 0
-var instruments = preload("res://scripts/pc_tactical_instruments.gd").new()
-var map_art = preload("res://scripts/pc_tactical_map.gd").new()
+var instruments = TacticalInstruments.new()
+var map_art = TacticalMap.new()
 
 func _init() -> void:
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -12,11 +16,22 @@ func _init() -> void:
 	instruments.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(map_art)
 	map_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	heading_font.changed.connect(_invalidate_font_caches)
+	mono.changed.connect(_invalidate_font_caches)
+
+func _invalidate_font_caches() -> void:
+	_footer_cache_key.clear()
+	_footer_cache_value.clear()
+	_section_cache.clear()
+	queue_redraw()
 const STATIONS := {1:"GUNNER",2:"COMMANDER",3:"CUPOLA",4:"DRIVER",5:"SYSTEMS STATUS"}
 var fallback_tactical := false
 var frame_rect := Rect2i()
-var heading_font: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
-var mono: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
+var heading_font: Font = HeadingFont
+var mono: Font = MonoFont
+var _footer_cache_key: Array = []
+var _footer_cache_value: Dictionary = {}
+var _section_cache: Dictionary = {}
 const CREAM := Color("e3e4cd")
 const MUTED := Color("c1ccba")
 const AMBER := Color("e7b566")
@@ -70,6 +85,9 @@ func _footer_width(id: int, station_point: int, command_point: int) -> Vector2:
 	return measured
 
 func _footer_layout(id: int, scale: float) -> Dictionary:
+	var cache_key := [id, scale, mono]
+	if cache_key == _footer_cache_key:
+		return _footer_cache_value
 	var station_point:=clampi(ceili(12.0/maxf(scale,0.01)),20,22)
 	var command_point:=clampi(ceili(11.0/maxf(scale,0.01)),19,22)
 	var measured:=_footer_width(id,station_point,command_point)
@@ -78,9 +96,11 @@ func _footer_layout(id: int, scale: float) -> Dictionary:
 		if station_point>=command_point: station_point-=1
 		else: command_point-=1
 		measured=_footer_width(id,station_point,command_point)
-	return {"station_point":station_point,"command_point":command_point,
+	_footer_cache_key = cache_key
+	_footer_cache_value = {"station_point":station_point,"command_point":command_point,
 		"station_width":measured.x,"command_width":measured.y,"command_x":1512-measured.y+18,
 		"baseline":862+maxi(station_point,command_point)}
+	return _footer_cache_value
 
 func _header_layout(id: int, scale: float) -> Dictionary:
 	var compact:=scale<0.7
@@ -105,12 +125,19 @@ func _gutter_text(at: Vector2, words: String, width: float, desired: int, colour
 	if point>0: draw_string(heading_font if heading else mono,at,words,HORIZONTAL_ALIGNMENT_LEFT,-1,point,colour)
 
 func _section_layout(at: Vector2, words: String, width: float, scale: float) -> Dictionary:
+	var cache_key := [at, words, width, scale, heading_font]
+	if _section_cache.has(cache_key):
+		return _section_cache[cache_key]
 	var point:=clampi(ceili(12.0/maxf(scale,0.01)),22,26)
 	while point>16 and heading_font.get_string_size(words,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x>width: point-=1
 	var label_width:=heading_font.get_string_size(words,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x
 	var y:=at.y-point*0.38
-	return {"point":point,"label_width":label_width,
+	var layout := {"point":point,"label_width":label_width,
 		"rule_from":Vector2(at.x+label_width+16,y),"rule_to":Vector2(at.x+width,y)}
+	if _section_cache.size() >= 32:
+		_section_cache.clear()
+	_section_cache[cache_key] = layout
+	return layout
 
 func _section_title(at: Vector2, words: String, width: float) -> void:
 	var layout:=_section_layout(at,words,width,_frame_scale())

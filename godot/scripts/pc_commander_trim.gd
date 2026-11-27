@@ -7,6 +7,7 @@ const PROTECTED = [Rect2i(15,62,146,98),Rect2i(14,176,80,18),
 	Rect2i(207,148,82,39)]
 const SCREWS = [Vector2(190,66),Vector2(305,66),Vector2(196,149),
 	Vector2(297,149),Vector2(196,187),Vector2(297,187)]
+const CommanderTrimShader = preload("res://scripts/pc_commander_trim.gdshader")
 var active := false
 var scale_xy := Vector2.ONE
 var _ui_texture: ImageTexture
@@ -17,7 +18,7 @@ var _verified_tags := PackedByteArray()
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var shader := ShaderMaterial.new()
-	shader.shader = preload("res://scripts/pc_commander_trim.gdshader")
+	shader.shader = CommanderTrimShader
 	material = shader
 	resized.connect(_layout)
 	clear()
@@ -71,7 +72,7 @@ func set_frame(source: Image, ui: Image, tags: Image, camera: Rect2i, world: Tex
 # Persistent mask textures: a same-size/format mask is uploaded in place
 # instead of allocating and freeing a texture resource every frame.
 static func upload(current: ImageTexture, image: Image) -> ImageTexture:
-	if current!=null and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format():
+	if current!=null and DisplayServer.get_name()!="headless" and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format():
 		current.update(image)
 		return current
 	return ImageTexture.create_from_image(image)

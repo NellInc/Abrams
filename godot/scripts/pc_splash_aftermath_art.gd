@@ -2,6 +2,7 @@ extends Control
 ## Full original-frame identity controls these static presentation plates.
 ## Original PC code retains scene selection, duration, transition and input.
 const CATALOG_SHA := "7b5384a974959aded00990135682599c69e00f27ed629a0405c04f32211f6f6f"
+const EndingSmokeShader = preload("res://scripts/pc_ending_smoke.gdshader")
 var entries: Dictionary = {}
 var textures: Dictionary = {}
 var native_images: Dictionary = {}
@@ -10,12 +11,14 @@ var motion_enabled := true
 var smoke_phase := 0.0
 var _motion_scene := ""
 var _smoke := ShaderMaterial.new()
+var _last_bytes := PackedByteArray()
+var _last_key := ""
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	resized.connect(queue_redraw)
-	_smoke.shader = preload("res://scripts/pc_ending_smoke.gdshader")
+	_smoke.shader = EndingSmokeShader
 	material = _smoke
 	clear()
 
@@ -26,6 +29,7 @@ func clear() -> void:
 
 func load_sources(root: String) -> bool:
 	clear(); reset_motion(); entries.clear(); textures.clear(); native_images.clear()
+	_last_bytes.clear(); _last_key = ""
 	var path := root.path_join("local-art/pc-splash-aftermath-v1/catalog.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path) != CATALOG_SHA: return false
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -54,11 +58,14 @@ func load_sources(root: String) -> bool:
 
 func match_frame(source: Image, program: Dictionary) -> Dictionary:
 	if source == null or source.get_size() != Vector2i(320,200) or source.get_format() != Image.FORMAT_RGB8: return {}
-	var hash := HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256); hash.update(source.get_data())
-	var key := hash.finish().hex_encode()
-	if not entries.has(key) or entries[key].program != program.get("name", ""): return {}
-	return entries[key]
+	var bytes := source.get_data()
+	if bytes != _last_bytes:
+		var hash := HashingContext.new()
+		hash.start(HashingContext.HASH_SHA256); hash.update(bytes)
+		_last_bytes = bytes
+		_last_key = hash.finish().hex_encode()
+	if not entries.has(_last_key) or entries[_last_key].program != program.get("name", ""): return {}
+	return entries[_last_key]
 
 func native_frame(source: Image, program: Dictionary) -> Image:
 	var row := match_frame(source,program)

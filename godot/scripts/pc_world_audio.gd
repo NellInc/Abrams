@@ -389,10 +389,16 @@ static func read_flight_sources(_base: String) -> Dictionary:
 	for index: int in FLIGHT_PHASES: result[index] = {"sha256":FLIGHT_FINGERPRINTS[index]}
 	return result
 
+static var _flight_sig_cache: Dictionary = {}
+
 static func flight_signature(sprite: Dictionary) -> String:
 	var pixels: Variant = sprite.get("pixels")
 	var opaque: Variant = sprite.get("opaque")
 	if not pixels is Array or not opaque is Array or pixels.size() != opaque.size() or pixels.is_empty(): return ""
+	var index_key: Variant = sprite.get("index", -1)
+	var cached: Variant = _flight_sig_cache.get(index_key)
+	if cached is Array and pixels == cached[0] and opaque == cached[1]:
+		return cached[2]
 	var bytes: PackedByteArray = PackedByteArray()
 	bytes.resize(pixels.size()*2)
 	for at: int in pixels.size():
@@ -402,7 +408,11 @@ static func flight_signature(sprite: Dictionary) -> String:
 		bytes[pixels.size()+at] = 1 if opaque[at] else 0
 	var hash: HashingContext = HashingContext.new()
 	hash.start(HashingContext.HASH_SHA256); hash.update(bytes)
-	return hash.finish().hex_encode()
+	var signature := hash.finish().hex_encode()
+	if _flight_sig_cache.size() >= 16:
+		_flight_sig_cache.clear()
+	_flight_sig_cache[index_key] = [pixels.duplicate(), opaque.duplicate(), signature]
+	return signature
 
 static func flight_candidate(object: Dictionary, actors: Dictionary, data: Dictionary, sources: Dictionary) -> bool:
 	# Steady texture only. Visibility is never a launch/birth notification.
@@ -444,10 +454,10 @@ static func flight_candidate(object: Dictionary, actors: Dictionary, data: Dicti
 		if not (clip[at] is int or clip[at] is float) or not is_finite(float(clip[at])) or clip[at] != floorf(float(clip[at])) or not exact_number(sprite.clip[at],int(clip[at])): return false
 	return clip[0] >= 0 and clip[0] <= clip[2] and clip[2] < 320 and clip[1] >= 0 and clip[1] <= clip[3] and clip[3] < 200
 
-static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t72: bool = false, flight_resources: Dictionary = {}, dedicated_brdm: bool = false, dedicated_vehicles: Dictionary = {}) -> Dictionary:
+static func candidates(data: Dictionary, dedicated_t80: bool = true, dedicated_t72: bool = false, flight_resources: Dictionary = {}, dedicated_brdm: bool = false, dedicated_vehicles: Dictionary = {}, preindexed_actors = null) -> Dictionary:
 	var result: Dictionary = {}
 	if not data.get("objects") is Array or not data.get("camera") is Dictionary or not data.get("unsupported") is Array or not data.unsupported.is_empty(): return result
-	var actors: Dictionary = Modern.dynamic_index(data)
+	var actors: Dictionary = preindexed_actors if preindexed_actors is Dictionary else Modern.dynamic_index(data)
 	for i: int in data.objects.size():
 		var object: Dictionary = data.objects[i]
 		var cue: String = ""
@@ -508,8 +518,9 @@ func observe(data: Dictionary, ownership: SubViewport, ui: Image, source_frame: 
 		stop(); return
 	var bits: PackedByteArray = ui.get_data()
 	if bits.count(0) + bits.count(255) != 64000: stop(); return
-	var selected: Dictionary = candidates(data, streams.has("t80"), streams.has("t72"), flight_sources, streams.has("brdm"), streams)
-	var rockets: Dictionary = rocket_owners(data) if rocket_stream!=null else {}
+	var actors: Dictionary = Modern.dynamic_index(data)
+	var selected: Dictionary = candidates(data, streams.has("t80"), streams.has("t72"), flight_sources, streams.has("brdm"), streams, actors)
+	var rockets: Dictionary = rocket_owners(data, actors) if rocket_stream!=null else {}
 	for id: int in selected.keys():
 		if not streams.has(CUE_PLAYERS.get(selected[id].cue,selected[id].cue)) or cue_gain(selected[id].cue) <= 0: selected.erase(id)
 	var cow_ready: bool = false
@@ -719,10 +730,10 @@ static func same_rocket_pose(left: Variant, right: Variant) -> bool:
 			if not source_integer(left[key][at]) or not source_integer(right[key][at]) or int(left[key][at])!=int(right[key][at]): return false
 	return true
 
-static func rocket_owners(data: Dictionary) -> Dictionary:
+static func rocket_owners(data: Dictionary, preindexed_actors = null) -> Dictionary:
 	var result: Dictionary={}
 	if not data.get("objects") is Array or not data.get("unsupported") is Array or not data.unsupported.is_empty(): return result
-	var actors: Dictionary=Modern.dynamic_index(data)
+	var actors: Dictionary = preindexed_actors if preindexed_actors is Dictionary else Modern.dynamic_index(data)
 	for index: int in data.objects.size():
 		var object: Variant=data.objects[index]
 		if not object is Dictionary or object.get("dynamic_instance")!=true or object.get("kind")=="sprite" or object.get("polygons",[]).is_empty(): continue

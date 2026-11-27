@@ -2,6 +2,8 @@ extends Control
 ## A cartographic finish over the complete verified map, never a new map model.
 const FieldPanel = preload("res://scripts/pc_tactical_panel.gd")
 const Proof = preload("res://scripts/pc_dynamic_map_art.gd")
+const TacticalMapShader = preload("res://scripts/pc_tactical_map.gdshader")
+const MonoFont = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
 var proof = Proof.new()
 var picture := TextureRect.new()
 var ink := ShaderMaterial.new()
@@ -18,13 +20,19 @@ var proof_reuse_count := 0
 const SURFACE_CACHE_SIZE := 4
 var _surface_cache: Dictionary = {}
 var _surface_order: Array[String] = []
+var _last_terrain_mode := -1
+var _last_terrain_bytes := PackedByteArray()
+var _last_terrain_key := ""
+var _last_crop_bytes := PackedByteArray()
+var _last_crop_sha := ""
 var in_place := false
 # Two exact original material recipes, not inferred hill/object identities.
 # RGB labels with a 43 channel cannot collide with the standard EGA palette.
 const EARTH_DARK := 0x552b00
 const EARTH_LIGHT := 0x80552b
 const SURFACES := [0x00aa00,0xaaaaaa,0x555555,0x5555ff,0xaa5500]
-var font: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
+static var _surface_words: Array = []
+var font: Font = MonoFont
 
 # Opaque RGBA8 words: one native pass replaces per-cell byte reads. Words only
 # ever compare for equality, so their byte order is irrelevant. Their alpha
@@ -149,8 +157,9 @@ static func surface_image(terrain: Image, local: bool) -> Image:
 					data[at*4]=(rgb>>16)&255;data[at*4+1]=(rgb>>8)&255;data[at*4+2]=rgb&255
 	# Unknown colours and small components are exact nearest-source patches.
 	# Large regions retain a finite source-cell core in the contour shader.
-	var surfaces: Array=[]
-	for surface in SURFACES: surfaces.append(_word(surface))
+	if _surface_words.is_empty():
+		for surface in SURFACES: _surface_words.append(_word(surface))
+	var surfaces: Array=_surface_words
 	var labelled:=_run_components(codes,width)
 	var starts: PackedInt32Array=labelled.starts
 	var lengths: PackedInt32Array=labelled.lengths
@@ -182,8 +191,14 @@ static func terrain_image(source: Image, item: Dictionary) -> Image:
 
 func _surface(source: Image, item: Dictionary) -> void:
 	var terrain:=terrain_image(source,item)
-	var hash:=HashingContext.new();hash.start(HashingContext.HASH_SHA256);hash.update(terrain.get_data())
-	var key:=str(item.mode)+hash.finish().hex_encode()
+	var terrain_bytes:=terrain.get_data()
+	var mode_id:=int(item.mode)
+	if mode_id!=_last_terrain_mode or terrain_bytes!=_last_terrain_bytes:
+		var hash:=HashingContext.new();hash.start(HashingContext.HASH_SHA256);hash.update(terrain_bytes)
+		_last_terrain_mode=mode_id
+		_last_terrain_bytes=terrain_bytes
+		_last_terrain_key=str(item.mode)+hash.finish().hex_encode()
+	var key:=_last_terrain_key
 	if key!=surface_hash or surface_texture==null:
 		var styled: Image=_surface_cache.get(key)
 		if styled==null:
@@ -202,7 +217,7 @@ func _surface(source: Image, item: Dictionary) -> void:
 
 func _init() -> void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
-	ink.shader=preload("res://scripts/pc_tactical_map.gdshader")
+	ink.shader=TacticalMapShader
 	picture.material=ink
 	picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	picture.mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -227,9 +242,14 @@ func _proved_map(frame: Control) -> Dictionary:
 	var shared: Dictionary=frame.dynamic_map_art.packet
 	if not shared.is_empty() and item is Dictionary and source!=null and source.get_size()==Vector2i(320,200) \
 			and shared.recursive_equal(item,8) and shared.get("page_offset")==frame._cached_presentation.get("page_offset"):
-		var crop:=source.get_region(Proof.MAP_RECT);crop.convert(Image.FORMAT_RGB8)
-		var hash:=HashingContext.new();hash.start(HashingContext.HASH_SHA256);hash.update(crop.get_data())
-		if hash.finish().hex_encode()==shared.get("pixel_sha256"):
+		var crop:=source.get_region(Proof.MAP_RECT)
+		if crop.get_format()!=Image.FORMAT_RGB8: crop.convert(Image.FORMAT_RGB8)
+		var crop_bytes:=crop.get_data()
+		if crop_bytes!=_last_crop_bytes:
+			var hash:=HashingContext.new();hash.start(HashingContext.HASH_SHA256);hash.update(crop_bytes)
+			_last_crop_bytes=crop_bytes
+			_last_crop_sha=hash.finish().hex_encode()
+		if _last_crop_sha==shared.get("pixel_sha256"):
 			proof_reuse_count+=1
 			return shared
 	if not proof.set_frame(source,frame._cached_presentation): return {}
@@ -243,8 +263,11 @@ func set_frame(frame: Control, layout: Dictionary, ui: PackedByteArray=PackedByt
 	if item.is_empty(): return false
 	if layout.get("in_place",false):
 		if ui.size()!=64000: return false
-		var mask:=Image.create_from_data(320,200,false,Image.FORMAT_L8,ui)
-		if mask.get_region(Proof.MAP_RECT).get_data().count(255)!=144*96: return false
+		var mx := Proof.MAP_RECT.position.x
+		var mw := Proof.MAP_RECT.size.x
+		for y in range(Proof.MAP_RECT.position.y,Proof.MAP_RECT.end.y):
+			var row_start := y*320+mx
+			if ui.slice(row_start,row_start+mw).count(255)!=mw: return false
 		in_place=true
 	# The source observer distinguishes cell rows from the final player draw.
 	# Enforce that shape here too before treating any line as player ink.

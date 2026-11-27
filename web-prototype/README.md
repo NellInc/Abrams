@@ -131,6 +131,6 @@ Working if: the real entry point boots through normal original frames, failed st
 
 ## Full-experience controls
 
-The optional More controls disclosure exposes the native five-channel mixer, shared default reset, MSAA and anisotropic filtering. Saved graphics mode, HUD, quality and gains are independent. A missing optional import falls back without forgetting the saved graphics choice. The Tactical offline guide wraps at narrow widths, searches displayed text by all query words, reports result counts and handles Escape without sending it to the original game. Restored styling is preserved.
+The optional More controls disclosure exposes the browser's 13-channel mixer (five core groups plus eight combat and cockpit channels), shared default reset, MSAA and anisotropic filtering. Saved graphics mode, HUD, quality and gains are independent. A missing optional import falls back without forgetting the saved graphics choice. The Tactical offline guide wraps at narrow widths, searches displayed text by all query words, reports result counts and handles Escape without sending it to the original game. Restored styling is preserved.
 
 A running bridge error exposes clean reload and retains its actual cause through engine exit. The packager checks authored-part identities and core build hash, rejects inputs changed during copying and retains the accepted bundle on failure. This programme remains local only.

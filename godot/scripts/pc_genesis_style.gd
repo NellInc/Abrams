@@ -3,6 +3,7 @@ extends RefCounted
 ## Original PC material indices, geometry, draw ordering and UI are unchanged.
 const PALETTE_SHA256 = "aabb29495777c4cd15b2a7f0c7ca89d67e4a2fda70b6bb0d2411c0c8b5206169"
 const PC_PALETTE = preload("res://scripts/pc_tandem_frame.gd").ART_PALETTE
+static var _pc_json_palette: Array = JSON.parse_string(JSON.stringify(PC_PALETTE))
 # Explicit visual mapping. The dark road uses Genesis bank-3 entry 13.
 const SWATCHES = [48,49,50,61,52,53,54,55,56,57,58,59,60,61,62,63]
 var palette: Array = []
@@ -22,6 +23,8 @@ func load_palette(path: String) -> bool:
 
 func for_original(source: Array) -> Array:
 	if palette.size() != 16 or source.size() != 16: return source
+	if source == PC_PALETTE or source == _pc_json_palette:
+		return palette.duplicate(true)
 	for i in 16:
 		if not source[i] is Array or source[i].size() != 3: return source
 		for channel in 3:

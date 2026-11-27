@@ -4,6 +4,7 @@ extends RefCounted
 ## occlusion belongs to original UI ownership, not an invented effect tint.
 const Colour = preload("res://scripts/pc_colour.gd")
 const PC_PALETTE = preload("res://scripts/pc_tandem_frame.gd").ART_PALETTE
+static var _pc_json_palette: Array = JSON.parse_string(JSON.stringify(PC_PALETTE))
 const SOURCE_HASH := "8d6483bdc0ad1df38338e24c2bd413ca497603d0aea819034b72a1862f19db41"
 const ASSETS := [
 	["effects-v1/impact-15-native-candidate.png", "b931d8f463483d3ff901203351cf553b4fdaa8d0df231f03ae28e9819b4fc7d4"],
@@ -94,10 +95,11 @@ func mapping(object: Dictionary, camera: Dictionary, palette: Array) -> Dictiona
 	if not loaded or atlas==null or palette.size()!=16: return {}
 	# JSON numbers arrive as floats; nested Array equality is type-sensitive.
 	# Compare the actual channels rather than rejecting an identical live palette.
-	for i in 16:
-		if not palette[i] is Array or palette[i].size()!=3: return {}
-		for c in 3:
-			if palette[i][c]!=PC_PALETTE[i][c]: return {}
+	if palette != PC_PALETTE and palette != _pc_json_palette:
+		for i in 16:
+			if not palette[i] is Array or palette[i].size()!=3: return {}
+			for c in 3:
+				if palette[i][c]!=PC_PALETTE[i][c]: return {}
 	if object.get("kind","")!="sprite" or object.get("sprite_status","")!="observed": return {}
 	var sprite = object.get("sprite")
 	if not sprite is Dictionary: return {}

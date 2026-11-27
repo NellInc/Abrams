@@ -4,6 +4,7 @@ signal reference_selected(name: String)
 var references := HBoxContainer.new()
 var attribution := Label.new()
 const COVER_PATH := "branding/abrams-cover-remastered.png"
+const InterfaceTheme = preload("res://scripts/pc_interface_theme.gd")
 var cover := TextureRect.new()
 var message := Label.new()
 var fallback := Label.new()
@@ -49,7 +50,7 @@ func _init() -> void:
 	attribution.add_theme_font_size_override("font_size",14)
 	attribution.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	add_child(attribution)
-	references.theme=preload("res://scripts/pc_interface_theme.gd").build()
+	references.theme=InterfaceTheme.build()
 	references.alignment=BoxContainer.ALIGNMENT_CENTER
 	for title in ["Keyboard controls","Field guide","Original credits"]:
 		var button := Button.new()

@@ -12,6 +12,18 @@ const MOTOR_CATALOG_SHA := "a34ebc4d9a81d48c58c34024845b03c2362555f2d818040578cc
 const MOTOR_ART_SHA := "3fb46798b867ca528f96e8bc0a70d6f3a9e7a1016ca87f3e8549562469019c76"
 const MOTOR_PALETTE = [[0,0,0],[255,255,255],[170,170,170],[85,85,85],[85,85,255],[85,255,255],
 	[170,0,0],[170,85,0],[0,170,0],[85,255,85],[255,255,85],[0,0,0],[255,85,85],[0,0,170],[85,255,255],[255,255,255]]
+static var _motor_json_palette: Array = JSON.parse_string(JSON.stringify(MOTOR_PALETTE))
+const SplashAftermathArt = preload("res://scripts/pc_splash_aftermath_art.gd")
+const FrontendPanels = preload("res://scripts/pc_frontend_panels.gd")
+const FrontendContours = preload("res://scripts/pc_frontend_contours.gd")
+const MapArt = preload("res://scripts/pc_map_art.gd")
+const NewspaperArt = preload("res://scripts/pc_newspaper_art.gd")
+const IntroArt = preload("res://scripts/pc_intro_art.gd")
+const InformationArt = preload("res://scripts/pc_information_art.gd")
+const ArmingPanelArt = preload("res://scripts/pc_arming_panel_art.gd")
+const Typography = preload("res://scripts/pc_typography.gd")
+const OriginalCursor = preload("res://scripts/pc_original_cursor.gd")
+const FrontendArtShader = preload("res://scripts/pc_frontend_art.gdshader")
 var motor_catalog: Dictionary = {}
 var motor_indices := PackedByteArray()
 # Plate-8 RGB implied by MOTOR_PALETTE, which the live palette must equal.
@@ -27,27 +39,30 @@ var _motor_mask_texture: ImageTexture
 var _motor_mask_key := ""
 var _scene_mask_texture: ImageTexture
 var _scene_mask_key := ""
+var _last_office_bytes := PackedByteArray()
+var _last_office_height := -1
+var _last_office_hash := ""
 var portraits: Array[Texture2D] = []
 var active: Dictionary = {}
 var text_enabled := true
-var splash_aftermath_art = preload("res://scripts/pc_splash_aftermath_art.gd").new()
-var panels = preload("res://scripts/pc_frontend_panels.gd").new()
-var contours = preload("res://scripts/pc_frontend_contours.gd").new()
-var map_art = preload("res://scripts/pc_map_art.gd").new()
-var newspaper_art = preload("res://scripts/pc_newspaper_art.gd").new()
-var intro_art = preload("res://scripts/pc_intro_art.gd").new()
-var information_art = preload("res://scripts/pc_information_art.gd").new()
-var arming_panel = preload("res://scripts/pc_arming_panel_art.gd").new()
-var typography = preload("res://scripts/pc_typography.gd").new()
-var flow_typography = preload("res://scripts/pc_typography.gd").new()
-var original_cursor = preload("res://scripts/pc_original_cursor.gd").new()
+var splash_aftermath_art = SplashAftermathArt.new()
+var panels = FrontendPanels.new()
+var contours = FrontendContours.new()
+var map_art = MapArt.new()
+var newspaper_art = NewspaperArt.new()
+var intro_art = IntroArt.new()
+var information_art = InformationArt.new()
+var arming_panel = ArmingPanelArt.new()
+var typography = Typography.new()
+var flow_typography = Typography.new()
+var original_cursor = OriginalCursor.new()
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var effect := ShaderMaterial.new()
-	effect.shader = preload("res://scripts/pc_frontend_art.gdshader")
+	effect.shader = FrontendArtShader
 	material = effect
 	add_child(splash_aftermath_art)
 	splash_aftermath_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -102,6 +117,7 @@ func load_sources(root_path: String) -> bool:
 	_decoded.clear()
 	_motor_masks={"plate":"","ui":"","valid":false,"runs":PackedInt32Array(),"count":0}
 	_motor_mask_key="";_scene_mask_key=""
+	_last_office_bytes.clear();_last_office_height=-1;_last_office_hash=""
 	flow_typography.load_sources(root_path.path_join("GAME"))
 	# Text restoration needs only its own pinned GAME fonts, never the office art.
 	typography.load_sources(root_path.path_join("GAME"))
@@ -166,8 +182,12 @@ func panel_border(source: Image, y: int) -> bool:
 	# Complete white top border plus blue interior corners, as drawn by the
 	# original dialogue box. The art shader preserves this row and all rows
 	# below it; separately verified typography may redraw complete glyph lines.
-	for x in 320:
-		if source.get_pixel(x,y).to_rgba32()!=0xffffffff: return false
+	if source.get_format()==Image.FORMAT_RGB8 and source.get_width()==320:
+		var row_start := y*960
+		if source.get_data().slice(row_start,row_start+960).count(255)!=960: return false
+	else:
+		for x in 320:
+			if source.get_pixel(x,y).to_rgba32()!=0xffffffff: return false
 	return source.get_pixel(1,y+1).to_rgba32()==0x5555ffff and source.get_pixel(318,y+1).to_rgba32()==0x5555ffff
 
 func _load_motor_pool(root_path: String) -> void:
@@ -201,10 +221,11 @@ func _set_motor_pool(source: Image, presentation: Dictionary) -> bool:
 	var ui = presentation.get("ui_overlay")
 	var palette = presentation.get("palette_rgb")
 	if not overlay is Dictionary or not ui is Dictionary or not palette is Array or palette.size()!=16: return false
-	for i in 16:
-		if not palette[i] is Array or palette[i].size()!=3: return false
-		for c in 3:
-			if palette[i][c]!=MOTOR_PALETTE[i][c]: return false
+	if palette != MOTOR_PALETTE and palette != _motor_json_palette:
+		for i in 16:
+			if not palette[i] is Array or palette[i].size()!=3: return false
+			for c in 3:
+				if palette[i][c]!=MOTOR_PALETTE[i][c]: return false
 	if overlay.get("width")!=320 or overlay.get("height")!=200: return false
 	if ui.get("width")!=320 or ui.get("height")!=200: return false
 	var plates = overlay.get("plates")
@@ -292,7 +313,7 @@ static func _append_run(runs: PackedInt32Array, start: int, end: int) -> void:
 
 static func _upload(current: ImageTexture, image: Image) -> ImageTexture:
 	# Same-size/format images refresh the existing texture resource in place.
-	if current!=null and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format() and not current.has_mipmaps():
+	if current!=null and DisplayServer.get_name()!="headless" and Vector2i(current.get_size())==image.get_size() and current.get_format()==image.get_format() and not current.has_mipmaps():
 		current.update(image)
 		return current
 	return ImageTexture.create_from_image(image)
@@ -398,10 +419,17 @@ func _set_art_frame(source: Image, program: Dictionary, presentation: Dictionary
 	for height in catalog.heights:
 		var h := int(height)
 		if not panel_border(source,h): continue
-		var hasher := HashingContext.new()
-		hasher.start(HashingContext.HASH_SHA256)
-		hasher.update(bytes.slice(0,320*h*3))
-		var hash := hasher.finish().hex_encode()
+		var hash := ""
+		if bytes == _last_office_bytes and h == _last_office_height:
+			hash = _last_office_hash
+		else:
+			var hasher := HashingContext.new()
+			hasher.start(HashingContext.HASH_SHA256)
+			hasher.update(bytes.slice(0,320*h*3))
+			hash = hasher.finish().hex_encode()
+			_last_office_bytes = bytes
+			_last_office_height = h
+			_last_office_hash = hash
 		var matches: Array = catalog.templates.filter(func(t):return t.hashes[str(h)]==hash)
 		if matches.size()!=1: continue
 		var item: Dictionary = matches[0]

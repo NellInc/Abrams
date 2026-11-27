@@ -6,6 +6,7 @@ extends Control
 const SOURCE_AT = Vector2i(37,59) # SIM.EXE:3ee1..3f03, gunner-view crew popup.
 const CATALOG_SHA = "ed932398c3897f2727159457290e76e70c28d424ecb58f57998982b2dd626e5b"
 const SOURCE_SHA = "e769b71bee8a40023e6ffdb3ac0fd5db0a7485148c1d2eb3fd4fe3b1da6ffa42"
+const PortraitArtShader = preload("res://scripts/pc_portrait_art.gdshader")
 const ART = [
 	["commander","commander-v1.png","5f16b256d211dbdbf4dd6a49bf81e8dedd9000444901e691c7081baa77efbbd6"],
 	["gunner","gunner-v2.png","60428eddc7c59fbdde2bc0f13693f1c2e2c7e8f3fc0dc6f70774b4c3d8be8e96"],
@@ -14,6 +15,12 @@ const ART = [
 ]
 var templates: Array[Dictionary] = []
 var active: Dictionary = {}
+const PORTRAIT_BOX := Rect2i(37,59,49,48)
+var _last_box_rgb := PackedByteArray()
+var _last_box_ui := PackedByteArray()
+var _last_template_textures: Array = []
+var _last_active: Dictionary = {}
+var _last_mask: Texture2D
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -21,7 +28,7 @@ func _init() -> void:
 	# usual window sizes; mipmaps give a filtered downscale instead of aliasing.
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	var shader_material := ShaderMaterial.new()
-	shader_material.shader = preload("res://scripts/pc_portrait_art.gdshader")
+	shader_material.shader = PortraitArtShader
 	material = shader_material
 
 func clear() -> void:
@@ -31,6 +38,7 @@ func clear() -> void:
 func load_sources(root_path: String) -> bool:
 	clear()
 	templates.clear()
+	_last_box_rgb.clear();_last_box_ui.clear();_last_template_textures.clear();_last_active.clear();_last_mask=null
 	var source := root_path.path_join("GAME/FACES.BMP")
 	var catalogue := root_path.path_join("local-art/pc-portraits-v1/faces.json")
 	if not FileAccess.file_exists(source) or FileAccess.get_sha256(source)!=SOURCE_SHA: return false
@@ -65,25 +73,52 @@ func load_sources(root_path: String) -> bool:
 func matches(source: Image, ui: Image, item: Dictionary, at: Vector2i) -> bool:
 	var box := Rect2i(at,item.size)
 	if not Rect2i(0,0,320,200).encloses(box): return false
+	var l8_ui := ui.get_format() == Image.FORMAT_L8 and ui.get_size() == Vector2i(320,200)
+	var ui_bytes := ui.get_data() if l8_ui else PackedByteArray()
 	for point in item.points:
 		var p: Vector2i = at+point.at
-		if ui.get_pixelv(p).r!=1.0 or source.get_pixelv(p).to_rgba32()!=point.rgb: return false
+		if (ui_bytes[p.y*320+p.x] != 255 if l8_ui else ui.get_pixelv(p).r!=1.0) or source.get_pixelv(p).to_rgba32()!=point.rgb: return false
 	return true
 
 func set_frame(source: Image, ui: Image, _presentation: Dictionary) -> void:
 	clear()
 	if templates.size()!=4 or source==null or ui==null: return
 	if source.get_size()!=Vector2i(320,200) or ui.get_size()!=Vector2i(320,200) or ui.get_format()!=Image.FORMAT_L8: return
+	var ui_crop := ui.get_region(PORTRAIT_BOX).get_data()
+	# Fast path: when no UI pixels exist in the portrait slot at all, no portrait can match.
+	if ui_crop.count(255)==0:
+		_last_box_ui = ui_crop
+		_last_box_rgb.clear()
+		_last_active.clear()
+		_last_mask = null
+		return
+	var template_textures := [templates[0].get("texture"),templates[1].get("texture"),templates[2].get("texture"),templates[3].get("texture")]
+	var rgb_crop := source.get_region(PORTRAIT_BOX).get_data() if source.get_format()==Image.FORMAT_RGB8 else PackedByteArray()
+	if not rgb_crop.is_empty() and rgb_crop==_last_box_rgb and ui_crop==_last_box_ui and template_textures==_last_template_textures:
+		if not _last_active.is_empty():
+			active = _last_active.duplicate()
+			material.set_shader_parameter("original_coverage",_last_mask)
+			queue_redraw()
+		return
+	var found_mask: Texture2D = null
 	for item in templates:
 		# All four identities are tested at the sole source-defined anchor. No
 		# queued speaker, text hint, previous frame or timeout can grant visibility.
 		if not matches(source,ui,item,SOURCE_AT): continue
 		if not active.is_empty():
+			_last_box_rgb.clear();_last_active.clear();_last_mask=null
 			clear() # Ambiguous source identities retain original art.
 			return
 		active = {"id":item.id,"name":item.name,"at":SOURCE_AT,"size":item.size,
 			"opaque_pixels":item.points.size(),"texture":item.texture}
+		found_mask = item.mask
 		material.set_shader_parameter("original_coverage",item.mask)
+	if not rgb_crop.is_empty():
+		_last_box_rgb = rgb_crop
+		_last_box_ui = ui_crop
+		_last_template_textures = template_textures
+		_last_active = active.duplicate()
+		_last_mask = found_mask
 	queue_redraw()
 
 func _draw() -> void:

@@ -1,12 +1,15 @@
 extends Control
 ## Native-pixel source composition with verified Tactical station reflow.
 const TandemFrame = preload("res://scripts/pc_tandem_frame.gd")
+const GunnerTrim = preload("res://scripts/pc_gunner_trim.gd")
+const TacticalChrome = preload("res://scripts/pc_tactical_chrome.gd")
+const TacticalHudShader = preload("res://scripts/pc_tactical_hud.gdshader")
 var world_viewport := SubViewport.new()
 var tandem_viewport := SubViewport.new()
 var tandem_frame := TandemFrame.new()
 var display := TextureRect.new()
 var background := ColorRect.new()
-var tactical_chrome := preload("res://scripts/pc_tactical_chrome.gd").new()
+var tactical_chrome := TacticalChrome.new()
 var hud_style := "restored"
 var tactical_material := ShaderMaterial.new()
 var _hud_mask_bytes := ""
@@ -15,6 +18,7 @@ var _panel_mask_texture: Texture2D
 # Independent CPU snapshot paired with the uploaded mask, never authority.
 var _panel_mask_image: Image
 var _panel_mask_bytes := PackedByteArray()
+var _panel_mask_station := 0
 var _hud_mask_data := PackedByteArray()
 var _wide_station := 0
 var _station := 0
@@ -83,7 +87,7 @@ static func parse_extent(value: String) -> Vector2i:
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tactical_material.shader=preload("res://scripts/pc_tactical_hud.gdshader")
+	tactical_material.shader=TacticalHudShader
 	background.color = Color.BLACK
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
@@ -125,8 +129,14 @@ func set_hud_style(style: String) -> bool:
 		_hud_mask_texture=null
 		_hud_mask_data=PackedByteArray()
 		_panel_mask_bytes=PackedByteArray()
+		_panel_mask_station=0
 		_panel_mask_texture=null
 		_panel_mask_image=null
+		_wide_panel_mask_bytes.clear()
+		_wide_mask_safe=false
+		_wide_mask_station=0
+		_source_mask_key.clear()
+		_source_mask_bytes.clear()
 	_set_wide_station(0)
 	_update_hud_material()
 	return true
@@ -139,14 +149,19 @@ func set_hud_frame(presentation: Dictionary, program: Dictionary, verified_panel
 		verified_panel_mask=_source_cockpit_mask(presentation)
 	if verified_panel_mask==null:
 		_panel_mask_bytes.clear()
+		_panel_mask_station=0
 		_panel_mask_texture=null
 		_panel_mask_image=null
 	else:
 		var panel_bytes:=verified_panel_mask.get_data()
 		if panel_bytes!=_panel_mask_bytes or _panel_mask_texture==null:
-			_panel_mask_texture=ImageTexture.create_from_image(verified_panel_mask)
+			if _panel_mask_texture is ImageTexture and DisplayServer.get_name()!="headless" and Vector2i(_panel_mask_texture.get_size())==verified_panel_mask.get_size() and _panel_mask_texture.get_format()==verified_panel_mask.get_format():
+				(_panel_mask_texture as ImageTexture).update(verified_panel_mask)
+			else:
+				_panel_mask_texture=ImageTexture.create_from_image(verified_panel_mask)
 			_panel_mask_image=verified_panel_mask.duplicate() if verified_panel_mask.get_size()==Vector2i(320,200) and verified_panel_mask.get_format()==Image.FORMAT_L8 and not verified_panel_mask.has_mipmaps() else null
 			_panel_mask_bytes=panel_bytes
+			_panel_mask_station=_detect_station(panel_bytes)
 	if _fallback_pair_verified:
 		var same_frame_bytes := _source_cockpit_mask_bytes(presentation)
 		_fallback_pair_verified = not same_frame_bytes.is_empty() and same_frame_bytes == _panel_mask_bytes
@@ -218,9 +233,14 @@ func _source_cockpit_mask_bytes(presentation: Dictionary) -> PackedByteArray:
 		return _source_mask_bytes
 	_source_mask_key=key.duplicate(true)
 	_source_mask_bytes=PackedByteArray()
-	var mask:=Image.new()
-	if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK or mask.get_size()!=Vector2i(320,200) or mask.get_format()!=Image.FORMAT_L8: return PackedByteArray()
-	var bits:=mask.get_data()
+	var cached_plate: Dictionary = tandem_frame._mask_cache.get("plate", {})
+	var bits: PackedByteArray
+	if cached_plate.get("encoded") == overlay.mask_png and cached_plate.get("bytes") != null and cached_plate.get("format") == Image.FORMAT_L8:
+		bits = cached_plate.bytes
+	else:
+		var mask:=Image.new()
+		if mask.load_png_from_buffer(Marshalls.base64_to_raw(overlay.mask_png))!=OK or mask.get_size()!=Vector2i(320,200) or mask.get_format()!=Image.FORMAT_L8: return PackedByteArray()
+		bits=mask.get_data()
 	var recognised:=bits.count(0)
 	for id in TandemFrame.COCKPIT_SOURCES:
 		var count:=bits.count(id)
@@ -237,13 +257,19 @@ func _source_cockpit_mask(presentation: Dictionary) -> Image:
 	var bits := _source_cockpit_mask_bytes(presentation)
 	return Image.create_from_data(320,200,false,Image.FORMAT_L8,bits) if not bits.is_empty() else null
 
+static func _detect_station(panel_bytes: PackedByteArray) -> int:
+	if panel_bytes.size()!=64000: return 0
+	# STATUS can cover a surviving Commander plate during its original dissolve.
+	if panel_bytes.count(5)>0: return 5
+	for id in range(1,5):
+		if panel_bytes.count(id)>0: return id
+	return 0
+
 func _source_station() -> int:
 	if _panel_mask_bytes.size()!=64000: return 0
-	# STATUS can cover a surviving Commander plate during its original dissolve.
-	if _panel_mask_bytes.count(5)>0: return 5
-	for id in range(1,5):
-		if _panel_mask_bytes.count(id)>0: return id
-	return 0
+	if _panel_mask_station==0:
+		_panel_mask_station=_detect_station(_panel_mask_bytes)
+	return _panel_mask_station
 
 func _safe_wide_station(bounds: Vector4, panel_mask: Image) -> int:
 	if not TACTICAL_LAYOUTS.has(_station) or not _tactical_graphics(): return 0
@@ -283,9 +309,10 @@ static func source_gunner_corners(source: Image, ui: PackedByteArray, tags: Pack
 	# The same finite source shape as the existing optical trim. An unknown
 	# write at any corner rejects the entire finish, including that new ink.
 	if source==null or source.get_size()!=Vector2i(320,200) or ui.size()!=64000 or tags.size()!=64000: return false
-	for p in preload("res://scripts/pc_gunner_trim.gd").corner_pixels():
+	var grey_rgba := Color8(85,85,85).to_rgba32()
+	for p in GunnerTrim.corner_pixels():
 		var index: int=p.y*320+p.x
-		if ui[index]!=255 or tags[index]!=0 or source.get_pixelv(p).to_rgba32()!=Color8(85,85,85).to_rgba32(): return false
+		if ui[index]!=255 or tags[index]!=0 or source.get_pixelv(p).to_rgba32()!=grey_rgba: return false
 	return true
 
 func _update_hud_material() -> void:
@@ -329,14 +356,19 @@ func _update_hud_material() -> void:
 func _tactical_graphics() -> bool:
 	return tandem_frame.graphics_mode in ["upscaled","modern","tactical"]
 
+static var _original_tactical_layouts: Dictionary = {}
+
 static func original_tactical_layout(station: int) -> Dictionary:
 	# Destinations are the same exclusive source endpoints. This never grants
 	# permission to reflow, crop or discard any part of the original frame.
+	if _original_tactical_layouts.has(station):
+		return _original_tactical_layouts[station]
 	var layout: Dictionary=TACTICAL_LAYOUTS[station].duplicate(true)
 	var destinations: Array=[]
 	for region: Vector4 in layout.source: destinations.append(region/Vector4(320,200,320,200))
 	layout.destination=destinations
 	layout.in_place=true
+	_original_tactical_layouts[station]=layout
 	return layout
 
 func set_graphics_quality(mode: String, samples: int, anisotropy: int) -> bool:

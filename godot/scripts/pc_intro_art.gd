@@ -23,6 +23,8 @@ var outline_text_enabled := true
 # PC-pose-only composition (pixel oracles, comparison tools).
 var source_frame := -1
 var shot_start := -1
+var _last_bytes := PackedByteArray()
+var _last_fingerprint := ""
 # PC frames from the first flash at which each original pose appears.
 const PC_POSE_AT := [0,1,4,7]
 # The same four poses at the Genesis cadence (its frames 238/243/248/254 at 60 Hz),
@@ -77,6 +79,7 @@ static func shot_state(f: int) -> Dictionary:
 
 func load_sources(root_path: String) -> bool:
 	clear(); catalog.clear(); textures.clear(); frames.clear(); overlays.clear(); dedication.clear()
+	_last_bytes.clear(); _last_fingerprint = ""
 	var path := root_path.path_join("local-art/pc-intro-v2/intro.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA: return false
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -117,9 +120,13 @@ func set_frame(source: Image, program: Dictionary) -> bool:
 	clear()
 	if catalog.is_empty() or program.get("name")!="START": return false
 	if source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8: return false
-	var hash := HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256);hash.update(source.get_data())
-	var fingerprint := hash.finish().hex_encode()
+	var bytes := source.get_data()
+	if bytes != _last_bytes:
+		var hash := HashingContext.new()
+		hash.start(HashingContext.HASH_SHA256);hash.update(bytes)
+		_last_bytes = bytes
+		_last_fingerprint = hash.finish().hex_encode()
+	var fingerprint := _last_fingerprint
 	if not frames.has(fingerprint): return false
 	active=frames[fingerprint].duplicate(true)
 	active.dedication=active.name=="credit-8"

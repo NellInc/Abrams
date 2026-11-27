@@ -2,8 +2,12 @@ extends TextureRect
 ## Extracted native donors only. No high-resolution art or world rerendering.
 const CATALOG_SHA := "c35a2628fa44e91ea716a0522290efe3a3307a010ca96eb189ae7078bd006cc1"
 const EXPECTED_PIXELS_SHA:="154d489c50054d7c96ea3ce6b7cead02179a4aac652d0780da9c72a6886012c9"
-var splash_aftermath_art=preload("res://scripts/pc_splash_aftermath_art.gd").new()
-var newspaper_art=preload("res://scripts/pc_newspaper_art.gd").new()
+const SplashAftermathArt = preload("res://scripts/pc_splash_aftermath_art.gd")
+const NewspaperArt = preload("res://scripts/pc_newspaper_art.gd")
+const NativeGraphicsShader = preload("res://scripts/pc_native_graphics.gdshader")
+const Typography = preload("res://scripts/pc_typography.gd")
+var splash_aftermath_art=SplashAftermathArt.new()
+var newspaper_art=NewspaperArt.new()
 var catalog: Dictionary = {}
 var catalogs: Dictionary = {}
 var images: Dictionary = {}
@@ -29,13 +33,14 @@ var mask_decode_count := 0
 const STATUS_RECT := Rect2i(123,37,182,63)
 var status_tags_pristine := false
 var expected_status_bytes := PackedByteArray()
+var _composed_texture: ImageTexture
 
 func _init() -> void:
 	expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var effect:=ShaderMaterial.new()
-	effect.shader=preload("res://scripts/pc_native_graphics.gdshader")
+	effect.shader=NativeGraphicsShader
 	material=effect
 	add_child(splash_aftermath_art)
 	newspaper_art.high_resolution=false
@@ -77,7 +82,7 @@ func load_sources(root: String) -> bool:
 		catalogs[name]=definition
 	for name in ["6X6.FNT","8X8.FNT"]:
 		path=root.path_join("GAME/"+name)
-		if FileAccess.get_sha256(path)!=preload("res://scripts/pc_typography.gd").FONT_SOURCES[name]:return false
+		if FileAccess.get_sha256(path)!=Typography.FONT_SOURCES[name]:return false
 		fonts[name]=FileAccess.get_file_as_bytes(path)
 	var faces:Dictionary=catalogs.portraits
 	path=root.path_join("GAME/"+faces.source)
@@ -96,6 +101,8 @@ func load_sources(root: String) -> bool:
 			points.append([x,y,Color8(rgb[0],rgb[1],rgb[2])])
 		var native:Image=images["crew-"+["commander","gunner","driver","loader"][id]].duplicate()
 		native.resize(width,int(face.height),Image.INTERPOLATE_NEAREST)
+		for point in points:
+			point.append(native.get_pixel(point[0],point[1]))
 		portrait_templates.append({"points":points,"donor":native,"name":["commander","gunner","driver","loader"][id]})
 	# images.expected is RGB8 (pinned above), matching the RGB8 source frame.
 	expected_status_bytes=images.expected.get_region(Rect2i(STATUS_RECT.position+Vector2i(0,800),STATUS_RECT.size)).get_data()
@@ -167,10 +174,7 @@ func _frontend(source: Image, program: String) -> Image:
 		for height in catalogs.office.heights:
 			var h:=int(height)
 			if h<200:
-				var border:=true
-				for x in 320:
-					if source.get_pixel(x,h)!=Color.WHITE:border=false;break
-				if not border:continue
+				if bytes.slice(h*960,(h+1)*960).count(255)!=960:continue
 			var sha:=fingerprint(bytes.slice(0,320*h*3))
 			for e in catalogs.office.templates:
 				if e.hashes[str(h)]!=sha or int(e.pose)>1:continue
@@ -195,7 +199,11 @@ func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> 
 	if aftermath!=source:
 		composed=aftermath.duplicate()
 		active.donors.append("aftermath:"+splash_aftermath_art.match_frame(source,program).name)
-	texture=ImageTexture.create_from_image(composed)
+	if _composed_texture==null or DisplayServer.get_name()=="headless" or Vector2i(_composed_texture.get_size())!=composed.get_size() or _composed_texture.get_format()!=composed.get_format():
+		_composed_texture=ImageTexture.create_from_image(composed)
+	else:
+		_composed_texture.update(composed)
+	texture=_composed_texture
 	if newspaper_art.set_frame(source,program): active.donors.append("newspaper:"+newspaper_art.active.name)
 	var plate=presentation.get("plate_overlay",{})
 	var ui=presentation.get("ui_overlay",{})
@@ -212,8 +220,12 @@ func set_frame(source: Image, presentation: Dictionary, program: Dictionary) -> 
 				var x:int=37+point[0];var y:int=59+point[1]
 				if bits[y*320+x]!=255 or source.get_pixel(x,y)!=point[2]:matches=false;break
 			if not matches:continue
-			for point in item.points:composed.set_pixel(37+point[0],59+point[1],item.donor.get_pixel(point[0],point[1]))
-			(texture as ImageTexture).update(composed)
+			for point in item.points:composed.set_pixel(37+point[0],59+point[1],point[3])
+			if DisplayServer.get_name()=="headless":
+				_composed_texture=ImageTexture.create_from_image(composed)
+				texture=_composed_texture
+			else:
+				(texture as ImageTexture).update(composed)
 			active.donors.append("portrait:"+item.name)
 			break
 	var enabled:=0
@@ -243,12 +255,15 @@ func _validate_masks(plate_png: String, ui_png: String) -> void:
 	var tagged:=0
 	for id in 9:tagged+=values.count(id)
 	if tagged!=values.size():return
-	for i in values.size():
-		if values[i]!=0 and bits[i]!=255:return
+	for y in 200:
+		var lo:=y*320
+		var row:=values.slice(lo,lo+320)
+		if row.count(0)==320:continue
+		var owned:=bits.slice(lo,lo+320)
+		if owned.count(255)==320:continue
+		for x in 320:
+			if row[x]!=0 and owned[x]!=255:return
 	mask_values=values;mask_bits=bits
-	status_tags_pristine=true
-	for y in range(STATUS_RECT.position.y,STATUS_RECT.end.y):
-		var lo:=y*320+STATUS_RECT.position.x
-		if values.slice(lo,lo+STATUS_RECT.size.x).count(5)!=STATUS_RECT.size.x:status_tags_pristine=false;break
+	status_tags_pristine=tags.get_region(STATUS_RECT).get_data().count(5)==STATUS_RECT.size.x*STATUS_RECT.size.y
 	mask_textures=[ImageTexture.create_from_image(tags),ImageTexture.create_from_image(mask)]
 	mask_valid=true

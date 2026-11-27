@@ -45,6 +45,14 @@ func check_settings_slider()->void:
 	check(slider.value==70 and title.text.ends_with(": 70%"),"open slider follows an outside mix change")
 	check(choice.selected==Menu.HUD_STYLES.find("restored"),"open choice follows an outside setting change")
 	cover.settings_page=null;page.free();holder.free()
+	var cancelled:=[0]
+	cover.route_cancel_requested.connect(func():cancelled[0]+=1)
+	var route_box:=Control.new();var cancel_btn:=Button.new();cancel_btn.visible=true
+	cover.route_panel=route_box;cover.route_cancel=cancel_btn
+	var esc:=InputEventKey.new();esc.keycode=KEY_ESCAPE;esc.pressed=true
+	cover._unhandled_key_input(esc)
+	check(cancelled[0]==1,"Escape cancels an active route loading screen")
+	cover.route_panel=null;cover.route_cancel=null;route_box.free();cancel_btn.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	root.remove_child(slider)
 	cover.free();title.free();slider.free()
@@ -65,6 +73,15 @@ func check_artwork_viewer()->void:
 	var review=scene.instantiate();review.art_root=ProjectSettings.globalize_path(empty)
 	root.add_child(review)
 	check(review.can_compare and str(review.errors.values()[0]).begins_with("Local artwork missing:"),"standalone review tool keeps its diagnostic")
+	var pgdn:=InputEventKey.new();pgdn.keycode=KEY_PAGEDOWN;pgdn.pressed=true
+	review._unhandled_key_input(pgdn)
+	check(review.page==1,"PageDown advances the artwork viewer")
+	var end_key:=InputEventKey.new();end_key.keycode=KEY_END;end_key.pressed=true
+	review._unhandled_key_input(end_key)
+	check(review.page==review.ART.size()-1,"End jumps to the last artwork page")
+	var home_key:=InputEventKey.new();home_key.keycode=KEY_HOME;home_key.pressed=true
+	review._unhandled_key_input(home_key)
+	check(review.page==0,"Home returns to the first artwork page")
 	root.remove_child(review);review.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(empty))
 	var directory:=ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()

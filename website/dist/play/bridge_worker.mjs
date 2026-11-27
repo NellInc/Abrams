@@ -55,6 +55,12 @@ let storageUnavailable = '';
 let buildId;
 let database;
 
+function slotMeta(row) {
+  if (!row) return undefined;
+  return {buildId: row.buildId, savedAt: row.savedAt,
+    sample: row.sample ? {program: row.sample.program} : undefined, _metaOnly: true};
+}
+
 function slotRows(recovery) {
   return Array.from({length: 6}, (_, slot) => {
     const saved = slot === 0 && recovery ? recovery : storedSlots.get(slot);
@@ -155,8 +161,10 @@ async function saveSlotRow(slot, saved) {
       const current = store.get(slot);
       const previous = store.get(previousKey(slot));
       previous.onsuccess = () => {
-        const overwritten = current.result ?? storedSlots.get(slot);
-        kept = previous.result ?? previousSlots.get(slot);
+        const storedFallback = storedSlots.get(slot);
+        const previousFallback = previousSlots.get(slot);
+        const overwritten = current.result ?? (storedFallback?._metaOnly ? undefined : storedFallback);
+        kept = previous.result ?? (previousFallback?._metaOnly ? undefined : previousFallback);
         if (overwritten && (overwritten.buildId === buildId || kept?.buildId !== buildId)) {
           store.put(overwritten, previousKey(slot));
           kept = overwritten;
@@ -178,9 +186,10 @@ async function saveSlotRow(slot, saved) {
 // read failure falls back to this tab's copy; a row from another build is not
 // loadable here.
 async function currentRow(key, cached) {
+  const fallback = cached?._metaOnly ? undefined : cached;
   let stored;
-  try { stored = await storedSlot('get', key); } catch { return cached; }
-  if (stored === undefined) return cached;
+  try { stored = await storedSlot('get', key); } catch { return fallback; }
+  if (stored === undefined) return fallback;
   return stored.buildId === buildId ? stored : null;
 }
 
@@ -267,6 +276,16 @@ function rgbFrame(heap, pointer, width, height, pitch) {
   if (!pointer || width !== 320 || height !== 200 || pitch !== 1280)
     throw new Error('The original PC framebuffer is unavailable');
   const rgb = new Uint8Array(width * height * 3);
+  if (typeof Uint32Array === 'function' && ((heap.byteOffset + pointer) & 3) === 0) {
+    const words = new Uint32Array(heap.buffer, heap.byteOffset + pointer, width * height);
+    for (let i = 0, target = 0; i < words.length; i++, target += 3) {
+      const px = words[i];
+      rgb[target] = (px >>> 16) & 255;
+      rgb[target + 1] = (px >>> 8) & 255;
+      rgb[target + 2] = px & 255;
+    }
+    return rgb;
+  }
   for (let y = 0; y < height; y++) {
     let source = pointer + y * pitch;
     let target = y * width * 3;
@@ -359,13 +378,15 @@ async function boot(message) {
   } else try {
     for (let slot = 0; slot <= 5; slot++) {
       const saved = await storedSlot('get', slot);
-      if (saved) storedSlots.set(slot, saved);
+      // Retain only lightweight metadata at boot instead of pinning all 11
+      // multi-MB IndexedDB checkpoints in JS RAM; loads read full blobs on demand.
+      if (saved) storedSlots.set(slot, slotMeta(saved));
       if (saved?.buildId === buildId) {
-        if (slot === 0) undo = saved;
-        else slots.set(slot, saved);
+        if (slot === 0) undo = slotMeta(saved);
+        else slots.set(slot, slotMeta(saved));
       }
       const previous = slot ? await storedSlot('get', previousKey(slot)) : undefined;
-      if (previous?.buildId === buildId) previousSlots.set(slot, previous);
+      if (previous?.buildId === buildId) previousSlots.set(slot, slotMeta(previous));
     }
   } catch (error) {
     // Gameplay can start without durable storage; checkpoint actions still
@@ -455,7 +476,7 @@ async function state(message) {
   // load_previous never rewrites the slot; like any load it captures undo.
   const previousLoad = message.op === 'load_previous';
   const saved = previousLoad ? await currentRow(previousKey(message.slot), previousSlots.get(message.slot))
-    : message.slot === 0 ? undo : await currentRow(message.slot, slots.get(message.slot));
+    : message.slot === 0 ? (undo?._metaOnly ? await currentRow(0, undefined) : undo) : await currentRow(message.slot, slots.get(message.slot));
   if (saved === null) {
     // The menu stops offering a row this version can never load.
     if (previousLoad) previousSlots.delete(message.slot); else slots.delete(message.slot);

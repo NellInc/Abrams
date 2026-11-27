@@ -48,7 +48,7 @@ const descriptions = {
   ega_upscaled: 'EGA Upscaled: crisp original artwork, original palette and skin colours.',
   genesis: 'Original-resolution Genesis artwork. Unavailable in the Web edition: its captured Genesis screens are not published.',
   upscaled: 'Genesis Upscaled: generated high-resolution remaster artwork and lettering.',
-  modern: 'Modernized 3D: the existing remaster presentation.',
+  modern: 'Modernized 3D: clean low-poly vehicles, buildings and trees with the restored HUD.',
   tactical: 'Tactical 3D: textured terrain, grounded vegetation and source-driven effects.',
 };
 // The render bitmap is exactly the canvas's CSS box: never larger (a squashed
@@ -68,7 +68,7 @@ new ResizeObserver(syncCanvasSize).observe(canvas);
 // HUD's bottom rows and status line are never pushed below the fold.
 const fitCanvas = () => {
   const container = canvas.parentElement;
-  if (canvas.hidden || !container || typeof window.innerHeight !== 'number') return;
+  if (canvas.hidden || !container || !container.clientWidth || typeof window.innerHeight !== 'number') return;
   const aspect = canvas.classList.contains?.('tactical') ? 16 / 9 : 4 / 3;
   const top = canvas.getBoundingClientRect().top + (window.scrollY || 0);
   const height = Math.max(120, window.innerHeight - top);
@@ -322,6 +322,14 @@ for (const [channel, select] of Object.entries(audioControls))
   select.addEventListener('change', () => choose({op: 'audio', channel, percent: Number(select.value)}));
 resetAudioButton.addEventListener('click', () => command({op: 'reset_audio'}));
 resetQualityButton.addEventListener('click', () => command({op: 'reset_quality'}));
+extended?.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && extended.open) {
+    event.preventDefault();
+    event.stopPropagation();
+    extended.open = false;
+    canvas.focus();
+  }
+});
 saveButton.addEventListener('click', () => {
   const slot = Number(saveSlot.value);
   if (command({op: 'save_state', slot})) {
@@ -399,13 +407,17 @@ function resetPlayer() {
   lastControls = undefined;
   extended.open = false;
   settingsStatus.textContent = '';
+  controlStatus.textContent = '';
+  document.querySelector('#graphics-description').textContent = '';
   storageWarning = '';
   document.querySelector('#web-storage-status').textContent = '';
   toolbar.hidden = true;
   canvas.hidden = true;
+  canvas.classList.remove('tactical');
   canvas.style && (canvas.style.width = canvas.style.height = '');
   player.hidden = true;
   document.body.classList.remove('playing');
+  if (document.fullscreenElement) document.exitFullscreen?.().catch?.(() => {});
   input.disabled = genesisInput.disabled = !isolationReady;
   selectionChanged();
 }

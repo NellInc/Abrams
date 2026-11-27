@@ -6,14 +6,17 @@ const TABLE_SHA = "b7cba01774ea26a79711b547634c0b0c46abebe9f9b214f110b37db594316
 const OFFSETS = [Vector4i(-4,20,4,20),Vector4i(0,20,0,3),Vector4i(25,3,25,-4),Vector4i(25,0,4,0),
 	Vector4i(-4,-20,4,-20),Vector4i(0,-20,0,-3),Vector4i(-25,3,-25,-4),Vector4i(-25,0,-4,0)]
 const BOX = Rect2i(134,13,51,97)
+const ReticleArtShader = preload("res://scripts/pc_reticle_art.gdshader")
 var packet: Dictionary = {}
 var ink: Array[Vector2i] = []
 var rectangles: Array[Rect2i] = []
+var _last_crop_bytes := PackedByteArray()
+var _last_crop_sha := ""
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var shader_material := ShaderMaterial.new()
-	shader_material.shader = preload("res://scripts/pc_reticle_art.gdshader")
+	shader_material.shader = ReticleArtShader
 	material = shader_material
 	clear()
 
@@ -76,18 +79,26 @@ func set_frame(source: Image, ui: Image, presentation: Dictionary) -> bool:
 		if not integer(clip[i]) or int(clip[i])!=[32,13,287,109][i]: return false
 	var crop := source.get_region(BOX)
 	crop.convert(Image.FORMAT_RGB8)
-	var hash := HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256)
-	hash.update(crop.get_data())
-	if hash.finish().hex_encode()!=item.get("pixel_sha256"): return false
+	var crop_bytes := crop.get_data()
+	if crop_bytes != _last_crop_bytes:
+		var hash := HashingContext.new()
+		hash.start(HashingContext.HASH_SHA256)
+		hash.update(crop_bytes)
+		_last_crop_bytes = crop_bytes
+		_last_crop_sha = hash.finish().hex_encode()
+	if _last_crop_sha!=item.get("pixel_sha256"): return false
 	var shape := geometry(int(item.center_y))
 	if shape.is_empty(): return false
 	var points := {}
 	var color := Color.BLACK if item.color==0 else Color.WHITE
+	var color_rgba := color.to_rgba32()
+	var l8_ui := ui.get_format() == Image.FORMAT_L8
+	var ui_bytes := ui.get_data() if l8_ui else PackedByteArray()
 	for rect in shape:
 		for y in range(rect.position.y,rect.end.y):
+			var row_offset := y * 320
 			for x in range(rect.position.x,rect.end.x):
-				if ui.get_pixel(x,y).r!=1.0 or source.get_pixel(x,y).to_rgba32()!=color.to_rgba32(): return false
+				if (ui_bytes[row_offset + x] != 255 if l8_ui else ui.get_pixel(x,y).r!=1.0) or source.get_pixel(x,y).to_rgba32()!=color_rgba: return false
 				points[Vector2i(x,y)]=true
 	ink.assign(points.keys())
 	rectangles=shape

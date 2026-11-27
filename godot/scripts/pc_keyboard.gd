@@ -56,6 +56,8 @@ static func held() -> Array:
 	for key in SIDED:
 		if key not in logical and not (modifier_sides.get(key,{}) as Dictionary).is_empty(): logical.append(key)
 	var active := resolve_pressed(logical,physical,genuine)
+	if active.is_empty() or focus_quarantine.is_empty():
+		return encode(active)
 	return encode(active.filter(func(key): return key not in focus_quarantine.values() or physical_presses.values().any(func(press): return press.key==key)))
 
 static var _candidates_cache: Array = []
@@ -120,6 +122,8 @@ static func clear_aliases() -> void:
 	physical_aliases.clear()
 
 static func resolve_pressed(logical: Array, physical_keypad: Array, genuine_aliases: Array) -> Array:
+	if physical_keypad.is_empty() and genuine_aliases.is_empty():
+		return logical.duplicate()
 	var active: Array = logical.duplicate()
 	var navigation := {KEY_KP_8:KEY_UP,KEY_KP_2:KEY_DOWN,KEY_KP_4:KEY_LEFT,KEY_KP_6:KEY_RIGHT}
 	for key in physical_keypad:
@@ -133,6 +137,8 @@ static func resolve_pressed(logical: Array, physical_keypad: Array, genuine_alia
 	# the genuine non-keypad key is still held. Its physical event survives.
 	for key in genuine_aliases:
 		if key not in active: active.append(key)
+	if active.is_empty():
+		return active
 	# Working if keypad identity survives NumLock and either release order,
 	# with the original protocol ordering, modifiers and 16-key cap retained.
 	return candidates().filter(func(key): return key in active)

@@ -41,6 +41,9 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
     firstReject(new Error(message));
     viewerReject(new Error(message));
     worker.terminate();
+    worker.onmessage = null;
+    worker.onerror = null;
+    worker.onmessageerror = null;
     onStatus?.({type: 'error', message});
   }
   worker.onerror = event => {
@@ -139,6 +142,7 @@ export function createBridgeHost(zip, catalog, buildId, onStatus, onControls) {
       if (!failed) worker.terminate();
       worker.onmessage = null;
       worker.onerror = null;
+      worker.onmessageerror = null;
       ready = false;
       pending = null;
       takenFrame = null;

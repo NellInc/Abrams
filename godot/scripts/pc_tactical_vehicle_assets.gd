@@ -272,7 +272,8 @@ func compile_gpu_groups(data:Dictionary) -> void:
 				candidates.append({"primitive":int(primitive),"area":area})
 				for triangle:Dictionary in face.triangles:
 					for i in 3:
-						positions.append(vec(triangle.vertices[i]));uv.append(Vector2(triangle.uvs[i][0],triangle.uvs[i][1]));heights.append(Vector2(0,grounding_height(shape,vec(triangle.vertices[i]))))
+						var pos:=vec(triangle.vertices[i])
+						positions.append(pos);uv.append(Vector2(triangle.uvs[i][0],triangle.uvs[i][1]));heights.append(Vector2(0,grounding_height(shape,pos)))
 			if positions.is_empty():continue
 			candidates.sort_custom(func(a,b):return a.area>b.area if a.area!=b.area else a.primitive<b.primitive)
 			var arrays:=[];arrays.resize(Mesh.ARRAY_MAX)
@@ -383,9 +384,13 @@ func compile_gpu_poses(data:Dictionary) -> void:
 		for triangle:Dictionary in model.triangles:
 			for i in 3:
 				positions.append(vec(triangle.vertices[i]));uvs.append(Vector2(triangle.uvs[i][0],triangle.uvs[i][1]));heights.append(Vector2(0,1))
+		var pose:Dictionary=model.presentation_pose
+		var head_basis:=Basis(vec(pose.head_basis[0]),vec(pose.head_basis[1]),vec(pose.head_basis[2]))
+		var head_origin:=vec(pose.head_origin)
+		var head_scale:=Vector3(18,18,15)
 		for triangle:Dictionary in model.command_head.triangles:
 			for i in 3:
-				positions.append(CrewPose.head_point(model.presentation_pose,triangle.vertices[i]));uvs.append(Vector2(triangle.uvs[i][0],triangle.uvs[i][1]));heights.append(Vector2(0,1))
+				positions.append(head_basis*(vec(triangle.vertices[i])*head_scale)+head_origin);uvs.append(Vector2(triangle.uvs[i][0],triangle.uvs[i][1]));heights.append(Vector2(0,1))
 		var arrays:=[];arrays.resize(Mesh.ARRAY_MAX)
 		arrays[Mesh.ARRAY_VERTEX]=positions;arrays[Mesh.ARRAY_TEX_UV]=uvs;arrays[Mesh.ARRAY_TEX_UV2]=heights
 		var mesh:=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)

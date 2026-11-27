@@ -67,6 +67,11 @@ func _run() -> void:
 	reader.search.text="long"
 	reader.search.text_changed.emit("long")
 	check(reader.scroll.scroll_vertical==0,"Tactical query resets scroll")
+	reader.search.text="abrams"
+	reader._render()
+	check(reader.other_matches_bar.visible and reader.other_matches_bar.get_child_count()==2,"cross-section jump bar lists matching Vehicles section")
+	reader.show_section("Vehicles",true)
+	check(reader.section=="Vehicles" and reader.search.text=="abrams" and reader.result_count.text=="1 matching entry","cross-section jump preserves active search query")
 	reader.show_section("Vehicles")
 	check(reader.search.text.is_empty() and reader.search.has_focus() and reader.scroll.scroll_vertical==0,"section clears query, focuses search and resets scroll")
 	reader.set_hud_style("restored")

@@ -20,21 +20,36 @@ static func near_clip(points: Array, near_y: float) -> Array:
 	return result
 
 static func project(p: Array, camera: Dictionary) -> Vector2:
-	return Vector2(float(camera.center[0]) + float(p[0]) * float(camera.focal_pixels) / float(p[1]),
-		float(camera.center[1]) - float(p[2]) * float(camera.focal_pixels) / float(p[1]))
+	var center: Array = camera.center
+	var focal := float(camera.focal_pixels)
+	var depth := float(p[1])
+	return Vector2(float(center[0]) + float(p[0]) * focal / depth,
+		float(center[1]) - float(p[2]) * focal / depth)
 
 static func unproject(p: Vector2, depth: float, camera: Dictionary) -> Array:
-	return [(p.x - float(camera.center[0])) * depth / float(camera.focal_pixels), depth,
-		(float(camera.center[1]) - p.y) * depth / float(camera.focal_pixels)]
+	var center: Array = camera.center
+	var focal := float(camera.focal_pixels)
+	return [(p.x - float(center[0])) * depth / focal, depth,
+		(float(center[1]) - p.y) * depth / focal]
 
 static func triangle_vertices(points: Array, camera: Dictionary) -> Array:
 	var clipped := near_clip(points, float(camera.near_raw))
-	if clipped.size() < 3: return []
+	var count := clipped.size()
+	if count < 3: return []
+	var center: Array = camera.center
+	var cx := float(center[0])
+	var cy := float(center[1])
+	var focal := float(camera.focal_pixels)
 	var screen := PackedVector2Array()
-	for p: Array in clipped: screen.append(project(p, camera))
+	screen.resize(count)
+	for i in count:
+		var p: Array = clipped[i]
+		var depth := float(p[1])
+		screen[i] = Vector2(cx + float(p[0]) * focal / depth, cy - float(p[2]) * focal / depth)
 	var indices := Geometry2D.triangulate_polygon(screen)
 	var output: Array = []
-	for index in indices: output.append(clipped[index])
+	output.resize(indices.size())
+	for i in indices.size(): output[i] = clipped[indices[i]]
 	return output
 
 static func line_vertices(a: Array, b: Array, camera: Dictionary) -> Array:
@@ -91,26 +106,38 @@ static func sprite_runs(sprite: Dictionary, camera: Dictionary) -> Array:
 	# Original bitmap pixels, not a guessed billboard scale. Transparent pixels
 	# emit no triangles, preserving earlier original surfaces in painter order.
 	var result: Array = []
-	var left: int = maxi(int(sprite.clip[0]), int(camera.clip[0]))
-	var top: int = maxi(int(sprite.clip[1]), int(camera.clip[1]))
-	var right: int = mini(int(sprite.clip[2]), int(camera.clip[2]))
-	var bottom: int = mini(int(sprite.clip[3]), int(camera.clip[3]))
-	for row in int(sprite.height):
-		var y: int = int(sprite.origin[1]) + row
+	var sprite_clip: Array = sprite.clip
+	var cam_clip: Array = camera.clip
+	var left: int = maxi(int(sprite_clip[0]), int(cam_clip[0]))
+	var top: int = maxi(int(sprite_clip[1]), int(cam_clip[1]))
+	var right: int = mini(int(sprite_clip[2]), int(cam_clip[2]))
+	var bottom: int = mini(int(sprite_clip[3]), int(cam_clip[3]))
+	var width: int = int(sprite.width)
+	var height: int = int(sprite.height)
+	var origin: Array = sprite.origin
+	var ox: int = int(origin[0])
+	var oy: int = int(origin[1])
+	var opaque: Array = sprite.opaque
+	var pixels: Array = sprite.pixels
+	var col_start: int = maxi(0, left - ox)
+	var col_end: int = mini(width, right - ox + 1)
+	if col_start >= col_end: return result
+	for row in height:
+		var y: int = oy + row
 		if y < top or y > bottom: continue
-		var col: int = maxi(0, left - int(sprite.origin[0]))
-		var end: int = mini(int(sprite.width), right - int(sprite.origin[0]) + 1)
-		while col < end:
-			var at: int = row * int(sprite.width) + col
-			if not sprite.opaque[at]:
+		var row_offset: int = row * width
+		var col: int = col_start
+		while col < col_end:
+			var at: int = row_offset + col
+			if not opaque[at]:
 				col += 1
 				continue
-			var color: int = int(sprite.pixels[at])
+			var color: int = int(pixels[at])
 			var start := col
 			col += 1
-			while col < end and sprite.opaque[row * int(sprite.width) + col] and int(sprite.pixels[row * int(sprite.width) + col]) == color:
+			while col < col_end and opaque[row_offset + col] and int(pixels[row_offset + col]) == color:
 				col += 1
-			var x: int = int(sprite.origin[0]) + start
+			var x: int = ox + start
 			result.append({"points": [Vector2(x, y), Vector2(x + col - start, y),
 				Vector2(x + col - start, y + 1), Vector2(x, y + 1)], "color": color})
 	return result

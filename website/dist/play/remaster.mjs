@@ -18,6 +18,7 @@ const saveSlot = document.querySelector('#web-save-slot');
 const saveButton = document.querySelector('#web-save');
 const loadSlot = document.querySelector('#web-load-slot');
 const loadButton = document.querySelector('#web-load');
+const loadPreviousButton = document.querySelector('#web-load-previous');
 const speedButton = document.querySelector('#web-speed');
 const fullscreenButton = document.querySelector('#web-fullscreen');
 const controlStatus = document.querySelector('#web-control-status');
@@ -25,7 +26,7 @@ const extended = document.querySelector('#web-extended');
 const settingsStatus = document.querySelector('#web-settings-status');
 const audioNote = document.querySelector('#web-audio-note');
 const qualityControls = {msaa: document.querySelector('#web-msaa'), anisotropy: document.querySelector('#web-anisotropy')};
-const audioControls = Object.fromEntries(['master', 'effects', 'voice', 'motors', 'music', 'cannon', 'machinegun', 'impact', 'smoke', 'engine', 'turret']
+const audioControls = Object.fromEntries(['master', 'effects', 'voice', 'motors', 'music', 'cannon', 'machinegun', 'impact', 'smoke', 'engine', 'turret', 'radio', 'switch']
   .map(channel => [channel, document.querySelector('#web-audio-' + channel)]));
 const resetAudioButton = document.querySelector('#web-reset-audio');
 const resetQualityButton = document.querySelector('#web-reset-quality');
@@ -47,7 +48,7 @@ const descriptions = {
   ega_upscaled: 'EGA Upscaled: crisp original artwork, original palette and skin colours.',
   genesis: 'Original-resolution Genesis artwork. Unavailable in the Web edition: its captured Genesis screens are not published.',
   upscaled: 'Genesis Upscaled: generated high-resolution remaster artwork and lettering.',
-  modern: 'Modernized 3D: the existing remaster presentation.',
+  modern: 'Modernized 3D: clean low-poly vehicles, buildings and trees with the restored HUD.',
   tactical: 'Tactical 3D: textured terrain, grounded vegetation and source-driven effects.',
 };
 // The render bitmap is exactly the canvas's CSS box: never larger (a squashed
@@ -67,7 +68,7 @@ new ResizeObserver(syncCanvasSize).observe(canvas);
 // HUD's bottom rows and status line are never pushed below the fold.
 const fitCanvas = () => {
   const container = canvas.parentElement;
-  if (canvas.hidden || !container || typeof window.innerHeight !== 'number') return;
+  if (canvas.hidden || !container || !container.clientWidth || typeof window.innerHeight !== 'number') return;
   const aspect = canvas.classList.contains?.('tactical') ? 16 / 9 : 4 / 3;
   const top = canvas.getBoundingClientRect().top + (window.scrollY || 0);
   const height = Math.max(120, window.innerHeight - top);
@@ -191,8 +192,8 @@ async function prepareIsolation() {
 prepareIsolation();
 const command = value => {
   if (!started || toolbar.hidden) return false;
-  if ((busy && ['save_state', 'load_state', 'quick_save', 'quick_load', 'speed'].includes(value.op)) ||
-      (storageWarning && ['save_state', 'load_state', 'quick_save', 'quick_load'].includes(value.op))) return false;
+  if ((busy && ['save_state', 'load_state', 'load_previous', 'quick_save', 'quick_load', 'speed'].includes(value.op)) ||
+      (storageWarning && ['save_state', 'load_state', 'load_previous', 'quick_save', 'quick_load'].includes(value.op))) return false;
   if (!host?.queueControl(value)) {
     notice('The game could not accept this action. Wait for the current operation, then try again.');
     return false;
@@ -216,8 +217,10 @@ function updateExtended(state) {
     }
   }
   for (const [key, select] of Object.entries(audioControls)) {
+    if (!select) continue;
     const supported = Object.hasOwn(state.audio || {}, key) || Object.hasOwn(state.audio_defaults || {}, key);
-    select.closest('label').hidden = !supported;
+    const label = select.closest('label');
+    if (label) label.hidden = !supported;
     const value = state.audio?.[key];
     const valid = Number.isInteger(value) && value >= 0 && value <= 100;
     select.disabled = !supported || !valid;
@@ -290,6 +293,15 @@ function updateToolbar(state, announce = true) {
   if (!available.has(loadSlot.value)) loadSlot.value = [...available][0] || '1';
   loadButton.disabled = busy || !!storageWarning || !available.has(loadSlot.value);
   loadSlot.disabled = busy || !!storageWarning || !available.size;
+  if (loadPreviousButton) {
+    const selectedRow = state.slots.find(row => String(row.slot) === loadSlot.value);
+    const hasPrevious = Number(loadSlot.value) >= 1 && !!selectedRow?.previous_saved_at;
+    loadPreviousButton.hidden = !hasPrevious;
+    loadPreviousButton.disabled = busy || !!storageWarning || !hasPrevious;
+    loadPreviousButton.title = hasPrevious && Number.isFinite(Date.parse(selectedRow.previous_saved_at))
+      ? `Restore overwritten Slot ${loadSlot.value} (${new Date(selectedRow.previous_saved_at).toLocaleString()})`
+      : '';
+  }
   saveButton.disabled = saveSlot.disabled = busy || !!storageWarning;
   speedButton.disabled = busy;
   toolbar.setAttribute('aria-busy', String(busy));
@@ -310,8 +322,35 @@ for (const [channel, select] of Object.entries(audioControls))
   select.addEventListener('change', () => choose({op: 'audio', channel, percent: Number(select.value)}));
 resetAudioButton.addEventListener('click', () => command({op: 'reset_audio'}));
 resetQualityButton.addEventListener('click', () => command({op: 'reset_quality'}));
-saveButton.addEventListener('click', () => act({op: 'save_state', slot: Number(saveSlot.value)}));
-loadButton.addEventListener('click', () => act({op: 'load_state', slot: Number(loadSlot.value)}));
+extended?.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && extended.open) {
+    event.preventDefault();
+    event.stopPropagation();
+    extended.open = false;
+    canvas.focus();
+  }
+});
+saveButton.addEventListener('click', () => {
+  const slot = Number(saveSlot.value);
+  if (command({op: 'save_state', slot})) {
+    notice(`Saving slot ${slot}…`);
+    canvas.focus();
+  }
+});
+loadButton.addEventListener('click', () => {
+  const slot = Number(loadSlot.value);
+  if (command({op: 'load_state', slot})) {
+    notice(slot === 0 ? 'Restoring previous session…' : `Loading slot ${slot}…`);
+    canvas.focus();
+  }
+});
+loadPreviousButton?.addEventListener('click', () => {
+  const slot = Number(loadSlot.value);
+  if (slot >= 1 && command({op: 'load_previous', slot})) {
+    notice(`Restoring overwritten slot ${slot}…`);
+    canvas.focus();
+  }
+});
 loadSlot.addEventListener('change', refresh);
 graphics.addEventListener('change', () => choose({op: 'graphics', mode: graphics.value}));
 hudStyle.addEventListener('change', () => choose({op: 'hud_style', style: hudStyle.value}));
@@ -368,13 +407,17 @@ function resetPlayer() {
   lastControls = undefined;
   extended.open = false;
   settingsStatus.textContent = '';
+  controlStatus.textContent = '';
+  document.querySelector('#graphics-description').textContent = '';
   storageWarning = '';
   document.querySelector('#web-storage-status').textContent = '';
   toolbar.hidden = true;
   canvas.hidden = true;
+  canvas.classList.remove('tactical');
   canvas.style && (canvas.style.width = canvas.style.height = '');
   player.hidden = true;
   document.body.classList.remove('playing');
+  if (document.fullscreenElement) document.exitFullscreen?.().catch?.(() => {});
   input.disabled = genesisInput.disabled = !isolationReady;
   selectionChanged();
 }

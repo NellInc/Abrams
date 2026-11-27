@@ -3,6 +3,7 @@ extends RefCounted
 ## The caller owns pre/postdraw ordering and all transport/visibility gates.
 const Colour = preload("res://scripts/pc_colour.gd")
 const VehicleShader = preload("res://scripts/pc_tactical_vehicles.gdshader")
+const VehicleView = preload("res://scripts/pc_tactical_vehicle_view.gd")
 const QUALIFIED_ENGINE: String = "ed1daf0bf"
 const MAX_OWNERS: int = 4
 const MAX_GROUPS: int = 32
@@ -70,9 +71,8 @@ func prewarm(assets: RefCounted, world: SubViewport) -> Dictionary:
 	if not is_instance_valid(world) or not is_instance_valid(assets) or not pending.is_empty() or not armed.is_empty() or _proof_mask != null:
 		return {"ok":false,"skipped":true,"reason":"startup only"}
 	var proof: RefCounted = self
-	const VehicleView = preload("res://scripts/pc_tactical_vehicle_view.gd")
 	var started: int = Time.get_ticks_usec()
-	var code: String = shader_variant(preload("res://scripts/pc_tactical_vehicles.gdshader").code)
+	var code: String = shader_variant(VehicleShader.code)
 	if code.is_empty() or not assets.ready:return {"ok":false,"reason":"source shader/assets unavailable"}
 	var selected: ArrayMesh
 	for row: Dictionary in assets.cow_proof_groups.values():
@@ -92,7 +92,7 @@ func prewarm(assets: RefCounted, world: SubViewport) -> Dictionary:
 	var mask: Image = Image.create(1,1,false,Image.FORMAT_RGBA8);mask.fill(Color8(1,0,8,255))
 	var ownership: Texture2D = ImageTexture.create_from_image(mask)
 	proof._shader=Shader.new();proof._shader.code=code
-	proof._shader_source=preload("res://scripts/pc_tactical_vehicles.gdshader").code
+	proof._shader_source=VehicleShader.code
 	var material: ShaderMaterial = ShaderMaterial.new()
 	var binder: Node3D = VehicleView.new()
 	binder.bind_material(material,assets,157,1,ownership,{"inverse":Basis.IDENTITY,"origin":Vector3.ZERO})

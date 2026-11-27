@@ -239,21 +239,28 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, ground
 	material.set_shader_parameter("camera_to_local",mapping.inverse)
 	material.set_shader_parameter("source_eye_height",origin.z)
 	material.set_shader_parameter("horizon",Vector3(-delta.y,delta.x,delta.y*a.x-delta.x*a.y)/delta.length())
+	var origin_xy := Vector2(origin.x,origin.y)
+	var near_cutoff := float(frame.near_raw)+32.0
+	var cx := float(frame.center[0])
+	var cy := float(frame.center[1])
+	var focal := float(frame.focal_pixels)
 	for layer in 2:
 		var spacing: float = LAYERS[layer][0]
 		var radius: float = LAYERS[layer][1]
+		var radius_sq: float = radius*radius
 		var center := Vector2i(floori(origin.x/spacing),floori(origin.y/spacing))
 		var reach := ceili(radius/spacing)
 		var instances: Array = []
 		for planted: Array in _planting_grid(layer,center,spacing,reach):
 			var ground: Vector2=planted[0]
-			var seed: float=planted[1]
-			var distance := ground.distance_to(Vector2(origin.x,origin.y))
-			if distance>radius: continue
+			var dist_sq := ground.distance_squared_to(origin_xy)
+			if dist_sq>radius_sq: continue
 			var raw: Vector3 = view*Vector3(ground.x-origin.x,origin.y-ground.y,-origin.z)
-			if raw.y<float(frame.near_raw)+32.0: continue
-			var projected := Surface.project([raw.x,raw.y,raw.z],frame)
+			if raw.y<near_cutoff: continue
+			var projected := Vector2(cx+raw.x*focal/raw.y,cy-raw.z*focal/raw.y)
 			if not clip.has_point(projected): continue
+			var seed: float=planted[1]
+			var distance := sqrt(dist_sq)
 			var size_factor := (0.7+seed*0.9)*(1.0-smoothstep(radius*0.76,radius,distance))
 			# Shape variation belongs to each fixed seed, never camera position or
 			# elapsed time. Apply it in plant axes before the captured camera basis.

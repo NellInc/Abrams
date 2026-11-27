@@ -311,7 +311,7 @@
           <p class="interaction-status" id="comparison-status" role="status"></p>
           <h3>The PC game still runs the show.</h3>
           <p>The original MS-DOS simulation runs in DOSBox Pure, in tandem with the Godot game engine. Missions, aiming, damage and vehicle behaviour remain with the PC game, while the remaster handles what you see and hear.</p>
-          <p>Switch graphics immediately during play. The Web edition offers <span data-modes="web">EGA, EGA Upscaled, Genesis, Genesis Upscaled, Modernized and Tactical</span>, with HUD Style chosen separately. The Alpha&nbsp;9 downloads offer EGA, EGA Upscaled, Genesis Upscaled and the experimental Modern and Tactical modes, with the same HUD Style choice.</p>
+          <p>Switch graphics immediately during play. The Web edition lists <span data-modes="web">EGA, EGA Upscaled, Genesis, Genesis Upscaled, Modernized and Tactical</span> (original-resolution Genesis is disabled in browser; the other five modes play in browser), with HUD Style chosen separately. The Alpha&nbsp;9 downloads offer EGA, EGA Upscaled, Genesis Upscaled and the experimental Modern and Tactical modes, with the same HUD Style choice.</p>
           <noscript><p>Open the original-resolution <a href="assets/images/colonel-ega.webp">EGA</a>, <a href="assets/images/colonel-genesis.webp">Genesis</a> or <a href="assets/images/colonel-upscaled.webp">Genesis Upscaled</a> screenshots.</p></noscript>
         </div>
       </div>
@@ -400,7 +400,7 @@
             </article>
             <article class="mission-brief" data-brief="the-mossel-intercept" hidden>
               <h3>The Mossel Intercept</h3>
-              <p>Damaged Allied vehicles lie west of the player, across the Mossel, after defeating a Soviet reconnaissance group. A powerful Soviet patrol approaches southward along the river.</p>
+              <p>Damaged Allied vehicles lie west of your position, across the Mossel, after defeating a Soviet reconnaissance group. A powerful Soviet patrol approaches southward along the river.</p>
               <p class="mission-objective"><strong>Objective</strong><span>Reach the damaged Allied vehicles before the Soviet patrol, then escort them to your base.</span></p>
             </article>
             <p class="guide-link"><a href="assets/guides/field-guide.pdf?v=9bbe16233ab9">Open the field guide <span class="nowrap">(PDF, 4.9 MB)</span></a></p>
@@ -461,11 +461,11 @@
         <div class="faq-col">
         <details><summary>Is the original game included?</summary><p>No. The remaster is free, but it runs your own copy of the original PC game, which isn’t included. A Sega Genesis ROM is optional and isn’t included either.</p></details>
         <details><summary>Which copy of the PC game works?</summary><p>The importer checks every file against the one supported release and turns away other versions, changed files and partial folders. Choose the complete extracted game folder (all 68 original files), not a ZIP or the executables alone.</p></details>
-        <details><summary>Do I need the Genesis ROM?</summary><p>No. Only Genesis mode needs it. With the PC game alone, the Web edition offers EGA, EGA Upscaled, Genesis Upscaled, Modernized and Tactical, and the Alpha&nbsp;9 downloads offer EGA, EGA Upscaled, Genesis Upscaled, Modern and Tactical. The supported raw ROM (not a ZIP) adds Genesis-mode artwork and music in the Web edition and Genesis-based artwork in the downloads; it can’t replace the PC game.</p></details>
+        <details><summary>Do I need the Genesis ROM?</summary><p>No. With the PC game alone, the Web edition offers EGA, EGA Upscaled, Genesis Upscaled, Modernized and Tactical, and the Alpha&nbsp;10 downloads offer EGA, EGA Upscaled, Genesis Upscaled, Modern and Tactical. Adding the supported raw ROM (not a ZIP) unlocks the Genesis-based remaster artwork and frontend music in the Web edition and Genesis-based artwork in the downloads; original-resolution Genesis mode requires an equipped local source checkout, and the ROM can’t replace the PC game.</p></details>
         <details><summary>My computer warns me about the app.</summary><p>The macOS app is Developer ID signed and notarized by Apple. The Windows build is unsigned, so Windows may ask you to approve it. Compare your download with the published checksums, and never turn off system-wide security. On Linux, if the launcher won’t start, restore execute permissions as the <a href="https://github.com/NellInc/Abrams/releases/tag/v0.1.0-alpha.9">Alpha 9 release notes</a> describe.</p></details>
         </div>
         <div class="faq-col">
-        <details><summary>Upgrading from an earlier alpha?</summary><p>Back up your Abrams profile and keep your previous alpha; save states load only in a compatible build. On macOS and Linux, alpha&nbsp;5 save states load in alpha&nbsp;6. Windows alpha&nbsp;5 states and those from earlier alphas need their matching build; the game’s own campaign saves are separate.</p></details>
+        <details><summary>Upgrading from an earlier alpha?</summary><p>Back up your Abrams profile and keep your previous alpha; save states load only in a compatible build. Alpha&nbsp;9 checkpoints record the exact core, game and platform identity, while older alpha states need their matching build; the original game’s own campaign saves are separate.</p></details>
         <details><summary>Is this affiliated with Dynamix or Electronic Arts?</summary><p>No. It’s an unofficial, independent, non-commercial fan project; the original game’s rights remain with their holders.</p></details>
         <details><summary>Found a bug?</summary><p>Please <a href="https://github.com/NellInc/Abrams/issues/new">report it on GitHub</a> with your platform, the alpha number and the profile’s <code>logs/</code> folder.</p></details>
         </div>

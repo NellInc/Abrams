@@ -78,6 +78,7 @@ func _hold_battle() -> void:
 	battle_until=source_frame+900
 
 func reset_score() -> void:
+	super.reset_score()
 	game_enabled=false;source_active=false;source_frame=-1;battle_until=-1;crisis_until=-1
 	battle_index=-1
 	result="";end_context="";last_program=""

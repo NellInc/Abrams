@@ -191,7 +191,7 @@ vec4 kill_blast(vec2 q, float age, float seed, vec2 down, float base) {
     float fd=length(p-fc)/r+(fn-0.5)*0.42+(fn2-0.5)*0.16;
     float cool=smoothstep(0.08,0.75,age);
     float ball=(1.0-smoothstep(0.78,1.0,fd))*(1.0-smoothstep(0.55,0.95,age))*above;
-    float heat=clamp((1.0-fd)*1.6,0.0,1.0)*(1.0-cool)+0.0;
+    float heat=clamp((1.0-fd)*1.6,0.0,1.0)*(1.0-cool);
     vec3 fire=mix(vec3(0.55,0.08,0.02),vec3(1.0,0.48,0.08),smoothstep(0.05,0.45,heat+0.25*(1.0-cool)));
     fire=mix(fire,vec3(1.0,0.90,0.55),smoothstep(0.55,0.9,heat));
     // Billows: lit crowns and sooty folds give the ball volume, lit from above.

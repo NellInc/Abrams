@@ -26,14 +26,17 @@ const ART := [
 	{"name":"SMOKE DISCHARGERS", "source":"info-v1/weapon-smoke-illustration.png", "remaster":"weapon-smoke-v2.png","collection":"remastered/armament-v1","wide":true,"source_aspect":3.2},
 	{"name":"CREW STATIONS DIAGRAM", "source":"crew-diagram-v1/crew-diagram-original.png", "remaster":"crew-diagram-v2.png","collection":"remastered/crew-diagram-v1","wide":true,"source_aspect":3.2786885},
 ]
+const MonoFont = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
+const HeadingFont = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+const MainScript = preload("res://scripts/main.gd")
 var page := 0
 var original := false
 var side_by_side := false
 var textures: Dictionary = {}
 var _art_paths: Dictionary = {}
 var _capture_active := false
-var font: Font = preload("res://assets/fonts/IBMPlexMono-Regular.ttf")
-var heading: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+var font: Font = MonoFont
+var heading: Font = HeadingFont
 var errors: Dictionary = {}
 var controls: Array[Dictionary] = []
 var _split_button: Button
@@ -158,9 +161,19 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	match event.keycode:
 		KEY_ESCAPE: _back()
-		KEY_LEFT: _change(-1)
-		KEY_RIGHT: _change(1)
+		KEY_LEFT, KEY_UP, KEY_PAGEUP: _change(-1)
+		KEY_RIGHT, KEY_DOWN, KEY_PAGEDOWN: _change(1)
+		KEY_HOME:
+			page = 0
+			_ensure_page_loaded(page)
+			queue_redraw()
+		KEY_END:
+			page = ART.size() - 1
+			_ensure_page_loaded(page)
+			queue_redraw()
 		KEY_S: _toggle_split()
+		_: return
+	if get_viewport(): get_viewport().set_input_as_handled()
 
 func _input(event: InputEvent) -> void:
 	# Intercept Tab before Control uses it for focus traversal.
@@ -237,7 +250,7 @@ func _capture() -> void:
 		get_tree().quit(2)
 		return
 	# Captures include extracted original Genesis pages, so they must never land inside res:// or the sources.
-	var output: String = preload("res://scripts/main.gd").capture_directory(args[at+1])
+	var output: String = MainScript.capture_directory(args[at+1])
 	if output.is_empty():
 		push_error("--capture-art refuses output inside godot/ or the original sources: " + args[at+1])
 		get_tree().quit(2)

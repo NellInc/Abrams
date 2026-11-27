@@ -1,5 +1,7 @@
 extends "res://scripts/pc_audio_menu.gd"
 ## Remaster controls live outside the source framebuffer; Tab toggles acceleration.
+const InterfaceTheme = preload("res://scripts/pc_interface_theme.gd")
+const CondensedFont = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 signal graphics_selected(mode: String)
 signal hud_style_selected(style: String)
 signal quality_selected(msaa_samples: int, anisotropic_samples: int)
@@ -72,11 +74,11 @@ func _apply_hud_theme() -> void:
 	_styled_hud=hud_style
 	var reader: Window = get_tree().root.get_node_or_null("PlayerReference") as Window if is_inside_tree() else null
 	if reader!=null:reader.call("set_hud_style",hud_style)
-	theme=preload("res://scripts/pc_interface_theme.gd").build()
+	theme=InterfaceTheme.build()
 	_tactical_bar.visible=hud_style=="tactical"
 	if hud_style!="tactical": return
 	for type in ["MenuBar","PopupMenu"]:
-		theme.set_font("font",type,preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf"))
+		theme.set_font("font",type,CondensedFont)
 		theme.set_font_size("font_size",type,18)
 		for name in ["font_color","font_hover_color","font_focus_color","font_pressed_color","font_hover_pressed_color"]:
 			theme.set_color(name,type,Color("e3e4cd"))
@@ -88,7 +90,7 @@ func _apply_hud_theme() -> void:
 		style.border_width_bottom=1
 		style.border_color=Color("e7b566") if state in ["hover","pressed","hover_pressed"] else Color("344733")
 		theme.set_stylebox(state,"MenuBar",style)
-	var panel:=preload("res://scripts/pc_interface_theme.gd").surface()
+	var panel:=InterfaceTheme.surface()
 	panel.bg_color=Color("101e16");panel.border_color=Color("61785b")
 	panel.content_margin_left=14;panel.content_margin_right=14
 	panel.content_margin_top=12;panel.content_margin_bottom=12
@@ -115,7 +117,7 @@ func _apply_hud_theme() -> void:
 	tooltip_panel.content_margin_left=10;tooltip_panel.content_margin_right=10
 	tooltip_panel.content_margin_top=8;tooltip_panel.content_margin_bottom=8
 	theme.set_stylebox("panel","TooltipPanel",tooltip_panel)
-	theme.set_font("font","TooltipLabel",preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf"))
+	theme.set_font("font","TooltipLabel",CondensedFont)
 	theme.set_font_size("font_size","TooltipLabel",18)
 	theme.set_color("font_color","TooltipLabel",Color("e3e4cd"))
 	for name in ["checked","radio_checked","unchecked","radio_unchecked","checked_disabled","radio_checked_disabled","unchecked_disabled","radio_unchecked_disabled","submenu","submenu_mirrored"]:
@@ -258,7 +260,7 @@ func _ready() -> void:
 	refresh_controls()
 
 func open_reference(name: String) -> void:
-	var reader := preload("res://scripts/pc_interface_theme.gd").show_reference(get_tree().root,name,hud_style)
+	var reader := InterfaceTheme.show_reference(get_tree().root,name,hud_style)
 	if not reader.is_connected("reader_changed",_reader_changed):reader.connect("reader_changed",_reader_changed)
 	_reader_changed(true)
 
@@ -385,7 +387,7 @@ func handle_shortcut(event: InputEvent) -> bool:
 	if layout_filter and not shortcut_is_macos and _layout_character(event,code):return false
 	# Claim the entire chord, including repeats and its release. The bridge polls
 	# Input directly, so marking the event handled alone cannot protect the guest.
-	for name in preload("res://scripts/pc_keyboard.gd").encode([code]):
+	for name in Keyboard.encode([code]):
 		if name not in shortcut_keys: shortcut_keys.append(name)
 	if not shortcut_is_macos:
 		for name in ["ctrl","alt"]:
@@ -444,9 +446,12 @@ func game_keys(held: Array) -> Array:
 			var system_chord: bool=shortcut_is_macos and name.length()==1 and name not in _last_held
 			if name in ["s","l","g","ctrl","alt"] or (name=="shift" and "l" in held) or system_chord:
 				if name not in shortcut_keys: shortcut_keys.append(name)
-	shortcut_keys=shortcut_keys.filter(func(name):return name in held)
+	if not shortcut_keys.is_empty():
+		shortcut_keys=shortcut_keys.filter(func(name):return name in held)
 	_last_held=held.duplicate()
-	return super.game_keys(held).filter(func(name):return name!="tab" and name not in shortcut_keys)
+	var active := super.game_keys(held)
+	if active.is_empty(): return active
+	return active.filter(func(name):return name!="tab" and name not in shortcut_keys)
 
 func key_passes(name: String) -> bool:
 	var reader: Window = get_tree().root.get_node_or_null("PlayerReference") as Window if is_inside_tree() else null

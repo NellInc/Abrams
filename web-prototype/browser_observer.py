@@ -38,7 +38,8 @@ def install_originals(archive: bytes, manifest: dict) -> None:
             name = row['name']
             if '/' in name or '\\' in name or name in ('', '.', '..'):
                 raise ValueError('unsafe original catalog name')
-            raw = source.read(name)
+            with source.open(name) as stream:
+                raw = stream.read(16 * 1024 * 1024 + 1)
             if len(raw) > 16 * 1024 * 1024 or hashlib.sha256(raw).hexdigest() != row['sha256']:
                 raise ValueError('original game file differs from manifest')
             (target / name).write_bytes(raw)

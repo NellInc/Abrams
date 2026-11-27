@@ -76,6 +76,14 @@ def read_bounded(path, limit):
     return raw
 
 
+def _read_member(archive, name, limit):
+    with archive.open(name) as stream:
+        raw = stream.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError('checkpoint member exceeds limit or is encrypted')
+    return raw
+
+
 def validate_disk(raw):
     if not raw: return
     if len(raw) > MAX_DISK: raise ValueError('campaign overlay exceeds size limit')
@@ -91,9 +99,20 @@ def validate_disk(raw):
             name = item.filename.replace('\\', '/')
             if name.startswith('/') or '..' in name.split('/') or ':' in name or item.flag_bits & 1:
                 raise ValueError('unsafe campaign archive member')
-        try: bad = archive.testzip()
-        except DAMAGED as error: raise ValueError(f'damaged campaign overlay: {error}') from error
-        if bad is not None: raise ValueError('campaign overlay CRC mismatch')
+        expanded = 0
+        for item in infos:
+            try:
+                with archive.open(item) as stream:
+                    while chunk := stream.read(min(65536, MAX_DISK - expanded + 1)):
+                        expanded += len(chunk)
+                        if expanded > MAX_DISK:
+                            raise ValueError('campaign overlay expands beyond size limit')
+            except zipfile.BadZipFile as error:
+                if 'Bad CRC-32' in str(error):
+                    raise ValueError('campaign overlay CRC mismatch') from error
+                raise ValueError(f'damaged campaign overlay: {error}') from error
+            except DAMAGED as error:
+                raise ValueError(f'damaged campaign overlay: {error}') from error
 
 
 def core_identity(core):
@@ -160,14 +179,15 @@ class StateStore:
                 if (len(infos) != len(names) or not {*LIMITS, 'manifest.json'} <= names
                         or names - {*LIMITS, *OPTIONAL_LIMITS, 'manifest.json'}):
                     raise ValueError('invalid checkpoint members')
+                member_limits = LIMITS | OPTIONAL_LIMITS
                 for item in infos:
-                    if item.file_size > ((LIMITS | OPTIONAL_LIMITS).get(item.filename, 65536)) or item.flag_bits & 1:
+                    if item.file_size > member_limits.get(item.filename, 65536) or item.flag_bits & 1:
                         raise ValueError('checkpoint member exceeds limit or is encrypted')
-                manifest = json.loads(archive.read('manifest.json'))
+                manifest = json.loads(_read_member(archive, 'manifest.json', 65536))
                 if not isinstance(manifest, dict): raise ValueError('invalid checkpoint manifest')
                 if manifest.get('compatibility') not in self.accepted:
                     raise ValueError('Checkpoint belongs to a different core, game, or platform')
-                files = {name: archive.read(name) for name in (LIMITS | OPTIONAL_LIMITS) if name in names}
+                files = {name: _read_member(archive, name, limit) for name, limit in member_limits.items() if name in names}
         except DAMAGED as error: raise ValueError(f'damaged checkpoint: {error}') from error
         if not files['state.bin']: raise ValueError('empty native checkpoint')
         if manifest.get('files') != {name: {'size': len(data), 'sha256': sha(data)} for name, data in files.items()}:

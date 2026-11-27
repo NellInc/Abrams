@@ -176,7 +176,7 @@ that every mission or campaign has been completed.
 
 Choose your original PC folder, then Start remaster. The file picker shows your selection before verification. An optional Genesis ROM unlocks the Genesis-based remaster artwork and frontend music, and the browser derives the Genesis effects from your verified ROM. Since 15 October 2026 the browser edition publishes no captured Genesis screens, so its Genesis mode, Genesis newspaper, map frame and clipboard restorations and Genesis vehicle colours keep original PC pixels (see [release rights](release-rights.md)). EGA Upscaled preserves the original PC palette and skin colours; Genesis Upscaled retains the generated high-resolution artwork. Graphics and HUD Style remain independent.
 
-Quick-save overwrite confirmation (`Ctrl+Alt+S` / `Cmd+S` pressed twice), AltGr layout guards, clean original `EXIT` handling, storage-unavailability guards, engine-failure reload recovery, overwritten-slot restore (`Restore overwritten`) and automatic canvas focus return after toolbar actions are active in the current browser shell.
+Quick-save overwrite confirmation (`Ctrl+Alt+S` pressed twice; `Cmd+S` is also handled if a browser passes it through), AltGr layout guards, clean original `EXIT` handling, storage-unavailability guards, engine-failure reload recovery, overwritten-slot restore (`Restore overwritten`) and automatic canvas focus return after toolbar actions are active in the current browser shell.
 
 Use **Game keyboard** after interacting with browser controls to return keyboard focus to the game. **Fullscreen** keeps the browser controls available; Escape leaves browser fullscreen. Editing a browser selector does not trigger quick-save/load or graphics shortcuts.
 
@@ -190,11 +190,11 @@ Working if: selection and focus are visible; all six graphics options retain the
 
 ## Extended browser controls
 
-Open **More controls: audio and graphics quality** for the same five presentation gains, antialiasing and anisotropic filtering as the native menu. The disclosure supports keyboard focus and Enter/Space; its controls wrap on compact windows. **Restore default mix** sets Master, Effects, Crew and Motors to 100%, Music to 70%. Full-quality defaults remain 4× MSAA and 16× filtering. Changes persist separately from checkpoints; a settings-save warning appears in this section, separately from campaign status.
+Open **More controls: audio and graphics quality** for percentage dropdowns covering the browser-supported core, combat and cockpit volume channels, alongside antialiasing and anisotropic filtering. The disclosure supports keyboard focus and Enter/Space, and pressing Escape inside it closes the drawer and returns focus to the game canvas. Its controls wrap on compact windows. **Restore default mix** sets Music to 70% and every other available channel to 100%. Full-quality defaults remain 4× MSAA and 16× filtering. Changes persist separately from checkpoints; a settings-save warning appears in this section, separately from campaign status.
 
 At 8×, audio is muted while your mix is retained. Original F5 and pause remain authoritative. A stopped original worker reveals **Reload page**, preserving its actual failure message and clearing the dead bridge. Reload requires reselecting originals and retains existing origin-local durable checkpoints.
 
-The Tactical reference reader wraps its tabs, stacks narrow rows, matches every search word across displayed text and shows entry counts. Escape closes it without forwarding that key to the original game. Clear search or choose another section to reset its scroll position. Restored retains its original styling and contiguous-query search.
+The Tactical reference reader wraps its tabs, stacks narrow rows, matches every search word across displayed text, shows entry counts and offers clickable cross-section jump buttons whenever a search matches entries in other tabs. Escape closes the reader, the in-game Settings overlay or a pending route transition without forwarding that key to the original game. Clear search or choose another section tab to reset its scroll position. Restored retains its original styling and contiguous-query search.
 
 ## Reference clarification, 14 October 2026
 

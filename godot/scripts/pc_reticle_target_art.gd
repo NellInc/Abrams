@@ -1,6 +1,8 @@
 extends "res://scripts/pc_reticle_art.gd"
 ## The original selected-target box. Same source-owned analytic ink as the sight.
 const TARGET_BOX = Rect2i(32,13,256,97)
+var _last_target_crop_bytes := PackedByteArray()
+var _last_target_crop_sha := ""
 
 static func target_lines(x: int,y: int) -> Array:
 	return [[x-5,y-5,x+5,y-5],[x-5,y+5,x+5,y+5],[x-5,y-5,x-5,y+5],[x+5,y-5,x+5,y+5]]
@@ -53,18 +55,26 @@ func set_frame(source: Image, ui: Image, presentation: Dictionary) -> bool:
 		if not integer(clip[i]) or int(clip[i])!=[32,13,287,109][i]: return false
 	var crop := source.get_region(TARGET_BOX)
 	crop.convert(Image.FORMAT_RGB8)
-	var hash := HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256)
-	hash.update(crop.get_data())
-	if hash.finish().hex_encode()!=item.get("pixel_sha256"): return false
+	var crop_bytes := crop.get_data()
+	if crop_bytes != _last_target_crop_bytes:
+		var hash := HashingContext.new()
+		hash.start(HashingContext.HASH_SHA256)
+		hash.update(crop_bytes)
+		_last_target_crop_bytes = crop_bytes
+		_last_target_crop_sha = hash.finish().hex_encode()
+	if _last_target_crop_sha!=item.get("pixel_sha256"): return false
 	var shape := target_geometry(int(item.center[0]),int(item.center[1]))
 	if shape.is_empty(): return false
 	var points := {}
 	var color := Color.BLACK if item.color==0 else Color.WHITE
+	var color_rgba := color.to_rgba32()
+	var l8_ui := ui.get_format() == Image.FORMAT_L8
+	var ui_bytes := ui.get_data() if l8_ui else PackedByteArray()
 	for rect in shape:
 		for y in range(rect.position.y,rect.end.y):
+			var row_offset := y * 320
 			for x in range(rect.position.x,rect.end.x):
-				if ui.get_pixel(x,y).r!=1.0 or source.get_pixel(x,y).to_rgba32()!=color.to_rgba32(): return false
+				if (ui_bytes[row_offset + x] != 255 if l8_ui else ui.get_pixel(x,y).r!=1.0) or source.get_pixel(x,y).to_rgba32()!=color_rgba: return false
 				points[Vector2i(x,y)]=true
 	ink.assign(points.keys())
 	rectangles=shape

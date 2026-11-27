@@ -395,6 +395,41 @@ class SaveStateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'unsafe'): self.store.install_disk(bad.getvalue())
         self.assertEqual(self.store.disk.read_bytes(),self.disk.getvalue())
 
+    def test_bounded_zip_reads_reject_forged_headers_and_bad_crc(self):
+        # Corrupt the CRC stored in the local and central headers.
+        raw_disk = bytearray(self.disk.getvalue())
+        with zipfile.ZipFile(io.BytesIO(bytes(raw_disk))) as z:
+            info = z.getinfo('ROSTER.DAT')
+        crc_bytes = struct.pack('<I', info.CRC)
+        bad_crc = struct.pack('<I', info.CRC ^ 1)
+        corrupted = bytes(raw_disk).replace(crc_bytes, bad_crc)
+        with self.assertRaisesRegex(ValueError, 'CRC mismatch'):
+            self.store.install_disk(corrupted)
+        # Over-limit archive is rejected before touching the live overlay.
+        big = io.BytesIO()
+        with zipfile.ZipFile(big, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+            z.writestr('ROSTER.DAT', b'A' * 2048)
+        with patch('tools.pc_state_store.MAX_DISK', 1024):
+            with self.assertRaisesRegex(ValueError, 'expands beyond size limit'):
+                self.store.install_disk(big.getvalue())
+        # A spoofed header claiming 0 bytes fails on every Python runtime (by
+        # streaming cap on Python <=3.13 or truncated-read CRC mismatch on 3.14+).
+        spoofed = bytearray(big.getvalue())
+        with zipfile.ZipFile(io.BytesIO(bytes(spoofed))) as z:
+            info = z.getinfo('ROSTER.DAT')
+        spoofed[info.header_offset + 22:info.header_offset + 26] = struct.pack('<I', 0)
+        cd = spoofed.find(b'PK\x01\x02')
+        spoofed[cd + 24:cd + 28] = struct.pack('<I', 0)
+        with patch('tools.pc_state_store.MAX_DISK', 1024):
+            with self.assertRaisesRegex(ValueError, 'expands beyond size limit|CRC mismatch'):
+                self.store.install_disk(bytes(spoofed))
+        # _read_member enforces the hard streaming byte cap independent of ZIP headers.
+        from tools.pc_state_store import _read_member
+        fake_archive = SimpleNamespace(open=lambda _name: io.BytesIO(b'x' * 32))
+        self.assertEqual(_read_member(fake_archive, 'state.bin', 32), b'x' * 32)
+        with self.assertRaisesRegex(ValueError, 'exceeds limit'):
+            _read_member(fake_archive, 'state.bin', 16)
+
 
 class FakeWorker:
     """Stands in for the native worker subprocess; no emulator or guest memory."""

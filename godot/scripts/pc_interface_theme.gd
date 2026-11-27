@@ -4,6 +4,7 @@ const INK := Color("111a21")
 const TEXT := Color("f4ead4")
 const MUTED := Color("c0c6c6")
 const ACCENT := Color("df8b66")
+const HeadingFont = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 
 static func surface(opacity: float = 0.94) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -51,7 +52,7 @@ static func reference_theme(tactical: bool) -> Theme:
 	var cream := Color("e3e4cd")
 	var amber := Color("e7b566")
 	var muted := Color("a7b09a")
-	var heading := preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+	var heading := HeadingFont
 	for type in ["Label","Button","LineEdit"]:
 		result.set_color("font_color",type,cream)
 	result.set_color("default_color","RichTextLabel",cream)

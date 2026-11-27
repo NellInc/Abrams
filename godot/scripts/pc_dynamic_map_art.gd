@@ -4,6 +4,8 @@ const SIM_SHA="9ee5a5898ddcb8192d30b4083981419515eb3ca220e6cbcd214df628bb164099"
 const MAP_RECT=Rect2i(16,63,144,96)
 var packet:Dictionary={}
 var rectangles:Array=[]
+var _last_crop_bytes:=PackedByteArray()
+var _last_crop_sha:=""
 func _init()->void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	resized.connect(queue_redraw)
@@ -22,8 +24,12 @@ func set_frame(source:Image,presentation:Dictionary)->bool:
 		if not integer(item.rect[i]) or int(item.rect[i])!=[16,63,144,96][i]:return false
 	if source==null or source.get_size()!=Vector2i(320,200):return false
 	var crop:=source.get_region(MAP_RECT);crop.convert(Image.FORMAT_RGB8)
-	var hash:=HashingContext.new();hash.start(HashingContext.HASH_SHA256);hash.update(crop.get_data())
-	if hash.finish().hex_encode()!=item.get("pixel_sha256"):return false
+	var crop_bytes:=crop.get_data()
+	if crop_bytes!=_last_crop_bytes:
+		var hash:=HashingContext.new();hash.start(HashingContext.HASH_SHA256);hash.update(crop_bytes)
+		_last_crop_bytes=crop_bytes
+		_last_crop_sha=hash.finish().hex_encode()
+	if _last_crop_sha!=item.get("pixel_sha256"):return false
 	var palette=item.get("palette_rgb")
 	if not palette is Array or palette.size()!=16:return false
 	var colors:Array[Color]=[]

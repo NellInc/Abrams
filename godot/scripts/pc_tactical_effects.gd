@@ -146,11 +146,11 @@ static func actor_for(object: Dictionary, data: Dictionary, actors = null) -> Di
 # Retain only inputs consumed by this presentation, excluding off-screen pools.
 # Actor speed, heading and position never shape a puff: the original frame
 # shows none of them beyond the drawn model, so they cannot dirty the batch.
-static func inputs(data: Dictionary) -> Array:
+static func inputs(data: Dictionary, actors = null) -> Array:
 	var rows: Array=[data.get("world",{}).get("presentation_effects",{})]
-	var actors:=Modern.dynamic_index(data)
+	var indexed: Dictionary = actors if actors is Dictionary else Modern.dynamic_index(data)
 	for object: Dictionary in data.get("objects",[]):
-		var actor:=actor_for(object,data,actors)
+		var actor:=actor_for(object,data,indexed)
 		rows.append([not actor.is_empty(),actor.get("shape_header_word")])
 	return rows
 
@@ -311,7 +311,7 @@ func _debris(object: Dictionary, owner: int, seed: float, birth: float) -> void:
 
 # effect_mappings, when supplied, holds art.mapping(object,camera,palette) for
 # every pass object in order (the draw pass already computed them this frame).
-func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets: RefCounted, art: RefCounted, effect_mappings: Array = []) -> void:
+func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets: RefCounted, art: RefCounted, effect_mappings: Array = [], preindexed_actors = null) -> void:
 	# Mesh clears happen on every moving-camera pass. Only the next original
 	# observation prunes lifetimes; visibility still disappears immediately.
 	var previous_births:=_impact_births
@@ -369,7 +369,7 @@ func prepare(data: Dictionary, mapping: Dictionary, ownership: Texture2D, assets
 				var raw: Vector3=to_view*Vector3(point.x-origin.x,origin.y-point.y,point.z-origin.z)
 				_puff(raw,85.0+float(i%4)*13.0+age*65.0,0.30*(1.0-smoothstep(0.85,1.0,age)),0.0,float(i)*0.37,0,Geometry.project([raw.x,raw.y,raw.z],_frame))
 			counts.smoke=puffs.size()
-	var actors:=Modern.dynamic_index(data)
+	var actors: Dictionary = preindexed_actors if preindexed_actors is Dictionary else Modern.dynamic_index(data)
 	var replaced:=blast_sprites(data,actors)
 	for i in data.objects.size():
 		var object: Dictionary=data.objects[i]

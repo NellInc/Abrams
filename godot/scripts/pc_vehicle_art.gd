@@ -1,7 +1,10 @@
 extends RefCounted
 ## Cosmetic track/armour panels on six original visible faces. Never adds actors.
 const Colour = preload("res://scripts/pc_colour.gd")
+const TerrainStyle = preload("res://scripts/pc_terrain_style.gd")
+const GenesisStyle = preload("res://scripts/pc_genesis_style.gd")
 const PC_PALETTE = preload("res://scripts/pc_tandem_frame.gd").ART_PALETTE
+static var _pc_json_palette: Array = JSON.parse_string(JSON.stringify(PC_PALETTE))
 const SOURCE_HASH := "81cf10917d8647e8ac187e49887494992828277333f17d6c1926e59581f0a193"
 const ASSETS := [
 	["t62-track-v1.png","f5d8d0f6f93ec3d9a277e1d68cc2e48bdd567fb3b725375f774779e5bb31e992",[2046,768],[70,185,1940,400]],
@@ -33,16 +36,18 @@ var genesis_palette: Array=[]
 var regions: Array[Rect2] = []
 var palette_texture: Texture2D
 var palette_key := ""
+var _uv_cache: Dictionary = {}
 
 func load_assets(root: String) -> bool:
 	atlas=null
 	regions.clear()
+	_uv_cache.clear()
 	palette_texture=null
 	palette_key=""
 	genesis_palette.clear()
 	var source:=root.path_join("GAME/SHAPE.TBL")
 	if not FileAccess.file_exists(source) or FileAccess.get_sha256(source)!=SOURCE_HASH: return false
-	var style:=preload("res://scripts/pc_genesis_style.gd").new()
+	var style:=GenesisStyle.new()
 	if not style.load_palette(root.path_join("reference/genesis/extracted/gunner/palette.gpl")): return false
 	genesis_palette=style.palette
 	var images: Array[Image]=[]
@@ -71,10 +76,11 @@ func load_assets(root: String) -> bool:
 
 func mapping(object: Dictionary, polygon: Dictionary, palette: Array) -> Dictionary:
 	if atlas==null or palette.size()!=16: return {}
-	for i in 16:
-		if not palette[i] is Array or palette[i].size()!=3: return {}
-		for c in 3:
-			if palette[i][c]!=PC_PALETTE[i][c]: return {}
+	if palette != PC_PALETTE and palette != _pc_json_palette:
+		for i in 16:
+			if not palette[i] is Array or palette[i].size()!=3: return {}
+			for c in 3:
+				if palette[i][c]!=PC_PALETTE[i][c]: return {}
 	var shape:=int(object.get("shape_index",-1))
 	if shape not in MODELS or int(object.get("root",-1))!=MODELS[shape][0]: return {}
 	var primitive:=int(polygon.get("primitive",-1))
@@ -95,7 +101,10 @@ func mapping(object: Dictionary, polygon: Dictionary, palette: Array) -> Diction
 	var source: Array=MODELS[shape][2][primitive]
 	if points.size()!=source.size(): return {}
 	var donor: int=MODELS[shape][1]
-	return {"kind":10+donor,"uv":face_uvs(source,donor)}
+	var uv_key := Vector2i(shape, primitive)
+	if not _uv_cache.has(uv_key):
+		_uv_cache[uv_key] = face_uvs(source,donor)
+	return {"kind":10+donor,"uv":_uv_cache[uv_key].duplicate()}
 
 func face_uvs(source: Array, donor: int) -> Array:
 	var lo:=Vector2(INF,INF)
@@ -132,7 +141,7 @@ func colours(palette: Array, materials: Array) -> Texture2D:
 	if genesis: model_palette[3]=GENESIS_DARK.duplicate()
 	var image:=Image.create(materials.size(),LEVELS,false,Image.FORMAT_RGBAF if compatible else Image.FORMAT_RGBA8)
 	for i in materials.size():
-		var mean: Array=preload("res://scripts/pc_terrain_style.gd").material_mean(model_palette,materials[i])
+		var mean: Array=TerrainStyle.material_mean(model_palette,materials[i])
 		for level in LEVELS: image.set_pixel(i,level,Colour.input_color(detail_rgb(mean,level),compatible))
 	palette_texture=ImageTexture.create_from_image(image)
 	palette_key=key

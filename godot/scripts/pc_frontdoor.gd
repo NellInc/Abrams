@@ -4,6 +4,7 @@ signal game_selected(destination: String)
 signal quit_selected
 signal original_selected
 signal settings_closed
+const InterfaceTheme = preload("res://scripts/pc_interface_theme.gd")
 var menu: MenuBar
 var main: Node3D
 var stage: SubViewport
@@ -26,7 +27,7 @@ var settings_sync: Array[Callable] = []
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	theme=preload("res://scripts/pc_interface_theme.gd").build()
+	theme=InterfaceTheme.build()
 	stage_container=SubViewportContainer.new()
 	stage_container.stretch=true
 	add_child(stage_container)
@@ -306,8 +307,14 @@ func clear_route() -> void:
 	main.ui.show();main.set_screen("menu")
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE and is_instance_valid(settings_page):
-		close_settings();get_viewport().set_input_as_handled()
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode==KEY_ESCAPE:
+		if is_instance_valid(settings_page):
+			if menu: menu.release_keys=true
+			close_settings()
+			if get_viewport(): get_viewport().set_input_as_handled()
+		elif is_instance_valid(route_panel) and is_instance_valid(route_cancel) and route_cancel.visible:
+			route_cancel_requested.emit()
+			if get_viewport(): get_viewport().set_input_as_handled()
 
 func drain_for_shutdown() -> bool:
 	return await main.sound.drain_for_shutdown()

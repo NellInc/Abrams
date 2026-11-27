@@ -28,6 +28,12 @@ var _running_parts: Array[Dictionary] = []
 var _shoe_path: Array = []
 var _shoe_stations: Array[float] = []
 var _shoe_length := 0.0
+static var _shared_paint_shader: Shader
+static var _shared_cloth_shader: Shader
+static var _shared_skin_shader: Shader
+var _last_hull_transform := Transform3D()
+var _last_turret_transform := Transform3D()
+var _transforms_initialized := false
 const CREW_HIPS := [Vector3(0.7,0.98,0.48),Vector3(-0.72,0.96,0.56)]
 const CREW_NECKS := [Vector3(0.77,1.49,0.39),Vector3(-0.68,1.26,-0.04)]
 const CREW_HANDS := [[Vector3(0.98,1.34,0.3),Vector3(0.74,1.36,0.02)],
@@ -146,10 +152,11 @@ void fragment(){
 }"""
 
 func cloth_material(base: Color, camouflage := false, roughness := 0.94) -> ShaderMaterial:
-	var shader := Shader.new()
-	shader.code = CLOTH_SHADER
+	if _shared_cloth_shader == null:
+		_shared_cloth_shader = Shader.new()
+		_shared_cloth_shader.code = CLOTH_SHADER
 	var m := ShaderMaterial.new()
-	m.shader = shader
+	m.shader = _shared_cloth_shader
 	m.set_shader_parameter("base_color",base)
 	m.set_shader_parameter("camo",1.0 if camouflage else 0.0)
 	m.set_shader_parameter("surface_roughness",roughness)
@@ -181,18 +188,20 @@ void fragment(){
 }"""
 
 func skin_material() -> ShaderMaterial:
-	var shader := Shader.new()
-	shader.code = SKIN_SHADER
+	if _shared_skin_shader == null:
+		_shared_skin_shader = Shader.new()
+		_shared_skin_shader.code = SKIN_SHADER
 	var m := ShaderMaterial.new()
-	m.shader = shader
+	m.shader = _shared_skin_shader
 	m.set_shader_parameter("base_color",Color("a47c64"))
 	return m
 
 func paint_material(base: Color, offset := 0.0, dust_reach := 1.4, dust_amount := 1.0) -> ShaderMaterial:
-	var shader := Shader.new()
-	shader.code = PAINT_SHADER
+	if _shared_paint_shader == null:
+		_shared_paint_shader = Shader.new()
+		_shared_paint_shader.code = PAINT_SHADER
 	var m := ShaderMaterial.new()
-	m.shader = shader
+	m.shader = _shared_paint_shader
 	m.set_shader_parameter("base_color",base)
 	m.set_shader_parameter("height_offset",offset)
 	m.set_shader_parameter("dust_reach",dust_reach)
@@ -200,14 +209,23 @@ func paint_material(base: Color, offset := 0.0, dust_reach := 1.4, dust_amount :
 	return m
 
 func _process(_delta: float) -> void:
+	if not is_visible_in_tree():
+		return
 	# Keep the weathering anchored to the hull and turret frames (five uniforms per vehicle).
-	var hull_inverse := global_transform.affine_inverse()
-	paint.set_shader_parameter("to_local",Projection(hull_inverse))
-	dark.set_shader_parameter("to_local",Projection(hull_inverse))
-	fender_paint.set_shader_parameter("to_local",Projection(hull_inverse))
-	var turret_inverse := Projection(turret_root.global_transform.affine_inverse())
-	turret_paint.set_shader_parameter("to_local",turret_inverse)
-	bustle_paint.set_shader_parameter("to_local",turret_inverse)
+	var hull_xform := global_transform
+	if not _transforms_initialized or hull_xform != _last_hull_transform:
+		_last_hull_transform = hull_xform
+		var hull_inverse := Projection(hull_xform.affine_inverse())
+		paint.set_shader_parameter("to_local",hull_inverse)
+		dark.set_shader_parameter("to_local",hull_inverse)
+		fender_paint.set_shader_parameter("to_local",hull_inverse)
+	var turret_xform := turret_root.global_transform
+	if not _transforms_initialized or turret_xform != _last_turret_transform:
+		_last_turret_transform = turret_xform
+		var turret_inverse := Projection(turret_xform.affine_inverse())
+		turret_paint.set_shader_parameter("to_local",turret_inverse)
+		bustle_paint.set_shader_parameter("to_local",turret_inverse)
+	_transforms_initialized = true
 
 func material(color: Color, roughness := 0.85, metallic := 0.0) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()

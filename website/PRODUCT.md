@@ -31,8 +31,9 @@ Present the actual project, its art, original scenarios and original creators.
 
 The original PC game supplies gameplay and mission logic, with Godot presentation
 running in tandem. Genesis supplies optional donor graphics. The Web edition
-offers six graphics modes (EGA, EGA Upscaled, Genesis, Genesis Upscaled,
-Modernized and Tactical) with a separate HUD Style; the alpha 6 downloads offer
+lists six graphics modes (EGA, EGA Upscaled, Genesis, Genesis Upscaled,
+Modernized and Tactical; original-resolution Genesis is disabled in browser and
+the other five play in browser) with a separate HUD Style; the alpha 9 downloads offer
 five (EGA, EGA Upscaled, Genesis Upscaled, and the experimental Modern and Tactical,
 which is the default) with the same HUD Style choice. Homepage mode names
 come from the Web edition's Graphics menu, and `verify.py` checks them against it.

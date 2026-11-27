@@ -5,6 +5,9 @@ var entries: Array = []
 var images: Dictionary = {}
 var active: Dictionary = {}
 var high_resolution := true
+var _last_bytes := PackedByteArray()
+var _last_header := ""
+var _last_full := ""
 
 func _init() -> void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -16,6 +19,7 @@ func clear() -> void:
 
 func load_sources(root_path: String) -> bool:
 	clear();entries.clear();images.clear()
+	_last_bytes.clear();_last_header="";_last_full=""
 	var path:=root_path.path_join("local-art/pc-newspapers-v1/newspapers.json")
 	if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=CATALOG_SHA:return false
 	var data:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -47,11 +51,16 @@ func set_frame(source: Image, program: Dictionary) -> bool:
 	if entries.is_empty() or program.get("name")!="END":return false
 	if source==null or source.get_size()!=Vector2i(320,200) or source.get_format()!=Image.FORMAT_RGB8:return false
 	var bytes:=source.get_data()
-	var header:=digest(bytes.slice(0,320*72*3))
+	if bytes!=_last_bytes:
+		_last_bytes=bytes
+		_last_header=digest(bytes.slice(0,320*72*3))
+		_last_full=""
+	var header:=_last_header
 	for item in entries:
 		if item.header_sha256!=header:continue
 		if not high_resolution and not images[item.name].has("native"):return false
-		var height:=200 if digest(bytes)==item.rgb_sha256 else 72
+		if _last_full.is_empty(): _last_full=digest(bytes)
+		var height:=200 if _last_full==item.rgb_sha256 else 72
 		active={"name":item.name,"height":height,"source":item.source,"whole_plate":height==200}
 		texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR if high_resolution else CanvasItem.TEXTURE_FILTER_NEAREST
 		visible=true;queue_redraw();return true

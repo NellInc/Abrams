@@ -106,7 +106,7 @@ unsupported palette), a rewound pass sequence, or a save, load or graphics
 switch. Buildings, aircraft and bridges are excluded.
 
 The burst covers the wreck's own painted pixels, original impact sprites
-(shapes 168–185), and terrain and background the original painted before
+(shapes 168 to 185), and terrain and background the original painted before
 the wreck: open ground and sky behind it. Actors, trees, guided-missile
 flares and nearer terrain always cover it, so a live vehicle beside or
 behind the kill is never hidden. Fragments cross that open ground only when
@@ -146,7 +146,7 @@ fire sat below the wreck's base, in front of the tank.
 
 While a kill's blast is showing, Tactical replaces that kill's own impact
 sprite with the ground (Nell, 3 November: "It's still showing fire/smoke in
-front of the actual tank?"). The sprite is an impact shape (168–185) whose
+front of the actual tank?"). The sprite is an impact shape (168 to 185) whose
 original actor sits at exactly the wreck's world position. Its authored
 art, Tactical ash and sparks are not drawn, and the terrain underpaint shows
 through. Ownership is unchanged, so anything the original's sprite hid stays
@@ -173,8 +173,7 @@ without the clock, so they spend any burst instead of showing it frozen and
 replaying it late. This adds visible content the original does not have. The blast
 marks only a kill the original already marks with its own impact sprite.
 The short life, the fade and the 6-pixel limit on fragments crossing open
-ground keep stray specks from reading as a distant target, but that has not
-been play-tested.
+ground keep stray specks from reading as a distant target.
 
 Menus, lost focus and the original pause freeze the explicit clocks;
 checkpoint timeline resets, station changes and graphics re-entry discard stale
@@ -195,7 +194,7 @@ reduced motion and `--no-tactical-dynamics` spend a live burst through the
 real viewer gate, and the original pause holds it
 (`test_pc_tactical_dynamics.gd`). On native OpenGL the
 frame is exact before the clock runs and after the burst ends. The burst is
-visible at 0.15–0.9 s and never changes a pixel of an actor painted before
+visible at 0.15 to 0.9 s and never changes a pixel of an actor painted before
 or after the wreck, and a wholly hidden wreck throws nothing. A kill under
 6 pixels stays inside its 6-pixel minimum envelope
 (`test_pc_effect_art.gd -- --tactical-particles`). Through the real draw
